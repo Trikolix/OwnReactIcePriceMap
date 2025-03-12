@@ -36,3 +36,18 @@
     transform: rotate(360deg);
   }
 }
+
+.price-icon div {
+  background-color: #14923a; /* Tomatenrot */
+  background-image: "/img/icon/ice-cream-cup.png";
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  border: 2px solid white;
+}
