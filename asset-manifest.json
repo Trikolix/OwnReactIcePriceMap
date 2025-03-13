@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Trikolix/OwnReactIcePriceMap.git/static/css/main.8324cb0b.css",
+    "main.js": "/Trikolix/OwnReactIcePriceMap.git/static/js/main.78cb22bc.js",
+    "static/js/453.312b20da.chunk.js": "/Trikolix/OwnReactIcePriceMap.git/static/js/453.312b20da.chunk.js",
+    "index.html": "/Trikolix/OwnReactIcePriceMap.git/index.html",
+    "main.8324cb0b.css.map": "/Trikolix/OwnReactIcePriceMap.git/static/css/main.8324cb0b.css.map",
+    "main.78cb22bc.js.map": "/Trikolix/OwnReactIcePriceMap.git/static/js/main.78cb22bc.js.map",
+    "453.312b20da.chunk.js.map": "/Trikolix/OwnReactIcePriceMap.git/static/js/453.312b20da.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.8324cb0b.css",
+    "static/js/main.78cb22bc.js"
+  ]
+}
