@@ -1,5 +1,7 @@
 <?php
-header('Content-Type: application/json');
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
 $host = "localhost";
@@ -106,5 +108,5 @@ $response = [
     "attribute" => $attribute
 ];
 
-echo json_encode($response, JSON_PRETTY_PRINT);
+echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 ?>
