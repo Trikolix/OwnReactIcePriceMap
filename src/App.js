@@ -16,8 +16,9 @@ const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
-// TODO: will be retrieved from a backend in the future
+
 const IceCreamRadar = () => {
+  // TODO: will be retrieved from a backend in the future
   const [iceCreamShops, setIceCreamShops] = useState([
     { id: 1, name: 'Eiscafé Eis-Zapfen', price: null, lastPriceUpdate: null, position: [50.837021, 12.90473712], adress: "Uhlichstraße 18, 09112 Chemnitz", openingHours: "Mo-Fr: 12-17 Uhr; Sa-So: 12-17 Uhr" },
     { id: 2, name: 'Eiscafé Kohlebunker', price: null, lastPriceUpdate: null, position: [50.824928, 12.899595], adress: "Ulmenstraße 1, 09112 Chemnitz", openingHours: "Di-Fr: 13-18 Uhr; Sa-So: 12-18 Uhr" },
