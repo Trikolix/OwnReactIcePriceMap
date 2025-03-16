@@ -18,29 +18,56 @@ const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
 
 
 const IceCreamRadar = () => {
-  // TODO: will be retrieved from a backend in the future
-  const [iceCreamShops, setIceCreamShops] = useState([
-    { id: 1, name: 'Eiscafé Eis-Zapfen', price: null, lastPriceUpdate: null, position: [50.837021, 12.90473712], adress: "Uhlichstraße 18, 09112 Chemnitz", openingHours: "Mo-Fr: 12-17 Uhr; Sa-So: 12-17 Uhr" },
-    { id: 2, name: 'Eiscafé Kohlebunker', price: null, lastPriceUpdate: null, position: [50.824928, 12.899595], adress: "Ulmenstraße 1, 09112 Chemnitz", openingHours: "Di-Fr: 13-18 Uhr; Sa-So: 12-18 Uhr" },
-    { id: 3, name: 'Eis-Café Lunzenau', price: 1.6, lastPriceUpdate: "2025-03-06", position: [50.961954, 12.756064], adress: "Markt 11, 09328 Lunzenau", openingHours: null },
-    { id: 4, name: 'Softeisdiele Hartha', price: null, lastPriceUpdate: null, position: [51.093884, 12.974721], adress: "Franz-Mehring-Straße 4, 04746 Hartha", openingHours: null },
-    { id: 5, name: 'Rüllis Eismanufaktur', price: 2.0, lastPriceUpdate: "2024-02-01", position: [50.832999, 12.874314], adress: "Limbacher Str. 212, 09116 Chemnitz", openingHours: "Mo-Fr: 13-17 Uhr" },
-    { id: 6, name: 'Bäckerei Förster', price: null, lastPriceUpdate: null, position: [50.836005, 12.519606], adress: "Siemensstraße 8, 08371 Glauchau", openingHours: "Mo-Sa: 06-17 Uhr; So: 13-17 Uhr" },
-    { id: 7, name: 'Bistro & Eiscafe Zur Mel', price: null, lastPriceUpdate: null, position: [50.496214, 12.596914], adress: "Schulstraße 5, 08309 Eibenstock", openingHours: "Di-So: 11-17 Uhr" },
-    { id: 8, name: 'Bravo Eiscafe & Bistro - Vollmershain', price: 2.0, lastPriceUpdate: null, position: [50.851029, 12.306548], adress: "Dorfstraße 70, 04626 Vollmershain", openingHours: "Di-Fr: 14-22 Uhr; Sa: 13-21 Uhr; So: 12-19 Uhr" },
-    { id: 9, name: 'Eisdiele Dietz', price: null, lastPriceUpdate: null, position: [50.780604, 12.699031], adress: "Hauptstraße 6, 09355 Gersdorf", openingHours: null },
-    { id: 10, name: 'BELLA CIAO', price: null, lastPriceUpdate: null, position: [50.802424, 12.708078], adress: "Altmarkt 17, 09337 Hohenstein-Ernstthal", openingHours: "täglich: 10-20 Uhr" },
-    { id: 11, name: 'Corina Heil Eiscafé Fantasy', price: 1.4, lastPriceUpdate: "2024-02-01", position: [50.802148, 12.706420], adress: "Altmarkt 32, 09337 Hohenstein-Ernstthal", openingHours: "Di: 12:30-18 Uhr; Mi: 11-18 Uhr; Do-So: 12:30-18 Uhr" },
-    { id: 12, name: 'Hübschmann\'s Eislädl', price: null, lastPriceUpdate: null, position: [50.724041, 13.092184], adress: "Alte Marienberger Str. 2, 09432 Großolbersdorf", openingHours: "Sa-So: 14-18 Uhr" },
-    { id: 13, name: 'Eiscafé Börner', price: null, lastPriceUpdate: null, position: [50.859117, 13.167559], adress: "Lange Str. 22, 09569 Oederan", openingHours: null },
-    { id: 14, name: 'Eis-Cafe Bartsch', price: null, lastPriceUpdate: null, position: [50.5148685, 13.088929], adress: "Annaberger Str. 15, 09477 Jöhstadt", openingHours: "Do-Di: 13-21 Uhr" },
-    { id: 15, name: 'Café EISMAIK', price: 1.7, lastPriceUpdate: "2024-06-01", position: [50.93346789087332, 12.70526250737209], adress: "Brückenstraße 24, 09322 Penig", openingHours: "Di-Do: 13-18 Uhr; Sa-So: 13-18 Uhr" }
-  ]);
+  const [iceCreamShops, setIceCreamShops] = useState([]);
+  
+  // useState([
+  //   { id: 1, name: 'Eiscafé Eis-Zapfen', price: null, lastPriceUpdate: null, position: [50.837021, 12.90473712], adress: "Uhlichstraße 18, 09112 Chemnitz", openingHours: "Mo-Fr: 12-17 Uhr; Sa-So: 12-17 Uhr" },
+  //   { id: 2, name: 'Eiscafé Kohlebunker', price: null, lastPriceUpdate: null, position: [50.824928, 12.899595], adress: "Ulmenstraße 1, 09112 Chemnitz", openingHours: "Di-Fr: 13-18 Uhr; Sa-So: 12-18 Uhr" },
+  //   { id: 3, name: 'Eis-Café Lunzenau', price: 1.6, lastPriceUpdate: "2025-03-06", position: [50.961954, 12.756064], adress: "Markt 11, 09328 Lunzenau", openingHours: null },
+  //   { id: 4, name: 'Softeisdiele Hartha', price: null, lastPriceUpdate: null, position: [51.093884, 12.974721], adress: "Franz-Mehring-Straße 4, 04746 Hartha", openingHours: null },
+  //   { id: 5, name: 'Rüllis Eismanufaktur', price: 2.0, lastPriceUpdate: "2024-02-01", position: [50.832999, 12.874314], adress: "Limbacher Str. 212, 09116 Chemnitz", openingHours: "Mo-Fr: 13-17 Uhr" },
+  //   { id: 6, name: 'Bäckerei Förster', price: null, lastPriceUpdate: null, position: [50.836005, 12.519606], adress: "Siemensstraße 8, 08371 Glauchau", openingHours: "Mo-Sa: 06-17 Uhr; So: 13-17 Uhr" },
+  //   { id: 7, name: 'Bistro & Eiscafe Zur Mel', price: null, lastPriceUpdate: null, position: [50.496214, 12.596914], adress: "Schulstraße 5, 08309 Eibenstock", openingHours: "Di-So: 11-17 Uhr" },
+  //   { id: 8, name: 'Bravo Eiscafe & Bistro - Vollmershain', price: 2.0, lastPriceUpdate: null, position: [50.851029, 12.306548], adress: "Dorfstraße 70, 04626 Vollmershain", openingHours: "Di-Fr: 14-22 Uhr; Sa: 13-21 Uhr; So: 12-19 Uhr" },
+  //   { id: 9, name: 'Eisdiele Dietz', price: null, lastPriceUpdate: null, position: [50.780604, 12.699031], adress: "Hauptstraße 6, 09355 Gersdorf", openingHours: null },
+  //   { id: 10, name: 'BELLA CIAO', price: null, lastPriceUpdate: null, position: [50.802424, 12.708078], adress: "Altmarkt 17, 09337 Hohenstein-Ernstthal", openingHours: "täglich: 10-20 Uhr" },
+  //   { id: 11, name: 'Corina Heil Eiscafé Fantasy', price: 1.4, lastPriceUpdate: "2024-02-01", position: [50.802148, 12.706420], adress: "Altmarkt 32, 09337 Hohenstein-Ernstthal", openingHours: "Di: 12:30-18 Uhr; Mi: 11-18 Uhr; Do-So: 12:30-18 Uhr" },
+  //   { id: 12, name: 'Hübschmann\'s Eislädl', price: null, lastPriceUpdate: null, position: [50.724041, 13.092184], adress: "Alte Marienberger Str. 2, 09432 Großolbersdorf", openingHours: "Sa-So: 14-18 Uhr" },
+  //   { id: 13, name: 'Eiscafé Börner', price: null, lastPriceUpdate: null, position: [50.859117, 13.167559], adress: "Lange Str. 22, 09569 Oederan", openingHours: null },
+  //   { id: 14, name: 'Eis-Cafe Bartsch', price: null, lastPriceUpdate: null, position: [50.5148685, 13.088929], adress: "Annaberger Str. 15, 09477 Jöhstadt", openingHours: "Do-Di: 13-21 Uhr" },
+  //   { id: 15, name: 'Café EISMAIK', price: 1.7, lastPriceUpdate: "2024-06-01", position: [50.93346789087332, 12.70526250737209], adress: "Brückenstraße 24, 09322 Penig", openingHours: "Di-Do: 13-18 Uhr; Sa-So: 13-18 Uhr" }
+  // ]);
 
   const [userPosition, setUserPosition] = useState(null);
   const [maxPriceFilter, setMaxPriceFilter] = useState(null);
   const [openNowFilter, setOpenNowFilter] = useState(false);
   const mapRef = useRef(null);
+
+  const fetchIceCreamShops = async (latitude, longitude, radius) => {
+    try {
+      const query = `https://ice-app.4lima.de/backend/get_eisdiele_nahe.php?latitude=${latitude}&longitude=${longitude}&radius=${radius}`;
+      console.log(query);
+      const response = await fetch(query);
+      const data = await response.json();
+      console.log(data);
+      setIceCreamShops(data.eisdielen);
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Eisdielen:', error);
+    }
+  }
+
+  // Funktion zum Abrufen der detaillierten Informationen für eine Eisdiele
+  const fetchIceCreamShopDetails = async (eisdieleId) => {
+    try {
+      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${eisdieleId}`);
+      const data = await response.json();
+
+      return data;
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Eisdiele-Details:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -48,6 +75,7 @@ const IceCreamRadar = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           setUserPosition([latitude, longitude]);
+          fetchIceCreamShops(latitude, longitude, 50); // Radius kann angepasst werden
         },
         (error) => {
           console.error('Fehler beim Abrufen der Position:', error);
@@ -66,7 +94,7 @@ const IceCreamRadar = () => {
   }, [userPosition]);
 
   // Berechne den minimalen und maximalen Preis
-  const prices = iceCreamShops.map(shop => shop.price).filter(price => price !== null);
+  const prices = iceCreamShops.map(shop => shop.kugel_preis).filter(kugel_preis => kugel_preis !== null);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -142,8 +170,8 @@ const IceCreamRadar = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {filteredShops.map((shop) => {
-          const backgroundColor = getColorBasedOnPrice(shop.price, minPrice, maxPrice);
-          const displayPrice = shop.price !== null ? `${Number(shop.price).toFixed(2)} €` : '?';
+          const backgroundColor = getColorBasedOnPrice(shop.kugel_preis, minPrice, maxPrice);
+          const displayPrice = shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` : '?';
           const displayOpeningHours = shop.openingHours !== null ? shop.openingHours : '???';
           const displayLastPriceUpdate = shop.lastPriceUpdate !== null ? `(zuletzt aktualisiert: ${shop.lastPriceUpdate})` : '';
 
@@ -151,7 +179,7 @@ const IceCreamRadar = () => {
 
             <Marker
               key={shop.id}
-              position={shop.position}
+              position={[shop.latitude, shop.longitude]}
               icon={L.divIcon({
                 className: 'price-icon',
                 html: `<div style="background-color:${backgroundColor}">${displayPrice}</div>`,

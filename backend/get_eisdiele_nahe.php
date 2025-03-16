@@ -1,6 +1,7 @@
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
@@ -64,6 +65,14 @@ $sql = "SELECT e.id, e.name, e.adresse, e.latitude, e.longitude,
 $stmt = $pdo->prepare($sql);
 $stmt->execute(["latitude" => $latitude, "longitude" => $longitude, "radius" => $radius]);
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+foreach ($eisdielen as &$eisdiele) {
+    $eisdiele['latitude'] = floatval($eisdiele['latitude']);
+    $eisdiele['longitude'] = floatval($eisdiele['longitude']);
+    $eisdiele['kugel_preis'] = isset($eisdiele['kugel_preis']) ? floatval($eisdiele['kugel_preis']) : null;
+    $eisdiele['softeis_preis'] = isset($eisdiele['softeis_preis']) ? floatval($eisdiele['softeis_preis']) : null;
+    $eisdiele['entfernung_km'] = floatval($eisdiele['entfernung_km']);
+}
+unset($eisdiele); // Wichtiger Schritt, um Referenz-Probleme zu vermeiden
 
 
 echo json_encode(["eisdielen" => $eisdielen], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
