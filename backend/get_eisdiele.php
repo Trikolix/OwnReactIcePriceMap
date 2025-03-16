@@ -72,8 +72,8 @@ $softeis_preis = $stmt->fetch();
 $stmt = $pdo->prepare("
     SELECT 
         AVG(geschmack) as geschmack,
-        AVG(groesse_kugel) as groesse_kugel,
-        AVG(sorte_auswahl) as sorten_auswahl
+        AVG(kugelgroesse) as kugelgroesse,
+        AVG(auswahl) as auswahl
     FROM bewertungen
     WHERE eisdiele_id = ?
 ");
@@ -102,8 +102,8 @@ $response = [
     ],
     "bewertungen" => [
         "geschmack" => round($bewertungen["geschmack"], 2),
-        "groesse_kugel" => round($bewertungen["groesse_kugel"], 2),
-        "sorten_auswahl" => round($bewertungen["sorten_auswahl"], 2)
+        "kugelgroesse" => round($bewertungen["kugelgroesse"], 2),
+        "auswahl" => round($bewertungen["auswahl"], 2)
     ],
     "attribute" => $attribute
 ];
