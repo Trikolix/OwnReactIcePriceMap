@@ -127,7 +127,7 @@ const IceCreamRadar = () => {
       <h1>Ice-Price-Radar</h1>
 
       <div className="control-container">
-        <button className="custom-button" onClick={centerMapOnUser}>Auf meinen Standort zentrieren</button>
+        <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <ToggleSwitch options={["Alle Eisdielen", "Kugeleis", "Softeis"]} onChange={handleToggleChange} />
       </div>
 
