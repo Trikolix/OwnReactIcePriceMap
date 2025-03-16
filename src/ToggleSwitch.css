@@ -1,0 +1,39 @@
+.toggle-switch {
+    display: flex;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    width: max-content;
+  }
+  
+  .toggle-button {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    background-color: #ffe8d5;
+    color: #000000;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s;
+  }
+  
+  .toggle-button:hover {
+    background-color: #ffa55b;
+  }
+  
+  .toggle-button.active {
+    background-color: #ff7300;
+    color: #ffffff;
+  }
+  
+  .toggle-button.first {
+    border-radius: 8px 0 0 8px;
+  }
+  
+  .toggle-button.last {
+    border-radius: 0 8px 8px 0;
+  }
+  
+  .toggle-button:not(:last-child) {
+    border-right: 1px solid #ccc;
+  }

@@ -3,15 +3,16 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
+import ToggleSwitch from "./ToggleSwitch";
 
 // Funktion zur Berechnung der Farbe basierend auf dem Preis
 const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
   if (price === null) {
     return 'grey'; // Grau, wenn der Preis null ist
   }
-  const ratio = (price - minPrice + 0.1) / (maxPrice - minPrice);
-  const r = Math.floor(255 * ratio);
-  const g = Math.floor(255 * (1 - ratio));
+  const ratio = (price - minPrice) / (maxPrice - minPrice);
+  const r = Math.floor(200 * ratio);
+  const g = Math.floor(200 * (1 - ratio));
   const b = 0; // Blau bleibt 0, da wir nur zwischen Rot und Grün interpolieren
   return `rgb(${r}, ${g}, ${b})`;
 };
@@ -19,28 +20,10 @@ const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
-  
-  // useState([
-  //   { id: 1, name: 'Eiscafé Eis-Zapfen', price: null, lastPriceUpdate: null, position: [50.837021, 12.90473712], adress: "Uhlichstraße 18, 09112 Chemnitz", openingHours: "Mo-Fr: 12-17 Uhr; Sa-So: 12-17 Uhr" },
-  //   { id: 2, name: 'Eiscafé Kohlebunker', price: null, lastPriceUpdate: null, position: [50.824928, 12.899595], adress: "Ulmenstraße 1, 09112 Chemnitz", openingHours: "Di-Fr: 13-18 Uhr; Sa-So: 12-18 Uhr" },
-  //   { id: 3, name: 'Eis-Café Lunzenau', price: 1.6, lastPriceUpdate: "2025-03-06", position: [50.961954, 12.756064], adress: "Markt 11, 09328 Lunzenau", openingHours: null },
-  //   { id: 4, name: 'Softeisdiele Hartha', price: null, lastPriceUpdate: null, position: [51.093884, 12.974721], adress: "Franz-Mehring-Straße 4, 04746 Hartha", openingHours: null },
-  //   { id: 5, name: 'Rüllis Eismanufaktur', price: 2.0, lastPriceUpdate: "2024-02-01", position: [50.832999, 12.874314], adress: "Limbacher Str. 212, 09116 Chemnitz", openingHours: "Mo-Fr: 13-17 Uhr" },
-  //   { id: 6, name: 'Bäckerei Förster', price: null, lastPriceUpdate: null, position: [50.836005, 12.519606], adress: "Siemensstraße 8, 08371 Glauchau", openingHours: "Mo-Sa: 06-17 Uhr; So: 13-17 Uhr" },
-  //   { id: 7, name: 'Bistro & Eiscafe Zur Mel', price: null, lastPriceUpdate: null, position: [50.496214, 12.596914], adress: "Schulstraße 5, 08309 Eibenstock", openingHours: "Di-So: 11-17 Uhr" },
-  //   { id: 8, name: 'Bravo Eiscafe & Bistro - Vollmershain', price: 2.0, lastPriceUpdate: null, position: [50.851029, 12.306548], adress: "Dorfstraße 70, 04626 Vollmershain", openingHours: "Di-Fr: 14-22 Uhr; Sa: 13-21 Uhr; So: 12-19 Uhr" },
-  //   { id: 9, name: 'Eisdiele Dietz', price: null, lastPriceUpdate: null, position: [50.780604, 12.699031], adress: "Hauptstraße 6, 09355 Gersdorf", openingHours: null },
-  //   { id: 10, name: 'BELLA CIAO', price: null, lastPriceUpdate: null, position: [50.802424, 12.708078], adress: "Altmarkt 17, 09337 Hohenstein-Ernstthal", openingHours: "täglich: 10-20 Uhr" },
-  //   { id: 11, name: 'Corina Heil Eiscafé Fantasy', price: 1.4, lastPriceUpdate: "2024-02-01", position: [50.802148, 12.706420], adress: "Altmarkt 32, 09337 Hohenstein-Ernstthal", openingHours: "Di: 12:30-18 Uhr; Mi: 11-18 Uhr; Do-So: 12:30-18 Uhr" },
-  //   { id: 12, name: 'Hübschmann\'s Eislädl', price: null, lastPriceUpdate: null, position: [50.724041, 13.092184], adress: "Alte Marienberger Str. 2, 09432 Großolbersdorf", openingHours: "Sa-So: 14-18 Uhr" },
-  //   { id: 13, name: 'Eiscafé Börner', price: null, lastPriceUpdate: null, position: [50.859117, 13.167559], adress: "Lange Str. 22, 09569 Oederan", openingHours: null },
-  //   { id: 14, name: 'Eis-Cafe Bartsch', price: null, lastPriceUpdate: null, position: [50.5148685, 13.088929], adress: "Annaberger Str. 15, 09477 Jöhstadt", openingHours: "Do-Di: 13-21 Uhr" },
-  //   { id: 15, name: 'Café EISMAIK', price: 1.7, lastPriceUpdate: "2024-06-01", position: [50.93346789087332, 12.70526250737209], adress: "Brückenstraße 24, 09322 Penig", openingHours: "Di-Do: 13-18 Uhr; Sa-So: 13-18 Uhr" }
-  // ]);
-
   const [userPosition, setUserPosition] = useState(null);
   const [maxPriceFilter, setMaxPriceFilter] = useState(null);
   const [openNowFilter, setOpenNowFilter] = useState(false);
+  const [selectedOption, setSelectedOption] = useState("Alle Eisdielen");
   const mapRef = useRef(null);
 
   const fetchIceCreamShops = async (latitude, longitude, radius) => {
@@ -118,47 +101,37 @@ const IceCreamRadar = () => {
   const resetFilters = () => {
     setMaxPriceFilter(null);
     setOpenNowFilter(false);
+    setSelectedOption("Alle Eisdielen");
   };
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
-    const isWithinPriceRange = maxPriceFilter === null || (shop.price !== null && shop.price <= maxPriceFilter);
-    const isOpenNow = openNowFilter ? isOpenNowFilter(shop.openingHours) : true;
-    return isWithinPriceRange && isOpenNow;
+    const hasCorrectIceType = selectedOption === "Alle Eisdielen" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null)
+    return hasCorrectIceType;
   });
 
   // Funktion zum Zentrieren der Karte auf den Benutzerstandort
   const centerMapOnUser = () => {
     if (mapRef.current && userPosition) {
-      mapRef.current.setView(userPosition, 11); // Zentriere die Karte auf die Benutzerposition
+      mapRef.current.setView(userPosition); // Zentriere die Karte auf die Benutzerposition
     }
-  }; 
+  };
+
+  const handleToggleChange = (selectedOption) => {
+    console.log("Ausgewählt:", selectedOption);
+    setSelectedOption(selectedOption);
+  };
 
   return (
     <div>
       <h1>Ice-Price-Radar</h1>
-      <div>
-        <label>
-          Maximaler Preis:
-          <input
-            type="number"
-            step="0.1"
-            value={maxPriceFilter || ''}
-            onChange={(e) => setMaxPriceFilter(e.target.value)}
-            placeholder="Max. Preis"
-          />
-        </label>
-        <label>
-          Nur geöffnete Eisdielen anzeigen:
-          <input
-            type="checkbox"
-            checked={openNowFilter}
-            onChange={(e) => setOpenNowFilter(e.target.checked)}
-          />
-        </label>
-        <button onClick={resetFilters}>Filter zurücksetzen</button>
-        <button onClick={centerMapOnUser}>Auf meinen Standort zentrieren</button>
+
+      <div className="control-container">
+        <button className="custom-button" onClick={centerMapOnUser}>Auf meinen Standort zentrieren</button>
+        <ToggleSwitch options={["Alle Eisdielen", "Kugeleis", "Softeis"]} onChange={handleToggleChange} />
       </div>
+
+
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
         zoom={11}
@@ -171,7 +144,7 @@ const IceCreamRadar = () => {
         />
         {filteredShops.map((shop) => {
           const backgroundColor = getColorBasedOnPrice(shop.kugel_preis, minPrice, maxPrice);
-          const displayPrice = shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` : '?';
+          const displayPrice = selectedOption === "Softeis" ? `${Number(shop.softeis_preis).toFixed(2)} €`: shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` : '?';
           const displayOpeningHours = shop.openingHours !== null ? shop.openingHours : '???';
           const displayLastPriceUpdate = shop.lastPriceUpdate !== null ? `(zuletzt aktualisiert: ${shop.lastPriceUpdate})` : '';
 
@@ -192,7 +165,7 @@ const IceCreamRadar = () => {
                 <div>
                   <h2>{shop.name}</h2>
                   <p>Preis: {displayPrice} / Kugel <span style={{ fontSize: 'smaller', color: 'grey' }}> {displayLastPriceUpdate} </span></p>
-                  <p>Adresse: {shop.adress}</p>
+                  <p>Adresse: {shop.adresse}</p>
                   <p>Öffnungszeiten: {displayOpeningHours}</p>
                 </div>
               </Popup>

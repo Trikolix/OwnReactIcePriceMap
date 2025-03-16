@@ -1,3 +1,12 @@
+h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  color: #333;
+  margin-bottom: 15px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .price-icon div {
   background-color: #14923a;
   background-image: "/img/icon/ice-cream-cup.png";
@@ -11,4 +20,37 @@
   font-size: 12px;
   font-weight: bold;
   border: 2px solid white;
+}
+
+/* Container für Button + ToggleSwitch */
+.control-container {
+  display: flex;
+  gap: 15px; /* Mehr Abstand */
+  align-items: center;
+  justify-content: center; /* Zentriert es */
+  padding: 10px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Styling für den Button */
+.custom-button {
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: bold;
+  border: 2px solid #f8f8f8;
+  border-radius: 8px;
+  background-color: #ffe8d5;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.custom-button:hover {
+  background-color: #ffa55b;
+}
+
+.custom-button:active {
+  background-color: #e66b00;
+  color: white;
 }
