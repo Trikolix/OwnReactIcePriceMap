@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./ToggleSwitch.css";
 
 const ToggleSwitch = ({ options, onChange }) => {
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(2);
   
     const handleClick = (index) => {
       setActiveIndex(index);

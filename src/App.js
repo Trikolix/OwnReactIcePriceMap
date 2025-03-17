@@ -4,18 +4,9 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
 import ToggleSwitch from "./ToggleSwitch";
+import ShopMarker from "./ShopMarker";
 
-// Funktion zur Berechnung der Farbe basierend auf dem Preis
-const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
-  if (price === null) {
-    return 'grey'; // Grau, wenn der Preis null ist
-  }
-  const ratio = (price - minPrice) / (maxPrice - minPrice);
-  const r = Math.floor(200 * ratio);
-  const g = Math.floor(200 * (1 - ratio));
-  const b = 0; // Blau bleibt 0, da wir nur zwischen Rot und Grün interpolieren
-  return `rgb(${r}, ${g}, ${b})`;
-};
+
 
 
 const IceCreamRadar = () => {
@@ -23,13 +14,12 @@ const IceCreamRadar = () => {
   const [userPosition, setUserPosition] = useState(null);
   const [maxPriceFilter, setMaxPriceFilter] = useState(null);
   const [openNowFilter, setOpenNowFilter] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("Alle Eisdielen");
+  const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
 
   const fetchIceCreamShops = async (latitude, longitude, radius) => {
     try {
       const query = `https://ice-app.4lima.de/backend/get_eisdiele_nahe.php?latitude=${latitude}&longitude=${longitude}&radius=${radius}`;
-      console.log(query);
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);
@@ -81,32 +71,9 @@ const IceCreamRadar = () => {
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
-  // Funktion zum Überprüfen, ob die Eisdiele jetzt geöffnet ist
-  const isOpenNowFilter = (openingHours) => {
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-
-    // Hier müsstest du die Öffnungszeiten parsen und überprüfen
-    // Dies ist eine vereinfachte Version und muss angepasst werden
-    // Beispiel: "Mo-Fr: 12-17 Uhr; Sa-So: 12-17 Uhr"
-    if (openingHours === "???") return false;
-
-    // Dummy-Implementierung, ersetze durch echte Logik
-    return true;
-  };
-
-  // Funktion zum Zurücksetzen der Filter
-  const resetFilters = () => {
-    setMaxPriceFilter(null);
-    setOpenNowFilter(false);
-    setSelectedOption("Alle Eisdielen");
-  };
-
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
-    const hasCorrectIceType = selectedOption === "Alle Eisdielen" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null)
+    const hasCorrectIceType = selectedOption === "Alle" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null)
     return hasCorrectIceType;
   });
 
@@ -128,7 +95,7 @@ const IceCreamRadar = () => {
 
       <div className="control-container">
         <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
-        <ToggleSwitch options={["Alle Eisdielen", "Kugeleis", "Softeis"]} onChange={handleToggleChange} />
+        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
       </div>
 
 
@@ -143,35 +110,17 @@ const IceCreamRadar = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {filteredShops.map((shop) => {
-          const backgroundColor = getColorBasedOnPrice(shop.kugel_preis, minPrice, maxPrice);
-          const displayPrice = selectedOption === "Softeis" ? `${Number(shop.softeis_preis).toFixed(2)} €`: shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` : '?';
-          const displayOpeningHours = shop.openingHours !== null ? shop.openingHours : '???';
-          const displayLastPriceUpdate = shop.lastPriceUpdate !== null ? `(zuletzt aktualisiert: ${shop.lastPriceUpdate})` : '';
-
           return (
-
-            <Marker
-              key={shop.id}
-              position={[shop.latitude, shop.longitude]}
-              icon={L.divIcon({
-                className: 'price-icon',
-                html: `<div style="background-color:${backgroundColor}">${displayPrice}</div>`,
-                iconSize: [38, 38],
-                iconAnchor: [19, 19],
-                popupAnchor: [0, -19], // Verschiebt das Popup um 19 Pixel nach oben
-              })}
-            >
-              <Popup>
-                <div>
-                  <h2>{shop.name}</h2>
-                  <p>Preis: {displayPrice} / Kugel <span style={{ fontSize: 'smaller', color: 'grey' }}> {displayLastPriceUpdate} </span></p>
-                  <p>Adresse: {shop.adresse}</p>
-                  <p>Öffnungszeiten: {displayOpeningHours}</p>
-                </div>
-              </Popup>
-            </Marker>
-          );
+          <ShopMarker 
+            key={shop.id}
+            shop={shop}
+            selectedOption={selectedOption}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+         />
+        );
         })}
+        
         {userPosition && (
           <Marker
             position={userPosition}

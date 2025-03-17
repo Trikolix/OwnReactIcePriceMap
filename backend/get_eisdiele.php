@@ -1,6 +1,7 @@
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
@@ -101,9 +102,9 @@ $response = [
         "softeis" => $softeis_preis ?: null
     ],
     "bewertungen" => [
-        "geschmack" => round($bewertungen["geschmack"], 2),
-        "kugelgroesse" => round($bewertungen["kugelgroesse"], 2),
-        "auswahl" => round($bewertungen["auswahl"], 2)
+        "geschmack" => isset($bewertungen["geschmack"]) ? round($bewertungen["geschmack"], 2) : null,
+        "kugelgroesse" => isset($bewertungen["kugelgroesse"]) ? round($bewertungen["kugelgroesse"], 2) : null,
+        "auswahl" => isset($bewertungen["auswahl"]) ? round($bewertungen["auswahl"], 2) : null,
     ],
     "attribute" => $attribute
 ];
