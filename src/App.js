@@ -5,6 +5,10 @@ import L from 'leaflet';
 import './App.css';
 import ToggleSwitch from "./ToggleSwitch";
 import ShopMarker from "./ShopMarker";
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 
 
 
@@ -109,6 +113,7 @@ const IceCreamRadar = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        <MarkerClusterGroup>
         {filteredShops.map((shop) => {
           return (
           <ShopMarker 
@@ -120,7 +125,7 @@ const IceCreamRadar = () => {
          />
         );
         })}
-        
+        </MarkerClusterGroup>
         {userPosition && (
           <Marker
             position={userPosition}
