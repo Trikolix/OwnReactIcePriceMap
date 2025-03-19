@@ -62,7 +62,7 @@ const IceCreamRadar = () => {
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
     if (mapRef.current && userPosition) {
-      mapRef.current.setView(userPosition, 11);
+      mapRef.current.setView(userPosition, 10);
     }
   }, [userPosition]);
 
@@ -90,7 +90,7 @@ const IceCreamRadar = () => {
   };
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <h1>Ice-Price-Radar</h1>
 
       <div className="control-container">
@@ -101,8 +101,8 @@ const IceCreamRadar = () => {
 
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
-        zoom={11}
-        style={{ height: '700px', width: '100%' }}
+        zoom={10}
+        style={{ flex: 1, width: '100%' }}
         ref={mapRef}
       >
         <TileLayer
