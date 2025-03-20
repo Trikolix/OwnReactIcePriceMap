@@ -14,8 +14,6 @@ const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
   const [userPosition, setUserPosition] = useState(null);
   const [clustering, setClustering] = useState(true);
-  const [maxPriceFilter, setMaxPriceFilter] = useState(null);
-  const [openNowFilter, setOpenNowFilter] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
 
@@ -59,9 +57,6 @@ const IceCreamRadar = () => {
   const prices = iceCreamShops.map(shop => shop.kugel_preis).concat(iceCreamShops.map(shop => shop.softeis_preis)).filter(price => price !== null);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
-  console.log(minPrice, maxPrice);
-
-
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {

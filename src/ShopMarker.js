@@ -73,24 +73,25 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
             <p>Lädt...</p>
           ) : shopDetails ? (
             <>
+              <p><b>Adresse:</b> {shopDetails.eisdiele.adresse}</p>
+              {shopDetails?.eisdiele?.openingHours && (
+                <div>
+                  <h3>Öffnungszeiten:</h3>
+                  {displayOpeningHours.map((part, index) => (
+                    <div key={index}>{part.trim()}</div>
+                  ))}
+                </div>
+              )}
               <h3>Preise:</h3>
               {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>(zuletzt aktualisiert: {shopDetails.preise.kugel.letztes_update})</span></div>)}
               {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>(zuletzt aktualisiert: {shopDetails.preise.softeis.letztes_update})</span></div>)}
-              <p><b>Adresse:</b> {shopDetails.eisdiele.adresse}</p>
+              
               {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
                 <div><h3>Bewertungen:</h3>
                   <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
                   <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
                   <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
                   {shopDetails.attribute && <div><b>Nutzern loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
-                </div>
-              )}
-              {shopDetails?.eisdiele?.openingHours && (
-                <div>
-                  <b>Öffnungszeiten:</b>
-                  {displayOpeningHours.map((part, index) => (
-                    <div key={index}>{part.trim()}</div>
-                  ))}
                 </div>
               )}
               {shopDetails?.eisdiele?.komoot && (<div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />)}
