@@ -29,8 +29,9 @@ h1 {
   align-items: center;
   justify-content: center; /* Zentriert es */
   padding: 10px;
-  max-width: 600px;
   margin: 0 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 /* Styling für den Button */

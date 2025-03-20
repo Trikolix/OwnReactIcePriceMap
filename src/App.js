@@ -10,12 +10,10 @@ import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 
-
-
-
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
   const [userPosition, setUserPosition] = useState(null);
+  const [clustering, setClustering] = useState(true);
   const [maxPriceFilter, setMaxPriceFilter] = useState(null);
   const [openNowFilter, setOpenNowFilter] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Alle");
@@ -32,19 +30,6 @@ const IceCreamRadar = () => {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
   }
-
-  // Funktion zum Abrufen der detaillierten Informationen für eine Eisdiele
-  const fetchIceCreamShopDetails = async (eisdieleId) => {
-    try {
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${eisdieleId}`);
-      const data = await response.json();
-
-      return data;
-    } catch (error) {
-      console.error('Fehler beim Abrufen der Eisdiele-Details:', error);
-      return null;
-    }
-  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -71,9 +56,12 @@ const IceCreamRadar = () => {
   }, [userPosition]);
 
   // Berechne den minimalen und maximalen Preis
-  const prices = iceCreamShops.map(shop => shop.kugel_preis).filter(kugel_preis => kugel_preis !== null);
+  const prices = iceCreamShops.map(shop => shop.kugel_preis).concat(iceCreamShops.map(shop => shop.softeis_preis)).filter(price => price !== null);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
+  console.log(minPrice, maxPrice);
+
+
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
@@ -95,11 +83,14 @@ const IceCreamRadar = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <h1>Ice-Price-Radar</h1>
+      <h1>The Gourmet Cyclist</h1>
 
       <div className="control-container">
-        <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
+        <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
+        <button className="custom-button" onClick={() => setClustering(!clustering)}>
+          {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
+        </button>
       </div>
 
 
@@ -113,19 +104,33 @@ const IceCreamRadar = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <MarkerClusterGroup>
-        {filteredShops.map((shop) => {
-          return (
-          <ShopMarker 
-            key={shop.id}
-            shop={shop}
-            selectedOption={selectedOption}
-            minPrice={minPrice}
-            maxPrice={maxPrice}
-         />
-        );
-        })}
-        </MarkerClusterGroup>
+        {clustering ? ( // show the clustered
+          <MarkerClusterGroup maxClusterRadius={25}>
+            {filteredShops.map((shop) => {
+              return (
+                <ShopMarker
+                  key={shop.id}
+                  shop={shop}
+                  selectedOption={selectedOption}
+                  minPrice={minPrice}
+                  maxPrice={maxPrice}
+                />
+              );
+            })}
+          </MarkerClusterGroup>
+        ) : ( // show them unclustered
+          filteredShops.map((shop) => {
+              return (
+                <ShopMarker
+                  key={shop.id}
+                  shop={shop}
+                  selectedOption={selectedOption}
+                  minPrice={minPrice}
+                  maxPrice={maxPrice}
+                />
+              );
+            })
+        )}
         {userPosition && (
           <Marker
             position={userPosition}

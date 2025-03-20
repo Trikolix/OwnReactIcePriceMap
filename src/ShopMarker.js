@@ -18,8 +18,13 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  const backgroundColor = getColorBasedOnPrice(shop.kugel_preis, minPrice, maxPrice);
-  const displayPrice = selectedOption === "Softeis" ? `${Number(shop.softeis_preis).toFixed(2)} €` : shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` : '?';
+  const shopPrice = selectedOption === "Softeis" ? shop.softeis_preis :
+    selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? shop.softeis_preis :
+    shop.kugel_preis;
+  const backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
+  const displayPrice = selectedOption === "Softeis" ? `${Number(shop.softeis_preis).toFixed(2)} €` :
+   shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` :
+   selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? `${Number(shop.softeis_preis).toFixed(2)} €` : '?';
   const displayOpeningHours = shopDetails?.eisdiele?.openingHours ? shopDetails.eisdiele.openingHours.split(";") : ["???"];
 
   const fetchShopDetails = async () => {
