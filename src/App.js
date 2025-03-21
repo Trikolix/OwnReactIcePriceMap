@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
@@ -12,12 +12,34 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
+  const cachedBounds = useRef([]);
   const [userPosition, setUserPosition] = useState(null);
   const [clustering, setClustering] = useState(true);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
 
-  const fetchIceCreamShops = async (latitude, longitude, radius) => {
+
+  const fetchIceCreamShops = async (bounds) => {
+    const boundsKey = `${bounds.minLat},${bounds.maxLat},${bounds.minLon},${bounds.maxLon}`;
+    if (cachedBounds.current.some(cached =>
+      bounds.minLat >= cached.minLat && bounds.maxLat <= cached.maxLat &&
+      bounds.minLon >= cached.minLon && bounds.maxLon <= cached.maxLon
+    )) return;
+
+    cachedBounds.current.push(bounds);
+
+    try {
+      const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}`;
+      const response = await fetch(query);
+      const data = await response.json();
+      console.log(data);
+      setIceCreamShops(data);
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Eisdielen:', error);
+    }
+  };
+
+  /* const fetchIceCreamShops = async (latitude, longitude, radius) => {
     try {
       const query = `https://ice-app.4lima.de/backend/get_eisdiele_nahe.php?latitude=${latitude}&longitude=${longitude}&radius=${radius}`;
       const response = await fetch(query);
@@ -27,7 +49,7 @@ const IceCreamRadar = () => {
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
-  }
+  } */
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -35,7 +57,7 @@ const IceCreamRadar = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           setUserPosition([latitude, longitude]);
-          fetchIceCreamShops(latitude, longitude, 50); // Radius kann angepasst werden
+          //fetchIceCreamShops(latitude, longitude, 50); // Radius kann angepasst werden
         },
         (error) => {
           console.error('Fehler beim Abrufen der Position:', error);
@@ -52,6 +74,25 @@ const IceCreamRadar = () => {
       mapRef.current.setView(userPosition, 10);
     }
   }, [userPosition]);
+
+  const MapEventHandler = () => {
+    const map = useMap();
+    useEffect(() => {
+      const onMoveEnd = () => {
+        const bounds = map.getBounds();
+        const newBounds = {
+          minLat: bounds.getSouth(),
+          maxLat: bounds.getNorth(),
+          minLon: bounds.getWest(),
+          maxLon: bounds.getEast()
+        };
+        fetchIceCreamShops(newBounds);
+      };
+      map.on('moveend', onMoveEnd);
+      return () => map.off('moveend', onMoveEnd);
+    }, [map]);
+    return null;
+  };
 
   // Berechne den minimalen und maximalen Preis
   const prices = iceCreamShops.map(shop => shop.kugel_preis).concat(iceCreamShops.map(shop => shop.softeis_preis)).filter(price => price !== null);
@@ -99,6 +140,7 @@ const IceCreamRadar = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        <MapEventHandler />
         {clustering ? ( // show the clustered
           <MarkerClusterGroup maxClusterRadius={25}>
             {filteredShops.map((shop) => {
@@ -117,7 +159,7 @@ const IceCreamRadar = () => {
           filteredShops.map((shop) => {
               return (
                 <ShopMarker
-                  key={shop.id}
+                  key={shop.eisdielen_id}
                   shop={shop}
                   selectedOption={selectedOption}
                   minPrice={minPrice}
