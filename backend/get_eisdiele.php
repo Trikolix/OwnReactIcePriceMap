@@ -74,7 +74,8 @@ $stmt = $pdo->prepare("
     SELECT 
         AVG(geschmack) as geschmack,
         AVG(kugelgroesse) as kugelgroesse,
-        AVG(auswahl) as auswahl
+        AVG(auswahl) as auswahl,
+        AVG(waffel) as waffel
     FROM bewertungen
     WHERE eisdiele_id = ?
 ");
@@ -104,6 +105,7 @@ $response = [
     "bewertungen" => [
         "geschmack" => isset($bewertungen["geschmack"]) ? round($bewertungen["geschmack"], 2) : null,
         "kugelgroesse" => isset($bewertungen["kugelgroesse"]) ? round($bewertungen["kugelgroesse"], 2) : null,
+        "waffel" => isset($bewertungen["waffel"]) ? round($bewertungen["waffel"], 2) : null,
         "auswahl" => isset($bewertungen["auswahl"]) ? round($bewertungen["auswahl"], 2) : null,
     ],
     "attribute" => $attribute

@@ -118,8 +118,8 @@ const IceCreamRadar = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <h1>The Gourmet Cyclist</h1>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+        <img src={require('./header.png')} alt="Header" style={{ height: '200px', width: '200px', alignSelf:'center'}} />
 
       <div className="control-container">
         <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
@@ -157,16 +157,16 @@ const IceCreamRadar = () => {
           </MarkerClusterGroup>
         ) : ( // show them unclustered
           filteredShops.map((shop) => {
-              return (
-                <ShopMarker
-                  key={shop.eisdielen_id}
-                  shop={shop}
-                  selectedOption={selectedOption}
-                  minPrice={minPrice}
-                  maxPrice={maxPrice}
-                />
-              );
-            })
+            return (
+              <ShopMarker
+                key={shop.eisdielen_id}
+                shop={shop}
+                selectedOption={selectedOption}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+              />
+            );
+          })
         )}
         {userPosition && (
           <Marker

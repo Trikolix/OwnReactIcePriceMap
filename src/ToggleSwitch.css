@@ -11,19 +11,17 @@
     font-size: 14px;
     font-weight: bold;
     border: none;
-    background-color: #ffe8d5;
-    color: #000000;
+    background-color: white;
     cursor: pointer;
     transition: background 0.3s, color 0.3s;
   }
   
   .toggle-button:hover {
-    background-color: #ffa55b;
+    background-color: #cecece;
   }
   
   .toggle-button.active {
-    background-color: #ff7300;
-    color: #ffffff;
+    background-color: #cecece;
   }
   
   .toggle-button.first {

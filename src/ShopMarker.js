@@ -90,6 +90,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
                 <div><h3>Bewertungen:</h3>
                   <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
                   <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
+                  <div><b>Waffel:</b> {shopDetails.bewertungen.waffel ? shopDetails.bewertungen.waffel : '-'} / 5</div>
                   <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
                   {shopDetails.attribute && <div><b>Nutzern loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                 </div>
