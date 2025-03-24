@@ -18,7 +18,6 @@ const IceCreamRadar = () => {
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
 
-
   const fetchIceCreamShops = async (bounds) => {
     const boundsKey = `${bounds.minLat},${bounds.maxLat},${bounds.minLon},${bounds.maxLon}`;
     if (cachedBounds.current.some(cached =>
@@ -95,15 +94,19 @@ const IceCreamRadar = () => {
   };
 
   // Berechne den minimalen und maximalen Preis
-  const prices = iceCreamShops.map(shop => shop.kugel_preis).concat(iceCreamShops.map(shop => shop.softeis_preis)).filter(price => price !== null);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
     const hasCorrectIceType = selectedOption === "Alle" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null)
     return hasCorrectIceType;
   });
+
+  const prices = selectedOption === "Alle" ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
+   selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
+   selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) : null ;
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
 
   // Funktion zum Zentrieren der Karte auf den Benutzerstandort
   const centerMapOnUser = () => {

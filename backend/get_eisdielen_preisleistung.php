@@ -51,7 +51,7 @@ JOIN (
 ) b ON e.id = b.eisdiele_id
 -- Aktuellsten Preis für Kugel pro Eisdiele finden
 JOIN preise p ON e.id = p.eisdiele_id 
-WHERE p.typ = 'kugel' AND PLV NOT null
+WHERE p.typ = 'kugel'
 AND p.gemeldet_am = (
     SELECT MAX(p2.gemeldet_am) 
     FROM preise p2 
