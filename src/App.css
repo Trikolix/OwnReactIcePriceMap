@@ -26,7 +26,7 @@ h1 {
 .control-container {
   display: flex;
   gap: 15px; /* Mehr Abstand */
-  align-items: center;
+  align-items: flex-end;
   justify-content: center; /* Zentriert es */
   padding: 10px;
   margin: 0 auto;
@@ -36,7 +36,7 @@ h1 {
 
 /* Styling für den Button */
 .custom-button {
-  padding: 10px 20px;
+  padding: 7px 15px;
   font-size: 14px;
   font-weight: bold;
   border: 2px solid #f8f8f8;

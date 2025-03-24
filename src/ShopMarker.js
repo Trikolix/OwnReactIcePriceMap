@@ -27,6 +27,29 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
    selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? `${Number(shop.softeis_preis).toFixed(2)} €` : '?';
   const displayOpeningHours = shopDetails?.eisdiele?.openingHours ? shopDetails.eisdiele.openingHours.split(";") : ["???"];
 
+  const calculateTimeDifference = (dateString) => {
+    const currentDate = new Date();
+    const pastDate = new Date(dateString);
+
+    // Berechnen der Differenz in Millisekunden
+    const diffInMilliseconds = currentDate - pastDate;    
+
+    // Umrechnen in Tage
+    const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
+
+    if (diffInDays > 365) {
+      const diffInYears = Math.floor(diffInDays / 365);
+      return `Vor ${diffInYears} Jahr${diffInYears > 1 ? 'en' : ''}`;
+    } else if (diffInDays > 30) {
+      const diffInMonths = Math.floor(diffInDays / 30);
+      return `Vor ${diffInMonths} Monat${diffInMonths > 1 ? 'en' : ''}`;
+    } else if (diffInDays == 0)
+      return 'Vor < 24 Stunden';
+    else {
+      return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
+    }
+  };
+
   const fetchShopDetails = async () => {
     if (shopDetails || loading) return;
 
@@ -83,8 +106,8 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
                 </div>
               )}
               {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<h3>Preise:</h3>)}
-              {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>(zuletzt aktualisiert: {shopDetails.preise.kugel.letztes_update})</span></div>)}
-              {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>(zuletzt aktualisiert: {shopDetails.preise.softeis.letztes_update})</span></div>)}
+              {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update) } aktualisiert)</span></div>)}
+              {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span></div>)}
               
               {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
                 <div><h3>Bewertungen:</h3>

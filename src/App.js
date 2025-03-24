@@ -119,9 +119,10 @@ const IceCreamRadar = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-        <img src={require('./header.png')} alt="Header" style={{ height: '200px', width: '200px', alignSelf:'center'}} />
+        
 
       <div className="control-container">
+      <img src={require('./header.png')} alt="Header" style={{ height: '150px', width: '150px', alignSelf:'center'}} />
         <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
         <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
