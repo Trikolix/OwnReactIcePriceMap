@@ -116,9 +116,10 @@ const IceCreamRadar = () => {
       console.log(data);
       if (data.status === 'success') {
         setUserId(data.userId);
+        console.log(userId);
         setIsLoggedIn(true);
         setMessage('Login erfolgreich!');
-        // Schließen Sie das Modal nach 3 Sekunden
+        // Schließen Sie das Modal nach 2 Sekunden
         setTimeout(() => {
           setShowLoginModal(false); // Angenommen, Sie haben einen State für das Modal
           setMessage('');
@@ -136,8 +137,6 @@ const IceCreamRadar = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
   };
-
-
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
@@ -213,6 +212,8 @@ const IceCreamRadar = () => {
                   selectedOption={selectedOption}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
+                  isLoggedIn={isLoggedIn}
+                  userId={userId}
                 />
               );
             })}
@@ -226,6 +227,8 @@ const IceCreamRadar = () => {
                 selectedOption={selectedOption}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
+                isLoggedIn={isLoggedIn}
+                userId={userId}
               />
             );
           })
