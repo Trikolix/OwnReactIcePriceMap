@@ -17,6 +17,8 @@ const IceCreamRadar = () => {
   const [clustering, setClustering] = useState(true);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const fetchIceCreamShops = async (bounds) => {
     const boundsKey = `${bounds.minLat},${bounds.maxLat},${bounds.minLon},${bounds.maxLon}`;
@@ -93,18 +95,27 @@ const IceCreamRadar = () => {
     return null;
   };
 
-  // Berechne den minimalen und maximalen Preis
-  
+  const handleLogin = () => {
+    // Hier können Sie Ihre Login-Logik implementieren
+    setIsLoggedIn(true);
+    setShowLoginModal(false);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
+
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
     const hasCorrectIceType = selectedOption === "Alle" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null)
     return hasCorrectIceType;
   });
-
+  // Berechne den minimalen und maximalen Preis
   const prices = selectedOption === "Alle" ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
-   selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
-   selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) : null ;
+    selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
+      selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -122,14 +133,21 @@ const IceCreamRadar = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-        
+
 
       <div className="control-container">
-      <img src={require('./header.png')} alt="Header" style={{ height: '150px', width: '150px', alignSelf:'center'}} />
+        <img src={require('./header.png')} alt="Header" style={{ height: '150px', width: '150px', alignSelf: 'center' }} />
         <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
         <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
+        </button>
+        <button
+          className="custom-button"
+          style={{ position: 'absolute', top: '10px', right: '10px' }}
+          onClick={() => isLoggedIn ? handleLogout() : setShowLoginModal(true)}
+        >
+          {isLoggedIn ? 'Logout' : 'Login'}
         </button>
       </div>
 
@@ -190,6 +208,17 @@ const IceCreamRadar = () => {
           </Marker>
         )}
       </MapContainer>
+      {showLoginModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Login</h2>
+            <input type="text" placeholder="Benutzername" />
+            <input type="password" placeholder="Passwort" /><br></br>
+            <button onClick={handleLogin}>Login</button>
+            <button onClick={() => setShowLoginModal(false)}>Schließen</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
