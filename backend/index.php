@@ -30,7 +30,7 @@ $eisdielen = json_decode($json, true);
         <div class="col-md-3">
             <label for="sortBy" class="form-label">Sortieren nach:</label>
             <select id="sortBy" class="form-select">
-                <option value="PLV">PLV (Preis-Leistung)</option>
+                <option value="PLV">Preis-Leistung</option>
                 <option value="geschmack">Geschmack</option>
                 <option value="kugelgroesse">Kugelgröße</option>
                 <option value="waffel">Waffel</option>
@@ -53,7 +53,7 @@ $eisdielen = json_decode($json, true);
                 <th>Waffel</th>
                 <th>Anzahl Sorten</th>
                 <th>Preis (€)</th>
-                <th>PLV</th>
+                <th>Preis-Leistung</th>
             </tr>
         </thead>
         <tbody id="rankingTable">

@@ -27,13 +27,36 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
    selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? `${Number(shop.softeis_preis).toFixed(2)} €` : '?';
   const displayOpeningHours = shopDetails?.eisdiele?.openingHours ? shopDetails.eisdiele.openingHours.split(";") : ["???"];
 
+  const calculateTimeDifference = (dateString) => {
+    const currentDate = new Date();
+    const pastDate = new Date(dateString);
+
+    // Berechnen der Differenz in Millisekunden
+    const diffInMilliseconds = currentDate - pastDate;    
+
+    // Umrechnen in Tage
+    const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
+
+    if (diffInDays > 365) {
+      const diffInYears = Math.floor(diffInDays / 365);
+      return `Vor ${diffInYears} Jahr${diffInYears > 1 ? 'en' : ''}`;
+    } else if (diffInDays > 30) {
+      const diffInMonths = Math.floor(diffInDays / 30);
+      return `Vor ${diffInMonths} Monat${diffInMonths > 1 ? 'en' : ''}`;
+    } else if (diffInDays == 0)
+      return 'Vor < 24 Stunden';
+    else {
+      return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
+    }
+  };
+
   const fetchShopDetails = async () => {
     if (shopDetails || loading) return;
 
     setLoading(true);
     try {
-      console.log(`Fetching details for shop ID: ${shop.id}`);
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${shop.id}`);
+      console.log(`Fetching details for shop ID: ${shop.eisdielen_id}`);
+      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
 
       // Checke, ob die Antwort wirklich JSON ist
       const contentType = response.headers.get("content-type");
@@ -42,8 +65,8 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
         throw new Error(`Invalid JSON response: ${text}`);
       }
       const data = await response.json();
-      setShopDetails(data);
       console.log(data);
+      setShopDetails(data);
     } catch (error) {
       console.error("Fehler beim Laden der Daten:", error);
     } finally {
@@ -68,7 +91,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
     >
       <Popup>
         <div>
-          <h2>{shop.name}</h2>
+          <h2>{shop.eisdielen_name}</h2>
           {loading ? (
             <p>Lädt...</p>
           ) : shopDetails ? (
@@ -82,19 +105,25 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
                   ))}
                 </div>
               )}
-              <h3>Preise:</h3>
-              {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>(zuletzt aktualisiert: {shopDetails.preise.kugel.letztes_update})</span></div>)}
-              {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>(zuletzt aktualisiert: {shopDetails.preise.softeis.letztes_update})</span></div>)}
+              {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<h3>Preise:</h3>)}
+              {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update) } aktualisiert)</span></div>)}
+              {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span></div>)}
               
               {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
                 <div><h3>Bewertungen:</h3>
                   <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
                   <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
+                  <div><b>Waffel:</b> {shopDetails.bewertungen.waffel ? shopDetails.bewertungen.waffel : '-'} / 5</div>
                   <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
                   {shopDetails.attribute && <div><b>Nutzern loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                 </div>
               )}
-              {shopDetails?.eisdiele?.komoot && (<div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />)}
+              {shopDetails?.eisdiele?.komoot && (
+                <>
+                <h3>Komoot</h3>
+                <div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />
+                </>
+              )}
 
             </>
           ) : (
