@@ -6,6 +6,7 @@ $eisdielen = json_decode($json, true);
 
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@ $eisdielen = json_decode($json, true);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body class="container mt-4">
 
     <h2 class="text-center">🏆 Eisdielen-Ranking</h2>
@@ -58,68 +60,84 @@ $eisdielen = json_decode($json, true);
         </thead>
         <tbody id="rankingTable">
             <?php foreach ($eisdielen as $eisdiele): ?>
-                <tr>
-                    <td><?= htmlspecialchars($eisdiele['eisdielen_name']) ?></td>
-                    <td><?= number_format($eisdiele['avg_geschmack'], 1) ?></td>
-                    <td><?= number_format($eisdiele['avg_kugelgroesse'], 1) ?></td>
-                    <td><?= number_format($eisdiele['avg_waffel'], 1) ?></td>
-                    <td><?= number_format($eisdiele['avg_auswahl'], 1) ?></td>
-                    <td><?= number_format($eisdiele['aktueller_preis'], 2) ?> €</td>
-                    <td><strong><?= number_format($eisdiele['PLV'], 2) ?></strong></td>
-                </tr>
+            <tr>
+                <td><?= htmlspecialchars($eisdiele['eisdielen_name']) ?></td>
+                <td><?= number_format($eisdiele['avg_geschmack'], 1) ?></td>
+                <td><?= number_format($eisdiele['avg_kugelgroesse'], 1) ?></td>
+                <td><?= number_format($eisdiele['avg_waffel'], 1) ?></td>
+                <td><?= number_format($eisdiele['avg_auswahl'], 1) ?></td>
+                <td><?= number_format($eisdiele['aktueller_preis'], 2) ?> €</td>
+                <td><strong><?= number_format($eisdiele['PLV'], 2) ?></strong></td>
+            </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
 
+    <h4 class="text-center">Erklärung zum Ranking</h4>
+    <p>
+        Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet. Der Geschmack hat dabei eine Gewichtung von
+        3, die Kugelgröße eine Wichtung von 2 und die Waffel eine Wichtung von 1.
+        Das ganze wird noch mit dem Verhältnis zur günstigsten Eisdiele multipliziert. Für eine perfekte 5.0 Bewertung
+        bräuchte es also durchschnittlich 5.0 Bewertungen in allen Kategrorien
+        und es müsste zeitgleich die günstigste Eisdiele in der ganzen Datenbank sein.<br><br>
+        G - Ø Bewertung des Geschmacks<br>
+        K - Ø Bewertung der Kugelgröße<br>
+        W - Ø Bewertung der Eiswaffel<br>
+        P - Preis pro Kugel in €<br>
+        Pmin - Preis der günstigsten Eisdiele in €<br>
+        <center><img src='plv-formel.png'></img></center>
+    </p>
+
     <script>
-        $(document).ready(function() {
-            $("#applyFilter").click(function() {
-                let minGeschmack = parseFloat($("#minGeschmack").val());
-                let minPLV = parseFloat($("#minPLV").val());
-                let sortBy = $("#sortBy").val();
+    $(document).ready(function() {
+        $("#applyFilter").click(function() {
+            let minGeschmack = parseFloat($("#minGeschmack").val());
+            let minPLV = parseFloat($("#minPLV").val());
+            let sortBy = $("#sortBy").val();
 
-                let rows = $("#rankingTable tr").get();
+            let rows = $("#rankingTable tr").get();
 
-                rows = rows.filter(row => {
-                    let geschmack = parseFloat($(row).find("td:eq(1)").text());
-                    let plv = parseFloat($(row).find("td:eq(5)").text());
-                    return geschmack >= minGeschmack && plv >= minPLV;
-                });
-
-                rows.sort((a, b) => {
-                    let valA, valB;
-                    switch (sortBy) {
-                        case "PLV":
-                            valA = parseFloat($(a).find("td:eq(6)").text());
-                            valB = parseFloat($(b).find("td:eq(6)").text());
-                            return valB - valA;
-                        case "geschmack":
-                            valA = parseFloat($(a).find("td:eq(1)").text());
-                            valB = parseFloat($(b).find("td:eq(1)").text());
-                            return valB - valA;
-                        case "kugelgroesse":
-                            valA = parseFloat($(a).find("td:eq(2)").text());
-                            valB = parseFloat($(b).find("td:eq(2)").text());
-                            return valB - valA;
-                        case "waffel":
-                            valA = parseFloat($(a).find("td:eq(3)").text());
-                            valB = parseFloat($(b).find("td:eq(3)").text());
-                            return valB - valA;
-                        case "auswahl":
-                            valA = parseFloat($(a).find("td:eq(4)").text());
-                            valB = parseFloat($(b).find("td:eq(4)").text());
-                            return valB - valA;
-                        case "preis":
-                            valA = parseFloat($(a).find("td:eq(5)").text());
-                            valB = parseFloat($(b).find("td:eq(5)").text());
-                            return valA - valB;
-                    }
-                });
-
-                $("#rankingTable").html(rows);
+            rows = rows.filter(row => {
+                let geschmack = parseFloat($(row).find("td:eq(1)").text());
+                let plv = parseFloat($(row).find("td:eq(5)").text());
+                return geschmack >= minGeschmack && plv >= minPLV;
             });
+
+            rows.sort((a, b) => {
+                let valA, valB;
+                switch (sortBy) {
+                    case "PLV":
+                        valA = parseFloat($(a).find("td:eq(6)").text());
+                        valB = parseFloat($(b).find("td:eq(6)").text());
+                        return valB - valA;
+                    case "geschmack":
+                        valA = parseFloat($(a).find("td:eq(1)").text());
+                        valB = parseFloat($(b).find("td:eq(1)").text());
+                        return valB - valA;
+                    case "kugelgroesse":
+                        valA = parseFloat($(a).find("td:eq(2)").text());
+                        valB = parseFloat($(b).find("td:eq(2)").text());
+                        return valB - valA;
+                    case "waffel":
+                        valA = parseFloat($(a).find("td:eq(3)").text());
+                        valB = parseFloat($(b).find("td:eq(3)").text());
+                        return valB - valA;
+                    case "auswahl":
+                        valA = parseFloat($(a).find("td:eq(4)").text());
+                        valB = parseFloat($(b).find("td:eq(4)").text());
+                        return valB - valA;
+                    case "preis":
+                        valA = parseFloat($(a).find("td:eq(5)").text());
+                        valB = parseFloat($(b).find("td:eq(5)").text());
+                        return valA - valB;
+                }
+            });
+
+            $("#rankingTable").html(rows);
         });
+    });
     </script>
 
 </body>
+
 </html>
