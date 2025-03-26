@@ -9,6 +9,7 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
+import SubmitIceShopForm from './SubmitIceShopForm';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -21,6 +22,7 @@ const IceCreamRadar = () => {
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState(null);
 
@@ -181,13 +183,21 @@ const IceCreamRadar = () => {
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
         </button>
-        <button
-          className="custom-button"
-          style={{ position: 'absolute', top: '10px', right: '10px' }}
-          onClick={() => isLoggedIn ? handleLogout() : setShowLoginModal(true)}
-        >
-          {isLoggedIn ? 'Logout' : 'Login'}
-        </button>
+        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', flexDirection: 'row', fontWeight: 'bold', fontSize: 'larger'}}>
+          {isLoggedIn ? ("Eingeloggt als " + username) : ''}
+          {isLoggedIn ? (<button
+            className="custom-button"
+            onClick={() => setShowSubmitNewIceShop(true)}
+          >
+            Neue Eisdiele eintragen
+          </button>) : ''}
+          <button
+            className="custom-button"
+            onClick={() => isLoggedIn ? handleLogout() : setShowLoginModal(true)}
+          >
+            {isLoggedIn ? 'Logout' : 'Login'}
+          </button>
+        </div>
       </div>
 
 
@@ -273,6 +283,13 @@ const IceCreamRadar = () => {
             <button onClick={() => closeLoginForm()}>Schließen</button>
           </div>
         </div>
+      )}
+      {showSubmitNewIceShop && (
+        <SubmitIceShopForm
+          showForm={showSubmitNewIceShop}
+          setShowForm={setShowSubmitNewIceShop}
+          userId={userId}
+        />
       )}
     </div>
   );

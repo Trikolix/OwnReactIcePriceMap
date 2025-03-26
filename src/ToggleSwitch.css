@@ -1,6 +1,6 @@
 .toggle-switch {
     display: flex;
-    border: 2px solid #ccc;
+    border: 2px solid white;
     border-radius: 8px;
     overflow: hidden;
     width: max-content;
@@ -11,17 +11,18 @@
     font-size: 14px;
     font-weight: bold;
     border: none;
-    background-color: white;
+    background-color: #004080;
+    color: white;
     cursor: pointer;
     transition: background 0.3s, color 0.3s;
   }
   
   .toggle-button:hover {
-    background-color: #cecece;
+    background-color: #0055A5;
   }
   
   .toggle-button.active {
-    background-color: #cecece;
+    background-color: #0055A5;
   }
   
   .toggle-button.first {
@@ -33,5 +34,5 @@
   }
   
   .toggle-button:not(:last-child) {
-    border-right: 1px solid #ccc;
+    border-right: 1px solid white;
   }
