@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { use, useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import SubmitPriceForm from "./SubmitPriceForm";
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showPriceForm, setShowPriceForm] = useState(false);
 
   // Funktion zur Berechnung der Farbe basierend auf dem Preis
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
@@ -20,11 +22,11 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
 
   const shopPrice = selectedOption === "Softeis" ? shop.softeis_preis :
     selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? shop.softeis_preis :
-    shop.kugel_preis;
+      shop.kugel_preis;
   const backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
   const displayPrice = selectedOption === "Softeis" ? `${Number(shop.softeis_preis).toFixed(2)} €` :
-   shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` :
-   selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? `${Number(shop.softeis_preis).toFixed(2)} €` : '?';
+    shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` :
+      selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? `${Number(shop.softeis_preis).toFixed(2)} €` : '?';
   const displayOpeningHours = shopDetails?.eisdiele?.openingHours ? shopDetails.eisdiele.openingHours.split(";") : ["???"];
 
   const calculateTimeDifference = (dateString) => {
@@ -32,7 +34,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
     const pastDate = new Date(dateString);
 
     // Berechnen der Differenz in Millisekunden
-    const diffInMilliseconds = currentDate - pastDate;    
+    const diffInMilliseconds = currentDate - pastDate;
 
     // Umrechnen in Tage
     const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
@@ -75,63 +77,71 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice }) => {
   };
 
   return (
-    <Marker
-      key={shop.id}
-      position={[shop.latitude, shop.longitude]}
-      icon={L.divIcon({
-        className: "price-icon",
-        html: `<div style="background-color:${backgroundColor}">${displayPrice}</div>`,
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
-        popupAnchor: [0, -19],
-      })}
-      eventHandlers={{
-        click: fetchShopDetails, // API-Call erst beim Klick auslösen
-      }}
-    >
-      <Popup>
-        <div>
-          <h2>{shop.eisdielen_name}</h2>
-          {loading ? (
-            <p>Lädt...</p>
-          ) : shopDetails ? (
-            <>
-              <p><b>Adresse:</b> {shopDetails.eisdiele.adresse}</p>
-              {shopDetails?.eisdiele?.openingHours && (
-                <div>
-                  <h3>Öffnungszeiten:</h3>
-                  {displayOpeningHours.map((part, index) => (
-                    <div key={index}>{part.trim()}</div>
-                  ))}
-                </div>
-              )}
-              {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<h3>Preise:</h3>)}
-              {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update) } aktualisiert)</span></div>)}
-              {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span></div>)}
-              
-              {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
-                <div><h3>Bewertungen:</h3>
-                  <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
-                  <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
-                  <div><b>Waffel:</b> {shopDetails.bewertungen.waffel ? shopDetails.bewertungen.waffel : '-'} / 5</div>
-                  <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
-                  {shopDetails.attribute && <div><b>Nutzern loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
-                </div>
-              )}
-              {shopDetails?.eisdiele?.komoot && (
-                <>
-                <h3>Komoot</h3>
-                <div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />
-                </>
-              )}
+    <>
+      <Marker
+        key={shop.id}
+        position={[shop.latitude, shop.longitude]}
+        icon={L.divIcon({
+          className: "price-icon",
+          html: `<div style="background-color:${backgroundColor}">${displayPrice}</div>`,
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
+          popupAnchor: [0, -19],
+        })}
+        eventHandlers={{
+          click: fetchShopDetails, // API-Call erst beim Klick auslösen
+        }}
+      >
+        <Popup>
+          <div>
+            <h2>{shop.eisdielen_name}</h2>
+            {loading ? (
+              <p>Lädt...</p>
+            ) : shopDetails ? (
+              <>
+                <p><b>Adresse:</b> {shopDetails.eisdiele.adresse}</p>
+                {shopDetails?.eisdiele?.openingHours && (
+                  <div>
+                    <h3>Öffnungszeiten:</h3>
+                    {displayOpeningHours.map((part, index) => (
+                      <div key={index}>{part.trim()}</div>
+                    ))}
+                  </div>
+                )}
+                {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<h3>Preise:</h3>)}
+                {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update)} aktualisiert)</span></div>)}
+                {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span></div>)}
+                {isLoggedIn && (<button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</button>)}
+                {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
+                  <div><h3>Bewertungen:</h3>
+                    <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
+                    <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
+                    <div><b>Waffel:</b> {shopDetails.bewertungen.waffel ? shopDetails.bewertungen.waffel : '-'} / 5</div>
+                    <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
+                    {shopDetails.attribute && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
+                  </div>
+                )}
+                {shopDetails?.eisdiele?.komoot && (
+                  <>
+                    <h3>Komoot</h3>
+                    <div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />
+                  </>
+                )}
 
-            </>
-          ) : (
-            <p>Klicke auf den Marker, um Details zu laden.</p>
-          )}
-        </div>
-      </Popup>
-    </Marker>
+              </>
+            ) : (
+              <p>Klicke auf den Marker, um Details zu laden.</p>
+            )}
+          </div>
+        </Popup>
+      </Marker>
+      <SubmitPriceForm
+        shop={shop}
+        userId={userId? userId : 1}
+        showPriceForm={showPriceForm}
+        setShowPriceForm={setShowPriceForm}
+      />
+    </>
   );
 };
 

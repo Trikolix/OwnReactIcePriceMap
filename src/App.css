@@ -41,18 +41,18 @@ h1 {
   font-weight: bold;
   border: 2px solid #f8f8f8;
   border-radius: 8px;
-  background-color: white;
-  color: #333;
+  background-color: #004080;
+  color: white;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .custom-button:hover {
-  background-color: #cecece;
+  background-color: #0055A5;
 }
 
 .custom-button:active {
-  background-color: #cecece;
+  background-color: #0055A5;
 }
 
 .modal-overlay {

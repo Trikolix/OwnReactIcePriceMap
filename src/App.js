@@ -9,6 +9,7 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
+import SubmitIceShopForm from './SubmitIceShopForm';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -17,8 +18,13 @@ const IceCreamRadar = () => {
   const [clustering, setClustering] = useState(true);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
+  const [message, setMessage] = useState('');
+  const [userId, setUserId] = useState(null);
 
   const fetchIceCreamShops = async (bounds) => {
     const boundsKey = `${bounds.minLat},${bounds.maxLat},${bounds.minLon},${bounds.maxLon}`;
@@ -95,17 +101,44 @@ const IceCreamRadar = () => {
     return null;
   };
 
-  const handleLogin = () => {
-    // Hier können Sie Ihre Login-Logik implementieren
-    setIsLoggedIn(true);
-    setShowLoginModal(false);
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('https://ice-app.4lima.de/backend/login.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          password
+        })
+      });
+
+      const data = await response.json();
+      console.log(data);
+      if (data.status === 'success') {
+        setUserId(data.userId);
+        console.log(userId);
+        setIsLoggedIn(true);
+        setMessage('Login erfolgreich!');
+        // Schließen Sie das Modal nach 2 Sekunden
+        setTimeout(() => {
+          setShowLoginModal(false); // Angenommen, Sie haben einen State für das Modal
+          setMessage('');
+          setPassword('');
+        }, 2000);
+      } else {
+        setMessage(`Login fehlgeschlagen: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Error during login:", error); // Debugging
+      setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    }
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
   };
-
-
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
@@ -131,6 +164,14 @@ const IceCreamRadar = () => {
     setSelectedOption(selectedOption);
   };
 
+  const closeLoginForm = () => {
+    setShowLoginModal(false);
+    setMessage('');
+    setUsername('');
+    setPassword('');
+  };
+
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
 
@@ -142,13 +183,21 @@ const IceCreamRadar = () => {
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
         </button>
-        <button
-          className="custom-button"
-          style={{ position: 'absolute', top: '10px', right: '10px' }}
-          onClick={() => isLoggedIn ? handleLogout() : setShowLoginModal(true)}
-        >
-          {isLoggedIn ? 'Logout' : 'Login'}
-        </button>
+        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', flexDirection: 'row', fontWeight: 'bold', fontSize: 'larger'}}>
+          {isLoggedIn ? ("Eingeloggt als " + username) : ''}
+          {isLoggedIn ? (<button
+            className="custom-button"
+            onClick={() => setShowSubmitNewIceShop(true)}
+          >
+            Neue Eisdiele eintragen
+          </button>) : ''}
+          <button
+            className="custom-button"
+            onClick={() => isLoggedIn ? handleLogout() : setShowLoginModal(true)}
+          >
+            {isLoggedIn ? 'Logout' : 'Login'}
+          </button>
+        </div>
       </div>
 
 
@@ -173,6 +222,8 @@ const IceCreamRadar = () => {
                   selectedOption={selectedOption}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
+                  isLoggedIn={isLoggedIn}
+                  userId={userId}
                 />
               );
             })}
@@ -186,6 +237,8 @@ const IceCreamRadar = () => {
                 selectedOption={selectedOption}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
+                isLoggedIn={isLoggedIn}
+                userId={userId}
               />
             );
           })
@@ -212,12 +265,31 @@ const IceCreamRadar = () => {
         <div className="modal-overlay">
           <div className="modal-content">
             <h2>Login</h2>
-            <input type="text" placeholder="Benutzername" />
-            <input type="password" placeholder="Passwort" /><br></br>
+            <input
+              type="text"
+              placeholder="Benutzername"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+            <input
+              type="password"
+              placeholder="Passwort"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            /><br></br>
             <button onClick={handleLogin}>Login</button>
-            <button onClick={() => setShowLoginModal(false)}>Schließen</button>
+            <p>{message}</p>
+            {isLoggedIn && <p>Willkommen zurück, {username}!</p>}
+            <button onClick={() => closeLoginForm()}>Schließen</button>
           </div>
         </div>
+      )}
+      {showSubmitNewIceShop && (
+        <SubmitIceShopForm
+          showForm={showSubmitNewIceShop}
+          setShowForm={setShowSubmitNewIceShop}
+          userId={userId}
+        />
       )}
     </div>
   );
