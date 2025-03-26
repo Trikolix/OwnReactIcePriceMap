@@ -184,7 +184,6 @@ const IceCreamRadar = () => {
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
         </button>
         <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', flexDirection: 'row', fontWeight: 'bold', fontSize: 'larger'}}>
-          {isLoggedIn ? ("Eingeloggt als " + username) : ''}
           {isLoggedIn ? (<button
             className="custom-button"
             onClick={() => setShowSubmitNewIceShop(true)}

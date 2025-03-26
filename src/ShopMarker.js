@@ -2,11 +2,13 @@ import { use, useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import SubmitPriceForm from "./SubmitPriceForm";
+import SubmitReviewForm from "./SubmitReviewForm"
 
 const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   // Funktion zur Berechnung der Farbe basierend auf dem Preis
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
@@ -121,6 +123,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                     {shopDetails.attribute && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                   </div>
                 )}
+                {isLoggedIn && (<button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>)}
                 {shopDetails?.eisdiele?.komoot && (
                   <>
                     <h3>Komoot</h3>
@@ -137,10 +140,16 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       </Marker>
       <SubmitPriceForm
         shop={shop}
-        userId={userId? userId : 1}
+        userId={userId}
         showPriceForm={showPriceForm}
         setShowPriceForm={setShowPriceForm}
       />
+      {isLoggedIn && showReviewForm && (<SubmitReviewForm
+      shopId={shop.eisdielen_id}
+      userId={userId}
+      showForm={showReviewForm}
+      setShowForm={setShowReviewForm}
+      />)}
     </>
   );
 };
