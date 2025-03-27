@@ -138,17 +138,17 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
           </div>
         </Popup>
       </Marker>
-      <SubmitPriceForm
+      {showPriceForm && (<SubmitPriceForm
         shop={shop}
         userId={userId}
         showPriceForm={showPriceForm}
         setShowPriceForm={setShowPriceForm}
-      />
+      />)}
       {isLoggedIn && showReviewForm && (<SubmitReviewForm
-      shopId={shop.eisdielen_id}
-      userId={userId}
-      showForm={showReviewForm}
-      setShowForm={setShowReviewForm}
+        shopId={shop.eisdielen_id}
+        userId={userId}
+        showForm={showReviewForm}
+        setShowForm={setShowReviewForm}
       />)}
     </>
   );
