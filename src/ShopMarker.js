@@ -124,7 +124,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                   </div>
                 )}
                 {isLoggedIn && (<button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>)}
-                {shopDetails?.eisdiele?.komoot && (
+                {shopDetails?.eisdiele?.komoot && isLoggedIn && (
                   <>
                     <h3>Komoot</h3>
                     <div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />
