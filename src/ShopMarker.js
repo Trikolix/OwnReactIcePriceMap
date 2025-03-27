@@ -111,8 +111,15 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                   </div>
                 )}
                 {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<h3>Preise:</h3>)}
-                {shopDetails.preise.kugel != null && (<div><b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update)} aktualisiert)</span></div>)}
-                {shopDetails.preise.softeis != null && (<div><b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span></div>)}
+                {shopDetails.preise.kugel != null && (<div>
+                  <b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € {shopDetails.preise.kugel.beschreibung != null && (<>({shopDetails.preise.kugel.beschreibung}) </>)}
+                  <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update)} aktualisiert)</span>
+                  </div>)}
+                
+                {shopDetails.preise.softeis != null && (<div>
+                  <b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € {shopDetails.preise.softeis.beschreibung != null && (<>({shopDetails.preise.softeis.beschreibung}) </>)}
+                  <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span>
+                  </div>)}
                 {isLoggedIn && (<button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</button>)}
                 {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
                   <div><h3>Bewertungen:</h3>
@@ -139,7 +146,8 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
         </Popup>
       </Marker>
       {showPriceForm && (<SubmitPriceForm
-        shop={shop}
+        shop={shopDetails}
+        shopId={shop.eisdielen_id}
         userId={userId}
         showPriceForm={showPriceForm}
         setShowPriceForm={setShowPriceForm}

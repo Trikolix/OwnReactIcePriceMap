@@ -44,7 +44,12 @@ if (!$eisdiele) {
 
 // aktuellsten Kugelpreis abrufen
 $stmt = $pdo->prepare("
-    SELECT 'kugel' AS typ, preis, MAX(gemeldet_am) as letztes_update, COUNT(*) as bestaetigungen
+    SELECT 
+        'kugel' AS typ,
+        preis,
+        MAX(gemeldet_am) as letztes_update,
+        MAX(beschreibung) AS beschreibung,
+        COUNT(*) as bestaetigungen
     FROM preise 
     WHERE eisdiele_id = ? AND typ = 'kugel'
     GROUP BY preis
@@ -57,11 +62,21 @@ $kugel_preis = $stmt->fetch();
 
 // aktuellsten Softeispreis abrufen
 $stmt = $pdo->prepare("
-    SELECT 'softeis' AS typ, preis, MAX(gemeldet_am) as letztes_update, COUNT(*) as bestaetigungen
-    FROM preise 
-    WHERE eisdiele_id = ? AND typ = 'softeis'
-    GROUP BY preis
-    ORDER BY letztes_update DESC
+    SELECT
+        'softeis' AS typ,
+        preis,
+        MAX(gemeldet_am) AS letztes_update,
+        MAX(beschreibung) AS beschreibung,
+        COUNT(*) AS bestaetigungen
+    FROM
+        preise
+    WHERE
+        eisdiele_id = ? AND typ = 'softeis'
+    GROUP BY
+        preis
+    ORDER BY
+        letztes_update
+    DESC
     LIMIT 1
 ");
 

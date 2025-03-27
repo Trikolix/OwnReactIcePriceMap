@@ -22,12 +22,12 @@ try {
 }
 
 // Funktion zum Senden / Aktualisieren der Preise
-function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfokugelPreis, $softeisPreis, $additionalInfosofteisPreis) {
+function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis) {
     $response = [];
 
     try {
         if ($kugelPreis !== null) {
-            $sql = $additionalInfokugelPreis ? 
+            $sql = $additionalInfoKugelPreis != null ?
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`)
                 VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW())
                 ON DUPLICATE KEY UPDATE 
@@ -45,15 +45,15 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfokugelPr
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':shopId', $shopId, PDO::PARAM_INT);
             $stmt->bindParam(':kugelPreis', $kugelPreis, PDO::PARAM_STR);
-            if ($additionalInfokugelPreis) {
-                $stmt->bindParam(':beschreibung', $additionalInfokugelPreis, PDO::PARAM_STR);
+            if ($additionalInfoKugelPreis) {
+                $stmt->bindParam(':beschreibung', $additionalInfoKugelPreis, PDO::PARAM_STR);
             }
             $stmt->execute();
             $response[] = ['typ' => 'kugel', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
         }
 
         if ($softeisPreis !== null) {
-            $sql = $additionalInfosofteisPreis ? 
+            $sql = $additionalInfoSofteisPreis != null ? 
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`)
                 VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW())
                 ON DUPLICATE KEY UPDATE 
@@ -71,8 +71,8 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfokugelPr
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':shopId', $shopId, PDO::PARAM_INT);
             $stmt->bindParam(':softeisPreis', $softeisPreis, PDO::PARAM_STR);
-            if ($additionalInfosofteisPreis) {
-                $stmt->bindParam(':beschreibung', $additionalInfosofteisPreis, PDO::PARAM_STR);
+            if ($additionalInfoSofteisPreis) {
+                $stmt->bindParam(':beschreibung', $additionalInfoSofteisPreis, PDO::PARAM_STR);
             }
             $stmt->execute();
             $response[] = ['typ' => 'softeis', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
@@ -94,8 +94,8 @@ if (!isset($inputData["shopId"]) || !isset($inputData["userId"]) || (!isset($inp
 $shopId = $inputData['shopId'];
 $userId = $inputData['userId'];
 $kugelPreis = $inputData['kugelPreis'] ?? null;
-$additionalInfokugelPreis = $inputData['additionalInfokugelPreis'] ?? null;
+$additionalInfoKugelPreis = $inputData['additionalInfoKugelPreis'] ?? null;
 $softeisPreis = $inputData['softeisPreis'] ?? null;
-$additionalInfosofteisPreis = $inputData['additionalInfosofteisPreis'] ?? null;
-submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfokugelPreis, $softeisPreis, $additionalInfosofteisPreis);
+$additionalInfoSofteisPreis = $inputData['additionalInfoSofteisPreis'] ?? null;
+submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis);
 ?>

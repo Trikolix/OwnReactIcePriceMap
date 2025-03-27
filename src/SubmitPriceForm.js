@@ -1,9 +1,12 @@
 import { useState } from "react";
-const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
+const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm }) => {
 
-    const [kugelPreis, setKugelPreis] = useState(null);
-    const [softeisPreis, setSofteiPreis] = useState(null);
+    const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis? shop.preise.kugel.preis : null);
+    const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung? shop.preise.kugel.beschreibung : null);
+    const [softeisPreis, setSofteiPreis] = useState(shop.preise?.softeis?.preis? shop.preise.softeis.preis : null);
+    const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung? shop.preise.softeis.beschreibung : null);
     const [message, setMessage] = useState('');
+    console.log(shop);
 
     const submit = async () => {
         try {
@@ -13,13 +16,23 @@ const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    shopId: shop.eisdielen_id,
+                    shopId: shopId,
                     userId: userId,
                     kugelPreis,
-                    softeisPreis
+                    additionalInfoKugelPreis,
+                    softeisPreis,
+                    additionalInfoSofteisPreis
                 })
             });
+            console.log(JSON.stringify({
+                shopId: shop.eisdielen_id,
+                userId: userId,
+                kugelPreis,
+                additionalInfoKugelPreis,
+                softeisPreis,
+                additionalInfoSofteisPreis}));
             const data = await response.json();
+            console.log(data);
             data.forEach(element => {
                 if (element.status === 'success') {
                     setMessage('Preis erfolgreich gemeldet!');
@@ -32,7 +45,9 @@ const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
                 setMessage('');
                 setShowPriceForm(false);
                 setKugelPreis(null);
+                setAdditionalInfoKugelPreis(null);
                 setSofteiPreis(null);
+                setAdditionalInfoSofteisPreis(null);
             }, 2000);
         } catch (error) {
 
@@ -52,6 +67,7 @@ const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
                     value={kugelPreis ? kugelPreis : ''}
                     onChange={(e) => setKugelPreis(e.target.value)}
                 />€</b></div>
+                <div><b>Zusatzbeschreibung für die Kugel:</b> <textarea rows="3" cols="35" value={additionalInfoKugelPreis} onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)} /></div>
                 <div><b>Preis für Softeis:<input
                     type="number"
                     min="1.0"
@@ -61,6 +77,7 @@ const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
                     value={softeisPreis ? softeisPreis : ''}
                     onChange={(e) => setSofteiPreis(e.target.value)}
                 />€</b></div>
+                <div><b>Zusatzbeschreibung für Softeis:</b> <textarea rows="3" cols="30" value={additionalInfoSofteisPreis} onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)} /></div>
                 <button onClick={submit}>Einreichen</button>
                 <p>{message}</p>
                 <button onClick={() => setShowPriceForm(false)}>Schließen</button>
