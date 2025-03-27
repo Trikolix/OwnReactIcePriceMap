@@ -42,7 +42,7 @@ const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
         <div className="modal-overlay">
             <div className="modal-content">
                 <h2>Preis für {shop.eisdielen_name} einreichen</h2>
-                <div><b>Kugelpreis:<input
+                <div><b>Preis pro Kugel:<input
                     type="number"
                     min="1.0"
                     max="5.0"
@@ -51,7 +51,7 @@ const SubmitPriceForm = ({ shop, userId, showPriceForm, setShowPriceForm }) => {
                     value={kugelPreis ? kugelPreis : ''}
                     onChange={(e) => setKugelPreis(e.target.value)}
                 />€</b></div>
-                <div><b>Kugelpreis:<input
+                <div><b>Preis für Softeis:<input
                     type="number"
                     min="1.0"
                     max="5.0"

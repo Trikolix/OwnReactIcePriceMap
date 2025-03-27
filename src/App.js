@@ -101,6 +101,16 @@ const IceCreamRadar = () => {
     return null;
   };
 
+  // Prüft beim Laden der Seite, ob der User noch eingeloggt ist
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userId");
+
+    if (storedUserId) {
+      setUserId(storedUserId);
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   const handleLogin = async () => {
     try {
       const response = await fetch('https://ice-app.4lima.de/backend/login.php', {
@@ -121,6 +131,9 @@ const IceCreamRadar = () => {
         console.log(userId);
         setIsLoggedIn(true);
         setMessage('Login erfolgreich!');
+
+        localStorage.setItem('userId', data.userId);
+
         // Schließen Sie das Modal nach 2 Sekunden
         setTimeout(() => {
           setShowLoginModal(false); // Angenommen, Sie haben einen State für das Modal
@@ -138,6 +151,7 @@ const IceCreamRadar = () => {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    localStorage.removeItem('userId');
   };
 
   // Funktion zum Filtern der Eisdielen
@@ -183,8 +197,7 @@ const IceCreamRadar = () => {
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
         </button>
-        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', flexDirection: 'row', fontWeight: 'bold', fontSize: 'larger'}}>
-          {isLoggedIn ? ("Eingeloggt als " + username) : ''}
+        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', flexDirection: 'row', fontWeight: 'bold', fontSize: 'larger' }}>
           {isLoggedIn ? (<button
             className="custom-button"
             onClick={() => setShowSubmitNewIceShop(true)}
@@ -265,19 +278,26 @@ const IceCreamRadar = () => {
         <div className="modal-overlay">
           <div className="modal-content">
             <h2>Login</h2>
-            <input
-              type="text"
-              placeholder="Benutzername"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Passwort"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            /><br></br>
-            <button onClick={handleLogin}>Login</button>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault(); // Verhindert das Neuladen der Seite
+                handleLogin();
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Benutzername"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <input
+                type="password"
+                placeholder="Passwort"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              /><br />
+              <button type="submit">Login</button>
+            </form>
             <p>{message}</p>
             {isLoggedIn && <p>Willkommen zurück, {username}!</p>}
             <button onClick={() => closeLoginForm()}>Schließen</button>
