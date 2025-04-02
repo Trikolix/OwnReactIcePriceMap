@@ -6,10 +6,10 @@ import './App.css';
 import ToggleSwitch from "./ToggleSwitch";
 import ShopMarker from "./ShopMarker";
 import MarkerClusterGroup from 'react-leaflet-cluster';
-import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import SubmitIceShopForm from './SubmitIceShopForm';
+import Header from './Header';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -188,32 +188,16 @@ const IceCreamRadar = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-
-
-      <div className="control-container">
-        <img src={require('./header.png')} alt="Header" style={{ height: '150px', width: '150px', alignSelf: 'center' }} />
-        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
-        <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
-        <button className="custom-button" onClick={() => setClustering(!clustering)}>
-          {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
-        </button>
-        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '15px', flexDirection: 'row', fontWeight: 'bold', fontSize: 'larger' }}>
-          {isLoggedIn ? (<button
-            className="custom-button"
-            onClick={() => setShowSubmitNewIceShop(true)}
-          >
-            Neue Eisdiele eintragen
-          </button>) : ''}
-          <button
-            className="custom-button"
-            onClick={() => isLoggedIn ? handleLogout() : setShowLoginModal(true)}
-          >
-            {isLoggedIn ? 'Logout' : 'Login'}
-          </button>
-        </div>
-      </div>
-
-
+      <Header
+        isLoggedIn={isLoggedIn}
+        onLogout={handleLogout}
+        setShowSubmitNewIceShop={setShowSubmitNewIceShop}
+        setShowLoginModal={setShowLoginModal}
+        handleToggleChange={handleToggleChange}
+        centerMapOnUser={centerMapOnUser}
+        clustering={clustering}
+        setClustering={setClustering}
+      />
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
         zoom={10}

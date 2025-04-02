@@ -25,7 +25,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
                 })
             });
             console.log(JSON.stringify({
-                shopId: shop.eisdielen_id,
+                shopId: shopId,
                 userId: userId,
                 kugelPreis,
                 additionalInfoKugelPreis,

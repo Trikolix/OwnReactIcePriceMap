@@ -86,7 +86,7 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
 $inputData = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($inputData["shopId"]) || !isset($inputData["userId"]) || (!isset($inputData["kugelPreis"]) && !inputData($inputData["softeisPreis"]))) {
+if (!isset($inputData["shopId"]) || !isset($inputData["userId"]) || (!isset($inputData["kugelPreis"]) && !isset($inputData["softeisPreis"]))) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter: shopId , userId, kugelPreis oder softeisPreis müssen gesetzt sein.", "shopId" => $inputData["shopId"], "userId" => $inputData["userId"], "kugelPreis" => $inputData["kugelPreis"], "softeisPreis" => $inputData["softeisPreis"]]);
     exit;
 }

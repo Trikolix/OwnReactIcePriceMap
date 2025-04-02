@@ -1,10 +1,9 @@
 <?php
-
 $host = "localhost";
 $dbname = "db_439770_2";
 $username = "USER439770_wed";
 $password = "K8RYTP23y8kWSdt";
-
+ 
 // Verbindung zur Datenbank
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
@@ -15,7 +14,7 @@ try {
     echo json_encode(["error" => "Datenbankverbindung fehlgeschlagen"]);
     exit();
 }
-
+ 
 $sql = "SELECT 
     e.id AS eisdielen_id,
     e.name AS eisdielen_name,
@@ -55,15 +54,15 @@ AND p.gemeldet_am = (
 )
 HAVING PLV IS NOT NULL
 ORDER BY PLV DESC;";
-
+ 
 // SQL ausführen
 $stmt = $pdo->query($sql);
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
- 
+
 <!DOCTYPE html>
 <html lang="de">
- 
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,34 +73,34 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         const table = document.querySelector(".table");
         const headers = table.querySelectorAll("th");
         const tbody = table.querySelector("tbody");
- 
+
         headers.forEach((header, columnIndex) => {
             header.style.cursor = "pointer";
             header.innerHTML += ' <span class="sort-icon"></span>'; // Sortier-Symbol Platzhalter
- 
+
             header.addEventListener("click", () => {
                 const rows = Array.from(tbody.querySelectorAll("tr"));
                 const isAscending = header.dataset.order === "asc";
                 const type = header.textContent.trim();
- 
+
                 rows.sort((rowA, rowB) => {
                     let cellA = rowA.children[columnIndex].textContent.trim();
                     let cellB = rowB.children[columnIndex].textContent.trim();
- 
+
                     // Falls es eine Zahl ist, konvertieren
                     if (!isNaN(parseFloat(cellA)) && !isNaN(parseFloat(cellB))) {
                         cellA = parseFloat(cellA);
                         cellB = parseFloat(cellB);
                     }
- 
+
                     return isAscending ? (cellA > cellB ? 1 : -1) : (cellA < cellB ? 1 :
                         -1);
                 });
- 
+
                 // Sortierte Reihenfolge in das DOM einfügen
                 tbody.innerHTML = "";
                 rows.forEach(row => tbody.appendChild(row));
- 
+
                 // Sortierrichtung speichern
                 headers.forEach(h => {
                     h.removeAttribute("data-order");
@@ -109,7 +108,7 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         ""; // Symbole zurücksetzen
                 });
                 header.dataset.order = isAscending ? "desc" : "asc";
- 
+
                 // Sortier-Symbol setzen
                 const sortSymbol = isAscending ? " ▲" : " ▼";
                 header.querySelector(".sort-icon").innerHTML = sortSymbol;
@@ -118,14 +117,14 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
     });
     </script>
 </head>
- 
+
 <body>
     <div style="display: flex; flex-direction: column; background-color: #ffb522; margin: 0 auto;">
-        <img src="header.png" alt="Header" style=" align-self: center; height: 150px; width: 150px;">
+        <a href="https://ice-app.4lima.de/" style="align-self: center;"><img src="header.png" alt="Header" style="align-self: center; height: 150px; width: 150px;"></a>
     </div>
     <div class="container mt-4">
         <h2 class="text-center">🏆 Eisdielen-Ranking</h2>
- 
+
         <!-- Tabelle -->
         <table class="table table-bordered table-striped">
             <thead>
@@ -153,7 +152,7 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endforeach; ?>
             </tbody>
         </table>
- 
+
         <h4 class="text-center">Erklärung zum Ranking</h4>
         <p>
             Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet. Der Geschmack hat dabei eine Gewichtung
@@ -172,5 +171,5 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </p>
     </div>
 </body>
- 
+
 </html>

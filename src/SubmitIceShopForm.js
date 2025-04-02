@@ -5,7 +5,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
     const [adresse, setAdresse] = useState("");
     const [latitude, setLatitude] = useState("");
     const [longitude, setLongitude] = useState("");
-    const [openingHours, setOpeningHours] = useState("" );
+    const [openingHours, setOpeningHours] = useState("");
     const [komoot, setKomoot] = useState("");
     const [message, setMessage] = useState("");
 
@@ -50,7 +50,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
     return showForm ? (
         <div className="modal-overlay">
             <div className="modal-content">
-            <button className="close-button" style={{position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none'}}onClick={() => setShowForm(false)}>x</button>
+                <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => setShowForm(false)}>x</button>
                 <h2 className="form-title">Neue Eisdiele eintragen</h2>
                 <div className="form-group"><label>Name:</label> <input type="text" value={name} onChange={(e) => setName(e.target.value)} /></div>
                 <div className="form-group"><label>Adresse:</label> <input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} /></div>
@@ -59,7 +59,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
                 <div className="form-group"><label>Öffnungszeiten (optional):</label> <textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} /></div>
                 <div className="form-group"><label>Komoot-Link (optional):</label> <input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} /></div>
                 <div className="button-group">
-                    <button className="submit-button" onClick={submit}>Einreichen</button><br />
+                    <button className="submit-button" onClick={submit}>Einreichen</button><br /><br />
                     <button className="close-button" onClick={() => setShowForm(false)}>Schließen</button>
                 </div>
                 <p className="message">{message}</p>
