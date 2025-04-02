@@ -4,7 +4,7 @@ import L from "leaflet";
 import SubmitPriceForm from "./SubmitPriceForm";
 import SubmitReviewForm from "./SubmitReviewForm"
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
@@ -22,13 +22,36 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
     return `rgb(${r}, ${g}, ${b})`;
   };
 
+  let backgroundColor;
   const shopPrice = selectedOption === "Softeis" ? shop.softeis_preis :
     selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? shop.softeis_preis :
       shop.kugel_preis;
-  const backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
-  const displayPrice = selectedOption === "Softeis" ? `${Number(shop.softeis_preis).toFixed(2)} €` :
-    shop.kugel_preis !== null ? `${Number(shop.kugel_preis).toFixed(2)} €` :
-      selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? `${Number(shop.softeis_preis).toFixed(2)} €` : '?';
+  if (selectedOption === "Rating") {
+    backgroundColor = getColorBasedOnPrice(plv, maxPrice, minPrice-1);
+  } else {
+    backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
+  }
+
+  let displayPrice;
+  switch (true) {
+    case selectedOption === "Softeis" && shop.softeis_preis !== null:
+      displayPrice = `${Number(shop.softeis_preis).toFixed(2)} €`;
+      break;
+    case selectedOption === "Kugeleis" && shop.kugel_preis !== null:
+      displayPrice = `${Number(shop.kugel_preis).toFixed(2)} €`;
+      break;
+    case selectedOption === "Alle" && shop.kugel_preis != null:
+      displayPrice = `${Number(shop.kugel_preis).toFixed(2)} €`;
+      break;
+    case selectedOption === "Alle" && shop.softeis_preis != null:
+      displayPrice = `${Number(shop.softeis_preis).toFixed(2)} €`;
+      break;
+    case selectedOption === "Rating" && plv !== null:
+      displayPrice = `${Number(plv).toFixed(2)}`;
+      break;
+    default:
+      displayPrice = '?';
+  }
   const displayOpeningHours = shopDetails?.eisdiele?.openingHours ? shopDetails.eisdiele.openingHours.split(";") : ["???"];
 
   const calculateTimeDifference = (dateString) => {
@@ -114,12 +137,12 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                 {shopDetails.preise.kugel != null && (<div>
                   <b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € {shopDetails.preise.kugel.beschreibung != null && (<>({shopDetails.preise.kugel.beschreibung}) </>)}
                   <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update)} aktualisiert)</span>
-                  </div>)}
-                
+                </div>)}
+
                 {shopDetails.preise.softeis != null && (<div>
                   <b>Softeis:</b> {shopDetails.preise.softeis.preis.toFixed(2)} € {shopDetails.preise.softeis.beschreibung != null && (<>({shopDetails.preise.softeis.beschreibung}) </>)}
                   <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.softeis.letztes_update)} aktualisiert)</span>
-                  </div>)}
+                </div>)}
                 {isLoggedIn && (<button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</button>)}
                 {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
                   <div><h3>Bewertungen:</h3>

@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
-import ToggleSwitch from "./ToggleSwitch";
 import ShopMarker from "./ShopMarker";
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
@@ -156,13 +155,14 @@ const IceCreamRadar = () => {
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
-    const hasCorrectIceType = selectedOption === "Alle" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null)
+    const hasCorrectIceType = selectedOption === "Alle" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null) || (selectedOption === "Rating" && shop.PLV !== null);
     return hasCorrectIceType;
   });
   // Berechne den minimalen und maximalen Preis
   const prices = selectedOption === "Alle" ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
     selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
-      selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) : null;
+      selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) : 
+      selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -221,6 +221,7 @@ const IceCreamRadar = () => {
                   maxPrice={maxPrice}
                   isLoggedIn={isLoggedIn}
                   userId={userId}
+                  plv={shop.PLV}
                 />
               );
             })}
@@ -236,6 +237,7 @@ const IceCreamRadar = () => {
                 maxPrice={maxPrice}
                 isLoggedIn={isLoggedIn}
                 userId={userId}
+                plv={shop.PLV}
               />
             );
           })

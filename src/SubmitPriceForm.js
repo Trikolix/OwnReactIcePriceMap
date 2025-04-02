@@ -6,7 +6,6 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
     const [softeisPreis, setSofteiPreis] = useState(shop.preise?.softeis?.preis? shop.preise.softeis.preis : null);
     const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung? shop.preise.softeis.beschreibung : null);
     const [message, setMessage] = useState('');
-    console.log(shop);
 
     const submit = async () => {
         try {

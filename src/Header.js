@@ -13,7 +13,7 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
     <HeaderContainer>
       <LogoContainer>
         <Logo src={require('./header.png')} alt="Website Logo" />
-        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle"]} onChange={handleToggleChange} />
+        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle", "Rating"]} onChange={handleToggleChange} />
         <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
@@ -53,9 +53,9 @@ const HeaderContainer = styled.header`
 `;
 
 const LogoContainer = styled.div`
-  display: flex;
+  display: ruby;
   align-items: center;
-  margin: 0 auto;
+  margin: 5px auto;
   color: black;
 `;
 
