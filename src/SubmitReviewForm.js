@@ -63,16 +63,16 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId }) => {
 
     return showForm ? (
         <div className="modal-overlay">
-            <div className="modal-content">
-            <button className="close-button" style={{position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none'}}onClick={() => setShowForm(false)}>x</button>
+            <div className="modal-content" style={{ position: 'relative' }}>
+                <button className="close-button" style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => setShowForm(false)}>×</button>
                 <h2 className="form-title">Eisdiele bewerten</h2>
-                <div className="form-group"><label>Geschmack:</label> <input type="number" min="1.0" max="5.0" step="0.1" value={geschmack || '' } onChange={(e) => setGeschmack(parseFloat(e.target.value))} /></div>
+                <div className="form-group"><label>Geschmack:</label> <input type="number" min="1.0" max="5.0" step="0.1" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} /></div>
                 <div className="form-group"><label>Kugelgröße:</label> <input type="number" min="1.0" max="5.0" step="0.1" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} /></div>
                 <div className="form-group"><label>Waffel:</label> <input type="number" min="1.0" max="5.0" step="0.1" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} /></div>
                 <div className="form-group"><label>Auswahl:</label> <input type="number" min="1" max="10" step="1" value={auswahl || ''} onChange={(e) => setAuswahl(parseInt(e.target.value))} /></div>
                 <div className="form-group"><label>Beschreibung:</label> <textarea rows="7" cols="35" value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} /></div>
                 <div className="button-group">
-                    <button className="submit-button" onClick={submit}>Einreichen</button><br />
+                    <button className="submit-button" onClick={submit}>Einreichen</button><br /><br /> 
                     <button className="close-button" onClick={() => setShowForm(false)}>Schließen</button>
                 </div>
                 <p className="message">{message}</p>

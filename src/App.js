@@ -262,7 +262,8 @@ const IceCreamRadar = () => {
       </MapContainer>
       {showLoginModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content" style={{position: 'relative'}}>
+          <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
             <h2>Login</h2>
             <form
               onSubmit={(e) => {

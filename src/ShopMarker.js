@@ -2,6 +2,7 @@ import { use, useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import SubmitPriceForm from "./SubmitPriceForm";
+import styled from 'styled-components';
 import SubmitReviewForm from "./SubmitReviewForm"
 
 const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv }) => {
@@ -119,21 +120,21 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       >
         <Popup>
           <div>
-            <h2>{shop.eisdielen_name}</h2>
+            <Header>{shop.eisdielen_name}</Header>
             {loading ? (
               <p>Lädt...</p>
             ) : shopDetails ? (
               <>
-                <p><b>Adresse:</b> {shopDetails.eisdiele.adresse}</p>
+                <b>Adresse:</b> {shopDetails.eisdiele.adresse}
                 {shopDetails?.eisdiele?.openingHours && (
                   <div>
-                    <h3>Öffnungszeiten:</h3>
+                    <SubHeading>Öffnungszeiten:</SubHeading>
                     {displayOpeningHours.map((part, index) => (
                       <div key={index}>{part.trim()}</div>
                     ))}
                   </div>
                 )}
-                {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<h3>Preise:</h3>)}
+                {(shopDetails.preise.kugel != null || shopDetails.preise.softeis != null) && (<SubHeading>Preise:</SubHeading>)}
                 {shopDetails.preise.kugel != null && (<div>
                   <b>Kugelpreis:</b> {shopDetails.preise.kugel.preis.toFixed(2)} € {shopDetails.preise.kugel.beschreibung != null && (<>({shopDetails.preise.kugel.beschreibung}) </>)}
                   <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopDetails.preise.kugel.letztes_update)} aktualisiert)</span>
@@ -145,12 +146,12 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                 </div>)}
                 {isLoggedIn && (<button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</button>)}
                 {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
-                  <div><h3>Bewertungen:</h3>
+                  <div><SubHeading>Bewertungen:</SubHeading>
                     <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
                     <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
                     <div><b>Waffel:</b> {shopDetails.bewertungen.waffel ? shopDetails.bewertungen.waffel : '-'} / 5</div>
                     <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
-                    {shopDetails.attribute && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
+                    {shopDetails.attribute?.length > 0 && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                   </div>
                 )}
                 {isLoggedIn && (<button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>)}
@@ -186,3 +187,14 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
 };
 
 export default ShopMarker;
+
+const Header = styled.h2`
+  margin-block-end: 12px;
+  text-align:center
+  `;
+
+const SubHeading = styled.h3`
+  margin-block-start: 5px;
+  margin-block-end: 0px;
+  text-decoration: underline;
+`;

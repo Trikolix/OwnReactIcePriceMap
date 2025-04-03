@@ -55,7 +55,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
     return showPriceForm ? (
         <div className="modal-overlay">
             <div className="modal-content" style={{position: "relative"}}>
-                <button className="close-button" style={{position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none'}}onClick={() => setShowPriceForm(false)}>x</button>
+                <button className="close-button" style={{position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none'}}onClick={() => setShowPriceForm(false)}>×</button>
                 <h2>Preis für {shop.eisdielen_name} einreichen</h2>
                 <div><b>Preis pro Kugel:<input
                     type="number"
