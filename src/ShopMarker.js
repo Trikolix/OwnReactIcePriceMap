@@ -188,6 +188,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
         userId={userId}
         showForm={showReviewForm}
         setShowForm={setShowReviewForm}
+        shopName={shopDetails.eisdiele.name}
       />)}
     </>
   );
