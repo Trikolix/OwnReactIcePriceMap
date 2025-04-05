@@ -4,8 +4,9 @@ import L from "leaflet";
 import SubmitPriceForm from "./SubmitPriceForm";
 import styled from 'styled-components';
 import SubmitReviewForm from "./SubmitReviewForm"
+import FavoritenButton from "./FavoritButton"
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
@@ -25,10 +26,10 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
 
   let backgroundColor;
   const shopPrice = selectedOption === "Softeis" ? shop.softeis_preis :
-    selectedOption === "Alle" && shop.kugel_preis == null && shop.softeis_preis !== null ? shop.softeis_preis :
+    (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.kugel_preis == null && shop.softeis_preis !== null ? shop.softeis_preis :
       shop.kugel_preis;
   if (selectedOption === "Rating") {
-    backgroundColor = getColorBasedOnPrice(plv, maxPrice, minPrice-1);
+    backgroundColor = getColorBasedOnPrice(plv, maxPrice, minPrice - 1);
   } else {
     backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
   }
@@ -41,10 +42,10 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
     case selectedOption === "Kugeleis" && shop.kugel_preis !== null:
       displayPrice = `${Number(shop.kugel_preis).toFixed(2)} €`;
       break;
-    case selectedOption === "Alle" && shop.kugel_preis != null:
+    case (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.kugel_preis != null:
       displayPrice = `${Number(shop.kugel_preis).toFixed(2)} €`;
       break;
-    case selectedOption === "Alle" && shop.softeis_preis != null:
+    case (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.softeis_preis != null:
       displayPrice = `${Number(shop.softeis_preis).toFixed(2)} €`;
       break;
     case selectedOption === "Rating" && plv !== null:
@@ -120,6 +121,12 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       >
         <Popup>
           <div>
+            <FavoritenButton
+              eisdieleId={shop.eisdielen_id}
+              isLoggedIn={isLoggedIn}
+              userId={userId}
+              setIceCreamShops={setIceCreamShops}
+            />
             <Header>{shop.eisdielen_name}</Header>
             {loading ? (
               <p>Lädt...</p>

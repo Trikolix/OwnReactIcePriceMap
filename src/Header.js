@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import ToggleSwitch from "./ToggleSwitch";
 
-const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, handleToggleChange, centerMapOnUser, clustering, setClustering }) => {
+const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, handleToggleChange, centerMapOnUser, clustering, setClustering, setZeigeFavoriten }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -13,7 +13,7 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
     <HeaderContainer>
       <LogoContainer>
         <Logo src={require('./header.png')} alt="Website Logo" />
-        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle", "Rating"]} onChange={handleToggleChange} />
+        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle", "Rating", "Favoriten"]} onChange={handleToggleChange} />
         <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
@@ -31,6 +31,7 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
           {isLoggedIn ? (
             <>
               <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
+              <MenuItem onClick={() => setZeigeFavoriten(true)}>Favoriten anzeigen</MenuItem>
               <MenuItem onClick={onLogout}>Ausloggen</MenuItem>
             </>
           ) : (
