@@ -208,7 +208,7 @@ const IceCreamRadar = () => {
         setZeigeFavoriten={setZeigeFavoriten}
       />
       {zeigeFavoriten ? (
-        <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} />
+        <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} setZeigeFavoriten={setZeigeFavoriten} />
       ) : <></>}
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}

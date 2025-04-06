@@ -29,7 +29,7 @@ $minLat = (float) $_GET['minLat'];
 $minLon = (float) $_GET['minLon'];
 $maxLat = (float) $_GET['maxLat'];
 $maxLon = (float) $_GET['maxLon'];
-$userId = (int) $_GET['userId'] ?? null;
+$userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
 
 $sql = "SELECT 
     e.id AS eisdielen_id,

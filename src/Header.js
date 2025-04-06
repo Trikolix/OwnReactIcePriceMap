@@ -1,13 +1,32 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import ToggleSwitch from "./ToggleSwitch";
 
 const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, handleToggleChange, centerMapOnUser, clustering, setClustering, setZeigeFavoriten }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   return (
     <HeaderContainer>
@@ -26,7 +45,7 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
         <span />
       </BurgerMenu>
       {menuOpen && (
-        <Menu>
+        <Menu ref={menuRef}>
           <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
           {isLoggedIn ? (
             <>
