@@ -9,6 +9,7 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import SubmitIceShopForm from './SubmitIceShopForm';
 import Header from './Header';
+import FavoritenListe from './FavoritenListe';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -24,9 +25,9 @@ const IceCreamRadar = () => {
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState(null);
+  const [zeigeFavoriten, setZeigeFavoriten] = useState(false);
 
   const fetchIceCreamShops = async (bounds) => {
-    const boundsKey = `${bounds.minLat},${bounds.maxLat},${bounds.minLon},${bounds.maxLon}`;
     if (cachedBounds.current.some(cached =>
       bounds.minLat >= cached.minLat && bounds.maxLat <= cached.maxLat &&
       bounds.minLon >= cached.minLon && bounds.maxLon <= cached.maxLon
@@ -35,7 +36,7 @@ const IceCreamRadar = () => {
     cachedBounds.current.push(bounds);
 
     try {
-      const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}`;
+      const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);
@@ -155,14 +156,21 @@ const IceCreamRadar = () => {
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
-    const hasCorrectIceType = selectedOption === "Alle" || (selectedOption === "Kugeleis" && shop.kugel_preis !== null) || (selectedOption === "Softeis" && shop.softeis_preis !== null) || (selectedOption === "Rating" && shop.PLV !== null);
-    return hasCorrectIceType;
+      if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
+      if (selectedOption === "Softeis") return shop.softeis_preis !== null;
+      if (selectedOption === "Rating") return shop.PLV !== null;
+      if (selectedOption === "Favoriten") {
+        console.log(shop);
+        console.log(shop.is_favorit == '1');
+        return shop.is_favorit == '1';
+      }
+      return true;
   });
   // Berechne den minimalen und maximalen Preis
-  const prices = selectedOption === "Alle" ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
+  const prices = (selectedOption === "Alle" || selectedOption === "Favoriten") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
     selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
-      selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) : 
-      selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) : null;
+      selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
+        selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -197,7 +205,11 @@ const IceCreamRadar = () => {
         centerMapOnUser={centerMapOnUser}
         clustering={clustering}
         setClustering={setClustering}
+        setZeigeFavoriten={setZeigeFavoriten}
       />
+      {zeigeFavoriten ? (
+        <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} setZeigeFavoriten={setZeigeFavoriten} />
+      ) : <></>}
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
         zoom={10}
@@ -222,6 +234,7 @@ const IceCreamRadar = () => {
                   isLoggedIn={isLoggedIn}
                   userId={userId}
                   plv={shop.PLV}
+                  setIceCreamShops={setIceCreamShops}
                 />
               );
             })}
@@ -262,8 +275,8 @@ const IceCreamRadar = () => {
       </MapContainer>
       {showLoginModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{position: 'relative'}}>
-          <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
+          <div className="modal-content" style={{ position: 'relative' }}>
+            <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
             <h2>Login</h2>
             <form
               onSubmit={(e) => {

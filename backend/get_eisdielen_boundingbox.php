@@ -29,6 +29,7 @@ $minLat = (float) $_GET['minLat'];
 $minLon = (float) $_GET['minLon'];
 $maxLat = (float) $_GET['maxLat'];
 $maxLon = (float) $_GET['maxLon'];
+$userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
 
 $sql = "SELECT 
     e.id AS eisdielen_id,
@@ -59,7 +60,11 @@ $sql = "SELECT
             (3 * b.avg_geschmack + 2 * b.avg_kugelgroesse + 1 * b.avg_waffel) / 30
             * (0.75 + 0.25 * ( (SELECT MIN(preis) FROM preise WHERE typ = 'kugel') / p.preis ))
         ), 2
-    ) AS PLV
+    ) AS PLV,
+    CASE 
+    WHEN f.nutzer_id IS NOT NULL THEN 1 
+    ELSE 0 
+    END AS is_favorit
 FROM eisdielen e
 -- Durchschnittliche Bewertungen pro Eisdiele berechnen
 LEFT JOIN (
@@ -80,6 +85,7 @@ AND p.gemeldet_am = (
     WHERE p2.eisdiele_id = p.eisdiele_id 
     AND p2.typ = 'kugel'
 )
+LEFT JOIN favoriten f ON e.id = f.eisdiele_id AND f.nutzer_id = :userId
 WHERE e.latitude BETWEEN :minLat AND :maxLat 
 AND e.longitude BETWEEN :minLon AND :maxLon
 ORDER BY PLV DESC;
@@ -90,6 +96,7 @@ $stmt->bindParam(':minLat', $minLat);
 $stmt->bindParam(':maxLat', $maxLat);
 $stmt->bindParam(':minLon', $minLon);
 $stmt->bindParam(':maxLon', $maxLon);
+$stmt->bindParam(':userId', $userId);
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

@@ -1,19 +1,38 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import ToggleSwitch from "./ToggleSwitch";
 
-const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, handleToggleChange, centerMapOnUser, clustering, setClustering }) => {
+const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, handleToggleChange, centerMapOnUser, clustering, setClustering, setZeigeFavoriten }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
   return (
     <HeaderContainer>
       <LogoContainer>
         <Logo src={require('./header.png')} alt="Website Logo" />
-        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle", "Rating"]} onChange={handleToggleChange} />
+        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle", "Rating", "Favoriten"]} onChange={handleToggleChange} />
         <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
         <button className="custom-button" onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
@@ -26,11 +45,12 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
         <span />
       </BurgerMenu>
       {menuOpen && (
-        <Menu>
+        <Menu ref={menuRef}>
           <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
           {isLoggedIn ? (
             <>
               <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
+              <MenuItem onClick={() => setZeigeFavoriten(true)}>Favoriten anzeigen</MenuItem>
               <MenuItem onClick={onLogout}>Ausloggen</MenuItem>
             </>
           ) : (
