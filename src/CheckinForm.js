@@ -10,6 +10,7 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
     const [größenbewertung, setGrößenbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
+    const [message, setMessage] = useState('');
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -22,27 +23,47 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
         setSorten(sorten.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSubmit({
-            userId,
-            shopId,
-            type,
-            sorten,
-            gesamtbewertung: parseFloat(gesamtbewertung),
-            waffelbewertung: parseFloat(waffelbewertung),
-            größenbewertung: parseFloat(größenbewertung),
-            kommentar,
-            bild
-        });
+    const submit = async () => {
+        try {
+            const response = await fetch("https://ice-app.4lima.de/backend/checkin_upload.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId,
+                    shopId,
+                    type,
+                    sorten,
+                    gesamtbewertung: parseFloat(gesamtbewertung),
+                    waffelbewertung: parseFloat(waffelbewertung),
+                    größenbewertung: parseFloat(größenbewertung),
+                    kommentar,
+                    bild
+                })
+            });
+            const data = await response.json();
+            console.log(data);
+            if (data.status === "success") {
+                setMessage("Bewertung erfolgreich gespeichert!");
+            } else {
+                setMessage(`Fehler: ${data.message}`);
+            }
+            setTimeout(() => {
+                setMessage("");
+                setShowCheckinForm(false);
+            }, 2000);
+        } catch (error) {
+            setMessage("Ein Fehler ist aufgetreten.");
+        }
     };
 
     return (
         <Overlay>
             <Modal>
                 <CloseButton onClick={() => setShowCheckinForm(false)}>×</CloseButton>
-                <Form onSubmit={handleSubmit}>
-                <Heading>Eis-Checkin für {shop.eisdiele.name}</Heading>
+                <Form onSubmit={submit}>
+                    <Heading>Eis-Checkin für {shop.eisdiele.name}</Heading>
                     <Section>
                         <Label>Eistyp</Label>
                         <Select value={type} onChange={(e) => setType(e.target.value)}>
@@ -144,6 +165,7 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
                     </Section>
 
                     <Button type="submit">Check-in</Button>
+                    <Message>{message}</Message>
                 </Form>
             </Modal>
         </Overlay>
@@ -261,4 +283,9 @@ const Row = styled.div`
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   align-items: center;
+`;
+
+const Message = styled.p`
+  margin-top: 1rem;
+  font-style: italic;
 `;

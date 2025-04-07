@@ -1,4 +1,4 @@
-import { use, useState } from "react";
+import { useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import SubmitPriceForm from "./SubmitPriceForm";
@@ -75,7 +75,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
     } else if (diffInDays > 30) {
       const diffInMonths = Math.floor(diffInDays / 30);
       return `Vor ${diffInMonths} Monat${diffInMonths > 1 ? 'en' : ''}`;
-    } else if (diffInDays == 0)
+    } else if (diffInDays === 0)
       return 'Vor < 24 Stunden';
     else {
       return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;

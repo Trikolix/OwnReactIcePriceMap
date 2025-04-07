@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -10,7 +10,6 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import SubmitIceShopForm from './SubmitIceShopForm';
 import Header from './Header';
 import FavoritenListe from './FavoritenListe';
-import ToggleSwitch from "./ToggleSwitch";
 import DropdownSelect from './DropdownSelect';
 import styled from 'styled-components';
 
@@ -166,11 +165,7 @@ const IceCreamRadar = () => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
     if (selectedOption === "Rating") return shop.PLV !== null;
-    if (selectedOption === "Favoriten") {
-      console.log(shop);
-      console.log(shop.is_favorit == '1');
-      return shop.is_favorit == '1';
-    }
+    if (selectedOption === "Favoriten") return shop.is_favorit === '1';
     return true;
   });
   // Berechne den minimalen und maximalen Preis

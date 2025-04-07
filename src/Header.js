@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import ToggleSwitch from "./ToggleSwitch";
 
-const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, handleToggleChange, centerMapOnUser, clustering, setClustering, setZeigeFavoriten }) => {
+const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, setZeigeFavoriten }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -76,10 +75,6 @@ const LogoContainer = styled.div`
 
 const Logo = styled.img`
   height: 100px;
-`;
-
-const SiteName = styled.h1`
-  font-size: 2.0em;
 `;
 
 const BurgerMenu = styled.div`
