@@ -10,6 +10,7 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import SubmitIceShopForm from './SubmitIceShopForm';
 import Header from './Header';
 import FavoritenListe from './FavoritenListe';
+import ToggleSwitch from "./ToggleSwitch";
 import DropdownSelect from './DropdownSelect';
 import styled from 'styled-components';
 
