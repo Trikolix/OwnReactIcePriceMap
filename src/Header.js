@@ -31,12 +31,7 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
   return (
     <HeaderContainer>
       <LogoContainer>
-        <Logo src={require('./header.png')} alt="Website Logo" />
-        <ToggleSwitch options={["Kugeleis", "Softeis", "Alle", "Rating", "Favoriten"]} onChange={handleToggleChange} />
-        <button className="custom-button" onClick={centerMapOnUser}>Karte zentrieren</button>
-        <button className="custom-button" onClick={() => setClustering(!clustering)}>
-          {clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren'}
-        </button>
+        <Logo src={require('./header_wide.png')} alt="Website Logo" />
       </LogoContainer>
       
       <BurgerMenu onClick={toggleMenu}>
@@ -80,7 +75,7 @@ const LogoContainer = styled.div`
 `;
 
 const Logo = styled.img`
-  height: 120px;
+  height: 100px;
 `;
 
 const SiteName = styled.h1`

@@ -10,6 +10,8 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import SubmitIceShopForm from './SubmitIceShopForm';
 import Header from './Header';
 import FavoritenListe from './FavoritenListe';
+import DropdownSelect from './DropdownSelect';
+import styled from 'styled-components';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -46,25 +48,12 @@ const IceCreamRadar = () => {
     }
   };
 
-  /* const fetchIceCreamShops = async (latitude, longitude, radius) => {
-    try {
-      const query = `https://ice-app.4lima.de/backend/get_eisdiele_nahe.php?latitude=${latitude}&longitude=${longitude}&radius=${radius}`;
-      const response = await fetch(query);
-      const data = await response.json();
-      console.log(data);
-      setIceCreamShops(data.eisdielen);
-    } catch (error) {
-      console.error('Fehler beim Abrufen der Eisdielen:', error);
-    }
-  } */
-
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           setUserPosition([latitude, longitude]);
-          //fetchIceCreamShops(latitude, longitude, 50); // Radius kann angepasst werden
         },
         (error) => {
           console.error('Fehler beim Abrufen der Position:', error);
@@ -136,7 +125,7 @@ const IceCreamRadar = () => {
 
         // Schließen Sie das Modal nach 2 Sekunden
         setTimeout(() => {
-          setShowLoginModal(false); // Angenommen, Sie haben einen State für das Modal
+          setShowLoginModal(false);
           setMessage('');
           setPassword('');
         }, 2000);
@@ -156,15 +145,15 @@ const IceCreamRadar = () => {
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
-      if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
-      if (selectedOption === "Softeis") return shop.softeis_preis !== null;
-      if (selectedOption === "Rating") return shop.PLV !== null;
-      if (selectedOption === "Favoriten") {
-        console.log(shop);
-        console.log(shop.is_favorit == '1');
-        return shop.is_favorit == '1';
-      }
-      return true;
+    if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
+    if (selectedOption === "Softeis") return shop.softeis_preis !== null;
+    if (selectedOption === "Rating") return shop.PLV !== null;
+    if (selectedOption === "Favoriten") {
+      console.log(shop);
+      console.log(shop.is_favorit == '1');
+      return shop.is_favorit == '1';
+    }
+    return true;
   });
   // Berechne den minimalen und maximalen Preis
   const prices = (selectedOption === "Alle" || selectedOption === "Favoriten") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
@@ -209,7 +198,22 @@ const IceCreamRadar = () => {
       />
       {zeigeFavoriten ? (
         <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} setZeigeFavoriten={setZeigeFavoriten} />
-      ) : <></>}
+      ) : <LogoContainer>
+        <DropdownSelect
+          options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten"]}
+          onChange={(selectedOption) => {
+            console.log("Ausgewählt:", selectedOption);
+            setSelectedOption(selectedOption);
+          }}
+        />
+        <YellowButton onClick={centerMapOnUser}>📍 Standort</YellowButton>
+        <YellowButton onClick={() => setClustering(!clustering)}>
+          {clustering ? 'Clustering: An' : 'Clustering: Aus'}
+        </YellowButton>
+      </LogoContainer>}
+
+
+
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
         zoom={10}
@@ -220,6 +224,7 @@ const IceCreamRadar = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+
         <MapEventHandler />
         {clustering ? ( // show the clustered
           <MarkerClusterGroup maxClusterRadius={25}>
@@ -316,3 +321,26 @@ const IceCreamRadar = () => {
 };
 
 export default IceCreamRadar;
+
+const LogoContainer = styled.div`
+  display: ruby;
+  align-items: center;
+  margin: 5px auto;
+  color: black;
+`;
+
+const YellowButton = styled.button`
+  background-color: #ffb522;
+  color: black;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #ffcb4c;
+  }
+`;
