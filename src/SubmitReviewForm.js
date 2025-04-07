@@ -15,17 +15,15 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName }) =
         const fetchReview = async () => {
             try {
                 const response = await fetch(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shopId}`);
-                console.log(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shopId}`);
                 const data = await response.json();
-                console.log(data);
+                setAttribute(data.allAttributes.filter(attr => !data.attributes || !data.attributes.includes(attr)));
                 if (data.review) {
                     setGeschmack(data.review.geschmack);
                     setKugelgroesse(data.review.kugelgroesse);
                     setWaffel(data.review.waffel);
                     setAuswahl(data.review.auswahl);
                     setBeschreibung(data.review.beschreibung);
-                    setSelectedAttributes(data.attributes);
-                    setAttribute(data.allAttributes.filter(attr => !data.attributes.includes(attr)))
+                    setSelectedAttributes(data.attributes);                    
                 }
             } catch (error) {
                 console.error("Fehler beim Abrufen der Bewertung", error);

@@ -1,10 +1,11 @@
 import { useState } from "react";
+import styled from 'styled-components';
 const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm }) => {
 
-    const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis? shop.preise.kugel.preis : null);
-    const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung? shop.preise.kugel.beschreibung : null);
-    const [softeisPreis, setSofteiPreis] = useState(shop.preise?.softeis?.preis? shop.preise.softeis.preis : null);
-    const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung? shop.preise.softeis.beschreibung : null);
+    const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
+    const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null);
+    const [softeisPreis, setSofteiPreis] = useState(shop.preise?.softeis?.preis ? shop.preise.softeis.preis : null);
+    const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung ? shop.preise.softeis.beschreibung : null);
     const [message, setMessage] = useState('');
 
     const submit = async () => {
@@ -29,7 +30,8 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
                 kugelPreis,
                 additionalInfoKugelPreis,
                 softeisPreis,
-                additionalInfoSofteisPreis}));
+                additionalInfoSofteisPreis
+            }));
             const data = await response.json();
             console.log(data);
             data.forEach(element => {
@@ -53,35 +55,137 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
         }
     }
     return showPriceForm ? (
-        <div className="modal-overlay">
-            <div className="modal-content" style={{position: "relative"}}>
-                <button className="close-button" style={{position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none'}}onClick={() => setShowPriceForm(false)}>×</button>
-                <h2>Preis für {shop.eisdielen_name} einreichen</h2>
-                <div><b>Preis pro Kugel:<input
-                    type="number"
-                    min="1.0"
-                    max="5.0"
-                    step="0.1"
-                    placeholder="0.0"
-                    value={kugelPreis ? kugelPreis : ''}
-                    onChange={(e) => setKugelPreis(e.target.value)}
-                />€</b></div>
-                <div><b>Zusatzbeschreibung für die Kugel:</b> <textarea rows="3" cols="35" value={additionalInfoKugelPreis} onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)} /></div>
-                <div><b>Preis für Softeis:<input
-                    type="number"
-                    min="1.0"
-                    max="5.0"
-                    step="0.1"
-                    placeholder="0.0"
-                    value={softeisPreis ? softeisPreis : ''}
-                    onChange={(e) => setSofteiPreis(e.target.value)}
-                />€</b></div>
-                <div><b>Zusatzbeschreibung für Softeis:</b> <textarea rows="3" cols="30" value={additionalInfoSofteisPreis} onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)} /></div>
-                <button onClick={submit}>Einreichen</button>
-                <p>{message}</p>
-                <button onClick={() => setShowPriceForm(false)}>Schließen</button>
-            </div>
-        </div>) : null;
+        <Overlay>
+            <Modal>
+                <CloseButton onClick={() => setShowPriceForm(false)}>×</CloseButton>
+                <Heading>Preis für {shop.eisdiele.name} einreichen</Heading>
+
+                <Label>
+                    Preis pro Kugel:
+                    <Input
+                        type="number"
+                        min="1.0"
+                        max="5.0"
+                        step="0.1"
+                        placeholder="0.0"
+                        value={kugelPreis ?? ''}
+                        onChange={(e) => setKugelPreis(e.target.value)}
+                    />
+                    €
+                </Label>
+
+                <Label>
+                    Zusatzbeschreibung für die Kugel:
+                    <TextArea
+                        rows={3}
+                        value={additionalInfoKugelPreis}
+                        onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)}
+                    />
+                </Label>
+
+                <Label>
+                    Preis für Softeis:
+                    <Input
+                        type="number"
+                        min="1.0"
+                        max="5.0"
+                        step="0.1"
+                        placeholder="0.0"
+                        value={softeisPreis ?? ''}
+                        onChange={(e) => setSofteiPreis(e.target.value)}
+                    />
+                    €
+                </Label>
+
+                <Label>
+                    Zusatzbeschreibung für Softeis:
+                    <TextArea
+                        rows={3}
+                        value={additionalInfoSofteisPreis}
+                        onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)}
+                    />
+                </Label>
+
+                <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                <Message>{message}</Message>
+            </Modal>
+        </Overlay>) : null;
 };
 
 export default SubmitPriceForm;
+
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const Modal = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+`;
+
+const Heading = styled.h2`
+  margin-bottom: 1rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-top: 1rem;
+  font-weight: bold;
+`;
+
+const Input = styled.input`
+  width: 100px;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+`;
+
+const SubmitButton = styled.button`
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #005fa3;
+  }
+`;
+
+const Message = styled.p`
+  margin-top: 1rem;
+  font-style: italic;
+`;

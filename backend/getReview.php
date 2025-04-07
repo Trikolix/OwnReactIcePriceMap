@@ -33,6 +33,10 @@ $sql = "SELECT id, geschmack, kugelgroesse, waffel, auswahl, beschreibung FROM b
 $stmt = $pdo->prepare($sql);
 $stmt->execute([':userId' => $userId, ':shopId' => $shopId]);
 $review = $stmt->fetch();
+
+$stmtAllAttr = $pdo->prepare("SELECT name FROM attribute");
+$stmtAllAttr->execute();
+$allAttributes = $stmtAllAttr->fetchAll(PDO::FETCH_COLUMN);
 if ($review) {
     // Attribute zur Bewertung abfragen
     $stmtAttr = $pdo->prepare("
@@ -44,15 +48,16 @@ if ($review) {
     $stmtAttr->execute(['bewertungId' => $review['id']]);
     $attributes = $stmtAttr->fetchAll(PDO::FETCH_COLUMN);
 
-    $stmtAllAttr = $pdo->prepare("SELECT name FROM attribute");
-    $stmtAllAttr->execute();
-    $allAttributes = $stmtAllAttr->fetchAll(PDO::FETCH_COLUMN);
     echo json_encode([
         'review' => $review,
         'attributes' => $attributes,
-        "allAttributes" => $allAttributes
+        'allAttributes' => $allAttributes
     ]);
 } else {
-    echo json_encode(['review' => null]);
+    echo json_encode([
+        'review' => null,
+        'attributes' => null,
+        'allAttributes' => $allAttributes
+    ]);
 }
 ?>

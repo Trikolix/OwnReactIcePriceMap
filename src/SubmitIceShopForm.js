@@ -47,25 +47,143 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
         }
     };
 
-    return showForm ? (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => setShowForm(false)}>x</button>
-                <h2 className="form-title">Neue Eisdiele eintragen</h2>
-                <div className="form-group"><label>Name:</label> <input type="text" value={name} onChange={(e) => setName(e.target.value)} /></div>
-                <div className="form-group"><label>Adresse:</label> <input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} /></div>
-                <div className="form-group"><label>Latitude:</label> <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} /></div>
-                <div className="form-group"><label>Longitude:</label> <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} /></div>
-                <div className="form-group"><label>Öffnungszeiten (optional):</label> <textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} /></div>
-                <div className="form-group"><label>Komoot-Link (optional):</label> <input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} /></div>
-                <div className="button-group">
-                    <button className="submit-button" onClick={submit}>Einreichen</button><br /><br />
-                    <button className="close-button" onClick={() => setShowForm(false)}>Schließen</button>
-                </div>
-                <p className="message">{message}</p>
+    return showForm && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <button style={styles.closeX} onClick={() => setShowForm(false)}>×</button>
+            <h2 style={styles.title}>Neue Eisdiele eintragen</h2>
+      
+            <div style={styles.group}>
+              <label>Name:</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={styles.input} />
             </div>
+      
+            <div style={styles.group}>
+              <label>Adresse:</label>
+              <input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} style={styles.input} />
+            </div>
+      
+            <div style={styles.groupInline}>
+              <div style={styles.group}>
+                <label>Latitude:</label>
+                <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} style={styles.input} />
+              </div>
+              <div style={styles.group}>
+                <label>Longitude:</label>
+                <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} style={styles.input} />
+              </div>
+            </div>
+      
+            <div style={styles.group}>
+              <label>Öffnungszeiten (optional):</label>
+              <textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} style={styles.textarea} />
+            </div>
+      
+            <div style={styles.group}>
+              <label>Komoot-Link (optional):</label>
+              <input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} style={styles.input} />
+            </div>
+      
+            <div style={styles.buttonGroup}>
+              <button style={styles.submitButton} onClick={submit}>Einreichen</button>
+              <button style={styles.closeButton} onClick={() => setShowForm(false)}>Schließen</button>
+            </div>
+      
+            {message && <p style={styles.message}>{message}</p>}
+          </div>
         </div>
-    ) : null;
+    )
 };
 
 export default SubmitIceShopForm;
+
+const styles = {
+    overlay: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000
+    },
+    modal: {
+      backgroundColor: "#fff",
+      padding: "2rem",
+      borderRadius: "16px",
+      maxWidth: "500px",
+      width: "100%",
+      boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2)",
+      position: "relative"
+    },
+    title: {
+      fontSize: "1.5rem",
+      fontWeight: "bold",
+      marginBottom: "1.5rem"
+    },
+    group: {
+      display: "flex",
+      flexDirection: "column",
+      marginBottom: "1rem"
+    },
+    groupInline: {
+      display: "flex",
+      gap: "1rem",
+      marginBottom: "1rem"
+    },
+    input: {
+      padding: "0.5rem",
+      fontSize: "1rem",
+      borderRadius: "8px",
+      border: "1px solid #ccc",
+      marginTop: "0.25rem"
+    },
+    textarea: {
+      padding: "0.5rem",
+      fontSize: "1rem",
+      borderRadius: "8px",
+      border: "1px solid #ccc",
+      marginTop: "0.25rem",
+      resize: "vertical"
+    },
+    buttonGroup: {
+      display: "flex",
+      gap: "1rem",
+      marginTop: "1.5rem"
+    },
+    submitButton: {
+      backgroundColor: "#007bff",
+      color: "white",
+      border: "none",
+      padding: "0.6rem 1.2rem",
+      borderRadius: "8px",
+      fontSize: "1rem",
+      cursor: "pointer"
+    },
+    closeButton: {
+      backgroundColor: "#f44336",
+      color: "white",
+      border: "none",
+      padding: "0.6rem 1.2rem",
+      borderRadius: "8px",
+      fontSize: "1rem",
+      cursor: "pointer"
+    },
+    closeX: {
+      position: "absolute",
+      top: "10px",
+      right: "10px",
+      background: "none",
+      border: "none",
+      fontSize: "1.5rem",
+      cursor: "pointer"
+    },
+    message: {
+      marginTop: "1rem",
+      fontStyle: "italic",
+      color: "#555"
+    }
+  };
