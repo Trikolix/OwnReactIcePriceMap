@@ -198,7 +198,7 @@ const styles = {
     },
     selectedAttributes: {
         padding: '4px 12px',
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#ffb522',
         color: 'white',
         borderRadius: '9999px',
         cursor: 'pointer',
@@ -224,14 +224,14 @@ const styles = {
     },
     addButton: {
         padding: '6px 12px',
-        backgroundColor: '#10b981',
+        backgroundColor: '#ffb522',
         color: 'white',
         border: 'none',
         borderRadius: '4px',
         cursor: 'pointer'
     },
     submitButton: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#ffb522',
         color: 'white',
         padding: '6px 12px',
         borderRadius: '4px',

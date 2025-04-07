@@ -5,12 +5,15 @@ import SubmitPriceForm from "./SubmitPriceForm";
 import styled from 'styled-components';
 import SubmitReviewForm from "./SubmitReviewForm"
 import FavoritenButton from "./FavoritButton"
+import CheckinForm from "./CheckinForm";
 
 const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, refreshShops }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showCheckinForm, setShowCheckinForm] = useState(false);
+  
 
   // Funktion zur Berechnung der Farbe basierend auf dem Preis
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
@@ -161,7 +164,11 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                     {shopDetails.attribute?.length > 0 && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                   </div>
                 )}
-                {isLoggedIn && (<button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>)}
+                {isLoggedIn && (<>
+                  <button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>
+                  <button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</button>
+                  </>
+                )}
                 {shopDetails?.eisdiele?.komoot && isLoggedIn && (
                   <>
                     <h3>Komoot</h3>
@@ -192,6 +199,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
         shopName={shopDetails.eisdiele.name}
         refreshShops={refreshShops}
       />)}
+      {showCheckinForm && (<CheckinForm shop={shopDetails} shopId={shop.eisdielen_id} userId={userId} setShowCheckinForm={setShowCheckinForm}/>) }
     </>
   );
 };

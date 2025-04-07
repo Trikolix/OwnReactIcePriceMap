@@ -178,7 +178,7 @@ const TextArea = styled.textarea`
 const SubmitButton = styled.button`
   margin-top: 1.5rem;
   padding: 0.75rem 1.5rem;
-  background-color: #0077cc;
+  background-color: #ffb522;
   color: white;
   border: none;
   border-radius: 12px;
@@ -186,7 +186,7 @@ const SubmitButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background-color: #005fa3;
+    background-color: #ffcb4c;
   }
 `;
 
