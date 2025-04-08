@@ -15,6 +15,14 @@ try {
     exit();
 }
  
+// alte PLV-Formel:
+// (SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) AS min_preis,
+// ROUND(
+//     1 + 4 * (
+//         (3 * b.avg_geschmack + 2 * b.avg_kugelgroesse + 1 * b.avg_waffel) / 30
+//         * (0.65 + 0.35 * ( ( SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) / p.preis ))
+//     ), 2
+// ) AS PLV
 $sql = "SELECT 
     e.id AS eisdielen_id,
     e.name AS eisdielen_name,
@@ -23,12 +31,11 @@ $sql = "SELECT
     b.avg_waffel,
     b.avg_auswahl,
     p.preis AS aktueller_preis,
-    (SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) AS min_preis,
     -- Preis-Leistungs-Verhältnis (PLV) berechnen
     ROUND(
         1 + 4 * (
-            (3 * b.avg_geschmack + 2 * b.avg_kugelgroesse + 1 * b.avg_waffel) / 30
-            * (0.65 + 0.35 * ( ( SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) / p.preis ))
+            (0.7 * ((3 * b.avg_geschmack + b.avg_waffel) / 20))
+            + (0.3 * (3 * b.avg_kugelgroesse) / (10 * p.preis))
         ), 2
     ) AS PLV
 FROM eisdielen e
@@ -155,16 +162,15 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <h4 class="text-center">Erklärung zum Ranking</h4>
         <p>
-            Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet. Der Geschmack hat dabei eine Gewichtung
-            von
-            3, die Kugelgröße eine Wichtung von 2 und die Waffel eine Wichtung von 1.
-            Das ganze wird noch mit dem Verhältnis zur günstigsten Eisdiele multipliziert. Für eine perfekte 5.0
-            Bewertung
-            bräuchte es also durchschnittlich 5.0 Bewertungen in allen Kategrorien
-            und es müsste zeitgleich die günstigste Eisdiele in der ganzen Datenbank sein.<br><br>
-            G - Ø Bewertung des Geschmacks<br>
-            K - Ø Bewertung der Kugelgröße<br>
-            W - Ø Bewertung der Eiswaffel<br>
+            Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet. Der Geschmack hat dabei eine Gewichtung von 70% und setzt sich zusammen aus
+            Geschmack und Waffel. Wobei Geschmack 4 fach so stark gewichtet wird wie die Waffel.
+            Die anderen 30% der Bewertung entsteht aus dem Verhältnis von Kugelgröße zu Preis.
+            Eine Kugelgröße von 5.0 Punkten bei einem Preis von 1,5€ ergibt dabei einen Faktor 1. 
+            Je kleiner die Kugelgröße und je höher der Preis wird, desto kleiner wird der Faktor.
+            Da der Wert 1 bei einem Preis von 1,50€ pro Kugel erreicht wird, kann der Faktor bei Eisdielen die sehr große Kugeln für unter 1,50€ anbieten auch größer als 1 werden.<br><br>
+            G - Ø Bewertung des Geschmacks (0 - 5)<br>
+            K - Ø Bewertung der Kugelgröße (0 - 5)<br>
+            W - Ø Bewertung der Eiswaffel (0 - 5)<br>
             P - Preis pro Kugel in €<br>
             <center><img src='plv-formel_neu.png'></img></center>
         </p>
