@@ -59,6 +59,7 @@ const IceCreamRadar = () => {
       const data = await response.json();
       console.log(data);
       setIceCreamShops(data);
+      cachedBounds.current = [];
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
@@ -165,7 +166,7 @@ const IceCreamRadar = () => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
     if (selectedOption === "Rating") return shop.PLV !== null;
-    if (selectedOption === "Favoriten") return shop.is_favorit === '1';
+    if (selectedOption === "Favoriten") return shop.is_favorit === 1;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
