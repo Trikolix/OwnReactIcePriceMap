@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import SubmitReviewForm from "./SubmitReviewForm"
 import FavoritenButton from "./FavoritButton"
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, refreshShops }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
@@ -182,6 +182,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
         userId={userId}
         showPriceForm={showPriceForm}
         setShowPriceForm={setShowPriceForm}
+        refreshShops={refreshShops}
       />)}
       {isLoggedIn && showReviewForm && (<SubmitReviewForm
         shopId={shop.eisdielen_id}
@@ -189,6 +190,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
         showForm={showReviewForm}
         setShowForm={setShowReviewForm}
         shopName={shopDetails.eisdiele.name}
+        refreshShops={refreshShops}
       />)}
     </>
   );

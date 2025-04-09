@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
+const SubmitIceShopForm = ({ showForm, setShowForm, userId, refreshShops }) => {
     const [name, setName] = useState("");
     const [adresse, setAdresse] = useState("");
     const [latitude, setLatitude] = useState("");
@@ -29,6 +29,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
             const data = await response.json();
             if (data.status === "success") {
                 setMessage("Eisdiele erfolgreich hinzugefügt!");
+                refreshShops();
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }
@@ -44,6 +45,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId }) => {
             }, 2000);
         } catch (error) {
             setMessage("Ein Fehler ist aufgetreten.");
+            console.log(error);
         }
     };
 

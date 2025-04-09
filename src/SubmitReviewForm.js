@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName }) => {
+const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, refreshShops }) => {
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
     const [waffel, setWaffel] = useState(null);
@@ -53,6 +53,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName }) =
             const data = await response.json();
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
+                refreshShops();
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }

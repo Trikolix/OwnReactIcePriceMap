@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from 'styled-components';
-const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm }) => {
+const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm, refreshShops }) => {
 
     const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
     const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null);
@@ -36,6 +36,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
             console.log(data);
             data.forEach(element => {
                 if (element.status === 'success') {
+                    refreshShops();
                     setMessage('Preis erfolgreich gemeldet!');
                 } else {
                     setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
@@ -117,6 +118,10 @@ export default SubmitPriceForm;
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;

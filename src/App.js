@@ -48,6 +48,23 @@ const IceCreamRadar = () => {
     }
   };
 
+  const refreshShops = async () => {
+    console.log("refreshShops");
+    const bounds = mapRef.current?.getBounds();
+    if (!bounds) return;
+  
+    try {
+      const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
+      const response = await fetch(query);
+      const data = await response.json();
+      console.log(data);
+      setIceCreamShops(data);
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Eisdielen:', error);
+    }
+  };
+  
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -240,6 +257,7 @@ const IceCreamRadar = () => {
                   userId={userId}
                   plv={shop.PLV}
                   setIceCreamShops={setIceCreamShops}
+                  refreshShops={refreshShops}
                 />
               );
             })}
@@ -256,6 +274,8 @@ const IceCreamRadar = () => {
                 isLoggedIn={isLoggedIn}
                 userId={userId}
                 plv={shop.PLV}
+                setIceCreamShops={setIceCreamShops}
+                refreshShops={refreshShops}
               />
             );
           })
@@ -314,6 +334,7 @@ const IceCreamRadar = () => {
           showForm={showSubmitNewIceShop}
           setShowForm={setShowSubmitNewIceShop}
           userId={userId}
+          refreshShops={refreshShops}
         />
       )}
     </div>

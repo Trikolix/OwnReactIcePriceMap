@@ -166,8 +166,7 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
             K - Ø Bewertung der Kugelgröße<br>
             W - Ø Bewertung der Eiswaffel<br>
             P - Preis pro Kugel in €<br>
-            Pmin - Preis der günstigsten Eisdiele in €<br>
-            <center><img src='plv-formel.png'></img></center>
+            <center><img src='plv-formel_neu.png'></img></center>
         </p>
     </div>
 </body>
