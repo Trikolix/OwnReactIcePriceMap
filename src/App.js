@@ -1,5 +1,6 @@
-import { React, useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef, useMemo  } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import throttle from 'lodash.throttle';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
@@ -57,7 +58,7 @@ const IceCreamRadar = () => {
     console.log("refreshShops");
     const bounds = mapRef.current?.getBounds();
     if (!bounds) return;
-  
+
     try {
       const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
       const response = await fetch(query);
@@ -69,7 +70,7 @@ const IceCreamRadar = () => {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
   };
-  
+
 
   // Geoposition des Nutzers laden
   useEffect(() => {
@@ -97,6 +98,14 @@ const IceCreamRadar = () => {
 
   const MapEventHandler = () => {
     const map = useMap();
+
+    // useMemo, damit die throttled Funktion nicht bei jedem Render neu erstellt wird
+    const throttledFetch = useMemo(() => {
+      return throttle((bounds) => {
+        fetchIceCreamShops(bounds);
+      }, 1000); // 1000 ms = 1 Sekunde
+    }, []);
+
     useEffect(() => {
       const onMoveEnd = () => {
         const bounds = map.getBounds();
@@ -106,7 +115,7 @@ const IceCreamRadar = () => {
           minLon: bounds.getWest(),
           maxLon: bounds.getEast()
         };
-        fetchIceCreamShops(newBounds);
+        throttledFetch(newBounds);
       };
       map.on('moveend', onMoveEnd);
       return () => map.off('moveend', onMoveEnd);
