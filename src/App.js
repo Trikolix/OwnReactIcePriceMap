@@ -12,9 +12,12 @@ import Header from './Header';
 import FavoritenListe from './FavoritenListe';
 import DropdownSelect from './DropdownSelect';
 import styled from 'styled-components';
+import SubmitPriceForm from './SubmitPriceForm';
+import SubmitReviewForm from './SubmitReviewForm';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
+  const [activeShop, setActiveShop] = useState(null);
   const cachedBounds = useRef([]);
   const [userPosition, setUserPosition] = useState(null);
   const [clustering, setClustering] = useState(true);
@@ -25,6 +28,8 @@ const IceCreamRadar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
+  const [showPriceForm, setShowPriceForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState(null);
   const [zeigeFavoriten, setZeigeFavoriten] = useState(false);
@@ -66,6 +71,7 @@ const IceCreamRadar = () => {
   };
   
 
+  // Geoposition des Nutzers laden
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -255,6 +261,9 @@ const IceCreamRadar = () => {
                   plv={shop.PLV}
                   setIceCreamShops={setIceCreamShops}
                   refreshShops={refreshShops}
+                  setActiveShop={setActiveShop}
+                  setShowPriceForm={setShowPriceForm}
+                  setShowReviewForm={setShowReviewForm}
                 />
               );
             })}
@@ -273,6 +282,9 @@ const IceCreamRadar = () => {
                 plv={shop.PLV}
                 setIceCreamShops={setIceCreamShops}
                 refreshShops={refreshShops}
+                setActiveShop={setActiveShop}
+                setShowPriceForm={setShowPriceForm}
+                setShowReviewForm={setShowReviewForm}
               />
             );
           })
@@ -334,6 +346,20 @@ const IceCreamRadar = () => {
           refreshShops={refreshShops}
         />
       )}
+      {showPriceForm && (<SubmitPriceForm
+        shop={activeShop}
+        userId={userId}
+        showPriceForm={showPriceForm}
+        setShowPriceForm={setShowPriceForm}
+        refreshShops={refreshShops}
+      />)}
+      {showReviewForm && (<SubmitReviewForm
+        shop={activeShop}
+        userId={userId}
+        showForm={showReviewForm}
+        setShowForm={setShowReviewForm}
+        refreshShops={refreshShops}
+      />)}
     </div>
   );
 };

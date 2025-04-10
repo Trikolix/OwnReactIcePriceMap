@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, refreshShops }) => {
+const SubmitReviewForm = ({ showForm, setShowForm, userId, shop, refreshShops }) => {
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
     const [waffel, setWaffel] = useState(null);
@@ -14,7 +14,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
     useEffect(() => {
         const fetchReview = async () => {
             try {
-                const response = await fetch(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shopId}`);
+                const response = await fetch(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
                 const data = await response.json();
                 setAttribute(data.allAttributes.filter(attr => !data.attributes || !data.attributes.includes(attr)));
                 if (data.review) {
@@ -30,7 +30,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
             }
         };
         fetchReview();
-    }, [userId, shopId]);
+    }, [userId, shop.eisdiele.id]);
 
     const submit = async () => {
         try {
@@ -41,7 +41,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
                 },
                 body: JSON.stringify({
                     userId,
-                    shopId,
+                    shopId: shop.eisdiele.id,
                     geschmack,
                     kugelgroesse,
                     waffel,
@@ -87,7 +87,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
         <div style={styles.modalOverlay}>
             <div style={styles.modalContent}>
                 <button style={styles.closeButton} onClick={() => setShowForm(false)}>x</button>
-                <h2 style={styles.formTitle}>{shopName} bewerten</h2>
+                <h2 style={styles.formTitle}>{shop.eisdiele.name} bewerten</h2>
 
                 <div style={styles.gridForm}>
                     <label>Geschmack:</label>

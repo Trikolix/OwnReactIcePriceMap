@@ -1,18 +1,12 @@
 import { useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
-import SubmitPriceForm from "./SubmitPriceForm";
 import styled from 'styled-components';
-import SubmitReviewForm from "./SubmitReviewForm"
 import FavoritenButton from "./FavoritButton"
-import CheckinForm from "./CheckinForm";
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, refreshShops }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, setActiveShop, setShowPriceForm, setShowReviewForm }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showPriceForm, setShowPriceForm] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [showCheckinForm, setShowCheckinForm] = useState(false);
   
 
   // Funktion zur Berechnung der Farbe basierend auf dem Preis
@@ -99,6 +93,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       const data = await response.json();
       console.log(data);
       setShopDetails(data);
+      setActiveShop(data);
     } catch (error) {
       console.error("Fehler beim Laden der Daten:", error);
     } finally {
@@ -166,7 +161,6 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                 )}
                 {isLoggedIn && (<>
                   <button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>
-                  <button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</button>
                   </>
                 )}
                 {shopDetails?.eisdiele?.komoot && isLoggedIn && (
@@ -183,23 +177,6 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
           </div>
         </Popup>
       </Marker>
-      {showPriceForm && (<SubmitPriceForm
-        shop={shopDetails}
-        shopId={shop.eisdielen_id}
-        userId={userId}
-        showPriceForm={showPriceForm}
-        setShowPriceForm={setShowPriceForm}
-        refreshShops={refreshShops}
-      />)}
-      {isLoggedIn && showReviewForm && (<SubmitReviewForm
-        shopId={shop.eisdielen_id}
-        userId={userId}
-        showForm={showReviewForm}
-        setShowForm={setShowReviewForm}
-        shopName={shopDetails.eisdiele.name}
-        refreshShops={refreshShops}
-      />)}
-      {showCheckinForm && (<CheckinForm shop={shopDetails} shopId={shop.eisdielen_id} userId={userId} setShowCheckinForm={setShowCheckinForm}/>) }
     </>
   );
 };

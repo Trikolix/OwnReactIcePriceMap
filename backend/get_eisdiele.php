@@ -30,7 +30,7 @@ if ($eisdiele_id <= 0) {
 
 // 1. Basisinformationen der Eisdiele abrufen
 $stmt = $pdo->prepare("
-    SELECT name, adresse, latitude, longitude, openingHours, komoot
+    SELECT *
     FROM eisdielen 
     WHERE id = ?
 ");
