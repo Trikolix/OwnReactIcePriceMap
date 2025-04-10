@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const SubmitIceShopForm = ({ showForm, setShowForm, userId, refreshShops }) => {
+const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops }) => {
     const [name, setName] = useState("");
     const [adresse, setAdresse] = useState("");
     const [latitude, setLatitude] = useState("");
@@ -96,7 +96,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId, refreshShops }) => {
     )
 };
 
-export default SubmitIceShopForm;
+export default SubmitIceShopModal;
 
 const styles = {
     overlay: {

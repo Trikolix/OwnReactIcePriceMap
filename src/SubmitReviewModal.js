@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const SubmitReviewForm = ({ showForm, setShowForm, userId, shop, refreshShops }) => {
+const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }) => {
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
     const [waffel, setWaffel] = useState(null);
@@ -140,7 +140,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shop, refreshShops })
     ) : null;
 };
 
-export default SubmitReviewForm;
+export default SubmitReviewModal;
 
 const styles = {
     modalOverlay: {

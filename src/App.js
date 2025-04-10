@@ -8,14 +8,14 @@ import ShopMarker from "./ShopMarker";
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
-import SubmitIceShopForm from './SubmitIceShopForm';
+import SubmitIceShopModal from './SubmitIceShopModal';
+import SubmitPriceModal from './SubmitPriceModal';
+import SubmitReviewModal from './SubmitReviewModal';
+import LoginModal from './LoginModal';
 import Header from './Header';
 import FavoritenListe from './FavoritenListe';
 import DropdownSelect from './DropdownSelect';
 import styled from 'styled-components';
-import SubmitPriceForm from './SubmitPriceForm';
-import SubmitReviewForm from './SubmitReviewForm';
-import LoginModal from './LoginModal';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -278,21 +278,21 @@ const IceCreamRadar = () => {
         />
       }
       {showSubmitNewIceShop && (
-        <SubmitIceShopForm
+        <SubmitIceShopModal
           showForm={showSubmitNewIceShop}
           setShowForm={setShowSubmitNewIceShop}
           userId={userId}
           refreshShops={refreshShops}
         />
       )}
-      {showPriceForm && (<SubmitPriceForm
+      {showPriceForm && (<SubmitPriceModal
         shop={activeShop}
         userId={userId}
         showPriceForm={showPriceForm}
         setShowPriceForm={setShowPriceForm}
         refreshShops={refreshShops}
       />)}
-      {showReviewForm && (<SubmitReviewForm
+      {showReviewForm && (<SubmitReviewModal
         shop={activeShop}
         userId={userId}
         showForm={showReviewForm}

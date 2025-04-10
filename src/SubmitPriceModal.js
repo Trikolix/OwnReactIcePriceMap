@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from 'styled-components';
-const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm, refreshShops }) => {
+const SubmitPriceModal = ({ shop, shopId, userId, showPriceForm, setShowPriceForm, refreshShops }) => {
 
     const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
     const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null);
@@ -113,7 +113,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
         </Overlay>) : null;
 };
 
-export default SubmitPriceForm;
+export default SubmitPriceModal;
 
 const Overlay = styled.div`
   position: fixed;
