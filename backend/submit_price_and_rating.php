@@ -1,5 +1,4 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
 
 require 'db_connect.php'; // Stellt die PDO-Verbindung her
 
