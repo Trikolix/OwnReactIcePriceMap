@@ -30,6 +30,9 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
   } else {
     backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
   }
+  if (selectedOption === "Geschmack") {
+    backgroundColor = getColorBasedOnPrice(shop.avg_geschmack, maxPrice, minPrice);
+  }
 
   let displayPrice;
   switch (true) {
@@ -47,6 +50,9 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       break;
     case selectedOption === "Rating" && plv !== null:
       displayPrice = `${Number(plv).toFixed(2)}`;
+      break;
+    case selectedOption === "Geschmack" && shop.avg_geschmack !== null:
+      displayPrice = `${Number(shop.avg_geschmack).toFixed(2)}`;
       break;
     default:
       displayPrice = '?';

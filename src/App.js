@@ -142,13 +142,15 @@ const IceCreamRadar = () => {
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
     if (selectedOption === "Rating") return shop.PLV !== null;
     if (selectedOption === "Favoriten") return shop.is_favorit === 1;
+    if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
   const prices = (selectedOption === "Alle" || selectedOption === "Favoriten") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
     selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
       selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
-        selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) : null;
+        selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) :
+        selectedOption === "Geschmack" ? filteredShops.map(shop => shop.avg_geschmack).filter(avg_geschmack => avg_geschmack !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -181,7 +183,7 @@ const IceCreamRadar = () => {
         <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} setZeigeFavoriten={setZeigeFavoriten} />
       ) : <LogoContainer>
         <DropdownSelect
-          options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten"]}
+          options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten", "Geschmack"]}
           onChange={(selectedOption) => {
             console.log("Ausgewählt:", selectedOption);
             setSelectedOption(selectedOption);
