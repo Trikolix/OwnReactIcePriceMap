@@ -37,8 +37,8 @@ $sql = "SELECT
     -- Preis-Leistungs-Verhältnis (PLV) berechnen
     ROUND(
         1 + 4 * (
-            (3 * b.avg_geschmack + 2 * b.avg_kugelgroesse + 1 * b.avg_waffel) / 30
-            * (0.75 + 0.25 * ( (SELECT MIN(preis) FROM preise WHERE typ = 'kugel') / p.preis ))
+            (0.7 * ((3 * b.avg_geschmack + b.avg_waffel) / 20))
+            + (0.3 * (3 * b.avg_kugelgroesse) / (10 * p.preis))
         ), 2
     ) AS PLV,
     CASE 

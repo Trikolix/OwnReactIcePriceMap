@@ -13,8 +13,8 @@ $sql = "SELECT
     -- Preis-Leistungs-Verhältnis (PLV) berechnen
     ROUND(
         1 + 4 * (
-            (3 * b.avg_geschmack + 2 * b.avg_kugelgroesse + 1 * b.avg_waffel) / 30
-            * (0.65 + 0.35 * ( ( SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) / p.preis ))
+            (0.7 * ((3 * b.avg_geschmack + b.avg_waffel) / 20))
+            + (0.3 * (3 * b.avg_kugelgroesse) / (10 * p.preis))
         ), 2
     ) AS PLV
 FROM eisdielen e
