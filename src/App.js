@@ -285,6 +285,8 @@ const IceCreamRadar = () => {
           setShowForm={setShowSubmitNewIceShop}
           userId={userId}
           refreshShops={refreshShops}
+          userLatitude={userPosition[0]}
+          userLongitude={userPosition[1]}
         />
       )}
       {showPriceForm && (<SubmitPriceModal
