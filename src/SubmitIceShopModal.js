@@ -1,8 +1,8 @@
 import { useState } from "react";
+import styled from "styled-components";
+import LocationPicker from "./components/LocationPicker";
 
-import LocationPicker from "./components/LocationPicker"
-
-const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude, userLongitude }) => {
+const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude = null, userLongitude = null}) => {
   const [name, setName] = useState("");
   const [adresse, setAdresse] = useState("");
   const [latitude, setLatitude] = useState("");
@@ -15,9 +15,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
     try {
       const response = await fetch("https://ice-app.4lima.de/backend/submitIceShop.php", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           adresse,
@@ -52,152 +50,165 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
   };
 
   return showForm && (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        <button style={styles.closeX} onClick={() => setShowForm(false)}>×</button>
-        <h2 style={styles.title}>Neue Eisdiele eintragen</h2>
+    <Overlay>
+      <Modal>
+        <CloseX onClick={() => setShowForm(false)}>×</CloseX>
+        <Title>Neue Eisdiele eintragen</Title>
 
-        <div style={styles.group}>
+        <Group>
           <label>Name:</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={styles.input} />
-        </div>
+          <Input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+        </Group>
 
-        <div style={styles.group}>
+        <Group>
           <label>Adresse:</label>
-          <input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} style={styles.input} />
-        </div>
+          <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} />
+        </Group>
 
         <LocationPicker
-          latitude={latitude || userLatitude || 50.83}
-          longitude={longitude || userLongitude || 12.92}
+          latitude={ latitude || userLatitude || 50.83}
+          longitude={ longitude || userLongitude || 12.92}
           setLatitude={setLatitude}
           setLongitude={setLongitude}
         />
-        
-        <div style={styles.groupInline}>
-          <div style={styles.group}>
+
+        <GroupInline>
+          <Group>
             <label>Latitude:</label>
-            <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} style={styles.inputCoordinate} />
-          </div>
-          <div style={styles.group}>
+            <CoordinateInput
+              type="number"
+              step="0.000001"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+            />
+          </Group>
+          <Group>
             <label>Longitude:</label>
-            <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} style={styles.inputCoordinate} />
-          </div>
-        </div>
+            <CoordinateInput
+              type="number"
+              step="0.000001"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+            />
+          </Group>
+        </GroupInline>
 
-        <div style={styles.group}>
+        <Group>
           <label>Öffnungszeiten (optional):</label>
-          <textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} style={styles.textarea} />
-        </div>
+          <Textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+        </Group>
 
-        <div style={styles.group}>
+        <Group>
           <label>Komoot-Link (optional):</label>
-          <input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} style={styles.input} />
-        </div>
+          <Input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} />
+        </Group>
 
-        <div style={styles.buttonGroup}>
-          <button style={styles.submitButton} onClick={submit}>Einreichen</button>
-        </div>
+        <ButtonGroup>
+          <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+        </ButtonGroup>
 
-        {message && <p style={styles.message}>{message}</p>}
-      </div>
-    </div>
-  )
+        {message && <Message>{message}</Message>}
+      </Modal>
+    </Overlay>
+  );
 };
 
 export default SubmitIceShopModal;
 
-const styles = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: "1rem", // sorgt dafür, dass Modal nicht am Rand klebt
-    zIndex: 1000,
-    overflowY: "auto" // falls Inhalt größer als Viewport
-  },
-  modal: {
-    backgroundColor: "#fff",
-    padding: "1rem",
-    borderRadius: "16px",
-    width: "100%",
-    maxWidth: "450px",
-    maxHeight: "90vh", // begrenzt Höhe auf kleinen Screens
-    overflowY: "auto", // erlaubt Scrollen im Modal
-    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2)",
-    position: "relative",
-  },
-  title: {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    marginBottom: "0.5rem"
-  },
-  group: {
-    display: "flex",
-    flexDirection: "column",
-    marginBottom: "0.5rem"
-  },
-  groupInline: {
-    display: "flex",
-    gap: "1rem",
-    marginBottom: "0.5rem"
-  },
-  input: {
-    padding: "0.5rem",
-    fontSize: "1rem",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    marginTop: "0.25rem"
-  },
-  inputCoordinate: {
-    padding: "0.5rem",
-    fontSize: "1rem",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    marginTop: "0.25rem",
-    width: "90%"
-  },
-  textarea: {
-    padding: "0.5rem",
-    fontSize: "1rem",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    marginTop: "0.25rem",
-    resize: "vertical"
-  },
-  buttonGroup: {
-    display: "flex",
-    justifyContent: "center",
-    gap: "1rem",
-    marginTop: "0.5rem"
-  },
-  submitButton: {
-    backgroundColor: "#ffb522",
-    color: "white",
-    border: "none",
-    padding: "0.6rem 1.2rem",
-    borderRadius: "8px",
-    fontSize: "1rem",
-    cursor: "pointer"
-  },
-  closeX: {
-    position: "absolute",
-    top: "10px",
-    right: "10px",
-    background: "none",
-    border: "none",
-    fontSize: "1.5rem",
-    cursor: "pointer"
-  },
-  message: {
-    marginTop: "1rem",
-    fontStyle: "italic",
-    color: "#555"
-  }
-};
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+`;
+
+const Modal = styled.div`
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+`;
+
+const Title = styled.h2`
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+`;
+
+const Group = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+`;
+
+const GroupInline = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+`;
+
+const Input = styled.input`
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 0.25rem;
+`;
+
+const CoordinateInput = styled(Input)`
+  width: 90%;
+`;
+
+const Textarea = styled.textarea`
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 0.25rem;
+  resize: vertical;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+`;
+
+const SubmitButton = styled.button`
+  background-color: #ffb522;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+`;
+
+const CloseX = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+`;
+
+const Message = styled.p`
+  margin-top: 1rem;
+  font-style: italic;
+  color: #555;
+`;
