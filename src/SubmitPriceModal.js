@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from 'styled-components';
-const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm, refreshShops }) => {
+const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refreshShops }) => {
 
     const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
     const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null);
@@ -16,7 +16,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    shopId: shopId,
+                    shopId: shop.eisdiele.id,
                     userId: userId,
                     kugelPreis,
                     additionalInfoKugelPreis,
@@ -25,7 +25,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
                 })
             });
             console.log(JSON.stringify({
-                shopId: shopId,
+                shopId: shop.eisdiele.id,
                 userId: userId,
                 kugelPreis,
                 additionalInfoKugelPreis,
@@ -113,7 +113,7 @@ const SubmitPriceForm = ({ shop, shopId, userId, showPriceForm, setShowPriceForm
         </Overlay>) : null;
 };
 
-export default SubmitPriceForm;
+export default SubmitPriceModal;
 
 const Overlay = styled.div`
   position: fixed;
@@ -178,7 +178,7 @@ const TextArea = styled.textarea`
 const SubmitButton = styled.button`
   margin-top: 1.5rem;
   padding: 0.75rem 1.5rem;
-  background-color: #0077cc;
+  background-color: #ffb522;
   color: white;
   border: none;
   border-radius: 12px;
@@ -186,7 +186,7 @@ const SubmitButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background-color: #005fa3;
+    background-color: #ffcb4c;
   }
 `;
 

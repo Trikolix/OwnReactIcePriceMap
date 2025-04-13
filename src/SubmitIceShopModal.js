@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const SubmitIceShopForm = ({ showForm, setShowForm, userId, refreshShops }) => {
+const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops }) => {
     const [name, setName] = useState("");
     const [adresse, setAdresse] = useState("");
     const [latitude, setLatitude] = useState("");
@@ -88,7 +88,6 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId, refreshShops }) => {
       
             <div style={styles.buttonGroup}>
               <button style={styles.submitButton} onClick={submit}>Einreichen</button>
-              <button style={styles.closeButton} onClick={() => setShowForm(false)}>Schließen</button>
             </div>
       
             {message && <p style={styles.message}>{message}</p>}
@@ -97,7 +96,7 @@ const SubmitIceShopForm = ({ showForm, setShowForm, userId, refreshShops }) => {
     )
 };
 
-export default SubmitIceShopForm;
+export default SubmitIceShopModal;
 
 const styles = {
     overlay: {
@@ -157,16 +156,7 @@ const styles = {
       marginTop: "1.5rem"
     },
     submitButton: {
-      backgroundColor: "#007bff",
-      color: "white",
-      border: "none",
-      padding: "0.6rem 1.2rem",
-      borderRadius: "8px",
-      fontSize: "1rem",
-      cursor: "pointer"
-    },
-    closeButton: {
-      backgroundColor: "#f44336",
+      backgroundColor: "#ffb522",
       color: "white",
       border: "none",
       padding: "0.6rem 1.2rem",

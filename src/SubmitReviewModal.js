@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, refreshShops }) => {
+const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }) => {
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
     const [waffel, setWaffel] = useState(null);
@@ -14,7 +14,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
     useEffect(() => {
         const fetchReview = async () => {
             try {
-                const response = await fetch(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shopId}`);
+                const response = await fetch(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
                 const data = await response.json();
                 setAttribute(data.allAttributes.filter(attr => !data.attributes || !data.attributes.includes(attr)));
                 if (data.review) {
@@ -30,7 +30,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
             }
         };
         fetchReview();
-    }, [userId, shopId]);
+    }, [userId, shop.eisdiele.id]);
 
     const submit = async () => {
         try {
@@ -41,7 +41,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
                 },
                 body: JSON.stringify({
                     userId,
-                    shopId,
+                    shopId: shop.eisdiele.id,
                     geschmack,
                     kugelgroesse,
                     waffel,
@@ -87,7 +87,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
         <div style={styles.modalOverlay}>
             <div style={styles.modalContent}>
                 <button style={styles.closeButton} onClick={() => setShowForm(false)}>x</button>
-                <h2 style={styles.formTitle}>{shopName} bewerten</h2>
+                <h2 style={styles.formTitle}>{shop.eisdiele.name} bewerten</h2>
 
                 <div style={styles.gridForm}>
                     <label>Geschmack:</label>
@@ -140,7 +140,7 @@ const SubmitReviewForm = ({ showForm, setShowForm, userId, shopId, shopName, ref
     ) : null;
 };
 
-export default SubmitReviewForm;
+export default SubmitReviewModal;
 
 const styles = {
     modalOverlay: {
@@ -198,7 +198,7 @@ const styles = {
     },
     selectedAttributes: {
         padding: '4px 12px',
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#ffb522',
         color: 'white',
         borderRadius: '9999px',
         cursor: 'pointer',
@@ -224,14 +224,14 @@ const styles = {
     },
     addButton: {
         padding: '6px 12px',
-        backgroundColor: '#10b981',
+        backgroundColor: '#ffb522',
         color: 'white',
         border: 'none',
         borderRadius: '4px',
         cursor: 'pointer'
     },
     submitButton: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#ffb522',
         color: 'white',
         padding: '6px 12px',
         borderRadius: '4px',

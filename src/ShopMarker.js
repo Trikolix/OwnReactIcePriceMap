@@ -1,16 +1,13 @@
-import { use, useState } from "react";
+import { useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
-import SubmitPriceForm from "./SubmitPriceForm";
 import styled from 'styled-components';
-import SubmitReviewForm from "./SubmitReviewForm"
 import FavoritenButton from "./FavoritButton"
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, refreshShops }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, setActiveShop, setShowPriceForm, setShowReviewForm }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showPriceForm, setShowPriceForm] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  
 
   // Funktion zur Berechnung der Farbe basierend auf dem Preis
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
@@ -33,6 +30,9 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
   } else {
     backgroundColor = getColorBasedOnPrice(shopPrice, minPrice, maxPrice);
   }
+  if (selectedOption === "Geschmack") {
+    backgroundColor = getColorBasedOnPrice(shop.avg_geschmack, maxPrice, minPrice);
+  }
 
   let displayPrice;
   switch (true) {
@@ -50,6 +50,9 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       break;
     case selectedOption === "Rating" && plv !== null:
       displayPrice = `${Number(plv).toFixed(2)}`;
+      break;
+    case selectedOption === "Geschmack" && shop.avg_geschmack !== null:
+      displayPrice = `${Number(shop.avg_geschmack).toFixed(2)}`;
       break;
     default:
       displayPrice = '?';
@@ -72,7 +75,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
     } else if (diffInDays > 30) {
       const diffInMonths = Math.floor(diffInDays / 30);
       return `Vor ${diffInMonths} Monat${diffInMonths > 1 ? 'en' : ''}`;
-    } else if (diffInDays == 0)
+    } else if (diffInDays === 0)
       return 'Vor < 24 Stunden';
     else {
       return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
@@ -96,6 +99,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
       const data = await response.json();
       console.log(data);
       setShopDetails(data);
+      setActiveShop(data);
     } catch (error) {
       console.error("Fehler beim Laden der Daten:", error);
     } finally {
@@ -161,7 +165,10 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                     {shopDetails.attribute?.length > 0 && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                   </div>
                 )}
-                {isLoggedIn && (<button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>)}
+                {isLoggedIn && (<>
+                  <button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>
+                  </>
+                )}
                 {shopDetails?.eisdiele?.komoot && isLoggedIn && (
                   <>
                     <h3>Komoot</h3>
@@ -176,22 +183,6 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
           </div>
         </Popup>
       </Marker>
-      {showPriceForm && (<SubmitPriceForm
-        shop={shopDetails}
-        shopId={shop.eisdielen_id}
-        userId={userId}
-        showPriceForm={showPriceForm}
-        setShowPriceForm={setShowPriceForm}
-        refreshShops={refreshShops}
-      />)}
-      {isLoggedIn && showReviewForm && (<SubmitReviewForm
-        shopId={shop.eisdielen_id}
-        userId={userId}
-        showForm={showReviewForm}
-        setShowForm={setShowReviewForm}
-        shopName={shopDetails.eisdiele.name}
-        refreshShops={refreshShops}
-      />)}
     </>
   );
 };

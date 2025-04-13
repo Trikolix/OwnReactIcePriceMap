@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import throttle from 'lodash.throttle';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
@@ -7,7 +8,10 @@ import ShopMarker from "./ShopMarker";
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
-import SubmitIceShopForm from './SubmitIceShopForm';
+import SubmitIceShopModal from './SubmitIceShopModal';
+import SubmitPriceModal from './SubmitPriceModal';
+import SubmitReviewModal from './SubmitReviewModal';
+import LoginModal from './LoginModal';
 import Header from './Header';
 import FavoritenListe from './FavoritenListe';
 import DropdownSelect from './DropdownSelect';
@@ -15,17 +19,17 @@ import styled from 'styled-components';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
+  const [activeShop, setActiveShop] = useState(null);
   const cachedBounds = useRef([]);
   const [userPosition, setUserPosition] = useState(null);
   const [clustering, setClustering] = useState(true);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
-  const [message, setMessage] = useState('');
+  const [showPriceForm, setShowPriceForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [userId, setUserId] = useState(null);
   const [zeigeFavoriten, setZeigeFavoriten] = useState(false);
 
@@ -52,19 +56,21 @@ const IceCreamRadar = () => {
     console.log("refreshShops");
     const bounds = mapRef.current?.getBounds();
     if (!bounds) return;
-  
+
     try {
       const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);
       setIceCreamShops(data);
+      cachedBounds.current = [];
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
   };
-  
 
+
+  // Geoposition des Nutzers laden
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -90,6 +96,14 @@ const IceCreamRadar = () => {
 
   const MapEventHandler = () => {
     const map = useMap();
+
+    // useMemo, damit die throttled Funktion nicht bei jedem Render neu erstellt wird
+    const throttledFetch = useMemo(() => {
+      return throttle((bounds) => {
+        fetchIceCreamShops(bounds);
+      }, 1000); // 1000 ms = 1 Sekunde
+    }, []);
+
     useEffect(() => {
       const onMoveEnd = () => {
         const bounds = map.getBounds();
@@ -99,7 +113,7 @@ const IceCreamRadar = () => {
           minLon: bounds.getWest(),
           maxLon: bounds.getEast()
         };
-        fetchIceCreamShops(newBounds);
+        throttledFetch(newBounds);
       };
       map.on('moveend', onMoveEnd);
       return () => map.off('moveend', onMoveEnd);
@@ -117,44 +131,6 @@ const IceCreamRadar = () => {
     }
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      const response = await fetch('https://ice-app.4lima.de/backend/login.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username,
-          password
-        })
-      });
-
-      const data = await response.json();
-      console.log(data);
-      if (data.status === 'success') {
-        setUserId(data.userId);
-        console.log(userId);
-        setIsLoggedIn(true);
-        setMessage('Login erfolgreich!');
-
-        localStorage.setItem('userId', data.userId);
-
-        // Schließen Sie das Modal nach 2 Sekunden
-        setTimeout(() => {
-          setShowLoginModal(false);
-          setMessage('');
-          setPassword('');
-        }, 2000);
-      } else {
-        setMessage(`Login fehlgeschlagen: ${data.message}`);
-      }
-    } catch (error) {
-      console.error("Error during login:", error); // Debugging
-      setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
-    }
-  };
-
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('userId');
@@ -165,18 +141,16 @@ const IceCreamRadar = () => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
     if (selectedOption === "Rating") return shop.PLV !== null;
-    if (selectedOption === "Favoriten") {
-      console.log(shop);
-      console.log(shop.is_favorit == '1');
-      return shop.is_favorit == '1';
-    }
+    if (selectedOption === "Favoriten") return shop.is_favorit === 1;
+    if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
   const prices = (selectedOption === "Alle" || selectedOption === "Favoriten") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
     selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
       selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
-        selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) : null;
+        selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) :
+        selectedOption === "Geschmack" ? filteredShops.map(shop => shop.avg_geschmack).filter(avg_geschmack => avg_geschmack !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -191,14 +165,6 @@ const IceCreamRadar = () => {
     console.log("Ausgewählt:", selectedOption);
     setSelectedOption(selectedOption);
   };
-
-  const closeLoginForm = () => {
-    setShowLoginModal(false);
-    setMessage('');
-    setUsername('');
-    setPassword('');
-  };
-
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -217,7 +183,7 @@ const IceCreamRadar = () => {
         <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} setZeigeFavoriten={setZeigeFavoriten} />
       ) : <LogoContainer>
         <DropdownSelect
-          options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten"]}
+          options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten", "Geschmack"]}
           onChange={(selectedOption) => {
             console.log("Ausgewählt:", selectedOption);
             setSelectedOption(selectedOption);
@@ -258,6 +224,9 @@ const IceCreamRadar = () => {
                   plv={shop.PLV}
                   setIceCreamShops={setIceCreamShops}
                   refreshShops={refreshShops}
+                  setActiveShop={setActiveShop}
+                  setShowPriceForm={setShowPriceForm}
+                  setShowReviewForm={setShowReviewForm}
                 />
               );
             })}
@@ -276,6 +245,9 @@ const IceCreamRadar = () => {
                 plv={shop.PLV}
                 setIceCreamShops={setIceCreamShops}
                 refreshShops={refreshShops}
+                setActiveShop={setActiveShop}
+                setShowPriceForm={setShowPriceForm}
+                setShowReviewForm={setShowReviewForm}
               />
             );
           })
@@ -298,45 +270,37 @@ const IceCreamRadar = () => {
           </Marker>
         )}
       </MapContainer>
-      {showLoginModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ position: 'relative' }}>
-            <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
-            <h2>Login</h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault(); // Verhindert das Neuladen der Seite
-                handleLogin();
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Benutzername"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <input
-                type="password"
-                placeholder="Passwort"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              /><br />
-              <button type="submit">Login</button>
-            </form>
-            <p>{message}</p>
-            {isLoggedIn && <p>Willkommen zurück, {username}!</p>}
-            <button onClick={() => closeLoginForm()}>Schließen</button>
-          </div>
-        </div>
-      )}
+      {showLoginModal &&
+        <LoginModal
+          userId={userId}
+          isLoggedIn={isLoggedIn}
+          setUserId={setUserId}
+          setIsLoggedIn={setIsLoggedIn}
+          setShowLoginModal={setShowLoginModal}
+        />
+      }
       {showSubmitNewIceShop && (
-        <SubmitIceShopForm
+        <SubmitIceShopModal
           showForm={showSubmitNewIceShop}
           setShowForm={setShowSubmitNewIceShop}
           userId={userId}
           refreshShops={refreshShops}
         />
       )}
+      {showPriceForm && (<SubmitPriceModal
+        shop={activeShop}
+        userId={userId}
+        showPriceForm={showPriceForm}
+        setShowPriceForm={setShowPriceForm}
+        refreshShops={refreshShops}
+      />)}
+      {showReviewForm && (<SubmitReviewModal
+        shop={activeShop}
+        userId={userId}
+        showForm={showReviewForm}
+        setShowForm={setShowReviewForm}
+        refreshShops={refreshShops}
+      />)}
     </div>
   );
 };

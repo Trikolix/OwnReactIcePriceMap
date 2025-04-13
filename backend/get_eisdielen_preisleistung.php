@@ -1,25 +1,5 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-header('Access-Control-Allow-Origin: *');
-header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
-
-$host = "localhost";
-$dbname = "db_439770_2";
-$username = "USER439770_wed";
-$password = "K8RYTP23y8kWSdt";
-
-// Verbindung zur Datenbank
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
-} catch (PDOException $e) {
-    echo json_encode(["error" => "Datenbankverbindung fehlgeschlagen"]);
-    exit();
-}
 
 $sql = "SELECT 
     e.id AS eisdielen_id,
@@ -33,8 +13,8 @@ $sql = "SELECT
     -- Preis-Leistungs-Verhältnis (PLV) berechnen
     ROUND(
         1 + 4 * (
-            (3 * b.avg_geschmack + 2 * b.avg_kugelgroesse + 1 * b.avg_waffel) / 30
-            * (0.65 + 0.35 * ( ( SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) / p.preis ))
+            (0.7 * ((3 * b.avg_geschmack + b.avg_waffel) / 20))
+            + (0.3 * (3 * b.avg_kugelgroesse) / (10 * p.preis))
         ), 2
     ) AS PLV
 FROM eisdielen e
