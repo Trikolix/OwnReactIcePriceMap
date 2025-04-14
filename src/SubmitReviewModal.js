@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
 
-const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }) => {
+const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, setShowPriceForm }) => {
+    console.log(shop);
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
     const [waffel, setWaffel] = useState(null);
@@ -11,6 +12,9 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }
     const [attribute, setAttribute] = useState([]);
     const [selectedAttributes, setSelectedAttributes] = useState([]);
     const [neuesAttribut, setNeuesAttribut] = useState("");
+
+    const [submitted, setSubmitted] = useState(false);
+    const [preisfrage, setPreisfrage] = useState(false);
 
     useEffect(() => {
         const fetchReview = async () => {
@@ -55,13 +59,13 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
                 refreshShops();
+                setSubmitted(true);
+                setTimeout(() => {
+                    setPreisfrage(true);
+                }, 1000);
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }
-            setTimeout(() => {
-                setMessage("");
-                setShowForm(false);
-            }, 2000);
         } catch (error) {
             setMessage("Ein Fehler ist aufgetreten.");
         }
@@ -84,58 +88,116 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }
         }
     };
 
+    const openSubmitPriceForm = () => {
+        setShowForm(false);
+        setShowPriceForm(true);
+    };
+
+    const confirmPrice = async () => {
+        try {
+            const response = await fetch('https://ice-app.4lima.de/backend/submitPrice.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    shopId: shop.eisdiele.id,
+                    userId: userId,
+                    kugelPreis: shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null,
+                    additionalInfoKugelPreis: shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null,
+                    softeisPreis: shop.preise?.softeis?.preis ? shop.preise.softeis.preis : null,
+                    additionalInfoSofteisPreis: shop.preise?.softeis?.beschreibung ? shop.preise.softeis.beschreibung : null
+                })
+            });
+            const data = await response.json();
+            data.forEach(element => {
+                if (element.status === 'success') {
+                    refreshShops();
+                    setMessage('Preis erfolgreich bestätigt!');
+                    setTimeout(() => {
+                        setShowForm(false);
+                    }, 1000);
+                } else {
+                    setMessage(`Fehler beim Bestätigen vom Preis: ${element.message}`);
+                    return;
+                }
+            });
+        } catch (error) {
+
+        }
+    }
     return showForm ? (
         <ModalOverlay>
             <ModalContent>
                 <CloseButton onClick={() => setShowForm(false)}>x</CloseButton>
-                <FormTitle>{shop.eisdiele.name} bewerten</FormTitle>
+                {!submitted && (<>
+                    <FormTitle>{shop.eisdiele.name} bewerten</FormTitle>
 
-                <GridForm>
-                    <label>Geschmack:</label>
-                    <Input type="number" min="1.0" max="5.0" step="0.1" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
+                    <GridForm>
+                        <label>Geschmack:</label>
+                        <Input type="number" min="1.0" max="5.0" step="0.1" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
 
-                    <label>Kugelgröße:</label>
-                    <Input type="number" min="1.0" max="5.0" step="0.1" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
+                        <label>Kugelgröße:</label>
+                        <Input type="number" min="1.0" max="5.0" step="0.1" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
 
-                    <label>Waffel:</label>
-                    <Input type="number" min="1.0" max="5.0" step="0.1" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
+                        <label>Waffel:</label>
+                        <Input type="number" min="1.0" max="5.0" step="0.1" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
 
-                    <label>Auswahl:</label>
-                    <Input type="number" min="1" step="1" value={auswahl || ''} onChange={(e) => setAuswahl(parseInt(e.target.value))} />
-                </GridForm>
+                        <label>Auswahl:</label>
+                        <Input type="number" min="1" step="1" value={auswahl || ''} onChange={(e) => setAuswahl(parseInt(e.target.value))} />
+                    </GridForm>
 
-                <TextAreaGroup>
-                    <label>Beschreibung:</label>
-                    <TextArea rows="7" value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} />
-                </TextAreaGroup>
+                    <TextAreaGroup>
+                        <label>Beschreibung:</label>
+                        <TextArea rows="7" value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} />
+                    </TextAreaGroup>
 
-                <AttributeSection>
-                    <BoldText>Ausgewählte Attribute:</BoldText>
-                    <FlexWrap>
-                        {selectedAttributes.map((attr) => (
-                            <SelectedAttr key={attr} onClick={() => handleAttributeRemove(attr)}>
-                                {attr} ×
-                            </SelectedAttr>
-                        ))}
-                    </FlexWrap>
-                    <BoldText>Verfügbare Attribute:</BoldText>
-                    <FlexWrap>
-                        {attribute.map((attr) => (
-                            <AvailableAttr key={attr} onClick={() => handleAttributeSelect(attr)}>
-                                {attr}
-                            </AvailableAttr>
-                        ))}
-                    </FlexWrap>
-                    <AddAttributeRow>
-                        <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
-                        <SubmitButton onClick={handleNewAttribute}>Hinzufügen</SubmitButton>
-                    </AddAttributeRow>
-                </AttributeSection>
+                    <AttributeSection>
+                        <BoldText>Ausgewählte Attribute:</BoldText>
+                        <FlexWrap>
+                            {selectedAttributes.map((attr) => (
+                                <SelectedAttr key={attr} onClick={() => handleAttributeRemove(attr)}>
+                                    {attr} ×
+                                </SelectedAttr>
+                            ))}
+                        </FlexWrap>
+                        <BoldText>Verfügbare Attribute:</BoldText>
+                        <FlexWrap>
+                            {attribute.map((attr) => (
+                                <AvailableAttr key={attr} onClick={() => handleAttributeSelect(attr)}>
+                                    {attr}
+                                </AvailableAttr>
+                            ))}
+                        </FlexWrap>
+                        <AddAttributeRow>
+                            <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
+                            <SubmitButton onClick={handleNewAttribute}>Hinzufügen</SubmitButton>
+                        </AddAttributeRow>
+                    </AttributeSection>
 
-                <ButtonGroup>
-                    <SubmitButton onClick={submit}>Einreichen</SubmitButton>
-                </ButtonGroup>
-                <Message>{message}</Message>
+                    <ButtonGroup>
+                        <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                    </ButtonGroup>
+                </>)}
+                {(submitted && !preisfrage) ? (
+                    <Message>Vielen Dank für dein Review!</Message>
+                ) : (<Message>{message}</Message>)}
+
+                {preisfrage && (
+                    <>
+                        <Text>Stimmt der Preis von <strong>{shop.eisdiele.name}</strong> noch?</Text>
+                        <p>
+                            Kugelpreis: <strong>{shop.preise?.kugel?.preis ?? "keine Meldung"} €</strong><br />
+                            Softeispreis: <strong>{shop.preise?.softeis?.preis ?? "keine Meldung"} €</strong>
+                        </p>
+                        <ButtonGroup>
+                            {(shop.preise?.kugel?.preis || shop.preise?.softeis?.preis) && (
+                                <SubmitButton onClick={confirmPrice}>Stimmt noch</SubmitButton>)}
+                            <SubmitButton onClick={() => openSubmitPriceForm()}>Änderung vorschlagen</SubmitButton>
+                            <SubmitButton onClick={() => setShowForm(false)}>Schließen</SubmitButton>
+                        </ButtonGroup>
+                    </>
+                )}
             </ModalContent>
         </ModalOverlay>
     ) : null;
@@ -250,6 +312,7 @@ const SubmitButton = styled.button`
     background-color: #ffb522;
     color: white;
     padding: 6px 12px;
+    margin: 0px 3px 0px 3px;
     border-radius: 4px;
     border: none;
     cursor: pointer;
@@ -273,4 +336,9 @@ const AttributeSection = styled.div`
 const Message = styled.p`
     margin-top: 1rem;
     text-align: center;
+`;
+
+const Text = styled.p`
+    font-size: 1.1rem;
+    margin-top: 1rem;
 `;

@@ -251,6 +251,7 @@ const IceCreamRadar = () => {
                 setActiveShop={setActiveShop}
                 setShowPriceForm={setShowPriceForm}
                 setShowReviewForm={setShowReviewForm}
+                setShowCheckinForm={setShowCheckinForm}
               />
             );
           })
@@ -305,6 +306,7 @@ const IceCreamRadar = () => {
         showForm={showReviewForm}
         setShowForm={setShowReviewForm}
         refreshShops={refreshShops}
+        setShowPriceForm={setShowPriceForm}
       />)}
       {showCheckinForm && (<CheckinFrom
         shop={activeShop}

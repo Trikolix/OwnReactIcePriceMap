@@ -106,8 +106,9 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
                         onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)}
                     />
                 </Label>
-
-                <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                <ButtonGroup>
+                    <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                </ButtonGroup>
                 <Message>{message}</Message>
             </Modal>
         </Overlay>) : null;
@@ -173,6 +174,10 @@ const TextArea = styled.textarea`
   margin-top: 0.5rem;
   border-radius: 8px;
   border: 1px solid #ccc;
+`;
+
+const ButtonGroup = styled.div`
+    text-align: center;
 `;
 
 const SubmitButton = styled.button`
