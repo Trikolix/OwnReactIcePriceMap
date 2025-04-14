@@ -4,7 +4,7 @@ import L from "leaflet";
 import styled from 'styled-components';
 import FavoritenButton from "./FavoritButton"
 
-const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, setActiveShop, setShowPriceForm, setShowReviewForm }) => {
+const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, setActiveShop, setShowPriceForm, setShowReviewForm, setShowCheckinForm }) => {
   const [shopDetails, setShopDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   
@@ -167,6 +167,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                 )}
                 {isLoggedIn && (<>
                   <button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>
+                  <button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</button>
                   </>
                 )}
                 {shopDetails?.eisdiele?.komoot && isLoggedIn && (

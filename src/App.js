@@ -12,6 +12,7 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 import LoginModal from './LoginModal';
+import CheckinFrom from './CheckinForm';
 import Header from './Header';
 import FavoritenListe from './FavoritenListe';
 import DropdownSelect from './DropdownSelect';
@@ -30,6 +31,7 @@ const IceCreamRadar = () => {
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [userId, setUserId] = useState(null);
   const [zeigeFavoriten, setZeigeFavoriten] = useState(false);
 
@@ -214,7 +216,7 @@ const IceCreamRadar = () => {
             {filteredShops.map((shop) => {
               return (
                 <ShopMarker
-                  key={shop.id}
+                  key={shop.eisdielen_id}
                   shop={shop}
                   selectedOption={selectedOption}
                   minPrice={minPrice}
@@ -227,6 +229,7 @@ const IceCreamRadar = () => {
                   setActiveShop={setActiveShop}
                   setShowPriceForm={setShowPriceForm}
                   setShowReviewForm={setShowReviewForm}
+                  setShowCheckinForm={setShowCheckinForm}
                 />
               );
             })}
@@ -302,6 +305,12 @@ const IceCreamRadar = () => {
         showForm={showReviewForm}
         setShowForm={setShowReviewForm}
         refreshShops={refreshShops}
+      />)}
+      {showCheckinForm && (<CheckinFrom
+        shop={activeShop}
+        userId={userId}
+        showCheckinForm={showCheckinForm}
+        setShowCheckinForm={setShowCheckinForm}
       />)}
     </div>
   );

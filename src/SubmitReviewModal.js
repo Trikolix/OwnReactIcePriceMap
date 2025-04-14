@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import styled from "styled-components";
 
 const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }) => {
     const [geschmack, setGeschmack] = useState(null);
@@ -23,7 +24,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }
                     setWaffel(data.review.waffel);
                     setAuswahl(data.review.auswahl);
                     setBeschreibung(data.review.beschreibung);
-                    setSelectedAttributes(data.attributes);                    
+                    setSelectedAttributes(data.attributes);
                 }
             } catch (error) {
                 console.error("Fehler beim Abrufen der Bewertung", error);
@@ -84,174 +85,192 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops }
     };
 
     return showForm ? (
-        <div style={styles.modalOverlay}>
-            <div style={styles.modalContent}>
-                <button style={styles.closeButton} onClick={() => setShowForm(false)}>x</button>
-                <h2 style={styles.formTitle}>{shop.eisdiele.name} bewerten</h2>
+        <ModalOverlay>
+            <ModalContent>
+                <CloseButton onClick={() => setShowForm(false)}>x</CloseButton>
+                <FormTitle>{shop.eisdiele.name} bewerten</FormTitle>
 
-                <div style={styles.gridForm}>
+                <GridForm>
                     <label>Geschmack:</label>
-                    <input type="number" min="1.0" max="5.0" step="0.1" style={styles.input} value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
+                    <Input type="number" min="1.0" max="5.0" step="0.1" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
 
                     <label>Kugelgröße:</label>
-                    <input type="number" min="1.0" max="5.0" step="0.1" style={styles.input} value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
+                    <Input type="number" min="1.0" max="5.0" step="0.1" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
 
                     <label>Waffel:</label>
-                    <input type="number" min="1.0" max="5.0" step="0.1" style={styles.input} value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
+                    <Input type="number" min="1.0" max="5.0" step="0.1" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
 
                     <label>Auswahl:</label>
-                    <input type="number" min="1" step="1" style={styles.input} value={auswahl || ''} onChange={(e) => setAuswahl(parseInt(e.target.value))} />
-                </div>
+                    <Input type="number" min="1" step="1" value={auswahl || ''} onChange={(e) => setAuswahl(parseInt(e.target.value))} />
+                </GridForm>
 
-                <div style={styles.textAreaGroup}>
+                <TextAreaGroup>
                     <label>Beschreibung:</label>
-                    <textarea rows="7" cols="35" style={styles.input} value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} />
-                </div>
+                    <TextArea rows="7" value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} />
+                </TextAreaGroup>
 
-                <div style={styles.attributeSection}>
-                    <p style={styles.boldText}>Ausgewählte Attribute:</p>
-                    <div style={styles.flexWrap}>
+                <AttributeSection>
+                    <BoldText>Ausgewählte Attribute:</BoldText>
+                    <FlexWrap>
                         {selectedAttributes.map((attr) => (
-                            <span key={attr} style={styles.selectedAttributes} onClick={() => handleAttributeRemove(attr)}>
+                            <SelectedAttr key={attr} onClick={() => handleAttributeRemove(attr)}>
                                 {attr} ×
-                            </span>
+                            </SelectedAttr>
                         ))}
-                    </div>
-                    <p style={styles.boldText}>Verfügbare Attribute:</p>
-                    <div style={styles.flexWrap}>
+                    </FlexWrap>
+                    <BoldText>Verfügbare Attribute:</BoldText>
+                    <FlexWrap>
                         {attribute.map((attr) => (
-                            <span key={attr} style={styles.notSelectedAttributes} onClick={() => handleAttributeSelect(attr)}>
+                            <AvailableAttr key={attr} onClick={() => handleAttributeSelect(attr)}>
                                 {attr}
-                            </span>
+                            </AvailableAttr>
                         ))}
-                    </div>
-                    <div style={styles.addAttributeRow}>
-                        <input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" style={styles.input} />
-                        <button onClick={handleNewAttribute} style={styles.submitButton}>Hinzufügen</button>
-                    </div>
-                </div>
+                    </FlexWrap>
+                    <AddAttributeRow>
+                        <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
+                        <SubmitButton onClick={handleNewAttribute}>Hinzufügen</SubmitButton>
+                    </AddAttributeRow>
+                </AttributeSection>
 
-                <div style={styles.buttonGroup}>
-                    <button onClick={submit} style={styles.submitButton}>Einreichen</button>
-                </div>
-                <p style={styles.message}>{message}</p>
-            </div>
-        </div>
+                <ButtonGroup>
+                    <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                </ButtonGroup>
+                <Message>{message}</Message>
+            </ModalContent>
+        </ModalOverlay>
     ) : null;
 };
 
 export default SubmitReviewModal;
 
-const styles = {
-    modalOverlay: {
-        position: 'fixed',
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-    },
-    modalContent: {
-        backgroundColor: 'white',
-        padding: '24px',
-        borderRadius: '8px',
-        width: '90%',
-        maxWidth: '600px',
-        position: 'relative',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-    },
-    closeButton: {
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        background: 'none',
-        border: 'none',
-        fontSize: '1.2rem',
-        cursor: 'pointer',
-        outlineStyle: 'none'
-    },
-    formTitle: {
-        fontSize: '1.5rem',
-        marginBottom: '1rem'
-    },
-    gridForm: {
-        display: 'grid',
-        gridTemplateColumns: '150px 1fr',
-        gap: '8px 16px',
-        marginBottom: '1rem',
-        alignItems: 'center'
-    },
-    textAreaGroup: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        marginBottom: '1rem'
-    },
-    input: {
-        border: '1px solid #e5e7eb',
-        padding: '6px',
-        borderRadius: '4px',
-        fontSize: '1rem',
-        width: '100%',
-        boxSizing: 'border-box'
-    },
-    selectedAttributes: {
-        padding: '4px 12px',
-        backgroundColor: '#ffb522',
-        color: 'white',
-        borderRadius: '9999px',
-        cursor: 'pointer',
-        display: 'inline-block'
-    },
-    notSelectedAttributes: {
-        padding: '4px 12px',
-        backgroundColor: '#d1d5db',
-        borderRadius: '9999px',
-        cursor: 'pointer',
-        display: 'inline-block'
-    },
-    flexWrap: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '8px',
-        marginBottom: '8px'
-    },
-    addAttributeRow: {
-        display: 'flex',
-        gap: '8px',
-        marginTop: '8px'
-    },
-    addButton: {
-        padding: '6px 12px',
-        backgroundColor: '#ffb522',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer'
-    },
-    submitButton: {
-        backgroundColor: '#ffb522',
-        color: 'white',
-        padding: '6px 12px',
-        borderRadius: '4px',
-        border: 'none',
-        cursor: 'pointer'
-    },
-    buttonGroup: {
-        marginTop: '1rem',
-        textAlign: 'center'
-    },
-    boldText: {
-        fontWeight: '600',
-        marginTop: '1rem',
-        marginBottom: '0.5rem'
-    },
-    attributeSection: {
-        marginBottom: '1rem'
-    },
-    message: {
-        marginTop: '1rem',
-        textAlign: 'center'
-    }
-};
+// --- Styled Components ---
+
+const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 450px;
+    max-height: 100vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    position: relative;
+`;
+
+const CloseButton = styled.button`
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    outline: none;
+`;
+
+const FormTitle = styled.h2`
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+`;
+
+const GridForm = styled.div`
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 8px 16px;
+    margin-bottom: 1rem;
+    align-items: center;
+`;
+
+const TextAreaGroup = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 1rem;
+`;
+
+const Input = styled.input`
+    border: 1px solid #e5e7eb;
+    padding: 6px;
+    border-radius: 4px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+const TextArea = styled.textarea`
+    border: 1px solid #e5e7eb;
+    padding: 6px;
+    border-radius: 4px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+const SelectedAttr = styled.span`
+    padding: 4px 12px;
+    background-color: #ffb522;
+    color: white;
+    border-radius: 9999px;
+    cursor: pointer;
+    display: inline-block;
+`;
+
+const AvailableAttr = styled.span`
+    padding: 4px 12px;
+    background-color: #d1d5db;
+    border-radius: 9999px;
+    cursor: pointer;
+    display: inline-block;
+`;
+
+const FlexWrap = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+`;
+
+const AddAttributeRow = styled.div`
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+`;
+
+const SubmitButton = styled.button`
+    background-color: #ffb522;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+`;
+
+const ButtonGroup = styled.div`
+    margin-top: 1rem;
+    text-align: center;
+`;
+
+const BoldText = styled.p`
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+`;
+
+const AttributeSection = styled.div`
+    margin-bottom: 1rem;
+`;
+
+const Message = styled.p`
+    margin-top: 1rem;
+    text-align: center;
+`;

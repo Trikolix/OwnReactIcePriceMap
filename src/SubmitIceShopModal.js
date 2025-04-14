@@ -135,7 +135,7 @@ const Modal = styled.div`
   border-radius: 16px;
   width: 100%;
   max-width: 450px;
-  max-height: 90vh;
+  max-height: 100vh;
   overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   position: relative;
