@@ -1,4 +1,4 @@
-import { React, useState, useEffect, useRef, useMemo} from 'react';
+import { React, useState, useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import throttle from 'lodash.throttle';
 import 'leaflet/dist/leaflet.css';
@@ -8,13 +8,11 @@ import ShopMarker from "./ShopMarker";
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
-import SubmitIceShopModal from './SubmitIceShopModal';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 import LoginModal from './LoginModal';
 import CheckinFrom from './CheckinForm';
 import Header from './Header';
-import FavoritenListe from './FavoritenListe';
 import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
@@ -23,17 +21,14 @@ const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
   const [activeShop, setActiveShop] = useState(null);
   const cachedBounds = useRef([]);
-  const [userPosition, setUserPosition] = useState(null);
   const [clustering, setClustering] = useState(true);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
-  const { userId, isLoggedIn, login, logout } = useUser();
-  const [zeigeFavoriten, setZeigeFavoriten] = useState(false);
+  const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
 
   const fetchIceCreamShops = async (bounds) => {
     if (cachedBounds.current.some(cached =>
@@ -123,20 +118,6 @@ const IceCreamRadar = () => {
     return null;
   };
 
-  // Prüft beim Laden der Seite, ob der User noch eingeloggt ist
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("userId");
-
-    if (storedUserId) {
-      login(storedUserId);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    localStorage.removeItem('userId');
-  };
-
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
@@ -151,7 +132,7 @@ const IceCreamRadar = () => {
     selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
       selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
         selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) :
-        selectedOption === "Geschmack" ? filteredShops.map(shop => shop.avg_geschmack).filter(avg_geschmack => avg_geschmack !== null) : null;
+          selectedOption === "Geschmack" ? filteredShops.map(shop => shop.avg_geschmack).filter(avg_geschmack => avg_geschmack !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -162,21 +143,28 @@ const IceCreamRadar = () => {
     }
   };
 
-  const handleToggleChange = (selectedOption) => {
-    console.log("Ausgewählt:", selectedOption);
-    setSelectedOption(selectedOption);
+  const InitialFetch = ({ onInitialFetch }) => {
+    const map = useMap();
+
+    useEffect(() => {
+      const bounds = map.getBounds();
+      onInitialFetch({
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLon: bounds.getWest(),
+        maxLon: bounds.getEast(),
+      });
+    }, [map]);
+
+    return null;
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header
-        setShowSubmitNewIceShop={setShowSubmitNewIceShop}
-        setShowLoginModal={setShowLoginModal}
-        setZeigeFavoriten={setZeigeFavoriten}
+        refreshShops={refreshShops}
       />
-      {zeigeFavoriten ? (
-        <FavoritenListe userId={userId} isLoggedIn={isLoggedIn} setZeigeFavoriten={setZeigeFavoriten} />
-      ) : <LogoContainer>
+      <LogoContainer>
         <DropdownSelect
           options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten", "Geschmack"]}
           onChange={(selectedOption) => {
@@ -188,9 +176,7 @@ const IceCreamRadar = () => {
         <YellowButton onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering: An' : 'Clustering: Aus'}
         </YellowButton>
-      </LogoContainer>}
-
-
+      </LogoContainer>
 
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
@@ -198,6 +184,8 @@ const IceCreamRadar = () => {
         style={{ flex: 1, width: '100%' }}
         ref={mapRef}
       >
+
+        <InitialFetch onInitialFetch={fetchIceCreamShops} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -275,16 +263,6 @@ const IceCreamRadar = () => {
           setShowLoginModal={setShowLoginModal}
         />
       }
-      {showSubmitNewIceShop && (
-        <SubmitIceShopModal
-          showForm={showSubmitNewIceShop}
-          setShowForm={setShowSubmitNewIceShop}
-          userId={userId}
-          refreshShops={refreshShops}
-          userLatitude={userPosition ? userPosition[0] : 50.83 }
-          userLongitude={userPosition ? userPosition[1] : 12.92 }
-        />
-      )}
       {showPriceForm && (<SubmitPriceModal
         shop={activeShop}
         userId={userId}

@@ -7,6 +7,7 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userPosition, setUserPosition] = useState(null);
 
   // Beim Laden schauen, ob userId schon gespeichert ist
   useEffect(() => {
@@ -32,7 +33,7 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ userId, isLoggedIn, login, logout }}>
+    <UserContext.Provider value={{ userId, isLoggedIn, userPosition, login, logout, setUserPosition }}>
       {children}
     </UserContext.Provider>
   );

@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
+import LoginModal from './LoginModal';
+import SubmitIceShopModal from './SubmitIceShopModal';
 
-const Header = ({setShowSubmitNewIceShop, setShowLoginModal, setZeigeFavoriten }) => {
+const Header = (refreshShops) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const { userId, isLoggedIn, login, logout } = useUser();
+  const { userId, isLoggedIn, userPosition, login, logout, setUserPosition } = useUser();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -30,33 +34,53 @@ const Header = ({setShowSubmitNewIceShop, setShowLoginModal, setZeigeFavoriten }
   }, [menuOpen]);
 
   return (
-    <HeaderContainer>
-      <LogoContainer>
-        <Logo src={require('./header_wide.png')} alt="Website Logo" />
-      </LogoContainer>
-      
-      <BurgerMenu onClick={toggleMenu}>
-        <span />
-        <span />
-        <span />
-      </BurgerMenu>
-      {menuOpen && (
-        <Menu ref={menuRef}>
-          <MenuItem href="/">Eis-Karte</MenuItem>
-          <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
-          {isLoggedIn ? (
-            <>
-              <MenuItem href="/dashboard">Dashboard</MenuItem>
-              <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
-              <MenuItem href="/favoriten">Favoriten anzeigen</MenuItem>
-              <MenuItem onClick={logout}>Ausloggen</MenuItem>
-            </>
-          ) : (
-            <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
-          )}
-        </Menu>
+    <>
+      <HeaderContainer>
+        <LogoContainer>
+          <a href="https://ice-app.4lima.de/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
+        </LogoContainer>
+
+        <BurgerMenu onClick={toggleMenu}>
+          <span />
+          <span />
+          <span />
+        </BurgerMenu>
+        {menuOpen && (
+          <Menu ref={menuRef}>
+            <MenuItem href="/">Eis-Karte</MenuItem>
+            <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
+            {isLoggedIn ? (
+              <>
+                <MenuItem href="/dashboard">Dashboard</MenuItem>
+                <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
+                <MenuItem href="/favoriten">Favoriten anzeigen</MenuItem>
+                <MenuItem onClick={logout}>Ausloggen</MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
+            )}
+          </Menu>
+        )}
+      </HeaderContainer>
+      {showLoginModal &&
+        <LoginModal
+          userId={userId}
+          isLoggedIn={isLoggedIn}
+          login={login}
+          setShowLoginModal={setShowLoginModal}
+        />
+      }
+      {showSubmitNewIceShop && (
+        <SubmitIceShopModal
+          showForm={showSubmitNewIceShop}
+          setShowForm={setShowSubmitNewIceShop}
+          userId={userId}
+          refreshShops={refreshShops}
+          userLatitude={userPosition ? userPosition[0] : 50.83}
+          userLongitude={userPosition ? userPosition[1] : 12.92}
+        />
       )}
-    </HeaderContainer>
+    </>
   );
 };
 

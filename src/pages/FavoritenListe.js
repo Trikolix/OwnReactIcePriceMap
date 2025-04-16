@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import Header from "./Header";
-import { useUser } from "./context/UserContext";
+import Header from "../Header";
+import { useUser } from "../context/UserContext";
 
-function FavoritenListe(setZeigeFavoriten) {
+function FavoritenListe() {
   const [favoriten, setFavoriten] = useState([]);
-  const { userId, isLoggedIn, login, logout } = useUser();
-  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { userId, isLoggedIn } = useUser();
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -28,13 +26,8 @@ function FavoritenListe(setZeigeFavoriten) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-      <Header
-        setShowSubmitNewIceShop={setShowSubmitNewIceShop}
-        setShowLoginModal={setShowLoginModal}
-        setZeigeFavoriten={setZeigeFavoriten}
-      />
+      <Header/>
       <Container>
-        <BackButton href='/'>← Zurück zur Karte</BackButton>
         <Title>Deine Lieblings-Eisdielen 🍦</Title>
         {!isLoggedIn ? (
           <p>Bitte melde dich an, um deine Favoriten zu sehen.</p>
@@ -60,24 +53,10 @@ function FavoritenListe(setZeigeFavoriten) {
 export default FavoritenListe;
 
 
-const BackButton = styled.a`
-  background-color: #e0e0e0;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #cfcfcf;
-  }
-`;
-
 const Container = styled.div`
   padding: 1rem;
   background-color: white;
+  height: 100vh;
 `;
 
 const Title = styled.h2`
@@ -95,13 +74,15 @@ const List = styled.ul`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  align-items: center;
 `;
 
 const ListItem = styled.li`
   padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   background-color: white;
+  width: 80vw;
 `;
 
 const ShopName = styled.h3`
