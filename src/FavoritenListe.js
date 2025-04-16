@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import Header from "./Header";
+import { useUser } from "./context/UserContext";
 
-function FavoritenListe({ userId, isLoggedIn, setZeigeFavoriten }) {
+function FavoritenListe(setZeigeFavoriten) {
   const [favoriten, setFavoriten] = useState([]);
+  const { userId, isLoggedIn, login, logout } = useUser();
+  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -18,33 +23,44 @@ function FavoritenListe({ userId, isLoggedIn, setZeigeFavoriten }) {
   }, [userId, isLoggedIn]);
 
   if (!isLoggedIn) {
-    return <p>Bitte melde dich an, um deine Favoriten zu sehen.</p>;
+    return;
   }
 
   return (
-    <Container>
-      <BackButton onClick={() => setZeigeFavoriten(false)}>← Zurück zur Karte</BackButton>
-      <Title>Deine Lieblings-Eisdielen 🍦</Title>
-      {favoriten.length === 0 ? (
-        <Message>Du hast noch keine Favoriten gespeichert.</Message>
-      ) : (
-        <List>
-          {favoriten.map((eisdiele) => (
-            <ListItem key={eisdiele.id}>
-              <ShopName>{eisdiele.name}</ShopName>
-              <Address>{eisdiele.adresse}</Address>
-            </ListItem>
-          ))}
-        </List>
-      )}
-    </Container>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+      <Header
+        setShowSubmitNewIceShop={setShowSubmitNewIceShop}
+        setShowLoginModal={setShowLoginModal}
+        setZeigeFavoriten={setZeigeFavoriten}
+      />
+      <Container>
+        <BackButton href='/'>← Zurück zur Karte</BackButton>
+        <Title>Deine Lieblings-Eisdielen 🍦</Title>
+        {!isLoggedIn ? (
+          <p>Bitte melde dich an, um deine Favoriten zu sehen.</p>
+        ) : (
+          favoriten.length === 0 ? (
+            <Message>Du hast noch keine Favoriten gespeichert.</Message>
+          ) : (
+            <List>
+              {favoriten.map((eisdiele) => (
+                <ListItem key={eisdiele.id}>
+                  <ShopName>{eisdiele.name}</ShopName>
+                  <Address>{eisdiele.adresse}</Address>
+                </ListItem>
+              ))}
+            </List>
+          )
+        )}
+      </Container>
+    </div>
   );
 }
 
 export default FavoritenListe;
 
 
-const BackButton = styled.button`
+const BackButton = styled.a`
   background-color: #e0e0e0;
   border: none;
   border-radius: 8px;

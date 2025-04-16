@@ -1,9 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useUser } from './context/UserContext';
 
-const LoginModal = ({ userId, isLoggedIn, setUserId, setIsLoggedIn, setShowLoginModal }) => {
+const LoginModal = ({ setShowLoginModal }) => {
     const [message, setMessage] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const { userId, isLoggedIn, login, logout } = useUser();
 
     const handleLogin = async () => {
         try {
@@ -21,9 +23,8 @@ const LoginModal = ({ userId, isLoggedIn, setUserId, setIsLoggedIn, setShowLogin
           const data = await response.json();
           console.log(data);
           if (data.status === 'success') {
-            setUserId(data.userId);
+            login(data.userId);
             console.log(userId);
-            setIsLoggedIn(true);
             setMessage('Login erfolgreich!');
     
             localStorage.setItem('userId', data.userId);

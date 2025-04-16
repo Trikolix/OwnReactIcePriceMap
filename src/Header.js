@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { useUser } from './context/UserContext';
 
-const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, setZeigeFavoriten }) => {
+const Header = ({setShowSubmitNewIceShop, setShowLoginModal, setZeigeFavoriten }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const { userId, isLoggedIn, login, logout } = useUser();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -40,12 +42,14 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
       </BurgerMenu>
       {menuOpen && (
         <Menu ref={menuRef}>
+          <MenuItem href="/">Eis-Karte</MenuItem>
           <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
           {isLoggedIn ? (
             <>
+              <MenuItem href="/dashboard">Dashboard</MenuItem>
               <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
-              <MenuItem onClick={() => setZeigeFavoriten(true)}>Favoriten anzeigen</MenuItem>
-              <MenuItem onClick={onLogout}>Ausloggen</MenuItem>
+              <MenuItem href="/favoriten">Favoriten anzeigen</MenuItem>
+              <MenuItem onClick={logout}>Ausloggen</MenuItem>
             </>
           ) : (
             <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
