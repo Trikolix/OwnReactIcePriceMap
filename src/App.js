@@ -4,7 +4,7 @@ import { UserProvider } from './context/UserContext';
 import IceCreamRadar from './IceCreamRadar';
 import DashBoard from './pages/DashBoard';
 import Ranking from './pages/Ranking';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
 
 const App = () => {

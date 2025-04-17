@@ -5,7 +5,7 @@ const LoginModal = ({ setShowLoginModal }) => {
     const [message, setMessage] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const { userId, isLoggedIn, login, logout } = useUser();
+    const { userId, isLoggedIn, login } = useUser();
 
     const handleLogin = async () => {
         try {

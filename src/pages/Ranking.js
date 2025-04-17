@@ -8,16 +8,19 @@ function Ranking() {
     const [sortConfig, setSortConfig] = useState({ key: 'PLV', direction: 'descending' });
     const [openDetails, setOpenDetails] = useState(null);
 
-    useEffect(async () => {
-        try {
-        const query = `https://ice-app.4lima.de/backend/get_ranking.php`;
-        const response = await fetch(query);
-        const data = await response.json();
-        console.log(data);
-        setEisdielen(data);
-        } catch (error) {
-        console.error('Fehler beim Abrufen der Eisdielen:', error);
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const query = `https://ice-app.4lima.de/backend/get_ranking.php`;
+                const response = await fetch(query);
+                const data = await response.json();
+                console.log(data);
+                setEisdielen(data);
+            } catch (error) {
+                console.error('Fehler beim Abrufen der Eisdielen:', error);
+            }
         }
+        fetchData();
     }, []);
 
     const sortedData = [...eisdielen].sort((a, b) => {

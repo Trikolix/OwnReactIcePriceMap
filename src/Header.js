@@ -3,11 +3,12 @@ import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
+import { Link } from 'react-router-dom';
 
 const Header = (refreshShops) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const { userId, isLoggedIn, userPosition, login, logout, setUserPosition } = useUser();
+  const { userId, isLoggedIn, userPosition, login, logout } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
 
@@ -47,13 +48,13 @@ const Header = (refreshShops) => {
         </BurgerMenu>
         {menuOpen && (
           <Menu ref={menuRef}>
-            <MenuItem href="/">Eis-Karte</MenuItem>
+            <MenuItemLink to="/">Eis-Karte</MenuItemLink>
             <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
             {isLoggedIn ? (
               <>
-                <MenuItem href="/dashboard">Dashboard</MenuItem>
+                <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
                 <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
-                <MenuItem href="/favoriten">Favoriten anzeigen</MenuItem>
+                <MenuItemLink to="/favoriten">Favoriten anzeigen</MenuItemLink>
                 <MenuItem onClick={logout}>Ausloggen</MenuItem>
               </>
             ) : (
@@ -133,6 +134,19 @@ const Menu = styled.nav`
 `;
 
 const MenuItem = styled.a`
+  display: block;
+  padding: 10px;
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+
+  &:hover {
+    background:rgb(206, 137, 0);
+    color: white;
+  }
+`;
+
+const MenuItemLink = styled(Link)`
   display: block;
   padding: 10px;
   color: white;
