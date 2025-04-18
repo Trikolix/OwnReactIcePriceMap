@@ -38,7 +38,7 @@ const Header = (refreshShops) => {
     <>
       <HeaderContainer>
         <LogoContainer>
-          <a href="https://ice-app.4lima.de/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
+          <a href="/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
         </LogoContainer>
 
         <BurgerMenu onClick={toggleMenu}>

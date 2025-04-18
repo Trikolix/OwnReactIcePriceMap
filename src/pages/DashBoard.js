@@ -1,6 +1,7 @@
 import Header from './../Header';
 import React, { useState, useEffect } from 'react';
 import styled from "styled-components";
+import Rating from './../components/Rating';
 
 function DashBoard() {
   const [data, setData] = useState({
@@ -10,6 +11,7 @@ function DashBoard() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
 
   useEffect(() => {
@@ -21,12 +23,26 @@ function DashBoard() {
       })
       .catch((err) => {
         console.error("Fehler beim Laden der Dashboard-Daten:", err);
+        setError(err);
         setLoading(false);
       });
   }, []);
 
 
-  if (loading) return <p>Lade Dashboard-Daten…</p>;
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+      <Header />
+      <Title>Dashboard</Title>
+      <Container>Lade Dashboard Daten...</Container>
+    </div >
+  );
+  if (error !== null) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+      <Header />
+      <Title>Dashboard</Title>
+      <Container>Fehler beim Abruf der Daten</Container>
+    </div >
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -34,61 +50,61 @@ function DashBoard() {
       <Title>Dashboard</Title>
       <Container>
         <Section>
-        <Title>Durchschnittlicher Eispreis pro Landkreis</Title>
-        <Table>
-          <thead>
-            <tr>
-              <Th>Landkreis</Th>
-              <Th>Anzahl Eisdielen</Th>
-              <Th>Ø Kugelpreis (€)</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.pricePerLandkreis.map((entry) => (
-              <tr key={entry.landkreis_id}>
-                <Td>{entry.landkreis_name} (<em>{entry.bundesland_name}</em>)</Td>
-                <Td>{entry.anzahl_eisdielen}</Td>
-                <Td>{entry.durchschnittlicher_kugelpreis} €</Td>
+          <Title>Durchschnittlicher Eispreis pro Landkreis</Title>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Landkreis</Th>
+                <Th>Anzahl Eisdielen</Th>
+                <Th>Ø Kugelpreis (€)</Th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Section>
+            </thead>
+            <tbody>
+              {data.pricePerLandkreis.map((entry) => (
+                <tr key={entry.landkreis_id}>
+                  <Td>{entry.landkreis_name} (<em>{entry.bundesland_name}</em>)</Td>
+                  <Td>{entry.anzahl_eisdielen}</Td>
+                  <Td>{entry.durchschnittlicher_kugelpreis} €</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Section>
 
         <Section>
-        <Title>Neueste Bewertungen</Title>
-        {data.reviews.map((review) => (
-          <Card key={review.id}>
-            <strong>{review.nutzer_name}</strong> hat <strong>{review.eisdiele_name}</strong> bewertet. <em><small>am {new Date(review.erstellt_am).toLocaleDateString()}</small></em><br />
-            Geschmack: <strong>{review.geschmack} / 5</strong> ⭐<br />
-            Größe: <strong>{review.kugelgroesse} / 5</strong> ⭐<br />
-            Waffel: <strong>{review.waffel} / 5</strong> ⭐<br />
-            Auswahl: ~<strong>{review.auswahl}</strong> Sorten<br />
-            <p>{review.beschreibung}</p>
-            <small>Attribute: {review.bewertung_attribute.join(", ")}</small>
-          </Card>
-        ))}
-      </Section>
+          <Title>Neueste Bewertungen</Title>
+          {data.reviews.map((review) => (
+            <Card key={review.id}>
+              <strong>{review.nutzer_name}</strong> hat <strong>{review.eisdiele_name}</strong> bewertet. <em><small>(vom {new Date(review.erstellt_am).toLocaleDateString()})</small></em><br />
+              Geschmack: {review.geschmack === null ? (<>-</>) : (<><Rating stars={review.geschmack} /><strong>{review.geschmack}</strong></>)}<br />
+              Größe:  {review.kugelgroesse === null ? (<>-</>) : (<><Rating stars={review.kugelgroesse} /><strong>{review.kugelgroesse}</strong></>)}<br />
+              Waffel:  {review.waffel === null ? (<>-</>) : (<><Rating stars={review.waffel} /><strong>{review.waffel}</strong></>)}<br />
+              Auswahl: ~<strong>{review.auswahl}</strong> Sorten<br />
+              <p>{review.beschreibung}</p>
+              <small>vergebene Attribute: {review.bewertung_attribute.join(", ")}</small>
+            </Card>
+          ))}
+        </Section>
 
-      <Section>
-        <Title>Neueste Check-ins</Title>
-        {data.checkins.map((checkin) => (
-          <Card key={checkin.id}>
-            <strong>{checkin.eisdiele_name}</strong> ({checkin.adresse})<br />
-            Check-in von <em>{checkin.nutzer_name}</em> am {new Date(checkin.datum).toLocaleDateString()}<br />
-            Typ: {checkin.typ}<br />
-            Geschmack: {checkin.geschmackbewertung}, Waffel: {checkin.waffelbewertung}, Größe: {checkin.größenbewertung}<br />
-            <p>{checkin.kommentar}</p>
-            <strong>Sorten:</strong>
-            <List>
-              {checkin.eissorten.map((sorte, index) => (
-                <li key={index}>{sorte}</li>
-              ))}
-            </List>
-            {checkin.bild_url && <Image src={`https://ice-app.4lima.de/${checkin.bild_url}`} alt="Checkin Bild" />}
-          </Card>
-        ))}
-      </Section>
+        <Section>
+          <Title>Neueste Check-ins</Title>
+          {data.checkins.map((checkin) => (
+            <Card key={checkin.id}>
+              <strong>{checkin.eisdiele_name}</strong> ({checkin.adresse})<br />
+              Check-in von <em>{checkin.nutzer_name}</em> am {new Date(checkin.datum).toLocaleDateString()}<br />
+              Typ: {checkin.typ}<br />
+              Geschmack: {checkin.geschmackbewertung}, Waffel: {checkin.waffelbewertung}, Größe: {checkin.größenbewertung}<br />
+              <p>{checkin.kommentar}</p>
+              <strong>Sorten:</strong>
+              <List>
+                {checkin.eissorten.map((sorte, index) => (
+                  <li key={index}>{sorte}</li>
+                ))}
+              </List>
+              {checkin.bild_url && <Image src={`https://ice-app.4lima.de/${checkin.bild_url}`} alt="Checkin Bild" />}
+            </Card>
+          ))}
+        </Section>
       </Container>
     </div>
   )
