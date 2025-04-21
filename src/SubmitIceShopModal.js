@@ -2,7 +2,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import LocationPicker from "./components/LocationPicker";
 
-const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude = null, userLongitude = null}) => {
+const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude = null, userLongitude = null }) => {
   const [name, setName] = useState("");
   const [adresse, setAdresse] = useState("");
   const [latitude, setLatitude] = useState("");
@@ -10,9 +10,11 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
   const [openingHours, setOpeningHours] = useState("");
   const [komoot, setKomoot] = useState("");
   const [message, setMessage] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const submit = async () => {
     try {
+      console.log("refreshShops:", refreshShops, typeof refreshShops);
       const response = await fetch("https://ice-app.4lima.de/backend/submitIceShop.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,20 +31,22 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
       const data = await response.json();
       if (data.status === "success") {
         setMessage("Eisdiele erfolgreich hinzugefügt!");
+        setSubmitted(true);
         refreshShops();
-      } else {
-        setMessage(`Fehler: ${data.message}`);
-      }
-      setTimeout(() => {
-        setMessage("");
-        setShowForm(false);
         setName("");
         setAdresse("");
         setLatitude("");
         setLongitude("");
         setOpeningHours("{}");
         setKomoot("");
-      }, 2000);
+        setTimeout(() => {
+          setMessage("");
+          setShowForm(false);
+        }, 2000);
+      } else {
+        setMessage(`Fehler: ${data.message}`);
+      }
+
     } catch (error) {
       setMessage("Ein Fehler ist aufgetreten.");
       console.log(error);
@@ -54,58 +58,62 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
       <Modal>
         <CloseX onClick={() => setShowForm(false)}>×</CloseX>
         <Title>Neue Eisdiele eintragen</Title>
-
-        <Group>
-          <label>Name:</label>
-          <Input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-        </Group>
-
-        <Group>
-          <label>Adresse:</label>
-          <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} />
-        </Group>
-
-        <LocationPicker
-          latitude={ latitude || userLatitude || 50.83}
-          longitude={ longitude || userLongitude || 12.92}
-          setLatitude={setLatitude}
-          setLongitude={setLongitude}
-        />
-
-        <GroupInline>
+        {!submitted && (<form onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}>
           <Group>
-            <label>Latitude:</label>
-            <CoordinateInput
-              type="number"
-              step="0.000001"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-            />
+            <label>Name:</label>
+            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} />
           </Group>
+
           <Group>
-            <label>Longitude:</label>
-            <CoordinateInput
-              type="number"
-              step="0.000001"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-            />
+            <label>Adresse:</label>
+            <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} />
           </Group>
-        </GroupInline>
 
-        <Group>
-          <label>Öffnungszeiten (optional):</label>
-          <Textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
-        </Group>
+          <LocationPicker
+            latitude={latitude || userLatitude || 50.83}
+            longitude={longitude || userLongitude || 12.92}
+            setLatitude={setLatitude}
+            setLongitude={setLongitude}
+          />
 
-        <Group>
-          <label>Komoot-Link (optional):</label>
-          <Input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} />
-        </Group>
+          <GroupInline>
+            <Group>
+              <label>Latitude:</label>
+              <CoordinateInput
+                type="number"
+                step="0.000001"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+              />
+            </Group>
+            <Group>
+              <label>Longitude:</label>
+              <CoordinateInput
+                type="number"
+                step="0.000001"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+              />
+            </Group>
+          </GroupInline>
 
-        <ButtonGroup>
-          <SubmitButton onClick={submit}>Einreichen</SubmitButton>
-        </ButtonGroup>
+          <Group>
+            <label>Öffnungszeiten (optional):</label>
+            <Textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+          </Group>
+
+          <Group>
+            <label>Komoot-Link (optional):</label>
+            <Input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} />
+          </Group>
+
+          <ButtonGroup>
+            <SubmitButton type="submit">Einreichen</SubmitButton>
+          </ButtonGroup>
+        </form> )}
 
         {message && <Message>{message}</Message>}
       </Modal>

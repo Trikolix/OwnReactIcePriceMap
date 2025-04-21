@@ -4,19 +4,22 @@ require_once 'db_connect.php';
 $sql = "SELECT 
     e.id AS eisdielen_id,
     e.name AS eisdielen_name,
+    e.adresse,
+    e.openingHours,
     b.avg_geschmack,
     b.avg_kugelgroesse,
     b.avg_waffel,
     b.avg_auswahl,
     p.preis AS aktueller_preis,
-    (SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) AS min_preis,
     -- Preis-Leistungs-Verhältnis (PLV) berechnen
     ROUND(
         1 + 4 * (
             (0.7 * ((3 * b.avg_geschmack + b.avg_waffel) / 20))
             + (0.3 * (3 * b.avg_kugelgroesse) / (10 * p.preis))
         ), 2
-    ) AS PLV
+    ) AS PLV,
+    ((3 * b.avg_geschmack + b.avg_waffel) / 20) AS geschmacks_faktor,
+    ((3 * b.avg_kugelgroesse) / (10 * p.preis)) AS preisleistungs_faktor
 FROM eisdielen e
 -- Durchschnittliche Bewertungen pro Eisdiele berechnen
 JOIN (

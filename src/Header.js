@@ -5,7 +5,7 @@ import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link } from 'react-router-dom';
 
-const Header = (refreshShops) => {
+const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const { userId, isLoggedIn, userPosition, login, logout } = useUser();
@@ -49,7 +49,7 @@ const Header = (refreshShops) => {
         {menuOpen && (
           <Menu ref={menuRef}>
             <MenuItemLink to="/">Eis-Karte</MenuItemLink>
-            <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
+            <MenuItemLink to="/ranking">Eisdielen Ranking</MenuItemLink>
             {isLoggedIn ? (
               <>
                 <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>

@@ -11,6 +11,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
     const [message, setMessage] = useState('');
+    const [submitted, setSubmitted] = useState(false);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -46,13 +47,13 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             console.log(data);
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
+                setSubmitted(true);
+                setTimeout(() => {
+                    setShowCheckinForm(false);
+                }, 2000);
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }
-            setTimeout(() => {
-                setMessage("");
-                setShowCheckinForm(false);
-            }, 2000);
         } catch (error) {
             setMessage(`Ein Fehler ist aufgetreten: ${error}`);
         }
@@ -62,7 +63,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
         <Overlay>
             <Modal>
                 <CloseButton onClick={() => setShowCheckinForm(false)}>×</CloseButton>
-                <Form onSubmit={submit}>
+                {!submitted && (<Form onSubmit={submit}>
                     <Heading>Eis-Checkin für {shop.eisdiele.name}</Heading>
                     <Section>
                         <Label>Eistyp</Label>
@@ -166,8 +167,9 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
                     <ButtonGroup>
                         <Button type="submit">Check-in</Button>
                     </ButtonGroup>
-                    <Message>{message}</Message>
-                </Form>
+                    
+                </Form>) }
+                <Message>{message}</Message>
             </Modal>
         </Overlay>) : null
     );
