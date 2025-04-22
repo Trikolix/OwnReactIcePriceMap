@@ -14,6 +14,7 @@ function FavoritenListe() {
       .then((res) => res.json())
       .then((data) => {
         setFavoriten(data);
+        console.log(data);
       })
       .catch((err) => {
         console.error("Fehler beim Laden der Favoriten:", err);
@@ -26,7 +27,7 @@ function FavoritenListe() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-      <Header/>
+      <Header />
       <Container>
         <Title>Deine Lieblings-Eisdielen 🍦</Title>
         {!isLoggedIn ? (
@@ -39,7 +40,9 @@ function FavoritenListe() {
               {favoriten.map((eisdiele) => (
                 <ListItem key={eisdiele.id}>
                   <ShopName>{eisdiele.name}</ShopName>
-                  <Address>{eisdiele.adresse}</Address>
+                  <Paragraph><strong>Adresse:</strong> {eisdiele.adresse}</Paragraph>
+                  <Paragraph><strong>Öffnungszeiten:</strong><br /> {eisdiele.openingHours.split(";").map((part, index) => (<div key={index}>{part.trim()}</div>))}</Paragraph>
+                  <Paragraph>Am {new Date(eisdiele.favorit_seit).toLocaleString()} zu den Favoriten hinzugefügt.</Paragraph>
                 </ListItem>
               ))}
             </List>
@@ -83,13 +86,16 @@ const ListItem = styled.li`
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   background-color: white;
   width: 80vw;
+  max-width: 600px;
 `;
 
 const ShopName = styled.h3`
   font-size: 1.125rem;
   font-weight: bold;
+  margin-top: 0px;
+  margin-bottom: 0.5rem;
 `;
 
-const Address = styled.p`
+const Paragraph = styled.p`
   margin: 0.5rem 0 0;
 `;

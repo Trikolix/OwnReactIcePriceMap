@@ -68,14 +68,30 @@ const Ranking = () => {
                         <thead>
                             <tr>
                                 <th>Eisdiele</th>
-                                <th onClick={() => sortTable('avg_geschmack')}>Geschmack</th>
-                                <th onClick={() => sortTable('avg_kugelgroesse')}>Größe</th>
-                                <th onClick={() => sortTable('avg_waffel')}>Waffel</th>
-                                <th onClick={() => sortTable('avg_auswahl')}>Anzahl Sorten</th>
-                                <th onClick={() => sortTable('aktueller_preis')}>Preis (€)</th>
-                                <th onClick={() => sortTable('PLV')}>Preis-Leistung</th>
-                                <th onClick={() => sortTable('geschmacks_faktor')}>Faktor Geschmack</th>
-                                <th onClick={() => sortTable('preisleistungs_faktor')}>Faktor Preis-Leistung</th>
+                                <th onClick={() => sortTable('avg_geschmack')}>
+                                    Geschmack {sortConfig.key === 'avg_geschmack' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('avg_kugelgroesse')}>
+                                    Größe {sortConfig.key === 'avg_kugelgroesse' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('avg_waffel')}>
+                                    Waffel {sortConfig.key === 'avg_waffel' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('avg_auswahl')}>
+                                    Anzahl Sorten {sortConfig.key === 'avg_auswahl' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('aktueller_preis')}>
+                                    Preis (€) {sortConfig.key === 'aktueller_preis' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('PLV')}>
+                                    Rating {sortConfig.key === 'PLV' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('geschmacks_faktor')}>
+                                    Faktor Geschmack {sortConfig.key === 'geschmacks_faktor' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
+                                <th onClick={() => sortTable('preisleistungs_faktor')}>
+                                    Faktor Preis-Leistung {sortConfig.key === 'preisleistungs_faktor' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>

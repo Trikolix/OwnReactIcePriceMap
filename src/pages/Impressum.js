@@ -9,7 +9,7 @@ function Impressum() {
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'white' }}>
             <Header />
             <Container>
-            <Title>Impressum</Title>
+                <Title>Impressum</Title>
                 Angaben gemäß § 5 TMG
                 <p>
                     <SubTitle>Name und Anschrift des Anbieters:</SubTitle>
@@ -28,6 +28,10 @@ function Impressum() {
                     Christian Helbig <br />
                     Adresse wie oben
                 </p>
+                <Title>Hinweis auf User-generierte Inhalte</Title>
+                <p>Nutzer der App haben die Möglichkeit, Inhalte wie Bewertungen, Fotos und Eisdielen-Einträge eigenständig einzureichen.
+                    Diese Inhalte werden nicht vorab geprüft. Sollten Sie dennoch auf rechtswidrige Inhalte aufmerksam werden,
+                    bitten wir um eine kurze Nachricht an die oben genannte E-Mail-Adresse. Solche Inhalte werden bei Bekanntwerden umgehend entfernt.</p>
             </Container>
         </div>
     )

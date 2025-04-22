@@ -54,12 +54,13 @@ const Header = ({ refreshShops }) => {
               <>
                 <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
                 <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
-                <MenuItemLink to="/favoriten">Favoriten anzeigen</MenuItemLink>
+                <MenuItemLink to="/favoriten">Favoriten</MenuItemLink>
                 <MenuItem onClick={logout}>Ausloggen</MenuItem>
               </>
             ) : (
               <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
             )}
+            <MenuItemLink to="/impressum">Impressum</MenuItemLink>
           </Menu>
         )}
       </HeaderContainer>
