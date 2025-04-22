@@ -6,6 +6,7 @@ import DashBoard from './pages/DashBoard';
 import Ranking from './pages/Ranking';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
+import Impressum from './pages/Impressum';
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
           <Route path="/dashboard" element={<DashBoard />} />
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/favoriten" element={<FavoritenListe />} />
+          <Route path="/impressum" element={<Impressum />} />
         </Routes>
       </UserProvider>
     </Router>
