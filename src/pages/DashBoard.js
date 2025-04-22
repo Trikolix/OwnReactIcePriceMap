@@ -76,10 +76,10 @@ function DashBoard() {
           {data.reviews.map((review) => (
             <Card key={review.id}>
               <strong>{review.nutzer_name}</strong> hat <strong>{review.eisdiele_name}</strong> bewertet. <em><small>(vom {new Date(review.erstellt_am).toLocaleDateString()})</small></em><br />
-              Geschmack: {review.geschmack === null ? (<>-</>) : (<><Rating stars={review.geschmack} /><strong>{review.geschmack}</strong></>)}<br />
-              Größe:  {review.kugelgroesse === null ? (<>-</>) : (<><Rating stars={review.kugelgroesse} /><strong>{review.kugelgroesse}</strong></>)}<br />
-              Waffel:  {review.waffel === null ? (<>-</>) : (<><Rating stars={review.waffel} /><strong>{review.waffel}</strong></>)}<br />
-              Auswahl: ~<strong>{review.auswahl}</strong> Sorten<br />
+              {review.geschmack !== null && (<>Geschmack: <Rating stars={review.geschmack} /><strong>{review.geschmack}</strong><br /></>) }
+              {review.kugelgroesse !== null && (<>Größe: <Rating stars={review.kugelgroesse} /><strong>{review.kugelgroesse}</strong><br /></>) }
+              {review.waffel !== null && (<>Waffel: <Rating stars={review.waffel} /><strong>{review.waffel}</strong><br /></>) }
+              {review.auswahl !== null && (<>Auswahl: ~<strong>{review.auswahl}</strong> Sorten<br /></>)}
               <p>{review.beschreibung}</p>
               <small>vergebene Attribute: {review.bewertung_attribute.join(", ")}</small>
             </Card>
@@ -93,7 +93,9 @@ function DashBoard() {
               <strong>{checkin.eisdiele_name}</strong> ({checkin.adresse})<br />
               Check-in von <em>{checkin.nutzer_name}</em> am {new Date(checkin.datum).toLocaleDateString()}<br />
               Typ: {checkin.typ}<br />
-              Geschmack: {checkin.geschmackbewertung}, Waffel: {checkin.waffelbewertung}, Größe: {checkin.größenbewertung}<br />
+              Geschmack: <Rating stars={checkin.geschmackbewertung} /><strong>{checkin.geschmackbewertung}</strong><br />
+              Waffel: <Rating stars={checkin.waffelbewertung} /><strong>{checkin.waffelbewertung}</strong><br />
+              Größe: <Rating stars={checkin.größenbewertung} /><strong>{checkin.größenbewertung}</strong><br />
               <p>{checkin.kommentar}</p>
               <strong>Sorten:</strong>
               <List>

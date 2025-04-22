@@ -87,7 +87,7 @@ const IceCreamRadar = () => {
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
     if (mapRef.current && userPosition) {
-      mapRef.current.setView(userPosition, 10);
+      mapRef.current.setView(userPosition, 14);
     }
   }, [userPosition]);
 
@@ -180,7 +180,7 @@ const IceCreamRadar = () => {
 
       <MapContainer
         center={userPosition || [50.833707, 12.919187]}
-        zoom={10}
+        zoom={14}
         style={{ flex: 1, width: '100%' }}
         ref={mapRef}
       >
