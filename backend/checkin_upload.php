@@ -8,6 +8,9 @@ header('Content-Type: application/json; charset=utf-8');
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/evaluators/IceShopCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/PhotosCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/KugeleisCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/SofticeCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/SundaeCountEvaluator.php';
 
 // Preflight OPTIONS Request abfangen
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -69,9 +72,19 @@ $checkinId = $pdo->lastInsertId();
 // Evaluate Awards
 $evaluators = [
     new IceShopCountEvaluator(),
-    new PhotosCountEvaluator(),
     new CheckinCountEvaluator()
 ];
+
+if ($bild_url != null) $evaluators[] = new PhotosCountEvaluator();
+
+
+if ($type == "Kugel") {
+    $evaluators[] = new KugeleisCountEvaluator();
+} elseif ($type == "Softeis") {
+    $evaluators[] = new SofticeCountEvaluator();
+} elseif ($type == "Eisbecher") {
+    $evaluators[] = new SundaeCountEvaluator();
+}
 
 $newAwards = [];
 foreach ($evaluators as $evaluator) {

@@ -1,0 +1,187 @@
+import React, { useState } from "react";
+import styled from "styled-components";
+import Rating from "./Rating"; // ggf. Pfad anpassen
+
+const CheckinCard = ({ checkin }) => {
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+
+    return (
+        <>
+            <Card>
+                <ContentWrapper>
+                    <LeftContent>
+                        <strong>{checkin.nutzer_name}</strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
+                         bei <strong>{checkin.eisdiele_name}</strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
+
+                        <AttributeSection>
+                        <strong>Sorten:</strong>
+                            {checkin.eissorten.map((sorte, index) => (
+                                <AttributeBadge key={index}>{sorte}</AttributeBadge>
+                            ))}
+                        </AttributeSection>
+
+                        <Table>
+                            <tr>
+                                <th>Geschmack:</th>
+                                <td>
+                                    <Rating stars={checkin.geschmackbewertung} />{" "}
+                                    <strong>{checkin.geschmackbewertung}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Waffel:</th>
+                                <td>
+                                    <Rating stars={checkin.waffelbewertung} />{" "}
+                                    <strong>{checkin.waffelbewertung}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Größe:</th>
+                                <td>
+                                    <Rating stars={checkin.größenbewertung} />{" "}
+                                    <strong>{checkin.größenbewertung}</strong>
+                                </td>
+                            </tr>
+                        </Table>
+
+                        {checkin.kommentar && <p>{checkin.kommentar}</p>}
+                    </LeftContent>
+
+                    {checkin.bild_url && (
+                        <RightContent>
+                            <Thumbnail
+                                src={`https://ice-app.4lima.de/${checkin.bild_url}`}
+                                alt="Checkin Bild"
+                                onClick={() => setLightboxOpen(true)}
+                            />
+                        </RightContent>
+                    )}
+                </ContentWrapper>
+            </Card>
+
+            {lightboxOpen && (
+                <LightboxOverlay onClick={() => setLightboxOpen(false)}>
+                    <LightboxContent onClick={(e) => e.stopPropagation()}>
+                        <LightboxImage
+                            src={`https://ice-app.4lima.de/${checkin.bild_url}`}
+                            alt="Checkin Bild"
+                        />
+                        <LightboxTitle>
+                            {checkin.eisdiele_name} – {checkin.eissorten.join(", ")}
+                        </LightboxTitle>
+                    </LightboxContent>
+                </LightboxOverlay>
+            )}
+        </>
+    );
+};
+
+export default CheckinCard;
+
+// ---------- Styled Components ----------
+
+const Card = styled.div`
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+`;
+
+const ContentWrapper = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+`;
+
+const LeftContent = styled.div`
+  flex: 1 1 300px;
+  min-width: 250px;
+`;
+
+const RightContent = styled.div`
+  flex: 0 0 auto;
+`;
+
+const Table = styled.table`
+  border-spacing: 0.5rem 0.25rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+
+  th {
+    text-align: left;
+    vertical-align: top;
+    white-space: nowrap;
+    color: #555;
+    font-weight: normal;
+    padding-right: 0.5rem;
+  }
+
+  td {
+    vertical-align: top;
+  }
+`;
+
+const Thumbnail = styled.img`
+  max-width: 150px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const AttributeSection = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+const AttributeBadge = styled.span`
+  background-color: #e0f3ff;
+  color: #0077b6;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+`;
+
+const TypText = styled.em`
+  font-size: 0.85rem;
+  color: #777;
+`;
+
+
+// ---------- Lightbox ----------
+
+const LightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+`;
+
+const LightboxContent = styled.div`
+  max-width: 90%;
+  max-height: 90%;
+  text-align: center;
+`;
+
+const LightboxImage = styled.img`
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 8px;
+`;
+
+const LightboxTitle = styled.div`
+  color: white;
+  margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+`;
+
