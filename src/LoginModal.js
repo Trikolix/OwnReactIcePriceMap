@@ -23,11 +23,12 @@ const LoginModal = ({ setShowLoginModal }) => {
           const data = await response.json();
           console.log(data);
           if (data.status === 'success') {
-            login(data.userId);
+            login(data.userId, username);
             console.log(userId);
             setMessage('Login erfolgreich!');
     
             localStorage.setItem('userId', data.userId);
+            localStorage.setItem('username', username);
     
             // Schließen Sie das Modal nach 2 Sekunden
             setTimeout(() => {

@@ -39,7 +39,7 @@ class SofticeCountEvaluator extends BaseAwardEvaluator {
         global $pdo;
         $sql = "SELECT COUNT(id) AS checkins_count
                 FROM checkins
-                WHERE nutzer_id = ? AND type == 'Softeis'";
+                WHERE nutzer_id = ? AND typ = 'Softeis'";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 

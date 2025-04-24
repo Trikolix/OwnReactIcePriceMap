@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import Rating from "./Rating"; // ggf. Pfad anpassen
+import Rating from "./Rating";
+import { Link } from "react-router-dom";
 
 const CheckinCard = ({ checkin }) => {
     const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -10,7 +11,7 @@ const CheckinCard = ({ checkin }) => {
             <Card>
                 <ContentWrapper>
                     <LeftContent>
-                        <strong>{checkin.nutzer_name}</strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
+                        <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
                          bei <strong>{checkin.eisdiele_name}</strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
 
                         <AttributeSection>
@@ -67,7 +68,7 @@ const CheckinCard = ({ checkin }) => {
                             alt="Checkin Bild"
                         />
                         <LightboxTitle>
-                            {checkin.eisdiele_name} – {checkin.eissorten.join(", ")}
+                        {checkin.eissorten.join(", ")} Eis bei {checkin.eisdiele_name}
                         </LightboxTitle>
                     </LightboxContent>
                 </LightboxOverlay>
@@ -79,6 +80,11 @@ const CheckinCard = ({ checkin }) => {
 export default CheckinCard;
 
 // ---------- Styled Components ----------
+
+const CleanLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+`;
 
 const Card = styled.div`
   background: #f9f9f9;
