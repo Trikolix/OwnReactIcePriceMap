@@ -1,5 +1,5 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 // Funktion zum Senden / Aktualisieren der Preise
 function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis) {

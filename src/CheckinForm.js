@@ -12,6 +12,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [bild, setBild] = useState(null);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [awards, setAwards] = useState([]);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -48,9 +49,13 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
                 setSubmitted(true);
-                setTimeout(() => {
-                    setShowCheckinForm(false);
-                }, 2000);
+                if (data.new_awards && data.new_awards.length > 0) {
+                    setAwards(data.new_awards);
+                } else {
+                    setTimeout(() => {
+                        setShowCheckinForm(false);
+                    }, 2000);
+                }
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }
@@ -167,9 +172,22 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
                     <ButtonGroup>
                         <Button type="submit">Check-in</Button>
                     </ButtonGroup>
-                    
-                </Form>) }
+
+                </Form>)}
                 <Message>{message}</Message>
+                {awards.length > 0 && (
+                    <AwardsSection>
+                        <h3>Du hast neue Auszeichnungen erhalten:</h3>
+                        <ul>
+                            {awards.map((award, index) => (
+                                <AwardItem key={index}>
+                                    <AwardIcon src={`https://ice-app.4lima.de/${award.icon}`} alt="Award Icon" />
+                                    <AwardText>{award.message}</AwardText>
+                                </AwardItem>
+                            ))}
+                        </ul>
+                    </AwardsSection>
+                )}
             </Modal>
         </Overlay>) : null
     );
@@ -300,4 +318,25 @@ const Row = styled.div`
 const Message = styled.p`
   margin-top: 1rem;
   font-style: italic;
+`;
+
+const AwardsSection = styled.div`
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+`;
+
+const AwardItem = styled.li`
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+`;
+
+const AwardIcon = styled.img`
+  height: 100px;
+  margin-right: 0.75rem;
+`;
+
+const AwardText = styled.span`
+  font-size: 0.95rem;
 `;

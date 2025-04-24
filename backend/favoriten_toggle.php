@@ -1,5 +1,5 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 // Parameter aus der URL lesen
 $nutzerId = $_GET['nutzer_id'] ?? null;

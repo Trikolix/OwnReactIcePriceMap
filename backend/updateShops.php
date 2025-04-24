@@ -1,6 +1,6 @@
 <?php
 // DB-Verbindung herstellen
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 // Funktionen
 function getLocationDetailsFromCoords($lat, $lon) {

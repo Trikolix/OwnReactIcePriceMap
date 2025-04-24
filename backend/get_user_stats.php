@@ -1,5 +1,5 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 
