@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
-import Rating from "./Rating"; // ggf. Pfad anpassen
+import Rating from "./Rating";
+import { Link } from "react-router-dom";
 
 const ReviewCard = ({ review }) => {
   const formatDate = (dateString) =>
@@ -9,7 +10,7 @@ const ReviewCard = ({ review }) => {
   return (
     <Card>
       <Header>
-        <strong>{review.nutzer_name}</strong> hat{" "}
+        <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
         <strong>{review.eisdiele_name}</strong> bewertet.{" "}
         <DateText>(vom {formatDate(review.erstellt_am)})</DateText>
       </Header>
@@ -66,6 +67,11 @@ const ReviewCard = ({ review }) => {
 };
 
 export default ReviewCard;
+
+const CleanLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+`;
 
 const Card = styled.div`
   background: #f9f9f9;

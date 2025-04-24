@@ -6,11 +6,12 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
 require_once  __DIR__ . '/db_connect.php';
-require_once  __DIR__ . '/evaluators/IceShopCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/CountyCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/PhotosCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/KugeleisCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/SofticeCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/SundaeCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/CheckinCountEvaluator.php';
 
 // Preflight OPTIONS Request abfangen
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -71,7 +72,7 @@ $checkinId = $pdo->lastInsertId();
 
 // Evaluate Awards
 $evaluators = [
-    new IceShopCountEvaluator(),
+    new CountyCountEvaluator(),
     new CheckinCountEvaluator()
 ];
 
@@ -88,7 +89,10 @@ if ($type == "Kugel") {
 
 $newAwards = [];
 foreach ($evaluators as $evaluator) {
-    $newAwards = array_merge($newAwards, $evaluator->evaluate($userId));
+    $evaluated = $evaluator->evaluate($userId);
+    error_log(print_r($evaluator, true));
+    error_log(print_r($evaluated, true));
+    $newAwards = array_merge($newAwards, $evaluated);
 }
 
 // Falls Sorten mitgeschickt wurden: in eigene Tabelle einfügen

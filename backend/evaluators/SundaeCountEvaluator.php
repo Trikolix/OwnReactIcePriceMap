@@ -39,7 +39,7 @@ class SundaeCountEvaluator extends BaseAwardEvaluator {
         global $pdo;
         $sql = "SELECT COUNT(id) AS checkins_count
                 FROM checkins
-                WHERE nutzer_id = ? AND type == 'Eisbecher'";
+                WHERE nutzer_id = ? AND typ = 'Eisbecher'";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 
