@@ -1,5 +1,5 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 $latitude = (float) $_GET['latitude'];
 $longitude = (float) $_GET['longitude'];

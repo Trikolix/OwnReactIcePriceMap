@@ -18,6 +18,7 @@ function DashBoard() {
     fetch("https://ice-app.4lima.de/backend/dashboard.php")
       .then((res) => res.json())
       .then((json) => {
+        console.log(json);
         setData(json);
         setLoading(false);
       })

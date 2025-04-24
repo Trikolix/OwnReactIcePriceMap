@@ -5,7 +5,9 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/evaluators/IceShopCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/PhotosCountEvaluator.php';
 
 // Preflight OPTIONS Request abfangen
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -64,6 +66,18 @@ $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $komment
 
 $checkinId = $pdo->lastInsertId();
 
+// Evaluate Awards
+$evaluators = [
+    new IceShopCountEvaluator(),
+    new PhotosCountEvaluator(),
+    new CheckinCountEvaluator()
+];
+
+$newAwards = [];
+foreach ($evaluators as $evaluator) {
+    $newAwards = array_merge($newAwards, $evaluator->evaluate($userId));
+}
+
 // Falls Sorten mitgeschickt wurden: in eigene Tabelle einfügen
 if (is_array($sorten)) {
     $sorteStmt = $pdo->prepare("
@@ -77,5 +91,9 @@ if (is_array($sorten)) {
     }
 }
 
-echo json_encode(['status' => 'success', 'checkin_id' => $checkinId]);
+echo json_encode([
+    'status' => 'success',
+    'checkin_id' => $checkinId,
+    'new_awards' => $newAwards
+]);
 ?>
