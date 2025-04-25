@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { useUser } from './context/UserContext';
+import LoginModal from './LoginModal';
+import SubmitIceShopModal from './SubmitIceShopModal';
+import { Link } from 'react-router-dom';
 
-const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginModal, setZeigeFavoriten }) => {
+const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const { userId, isLoggedIn, userPosition, login, logout } = useUser();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -28,31 +35,54 @@ const Header = ({ isLoggedIn, onLogout, setShowSubmitNewIceShop, setShowLoginMod
   }, [menuOpen]);
 
   return (
-    <HeaderContainer>
-      <LogoContainer>
-        <Logo src={require('./header_wide.png')} alt="Website Logo" />
-      </LogoContainer>
-      
-      <BurgerMenu onClick={toggleMenu}>
-        <span />
-        <span />
-        <span />
-      </BurgerMenu>
-      {menuOpen && (
-        <Menu ref={menuRef}>
-          <MenuItem href="/ranking.php">Eisdielen Ranking</MenuItem>
-          {isLoggedIn ? (
-            <>
-              <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
-              <MenuItem onClick={() => setZeigeFavoriten(true)}>Favoriten anzeigen</MenuItem>
-              <MenuItem onClick={onLogout}>Ausloggen</MenuItem>
-            </>
-          ) : (
-            <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
-          )}
-        </Menu>
+    <>
+      <HeaderContainer>
+        <LogoContainer>
+          <a href="/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
+        </LogoContainer>
+
+        <BurgerMenu onClick={toggleMenu}>
+          <span />
+          <span />
+          <span />
+        </BurgerMenu>
+        {menuOpen && (
+          <Menu ref={menuRef}>
+            <MenuItemLink to="/">Eis-Karte</MenuItemLink>
+            <MenuItemLink to="/ranking">Eisdielen Ranking</MenuItemLink>
+            {isLoggedIn ? (
+              <>
+                <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
+                <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
+                <MenuItemLink to="/favoriten">Favoriten</MenuItemLink>
+                <MenuItem onClick={logout}>Ausloggen</MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
+            )}
+            <MenuItemLink to="/impressum">Impressum</MenuItemLink>
+          </Menu>
+        )}
+      </HeaderContainer>
+      {showLoginModal &&
+        <LoginModal
+          userId={userId}
+          isLoggedIn={isLoggedIn}
+          login={login}
+          setShowLoginModal={setShowLoginModal}
+        />
+      }
+      {showSubmitNewIceShop && (
+        <SubmitIceShopModal
+          showForm={showSubmitNewIceShop}
+          setShowForm={setShowSubmitNewIceShop}
+          userId={userId}
+          refreshShops={refreshShops}
+          userLatitude={userPosition ? userPosition[0] : 50.83}
+          userLongitude={userPosition ? userPosition[1] : 12.92}
+        />
       )}
-    </HeaderContainer>
+    </>
   );
 };
 
@@ -105,6 +135,19 @@ const Menu = styled.nav`
 `;
 
 const MenuItem = styled.a`
+  display: block;
+  padding: 10px;
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+
+  &:hover {
+    background:rgb(206, 137, 0);
+    color: white;
+  }
+`;
+
+const MenuItemLink = styled(Link)`
   display: block;
   padding: 10px;
   color: white;

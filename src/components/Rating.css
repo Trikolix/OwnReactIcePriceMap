@@ -1,0 +1,32 @@
+.star-rating {
+    display: inline-flex; /* Verwenden Sie inline-flex für eine bessere Kontrolle */
+    align-items: center; /* Zentrieren Sie die Sterne vertikal */
+    direction: ltr;
+    unicode-bidi: bidi-override;
+    font-size: 1.5em; /* Größe der Sterne anpassen */
+    vertical-align: middle; /* Stellen Sie sicher, dass die Sterne mittig ausgerichtet sind */
+}
+
+.star-container {
+    position: relative;
+    display: inline-block;
+    width: 1em; /* Breite eines Sterns */
+    margin-top: -40px;
+}
+
+.star {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #f8ce0b; /* Farbe der gefüllten Sterne */
+}
+
+.star.empty {
+    color: #ddd; /* Farbe der leeren Sterne */
+}
+
+.star.filled {
+    color: #f8ce0b; /* Farbe der gefüllten Sterne */
+}

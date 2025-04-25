@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 
-const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => {
+const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
-    const [gesamtbewertung, setGesamtbewertung] = useState(null);
-    const [waffelbewertung, setWaffelbewertung] = useState(null);
-    const [größenbewertung, setGrößenbewertung] = useState(null);
+    const [geschmackbewertung, setgeschmackbewertung] = useState("");
+    const [waffelbewertung, setWaffelbewertung] = useState("");
+    const [größenbewertung, setGrößenbewertung] = useState("");
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
     const [message, setMessage] = useState('');
+    const [submitted, setSubmitted] = useState(false);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -23,46 +24,46 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
         setSorten(sorten.filter((_, i) => i !== index));
     };
 
-    const submit = async () => {
+    const submit = async (e) => {
+        e.preventDefault();
         try {
+            const formData = new FormData();
+            formData.append("userId", userId);
+            formData.append("shopId", shop.eisdiele.id);
+            formData.append("type", type);
+            formData.append("geschmackbewertung", geschmackbewertung);
+            formData.append("waffelbewertung", waffelbewertung);
+            formData.append("größenbewertung", größenbewertung);
+            formData.append("kommentar", kommentar);
+            formData.append("bild", bild);
+            formData.append("sorten", JSON.stringify(sorten));
+
             const response = await fetch("https://ice-app.4lima.de/backend/checkin_upload.php", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    userId,
-                    shopId,
-                    type,
-                    sorten,
-                    gesamtbewertung: parseFloat(gesamtbewertung),
-                    waffelbewertung: parseFloat(waffelbewertung),
-                    größenbewertung: parseFloat(größenbewertung),
-                    kommentar,
-                    bild
-                })
+                body: formData
             });
+
             const data = await response.json();
             console.log(data);
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
+                setSubmitted(true);
+                setTimeout(() => {
+                    setShowCheckinForm(false);
+                }, 2000);
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }
-            setTimeout(() => {
-                setMessage("");
-                setShowCheckinForm(false);
-            }, 2000);
         } catch (error) {
-            setMessage("Ein Fehler ist aufgetreten.");
+            setMessage(`Ein Fehler ist aufgetreten: ${error}`);
         }
     };
 
-    return (
+    return (showCheckinForm ? (
         <Overlay>
             <Modal>
                 <CloseButton onClick={() => setShowCheckinForm(false)}>×</CloseButton>
-                <Form onSubmit={submit}>
+                {!submitted && (<Form onSubmit={submit}>
                     <Heading>Eis-Checkin für {shop.eisdiele.name}</Heading>
                     <Section>
                         <Label>Eistyp</Label>
@@ -117,20 +118,8 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
                             step="0.1"
                             min="1.0"
                             max="5.0"
-                            value={gesamtbewertung}
-                            onChange={(e) => setGesamtbewertung(e.target.value)}
-                        />
-                    </Section>
-
-                    <Section>
-                        <Label>Bwertung Waffel</Label>
-                        <Input
-                            type="number"
-                            step="0.1"
-                            min="1.0"
-                            max="5.0"
-                            value={waffelbewertung}
-                            onChange={(e) => setWaffelbewertung(e.target.value)}
+                            value={geschmackbewertung}
+                            onChange={(e) => setgeschmackbewertung(e.target.value)}
                         />
                     </Section>
 
@@ -143,6 +132,18 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
                             max="5.0"
                             value={größenbewertung}
                             onChange={(e) => setGrößenbewertung(e.target.value)}
+                        />
+                    </Section>
+
+                    <Section>
+                        <Label>Bewertung Waffel</Label>
+                        <Input
+                            type="number"
+                            step="0.1"
+                            min="1.0"
+                            max="5.0"
+                            value={waffelbewertung}
+                            onChange={(e) => setWaffelbewertung(e.target.value)}
                         />
                     </Section>
 
@@ -163,12 +164,14 @@ const CheckinForm = ({ shop, shopId, userId, onSubmit, setShowCheckinForm }) => 
                             onChange={(e) => setBild(e.target.files[0])}
                         />
                     </Section>
-
-                    <Button type="submit">Check-in</Button>
-                    <Message>{message}</Message>
-                </Form>
+                    <ButtonGroup>
+                        <Button type="submit">Check-in</Button>
+                    </ButtonGroup>
+                    
+                </Form>) }
+                <Message>{message}</Message>
             </Modal>
-        </Overlay>
+        </Overlay>) : null
     );
 };
 
@@ -185,13 +188,15 @@ const Overlay = styled.div`
 `;
 
 const Modal = styled.div`
-  background: white;
-  padding: 2rem;
+  background-color: #fff;
+  padding: 1rem;
   border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
+  width: 100%;
+  max-width: 450px;
+  max-height: 100vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 `;
 
 const CloseButton = styled.button`
@@ -212,7 +217,7 @@ const Form = styled.form`
 `;
 
 const Section = styled.div`
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 `;
 
 const Label = styled.label`
@@ -222,21 +227,21 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  width: 100%;
+  width: 95%;
   padding: 0.5rem;
   border-radius: 0.5rem;
   border: 1px solid #ccc;
 `;
 
 const Select = styled.select`
-  width: 100%;
+  width: 95%;
   padding: 0.5rem;
   border-radius: 0.5rem;
   border: 1px solid #ccc;
 `;
 
 const Textarea = styled.textarea`
-  width: 100%;
+  width: 95%;
   padding: 0.5rem;
   border-radius: 0.5rem;
   border: 1px solid #ccc;
@@ -254,6 +259,13 @@ const Button = styled.button`
   &:hover {
     background: #ffcb4c;
   }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
 `;
 
 const AddButton = styled.button`
