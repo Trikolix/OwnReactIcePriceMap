@@ -60,7 +60,6 @@ foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
 unset($review);
 
 // Latest Checkins
-
 $stmtCheckins = $pdo->prepare("
     SELECT c.*, 
            n.id AS nutzer_id,

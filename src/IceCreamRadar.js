@@ -16,6 +16,7 @@ import Header from './Header';
 import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
+import ShopDetailsView from './ShopDetailsView';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -28,6 +29,7 @@ const IceCreamRadar = () => {
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
+  const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
 
   const fetchIceCreamShops = async (bounds) => {
@@ -42,7 +44,6 @@ const IceCreamRadar = () => {
       const query = `https://ice-app.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
-      console.log(data);
       setIceCreamShops(data);
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
@@ -66,6 +67,17 @@ const IceCreamRadar = () => {
     }
   };
 
+  const fetchShopDetails = async (shop) => {
+    try {
+      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
+      const data = await response.json();
+      setActiveShop(data);
+      setShowDetailsView(false); // Reset the state to ensure re-rendering
+      setTimeout(() => setShowDetailsView(true), 0); // Reopen the view after resetting
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Shop-Details:', error);
+    }
+  };
 
   // Geoposition des Nutzers laden
   useEffect(() => {
@@ -122,9 +134,9 @@ const IceCreamRadar = () => {
   const filteredShops = iceCreamShops.filter(shop => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
-    // if (selectedOption === "Rating") return shop.PLV !== null;
+    if (selectedOption === "Rating") return shop.PLV !== null;
     if (selectedOption === "Favoriten") return shop.is_favorit === 1;
-    // if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
+    if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
@@ -211,6 +223,7 @@ const IceCreamRadar = () => {
                   setShowPriceForm={setShowPriceForm}
                   setShowReviewForm={setShowReviewForm}
                   setShowCheckinForm={setShowCheckinForm}
+                  fetchShopDetails={fetchShopDetails}
                 />
               );
             })}
@@ -233,6 +246,7 @@ const IceCreamRadar = () => {
                 setShowPriceForm={setShowPriceForm}
                 setShowReviewForm={setShowReviewForm}
                 setShowCheckinForm={setShowCheckinForm}
+                fetchShopDetails={fetchShopDetails}
               />
             );
           })
@@ -284,6 +298,15 @@ const IceCreamRadar = () => {
         showCheckinForm={showCheckinForm}
         setShowCheckinForm={setShowCheckinForm}
       />)}
+      {showDetailsView && (
+        <ShopDetailsView
+          shop={activeShop}
+          setShowPriceForm={setShowPriceForm}
+          setShowReviewForm={setShowReviewForm}
+          setShowCheckinForm={setShowCheckinForm}
+          onClose={() => setShowDetailsView(false)}
+        />
+      )}
     </div>
   );
 };
