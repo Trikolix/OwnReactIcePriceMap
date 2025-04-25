@@ -3,6 +3,7 @@ import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import styled from 'styled-components';
 import FavoritenButton from "./components/FavoritButton"
+import Rating from "./components/Rating";
 
 const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId, plv, setIceCreamShops, setActiveShop, setShowPriceForm, setShowReviewForm, setShowCheckinForm }) => {
   const [shopDetails, setShopDetails] = useState(null);
@@ -109,6 +110,13 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
 
   return (
     <>
+    <style>
+        {`
+          .star-container {
+            margin-top: -30px;
+          }
+        `}
+      </style>
       <Marker
         key={shop.id}
         position={[shop.latitude, shop.longitude]}
@@ -158,9 +166,9 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
                 {isLoggedIn && (<button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</button>)}
                 {shopDetails.bewertungen && (shopDetails.bewertungen.geschmack || shopDetails.bewertungen.auswahl || shopDetails.bewertungen.kugelgroesse) && (
                   <div><SubHeading>Bewertungen:</SubHeading>
-                    <div><b>Geschmack:</b> {shopDetails.bewertungen.geschmack ? shopDetails.bewertungen.geschmack : '-'} / 5</div>
-                    <div><b>Kugelgröße:</b> {shopDetails.bewertungen.kugelgroesse ? shopDetails.bewertungen.kugelgroesse : '-'} / 5</div>
-                    <div><b>Waffel:</b> {shopDetails.bewertungen.waffel ? shopDetails.bewertungen.waffel : '-'} / 5</div>
+                  {shopDetails.bewertungen.geschmack !== null && (<div><b>Geschmack:</b><Rating stars={shopDetails.bewertungen.geschmack} />{shopDetails.bewertungen.geschmack}</div>)}
+                  {shopDetails.bewertungen.kugelgroesse !== null && (<div><b>Kugelgröße:</b><Rating stars={shopDetails.bewertungen.kugelgroesse} />{shopDetails.bewertungen.kugelgroesse}</div>)}
+                  {shopDetails.bewertungen.waffel !== null && (<div><b>Waffel:</b><Rating stars={shopDetails.bewertungen.waffel} />{shopDetails.bewertungen.waffel}</div>)}
                     <div><b>Auswahl:</b> ~ {shopDetails.bewertungen.auswahl ? shopDetails.bewertungen.auswahl : '?'} Sorten</div>
                     {shopDetails.attribute?.length > 0 && <div><b>Nutzer loben besonders:</b> {shopDetails.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}</div>}
                   </div>
