@@ -84,7 +84,7 @@ if ($location) {
         
         $newAwards = [];
         foreach ($evaluators as $evaluator) {
-            $newAwards = array_merge($newAwards, $evaluator->evaluate($userId));
+            $newAwards = array_merge($newAwards, $evaluator->evaluate($data['userId']));
         }
         echo json_encode([
             "status" => "success",

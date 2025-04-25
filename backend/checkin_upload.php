@@ -12,6 +12,9 @@ require_once  __DIR__ . '/evaluators/KugeleisCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/SofticeCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/SundaeCountEvaluator.php';
 require_once  __DIR__ . '/evaluators/CheckinCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/BundeslandCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/FuerstPuecklerEvaluator.php';
+require_once  __DIR__ . '/evaluators/PerfectWeekEvaluator.php';
 
 // Preflight OPTIONS Request abfangen
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -73,11 +76,16 @@ $checkinId = $pdo->lastInsertId();
 // Evaluate Awards
 $evaluators = [
     new CountyCountEvaluator(),
-    new CheckinCountEvaluator()
+    new CheckinCountEvaluator(),
+    new BundeslandCountEvaluator(),
+    new PerfectWeekEvaluator()
 ];
 
 if ($bild_url != null) $evaluators[] = new PhotosCountEvaluator();
 
+if (is_array($sorten)) {
+    $evaluators[] = new FuerstPuecklerEvaluator();
+}
 
 if ($type == "Kugel") {
     $evaluators[] = new KugeleisCountEvaluator();

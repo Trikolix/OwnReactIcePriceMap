@@ -71,7 +71,7 @@ function UserSite() {
                     <StatsSection>
                         <StatBox>
                             <h2>{data.eisdielen_besucht}</h2>
-                            <p>besuchte Eisdielen</p>
+                            <p>verschiedene Eisdielen besucht</p>
                         </StatBox>
                         <StatBox>
                             <h2>{data.anzahl_checkins}</h2>
@@ -79,7 +79,7 @@ function UserSite() {
                         </StatBox>
                         <StatBox>
                             <h2>{(data.eisarten.Kugel + data.eisarten.Softeis) ? (data.eisarten.Kugel + data.eisarten.Softeis) : '0'}</h2>
-                            <p>Eis gegessen</p>
+                            <p>Portionen Eis gegessen</p>
                         </StatBox>
                     </StatsSection>
 

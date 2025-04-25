@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import './Rating.css'; // Stellen Sie sicher, dass Sie die CSS-Datei importieren
+import './Rating.css';
 
 const Rating = ({ stars }) => {
     const maxStars = 5;
