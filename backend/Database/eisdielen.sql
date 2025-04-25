@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 22. Apr 2025 um 12:24
--- Server-Version: 8.0.36-28
+-- Erstellungszeit: 27. Apr 2025 um 12:12
+-- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -29,8 +29,8 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `eisdielen` (
   `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `adresse` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `adresse` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `latitude` float(9,6) DEFAULT NULL,
   `longitude` float(9,6) DEFAULT NULL,
   `openingHours` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -145,7 +145,13 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `latitude`, `longitude`, `open
 (111, 'Klatt-Eis Eismanufaktur', 'Mittweidaer Str. 102, 09648 Mittweida', 51.000374, 12.899914, 'So: 13-18 Uhr', '', '2025-04-21 15:04:29', 1, 4, 3),
 (112, 'Eis-Pinguin', 'Puschkinstraße 4, 09112 Chemnitz', 50.830437, 12.900225, 'Coming soon', '', '2025-04-21 15:08:49', 1, 6, 3),
 (113, 'Eiscafé Caramello', 'Bahnhofstraße 2, 04651 Bad Lausick', 51.143497, 12.648633, 'Mo-So: 11-18 Uhr', '', '2025-04-22 05:43:44', 1, 9, 3),
-(114, ' Eisdiele Krause', 'Markt 2, 09306 Wechselburg', 51.004692, 12.773902, '', '', '2025-04-22 08:34:25', 1, 4, 3);
+(114, ' Eisdiele Krause', 'Markt 2, 09306 Wechselburg', 51.004692, 12.773902, '', '', '2025-04-22 08:34:25', 1, 4, 3),
+(115, 'Eisgarten an der Kaßbergauffahrt', 'Theaterstraße 60, 09111 Chemnitz', 50.833527, 12.915260, 'Montag - Sonntag 12.00 bis 18.00', '', '2025-04-22 11:09:10', 3, 6, 3),
+(116, 'Eiscafé Im Ratshof', 'Markt 1, 08371 Glauchau', 50.817062, 12.541419, 'Mo, Di, Do: 11-30-18 Uhr; Mi: 10-18 Uhr; Fr-So: 14-18 Uhr', '', '2025-04-24 06:21:54', 1, 5, 3),
+(117, 'Eiscafé Eis-Zapfen', 'Arthur-Bretschneider-Straße 13, 09113 Chemnitz', 50.844517, 12.901866, 'Mo-So: 13-18 Uhr', '', '2025-04-24 16:07:08', 1, 6, 3),
+(118, 'Eiscafé Sansi', 'Dammstraße 9, 03222 Lübbenau/Spreewald', 51.866680, 13.972628, 'Mo-So: 10:30-19 Uhr', '', '2025-04-26 00:10:32', 1, 16, 5),
+(119, 'Gelateria & Bistro Valmantone', 'Dammstraße 6, 03222 Lübbenau/Spreewald', 51.867027, 13.972271, 'Mo-So: 10-18 Uhr', '', '2025-04-26 00:13:26', 1, 16, 5),
+(120, 'Eisdiele \"Zur Buxbaude\"', 'Augustusburger Str. 240, 09127 Chemnitz', 50.829086, 12.960858, 'Mi-So: 13-17 Uhr', '', '2025-04-27 08:55:29', 1, 6, 3);
 
 --
 -- Indizes der exportierten Tabellen
@@ -168,7 +174,7 @@ ALTER TABLE `eisdielen`
 -- AUTO_INCREMENT für Tabelle `eisdielen`
 --
 ALTER TABLE `eisdielen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
 
 --
 -- Constraints der exportierten Tabellen
@@ -181,6 +187,22 @@ ALTER TABLE `eisdielen`
   ADD CONSTRAINT `fk_eisdielen_bundesland` FOREIGN KEY (`bundesland_id`) REFERENCES `bundeslaender` (`id`),
   ADD CONSTRAINT `fk_eisdielen_landkreis` FOREIGN KEY (`landkreis_id`) REFERENCES `landkreise` (`id`),
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `nutzer` (`id`) ON DELETE CASCADE;
+
+--
+-- Tabellenstruktur für Tabelle `komoot_routes`
+--
+
+CREATE TABLE `komoot_routes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `eisdiele_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `route` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `is_private` boolean NOT NULL DEFAULT false,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`eisdiele_id`) REFERENCES `eisdielen` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `nutzer` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const { userId, isLoggedIn, userPosition, login, logout } = useUser();
+  const { userId, username, isLoggedIn, userPosition, login, logout } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
 
@@ -50,12 +50,13 @@ const Header = ({ refreshShops }) => {
           <Menu ref={menuRef}>
             <MenuItemLink to="/">Eis-Karte</MenuItemLink>
             <MenuItemLink to="/ranking">Eisdielen Ranking</MenuItemLink>
+            <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
             {isLoggedIn ? (
               <>
-                <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
-                <MenuItem onClick={() => setShowSubmitNewIceShop(true)}>Neue Eisdiele eintragen</MenuItem>
-                <MenuItemLink to="/favoriten">Favoriten</MenuItemLink>
-                <MenuItem onClick={logout}>Ausloggen</MenuItem>
+                <MenuItemLink to={`/user/${userId}`} className="logged-in">{username} Nutzerseite</MenuItemLink>
+                <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Neue Eisdiele eintragen</MenuItem>
+                <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
+                <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (
               <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
@@ -141,9 +142,13 @@ const MenuItem = styled.a`
   font-weight: bold;
   text-decoration: none;
 
+  &.logged-in {
+    margin-left: 15px;
+    color:rgb(255, 255, 255);
+  }
+
   &:hover {
-    background:rgb(206, 137, 0);
-    color: white;
+    background: rgb(206, 137, 0);
   }
 `;
 
@@ -154,8 +159,12 @@ const MenuItemLink = styled(Link)`
   font-weight: bold;
   text-decoration: none;
 
+
+  &.logged-in {
+    margin-left: 15px;
+  }
   &:hover {
-    background:rgb(206, 137, 0);
+    background: rgb(206, 137, 0);
     color: white;
   }
 `;

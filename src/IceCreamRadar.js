@@ -82,7 +82,7 @@ const IceCreamRadar = () => {
     } else {
       console.error('Geolocation wird nicht unterstützt.');
     }
-  }, []);
+  }, [setUserPosition]);
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
@@ -114,7 +114,7 @@ const IceCreamRadar = () => {
       };
       map.on('moveend', onMoveEnd);
       return () => map.off('moveend', onMoveEnd);
-    }, [map]);
+    }, [map, throttledFetch]);
     return null;
   };
 
@@ -154,7 +154,7 @@ const IceCreamRadar = () => {
         minLon: bounds.getWest(),
         maxLon: bounds.getEast(),
       });
-    }, [map]);
+    }, [map, onInitialFetch]);
 
     return null;
   };

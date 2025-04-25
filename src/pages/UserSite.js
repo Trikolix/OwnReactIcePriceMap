@@ -68,6 +68,25 @@ function UserSite() {
                         <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
                     </HeaderDiv>
 
+                    <IceCreamStatsWrapper>
+                        <IceCreamSection>
+                            <h3>Eisarten gegessen</h3>
+                            <List>
+                                <li>Kugeleis: {data.eisarten.Kugel ? data.eisarten.Kugel : '0'}</li>
+                                <li>Softeis: {data.eisarten.Softeis ? data.eisarten.Softeis : '0'}</li>
+                                <li>Eisbecher: {data.eisarten.Eisbecher ? data.eisarten.Eisbecher : '0'}</li>
+                            </List>
+                        </IceCreamSection>
+                        <IceCreamSection>
+                            <h3>Top 5 Geschmacksrichtungen</h3>
+                            <List>
+                                {data.top_5_geschmacksrichtung.map((sorte, i) => (
+                                    <li key={i}>{sorte.sortenname} ({sorte.anzahl}x)</li>
+                                ))}
+                            </List>
+                        </IceCreamSection>
+                    </IceCreamStatsWrapper>
+
                     <StatsSection>
                         <StatBox>
                             <h2>{data.eisdielen_besucht}</h2>
@@ -96,15 +115,6 @@ function UserSite() {
                     </AwardsGrid>
 
                     <Section>
-                        <h3>Eisarten gegessen</h3>
-                        <List>
-                            <li>Kugeleis: {data.eisarten.Kugel ? data.eisarten.Kugel : '0'}</li>
-                            <li>Softeis: {data.eisarten.Softeis ? data.eisarten.Softeis : '0'}</li>
-                            <li>Eisbecher: {data.eisarten.Eisbecher ? data.eisarten.Eisbecher : '0'}</li>
-                        </List>
-                    </Section>
-
-                    <Section>
                         <h3>Verschiedene Eisdielen pro Landkreise</h3>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={data.eisdielen_pro_landkreis} layout="vertical" margin={{ left: 50 }}>
@@ -115,15 +125,6 @@ function UserSite() {
                             </BarChart>
                         </ResponsiveContainer>
                     </Section>
-
-                    <Section>
-                        <h3>Top 5 Geschmacksrichtungen</h3>
-                        <List>
-                            {data.top_5_geschmacksrichtung.map((sorte, i) => (
-                                <li key={i}>{sorte.sortenname} ({sorte.anzahl}x)</li>
-                            ))}
-                        </List>
-                    </Section>
                 </DashboardWrapper>
             </div>
         </div >
@@ -133,9 +134,10 @@ function UserSite() {
 export default UserSite;
 
 const DashboardWrapper = styled.div`
-  width: 900px;
-  margin: 0rem auto;
-  padding: 2rem;
+  width: 90%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
   height: 100%;
 `;
 
@@ -152,6 +154,12 @@ const StatsSection = styled.div`
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+  }
 `;
 
 const StatBox = styled.div`
@@ -160,14 +168,21 @@ const StatBox = styled.div`
   padding: 1rem;
   border-radius: 12px;
   text-align: center;
+  min-width: 150px;
+
   h2 {
     margin: 0;
     font-size: 2rem;
     color: #0077b6;
   }
+
   p {
     margin: 0.5rem 0 0;
     color: #555;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
   }
 `;
 
@@ -184,8 +199,12 @@ const List = styled.ul`
 
 const AwardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
 `;
 
 const AwardCard = styled.div`
@@ -194,10 +213,18 @@ const AwardCard = styled.div`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 16px;
   text-align: center;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const AwardImage = styled.img`
   height: 150px;
+
+  @media (max-width: 768px) {
+    height: 100px;
+  }
 `;
 
 const AwardTitle = styled.h3`
@@ -214,4 +241,20 @@ const AwardDate = styled.span`
   font-size: 0.75rem;
   color: #999;
   margin-top: 8px;
+`;
+
+const IceCreamStatsWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const IceCreamSection = styled.div`
+  flex: 1;
+  min-width: 200px;
 `;

@@ -84,7 +84,7 @@
         if (award.levels && award.levels.length > 0) {
           html += '<ul class="mt-2">';
           award.levels.forEach(level => {
-            html += `<li>Stufe ${level.level}: ${level.title_de} – ${level.threshold} Punkte <img src="../../${level.icon_path}" alt="Icon" class="award-preview ms-2"> "${level.description_de}" </li>`;
+            html += `<li><img src="../../${level.icon_path}" alt="Icon" class="award-preview ms-2"> Stufe ${level.level}: ${level.title_de} – ${level.threshold} Punkte "${level.description_de}" </li>`;
           });
           html += '</ul>';
         }

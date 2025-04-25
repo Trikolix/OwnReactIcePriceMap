@@ -51,6 +51,21 @@ function DashBoard() {
       <Header />
       <Title>Dashboard</Title>
       <Container>
+      <Section>
+          <Title>Neueste Check-ins</Title>
+          {data.checkins.map((checkin) => (
+            <CheckinCard key={checkin.id} checkin={checkin} />
+            
+          ))}
+        </Section>
+
+        <Section>
+          <Title>Neueste Bewertungen</Title>
+          {data.reviews.map((review) => (
+            <ReviewCard key={review.id} review={review} />
+          ))}
+        </Section>
+
         <Section>
           <Title>Durchschnittlicher Eispreis pro Landkreis</Title>
           <Table>
@@ -71,21 +86,6 @@ function DashBoard() {
               ))}
             </tbody>
           </Table>
-        </Section>
-
-        <Section>
-          <Title>Neueste Bewertungen</Title>
-          {data.reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </Section>
-
-        <Section>
-          <Title>Neueste Check-ins</Title>
-          {data.checkins.map((checkin) => (
-            <CheckinCard key={checkin.id} checkin={checkin} />
-            
-          ))}
         </Section>
       </Container>
     </div>
