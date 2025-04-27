@@ -16,7 +16,7 @@ function UserSite() {
     useEffect(() => {
         if (!finalUserId) return;
 
-        fetch(`https://ice-app.4lima.de/backend/get_user_stats.php?nutzer_id=${finalUserId}`)
+        fetch(`https://ice-app.de/backend/get_user_stats.php?nutzer_id=${finalUserId}`)
             .then((res) => res.json())
             .then((json) => {
                 console.log(json);
@@ -106,7 +106,7 @@ function UserSite() {
                     <AwardsGrid>
                         {data.user_awards.map((award, index) => (
                             <AwardCard key={index}>
-                                <AwardImage src={`https://ice-app.4lima.de/${award.icon_path}`} alt={award.title_de} />
+                                <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
                                 <AwardTitle>{award.title_de}</AwardTitle>
                                 <AwardDescription>{award.description_de}</AwardDescription>
                                 <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>

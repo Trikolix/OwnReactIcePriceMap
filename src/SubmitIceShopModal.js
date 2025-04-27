@@ -17,7 +17,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
   const submit = async () => {
     try {
       console.log("refreshShops:", refreshShops, typeof refreshShops);
-      const response = await fetch("https://ice-app.4lima.de/backend/submitIceShop.php", {
+      const response = await fetch("https://ice-app.de/backend/submitIceShop.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

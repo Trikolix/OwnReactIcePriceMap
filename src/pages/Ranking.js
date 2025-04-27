@@ -10,7 +10,7 @@ const Ranking = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('https://ice-app.4lima.de/backend/get_eisdielen_preisleistung.php');
+                const response = await fetch('https://ice-app.de/backend/get_eisdielen_preisleistung.php');
                 const data = await response.json();
                 setEisdielen(data);
             } catch (error) {

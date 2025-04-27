@@ -89,7 +89,7 @@ const ShopMarker = ({ shop, selectedOption, minPrice, maxPrice, isLoggedIn, user
     setLoading(true);
     try {
       console.log(`Fetching details for shop ID: ${shop.eisdielen_id}`);
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
+      const response = await fetch(`https://ice-app.de/backend/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
 
       // Checke, ob die Antwort wirklich JSON ist
       const contentType = response.headers.get("content-type");

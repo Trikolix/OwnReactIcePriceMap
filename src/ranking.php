@@ -139,7 +139,7 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <body>
     <div style="display: flex; flex-direction: column; background-color: #ffb522; margin: 0 auto; padding: 10px;">
-        <a href="https://ice-app.4lima.de/" style="align-self: center;"><img src="header_wide.png" alt="Header"
+        <a href="https://ice-app.de/" style="align-self: center;"><img src="header_wide.png" alt="Header"
                 style="align-self: center; height: 100px;"></a>
     </div>
     <div class="container mt-4">

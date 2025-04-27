@@ -39,7 +39,7 @@ const IceCreamRadar = () => {
     cachedBounds.current.push(bounds);
 
     try {
-      const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
+      const query = `https://ice-app.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);
@@ -55,7 +55,7 @@ const IceCreamRadar = () => {
     if (!bounds) return;
 
     try {
-      const query = `https://ice-app.4lima.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
+      const query = `https://ice-app.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);

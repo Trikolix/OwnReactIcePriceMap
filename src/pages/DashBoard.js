@@ -16,7 +16,7 @@ function DashBoard() {
 
 
   useEffect(() => {
-    fetch("https://ice-app.4lima.de/backend/dashboard.php")
+    fetch("https://ice-app.de/backend/dashboard.php")
       .then((res) => res.json())
       .then((json) => {
         console.log(json);

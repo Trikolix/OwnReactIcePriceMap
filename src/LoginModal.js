@@ -9,7 +9,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
     const handleLogin = async () => {
         try {
-          const response = await fetch('https://ice-app.4lima.de/backend/login.php', {
+          const response = await fetch('https://ice-app.de/backend/login.php', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

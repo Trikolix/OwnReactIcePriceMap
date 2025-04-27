@@ -40,7 +40,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             formData.append("bild", bild);
             formData.append("sorten", JSON.stringify(sorten));
 
-            const response = await fetch("https://ice-app.4lima.de/backend/checkin_upload.php", {
+            const response = await fetch("https://ice-app.de/backend/checkin_upload.php", {
                 method: "POST",
                 body: formData
             });

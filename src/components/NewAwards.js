@@ -11,7 +11,7 @@ const NewAwards = ({ awards }) => {
         {awards.map((award, index) => (
           <AwardItem key={index}>
             <AwardIcon
-              src={`https://ice-app.4lima.de/${award.icon}`}
+              src={`https://ice-app.de/${award.icon}`}
               alt="Award Icon"
             />
             <AwardText>{award.message}</AwardText>

@@ -51,7 +51,7 @@ const CheckinCard = ({ checkin }) => {
                     {checkin.bild_url && (
                         <RightContent>
                             <Thumbnail
-                                src={`https://ice-app.4lima.de/${checkin.bild_url}`}
+                                src={`https://ice-app.de/${checkin.bild_url}`}
                                 alt="Checkin Bild"
                                 onClick={() => setLightboxOpen(true)}
                             />
@@ -64,7 +64,7 @@ const CheckinCard = ({ checkin }) => {
                 <LightboxOverlay onClick={() => setLightboxOpen(false)}>
                     <LightboxContent onClick={(e) => e.stopPropagation()}>
                         <LightboxImage
-                            src={`https://ice-app.4lima.de/${checkin.bild_url}`}
+                            src={`https://ice-app.de/${checkin.bild_url}`}
                             alt="Checkin Bild"
                         />
                         <LightboxTitle>
