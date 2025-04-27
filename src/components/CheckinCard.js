@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
-const CheckinCard = ({ checkin }) => {
+const CheckinCard = ({ checkin, onEdit }) => {
     const [lightboxOpen, setLightboxOpen] = useState(false);
+    const { userId } = useUser();
 
     return (
         <>
@@ -46,6 +48,9 @@ const CheckinCard = ({ checkin }) => {
                         </Table>
 
                         {checkin.kommentar && <p>{checkin.kommentar}</p>}
+                        {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
+                            <></>// <EditButton onClick={() => onEdit(checkin.id)}>Bearbeiten</EditButton>
+                        )}
                     </LeftContent>
 
                     {checkin.bild_url && (
@@ -159,6 +164,20 @@ const TypText = styled.em`
   color: #777;
 `;
 
+const EditButton = styled.button`
+  background-color: #0077b6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+
+  &:hover {
+    background-color: #005f8a;
+  }
+`;
 
 // ---------- Lightbox ----------
 

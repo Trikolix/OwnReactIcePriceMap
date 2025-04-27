@@ -2,8 +2,11 @@ import React from "react";
 import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
+import { useUser } from "./../context/UserContext";
 
-const ReviewCard = ({ review }) => {
+const ReviewCard = ({ review, onEdit }) => {
+  const { userId } = useUser();
+
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("de-DE");
 
@@ -62,6 +65,10 @@ const ReviewCard = ({ review }) => {
           ))}
         </AttributeSection>
       )}
+
+      {parseInt(review.nutzer_id, 10) === parseInt(userId, 10) && (
+        <></> // <EditButton onClick={() => onEdit(review.id)}>Bearbeiten</EditButton>
+      )}
     </Card>
   );
 };
@@ -112,6 +119,7 @@ const AttributeSection = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 `;
 
 const AttributeBadge = styled.span`
@@ -121,5 +129,19 @@ const AttributeBadge = styled.span`
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 500;
+`;
+
+const EditButton = styled.button`
+  background-color: #0077b6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: #005f8a;
+  }
 `;
 

@@ -1,7 +1,14 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 
-$data = json_decode(file_get_contents("php://input"), true);
+try {
+    // Ensure JSON decoding handles errors
+    $data = json_decode(file_get_contents("php://input"), true, 512, JSON_THROW_ON_ERROR);
+} catch (JsonException $e) {
+    echo json_encode(["status" => "error", "message" => "Invalid JSON input"]);
+    exit;
+}
+
 $userId = $data['userId'];
 $shopId = $data['shopId'];
 $selectedAttributes = $data['selectedAttributes'] ?? [];
@@ -70,6 +77,9 @@ try {
             ':attributId' => $attrId
         ]);
     }
+
+    // $pdo->exec("ALTER TABLE bewertungen MODIFY COLUMN beschreibung TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
     echo json_encode(["status" => "success"]);
 } catch (PDOException $e) {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);

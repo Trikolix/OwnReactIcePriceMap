@@ -13,10 +13,9 @@ $sql2 = "SELECT COUNT(DISTINCT eisdiele_id) AS eisdielen_besucht
          WHERE nutzer_id = ?";
 
 // Anzahl an Checkins
-$sql3 = "SELECT COUNT(DISTINCT c.id) AS anzahl_checkins
-         FROM checkins c
-         JOIN checkin_sorten s ON c.id = s.checkin_id
-         WHERE c.nutzer_id = ?";
+$sql3 = "SELECT COUNT(DISTINCT id) AS anzahl_checkins
+         FROM checkins
+         WHERE nutzer_id = ?";
 
 // Anzahl gegessener Eisarten (Kugeln, Softeis, Eisbecher)
 $sql4 = "SELECT c.typ, COUNT(s.id) AS anzahl_eis
@@ -35,12 +34,12 @@ $sql5 = "SELECT l.name AS landkreis, COUNT(DISTINCT c.eisdiele_id) AS anzahl
          ORDER BY anzahl DESC";
 
 // Top 5 Geschmacksrichtung
-$sql6 = "SELECT s.sortenname, COUNT(*) AS anzahl
+$sql6 = "SELECT s.sortenname, AVG(s.bewertung) AS bewertung, COUNT(*) AS anzahl
          FROM checkin_sorten s
          JOIN checkins c ON s.checkin_id = c.id
          WHERE c.nutzer_id = ?
          GROUP BY s.sortenname
-         ORDER BY anzahl DESC, s.sortenname ASC
+         ORDER BY anzahl DESC, bewertung DESC
          LIMIT 5";
 
 // User Awards
@@ -56,6 +55,64 @@ $sql7 = "SELECT
            ON ua.award_id = al.award_id AND ua.level = al.level
          WHERE ua.user_id = ?
          ORDER BY ua.awarded_at DESC";
+
+// User Checkins
+$stmtCheckins = $pdo->prepare("
+    SELECT c.*, 
+           n.id AS nutzer_id,
+           n.username AS nutzer_name,
+           e.name AS eisdiele_name,
+           e.adresse
+    FROM checkins c
+    JOIN nutzer n ON c.nutzer_id = n.id
+    JOIN eisdielen e ON c.eisdiele_id = e.id
+    WHERE c.nutzer_id = :nutzerId
+    ORDER BY c.datum DESC
+    ");
+    $stmtCheckins->execute(['nutzerId' => $nutzerId]);
+    $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($checkins as &$checkin) {
+    $stmtSorten = $pdo->prepare("
+        SELECT sortenname, bewertung 
+        FROM checkin_sorten 
+        WHERE checkin_id = :checkinId
+    ");
+    $stmtSorten->execute(['checkinId' => $checkin['id']]);
+    $sorten = $stmtSorten->fetchAll(PDO::FETCH_COLUMN);
+    $checkin['eissorten'] = $sorten;
+    }
+    unset($checkin); // Referenz auflösen
+
+// User Reviews
+$stmtReviews = $pdo->prepare("SELECT b.*,
+                                     e.name AS eisdiele_name,
+                                     n.username AS nutzer_name,
+                                     n.id AS nutzer_id                            
+                              FROM bewertungen b
+                              JOIN eisdielen e ON b.eisdiele_id = e.id
+                              JOIN nutzer n ON b.nutzer_id = n.id
+                              WHERE b.nutzer_id = :nutzerId
+                              ORDER BY b.erstellt_am DESC
+                              LIMIT 10
+                            ");
+$stmtReviews->execute(['nutzerId' => $nutzerId]);
+$reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);
+
+// Bewertungen durchgehen und Attribute anhängen
+foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
+    $stmtAttr = $pdo->prepare("
+        SELECT a.name 
+        FROM bewertung_attribute ba 
+        JOIN attribute a ON ba.attribut_id = a.id 
+        WHERE ba.bewertung_id = :bewertungId
+    ");
+    $stmtAttr->execute(['bewertungId' => $review['id']]);
+    $attributes = $stmtAttr->fetchAll(PDO::FETCH_COLUMN);
+    $review['bewertung_attribute'] = $attributes;
+}
+// Referenz wieder auflösen
+unset($review);
 
 // Ausführen & Ergebnisse sammeln
 try {
@@ -79,7 +136,8 @@ try {
             case 6: $stats['user_awards'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
         }
     }
-
+    $stats["checkins"] = $checkins; // Checkins hinzufügen
+    $stats["reviews"] = $reviews; // Reviews hinzufügen
     header('Content-Type: application/json');
     echo json_encode($stats);
 

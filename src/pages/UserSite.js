@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
+import CheckinCard from "../components/CheckinCard";
+import ReviewCard from "../components/ReviewCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 function UserSite() {
@@ -12,6 +14,21 @@ function UserSite() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const finalUserId = userIdFromUrl || userIdFromContext;
+
+    // Add state to manage pagination for check-ins and reviews
+    const [checkinPage, setCheckinPage] = useState(1);
+    const [reviewPage, setReviewPage] = useState(1);
+
+    const loadMoreCheckins = () => {
+        setCheckinPage((prevPage) => prevPage + 1);
+    };
+
+    const loadMoreReviews = () => {
+        setReviewPage((prevPage) => prevPage + 1);
+    };
+
+    // Add tabs for displaying check-ins and reviews
+    const [activeTab, setActiveTab] = useState('checkins');
 
     useEffect(() => {
         if (!finalUserId) return;
@@ -29,7 +46,6 @@ function UserSite() {
                 setLoading(false);
             });
     }, [finalUserId]);
-
 
     if (loading) return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -57,6 +73,10 @@ function UserSite() {
             </div >
         </div >
     );
+
+    // Filter check-ins and reviews based on the current page
+    const displayedCheckins = data.checkins.slice(0, checkinPage * 5);
+    const displayedReviews = data.reviews.slice(0, reviewPage * 5);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -125,6 +145,48 @@ function UserSite() {
                             </BarChart>
                         </ResponsiveContainer>
                     </Section>
+
+                    <Section>
+                    <h3>Neuste Beiträge von {data.nutzername}</h3>
+                    <TabContainer>                      
+                        <TabButton
+                            active={activeTab === 'checkins'}
+                            onClick={() => setActiveTab('checkins')}
+                        >
+                            Check-ins
+                        </TabButton>
+                        <TabButton
+                            active={activeTab === 'reviews'}
+                            onClick={() => setActiveTab('reviews')}
+                        >
+                            Reviews
+                        </TabButton>
+                    </TabContainer>
+                    </Section>
+
+                    <TabContent>
+                        {activeTab === 'checkins' && (
+                            <div>
+                                {displayedCheckins.map((checkin, index) => (
+                                    <CheckinCard key={index} checkin={checkin} />
+                                ))}
+                                {displayedCheckins.length < data.checkins.length && (
+                                    <LoadMoreButton onClick={loadMoreCheckins}>Mehr Checkins laden</LoadMoreButton>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'reviews' && (
+                            <div>
+                                {displayedReviews.map((review, index) => (
+                                    <ReviewCard key={index} review={review} />
+                                ))}
+                                {displayedReviews.length < data.reviews.length && (
+                                    <LoadMoreButton onClick={loadMoreReviews}>Mehr Reviews laden</LoadMoreButton>
+                                )}
+                            </div>
+                        )}
+                    </TabContent>
                 </DashboardWrapper>
             </div>
         </div >
@@ -257,4 +319,47 @@ const IceCreamStatsWrapper = styled.div`
 const IceCreamSection = styled.div`
   flex: 1;
   min-width: 200px;
+`;
+
+// Style the load more buttons
+const LoadMoreButton = styled.button`
+  display: block;
+  margin: 1rem auto;
+  padding: 0.5rem 1rem;
+  background-color: #0077b6;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #005f8a;
+  }
+`;
+
+const TabContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+`;
+
+const TabButton = styled.button`
+  padding: 0.5rem 1rem;
+  margin: 0 0.5rem;
+  background-color: ${(props) => (props.active ? '#0077b6' : '#f0f0f0')};
+  color: ${(props) => (props.active ? 'white' : '#333')};
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+
+  &:hover {
+    background-color: ${(props) => (props.active ? '#005f8a' : '#e0e0e0')};
+  }
+`;
+
+const TabContent = styled.div`
+  margin-top: 1rem;
 `;

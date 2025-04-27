@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 27. Apr 2025 um 12:11
+-- Erstellungszeit: 27. Apr 2025 um 20:51
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -84,7 +84,11 @@ INSERT INTO `bewertungen` (`id`, `eisdiele_id`, `nutzer_id`, `geschmack`, `kugel
 (105, 9, 4, '4.4', '2.5', '4.5', NULL, '', '2025-04-21 13:20:39'),
 (106, 115, 3, '4.7', '4.5', '3.2', 2, 'Bei meinem Besuch im Eisgarten an der Kaßbergauffahrt ließ ich mir ein Schoko-Vanille-Softeis schmecken. Überzeugen konnte das Eis durch die Kombination aus der für Softeis üblichen cremigen Konsistenz sowie durch seinen angenehmen Geschmack. Eine eher schlechtere Bewertung erhielt die sehr einfache Waffel. Das Angebot an Eissorten ist sehr überschaubar, was aber bei Softeis keine Überraschung ist. Punkten kann der Eisgarten ebenfalls durch seine kleine anschließende Grünfläche sowie einige Sitzmöglichkeiten, die zum Verweilen einladen. Für Softeis-Liebhaber einen Besuch wert!', '2025-04-22 11:24:51'),
 (108, 59, 1, '4.8', '4.5', '2.3', 10, 'Gut im Ort versteckt, hat mich die kleine aber feine Eckeisdiele doch positiv überrascht.\nEs gibt Softeis, Kugeleis und Eisbecher im Angebot.\nMeine Kugeln Zimt und Malaga waren beide sehr lecker, intensiv von Geschmack und relativ groß.\nDazu ein günstiger Preis von 1,20€ pro Kugel.\nLediglich die kleine \"Papp\"Waffel sorgt mal wieder für Abzüge.', '2025-04-22 14:45:49'),
-(113, 118, 1, '4.6', '5.0', '4.6', 30, 'Eine super Auswahl von ca. 30 Sorten, davon ziemlich viele ausgefallene. Die Kugeln waren die größten die ich bis jetzt jemals bekommen habe. Das Eis war lecker, aber bei der Geschmacksintensität ist noch bisschen Raum nach oben. Insgesamt eine große Empfehlung.', '2025-04-26 00:17:09');
+(113, 118, 1, '4.6', '5.0', '4.6', 30, 'Eine super Auswahl von ca. 30 Sorten, davon ziemlich viele ausgefallene. Die Kugeln waren die größten die ich bis jetzt jemals bekommen habe. Das Eis war lecker, aber bei der Geschmacksintensität ist noch bisschen Raum nach oben. Insgesamt eine große Empfehlung.', '2025-04-26 00:17:09'),
+(118, 75, 1, NULL, NULL, NULL, 3, 'Hier gibt es einen Automaten, wo man Vanille-Softeis pur, mit Erdbeerfruchtzubereitung oder Soße mit Schokogeschmack bekommen kann.', '2025-04-27 13:45:01'),
+(120, 123, 2, '4.0', '3.0', '3.0', 22, 'Ich hatte eine Kugel Waldmeister, war ganz okay mal zur Abwechslung. Gibt eine überraschen große Auswahl zwischen Fruchtiges und Schokoladiges/Cookies etc. Nur die Kugelgröße hätte für den Preis besser sein können (1,90€)', '2025-04-27 15:33:12'),
+(121, 32, 3, '4.6', '4.0', '4.5', NULL, 'Ich entschied mich bei meinem Besuch am Milchkännchen für die Premiumsorte Joghurt-Sanddorn, womit ich definitiv eine gute Wahl traf. Der Geschmack wirkt ausgefallen/aufregend und vertraut zugleich. Auch mit seiner cremigen Konsistenz wusste das Eis zu überzeugen, abgerundet von einer leckeren und knusprigen Waffel. Eine Premiumsorte hat jedoch mit 2,20€ einen Preis, dem die Kugelgröße nicht ganz gerecht wird. Bei einem anschließenden Spaziergang am Schloßteich schmeckt das Eis gleich nochmal besser. ', '2025-04-27 16:30:16'),
+(122, 124, 4, '4.5', '5.0', '4.0', 12, 'Waffel nicht getestet. \nEiskugeln waren sehr groß \n', '2025-04-27 17:44:38');
 
 --
 -- Indizes der exportierten Tabellen

@@ -122,9 +122,9 @@ const IceCreamRadar = () => {
   const filteredShops = iceCreamShops.filter(shop => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
-    if (selectedOption === "Rating") return shop.PLV !== null;
+    // if (selectedOption === "Rating") return shop.PLV !== null;
     if (selectedOption === "Favoriten") return shop.is_favorit === 1;
-    if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
+    // if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
     return true;
   });
   // Berechne den minimalen und maximalen Preis

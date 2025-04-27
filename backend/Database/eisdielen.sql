@@ -187,22 +187,6 @@ ALTER TABLE `eisdielen`
   ADD CONSTRAINT `fk_eisdielen_bundesland` FOREIGN KEY (`bundesland_id`) REFERENCES `bundeslaender` (`id`),
   ADD CONSTRAINT `fk_eisdielen_landkreis` FOREIGN KEY (`landkreis_id`) REFERENCES `landkreise` (`id`),
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `nutzer` (`id`) ON DELETE CASCADE;
-
---
--- Tabellenstruktur für Tabelle `komoot_routes`
---
-
-CREATE TABLE `komoot_routes` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `eisdiele_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `route` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `is_private` boolean NOT NULL DEFAULT false,
-  PRIMARY KEY (`id`),
-  FOREIGN KEY (`eisdiele_id`) REFERENCES `eisdielen` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`user_id`) REFERENCES `nutzer` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
