@@ -2,7 +2,7 @@
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class BundeslandCountEvaluator extends BaseAwardEvaluator {
+class PerfectWeekEvaluator extends BaseAwardEvaluator {
     const AWARD_ID = 11;
 
     public function evaluate(int $userId): array {
@@ -38,7 +38,7 @@ class BundeslandCountEvaluator extends BaseAwardEvaluator {
         return $achievements;
     }
 
-    private function getBundeslandCount(int $userId): int {
+    private function hasPerfectWeek(int $userId): int {
         global $pdo;
         $sql = "SELECT COUNT(DISTINCT DATE(datum)) = 7 AS hat_7_tage_checkins
                 FROM checkins
@@ -46,7 +46,7 @@ class BundeslandCountEvaluator extends BaseAwardEvaluator {
                   AND DATE(datum) >= CURDATE() - INTERVAL 6 DAY
                   AND DATE(datum) <= CURDATE()";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userId]);
+        $stmt->execute(['userId' => $userId]);
 
         return (int)$stmt->fetchColumn();
     }
