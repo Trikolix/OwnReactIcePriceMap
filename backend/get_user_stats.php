@@ -94,7 +94,6 @@ $stmtReviews = $pdo->prepare("SELECT b.*,
                               JOIN nutzer n ON b.nutzer_id = n.id
                               WHERE b.nutzer_id = :nutzerId
                               ORDER BY b.erstellt_am DESC
-                              LIMIT 10
                             ");
 $stmtReviews->execute(['nutzerId' => $nutzerId]);
 $reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);

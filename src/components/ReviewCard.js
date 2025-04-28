@@ -4,7 +4,7 @@ import Rating from "./Rating";
 import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
 
-const ReviewCard = ({ review, onEdit }) => {
+const ReviewCard = ({ review }) => {
   const { userId } = useUser();
 
   const formatDate = (dateString) =>

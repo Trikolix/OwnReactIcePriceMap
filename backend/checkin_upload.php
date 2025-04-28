@@ -111,8 +111,10 @@ if (is_array($sorten)) {
     ");
     foreach ($sorten as $sorte) {
         $name = $sorte['name'] ?? '';
-        $bewertung = isset($sorte['bewertung']) && $sorte['bewertung'] != "" ? floatval($sorte['bewertung']) : $geschmack;
-        $sorteStmt->execute([$checkinId, $name, $bewertung]);
+        if (!empty($name)) {
+            $bewertung = isset($sorte['bewertung']) && $sorte['bewertung'] != "" ? floatval($sorte['bewertung']) : $geschmack;
+            $sorteStmt->execute([$checkinId, $name, $bewertung]);
+        }
     }
 }
 

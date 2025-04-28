@@ -3,83 +3,99 @@ import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import EditCheckinForm from "../EditCheckinForm";
 
-const CheckinCard = ({ checkin, onEdit }) => {
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const { userId } = useUser();
+const CheckinCard = ({ checkin }) => {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const { userId } = useUser();
 
-    return (
-        <>
-            <Card>
-                <ContentWrapper>
-                    <LeftContent>
-                        <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
-                         bei <strong>{checkin.eisdiele_name}</strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
+  const handleEditClick = () => {
+    setShowEditModal(true);
+  };
 
-                        <AttributeSection>
-                        <strong>Sorten:</strong>
-                            {checkin.eissorten.map((sorte, index) => (
-                                <AttributeBadge key={index}>{sorte}</AttributeBadge>
-                            ))}
-                        </AttributeSection>
+  return (
+    <>
+      <Card>
+        <ContentWrapper>
+          <LeftContent>
+            <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
+            bei <strong>{checkin.eisdiele_name}</strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
 
-                        <Table>
-                            <tr>
-                                <th>Geschmack:</th>
-                                <td>
-                                    <Rating stars={checkin.geschmackbewertung} />{" "}
-                                    <strong>{checkin.geschmackbewertung}</strong>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Waffel:</th>
-                                <td>
-                                    <Rating stars={checkin.waffelbewertung} />{" "}
-                                    <strong>{checkin.waffelbewertung}</strong>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Größe:</th>
-                                <td>
-                                    <Rating stars={checkin.größenbewertung} />{" "}
-                                    <strong>{checkin.größenbewertung}</strong>
-                                </td>
-                            </tr>
-                        </Table>
+            <AttributeSection>
+              <strong>Sorten:</strong>
+              {checkin.eissorten.map((sorte, index) => (
+                <AttributeBadge key={index}>{sorte}</AttributeBadge>
+              ))}
+            </AttributeSection>
 
-                        {checkin.kommentar && <p>{checkin.kommentar}</p>}
-                        {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
-                            <></>// <EditButton onClick={() => onEdit(checkin.id)}>Bearbeiten</EditButton>
-                        )}
-                    </LeftContent>
+            <Table>
+              <tr>
+                <th>Geschmack:</th>
+                <td>
+                  <Rating stars={checkin.geschmackbewertung} />{" "}
+                  <strong>{checkin.geschmackbewertung}</strong>
+                </td>
+              </tr>
+              <tr>
+                <th>Waffel:</th>
+                <td>
+                  <Rating stars={checkin.waffelbewertung} />{" "}
+                  <strong>{checkin.waffelbewertung}</strong>
+                </td>
+              </tr>
+              <tr>
+                <th>Größe:</th>
+                <td>
+                  <Rating stars={checkin.größenbewertung} />{" "}
+                  <strong>{checkin.größenbewertung}</strong>
+                </td>
+              </tr>
+            </Table>
 
-                    {checkin.bild_url && (
-                        <RightContent>
-                            <Thumbnail
-                                src={`https://ice-app.de/${checkin.bild_url}`}
-                                alt="Checkin Bild"
-                                onClick={() => setLightboxOpen(true)}
-                            />
-                        </RightContent>
-                    )}
-                </ContentWrapper>
-            </Card>
-
-            {lightboxOpen && (
-                <LightboxOverlay onClick={() => setLightboxOpen(false)}>
-                    <LightboxContent onClick={(e) => e.stopPropagation()}>
-                        <LightboxImage
-                            src={`https://ice-app.de/${checkin.bild_url}`}
-                            alt="Checkin Bild"
-                        />
-                        <LightboxTitle>
-                        {checkin.eissorten.join(", ")} Eis bei {checkin.eisdiele_name}
-                        </LightboxTitle>
-                    </LightboxContent>
-                </LightboxOverlay>
+            {checkin.kommentar && <p>{checkin.kommentar}</p>}
+            {console.log(parseInt(checkin.nutzer_id, 10), parseInt(userId, 10))}
+            {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
+              <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}
-        </>
-    );
+          </LeftContent>
+
+          {checkin.bild_url && (
+            <RightContent>
+              <Thumbnail
+                src={`https://ice-app.de/${checkin.bild_url}`}
+                alt="Checkin Bild"
+                onClick={() => setLightboxOpen(true)}
+              />
+            </RightContent>
+          )}
+        </ContentWrapper>
+      </Card>
+
+      {lightboxOpen && (
+        <LightboxOverlay onClick={() => setLightboxOpen(false)}>
+          <LightboxContent onClick={(e) => e.stopPropagation()}>
+            <LightboxImage
+              src={`https://ice-app.de/${checkin.bild_url}`}
+              alt="Checkin Bild"
+            />
+            <LightboxTitle>
+              {checkin.eissorten.join(", ")} Eis bei {checkin.eisdiele_name}
+            </LightboxTitle>
+          </LightboxContent>
+        </LightboxOverlay>
+      )}
+
+      {showEditModal && (
+        <EditCheckinForm
+          checkinId={checkin.id}
+          shopName={checkin.eisdiele_name}
+          showCheckinForm={showEditModal}
+          setShowCheckinForm={setShowEditModal}
+        />
+      )}
+    </>
+  );
 };
 
 export default CheckinCard;
