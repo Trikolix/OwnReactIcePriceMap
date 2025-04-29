@@ -16,11 +16,12 @@ const CheckinCard = ({ checkin }) => {
 
   return (
     <>
+      {console.log('checkincard', checkin)}
       <Card>
         <ContentWrapper>
           <LeftContent>
             <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
-            bei <strong>{checkin.eisdiele_name}</strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
+            bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
 
             <AttributeSection>
               <strong>Sorten:</strong>

@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
-import ReviewCard from "./components/ReviewCard";
+import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
+import FavoritenButton from './components/FavoritButton';
 
-const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm }) => {
+const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [isFullHeight, setIsFullHeight] = useState(false);
   const containerRef = useRef(null);
@@ -75,6 +76,10 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
       <Header>
         <h2>{shop.eisdiele.name}</h2>
         <CloseButton onClick={onClose}>✖</CloseButton>
+        <FavoritenButton
+                      eisdieleId={shop.eisdiele.id}
+                      setIceCreamShops={setIceCreamShops}
+                    />
       </Header>
       <Tabs>
         <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>

@@ -17,6 +17,7 @@ import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -31,6 +32,32 @@ const IceCreamRadar = () => {
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+
+  const { shopId } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchAndCenterShop = async (id) => {
+      try {
+        const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+        const data = await response.json();
+        console.log('fetchAndCenterShop', data)
+        setActiveShop(data);
+        setShowDetailsView(false);
+        setTimeout(() => setShowDetailsView(true), 0);
+
+        if (mapRef.current) {
+          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude], 16); // oder andere Zoom-Stufe
+        }
+      } catch (err) {
+        console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
+      }
+    };
+
+    if (shopId) {
+      fetchAndCenterShop(shopId);
+    }
+  }, [shopId]);
 
   const fetchIceCreamShops = async (bounds) => {
     if (cachedBounds.current.some(cached =>
@@ -69,9 +96,7 @@ const IceCreamRadar = () => {
 
   const fetchShopDetails = async (shop) => {
     try {
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
-      const data = await response.json();
-      setActiveShop(data);
+      navigate(`/map/activeShop/${shop.eisdielen_id}`);
       setShowDetailsView(false); // Reset the state to ensure re-rendering
       setTimeout(() => setShowDetailsView(true), 0); // Reopen the view after resetting
     } catch (error) {
@@ -214,15 +239,7 @@ const IceCreamRadar = () => {
                   selectedOption={selectedOption}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
-                  isLoggedIn={isLoggedIn}
-                  userId={userId}
                   plv={shop.PLV}
-                  setIceCreamShops={setIceCreamShops}
-                  refreshShops={refreshShops}
-                  setActiveShop={setActiveShop}
-                  setShowPriceForm={setShowPriceForm}
-                  setShowReviewForm={setShowReviewForm}
-                  setShowCheckinForm={setShowCheckinForm}
                   fetchShopDetails={fetchShopDetails}
                 />
               );
@@ -237,15 +254,7 @@ const IceCreamRadar = () => {
                 selectedOption={selectedOption}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
-                isLoggedIn={isLoggedIn}
-                userId={userId}
                 plv={shop.PLV}
-                setIceCreamShops={setIceCreamShops}
-                refreshShops={refreshShops}
-                setActiveShop={setActiveShop}
-                setShowPriceForm={setShowPriceForm}
-                setShowReviewForm={setShowReviewForm}
-                setShowCheckinForm={setShowCheckinForm}
                 fetchShopDetails={fetchShopDetails}
               />
             );
@@ -298,13 +307,18 @@ const IceCreamRadar = () => {
         showCheckinForm={showCheckinForm}
         setShowCheckinForm={setShowCheckinForm}
       />)}
-      {showDetailsView && (
+      {showDetailsView && activeShop && (
         <ShopDetailsView
           shop={activeShop}
           setShowPriceForm={setShowPriceForm}
           setShowReviewForm={setShowReviewForm}
           setShowCheckinForm={setShowCheckinForm}
-          onClose={() => setShowDetailsView(false)}
+          setIceCreamShops={setIceCreamShops}
+          onClose={() => {
+            setActiveShop(null);
+            setShowDetailsView(false);
+            navigate('/map'); // Zurück zur Map-URL ohne Shop
+          }}
         />
       )}
     </div>
