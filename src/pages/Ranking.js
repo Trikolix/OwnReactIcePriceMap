@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import Header from "../Header";
+import { Link } from "react-router-dom";
 
 const Ranking = () => {
     const [eisdielen, setEisdielen] = useState([]);
@@ -111,7 +112,8 @@ const Ranking = () => {
                                     <DetailsRow visible={expandedRow === index} className="details-row">
                                         <td colSpan="9">
                                             <DetailsContainer>
-                                                <h3>{eisdiele.eisdielen_name}</h3>
+
+                                                <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdielen_id}`}>{eisdiele.eisdielen_name}</CleanLink></h3>
                                                 <strong>Adresse: </strong>{eisdiele.adresse}<br />
                                                 <strong>Öffnungszeiten: </strong><br />{eisdiele.openingHours.split(';').map((time, i) => (
                                                     <React.Fragment key={i}>
@@ -148,6 +150,11 @@ const Ranking = () => {
 };
 
 export default Ranking;
+
+const CleanLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+`;
 
 const Container = styled.div`
   padding: 1rem;

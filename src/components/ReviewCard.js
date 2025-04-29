@@ -14,7 +14,7 @@ const ReviewCard = ({ review }) => {
     <Card>
       <Header>
         <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
-        <strong>{review.eisdiele_name}</strong> bewertet.{" "}
+        <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
         <DateText>(vom {formatDate(review.erstellt_am)})</DateText>
       </Header>
 

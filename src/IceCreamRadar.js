@@ -16,6 +16,9 @@ import Header from './Header';
 import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
+import ShopDetailsView from './ShopDetailsView';
+import { useParams, useNavigate } from 'react-router-dom';
+import MapCenterOnShop from './components/MapCenterOnShop';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -28,7 +31,34 @@ const IceCreamRadar = () => {
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
+  const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+
+  const { shopId } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchAndCenterShop = async (id) => {
+      try {
+        const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+        const data = await response.json();
+        console.log('fetchAndCenterShop', data)
+        setActiveShop(data);
+        setShowDetailsView(false);
+        setTimeout(() => setShowDetailsView(true), 0);
+
+        if (mapRef.current) {
+          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude], 16); // oder andere Zoom-Stufe
+        }
+      } catch (err) {
+        console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
+      }
+    };
+
+    if (shopId) {
+      fetchAndCenterShop(shopId);
+    }
+  }, [shopId]);
 
   const fetchIceCreamShops = async (bounds) => {
     if (cachedBounds.current.some(cached =>
@@ -42,7 +72,6 @@ const IceCreamRadar = () => {
       const query = `https://ice-app.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
-      console.log(data);
       setIceCreamShops(data);
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
@@ -66,6 +95,15 @@ const IceCreamRadar = () => {
     }
   };
 
+  const fetchShopDetails = async (shop) => {
+    try {
+      navigate(`/map/activeShop/${shop.eisdielen_id}`);
+      setShowDetailsView(false); // Reset the state to ensure re-rendering
+      setTimeout(() => setShowDetailsView(true), 0); // Reopen the view after resetting
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Shop-Details:', error);
+    }
+  };
 
   // Geoposition des Nutzers laden
   useEffect(() => {
@@ -122,9 +160,9 @@ const IceCreamRadar = () => {
   const filteredShops = iceCreamShops.filter(shop => {
     if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis") return shop.softeis_preis !== null;
-    // if (selectedOption === "Rating") return shop.PLV !== null;
+    if (selectedOption === "Rating") return shop.PLV !== null;
     if (selectedOption === "Favoriten") return shop.is_favorit === 1;
-    // if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
+    if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
@@ -192,6 +230,7 @@ const IceCreamRadar = () => {
         />
 
         <MapEventHandler />
+        {activeShop && <MapCenterOnShop shop={activeShop} />}
         {clustering ? ( // show the clustered
           <MarkerClusterGroup maxClusterRadius={25}>
             {filteredShops.map((shop) => {
@@ -202,15 +241,8 @@ const IceCreamRadar = () => {
                   selectedOption={selectedOption}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
-                  isLoggedIn={isLoggedIn}
-                  userId={userId}
                   plv={shop.PLV}
-                  setIceCreamShops={setIceCreamShops}
-                  refreshShops={refreshShops}
-                  setActiveShop={setActiveShop}
-                  setShowPriceForm={setShowPriceForm}
-                  setShowReviewForm={setShowReviewForm}
-                  setShowCheckinForm={setShowCheckinForm}
+                  fetchShopDetails={fetchShopDetails}
                 />
               );
             })}
@@ -224,15 +256,8 @@ const IceCreamRadar = () => {
                 selectedOption={selectedOption}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
-                isLoggedIn={isLoggedIn}
-                userId={userId}
                 plv={shop.PLV}
-                setIceCreamShops={setIceCreamShops}
-                refreshShops={refreshShops}
-                setActiveShop={setActiveShop}
-                setShowPriceForm={setShowPriceForm}
-                setShowReviewForm={setShowReviewForm}
-                setShowCheckinForm={setShowCheckinForm}
+                fetchShopDetails={fetchShopDetails}
               />
             );
           })
@@ -284,6 +309,20 @@ const IceCreamRadar = () => {
         showCheckinForm={showCheckinForm}
         setShowCheckinForm={setShowCheckinForm}
       />)}
+      {showDetailsView && activeShop && (
+        <ShopDetailsView
+          shop={activeShop}
+          setShowPriceForm={setShowPriceForm}
+          setShowReviewForm={setShowReviewForm}
+          setShowCheckinForm={setShowCheckinForm}
+          setIceCreamShops={setIceCreamShops}
+          onClose={() => {
+            setActiveShop(null);
+            setShowDetailsView(false);
+            navigate('/map'); // Zurück zur Map-URL ohne Shop
+          }}
+        />
+      )}
     </div>
   );
 };

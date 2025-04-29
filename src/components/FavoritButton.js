@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import "./FavoritButton.css";
+import { useUser } from "./../context/UserContext";
 
-const FavoritenButton = ({ eisdieleId, isLoggedIn, userId, setIceCreamShops }) => {
+const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
     const [favorisiert, setFavorisiert] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { isLoggedIn, userId } = useUser();
+
+    if (!isLoggedIn) {}
 
     // Favoritenstatus bei Mount laden
     useEffect(() => {

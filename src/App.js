@@ -16,6 +16,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<IceCreamRadar />} />
           <Route path="/map" element={<IceCreamRadar />} />
+          <Route path="/map/activeShop/:shopId" element={<IceCreamRadar />} />
           <Route path="/dashboard" element={<DashBoard />} />
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/favoriten" element={<FavoritenListe />} />
