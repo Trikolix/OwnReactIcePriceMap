@@ -18,6 +18,7 @@ import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
 import { useParams, useNavigate } from 'react-router-dom';
+import MapCenterOnShop from './components/MapCenterOnShop';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -229,6 +230,7 @@ const IceCreamRadar = () => {
         />
 
         <MapEventHandler />
+        {activeShop && <MapCenterOnShop shop={activeShop} />}
         {clustering ? ( // show the clustered
           <MarkerClusterGroup maxClusterRadius={25}>
             {filteredShops.map((shop) => {
