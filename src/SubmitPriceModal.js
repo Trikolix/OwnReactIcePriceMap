@@ -10,7 +10,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
 
     const submit = async () => {
         try {
-            const response = await fetch('https://ice-app.4lima.de/backend/submitPrice.php', {
+            const response = await fetch('https://ice-app.de/backend/submitPrice.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -127,7 +127,7 @@ const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1001;
 `;
 
 const Modal = styled.div`

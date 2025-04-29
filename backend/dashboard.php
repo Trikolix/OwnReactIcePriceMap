@@ -1,5 +1,5 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 // Price Per Landkreis
 $stmtPricePerLandkreis = $pdo->prepare("
@@ -33,13 +33,14 @@ $pricePerLandkreis = $stmtPricePerLandkreis->fetchAll(PDO::FETCH_ASSOC);
 // Latest Reviews
 $stmtReviews = $pdo->prepare("SELECT b.*,
                                      e.name AS eisdiele_name,
-                                     n.username AS nutzer_name
- FROM bewertungen b
- JOIN eisdielen e ON b.eisdiele_id = e.id
- JOIN nutzer n ON b.nutzer_id = n.id
- ORDER BY b.erstellt_am DESC
- LIMIT 10
- ");
+                                     n.username AS nutzer_name,
+                                     n.id AS nutzer_id                            
+                              FROM bewertungen b
+                              JOIN eisdielen e ON b.eisdiele_id = e.id
+                              JOIN nutzer n ON b.nutzer_id = n.id
+                              ORDER BY b.erstellt_am DESC
+                              LIMIT 10
+                            ");
 $stmtReviews->execute();
 $reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);
 
@@ -59,9 +60,9 @@ foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
 unset($review);
 
 // Latest Checkins
-
 $stmtCheckins = $pdo->prepare("
     SELECT c.*, 
+           n.id AS nutzer_id,
            n.username AS nutzer_name,
            e.name AS eisdiele_name,
            e.adresse

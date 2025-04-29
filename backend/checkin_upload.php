@@ -5,7 +5,16 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/evaluators/CountyCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/PhotosCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/KugeleisCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/SofticeCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/SundaeCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/CheckinCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/BundeslandCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/FuerstPuecklerEvaluator.php';
+require_once  __DIR__ . '/evaluators/PerfectWeekEvaluator.php';
 
 // Preflight OPTIONS Request abfangen
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -64,6 +73,36 @@ $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $komment
 
 $checkinId = $pdo->lastInsertId();
 
+// Evaluate Awards
+$evaluators = [
+    new CountyCountEvaluator(),
+    new CheckinCountEvaluator(),
+    new BundeslandCountEvaluator(),
+    new PerfectWeekEvaluator()
+];
+
+if ($bild_url != null) $evaluators[] = new PhotosCountEvaluator();
+
+if (is_array($sorten)) {
+    $evaluators[] = new FuerstPuecklerEvaluator();
+}
+
+if ($type == "Kugel") {
+    $evaluators[] = new KugeleisCountEvaluator();
+} elseif ($type == "Softeis") {
+    $evaluators[] = new SofticeCountEvaluator();
+} elseif ($type == "Eisbecher") {
+    $evaluators[] = new SundaeCountEvaluator();
+}
+
+$newAwards = [];
+foreach ($evaluators as $evaluator) {
+    $evaluated = $evaluator->evaluate($userId);
+    error_log(print_r($evaluator, true));
+    error_log(print_r($evaluated, true));
+    $newAwards = array_merge($newAwards, $evaluated);
+}
+
 // Falls Sorten mitgeschickt wurden: in eigene Tabelle einfügen
 if (is_array($sorten)) {
     $sorteStmt = $pdo->prepare("
@@ -72,10 +111,16 @@ if (is_array($sorten)) {
     ");
     foreach ($sorten as $sorte) {
         $name = $sorte['name'] ?? '';
-        $bewertung = isset($sorte['bewertung']) && $sorte['bewertung'] != "" ? floatval($sorte['bewertung']) : $geschmack;
-        $sorteStmt->execute([$checkinId, $name, $bewertung]);
+        if (!empty($name)) {
+            $bewertung = isset($sorte['bewertung']) && $sorte['bewertung'] != "" ? floatval($sorte['bewertung']) : $geschmack;
+            $sorteStmt->execute([$checkinId, $name, $bewertung]);
+        }
     }
 }
 
-echo json_encode(['status' => 'success', 'checkin_id' => $checkinId]);
+echo json_encode([
+    'status' => 'success',
+    'checkin_id' => $checkinId,
+    'new_awards' => $newAwards
+]);
 ?>

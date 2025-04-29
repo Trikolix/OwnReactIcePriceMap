@@ -1,5 +1,6 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -76,7 +77,19 @@ if ($location) {
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId
         ]);
-        echo json_encode(["status" => "success"]);
+        // Evaluate Awards
+        $evaluators = [
+            new IceShopSubmitCountEvaluator()
+        ];
+        
+        $newAwards = [];
+        foreach ($evaluators as $evaluator) {
+            $newAwards = array_merge($newAwards, $evaluator->evaluate($data['userId']));
+        }
+        echo json_encode([
+            "status" => "success",
+            'new_awards' => $newAwards
+        ]);
     } catch (PDOException $e) {
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }

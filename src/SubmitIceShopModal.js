@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 import LocationPicker from "./components/LocationPicker";
+import NewAwards from "./components/NewAwards";
 
 const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude = null, userLongitude = null }) => {
   const [name, setName] = useState("");
@@ -11,11 +12,12 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
   const [komoot, setKomoot] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [awards, setAwards] = useState([]);
 
   const submit = async () => {
     try {
       console.log("refreshShops:", refreshShops, typeof refreshShops);
-      const response = await fetch("https://ice-app.4lima.de/backend/submitIceShop.php", {
+      const response = await fetch("https://ice-app.de/backend/submitIceShop.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,10 +41,15 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
         setLongitude("");
         setOpeningHours("{}");
         setKomoot("");
-        setTimeout(() => {
-          setMessage("");
-          setShowForm(false);
-        }, 2000);
+        if (data.new_awards && data.new_awards.length > 0) {
+          setAwards(data.new_awards);
+        } else {
+          setTimeout(() => {
+            setMessage("");
+            setShowForm(false);
+          }, 2000);
+        }
+
       } else {
         setMessage(`Fehler: ${data.message}`);
       }
@@ -113,9 +120,10 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
           <ButtonGroup>
             <SubmitButton type="submit">Einreichen</SubmitButton>
           </ButtonGroup>
-        </form> )}
+        </form>)}
 
         {message && <Message>{message}</Message>}
+        <NewAwards awards={awards} />
       </Modal>
     </Overlay>
   );

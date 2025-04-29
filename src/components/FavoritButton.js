@@ -9,7 +9,7 @@ const FavoritenButton = ({ eisdieleId, isLoggedIn, userId, setIceCreamShops }) =
     useEffect(() => {
         if (!isLoggedIn) return;
 
-        fetch(`https://ice-app.4lima.de/backend/is_favorit.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
+        fetch(`https://ice-app.de/backend/is_favorit.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
             .then((res) => res.json())
             .then((data) => {
                 if (data.favorit === true) {
@@ -28,7 +28,7 @@ const FavoritenButton = ({ eisdieleId, isLoggedIn, userId, setIceCreamShops }) =
         }
 
         setLoading(true);
-        fetch(`https://ice-app.4lima.de/backend/favoriten_toggle.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
+        fetch(`https://ice-app.de/backend/favoriten_toggle.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
             .then(res => res.json())
             .then(data => {
                 console.log(data);

@@ -9,7 +9,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
     const handleLogin = async () => {
         try {
-          const response = await fetch('https://ice-app.4lima.de/backend/login.php', {
+          const response = await fetch('https://ice-app.de/backend/login.php', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -23,11 +23,12 @@ const LoginModal = ({ setShowLoginModal }) => {
           const data = await response.json();
           console.log(data);
           if (data.status === 'success') {
-            login(data.userId);
+            login(data.userId, username);
             console.log(userId);
             setMessage('Login erfolgreich!');
     
             localStorage.setItem('userId', data.userId);
+            localStorage.setItem('username', username);
     
             // Schließen Sie das Modal nach 2 Sekunden
             setTimeout(() => {
@@ -53,7 +54,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content" style={{ position: 'relative' }}>
+            <div className="modal-content" style={{ position: 'relative', zIndex: '1002' }}>
                 <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
                 <h2>Login</h2>
                 <form

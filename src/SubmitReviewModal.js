@@ -19,7 +19,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
     useEffect(() => {
         const fetchReview = async () => {
             try {
-                const response = await fetch(`https://ice-app.4lima.de/backend/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
+                const response = await fetch(`https://ice-app.de/backend/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
                 const data = await response.json();
                 setAttribute(data.allAttributes.filter(attr => !data.attributes || !data.attributes.includes(attr)));
                 if (data.review) {
@@ -39,7 +39,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
 
     const submit = async () => {
         try {
-            const response = await fetch("https://ice-app.4lima.de/backend/submitReview.php", {
+            const response = await fetch("https://ice-app.de/backend/submitReview.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -95,7 +95,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
 
     const confirmPrice = async () => {
         try {
-            const response = await fetch('https://ice-app.4lima.de/backend/submitPrice.php', {
+            const response = await fetch('https://ice-app.de/backend/submitPrice.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -214,7 +214,7 @@ const ModalOverlay = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 1001;
 `;
 
 const ModalContent = styled.div`

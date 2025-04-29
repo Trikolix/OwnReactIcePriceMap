@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import NewAwards from "./components/NewAwards";
 
 const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
-    const [geschmackbewertung, setgeschmackbewertung] = useState("");
+    const [geschmackbewertung, setGeschmackbewertung] = useState("");
     const [waffelbewertung, setWaffelbewertung] = useState("");
     const [größenbewertung, setGrößenbewertung] = useState("");
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [awards, setAwards] = useState([]);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -38,7 +40,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             formData.append("bild", bild);
             formData.append("sorten", JSON.stringify(sorten));
 
-            const response = await fetch("https://ice-app.4lima.de/backend/checkin_upload.php", {
+            const response = await fetch("https://ice-app.de/backend/checkin_upload.php", {
                 method: "POST",
                 body: formData
             });
@@ -48,9 +50,13 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
                 setSubmitted(true);
-                setTimeout(() => {
-                    setShowCheckinForm(false);
-                }, 2000);
+                if (data.new_awards && data.new_awards.length > 0) {
+                    setAwards(data.new_awards);
+                } else {
+                    setTimeout(() => {
+                        setShowCheckinForm(false);
+                    }, 2000);
+                }
             } else {
                 setMessage(`Fehler: ${data.message}`);
             }
@@ -111,46 +117,54 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
                         </div>
                     </Section>
 
-                    <Section>
-                        <Label>Bewertung Geschmack</Label>
-                        <Input
-                            type="number"
-                            step="0.1"
-                            min="1.0"
-                            max="5.0"
-                            value={geschmackbewertung}
-                            onChange={(e) => setgeschmackbewertung(e.target.value)}
-                        />
-                    </Section>
-
-                    <Section>
-                        <Label>Bewertung Größe</Label>
-                        <Input
-                            type="number"
-                            step="0.1"
-                            min="1.0"
-                            max="5.0"
-                            value={größenbewertung}
-                            onChange={(e) => setGrößenbewertung(e.target.value)}
-                        />
-                    </Section>
-
-                    <Section>
-                        <Label>Bewertung Waffel</Label>
-                        <Input
-                            type="number"
-                            step="0.1"
-                            min="1.0"
-                            max="5.0"
-                            value={waffelbewertung}
-                            onChange={(e) => setWaffelbewertung(e.target.value)}
-                        />
-                    </Section>
+                    <Table>
+                                <tbody>
+                                    <tr>
+                                        <td><Label>Bewertung Geschmack:</Label></td>
+                                        <td>
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                min="1.0"
+                                                max="5.0"
+                                                value={geschmackbewertung}
+                                                onChange={(e) => setGeschmackbewertung(e.target.value)}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><Label>Bewertung Größe:</Label></td>
+                                        <td>
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                min="1.0"
+                                                max="5.0"
+                                                value={größenbewertung}
+                                                onChange={(e) => setGrößenbewertung(e.target.value)}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><Label>Bewertung Waffel:</Label></td>
+                                        <td>
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                min="1.0"
+                                                max="5.0"
+                                                value={waffelbewertung}
+                                                onChange={(e) => setWaffelbewertung(e.target.value)}
+                                            />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </Table>
 
                     <Section>
                         <Label>Kommentar</Label>
                         <Textarea
-                            rows="3"
+                            rows="5"
                             value={kommentar}
                             onChange={(e) => setKommentar(e.target.value)}
                         />
@@ -167,9 +181,10 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
                     <ButtonGroup>
                         <Button type="submit">Check-in</Button>
                     </ButtonGroup>
-                    
-                </Form>) }
+
+                </Form>)}
                 <Message>{message}</Message>
+                <NewAwards awards={awards} />
             </Modal>
         </Overlay>) : null
     );
@@ -184,7 +199,7 @@ const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1001;
 `;
 
 const Modal = styled.div`
@@ -300,4 +315,22 @@ const Row = styled.div`
 const Message = styled.p`
   margin-top: 1rem;
   font-style: italic;
+`;
+
+const Table = styled.table`
+  border-spacing: 0;
+  margin-bottom: 1rem;
+
+  td {
+    padding: 0.1rem;
+    vertical-align: top;
+  }
+
+  td:first-child {
+    width: 70%;
+  }
+
+  td:last-child {
+    width: 30%;
+  }
 `;

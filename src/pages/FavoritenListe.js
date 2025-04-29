@@ -10,7 +10,7 @@ function FavoritenListe() {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    fetch(`https://ice-app.4lima.de/backend/favoriten_liste.php?nutzer_id=${userId}`)
+    fetch(`https://ice-app.de/backend/favoriten_liste.php?nutzer_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
         setFavoriten(data);

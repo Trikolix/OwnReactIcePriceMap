@@ -1,5 +1,5 @@
 <?php
-require_once 'db_connect.php';
+require_once  __DIR__ . '/db_connect.php';
 
 if (!isset($_GET["minLat"]) || !isset($_GET["maxLat"]) || !isset($_GET["minLon"]) || !isset($_GET["maxLon"])) {
     echo json_encode(["error" => "Bitte minLat, minLon, maxLat und maxLon als Parameter übergeben!"]);

@@ -1,6 +1,6 @@
 <?php
 // Holt die JSON-Daten vom API-Endpunkt
-$json = file_get_contents("https://ice-app.4lima.de/backend/get_eisdielen_preisleistung.php");
+$json = file_get_contents("https://ice-app.de/backend/get_eisdielen_preisleistung.php");
 $eisdielen = json_decode($json, true);
 ?>
 
