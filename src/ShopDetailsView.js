@@ -116,7 +116,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             </Table>
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
 
-            <h2>Bewertungen</h2>
+            <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
             {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (
               <Table>
                 <tr>
@@ -188,6 +188,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
 export default ShopDetailsView;
 
 const Container = styled.div`
+  overscroll-behavior: none;
   position: fixed;
   bottom: 0;
   left: 0;
