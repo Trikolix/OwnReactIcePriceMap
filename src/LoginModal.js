@@ -53,7 +53,7 @@ const LoginModal = ({ setShowLoginModal }) => {
       };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ zIndex: '1002' }}>
             <div className="modal-content" style={{ position: 'relative', zIndex: '1002' }}>
                 <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
                 <h2>Login</h2>

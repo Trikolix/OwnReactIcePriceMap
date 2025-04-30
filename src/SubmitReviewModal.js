@@ -37,6 +37,21 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
         fetchReview();
     }, [userId, shop.eisdiele.id]);
 
+    const askForPriceUpdate = (preise) => {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+        // Helper: prüft, ob ein Eintrag null ist oder dessen letztes_update zu alt ist
+        const isNullOrTooOld = (eintrag) => {
+          if (!eintrag) return true;
+          const updateDate = new Date(eintrag.letztes_update);
+          return isNaN(updateDate.getTime()) || updateDate < sevenDaysAgo;
+        };
+      
+        return isNullOrTooOld(preise.kugel) && isNullOrTooOld(preise.softeis);
+      };
+
+
     const submit = async () => {
         try {
             const response = await fetch("https://ice-app.de/backend/submitReview.php", {
@@ -61,7 +76,11 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
                 refreshShops();
                 setSubmitted(true);
                 setTimeout(() => {
-                    setPreisfrage(true);
+                    if (askForPriceUpdate(shop.preise)) {
+                        setPreisfrage(true);
+                    } else {
+                        setShowForm(false);
+                    }
                 }, 1000);
             } else {
                 setMessage(`Fehler: ${data.message}`);

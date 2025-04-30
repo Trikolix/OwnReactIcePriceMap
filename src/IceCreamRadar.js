@@ -48,7 +48,7 @@ const IceCreamRadar = () => {
         setTimeout(() => setShowDetailsView(true), 0);
 
         if (mapRef.current) {
-          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude], 16); // oder andere Zoom-Stufe
+          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude]);
         }
       } catch (err) {
         console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
