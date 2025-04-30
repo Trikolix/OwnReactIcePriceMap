@@ -124,7 +124,7 @@ const IceCreamRadar = () => {
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
-    if (mapRef.current && userPosition) {
+    if (mapRef.current && userPosition && !shopId) {
       mapRef.current.setView(userPosition, 14);
     }
   }, [userPosition]);
