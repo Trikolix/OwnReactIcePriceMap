@@ -4,6 +4,7 @@ import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link } from 'react-router-dom';
+import Login from './Login'; // Importiere die neue LoginModal-Komponente
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,7 +41,6 @@ const Header = ({ refreshShops }) => {
         <LogoContainer>
           <a href="/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
         </LogoContainer>
-
         <BurgerMenu onClick={toggleMenu}>
           <span />
           <span />
@@ -59,7 +59,7 @@ const Header = ({ refreshShops }) => {
                 <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (
-              <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
+              <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen / Registrieren</MenuItem>
             )}
             <MenuItemLink to="/impressum">Impressum</MenuItemLink>
           </Menu>

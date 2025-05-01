@@ -72,8 +72,8 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId, $osmId = nu
 $sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, komoot, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :komoot, :userId, :landkreisId, :bundeslandId, :landId)";
 $stmt = $pdo->prepare($sql);
 
-$lat = $data['latitude'];
-$lon = $data['longitude'];
+$lat = round(floatval($data['latitude']), 6);
+$lon = round(floatval($data['longitude']), 6);
 $location = getLocationDetailsFromCoords($lat, $lon);
 if ($location) {
     $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);

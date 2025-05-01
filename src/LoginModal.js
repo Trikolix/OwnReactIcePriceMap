@@ -1,88 +1,97 @@
 import React, { useState } from "react";
 import { useUser } from './context/UserContext';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
 const LoginModal = ({ setShowLoginModal }) => {
     const [message, setMessage] = useState('');
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { userId, isLoggedIn, login } = useUser();
+    const [isRegisterMode, setIsRegisterMode] = useState(false);
 
-    const handleLogin = async () => {
+    const { login, isLoggedIn } = useUser();
+
+    const auth = getAuth();
+
+    const handleFirebaseLogin = async () => {
         try {
-          const response = await fetch('https://ice-app.de/backend/login.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              username,
-              password
-            })
-          });
-    
-          const data = await response.json();
-          console.log(data);
-          if (data.status === 'success') {
-            login(data.userId, username);
-            console.log(userId);
-            setMessage('Login erfolgreich!');
-    
-            localStorage.setItem('userId', data.userId);
-            localStorage.setItem('username', username);
-    
-            // Schließen Sie das Modal nach 2 Sekunden
-            setTimeout(() => {
-              setShowLoginModal(false);
-              setMessage('');
-              setPassword('');
-            }, 2000);
-          } else {
-            setMessage(`Login fehlgeschlagen: ${data.message}`);
-          }
-        } catch (error) {
-          console.error("Error during login:", error); // Debugging
-          setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
-        }
-      };
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-      const closeLoginForm = () => {
+            login(user.uid, email); // nutze deine Context-Funktion
+            localStorage.setItem('userId', user.uid);
+            localStorage.setItem('username', email);
+
+            setMessage('Login erfolgreich!');
+            setTimeout(() => setShowLoginModal(false), 2000);
+        } catch (error) {
+            setMessage(`Fehler beim Login: ${error.message}`);
+        }
+    };
+
+    const handleFirebaseRegister = async () => {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            login(user.uid, email);
+            localStorage.setItem('userId', user.uid);
+            localStorage.setItem('username', email);
+
+            setMessage('Registrierung erfolgreich!');
+            setTimeout(() => setShowLoginModal(false), 2000);
+        } catch (error) {
+            setMessage(`Fehler bei der Registrierung: ${error.message}`);
+        }
+    };
+
+    const closeLoginForm = () => {
         setShowLoginModal(false);
         setMessage('');
-        setUsername('');
+        setEmail('');
         setPassword('');
-      };
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (isRegisterMode) {
+            handleFirebaseRegister();
+        } else {
+            handleFirebaseLogin();
+        }
+    };
 
     return (
         <div className="modal-overlay" style={{ zIndex: '1002' }}>
             <div className="modal-content" style={{ position: 'relative', zIndex: '1002' }}>
-                <button className="close-button" style={{ position: 'relative', top: '-10px', right: '-150px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', outlineStyle: 'none' }} onClick={() => closeLoginForm()}>x</button>
-                <h2>Login</h2>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault(); // Verhindert das Neuladen der Seite
-                        handleLogin();
-                    }}
-                >
+                <button className="close-button" onClick={closeLoginForm}>x</button>
+                <h2>{isRegisterMode ? 'Registrieren' : 'Login'}</h2>
+                <form onSubmit={handleSubmit}>
                     <input
-                        type="text"
-                        placeholder="Benutzername"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        type="email"
+                        placeholder="E-Mail"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
                     />
                     <input
                         type="password"
                         placeholder="Passwort"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                    /><br />
-                    <button type="submit">Login</button>
+                        required
+                    />
+                    <br />
+                    <button type="submit">{isRegisterMode ? 'Registrieren' : 'Login'}</button>
                 </form>
                 <p>{message}</p>
-                {isLoggedIn && <p>Willkommen zurück, {username}!</p>}
-                <button onClick={() => closeLoginForm()}>Schließen</button>
+                {isLoggedIn && <p>Willkommen zurück, {email}!</p>}
+                <button onClick={() => setIsRegisterMode(!isRegisterMode)}>
+                    {isRegisterMode ? 'Zum Login wechseln' : 'Neu hier? Registrieren'}
+                </button>
+                <button onClick={closeLoginForm}>Schließen</button>
             </div>
         </div>
     );
-}
+};
 
 export default LoginModal;
