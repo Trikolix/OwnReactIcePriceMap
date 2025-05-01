@@ -26,12 +26,25 @@ function getLocationDetailsFromCoords($lat, $lon) {
     // Verwende 'city', falls 'county' nicht vorhanden ist
     $landkreis = $data['address']['county'] ?? $data['address']['city'] ?? null;
     return [
+        'land' => $data['address']['country'],
+        "country_code" => $data['address']['country_code'],
         'bundesland' => $data['address']['state'],
         'bundesland_iso' => $data['address']['ISO3166-2-lvl4'] ?? null,
         'landkreis' => $landkreis,
         'landkreis_osm_id' => $data['osm_id'] ?? null  // beachte: ist meist die OSM-ID des Landkreises
     ];
     return null;
+}
+
+function getOrCreateLandId($pdo, $land, $country_code = null) {
+    $stmt = $pdo->prepare("SELECT id FROM laender WHERE name = ?");
+    $stmt->execute([$land]);
+    $id = $stmt->fetchColumn();
+    if ($id) return $id;
+
+    $insert = $pdo->prepare("INSERT INTO laender (name, country_code) VALUES (?, ?)");
+    $insert->execute([$land, $country_code]);
+    return $pdo->lastInsertId();
 }
 
 function getOrCreateBundeslandId($pdo, $bundeslandName, $iso = null) {
@@ -56,13 +69,14 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId, $osmId = nu
     return $pdo->lastInsertId();
 }
 
-$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, openingHours, komoot, user_id, landkreis_id, bundesland_id) VALUES (:name, :adresse, :latitude, :longitude, :openingHours, :komoot, :userId, :landkreisId, :bundeslandId)";
+$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, openingHours, komoot, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :openingHours, :komoot, :userId, :landkreisId, :bundeslandId, :landId)";
 $stmt = $pdo->prepare($sql);
 
 $lat = $data['latitude'];
 $lon = $data['longitude'];
 $location = getLocationDetailsFromCoords($lat, $lon);
 if ($location) {
+    $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
     $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso']);
     $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId, $location['landkreis_osm_id']);
     try {
@@ -75,7 +89,8 @@ if ($location) {
             ':komoot' => $data['komoot'],
             ':userId' => intval($data['userId']),
             ':landkreisId' => $landkreisId,
-            ':bundeslandId' => $bundeslandId
+            ':bundeslandId' => $bundeslandId,
+            ':landId' => $landId
         ]);
         // Evaluate Awards
         $evaluators = [
@@ -94,7 +109,7 @@ if ($location) {
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Konnte Bundesland/Landkreis nicht bestimmen."]);
+    echo json_encode(["status" => "error", "message" => "Konnte Land/Bundesland/Landkreis nicht bestimmen."]);
 }
 
 ?>

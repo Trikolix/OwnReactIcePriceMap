@@ -48,7 +48,7 @@ const IceCreamRadar = () => {
         setTimeout(() => setShowDetailsView(true), 0);
 
         if (mapRef.current) {
-          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude], 16); // oder andere Zoom-Stufe
+          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude]);
         }
       } catch (err) {
         console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
@@ -124,10 +124,10 @@ const IceCreamRadar = () => {
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
-    if (mapRef.current && userPosition) {
+    if (mapRef.current && userPosition && !shopId) {
       mapRef.current.setView(userPosition, 14);
     }
-  }, [userPosition]);
+  }, [userPosition, shopId]);
 
   const MapEventHandler = () => {
     const map = useMap();
@@ -319,7 +319,6 @@ const IceCreamRadar = () => {
           onClose={() => {
             setActiveShop(null);
             setShowDetailsView(false);
-            navigate('/map'); // Zurück zur Map-URL ohne Shop
           }}
         />
       )}
