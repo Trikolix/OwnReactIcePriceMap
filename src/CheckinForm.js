@@ -6,9 +6,9 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
-    const [geschmackbewertung, setGeschmackbewertung] = useState("");
-    const [waffelbewertung, setWaffelbewertung] = useState("");
-    const [größenbewertung, setGrößenbewertung] = useState("");
+    const [geschmackbewertung, setGeschmackbewertung] = useState(null);
+    const [waffelbewertung, setWaffelbewertung] = useState(null);
+    const [größenbewertung, setGrößenbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
     const [message, setMessage] = useState('');
