@@ -37,9 +37,9 @@ $userId = $_POST['userId'] ?? null;
 $shopId = $_POST['shopId'] ?? null;
 $type = $_POST['type'] ?? null;
 $geschmack = $_POST['geschmackbewertung'] ?? null;
-$waffel = $_POST['waffelbewertung'] ?? null;
-$größe = $_POST['größenbewertung'] ?? null;
-$kommentar = $_POST['kommentar'] ?? '';
+$geschmack = ($_POST['geschmackbewertung'] ?? '') !== '' ? floatval($_POST['geschmackbewertung']) : null;
+$waffel = ($_POST['waffelbewertung'] ?? '') !== '' ? floatval($_POST['waffelbewertung']) : null;
+$größe = ($_POST['größenbewertung'] ?? '') !== '' ? floatval($_POST['größenbewertung']) : null;
 $sorten = json_decode($_POST['sorten'] ?? '[]', true);
 
 // Validierung
