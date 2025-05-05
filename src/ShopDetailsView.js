@@ -116,36 +116,37 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             </Table>
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
 
-            <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
-            {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (
+
+            {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (<>
+              <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
               <Table>
-                <tr>
+                {shop.bewertungen.geschmack !== null && (<tr>
                   <th>Geschmack:</th>
                   <td>
                     <Rating stars={shop.bewertungen.geschmack} />{" "}
                     <strong>{shop.bewertungen.geschmack}</strong>
                   </td>
-                </tr>
-                <tr>
+                </tr>)}
+                {shop.bewertungen.waffel !== null && (<tr>
                   <th>Waffel:</th>
                   <td>
                     <Rating stars={shop.bewertungen.waffel} />{" "}
                     <strong>{shop.bewertungen.waffel}</strong>
                   </td>
-                </tr>
-                <tr>
+                </tr>)}
+                {shop.bewertungen.kugelgroesse !== null && (<tr>
                   <th>Größe:</th>
                   <td>
                     <Rating stars={shop.bewertungen.kugelgroesse} />{" "}
                     <strong>{shop.bewertungen.kugelgroesse}</strong>
                   </td>
-                </tr>
-                <tr>
+                </tr>)}
+                {shop.bewertungen.auswahl !== null && (<tr>
                   <th>Auswahl:</th>
                   <td>
                     ~ <strong>{shop.bewertungen.auswahl}</strong> Sorten
                   </td>
-                </tr>
+                </tr>)}
                 {shop.attribute?.length > 0 &&
                   <tr>
                     <th>Attribute:</th>
@@ -156,7 +157,8 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
                     </td>
                   </tr>}
               </Table>
-            ) : (<>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
+            </>
+            ) : (<><h2>Bewertungen</h2>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
             {isLoggedIn && shop.eisdiele.komoot !== "" && (<>
               <h2>Komoot</h2>
@@ -169,7 +171,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             {shop.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
             {shop.reviews && (shop.reviews.map((review, index) => (
-              <ReviewCard key={index} review={review} />
+              <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm}/>
             )))}
           </div>}
         {activeTab === 'checkins' && <div>

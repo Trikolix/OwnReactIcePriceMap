@@ -31,27 +31,27 @@ const CheckinCard = ({ checkin }) => {
             </AttributeSection>
 
             <Table>
-              <tr>
+              {checkin.geschmackbewertung !== null && (<tr>
                 <th>Geschmack:</th>
                 <td>
                   <Rating stars={checkin.geschmackbewertung} />{" "}
                   <strong>{checkin.geschmackbewertung}</strong>
                 </td>
-              </tr>
-              <tr>
+              </tr>)}
+              {checkin.waffelbewertung !== null && (<tr>
                 <th>Waffel:</th>
                 <td>
                   <Rating stars={checkin.waffelbewertung} />{" "}
                   <strong>{checkin.waffelbewertung}</strong>
                 </td>
-              </tr>
-              <tr>
+              </tr>)}
+              {checkin.größenbewertung !== null && (<tr>
                 <th>Größe:</th>
                 <td>
                   <Rating stars={checkin.größenbewertung} />{" "}
                   <strong>{checkin.größenbewertung}</strong>
                 </td>
-              </tr>
+              </tr>)}
             </Table>
 
             {checkin.kommentar && <p>{checkin.kommentar}</p>}

@@ -37,24 +37,24 @@ const IceCreamRadar = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchAndCenterShop = async (id) => {
-      try {
-        const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
-        const data = await response.json();
-        console.log('fetchAndCenterShop', data)
-        setActiveShop(data);
-        setShowDetailsView(false);
-        setTimeout(() => setShowDetailsView(true), 0);
+  const fetchAndCenterShop = async (id) => {
+    try {
+      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+      const data = await response.json();
+      console.log('fetchAndCenterShop', data)
+      setActiveShop(data);
+      setShowDetailsView(false);
+      setTimeout(() => setShowDetailsView(true), 0);
 
-        if (mapRef.current) {
-          mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude]);
-        }
-      } catch (err) {
-        console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
+      if (mapRef.current) {
+        mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude]);
       }
-    };
+    } catch (err) {
+      console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
+    }
+  };
 
+  useEffect(() => {
     if (shopId) {
       fetchAndCenterShop(shopId);
     }
@@ -243,6 +243,7 @@ const IceCreamRadar = () => {
                   maxPrice={maxPrice}
                   plv={shop.PLV}
                   fetchShopDetails={fetchShopDetails}
+                  fetchAndCenterShop={fetchAndCenterShop}
                 />
               );
             })}
@@ -258,6 +259,7 @@ const IceCreamRadar = () => {
                 maxPrice={maxPrice}
                 plv={shop.PLV}
                 fetchShopDetails={fetchShopDetails}
+                fetchAndCenterShop={fetchAndCenterShop}
               />
             );
           })
