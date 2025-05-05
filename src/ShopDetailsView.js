@@ -2,15 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
-import ReviewCard from "./components/ReviewCard";
+import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
+import FavoritenButton from './components/FavoritButton';
 
-const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm }) => {
+const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [isFullHeight, setIsFullHeight] = useState(false);
-  const containerRef = useRef(null);
+  const headerRef = useRef(null);
   const startYRef = useRef(0);
-  const isLoggedIn = useUser();
+  const { isLoggedIn } = useUser();
 
   useEffect(() => {
     const handleTouchStart = (e) => {
@@ -30,7 +31,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
       }
     };
 
-    const container = containerRef.current;
+    const container = headerRef.current;
     if (container) {
       container.addEventListener('touchstart', handleTouchStart);
       container.addEventListener('touchmove', handleTouchMove);
@@ -71,10 +72,14 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
 
   console.log('ShopDetailsView', shop);
   return (
-    <Container ref={containerRef} isFullHeight={isFullHeight}>
-      <Header>
+    <Container isFullHeight={isFullHeight}>
+      <Header ref={headerRef}>
         <h2>{shop.eisdiele.name}</h2>
         <CloseButton onClick={onClose}>✖</CloseButton>
+        <FavoritenButton
+          eisdieleId={shop.eisdiele.id}
+          setIceCreamShops={setIceCreamShops}
+        />
       </Header>
       <Tabs>
         <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
@@ -88,8 +93,8 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             <strong>Öffnungszeiten:</strong> {shop.eisdiele.openingHours.split(";").map((part, index) => (<div key={index}>{part.trim()}</div>))}
 
             <h2>Preise</h2>
+            {(shop.preise.kugel == null && shop.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
             <Table>
-              {(shop.preise.kugel == null && shop.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. Trage jetzt gerne Preise ein:</>)}
               {shop.preise.kugel != null && (
                 <tr>
                   <th>Kugelpreis:</th>
@@ -111,57 +116,67 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             </Table>
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
 
-            <h2>Bewertungen</h2>
-            {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (
+
+            {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (<>
+              <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
               <Table>
-                <tr>
+                {shop.bewertungen.geschmack !== null && (<tr>
                   <th>Geschmack:</th>
                   <td>
                     <Rating stars={shop.bewertungen.geschmack} />{" "}
                     <strong>{shop.bewertungen.geschmack}</strong>
                   </td>
-                </tr>
-                <tr>
+                </tr>)}
+                {shop.bewertungen.waffel !== null && (<tr>
                   <th>Waffel:</th>
                   <td>
                     <Rating stars={shop.bewertungen.waffel} />{" "}
                     <strong>{shop.bewertungen.waffel}</strong>
                   </td>
-                </tr>
-                <tr>
+                </tr>)}
+                {shop.bewertungen.kugelgroesse !== null && (<tr>
                   <th>Größe:</th>
                   <td>
                     <Rating stars={shop.bewertungen.kugelgroesse} />{" "}
                     <strong>{shop.bewertungen.kugelgroesse}</strong>
                   </td>
-                </tr>
-                <tr>
+                </tr>)}
+                {shop.bewertungen.auswahl !== null && (<tr>
                   <th>Auswahl:</th>
                   <td>
                     ~ <strong>{shop.bewertungen.auswahl}</strong> Sorten
                   </td>
-                </tr>
+                </tr>)}
                 {shop.attribute?.length > 0 &&
                   <tr>
                     <th>Attribute:</th>
                     <td>
-                      {shop.attribute.map(attribute => `${attribute.name} x ${attribute.anzahl}`).join(', ')}
+                      <AttributeSection>
+                        {shop.attribute.map(attribute => (<AttributeBadge>{attribute.anzahl} x {attribute.name}</AttributeBadge>))}
+                      </AttributeSection>
                     </td>
                   </tr>}
               </Table>
-            ) : (<>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
+            </>
+            ) : (<><h2>Bewertungen</h2>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
+            {isLoggedIn && shop.eisdiele.komoot !== "" && (<>
+              <h2>Komoot</h2>
+              <div dangerouslySetInnerHTML={{ __html: shop.eisdiele.komoot }} />
+            </>)}
           </div>}
         {activeTab === 'reviews' &&
           <div>
             <h2>Bewertungen</h2>
+            {shop.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
             {shop.reviews && (shop.reviews.map((review, index) => (
-              <ReviewCard key={index} review={review} />
+              <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm}/>
             )))}
           </div>}
         {activeTab === 'checkins' && <div>
           <h2>CheckIns</h2>
+          {shop.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
           {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
           {shop.checkins && (shop.checkins.map((checkin, index) => (
             <CheckinCard key={index} checkin={checkin} />
@@ -175,6 +190,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
 export default ShopDetailsView;
 
 const Container = styled.div`
+  overscroll-behavior: none;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -277,3 +293,18 @@ const Button = styled.button`
     font-weight: bold;
     cursor: pointer;
     `;
+
+const AttributeSection = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  `;
+
+const AttributeBadge = styled.span`
+    background-color: #e0f3ff;
+    color: #0077b6;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  `;

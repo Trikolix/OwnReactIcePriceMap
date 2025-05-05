@@ -38,7 +38,7 @@ class FuerstPuecklerEvaluator extends BaseAwardEvaluator {
         return $achievements;
     }
 
-    private function getBundeslandCount(int $userId): int {
+    private function hasFuerstPueckler(int $userId): int {
         global $pdo;
         $sql = "SELECT 
                   COUNT(DISTINCT CASE 

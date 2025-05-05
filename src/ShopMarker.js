@@ -1,7 +1,7 @@
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 
-const ShopMarker = ({ shop, fetchShopDetails, minPrice, maxPrice, plv, selectedOption }) => {
+const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxPrice, plv, selectedOption }) => {
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
     if (price === null || isNaN(price)) {
       return 'grey';
@@ -58,7 +58,11 @@ const ShopMarker = ({ shop, fetchShopDetails, minPrice, maxPrice, plv, selectedO
         popupAnchor: [0, -19],
       })}
       eventHandlers={{
-        click: () => fetchShopDetails(shop),
+        click: () => {
+          console.log("Marker clicked:", shop);
+          fetchShopDetails(shop);
+           fetchAndCenterShop(shop.eisdielen_id);
+          },
       }}
     >
       <Popup>

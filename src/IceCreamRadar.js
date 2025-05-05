@@ -17,6 +17,8 @@ import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
+import { useParams, useNavigate } from 'react-router-dom';
+import MapCenterOnShop from './components/MapCenterOnShop';
 
 const IceCreamRadar = () => {
   const [iceCreamShops, setIceCreamShops] = useState([]);
@@ -31,6 +33,32 @@ const IceCreamRadar = () => {
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+
+  const { shopId } = useParams();
+  const navigate = useNavigate();
+
+  const fetchAndCenterShop = async (id) => {
+    try {
+      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+      const data = await response.json();
+      console.log('fetchAndCenterShop', data)
+      setActiveShop(data);
+      setShowDetailsView(false);
+      setTimeout(() => setShowDetailsView(true), 0);
+
+      if (mapRef.current) {
+        mapRef.current.setView([data.eisdiele.latitude, data.eisdiele.longitude]);
+      }
+    } catch (err) {
+      console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (shopId) {
+      fetchAndCenterShop(shopId);
+    }
+  }, [shopId]);
 
   const fetchIceCreamShops = async (bounds) => {
     if (cachedBounds.current.some(cached =>
@@ -69,9 +97,7 @@ const IceCreamRadar = () => {
 
   const fetchShopDetails = async (shop) => {
     try {
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
-      const data = await response.json();
-      setActiveShop(data);
+      navigate(`/map/activeShop/${shop.eisdielen_id}`);
       setShowDetailsView(false); // Reset the state to ensure re-rendering
       setTimeout(() => setShowDetailsView(true), 0); // Reopen the view after resetting
     } catch (error) {
@@ -98,10 +124,10 @@ const IceCreamRadar = () => {
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
-    if (mapRef.current && userPosition) {
+    if (mapRef.current && userPosition && !shopId) {
       mapRef.current.setView(userPosition, 14);
     }
-  }, [userPosition]);
+  }, [userPosition, shopId]);
 
   const MapEventHandler = () => {
     const map = useMap();
@@ -204,6 +230,7 @@ const IceCreamRadar = () => {
         />
 
         <MapEventHandler />
+        {activeShop && <MapCenterOnShop shop={activeShop} />}
         {clustering ? ( // show the clustered
           <MarkerClusterGroup maxClusterRadius={25}>
             {filteredShops.map((shop) => {
@@ -214,16 +241,9 @@ const IceCreamRadar = () => {
                   selectedOption={selectedOption}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
-                  isLoggedIn={isLoggedIn}
-                  userId={userId}
                   plv={shop.PLV}
-                  setIceCreamShops={setIceCreamShops}
-                  refreshShops={refreshShops}
-                  setActiveShop={setActiveShop}
-                  setShowPriceForm={setShowPriceForm}
-                  setShowReviewForm={setShowReviewForm}
-                  setShowCheckinForm={setShowCheckinForm}
                   fetchShopDetails={fetchShopDetails}
+                  fetchAndCenterShop={fetchAndCenterShop}
                 />
               );
             })}
@@ -237,16 +257,9 @@ const IceCreamRadar = () => {
                 selectedOption={selectedOption}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
-                isLoggedIn={isLoggedIn}
-                userId={userId}
                 plv={shop.PLV}
-                setIceCreamShops={setIceCreamShops}
-                refreshShops={refreshShops}
-                setActiveShop={setActiveShop}
-                setShowPriceForm={setShowPriceForm}
-                setShowReviewForm={setShowReviewForm}
-                setShowCheckinForm={setShowCheckinForm}
                 fetchShopDetails={fetchShopDetails}
+                fetchAndCenterShop={fetchAndCenterShop}
               />
             );
           })
@@ -298,13 +311,17 @@ const IceCreamRadar = () => {
         showCheckinForm={showCheckinForm}
         setShowCheckinForm={setShowCheckinForm}
       />)}
-      {showDetailsView && (
+      {showDetailsView && activeShop && (
         <ShopDetailsView
           shop={activeShop}
           setShowPriceForm={setShowPriceForm}
           setShowReviewForm={setShowReviewForm}
           setShowCheckinForm={setShowCheckinForm}
-          onClose={() => setShowDetailsView(false)}
+          setIceCreamShops={setIceCreamShops}
+          onClose={() => {
+            setActiveShop(null);
+            setShowDetailsView(false);
+          }}
         />
       )}
     </div>

@@ -137,7 +137,6 @@ try {
     }
     $stats["checkins"] = $checkins; // Checkins hinzufügen
     $stats["reviews"] = $reviews; // Reviews hinzufügen
-    header('Content-Type: application/json');
     echo json_encode($stats);
 
 } catch (PDOException $e) {

@@ -4,7 +4,7 @@ import Rating from "./Rating";
 import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
 
-const ReviewCard = ({ review }) => {
+const ReviewCard = ({ review, setShowReviewForm }) => {
   const { userId } = useUser();
 
   const formatDate = (dateString) =>
@@ -14,7 +14,7 @@ const ReviewCard = ({ review }) => {
     <Card>
       <Header>
         <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
-        <strong>{review.eisdiele_name}</strong> bewertet.{" "}
+        <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
         <DateText>(vom {formatDate(review.erstellt_am)})</DateText>
       </Header>
 
@@ -66,8 +66,8 @@ const ReviewCard = ({ review }) => {
         </AttributeSection>
       )}
 
-      {parseInt(review.nutzer_id, 10) === parseInt(userId, 10) && (
-        <></> // <EditButton onClick={() => onEdit(review.id)}>Bearbeiten</EditButton>
+      {parseInt(review.nutzer_id, 10) === parseInt(userId, 10) && setShowReviewForm && (
+        <EditButton onClick={() => setShowReviewForm(true)}>Bearbeiten</EditButton>
       )}
     </Card>
   );

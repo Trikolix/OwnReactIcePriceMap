@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
+import { Link } from "react-router-dom";
 
 function FavoritenListe() {
   const [favoriten, setFavoriten] = useState([]);
@@ -39,7 +40,7 @@ function FavoritenListe() {
             <List>
               {favoriten.map((eisdiele) => (
                 <ListItem key={eisdiele.id}>
-                  <ShopName>{eisdiele.name}</ShopName>
+                  <ShopName><CleanLink to={`/map/activeShop/${eisdiele.id}`}>{eisdiele.name}</CleanLink></ShopName>
                   <Paragraph><strong>Adresse:</strong> {eisdiele.adresse}</Paragraph>
                   <Paragraph><strong>Öffnungszeiten:</strong><br /> {eisdiele.openingHours.split(";").map((part, index) => (<div key={index}>{part.trim()}</div>))}</Paragraph>
                   <Paragraph>Am {new Date(eisdiele.favorit_seit).toLocaleString()} zu den Favoriten hinzugefügt.</Paragraph>
@@ -55,6 +56,10 @@ function FavoritenListe() {
 
 export default FavoritenListe;
 
+const CleanLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+`;
 
 const Container = styled.div`
   padding: 1rem;

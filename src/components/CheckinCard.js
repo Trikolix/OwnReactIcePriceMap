@@ -16,11 +16,12 @@ const CheckinCard = ({ checkin }) => {
 
   return (
     <>
+      {console.log('checkincard', checkin)}
       <Card>
         <ContentWrapper>
           <LeftContent>
             <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
-            bei <strong>{checkin.eisdiele_name}</strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
+            bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
 
             <AttributeSection>
               <strong>Sorten:</strong>
@@ -30,27 +31,27 @@ const CheckinCard = ({ checkin }) => {
             </AttributeSection>
 
             <Table>
-              <tr>
+              {checkin.geschmackbewertung !== null && (<tr>
                 <th>Geschmack:</th>
                 <td>
                   <Rating stars={checkin.geschmackbewertung} />{" "}
                   <strong>{checkin.geschmackbewertung}</strong>
                 </td>
-              </tr>
-              <tr>
+              </tr>)}
+              {checkin.waffelbewertung !== null && (<tr>
                 <th>Waffel:</th>
                 <td>
                   <Rating stars={checkin.waffelbewertung} />{" "}
                   <strong>{checkin.waffelbewertung}</strong>
                 </td>
-              </tr>
-              <tr>
+              </tr>)}
+              {checkin.größenbewertung !== null && (<tr>
                 <th>Größe:</th>
                 <td>
                   <Rating stars={checkin.größenbewertung} />{" "}
                   <strong>{checkin.größenbewertung}</strong>
                 </td>
-              </tr>
+              </tr>)}
             </Table>
 
             {checkin.kommentar && <p>{checkin.kommentar}</p>}
