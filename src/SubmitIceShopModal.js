@@ -6,6 +6,7 @@ import NewAwards from "./components/NewAwards";
 const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude = null, userLongitude = null }) => {
   const [name, setName] = useState("");
   const [adresse, setAdresse] = useState("");
+  const [website, setWebsite] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [openingHours, setOpeningHours] = useState("");
@@ -23,6 +24,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
         body: JSON.stringify({
           name,
           adresse,
+          website,
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude),
           openingHours,
@@ -37,6 +39,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
         refreshShops();
         setName("");
         setAdresse("");
+        setWebsite("");
         setLatitude("");
         setLongitude("");
         setOpeningHours("{}");
@@ -110,6 +113,11 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
           <Group>
             <label>Öffnungszeiten (optional):</label>
             <Textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+          </Group>
+
+          <Group>
+            <label>Website (optional):</label>
+            <Input type="text"  value={website} onChange={(e) => setWebsite(e.target.value)} />
           </Group>
 
           <Group>

@@ -69,7 +69,7 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId, $osmId = nu
     return $pdo->lastInsertId();
 }
 
-$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, openingHours, komoot, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :openingHours, :komoot, :userId, :landkreisId, :bundeslandId, :landId)";
+$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, komoot, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :komoot, :userId, :landkreisId, :bundeslandId, :landId)";
 $stmt = $pdo->prepare($sql);
 
 $lat = $data['latitude'];
@@ -85,6 +85,7 @@ if ($location) {
             ':adresse' => $data['adresse'],
             ':latitude' => floatval($data['latitude']),
             ':longitude' => floatval($data['longitude']),
+            ':website' => $data['website'],
             ':openingHours' => $data['openingHours'],
             ':komoot' => $data['komoot'],
             ':userId' => intval($data['userId']),

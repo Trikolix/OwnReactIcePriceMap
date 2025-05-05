@@ -40,7 +40,7 @@ class BundeslandCountEvaluator extends BaseAwardEvaluator {
         $sql = "SELECT COUNT(DISTINCT s.bundesland_id) AS bundesland_count
                 FROM checkins c
                 JOIN eisdielen s ON c.eisdiele_id = s.id
-                WHERE c.nutzer_id = ?";
+                WHERE c.nutzer_id = ? AND s.land_id = 1";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 

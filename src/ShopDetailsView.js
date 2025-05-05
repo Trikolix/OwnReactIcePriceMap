@@ -91,6 +91,9 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
           <div>
             <strong>Adresse:</strong> {shop.eisdiele.adresse}<br />
             <strong>Öffnungszeiten:</strong> {shop.eisdiele.openingHours.split(";").map((part, index) => (<div key={index}>{part.trim()}</div>))}
+            {shop.eisdiele.website !== "" && (<>
+              <strong>Website:</strong> <a href={shop.eisdiele.website} target="_blank">{shop.eisdiele.website}</a><br />
+            </>)}
 
             <h2>Preise</h2>
             {(shop.preise.kugel == null && shop.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
