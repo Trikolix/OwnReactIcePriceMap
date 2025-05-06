@@ -18,6 +18,7 @@ require_once __DIR__ . '/evaluators/BundeslandCountEvaluator.php';
 require_once __DIR__ . '/evaluators/FuerstPuecklerEvaluator.php';
 require_once __DIR__ . '/evaluators/PerfectWeekEvaluator.php';
 require_once __DIR__ . '/evaluators/DayStreakEvaluator.php';
+require_once __DIR__ . '/evaluators/AllIceTypesEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -178,7 +179,8 @@ try {
         new CheckinCountEvaluator(),
         new BundeslandCountEvaluator(),
         new PerfectWeekEvaluator(),
-        new DayStreakEvaluator()
+        new DayStreakEvaluator(),
+        new AllIceTypesEvaluator()
     ];
 
     if ($bild_url !== null) $evaluators[] = new PhotosCountEvaluator();

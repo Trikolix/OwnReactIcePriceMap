@@ -142,7 +142,7 @@ foreach ($checkins as &$checkin) {
         WHERE checkin_id = :checkinId
     ");
     $stmtSorten->execute(['checkinId' => $checkin['id']]);
-    $sorten = $stmtSorten->fetchAll(PDO::FETCH_COLUMN);
+    $sorten = $stmtSorten->fetchAll(PDO::FETCH_ASSOC);
     $checkin['eissorten'] = $sorten;
 }
 unset($checkin); // Referenz auflösen

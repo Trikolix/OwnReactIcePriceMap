@@ -26,7 +26,7 @@ const CheckinCard = ({ checkin }) => {
             <AttributeSection>
               <strong>Sorten:</strong>
               {checkin.eissorten.map((sorte, index) => (
-                <AttributeBadge key={index}>{sorte}</AttributeBadge>
+                <AttributeBadge key={index}>{sorte.sortenname} ({sorte.bewertung}&#9733;)</AttributeBadge>
               ))}
             </AttributeSection>
 
@@ -38,18 +38,18 @@ const CheckinCard = ({ checkin }) => {
                   <strong>{checkin.geschmackbewertung}</strong>
                 </td>
               </tr>)}
-              {checkin.waffelbewertung !== null && (<tr>
-                <th>Waffel:</th>
-                <td>
-                  <Rating stars={checkin.waffelbewertung} />{" "}
-                  <strong>{checkin.waffelbewertung}</strong>
-                </td>
-              </tr>)}
               {checkin.größenbewertung !== null && (<tr>
                 <th>Größe:</th>
                 <td>
                   <Rating stars={checkin.größenbewertung} />{" "}
                   <strong>{checkin.größenbewertung}</strong>
+                </td>
+              </tr>)}
+              {checkin.waffelbewertung !== null && (<tr>
+                <th>Waffel:</th>
+                <td>
+                  <Rating stars={checkin.waffelbewertung} />{" "}
+                  <strong>{checkin.waffelbewertung}</strong>
                 </td>
               </tr>)}
             </Table>
@@ -81,7 +81,7 @@ const CheckinCard = ({ checkin }) => {
               alt="Checkin Bild"
             />
             <LightboxTitle>
-              {checkin.eissorten.join(", ")} Eis bei {checkin.eisdiele_name}
+              {checkin.eissorten.map((sorte) => sorte.sortenname).join(", ")} Eis bei {checkin.eisdiele_name}
             </LightboxTitle>
           </LightboxContent>
         </LightboxOverlay>
