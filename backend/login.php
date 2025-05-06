@@ -4,7 +4,7 @@ require_once  __DIR__ . '/db_connect.php';
 // Funktion zum Überprüfen des Logins
 function checkLogin($pdo, $inputUsername, $inputPassword) {
     // SQL-Abfrage vorbereiten
-    $stmt = $pdo->prepare("SELECT id, password_hash FROM nutzer WHERE username = :username");
+    $stmt = $pdo->prepare("SELECT id, password_hash, is_verified FROM nutzer WHERE username = :username");
     $stmt->bindParam(':username', $inputUsername, PDO::PARAM_STR);
     $stmt->execute();
 
@@ -12,7 +12,9 @@ function checkLogin($pdo, $inputUsername, $inputPassword) {
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch();
 
-        if (password_verify($inputPassword, $user['password_hash'])) {
+        if ($user['is_verified'] !== 1) {
+            return ['status' => 'error', 'message' => 'Dein Benutzeraccount ist noch nicht bestätigt.'];
+        } else if (password_verify($inputPassword, $user['password_hash'])) {
             return ['status' => 'success', 'userId' => $user['id']];
         } else {
             return ['status' => 'error', 'message' => 'Falsches Passwort'];
