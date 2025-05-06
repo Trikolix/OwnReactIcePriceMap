@@ -5,6 +5,7 @@ import { useUser } from './context/UserContext';
 import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
 import FavoritenButton from './components/FavoritButton';
+import OpeningHours from './components/OpeningHours';
 
 const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -90,9 +91,9 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
         {activeTab === 'info' &&
           <div>
             <strong>Adresse:</strong> {shop.eisdiele.adresse}<br />
-            <strong>Öffnungszeiten:</strong> {shop.eisdiele.openingHours.split(";").map((part, index) => (<div key={index}>{part.trim()}</div>))}
-            {shop.eisdiele.website !== "" && (<>
-              <strong>Website:</strong> <a href={shop.eisdiele.website} target="_blank">{shop.eisdiele.website}</a><br />
+            <OpeningHours eisdiele={shop.eisdiele} />
+            {shop.eisdiele.website !== "" && shop.eisdiele.website !== null && (<>
+              <strong>Website:</strong> <a href={shop.eisdiele.website} target="_blank" rel="noopener noreferrer">{shop.eisdiele.website}</a><br />
             </>)}
 
             <h2>Preise</h2>
@@ -174,7 +175,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             {shop.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
             {shop.reviews && (shop.reviews.map((review, index) => (
-              <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm}/>
+              <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm} />
             )))}
           </div>}
         {activeTab === 'checkins' && <div>
