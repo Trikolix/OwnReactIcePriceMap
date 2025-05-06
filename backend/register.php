@@ -73,7 +73,7 @@ $subject = "Neue Registrierung";
 $message = "Es hat sich ein neuer Nzter bei ice-app.de registriert.\n\nBenutzername: $username\nE-Mail: $email\n\nViele Grüße\ndein Eis-Team";
 $headers = "From: noreply@ice-app.de";
 
-$mailSent2 = mail($email, $subject, $message, $headers);
+$mailSent2 = mail("admin@ice-app.de", $subject, $message, $headers);
 
 if ($mailSent) {
     echo json_encode(['status' => 'success', 'message' => 'Registrierung erfolgreich. Schau in deine E-Mails um deine Registierung zu bestätigen.']);

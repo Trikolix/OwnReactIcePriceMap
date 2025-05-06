@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
@@ -6,13 +6,18 @@ import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
 import FavoritenButton from './components/FavoritButton';
 import OpeningHours from './components/OpeningHours';
+import RouteCard from './components/RouteCard';
 
 const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [isFullHeight, setIsFullHeight] = useState(false);
   const headerRef = useRef(null);
   const startYRef = useRef(0);
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, userId } = useUser();
+  const [routes, setRoutes] = useState([]);
+
+  // Verwende useMemo, um sicherzustellen, dass shop.eisdiele stabil ist
+  const eisdieleId = useMemo(() => shop?.eisdiele?.id, [shop]);
 
   useEffect(() => {
     const handleTouchStart = (e) => {
@@ -46,6 +51,30 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
     };
   }, [isFullHeight]);
 
+  useEffect(() => {
+    const fetchRoutes = async (id, userId) => {
+      try {
+        // Basis-URL mit der Eisdiele-ID
+        let url = `https://ice-app.4lima.de/backend/routen/getRoutes.php?eisdiele_id=${id}`;
+
+        // Wenn userId gesetzt ist, hänge sie an die URL an
+        if (userId) {
+          url += `&nutzer_id=${userId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('fetchRoutes', data);
+        setRoutes(data);
+      } catch (err) {
+        console.error('Fehler beim Abrufen der Routen via URL:', err);
+      }
+    };
+
+    if (eisdieleId) {
+      fetchRoutes(eisdieleId, userId);
+    }
+  }, [eisdieleId, userId]); // Abhängigkeiten hinzufügen, um sicherzustellen, dass der Effekt nur einmal läuft
+
   if (!shop) return null;
 
   const calculateTimeDifference = (dateString) => {
@@ -71,7 +100,6 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
     }
   };
 
-  console.log('ShopDetailsView', shop);
   return (
     <Container isFullHeight={isFullHeight}>
       <Header ref={headerRef}>
@@ -168,6 +196,9 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
               <h2>Komoot</h2>
               <div dangerouslySetInnerHTML={{ __html: shop.eisdiele.komoot }} />
             </>)}
+            {routes.map((route, index) => (
+              <RouteCard key={index} route={route} />
+            ))}
           </div>}
         {activeTab === 'reviews' &&
           <div>
