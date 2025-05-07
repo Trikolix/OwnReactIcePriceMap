@@ -11,7 +11,10 @@ $typ = $data['typ'] ?? null;
 $ist_oeffentlich = $data['ist_oeffentlich'] ?? null;
 
 if (!$route_id || !$nutzer_id) {
-    echo json_encode(['error' => 'Fehlende erforderliche Daten']);
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Fehlende erforderliche Daten'
+    ]);
     exit;
 }
 
@@ -27,5 +30,8 @@ $stmt->execute([
     'nutzer_id' => $nutzer_id
 ]);
 
-echo json_encode(['message' => 'Route erfolgreich aktualisiert']);
+echo json_encode([
+    'status' => 'success',
+    'message' => 'Route erfolgreich aktualisiert'
+]);
 ?>

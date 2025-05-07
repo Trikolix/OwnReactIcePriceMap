@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 
-const SubmitRouteForm = ({ showForm, setShowForm, shop }) => {
+const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRoute = null }) => {
 
     const [url, setUrl] = useState("");
     const [beschreibung, setBeschreibung] = useState("");
@@ -11,20 +11,39 @@ const SubmitRouteForm = ({ showForm, setShowForm, shop }) => {
     const { userId } = useUser();
     const [message, setMessage] = useState("");
 
+    // Wenn bestehende Route übergeben, Felder vorausfüllen
+    useEffect(() => {
+        if (existingRoute) {
+            setUrl(existingRoute.url || "");
+            setBeschreibung(existingRoute.beschreibung || "");
+            setTyp(existingRoute.typ || "Wanderung");
+            setisPrivat(!existingRoute.ist_oeffentlich);
+        }
+    }, [existingRoute]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         const routeData = {
-            eisdiele_id: shop.eisdiele.id,
+            eisdiele_id: shopId,
             nutzer_id: userId,
             url,
             beschreibung,
             typ,
-            ist_oeffentlich: !isPrivat,
+            ist_oeffentlich: isPrivat ? 0 : 1,
         };
 
+        // Bei Bearbeitung ID hinzufügen
+        if (existingRoute) {
+            routeData.id = existingRoute.id;
+        }
+
+        const endpoint = existingRoute
+            ? "https://ice-app.4lima.de/backend/routen/updateRoute.php"
+            : "https://ice-app.4lima.de/backend/routen/submitRoute.php";
+
         try {
-            const response  = await fetch("https://ice-app.4lima.de/backend/routen/submitRoute.php", {
+            const response  = await fetch(endpoint, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -34,14 +53,14 @@ const SubmitRouteForm = ({ showForm, setShowForm, shop }) => {
 
             const result = await response.json();
             if (result.status === "success") {
-                setMessage("Route erfolgreich hinzugefügt!");
+                setMessage(existingRoute ? "Route erfolgreich aktualisiert!" : "Route erfolgreich hinzugefügt!");
                 setUrl("");
                 setBeschreibung("");
                 setTyp("Wanderung");
                 setisPrivat(false);                
                 setTimeout(() => {
                     setShowForm(false);
-                }, 1000);
+                }, 2000);
             } else {
                 setMessage(`Fehler: ${result.message}`);
             }
@@ -55,7 +74,9 @@ const SubmitRouteForm = ({ showForm, setShowForm, shop }) => {
         <Overlay>
             <Modal>
                 <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
-                <Heading>Route für {shop.eisdiele.name} einreichen</Heading>
+                <Heading>
+                    {existingRoute ? "Route bearbeiten" : `Route für ${shopName} einreichen`}
+                </Heading>
 
                 <Label>
                     Embedded Komoot Route:
@@ -98,7 +119,9 @@ const SubmitRouteForm = ({ showForm, setShowForm, shop }) => {
                     />
                 </Label>
                 <ButtonGroup>
-                    <SubmitButton type="submit" onClick={handleSubmit}>Route einreichen</SubmitButton>
+                    <SubmitButton type="submit" onClick={handleSubmit}>
+                        {existingRoute ? "Änderungen speichern" : "Route einreichen"}
+                    </SubmitButton>
                     <SubmitButton type="button" onClick={() => setShowForm(false)}>
                         Abbrechen
                     </SubmitButton>

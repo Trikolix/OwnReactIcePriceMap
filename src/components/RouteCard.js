@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
-// import EditRouteForm from "../EditRouteForm"; // Angenommen, du hast ein Bearbeitungsformular für Routen
+import SubmitRouteForm  from "../SubmitRouteModal";
 
-const RouteCard = ({ route }) => {
+const RouteCard = ({ route, shopId, shopName }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
   const handleEditClick = () => {
     setShowEditModal(true);
+    console.log("handleEditClick", showEditModal);
   };
   var routeDisplayMap = {};
   routeDisplayMap["Wanderung"] = "Wanderung";
@@ -36,13 +37,14 @@ const RouteCard = ({ route }) => {
         </ContentWrapper>
       </Card>
 
-      {showEditModal && (<></>
-//        <EditRouteForm
-//          routeId={route.id}
-//          shopName={route.eisdiele_id} // Angenommen, du hast einen Shop-Namen oder eine ID
-//          showRouteForm={showEditModal}
-//          setShowRouteForm={setShowEditModal}
-//        />
+      {showEditModal && (
+        <SubmitRouteForm
+          shopId={shopId}
+          shopName={shopName}
+          showForm={showEditModal}
+          setShowForm={setShowEditModal}
+          existingRoute={route}
+        />
       )}
     </>
   );

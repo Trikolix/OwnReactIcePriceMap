@@ -4,7 +4,7 @@ require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['openingHours']) || !isset($data['komoot']) || !isset($data['userId'])) {
+if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['openingHours']) || !isset($data['userId'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
     exit;
 }
@@ -69,7 +69,7 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId, $osmId = nu
     return $pdo->lastInsertId();
 }
 
-$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, komoot, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :komoot, :userId, :landkreisId, :bundeslandId, :landId)";
+$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :userId, :landkreisId, :bundeslandId, :landId)";
 $stmt = $pdo->prepare($sql);
 
 $lat = $data['latitude'];
@@ -87,7 +87,6 @@ if ($location) {
             ':longitude' => floatval($data['longitude']),
             ':website' => $data['website'],
             ':openingHours' => $data['openingHours'],
-            ':komoot' => $data['komoot'],
             ':userId' => intval($data['userId']),
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId,

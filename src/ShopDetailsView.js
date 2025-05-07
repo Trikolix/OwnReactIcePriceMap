@@ -196,10 +196,10 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             ) : (<><h2>Bewertungen</h2>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
             <h2>Komoot Routen</h2>
-            {routes.length < 1 && (<>Es sind noch keine Routen für die Eisdiele vorhanden.</>)}
+            {routes.length < 1 && (<>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button></ButtonContainer>)}
             {routes.map((route, index) => (
-              <RouteCard key={index} route={route} />
+              <RouteCard key={index} route={route} shopId={shop.eisdiele.id} shopName={shop.eisdiele.name} />
             ))}
           </div>}
         {activeTab === 'reviews' &&
@@ -225,8 +225,8 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
       <SubmitRouteForm
         showForm={showRouteForm}
         setShowForm={setShowRouteForm}
-        onClose={() => setShowRouteForm(false)}
-        shop={shop}
+        shopId={shop.eisdiele.id}
+        shopName={shop.eisdiele.name}
         />)}
     </>
   );
