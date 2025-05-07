@@ -7,6 +7,7 @@ import CheckinCard from './components/CheckinCard';
 import FavoritenButton from './components/FavoritButton';
 import OpeningHours from './components/OpeningHours';
 import RouteCard from './components/RouteCard';
+import SubmitRouteForm from './SubmitRouteModal';
 
 const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -15,6 +16,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
   const startYRef = useRef(0);
   const { isLoggedIn, userId } = useUser();
   const [routes, setRoutes] = useState([]);
+  const [showRouteForm, setShowRouteForm] = useState(false);
 
   // Verwende useMemo, um sicherzustellen, dass shop.eisdiele stabil ist
   const eisdieleId = useMemo(() => shop?.eisdiele?.id, [shop]);
@@ -101,6 +103,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
   };
 
   return (
+    <>
     <Container isFullHeight={isFullHeight}>
       <Header ref={headerRef}>
         <h2>{shop.eisdiele.name}</h2>
@@ -192,10 +195,9 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
             </>
             ) : (<><h2>Bewertungen</h2>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
-            {isLoggedIn && shop.eisdiele.komoot !== "" && (<>
-              <h2>Komoot</h2>
-              <div dangerouslySetInnerHTML={{ __html: shop.eisdiele.komoot }} />
-            </>)}
+            <h2>Komoot Routen</h2>
+            {routes.length < 1 && (<>Es sind noch keine Routen für die Eisdiele vorhanden.</>)}
+            {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button></ButtonContainer>)}
             {routes.map((route, index) => (
               <RouteCard key={index} route={route} />
             ))}
@@ -219,6 +221,14 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
         </div>}
       </Content>
     </Container>
+    {showRouteForm && (
+      <SubmitRouteForm
+        showForm={showRouteForm}
+        setShowForm={setShowRouteForm}
+        onClose={() => setShowRouteForm(false)}
+        shop={shop}
+        />)}
+    </>
   );
 };
 

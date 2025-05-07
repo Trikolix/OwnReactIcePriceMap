@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
+import { Link } from "react-router-dom";
 // import EditRouteForm from "../EditRouteForm"; // Angenommen, du hast ein Bearbeitungsformular für Routen
 
 const RouteCard = ({ route }) => {
@@ -10,18 +11,21 @@ const RouteCard = ({ route }) => {
   const handleEditClick = () => {
     setShowEditModal(true);
   };
+  var routeDisplayMap = {};
+  routeDisplayMap["Wanderung"] = "Wanderung";
+  routeDisplayMap["Rennrad"] = "Rennrad Route";
+  routeDisplayMap["MTB"] = "MTB Route";
+  routeDisplayMap["Gravel"] = "Gravel Route";
+  routeDisplayMap["Sonstiges"] = "Sonstiges";
 
   return (
     <>
       <Card>
         <ContentWrapper>
           <LeftContent>
-            <strong>Route von <UserLink to={`/user/${route.nutzer_id}`}>Nutzer {route.nutzer_id}</UserLink></strong>
-            <TypText>({route.typ})</TypText>
-            <br />
-            <strong>Beschreibung:</strong> {route.beschreibung || "Keine Beschreibung verfügbar."}
-            <br />
-            <strong>Erstellt am:</strong> {new Date(route.erstellt_am).toLocaleDateString()}<br />
+            <h3>{routeDisplayMap[route.typ]} von <strong><UserLink to={`/user/${route.nutzer_id}`}>{route.username}</UserLink></strong>
+            <TypText> (Erstellt am: {new Date(route.erstellt_am).toLocaleDateString()})</TypText></h3>
+            {route.beschreibung && <p>{route.beschreibung}</p>}
             {parseInt(route.nutzer_id, 10) === parseInt(userId, 10) && (
               <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}
@@ -48,7 +52,7 @@ export default RouteCard;
 
 // ---------- Styled Components ----------
 
-const UserLink = styled.a`
+const UserLink = styled(Link)`
   text-decoration: none;
   color: inherit;
   cursor: pointer;
@@ -57,15 +61,13 @@ const UserLink = styled.a`
 const Card = styled.div`
   background: #f9f9f9;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 0.5rem;
   margin-bottom: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 `;
 
 const ContentWrapper = styled.div`
-  display: flex;
   gap: 1.5rem;
-  flex-wrap: wrap;
 `;
 
 const LeftContent = styled.div`
@@ -103,7 +105,7 @@ const EditButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  margin-top: 1rem;
+  margin-bottom: 1rem;
 
   &:hover {
     background-color: #005f8a;

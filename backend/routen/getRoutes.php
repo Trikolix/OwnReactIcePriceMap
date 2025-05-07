@@ -11,7 +11,10 @@ if (!$eisdiele_id) {
 }
 
 // SQL-Abfrage vorbereiten
-$sql = "SELECT * FROM routen WHERE eisdiele_id = :eisdiele_id AND (ist_oeffentlich = TRUE OR nutzer_id = :nutzer_id)";
+$sql = "SELECT r.*, n.username
+        FROM routen r
+        JOIN nutzer n ON r.nutzer_id = n.id
+        WHERE r.eisdiele_id = :eisdiele_id AND (r.ist_oeffentlich = TRUE OR r.nutzer_id = :nutzer_id)";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['eisdiele_id' => $eisdiele_id, 'nutzer_id' => $nutzer_id]);
 
