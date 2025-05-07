@@ -7,6 +7,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
     const [softeisPreis, setSofteiPreis] = useState(shop.preise?.softeis?.preis ? shop.preise.softeis.preis : null);
     const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung ? shop.preise.softeis.beschreibung : null);
     const [message, setMessage] = useState('');
+    const [submitted, setSubmitted] = useState(false);
 
     const submit = async () => {
         try {
@@ -37,6 +38,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
             data.forEach(element => {
                 if (element.status === 'success') {
                     refreshShops();
+                    setSubmitted(true);
                     setMessage('Preis erfolgreich gemeldet!');
                 } else {
                     setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
@@ -60,7 +62,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
             <Modal>
                 <CloseButton onClick={() => setShowPriceForm(false)}>×</CloseButton>
                 <Heading>Preis für {shop.eisdiele.name} einreichen</Heading>
-
+                {!submitted && (<>
                 <Label>
                     Preis pro Kugel:
                     <Input
@@ -109,6 +111,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
                 <ButtonGroup>
                     <SubmitButton onClick={submit}>Einreichen</SubmitButton>
                 </ButtonGroup>
+                </>)}
                 <Message>{message}</Message>
             </Modal>
         </Overlay>) : null;
