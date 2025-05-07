@@ -318,6 +318,7 @@ const IceCreamRadar = () => {
           setShowReviewForm={setShowReviewForm}
           setShowCheckinForm={setShowCheckinForm}
           setIceCreamShops={setIceCreamShops}
+          onShopUpdated={() => fetchAndCenterShop(activeShop.eisdiele.id)}
           onClose={() => {
             setActiveShop(null);
             setShowDetailsView(false);

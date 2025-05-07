@@ -6,7 +6,7 @@ import { useUser } from './context/UserContext';
 const EditCheckinForm = ({ checkinId, shopName, showCheckinForm, setShowCheckinForm }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
-    const [showSortenBewertung, setShowSortenBewertung] = useState(false);
+    const [showSortenBewertung, setShowSortenBewertung] = useState(true);
     const [geschmackbewertung, setGeschmackbewertung] = useState("");
     const [waffelbewertung, setWaffelbewertung] = useState("");
     const [größenbewertung, setGrößenbewertung] = useState("");

@@ -10,7 +10,6 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [openingHours, setOpeningHours] = useState("");
-  const [komoot, setKomoot] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [awards, setAwards] = useState([]);
@@ -28,7 +27,6 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude),
           openingHours,
-          komoot,
           userId
         })
       });
@@ -43,7 +41,6 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
         setLatitude("");
         setLongitude("");
         setOpeningHours("{}");
-        setKomoot("");
         if (data.new_awards && data.new_awards.length > 0) {
           setAwards(data.new_awards);
         } else {
@@ -118,11 +115,6 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
           <Group>
             <label>Website (optional):</label>
             <Input type="text"  value={website} onChange={(e) => setWebsite(e.target.value)} />
-          </Group>
-
-          <Group>
-            <label>Komoot-Link (optional):</label>
-            <Input type="text" value={komoot} onChange={(e) => setKomoot(e.target.value)} />
           </Group>
 
           <ButtonGroup>

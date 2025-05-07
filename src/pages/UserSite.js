@@ -18,6 +18,7 @@ function UserSite() {
     // Add state to manage pagination for check-ins and reviews
     const [checkinPage, setCheckinPage] = useState(1);
     const [reviewPage, setReviewPage] = useState(1);
+    const [awardPage, setAwardPage] = useState(1);
 
     const loadMoreCheckins = () => {
         setCheckinPage((prevPage) => prevPage + 1);
@@ -25,6 +26,10 @@ function UserSite() {
 
     const loadMoreReviews = () => {
         setReviewPage((prevPage) => prevPage + 1);
+    };
+
+    const loadMoreAwards = () => {
+        setAwardPage((prevPage) => prevPage + 1);
     };
 
     // Add tabs for displaying check-ins and reviews
@@ -77,6 +82,7 @@ function UserSite() {
     // Filter check-ins and reviews based on the current page
     const displayedCheckins = data.checkins.slice(0, checkinPage * 5);
     const displayedReviews = data.reviews.slice(0, reviewPage * 5);
+    const displayedAwards = data.user_awards.slice(0, awardPage * 6);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -124,7 +130,7 @@ function UserSite() {
 
                     <h3>Awards</h3>
                     <AwardsGrid>
-                        {data.user_awards.map((award, index) => (
+                        {displayedAwards.map((award, index) => (
                             <AwardCard key={index}>
                                 <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
                                 <AwardTitle>{award.title_de}</AwardTitle>
@@ -132,6 +138,9 @@ function UserSite() {
                                 <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
                             </AwardCard>
                         ))}
+{displayedAwards.length < data.user_awards.length && (
+                                    <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+                                )}
                     </AwardsGrid>
 
                     <Section>
