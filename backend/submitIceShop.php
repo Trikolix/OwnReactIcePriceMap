@@ -23,15 +23,14 @@ function getLocationDetailsFromCoords($lat, $lon) {
     if (!isset($data['address']['state'])) {
         return null;
     }
-    // Verwende 'city', falls 'county' nicht vorhanden ist
-    $landkreis = $data['address']['county'] ?? $data['address']['city'] ?? null;
+    // 'county' -> fallback 'city' -> fallback 'town' -> fallback 'village'
+    $landkreis = $data['address']['county'] ?? $data['address']['city'] ?? $data['address']['town'] ?? $data['address']['village'] ?? null;
     return [
         'land' => $data['address']['country'],
         "country_code" => $data['address']['country_code'],
         'bundesland' => $data['address']['state'],
         'bundesland_iso' => $data['address']['ISO3166-2-lvl4'] ?? null,
         'landkreis' => $landkreis,
-        'landkreis_osm_id' => $data['osm_id'] ?? null  // beachte: ist meist die OSM-ID des Landkreises
     ];
     return null;
 }
@@ -47,25 +46,25 @@ function getOrCreateLandId($pdo, $land, $country_code = null) {
     return $pdo->lastInsertId();
 }
 
-function getOrCreateBundeslandId($pdo, $bundeslandName, $iso = null) {
-    $stmt = $pdo->prepare("SELECT id FROM bundeslaender WHERE name = ?");
-    $stmt->execute([$bundeslandName]);
+function getOrCreateBundeslandId($pdo, $bundeslandName, $iso = null, $landId) {
+    $stmt = $pdo->prepare("SELECT id FROM bundeslaender WHERE name = ? AND land_id = ?");
+    $stmt->execute([$bundeslandName, $landId]);
     $id = $stmt->fetchColumn();
     if ($id) return $id;
 
-    $insert = $pdo->prepare("INSERT INTO bundeslaender (name, iso_code) VALUES (?, ?)");
-    $insert->execute([$bundeslandName, $iso]);
+    $insert = $pdo->prepare("INSERT INTO bundeslaender (name, iso_code, land_id) VALUES (?, ?, ?)");
+    $insert->execute([$bundeslandName, $iso, $landId]);
     return $pdo->lastInsertId();
 }
 
-function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId, $osmId = null) {
+function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId) {
     $stmt = $pdo->prepare("SELECT id FROM landkreise WHERE name = ? AND bundesland_id = ?");
     $stmt->execute([$landkreisName, $bundeslandId]);
     $id = $stmt->fetchColumn();
     if ($id) return $id;
 
-    $insert = $pdo->prepare("INSERT INTO landkreise (name, bundesland_id, osm_id) VALUES (?, ?, ?)");
-    $insert->execute([$landkreisName, $bundeslandId, $osmId]);
+    $insert = $pdo->prepare("INSERT INTO landkreise (name, bundesland_id) VALUES (?, ?)");
+    $insert->execute([$landkreisName, $bundeslandId]);
     return $pdo->lastInsertId();
 }
 
@@ -77,7 +76,7 @@ $lon = $data['longitude'];
 $location = getLocationDetailsFromCoords($lat, $lon);
 if ($location) {
     $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
-    $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso']);
+    $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'], $landId);
     $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId, $location['landkreis_osm_id']);
     try {
         $stmt->execute([
