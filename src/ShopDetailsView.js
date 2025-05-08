@@ -27,28 +27,33 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
     };
 
     const handleTouchMove = (e) => {
+      e.preventDefault();
       const touchY = e.touches[0].clientY;
       const deltaY = touchY - startYRef.current;
-      console.log('Touch move deltaY:', deltaY);
 
       if (deltaY < -50 && !isFullHeight) {
-        console.log("setIsFulHeight -> true")
         setIsFullHeight(true);
       } else if (deltaY > 50 && isFullHeight) {
         setIsFullHeight(false);
       }
     };
 
+    const handleTouchEnd = () => {
+      startYRef.current = 0;
+    };
+
     const container = headerRef.current;
     if (container) {
       container.addEventListener('touchstart', handleTouchStart);
       container.addEventListener('touchmove', handleTouchMove);
+      container.addEventListener('touchend', handleTouchEnd);
     }
 
     return () => {
       if (container) {
         container.removeEventListener('touchstart', handleTouchStart);
         container.removeEventListener('touchmove', handleTouchMove);
+        container.removeEventListener('touchend', handleTouchEnd);
       }
     };
   }, [isFullHeight]);
@@ -65,7 +70,6 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
         }
         const response = await fetch(url);
         const data = await response.json();
-        console.log('fetchRoutes', data);
         setRoutes(data);
       } catch (err) {
         console.error('Fehler beim Abrufen der Routen via URL:', err);
@@ -75,7 +79,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
     if (eisdieleId) {
       fetchRoutes(eisdieleId, userId);
     }
-  }, [eisdieleId, userId]); // Abhängigkeiten hinzufügen, um sicherzustellen, dass der Effekt nur einmal läuft
+  }, [eisdieleId, userId]);
 
   if (!shop) return null;
 
@@ -104,130 +108,140 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
 
   return (
     <>
-    <Container isFullHeight={isFullHeight}>
-      <Header ref={headerRef}>
-        <h2>{shop.eisdiele.name}</h2>
-        <CloseButton onClick={onClose}>✖</CloseButton>
-        <FavoritenButton
-          eisdieleId={shop.eisdiele.id}
-          setIceCreamShops={setIceCreamShops}
-        />
-      </Header>
-      <Tabs>
-        <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-        <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
-        <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
-      </Tabs>
-      <Content>
-        {activeTab === 'info' &&
-          <div>
-            <strong>Adresse:</strong> {shop.eisdiele.adresse}<br />
-            <OpeningHours eisdiele={shop.eisdiele} />
-            {shop.eisdiele.website !== "" && shop.eisdiele.website !== null && (<>
-              <strong>Website:</strong> <a href={shop.eisdiele.website} target="_blank" rel="noopener noreferrer">{shop.eisdiele.website}</a><br />
-            </>)}
-
-            <h2>Preise</h2>
-            {(shop.preise.kugel == null && shop.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
-            <Table>
-              {shop.preise.kugel != null && (
-                <tr>
-                  <th>Kugelpreis:</th>
-                  <td>
-                    <strong>{shop.preise?.kugel?.preis?.toFixed(2) ? shop.preise.kugel.preis.toFixed(2) : "-"} € </strong>
-                    {shop.preise?.kugel?.beschreibung ? (<>({shop.preise.kugel.beschreibung}) </>) : <></>}
-                    <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shop.preise.kugel.letztes_update)} aktualisiert)</span>
-                  </td>
-                </tr>)}
-              {shop.preise.softeis != null && (
-                <tr>
-                  <th>Softeispreis:</th>
-                  <td>
-                    <strong>{shop.preise?.softeis?.preis?.toFixed(2) ? shop.preise.softeis.preis.toFixed(2) : "-"} € </strong>
-                    {shop.preise?.softeis?.beschreibung ? (<>({shop.preise.softeis.beschreibung}) </>) : <></>}
-                    <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shop.preise.softeis.letztes_update)} aktualisiert)</span>
-                  </td>
-                </tr>)}
-            </Table>
-            {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
-
-
-            {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (<>
-              <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
+      <Container isFullHeight={isFullHeight}>
+        <Header ref={headerRef}>
+          <h2>{shop.eisdiele.name}</h2>
+          <CloseButton onClick={onClose}>✖</CloseButton>
+          <FavoritenButton
+            eisdieleId={shop.eisdiele.id}
+            setIceCreamShops={setIceCreamShops}
+          />
+        </Header>
+        <Tabs>
+          <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
+          <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
+          <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
+        </Tabs>
+        <Content>
+          {activeTab === 'info' &&
+            <div>
+              <strong>Adresse:</strong> {shop.eisdiele.adresse}<br />
+              <OpeningHours eisdiele={shop.eisdiele} />
+              {shop.eisdiele.website !== "" && shop.eisdiele.website !== null && (
+                <>
+                  <strong>Website:</strong> <a href={shop.eisdiele.website} target="_blank" rel="noopener noreferrer">{shop.eisdiele.website}</a><br />
+                </>
+              )}
+              <h2>Preise</h2>
+              {(shop.preise.kugel == null && shop.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
               <Table>
-                {shop.bewertungen.geschmack !== null && (<tr>
-                  <th>Geschmack:</th>
-                  <td>
-                    <Rating stars={shop.bewertungen.geschmack} />{" "}
-                    <strong>{shop.bewertungen.geschmack}</strong>
-                  </td>
-                </tr>)}
-                {shop.bewertungen.waffel !== null && (<tr>
-                  <th>Waffel:</th>
-                  <td>
-                    <Rating stars={shop.bewertungen.waffel} />{" "}
-                    <strong>{shop.bewertungen.waffel}</strong>
-                  </td>
-                </tr>)}
-                {shop.bewertungen.kugelgroesse !== null && (<tr>
-                  <th>Größe:</th>
-                  <td>
-                    <Rating stars={shop.bewertungen.kugelgroesse} />{" "}
-                    <strong>{shop.bewertungen.kugelgroesse}</strong>
-                  </td>
-                </tr>)}
-                {shop.bewertungen.auswahl !== null && (<tr>
-                  <th>Auswahl:</th>
-                  <td>
-                    ~ <strong>{shop.bewertungen.auswahl}</strong> Sorten
-                  </td>
-                </tr>)}
-                {shop.attribute?.length > 0 &&
+                {shop.preise.kugel != null && (
                   <tr>
-                    <th>Attribute:</th>
+                    <th>Kugelpreis:</th>
                     <td>
-                      <AttributeSection>
-                        {shop.attribute.map(attribute => (<AttributeBadge>{attribute.anzahl} x {attribute.name}</AttributeBadge>))}
-                      </AttributeSection>
+                      <strong>{shop.preise?.kugel?.preis?.toFixed(2) ? shop.preise.kugel.preis.toFixed(2) : "-"} € </strong>
+                      {shop.preise?.kugel?.beschreibung ? (<>({shop.preise.kugel.beschreibung}) </>) : <></>}
+                      <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shop.preise.kugel.letztes_update)} aktualisiert)</span>
                     </td>
-                  </tr>}
+                  </tr>)}
+                {shop.preise.softeis != null && (
+                  <tr>
+                    <th>Softeispreis:</th>
+                    <td>
+                      <strong>{shop.preise?.softeis?.preis?.toFixed(2) ? shop.preise.softeis.preis.toFixed(2) : "-"} € </strong>
+                      {shop.preise?.softeis?.beschreibung ? (<>({shop.preise.softeis.beschreibung}) </>) : <></>}
+                      <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shop.preise.softeis.letztes_update)} aktualisiert)</span>
+                    </td>
+                  </tr>)}
               </Table>
-            </>
-            ) : (<><h2>Bewertungen</h2>Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br /></>)}
-            {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
-            <h2>Komoot Routen</h2>
-            {routes.length < 1 && (<>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</>)}
-            {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button></ButtonContainer>)}
-            {routes.map((route, index) => (
-              <RouteCard key={index} route={route} shopId={shop.eisdiele.id} shopName={shop.eisdiele.name} />
-            ))}
-          </div>}
-        {activeTab === 'reviews' &&
-          <div>
-            <h2>Bewertungen</h2>
-            {shop.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
-            {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
-            {shop.reviews && (shop.reviews.map((review, index) => (
-              <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm} />
+              {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
+              {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (
+                <>
+                  <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
+                  <Table>
+                    {shop.bewertungen.geschmack !== null && (
+                      <tr>
+                        <th>Geschmack:</th>
+                        <td>
+                          <Rating stars={shop.bewertungen.geschmack} />{" "}
+                          <strong>{shop.bewertungen.geschmack}</strong>
+                        </td>
+                      </tr>)}
+                    {shop.bewertungen.waffel !== null && (
+                      <tr>
+                        <th>Waffel:</th>
+                        <td>
+                          <Rating stars={shop.bewertungen.waffel} />{" "}
+                          <strong>{shop.bewertungen.waffel}</strong>
+                        </td>
+                      </tr>)}
+                    {shop.bewertungen.kugelgroesse !== null && (
+                      <tr>
+                        <th>Größe:</th>
+                        <td>
+                          <Rating stars={shop.bewertungen.kugelgroesse} />{" "}
+                          <strong>{shop.bewertungen.kugelgroesse}</strong>
+                        </td>
+                      </tr>)}
+                    {shop.bewertungen.auswahl !== null && (
+                      <tr>
+                        <th>Auswahl:</th>
+                        <td>
+                          ~ <strong>{shop.bewertungen.auswahl}</strong> Sorten
+                        </td>
+                      </tr>)}
+                    {shop.attribute?.length > 0 &&
+                      <tr>
+                        <th>Attribute:</th>
+                        <td>
+                          <AttributeSection>
+                            {shop.attribute.map(attribute => (<AttributeBadge>{attribute.anzahl} x {attribute.name}</AttributeBadge>))}
+                          </AttributeSection>
+                        </td>
+                      </tr>}
+                  </Table>
+                </>
+              ) : (
+                <>
+                  <h2>Bewertungen</h2>
+                  Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br />
+                </>
+              )}
+              {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
+              <h2>Komoot Routen</h2>
+              {routes.length < 1 && (<>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</>)}
+              {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button></ButtonContainer>)}
+              {routes.map((route, index) => (
+                <RouteCard key={index} route={route} shopId={shop.eisdiele.id} shopName={shop.eisdiele.name} />
+              ))}
+            </div>}
+          {activeTab === 'reviews' &&
+            <div>
+              <h2>Bewertungen</h2>
+              {shop.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
+              {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
+              {shop.reviews && (shop.reviews.map((review, index) => (
+                <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm} />
+              )))}
+            </div>}
+          {activeTab === 'checkins' && <div>
+            <h2>CheckIns</h2>
+            {shop.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
+            {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
+            {shop.checkins && (shop.checkins.map((checkin, index) => (
+              <CheckinCard key={index} checkin={checkin} />
             )))}
           </div>}
-        {activeTab === 'checkins' && <div>
-          <h2>CheckIns</h2>
-          {shop.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
-          {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
-          {shop.checkins && (shop.checkins.map((checkin, index) => (
-            <CheckinCard key={index} checkin={checkin} />
-          )))}
-        </div>}
-      </Content>
-    </Container>
-    {showRouteForm && (
-      <SubmitRouteForm
-        showForm={showRouteForm}
-        setShowForm={setShowRouteForm}
-        shopId={shop.eisdiele.id}
-        shopName={shop.eisdiele.name}
-        />)}
+        </Content>
+      </Container>
+      {showRouteForm && (
+        <SubmitRouteForm
+          showForm={showRouteForm}
+          setShowForm={setShowRouteForm}
+          shopId={shop.eisdiele.id}
+          shopName={shop.eisdiele.name}
+        />
+      )}
     </>
   );
 };
@@ -330,26 +344,26 @@ const ButtonContainer = styled.div`
 `;
 
 const Button = styled.button`
-    padding: 0.75rem 1.5rem;
-    background-color: #ffb522;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    `;
+  padding: 0.75rem 1.5rem;
+  background-color: #ffb522;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+`;
 
 const AttributeSection = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  `;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
 
 const AttributeBadge = styled.span`
-    background-color: #e0f3ff;
-    color: #0077b6;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 500;
-  `;
+  background-color: #e0f3ff;
+  color: #0077b6;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+`;

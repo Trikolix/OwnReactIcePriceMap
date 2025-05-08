@@ -10,7 +10,7 @@ if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude'
 }
 
 function getLocationDetailsFromCoords($lat, $lon) {
-    $url = "https://nominatim.openstreetmap.org/reverse?lat={$lat}&lon={$lon}&format=json&addressdetails=1";
+    $url = "https://nominatim.openstreetmap.org/reverse?lat={$lat}&lon={$lon}&format=json&addressdetails=1&accept-language=de";
     $opts = [
         "http" => [
             "header" => "User-Agent: Ice-App/0.1\r\n"
