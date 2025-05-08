@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 
-const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null  }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -12,9 +12,48 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
+    const [currentBildUrl, setCurrentBildUrl] = useState(null);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
+    const [isAllowed, setIsAllowed] = useState(true);
+
+    useEffect(() => {
+            const fetchCheckinData = async () => {
+                try {
+                    const response = await fetch(`https://ice-app.de/backend/get_checkin.php?checkin_id=${checkinId}`);
+                    const data = await response.json();
+    
+                    if (data.error) {
+                        setMessage(data.error);
+                        return;
+                    }
+    
+                    if (parseInt(data.checkin.nutzer_id, 10) !== parseInt(userId, 10)) {
+                        setMessage("You aren't allowed to edit this checkin!");
+                        setIsAllowed(false);
+                        return;
+                    }
+    
+                    const checkin = data.checkin;
+                    setType(checkin.typ);
+                    setGeschmackbewertung(checkin.geschmackbewertung);
+                    setWaffelbewertung(checkin.waffelbewertung);
+                    setGrößenbewertung(checkin.größenbewertung);
+                    setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                    setKommentar(checkin.kommentar);
+                    setCurrentBildUrl(checkin.bild_url);
+                    setSorten(data.sorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
+                } catch (error) {
+                    setMessage(`Ein Fehler ist aufgetreten: ${error}`);
+                }
+            };
+    
+            if (checkinId) {
+                setShowSortenBewertung(true);
+                fetchCheckinData();
+            }
+        }, [checkinId, userId]);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -32,7 +71,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
         try {
             const formData = new FormData();
             formData.append("userId", userId);
-            formData.append("shopId", shop.eisdiele.id);
+            formData.append("shopId", shopId);
             formData.append("type", type);
             formData.append("geschmackbewertung", geschmackbewertung);
             formData.append("waffelbewertung", waffelbewertung);
@@ -41,16 +80,26 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             formData.append("kommentar", kommentar);
             formData.append("bild", bild);
             formData.append("sorten", JSON.stringify(sorten));
+            if (checkinId) formData.append("checkin_id", checkinId);
 
-            const response = await fetch("https://ice-app.de/backend/checkin_upload.php", {
-                method: "POST",
-                body: formData
-            });
+            const response = await fetch(
+                checkinId 
+                    ? "https://ice-app.de/backend/update_checkin.php" 
+                    : "https://ice-app.de/backend/checkin_upload.php",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
 
             const data = await response.json();
             console.log(data);
             if (data.status === "success") {
-                setMessage("Bewertung erfolgreich gespeichert!");
+                if (checkinId) {
+                    setMessage("Checkin erfolgreich aktualisiert!");
+                } else {
+                    setMessage("Checkin erfolgreich gespeichert!");
+                }                
                 setSubmitted(true);
                 if (data.new_awards && data.new_awards.length > 0) {
                     setAwards(data.new_awards);
@@ -71,8 +120,9 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
         <Overlay>
             <Modal>
                 <CloseButton onClick={() => setShowCheckinForm(false)}>×</CloseButton>
+                {isAllowed && (<>
                 {!submitted && (<Form onSubmit={submit}>
-                    <Heading>Eis-Checkin für {shop.eisdiele.name}</Heading>
+                    <Heading>Eis-Checkin für {shopName} {checkinId && ("bearbeiten")}</Heading>
                     <Section>
                         <Label>Eistyp</Label>
                         <Select value={type} onChange={(e) => setType(e.target.value)}>
@@ -187,6 +237,9 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
 
                     <Section>
                         <Label>Bild hochladen</Label>
+                        {currentBildUrl && (
+                                    <CurrentImage src={`https://ice-app.de/${currentBildUrl}`} alt="Aktuelles Bild" />
+                                )}
                         <Input
                             type="file"
                             accept="image/*"
@@ -194,10 +247,11 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
                         />
                     </Section>
                     <ButtonGroup>
-                        <Button type="submit">Check-in</Button>
+                        <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
                     </ButtonGroup>
 
                 </Form>)}
+                </>)}
                 <Message>{message}</Message>
                 <NewAwards awards={awards} />
             </Modal>
@@ -348,4 +402,11 @@ const Table = styled.table`
   td:last-child {
     width: 30%;
   }
+`;
+
+const CurrentImage = styled.img`
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
 `;

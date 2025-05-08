@@ -3,7 +3,7 @@ import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import EditCheckinForm from "../EditCheckinForm";
+import CheckinForm from "../CheckinForm";
 
 const CheckinCard = ({ checkin }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -38,11 +38,18 @@ const CheckinCard = ({ checkin }) => {
                   <strong>{checkin.geschmackbewertung}</strong>
                 </td>
               </tr>)}
-              {checkin.größenbewertung !== null && (<tr>
+              {checkin.größenbewertung !== null && checkin.typ === "Kugel" && (<tr>
                 <th>Größe:</th>
                 <td>
                   <Rating stars={checkin.größenbewertung} />{" "}
                   <strong>{checkin.größenbewertung}</strong>
+                </td>
+              </tr>)}
+              {checkin.preisleistungsbewertung !== null && (<tr>
+                <th>Preis-Leistung:</th>
+                <td>
+                  <Rating stars={checkin.preisleistungsbewertung} />{" "}
+                  <strong>{checkin.preisleistungsbewertung}</strong>
                 </td>
               </tr>)}
               {checkin.waffelbewertung !== null && (<tr>
@@ -88,9 +95,11 @@ const CheckinCard = ({ checkin }) => {
       )}
 
       {showEditModal && (
-        <EditCheckinForm
+        <CheckinForm
           checkinId={checkin.id}
+          shopId={checkin.eisdiele_id}
           shopName={checkin.eisdiele_name}
+          userId={userId}
           showCheckinForm={showEditModal}
           setShowCheckinForm={setShowEditModal}
         />

@@ -8,6 +8,7 @@ $type = $_POST['type'] ?? null;
 $geschmack = ($_POST['geschmackbewertung'] ?? '') !== '' ? floatval($_POST['geschmackbewertung']) : null;
 $waffel = ($_POST['waffelbewertung'] ?? '') !== '' ? floatval($_POST['waffelbewertung']) : null;
 $größe = ($_POST['größenbewertung'] ?? '') !== '' ? floatval($_POST['größenbewertung']) : null;
+$preisleistungsbewertung = ($_POST['preisleistungsbewertung'] ?? '') !== '' ? floatval($_POST['preisleistungsbewertung']) : null;
 $kommentar = $_POST['kommentar'] ?? '';
 $sorten = json_decode($_POST['sorten'] ?? '[]', true);
 
@@ -37,13 +38,16 @@ try {
     // Start der Transaktion
     $pdo->beginTransaction();
 
+    if ($type === "Kugel") {$preisleistungsbewertung = null;} else {$größe = null;}
+    if ($type === "Eisbecher") {$waffel = null;}
+
     // Update in Tabelle `checkins`
     $stmt = $pdo->prepare("
         UPDATE checkins
-        SET nutzer_id = ?, eisdiele_id = ?, typ = ?, geschmackbewertung = ?, waffelbewertung = ?, größenbewertung = ?, kommentar = ?, bild_url = COALESCE(?, bild_url)
+        SET nutzer_id = ?, eisdiele_id = ?, typ = ?, geschmackbewertung = ?, waffelbewertung = ?, größenbewertung = ?, preisleistungsbewertung = ?, kommentar = ?, bild_url = COALESCE(?, bild_url)
         WHERE id = ?
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $kommentar, $bild_url, $checkinId]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistungsbewertung, $kommentar, $bild_url, $checkinId]);
 
     // Löschen aller vorhandenen Sorten für diesen Checkin
     $deleteSortenStmt = $pdo->prepare("DELETE FROM checkin_sorten WHERE checkin_id = ?");

@@ -306,7 +306,8 @@ const IceCreamRadar = () => {
         setShowPriceForm={setShowPriceForm}
       />)}
       {showCheckinForm && (<CheckinFrom
-        shop={activeShop}
+        shopId={activeShop.eisdiele.id}
+        shopName={activeShop.eisdiele.name}
         userId={userId}
         showCheckinForm={showCheckinForm}
         setShowCheckinForm={setShowCheckinForm}
@@ -318,7 +319,6 @@ const IceCreamRadar = () => {
           setShowReviewForm={setShowReviewForm}
           setShowCheckinForm={setShowCheckinForm}
           setIceCreamShops={setIceCreamShops}
-          onShopUpdated={() => fetchAndCenterShop(activeShop.eisdiele.id)}
           onClose={() => {
             setActiveShop(null);
             setShowDetailsView(false);

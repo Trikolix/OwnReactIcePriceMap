@@ -133,19 +133,21 @@ const Ranking = () => {
                     </Table>
                     <Explanation>
                         <h4>Erklärung zum Ranking</h4>
-                        <p>
-                            Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet. Der Geschmack hat dabei eine Gewichtung
-                            von 3, die Kugelgröße eine Wichtung von 2 und die Waffel eine Wichtung von 1.
-                            Das ganze wird noch mit dem Verhältnis zur günstigsten Eisdiele multipliziert. Für eine perfekte 5.0
-                            Bewertung bräuchte es also durchschnittlich 5.0 Bewertungen in allen Kategorien
-                            und es müsste zeitgleich die günstigste Eisdiele in der ganzen Datenbank sein.<br /><br />
+                        <LeftAlign>
+                            <p>Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet:</p>
+                            <p>Es gibt einen <strong>Geschmacks-Faktor</strong> welcher sich aus Geschmack und Waffel zusammen setzt.
+                            Der Geschmack des Eises hat dabei eine 4 mal größere Gewichtung als die Waffel.</p>
+                            <p>Als zweites gibt es einen <strong>Preisleistungs-Faktor</strong>, welcher das Verhältnis von Kugel zu Preis wieder spiegelt.<br />
+                            Der Wert ergibt 1, wenn eine Kugel die Größenbewertung von 5.0 bei einem Preis von 1,50€ bekommt.<br />
+                            Es ist also möglich, dass eine Eisdiele einen Preis-Leistungsfakto größer 1 hat, wenn sie sehr große Kugeln für unter 1,50€ anbietet.</p>
+                            <p>Der Geschmacksfaktor und der Preis/Leistungsfaktor werden gewichtet miteinander mulitpliziert, 
+                                wobei <strong>Geschmack mit 70%</strong> gewichtet wird und  <strong>Preis-Leistung mit 30%.</strong></p>
                             G - Ø Bewertung des Geschmacks<br />
                             K - Ø Bewertung der Kugelgröße<br />
                             W - Ø Bewertung der Eiswaffel<br />
                             P - Preis pro Kugel in €<br />
-                            Pmin - Preis der günstigsten Eisdiele in €<br />
                             <img src={require('./plv-formel_neu.png')} alt='PLV Formel' />
-                        </p>
+                        </LeftAlign>
                     </Explanation>
 
                     <h2 className="text-center">🍦 Softeis-Ranking</h2>
@@ -203,6 +205,10 @@ const TableContainer = styled.div`
   overflow-x: auto;
   text-align: center;
 `;
+
+const LeftAlign = styled.p`
+  text-align: left;
+`
 
 const Table = styled.table`
   width: 100%;

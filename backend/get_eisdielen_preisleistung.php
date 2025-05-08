@@ -14,7 +14,7 @@ $sql = "SELECT
     -- Preis-Leistungs-Verhältnis (PLV) berechnen
     ROUND(
         1 + 4 * (
-            (0.7 * ((3 * b.avg_geschmack + b.avg_waffel) / 20))
+            (0.7 * ((4 * b.avg_geschmack + b.avg_waffel) / 25))
             + (0.3 * (3 * b.avg_kugelgroesse) / (10 * p.preis))
         ), 2
     ) AS PLV,
