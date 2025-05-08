@@ -9,6 +9,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
     const [geschmackbewertung, setGeschmackbewertung] = useState(null);
     const [waffelbewertung, setWaffelbewertung] = useState(null);
     const [größenbewertung, setGrößenbewertung] = useState(null);
+    const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
     const [bild, setBild] = useState(null);
     const [message, setMessage] = useState('');
@@ -36,6 +37,7 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
             formData.append("geschmackbewertung", geschmackbewertung);
             formData.append("waffelbewertung", waffelbewertung);
             formData.append("größenbewertung", größenbewertung);
+            formData.append("preisleistungsbewertung", preisleistungsbewertung);
             formData.append("kommentar", kommentar);
             formData.append("bild", bild);
             formData.append("sorten", JSON.stringify(sorten));
@@ -118,48 +120,61 @@ const CheckinForm = ({ shop, userId, showCheckinForm, setShowCheckinForm }) => {
                     </Section>
 
                     <Table>
-                                <tbody>
-                                    <tr>
-                                        <td><Label>Bewertung Geschmack:</Label></td>
-                                        <td>
-                                            <Input
-                                                type="number"
-                                                step="0.1"
-                                                min="1.0"
-                                                max="5.0"
-                                                value={geschmackbewertung}
-                                                onChange={(e) => setGeschmackbewertung(e.target.value)}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><Label>Bewertung Größe:</Label></td>
-                                        <td>
-                                            <Input
-                                                type="number"
-                                                step="0.1"
-                                                min="1.0"
-                                                max="5.0"
-                                                value={größenbewertung}
-                                                onChange={(e) => setGrößenbewertung(e.target.value)}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><Label>Bewertung Waffel:</Label></td>
-                                        <td>
-                                            <Input
-                                                type="number"
-                                                step="0.1"
-                                                min="1.0"
-                                                max="5.0"
-                                                value={waffelbewertung}
-                                                onChange={(e) => setWaffelbewertung(e.target.value)}
-                                            />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </Table>
+                        <tbody>
+                            <tr>
+                                <td><Label>Bewertung Geschmack:</Label></td>
+                                <td>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        min="1.0"
+                                        max="5.0"
+                                        value={geschmackbewertung}
+                                        onChange={(e) => setGeschmackbewertung(e.target.value)}
+                                    />
+                                </td>
+                            </tr>
+                            <tr style={{ display: type === "Kugel" ? "table-row" : "none" }}>
+                                <td><Label>Bewertung Größe:</Label></td>
+                                <td>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        min="1.0"
+                                        max="5.0"
+                                        value={größenbewertung}
+                                        onChange={(e) => setGrößenbewertung(e.target.value)}
+                                    />
+                                </td>
+                            </tr>
+                            <tr style={{ display: type !== "Kugel" ? "table-row" : "none" }}>
+                                <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
+                                <td>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        min="1.0"
+                                        max="5.0"
+                                        value={preisleistungsbewertung}
+                                        onChange={(e) => setPreisleistungsbewertung(e.target.value)}
+                                    />
+                                </td>
+                            </tr>
+                            {type !== "Eisbecher" && (<tr>
+                                <td><Label>Bewertung Waffel:</Label></td>
+                                <td>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        min="1.0"
+                                        max="5.0"
+                                        value={waffelbewertung}
+                                        onChange={(e) => setWaffelbewertung(e.target.value)}
+                                    />
+                                </td>
+                            </tr>)}
+                        </tbody>
+                    </Table>
 
                     <Section>
                         <Label>Kommentar</Label>

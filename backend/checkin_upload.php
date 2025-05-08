@@ -113,10 +113,12 @@ try {
     $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
+    $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
     // Bewertungen validieren
     validateRatingRange($geschmack, 'geschmackbewertung');
     validateRatingRange($waffel, 'waffelbewertung');
     validateRatingRange($größe, 'größenbewertung');
+    validateRatingRange($preisleistung, 'preisleistungsbewertung');
     $kommentar = $_POST['kommentar'] ?? '';
     $sorten = json_decode($_POST['sorten'] ?? '[]', true);
     if (!is_array($sorten)) $sorten = [];
@@ -168,10 +170,10 @@ try {
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, kommentar, bild_url)
+        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, bild_url)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $kommentar, $bild_url]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $bild_url]);
     $checkinId = $pdo->lastInsertId();
 
     // Evaluatoren

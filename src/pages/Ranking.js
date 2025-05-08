@@ -4,7 +4,8 @@ import Header from "../Header";
 import { Link } from "react-router-dom";
 
 const Ranking = () => {
-    const [eisdielen, setEisdielen] = useState([]);
+    const [EisdielenKugel, setEisdielenKugel] = useState([]);
+    const [EisdielenSofteis, setEisdielenSofteis] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: 'PLV', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
 
@@ -13,7 +14,10 @@ const Ranking = () => {
             try {
                 const response = await fetch('https://ice-app.de/backend/get_eisdielen_preisleistung.php');
                 const data = await response.json();
-                setEisdielen(data);
+                setEisdielenKugel(data);
+                const response2 = await fetch('https://ice-app.de/backend/get_softeis_rating.php');
+                const data2 = await response2.json();
+                setEisdielenSofteis(data2);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -30,8 +34,8 @@ const Ranking = () => {
         setSortConfig({ key, direction });
     };
 
-    const sortedEisdielen = React.useMemo(() => {
-        let sortableItems = [...eisdielen];
+    const sortedEisdielenKugel = React.useMemo(() => {
+        let sortableItems = [...EisdielenKugel];
         if (sortConfig.key !== null) {
             sortableItems.sort((a, b) => {
                 let aValue = a[sortConfig.key];
@@ -53,7 +57,7 @@ const Ranking = () => {
             });
         }
         return sortableItems;
-    }, [eisdielen, sortConfig]);
+    }, [EisdielenKugel, sortConfig]);
 
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
@@ -96,7 +100,7 @@ const Ranking = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {sortedEisdielen.map((eisdiele, index) => (
+                            {sortedEisdielenKugel.map((eisdiele, index) => (
                                 <React.Fragment key={index}>
                                     <tr onClick={() => toggleDetails(index)}>
                                         <td style={{ textAlign: 'left' }}>{eisdiele.eisdielen_name}</td>
@@ -143,6 +147,34 @@ const Ranking = () => {
                             <img src={require('./plv-formel_neu.png')} alt='PLV Formel' />
                         </p>
                     </Explanation>
+
+                    <h2 className="text-center">🍦 Softeis-Ranking</h2>
+                    <Table>
+                        <thead>
+                            <tr>
+                                <th>Eisdiele</th>
+                                <th>Gesamtwertung</th>
+                                <th>Geschmack</th>
+                                <th>Waffel</th>
+                                <th>Preis-Leistung</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {EisdielenSofteis.map((eisdiele, index) => (
+                                <tr key={`softeis-${index}`}>
+                                    <td style={{ textAlign: 'left' }}>
+                                        <CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>
+                                            {eisdiele.name}
+                                        </CleanLink>
+                                    </td>
+                                    <td>{eisdiele.finaler_softeis_score.toFixed(2)}</td>
+                                    <td>{eisdiele.avg_geschmack.toFixed(1)}</td>
+                                    <td>{eisdiele.avg_waffel.toFixed(1)}</td>
+                                    <td>{eisdiele.avg_preisleistung.toFixed(1)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
                 </TableContainer>
             </Container>
         </>
