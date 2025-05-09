@@ -77,7 +77,7 @@ $location = getLocationDetailsFromCoords($lat, $lon);
 if ($location) {
     $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
     $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'], $landId);
-    $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId, $location['landkreis_osm_id']);
+    $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
     try {
         $stmt->execute([
             ':name' => $data['name'],

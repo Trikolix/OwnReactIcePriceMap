@@ -8,6 +8,7 @@ import FavoritenButton from './components/FavoritButton';
 import OpeningHours from './components/OpeningHours';
 import RouteCard from './components/RouteCard';
 import SubmitRouteForm from './SubmitRouteModal';
+import ShareIcon from './components/ShareButton';
 
 const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -109,8 +110,8 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
   return (
     <>
       <Container isFullHeight={isFullHeight}>
-        <Header ref={headerRef}>
-          <h2>{shop.eisdiele.name}</h2>
+        <Header ref={headerRef}>          
+          <IceShopHeader>{shop.eisdiele.name}</IceShopHeader>
           <CloseButton onClick={onClose}>✖</CloseButton>
           <FavoritenButton
             eisdieleId={shop.eisdiele.id}
@@ -125,6 +126,7 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
         <Content>
           {activeTab === 'info' &&
             <div>
+              <ShareIcon path={"/map/activeShop/" + shop.eisdiele.id} />
               <strong>Adresse:</strong> {shop.eisdiele.adresse}<br />
               <OpeningHours eisdiele={shop.eisdiele} />
               {shop.eisdiele.website !== "" && shop.eisdiele.website !== null && (
@@ -367,3 +369,7 @@ const AttributeBadge = styled.span`
   font-size: 0.8rem;
   font-weight: 500;
 `;
+
+const IceShopHeader = styled.h2`
+  margin-top: 2rem;
+`
