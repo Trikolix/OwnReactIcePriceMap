@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
@@ -9,8 +9,11 @@ import OpeningHours from './components/OpeningHours';
 import RouteCard from './components/RouteCard';
 import SubmitRouteForm from './SubmitRouteModal';
 import ShareIcon from './components/ShareButton';
+import CheckinFrom from './CheckinForm';
+import SubmitPriceModal from './SubmitPriceModal';
+import SubmitReviewModal from './SubmitReviewModal';
 
-const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, setShowCheckinForm, setIceCreamShops }) => {
+const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [isFullHeight, setIsFullHeight] = useState(false);
   const headerRef = useRef(null);
@@ -18,9 +21,10 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
   const { isLoggedIn, userId } = useUser();
   const [routes, setRoutes] = useState([]);
   const [showRouteForm, setShowRouteForm] = useState(false);
-
-  // Verwende useMemo, um sicherzustellen, dass shop.eisdiele stabil ist
-  const eisdieleId = useMemo(() => shop?.eisdiele?.id, [shop]);
+  const [showPriceForm, setShowPriceForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showCheckinForm, setShowCheckinForm] = useState(false);
+  const [shopData, setShopData] = useState(null);
 
   useEffect(() => {
     const handleTouchStart = (e) => {
@@ -59,30 +63,51 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
     };
   }, [isFullHeight]);
 
-  useEffect(() => {
-    const fetchRoutes = async (id, userId) => {
-      try {
-        // Basis-URL mit der Eisdiele-ID
-        let url = `https://ice-app.4lima.de/backend/routen/getRoutes.php?eisdiele_id=${id}`;
-
-        // Wenn userId gesetzt ist, hänge sie an die URL an
-        if (userId) {
-          url += `&nutzer_id=${userId}`;
-        }
-        const response = await fetch(url);
-        const data = await response.json();
-        setRoutes(data);
-      } catch (err) {
-        console.error('Fehler beim Abrufen der Routen via URL:', err);
-      }
-    };
-
-    if (eisdieleId) {
-      fetchRoutes(eisdieleId, userId);
+  const fetchShopData = useCallback(async (id) => {
+    try {
+      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+      const data = await response.json();
+      setShopData(data);
+    } catch (err) {
+      console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
-  }, [eisdieleId, userId]);
+  }, []);
 
-  if (!shop) return null;
+  const refreshShop = () => {
+    fetchShopData(shopData.eisdiele.id);
+  };
+
+  const fetchRoutes = useCallback(async (id, userId) => {
+    try {
+      // Basis-URL mit der Eisdiele-ID
+      let url = `https://ice-app.4lima.de/backend/routen/getRoutes.php?eisdiele_id=${id}`;
+
+      // Wenn userId gesetzt ist, hänge sie an die URL an
+      if (userId) {
+        url += `&nutzer_id=${userId}`;
+      }
+      const response = await fetch(url);
+      const data = await response.json();
+      setRoutes(data);
+    } catch (err) {
+      console.error('Fehler beim Abrufen der Routen via URL:', err);
+    }
+  }, []);
+
+  const refreshRoutes = () => {
+    fetchRoutes(shopId, userId);
+  };
+
+  useEffect(() => {
+    console.log("Shop ID:", shopId);
+    if (shopId) {
+      fetchShopData(shopId);
+      fetchRoutes(shopId, userId);
+    }
+  }, [shopId, userId, fetchShopData, fetchRoutes]);
+
+
+  if (!shopData) return null;
 
   const calculateTimeDifference = (dateString) => {
     const currentDate = new Date();
@@ -110,11 +135,11 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
   return (
     <>
       <Container isFullHeight={isFullHeight}>
-        <Header ref={headerRef}>          
-          <IceShopHeader>{shop.eisdiele.name}</IceShopHeader>
+        <Header ref={headerRef}>
+          <IceShopHeader>{shopData.eisdiele.name}</IceShopHeader>
           <CloseButton onClick={onClose}>✖</CloseButton>
           <FavoritenButton
-            eisdieleId={shop.eisdiele.id}
+            eisdieleId={shopData.eisdiele.id}
             setIceCreamShops={setIceCreamShops}
           />
         </Header>
@@ -126,78 +151,79 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
         <Content>
           {activeTab === 'info' &&
             <div>
-              <ShareIcon path={"/map/activeShop/" + shop.eisdiele.id} />
-              <strong>Adresse:</strong> {shop.eisdiele.adresse}<br />
-              <OpeningHours eisdiele={shop.eisdiele} />
-              {shop.eisdiele.website !== "" && shop.eisdiele.website !== null && (
+              <ShareIcon path={"/map/activeShop/" + shopData.eisdiele.id} />
+              <strong>Eisdiele in: </strong>{shopData.eisdiele.land} - {shopData.eisdiele.bundesland} - {shopData.eisdiele.landkreis}<br />
+              <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
+              <OpeningHours eisdiele={shopData.eisdiele} />
+              {shopData.eisdiele.website !== "" && shopData.eisdiele.website !== null && (
                 <>
-                  <strong>Website:</strong> <a href={shop.eisdiele.website} target="_blank" rel="noopener noreferrer">{shop.eisdiele.website}</a><br />
+                  <strong>Website:</strong> <a href={shopData.eisdiele.website} target="_blank" rel="noopener noreferrer">{shopData.eisdiele.website}</a><br />
                 </>
               )}
               <h2>Preise</h2>
-              {(shop.preise.kugel == null && shop.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
+              {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
               <Table>
-                {shop.preise.kugel != null && (
+                {shopData.preise.kugel != null && (
                   <tr>
                     <th>Kugelpreis:</th>
                     <td>
-                      <strong>{shop.preise?.kugel?.preis?.toFixed(2) ? shop.preise.kugel.preis.toFixed(2) : "-"} € </strong>
-                      {shop.preise?.kugel?.beschreibung ? (<>({shop.preise.kugel.beschreibung}) </>) : <></>}
-                      <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shop.preise.kugel.letztes_update)} aktualisiert)</span>
+                      <strong>{shopData.preise?.kugel?.preis?.toFixed(2) ? shopData.preise.kugel.preis.toFixed(2) : "-"} € </strong>
+                      {shopData.preise?.kugel?.beschreibung ? (<>({shopData.preise.kugel.beschreibung}) </>) : <></>}
+                      <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.kugel.letztes_update)} aktualisiert)</span>
                     </td>
                   </tr>)}
-                {shop.preise.softeis != null && (
+                {shopData.preise.softeis != null && (
                   <tr>
                     <th>Softeispreis:</th>
                     <td>
-                      <strong>{shop.preise?.softeis?.preis?.toFixed(2) ? shop.preise.softeis.preis.toFixed(2) : "-"} € </strong>
-                      {shop.preise?.softeis?.beschreibung ? (<>({shop.preise.softeis.beschreibung}) </>) : <></>}
-                      <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shop.preise.softeis.letztes_update)} aktualisiert)</span>
+                      <strong>{shopData.preise?.softeis?.preis?.toFixed(2) ? shopData.preise.softeis.preis.toFixed(2) : "-"} € </strong>
+                      {shopData.preise?.softeis?.beschreibung ? (<>({shopData.preise.softeis.beschreibung}) </>) : <></>}
+                      <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.softeis.letztes_update)} aktualisiert)</span>
                     </td>
                   </tr>)}
               </Table>
               {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
-              {shop.bewertungen && (shop.bewertungen.geschmack || shop.bewertungen.auswahl || shop.bewertungen.kugelgroesse) ? (
+              {shopData.bewertungen && (shopData.bewertungen.geschmack || shopData.bewertungen.auswahl || shopData.bewertungen.kugelgroesse) ? (
                 <>
-                  <h2>Durchschnitt aus {(shop.reviews.length)} Bewertung(en)</h2>
+                  <h2>Durchschnitt aus {(shopData.reviews.length)} Bewertung(en)</h2>
                   <Table>
-                    {shop.bewertungen.geschmack !== null && (
+                    {shopData.bewertungen.geschmack !== null && (
                       <tr>
                         <th>Geschmack:</th>
                         <td>
-                          <Rating stars={shop.bewertungen.geschmack} />{" "}
-                          <strong>{shop.bewertungen.geschmack}</strong>
+                          <Rating stars={shopData.bewertungen.geschmack} />{" "}
+                          <strong>{shopData.bewertungen.geschmack}</strong>
                         </td>
                       </tr>)}
-                    {shop.bewertungen.waffel !== null && (
+                    {shopData.bewertungen.waffel !== null && (
                       <tr>
                         <th>Waffel:</th>
                         <td>
-                          <Rating stars={shop.bewertungen.waffel} />{" "}
-                          <strong>{shop.bewertungen.waffel}</strong>
+                          <Rating stars={shopData.bewertungen.waffel} />{" "}
+                          <strong>{shopData.bewertungen.waffel}</strong>
                         </td>
                       </tr>)}
-                    {shop.bewertungen.kugelgroesse !== null && (
+                    {shopData.bewertungen.kugelgroesse !== null && (
                       <tr>
                         <th>Größe:</th>
                         <td>
-                          <Rating stars={shop.bewertungen.kugelgroesse} />{" "}
-                          <strong>{shop.bewertungen.kugelgroesse}</strong>
+                          <Rating stars={shopData.bewertungen.kugelgroesse} />{" "}
+                          <strong>{shopData.bewertungen.kugelgroesse}</strong>
                         </td>
                       </tr>)}
-                    {shop.bewertungen.auswahl !== null && (
+                    {shopData.bewertungen.auswahl !== null && (
                       <tr>
                         <th>Auswahl:</th>
                         <td>
-                          ~ <strong>{shop.bewertungen.auswahl}</strong> Sorten
+                          ~ <strong>{shopData.bewertungen.auswahl}</strong> Sorten
                         </td>
                       </tr>)}
-                    {shop.attribute?.length > 0 &&
+                    {shopData.attribute?.length > 0 &&
                       <tr>
                         <th>Attribute:</th>
                         <td>
                           <AttributeSection>
-                            {shop.attribute.map(attribute => (<AttributeBadge>{attribute.anzahl} x {attribute.name}</AttributeBadge>))}
+                            {shopData.attribute.map(attribute => (<AttributeBadge>{attribute.anzahl} x {attribute.name}</AttributeBadge>))}
                           </AttributeSection>
                         </td>
                       </tr>}
@@ -214,24 +240,24 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
               {routes.length < 1 && (<>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</>)}
               {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button></ButtonContainer>)}
               {routes.map((route, index) => (
-                <RouteCard key={index} route={route} shopId={shop.eisdiele.id} shopName={shop.eisdiele.name} />
+                <RouteCard key={index} route={route} shopId={shopData.eisdiele.id} shopName={shopData.eisdiele.name} onSuccess={refreshRoutes} />
               ))}
             </div>}
           {activeTab === 'reviews' &&
             <div>
               <h2>Bewertungen</h2>
-              {shop.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
+              {shopData.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
               {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
-              {shop.reviews && (shop.reviews.map((review, index) => (
+              {shopData.reviews && (shopData.reviews.map((review, index) => (
                 <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm} />
               )))}
             </div>}
           {activeTab === 'checkins' && <div>
             <h2>CheckIns</h2>
-            {shop.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
+            {shopData.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
             {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
-            {shop.checkins && (shop.checkins.map((checkin, index) => (
-              <CheckinCard key={index} checkin={checkin} />
+            {shopData.checkins && (shopData.checkins.map((checkin, index) => (
+              <CheckinCard key={index} checkin={checkin} onSuccess={refreshShop} />
             )))}
           </div>}
         </Content>
@@ -240,10 +266,36 @@ const ShopDetailsView = ({ shop, onClose, setShowPriceForm, setShowReviewForm, s
         <SubmitRouteForm
           showForm={showRouteForm}
           setShowForm={setShowRouteForm}
-          shopId={shop.eisdiele.id}
-          shopName={shop.eisdiele.name}
+          shopId={shopData.eisdiele.id}
+          shopName={shopData.eisdiele.name}
+          onSuccess={refreshRoutes}
         />
       )}
+      {showPriceForm && (<SubmitPriceModal
+        shop={shopData}
+        userId={userId}
+        showPriceForm={showPriceForm}
+        refreshShops={refreshShops}
+        setShowPriceForm={setShowPriceForm}
+      />)}
+      {showReviewForm && (<SubmitReviewModal
+        shop={shopData}
+        userId={userId}
+        showForm={showReviewForm}
+        setShowForm={setShowReviewForm}
+        setShowPriceForm={setShowPriceForm}
+        refreshShops={refreshShops}
+        fetchShopData={fetchShopData}
+      />)}
+      {showCheckinForm && (<CheckinFrom
+        shopId={shopData.eisdiele.id}
+        shopName={shopData.eisdiele.name}
+        userId={userId}
+        showCheckinForm={showCheckinForm}
+        setShowCheckinForm={setShowCheckinForm}
+        onSuccess={refreshShop}
+      />)}
+
     </>
   );
 };

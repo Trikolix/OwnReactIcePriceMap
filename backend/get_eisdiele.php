@@ -10,9 +10,15 @@ if ($eisdiele_id <= 0) {
 
 // 1. Basisinformationen der Eisdiele abrufen
 $stmt = $pdo->prepare("
-    SELECT *
-    FROM eisdielen 
-    WHERE id = ?
+    SELECT e.* ,
+	   l.name AS land,
+	   b.name AS bundesland,
+	   lk.name AS landkreis
+    FROM eisdielen e
+	JOIN laender l ON e.land_id = l.id
+	JOIN bundeslaender b ON e.bundesland_id = b.id
+    JOIN landkreise lk ON e.landkreis_id = lk.id
+    WHERE e.id = ?;
 ");
 $stmt->execute([$eisdiele_id]);
 $eisdiele = $stmt->fetch();

@@ -4,7 +4,7 @@ import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
 import SubmitRouteForm  from "../SubmitRouteModal";
 
-const RouteCard = ({ route, shopId, shopName }) => {
+const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
@@ -44,6 +44,7 @@ const RouteCard = ({ route, shopId, shopName }) => {
           showForm={showEditModal}
           setShowForm={setShowEditModal}
           existingRoute={route}
+          onSuccess={onSuccess}
         />
       )}
     </>

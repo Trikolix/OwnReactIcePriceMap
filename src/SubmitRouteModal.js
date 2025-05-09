@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
+import NewAwards from "./components/NewAwards";
 
-const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRoute = null }) => {
+const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRoute = null, onSuccess }) => {
 
     const [url, setUrl] = useState("");
     const [beschreibung, setBeschreibung] = useState("");
@@ -11,6 +12,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const { userId } = useUser();
     const [message, setMessage] = useState("");
     const [submitted, setSubmitted] = useState(false);
+    const [awards, setAwards] = useState([]);
 
     // Wenn bestehende Route übergeben, Felder vorausfüllen
     useEffect(() => {
@@ -60,9 +62,15 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 setTyp("Wanderung");
                 setisPrivat(false);
                 setSubmitted(true);
-                setTimeout(() => {
-                    setShowForm(false);
-                }, 2000);
+                if (onSuccess) onSuccess();
+                if (result.new_awards && result.new_awards.length > 0) {
+                    console.log("Neue Auszeichnungen:", result.new_awards);
+                    setAwards(result.new_awards);
+                } else {
+                    setTimeout(() => {
+                        setShowForm(false);
+                    }, 2000);
+                }
             } else {
                 setMessage(`Fehler: ${result.message}`);
             }
@@ -97,6 +105,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 setTyp("Wanderung");
                 setisPrivat(false);
                 setSubmitted(true);
+                if (onSuccess) onSuccess();
                 setTimeout(() => {
                     setShowForm(false);
                 }, 2000);
@@ -144,7 +153,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                         Typ:
                         <Select value={typ} onChange={(e) => setTyp(e.target.value)}>
                             <option value="Rennrad">Rennrad</option>
-                            <option value="Wanderung">Wanderung</option>                            
+                            <option value="Wanderung">Wanderung</option>
                             <option value="MTB">MTB</option>
                             <option value="Gravel">Gravel</option>
                             <option value="Sonstiges">Sonstiges</option>
@@ -173,6 +182,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                         )}
                     </ButtonGroup></>)}
                 <Message>{message}</Message>
+                <NewAwards awards={awards} />
             </Modal>
         </Overlay>) : null;
 };

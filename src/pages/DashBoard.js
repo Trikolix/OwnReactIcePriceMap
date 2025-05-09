@@ -14,8 +14,7 @@ function DashBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
-  useEffect(() => {
+  const fetchDashboard = async () => {
     fetch("https://ice-app.de/backend/dashboard.php")
       .then((res) => res.json())
       .then((json) => {
@@ -28,6 +27,10 @@ function DashBoard() {
         setError(err);
         setLoading(false);
       });
+  }
+
+  useEffect(() => {
+    fetchDashboard();
   }, []);
 
 
@@ -54,7 +57,7 @@ function DashBoard() {
       <Section>
           <Title>Neueste Check-ins</Title>
           {data.checkins.map((checkin) => (
-            <CheckinCard key={checkin.id} checkin={checkin} />
+            <CheckinCard key={checkin.id} checkin={checkin} onSuccess={fetchDashboard}/>
             
           ))}
         </Section>

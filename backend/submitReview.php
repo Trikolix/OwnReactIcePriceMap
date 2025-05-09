@@ -77,9 +77,6 @@ try {
             ':attributId' => $attrId
         ]);
     }
-
-    // $pdo->exec("ALTER TABLE bewertungen MODIFY COLUMN beschreibung TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-
     echo json_encode(["status" => "success"]);
 } catch (PDOException $e) {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);

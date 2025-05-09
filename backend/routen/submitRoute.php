@@ -1,5 +1,7 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
+require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
+require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
 
 try {
     // Daten aus der Anfrage holen
@@ -30,10 +32,27 @@ try {
         'typ' => $typ,
         'ist_oeffentlich' => $ist_oeffentlich
     ]);
+
+    // Evaluatoren
+    $evaluators = [
+        new PublicRouteCountEvaluator(),
+        new PrivateRouteCountEvaluator()
+    ];
+
+    $newAwards = [];
+    foreach ($evaluators as $evaluator) {
+        try {
+            $evaluated = $evaluator->evaluate($nutzer_id);
+            $newAwards = array_merge($newAwards, $evaluated);
+        } catch (Exception $e) {
+            error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
+        }
+    }
     
     echo json_encode([
         'status' => 'success',
-        'message' => 'Route erfolgreich eingetragen'
+        'message' => 'Route erfolgreich eingetragen',
+        'new_awards' => $newAwards
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

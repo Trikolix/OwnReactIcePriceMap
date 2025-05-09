@@ -40,7 +40,7 @@ class DayStreakEvaluator extends BaseAwardEvaluator {
         $sql = "SELECT COUNT(DISTINCT eisdiele_id) AS anzahl
                 FROM checkins
                 WHERE nutzer_id = :nutzer_id
-                AND DATE(zeitpunkt) = CURDATE()";
+                AND DATE(datum) = CURDATE()";
     
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['nutzer_id' => $nutzerId]);

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import CheckinForm from "../CheckinForm";
 
-const CheckinCard = ({ checkin }) => {
+const CheckinCard = ({ checkin, onSuccess }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
@@ -102,6 +102,7 @@ const CheckinCard = ({ checkin }) => {
           userId={userId}
           showCheckinForm={showEditModal}
           setShowCheckinForm={setShowEditModal}
+          onSuccess={onSuccess}
         />
       )}
     </>

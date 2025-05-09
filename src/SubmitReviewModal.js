@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
 
-const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, setShowPriceForm }) => {
+const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, setShowPriceForm, fetchShopData }) => {
     console.log(shop);
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
@@ -74,6 +74,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
                 refreshShops();
+                fetchShopData && fetchShopData(shop.eisdiele.id);
                 setSubmitted(true);
                 setTimeout(() => {
                     if (askForPriceUpdate(shop.preise)) {

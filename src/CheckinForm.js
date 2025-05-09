@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null  }) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess}) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -101,6 +101,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     setMessage("Checkin erfolgreich gespeichert!");
                 }                
                 setSubmitted(true);
+                if (onSuccess) onSuccess();
                 if (data.new_awards && data.new_awards.length > 0) {
                     setAwards(data.new_awards);
                 } else {

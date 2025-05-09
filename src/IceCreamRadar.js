@@ -8,10 +8,7 @@ import ShopMarker from "./ShopMarker";
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
-import SubmitPriceModal from './SubmitPriceModal';
-import SubmitReviewModal from './SubmitReviewModal';
 import LoginModal from './LoginModal';
-import CheckinFrom from './CheckinForm';
 import Header from './Header';
 import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
@@ -28,9 +25,6 @@ const IceCreamRadar = () => {
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showPriceForm, setShowPriceForm] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
 
@@ -290,35 +284,11 @@ const IceCreamRadar = () => {
           setShowLoginModal={setShowLoginModal}
         />
       }
-      {showPriceForm && (<SubmitPriceModal
-        shop={activeShop}
-        userId={userId}
-        showPriceForm={showPriceForm}
-        setShowPriceForm={setShowPriceForm}
-        refreshShops={refreshShops}
-      />)}
-      {showReviewForm && (<SubmitReviewModal
-        shop={activeShop}
-        userId={userId}
-        showForm={showReviewForm}
-        setShowForm={setShowReviewForm}
-        refreshShops={refreshShops}
-        setShowPriceForm={setShowPriceForm}
-      />)}
-      {showCheckinForm && (<CheckinFrom
-        shopId={activeShop.eisdiele.id}
-        shopName={activeShop.eisdiele.name}
-        userId={userId}
-        showCheckinForm={showCheckinForm}
-        setShowCheckinForm={setShowCheckinForm}
-      />)}
       {showDetailsView && activeShop && (
         <ShopDetailsView
-          shop={activeShop}
-          setShowPriceForm={setShowPriceForm}
-          setShowReviewForm={setShowReviewForm}
-          setShowCheckinForm={setShowCheckinForm}
+          shopId={activeShop.eisdiele.id}
           setIceCreamShops={setIceCreamShops}
+          refreshShops={refreshShops}
           onClose={() => {
             setActiveShop(null);
             setShowDetailsView(false);
