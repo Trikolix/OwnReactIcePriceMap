@@ -11,7 +11,7 @@ $sql = "WITH bewertete_checkins AS (
         ROUND(
             1 + 4 * (
                 (
-                    0.7 * ((3 * geschmackbewertung + waffelbewertung) / 20)
+                    0.7 * ((4 * geschmackbewertung + waffelbewertung) / 25)
                     + 0.3 * preisleistungsbewertung
                 ) / 2.2
             ), 4

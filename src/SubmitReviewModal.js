@@ -15,6 +15,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
     const [submitted, setSubmitted] = useState(false);
     const [preisfrage, setPreisfrage] = useState(false);
+    const [showAllAttributes, setShowAllAttributes] = useState(false)
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
@@ -41,16 +42,16 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const askForPriceUpdate = (preise) => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
+
         // Helper: prüft, ob ein Eintrag null ist oder dessen letztes_update zu alt ist
         const isNullOrTooOld = (eintrag) => {
-          if (!eintrag) return true;
-          const updateDate = new Date(eintrag.letztes_update);
-          return isNaN(updateDate.getTime()) || updateDate < sevenDaysAgo;
+            if (!eintrag) return true;
+            const updateDate = new Date(eintrag.letztes_update);
+            return isNaN(updateDate.getTime()) || updateDate < sevenDaysAgo;
         };
-      
+
         return isNullOrTooOld(preise.kugel) && isNullOrTooOld(preise.softeis);
-      };
+    };
 
 
     const submit = async () => {
@@ -183,11 +184,16 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                         </FlexWrap>
                         <BoldText>Verfügbare Attribute:</BoldText>
                         <FlexWrap>
-                            {attribute.map((attr) => (
+                            {(showAllAttributes ? attribute : attribute.slice(0, 5)).map((attr) => (
                                 <AvailableAttr key={attr} onClick={() => handleAttributeSelect(attr)}>
                                     {attr}
                                 </AvailableAttr>
                             ))}
+                            {attribute.length > 5 && (
+                                <AvailableAttr onClick={() => setShowAllAttributes(!showAllAttributes)}>
+                                    {showAllAttributes ? "..." : "..."}
+                                </AvailableAttr>
+                            )}
                         </FlexWrap>
                         <AddAttributeRow>
                             <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
