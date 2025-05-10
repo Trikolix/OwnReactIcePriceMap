@@ -20,7 +20,7 @@ function Impressum() {
                 </p>
                 <p>
                     <SubTitle>Kontakt: </SubTitle>
-                    E-Mail: ch_helbig@mail.de
+                    E-Mail: admin@ice-app.de
                 </p>
 
                 <p>
