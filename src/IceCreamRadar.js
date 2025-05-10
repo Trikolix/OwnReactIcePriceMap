@@ -34,7 +34,7 @@ const IceCreamRadar = () => {
 
   const fetchAndCenterShop = async (id) => {
     try {
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}`);
       const data = await response.json();
       console.log('fetchAndCenterShop', data)
       setActiveShop(data);
@@ -289,7 +289,7 @@ const IceCreamRadar = () => {
         <ShopDetailsView
           shopId={activeShop.eisdiele.id}
           setIceCreamShops={setIceCreamShops}
-          refreshShops={refreshShops}
+          refreshMapShops={refreshShops}
           onClose={() => {
             setActiveShop(null);
             setShowDetailsView(false);

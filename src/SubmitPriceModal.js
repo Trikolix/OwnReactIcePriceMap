@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from 'styled-components';
-const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refreshShops }) => {
+const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuccess }) => {
 
     const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
     const [additionalInfoKugelPreis, setAdditionalInfoKugelPreis] = useState(shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null);
@@ -38,7 +38,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
             console.log(data);
             data.forEach(element => {
                 if (element.status === 'success') {
-                    refreshShops();
+                    onSuccess();
                     setSubmitted(true);
                     setMessage('Preis erfolgreich gemeldet!');
                 } else {

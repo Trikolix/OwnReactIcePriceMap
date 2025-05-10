@@ -84,7 +84,6 @@ const RightContent = styled.div`
 
 const IframeContainer = styled.div`
   width: 100%;
-  height: 440px;
   border: none;
   overflow: hidden;
 

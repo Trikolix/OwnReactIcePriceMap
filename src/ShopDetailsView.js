@@ -13,7 +13,7 @@ import CheckinFrom from './CheckinForm';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 
-const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) => {
+const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [isFullHeight, setIsFullHeight] = useState(false);
   const headerRef = useRef(null);
@@ -25,6 +25,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) =>
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [shopData, setShopData] = useState(null);
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     const handleTouchStart = (e) => {
@@ -65,7 +66,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) =>
 
   const fetchShopData = useCallback(async (id) => {
     try {
-      const response = await fetch(`https://ice-app.4lima.de/backend/get_eisdiele.php?eisdiele_id=${id}`);
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}`);
       const data = await response.json();
       setShopData(data);
     } catch (err) {
@@ -80,7 +81,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) =>
   const fetchRoutes = useCallback(async (id, userId) => {
     try {
       // Basis-URL mit der Eisdiele-ID
-      let url = `https://ice-app.4lima.de/backend/routen/getRoutes.php?eisdiele_id=${id}`;
+      let url = `${apiUrl}/routen/getRoutes.php?eisdiele_id=${id}`;
 
       // Wenn userId gesetzt ist, hänge sie an die URL an
       if (userId) {
@@ -142,6 +143,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) =>
             eisdieleId={shopData.eisdiele.id}
             setIceCreamShops={setIceCreamShops}
           />
+          <ShareIcon path={"/map/activeShop/" + shopData.eisdiele.id} />
         </Header>
         <Tabs>
           <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
@@ -151,7 +153,6 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) =>
         <Content>
           {activeTab === 'info' &&
             <div>
-              <ShareIcon path={"/map/activeShop/" + shopData.eisdiele.id} />
               <strong>Eisdiele in: </strong>{shopData.eisdiele.land} - {shopData.eisdiele.bundesland} - {shopData.eisdiele.landkreis}<br />
               <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
               <OpeningHours eisdiele={shopData.eisdiele} />
@@ -275,17 +276,17 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshShops }) =>
         shop={shopData}
         userId={userId}
         showPriceForm={showPriceForm}
-        refreshShops={refreshShops}
         setShowPriceForm={setShowPriceForm}
+        onSuccess={() => {refreshShop(); refreshMapShops();}}
       />)}
+
       {showReviewForm && (<SubmitReviewModal
         shop={shopData}
         userId={userId}
         showForm={showReviewForm}
         setShowForm={setShowReviewForm}
         setShowPriceForm={setShowPriceForm}
-        refreshShops={refreshShops}
-        fetchShopData={fetchShopData}
+        onSuccess={() => {refreshShop(); refreshMapShops();}}
       />)}
       {showCheckinForm && (<CheckinFrom
         shopId={shopData.eisdiele.id}

@@ -33,7 +33,7 @@ function DashBoard() {
 
   useEffect(() => {
     fetchDashboard();
-  });
+  }, []);
 
 
   if (loading) return (

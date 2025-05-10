@@ -13,6 +13,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const [message, setMessage] = useState("");
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     // Wenn bestehende Route übergeben, Felder vorausfüllen
     useEffect(() => {
@@ -42,8 +43,8 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
         }
 
         const endpoint = existingRoute
-            ? "https://ice-app.4lima.de/backend/routen/updateRoute.php"
-            : "https://ice-app.4lima.de/backend/routen/submitRoute.php";
+            ? `${apiUrl}/routen/updateRoute.php`
+            : `${apiUrl}/routen/submitRoute.php`;
 
         try {
             const response = await fetch(endpoint, {
@@ -85,7 +86,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
         if (!confirmDelete) return;
 
         try {
-            const response = await fetch("https://ice-app.4lima.de/backend/routen/deleteRoute.php", {
+            const response = await fetch(`${apiUrl}/routen/deleteRoute.php`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -117,7 +118,6 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
             alert("Ein unbekannter Fehler ist aufgetreten.");
         }
     };
-
 
     return showForm ? (
         <Overlay>
