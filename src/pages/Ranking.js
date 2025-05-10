@@ -8,14 +8,15 @@ const Ranking = () => {
     const [EisdielenSofteis, setEisdielenSofteis] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: 'PLV', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('https://ice-app.de/backend/get_eisdielen_preisleistung.php');
+                const response = await fetch(`${apiUrl}/get_eisdielen_preisleistung.php`);
                 const data = await response.json();
                 setEisdielenKugel(data);
-                const response2 = await fetch('https://ice-app.de/backend/get_softeis_rating.php');
+                const response2 = await fetch(`${apiUrl}/get_softeis_rating.php`);
                 const data2 = await response2.json();
                 setEisdielenSofteis(data2);
             } catch (error) {
@@ -24,7 +25,7 @@ const Ranking = () => {
         };
 
         fetchData();
-    }, []);
+    }, [apiUrl]);
 
     const sortTable = (key) => {
         let direction = 'descending';

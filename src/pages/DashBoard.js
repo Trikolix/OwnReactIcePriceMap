@@ -14,8 +14,10 @@ function DashBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
   const fetchDashboard = async () => {
-    fetch("https://ice-app.de/backend/dashboard.php")
+    fetch(`${apiUrl}/dashboard.php`)
       .then((res) => res.json())
       .then((json) => {
         console.log(json);
@@ -31,7 +33,7 @@ function DashBoard() {
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  });
 
 
   if (loading) return (

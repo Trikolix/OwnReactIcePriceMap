@@ -7,11 +7,12 @@ import { Link } from "react-router-dom";
 function FavoritenListe() {
   const [favoriten, setFavoriten] = useState([]);
   const { userId, isLoggedIn } = useUser();
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    fetch(`https://ice-app.de/backend/favoriten_liste.php?nutzer_id=${userId}`)
+    fetch(`${apiUrl}/favoriten_liste.php?nutzer_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
         setFavoriten(data);
@@ -20,7 +21,7 @@ function FavoritenListe() {
       .catch((err) => {
         console.error("Fehler beim Laden der Favoriten:", err);
       });
-  }, [userId, isLoggedIn]);
+  }, [userId, isLoggedIn, apiUrl]);
 
   if (!isLoggedIn) {
     return;

@@ -13,11 +13,12 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [awards, setAwards] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   const submit = async () => {
     try {
       console.log("refreshShops:", refreshShops, typeof refreshShops);
-      const response = await fetch("https://ice-app.de/backend/submitIceShop.php", {
+      const response = await fetch(`${apiUrl}/submitIceShop.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

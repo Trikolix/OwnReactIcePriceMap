@@ -27,6 +27,7 @@ const IceCreamRadar = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   const { shopId } = useParams();
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const IceCreamRadar = () => {
     cachedBounds.current.push(bounds);
 
     try {
-      const query = `https://ice-app.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
+      const query = `${apiUrl}/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       setIceCreamShops(data);
@@ -78,7 +79,7 @@ const IceCreamRadar = () => {
     if (!bounds) return;
 
     try {
-      const query = `https://ice-app.de/backend/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
+      const query = `${apiUrl}/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);

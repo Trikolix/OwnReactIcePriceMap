@@ -17,11 +17,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
             const fetchCheckinData = async () => {
                 try {
-                    const response = await fetch(`https://ice-app.de/backend/get_checkin.php?checkin_id=${checkinId}`);
+                    const response = await fetch(`${apiUrl}/get_checkin.php?checkin_id=${checkinId}`);
                     const data = await response.json();
     
                     if (data.error) {
@@ -53,7 +54,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 setShowSortenBewertung(true);
                 fetchCheckinData();
             }
-        }, [checkinId, userId]);
+        }, [checkinId, userId, apiUrl]);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -84,8 +85,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
             const response = await fetch(
                 checkinId 
-                    ? "https://ice-app.de/backend/update_checkin.php" 
-                    : "https://ice-app.de/backend/checkin_upload.php",
+                    ? `${apiUrl}/update_checkin.php` 
+                    : `${apiUrl}/checkin_upload.php`,
                 {
                     method: "POST",
                     body: formData

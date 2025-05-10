@@ -6,6 +6,7 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
     const [favorisiert, setFavorisiert] = useState(false);
     const [loading, setLoading] = useState(false);
     const { isLoggedIn, userId } = useUser();
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     if (!isLoggedIn) {}
 
@@ -13,7 +14,7 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
     useEffect(() => {
         if (!isLoggedIn) return;
 
-        fetch(`https://ice-app.de/backend/is_favorit.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
+        fetch(`${apiUrl}/is_favorit.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
             .then((res) => res.json())
             .then((data) => {
                 if (data.favorit === true) {
@@ -23,7 +24,7 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
             .catch((err) => {
                 console.error("Fehler beim Laden des Favoritenstatus:", err);
             });
-    }, [userId, eisdieleId, isLoggedIn]);
+    }, [userId, eisdieleId, isLoggedIn, apiUrl]);
 
     const handleToggle = () => {
         if (!isLoggedIn) {
@@ -32,7 +33,7 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
         }
 
         setLoading(true);
-        fetch(`https://ice-app.de/backend/favoriten_toggle.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
+        fetch(`${apiUrl}/favoriten_toggle.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
             .then(res => res.json())
             .then(data => {
                 console.log(data);

@@ -1,21 +1,38 @@
 <?php
 $DEBUG_MODE = false;
+
 $allowed_origins = [
     'https://ice-app.de',
-    'https://ice-app.lima-city.de',
+    'https://ice-app.4lima.de'
 ];
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
+$origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+$host   = $_SERVER['HTTP_HOST'] ?? '';
+$https  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 
-if (in_array($origin, $allowed_origins)) {
+// 1. Origin ist gesetzt → klassische CORS-Anfrage
+if ($origin && in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
-} else if ($DEBUG_MODE) {
+    header('Access-Control-Allow-Credentials: true');
+}
+
+// 2. Kein Origin – aber erlaubt, wenn von echtem Host über HTTPS und von Browser (Referer vorhanden)
+elseif (!$origin && in_array("https://$host", $allowed_origins) && $https && isset($_SERVER['HTTP_REFERER'])) {
+    header("Access-Control-Allow-Origin: https://$host");
+    header('Access-Control-Allow-Credentials: true');
+}
+
+// 3. Debug-Modus erlaubt alles
+elseif ($DEBUG_MODE) {
     ini_set('display_errors', 1);
     error_reporting(E_ALL);
-    header('Access-Control-Allow-Origin: *');  // Offen im Debug-Modus
-} else {
+    header('Access-Control-Allow-Origin: *');
+}
+
+// 4. Alles andere wird blockiert
+else {
     http_response_code(403);
-    echo json_encode(['error' => 'Unauthorized origin']);
+    echo json_encode(['error' => 'Unauthorized request']);
     exit;
 }
 

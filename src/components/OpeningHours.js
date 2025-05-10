@@ -9,6 +9,7 @@ const OpeningHours = ({ eisdiele }) => {
     const overlayRef = useRef(null);
     const tooltipRef = useRef(null);
     const { userId, username, isLoggedIn } = useUser();
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const handleReportClick = async () => {
         if (newOpeningHours === eisdiele.openingHours) {
@@ -18,7 +19,7 @@ const OpeningHours = ({ eisdiele }) => {
         }
 
         try {
-            const response = await fetch('https://ice-app.de/backend/submitNewOpeningHours.php', {
+            const response = await fetch(`${apiUrl}/submitNewOpeningHours.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

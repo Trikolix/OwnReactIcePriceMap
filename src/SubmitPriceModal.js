@@ -8,10 +8,11 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, refre
     const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung ? shop.preise.softeis.beschreibung : null);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const submit = async () => {
         try {
-            const response = await fetch('https://ice-app.de/backend/submitPrice.php', {
+            const response = await fetch(`${apiUrl}/submitPrice.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

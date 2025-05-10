@@ -15,11 +15,12 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
 
     const [submitted, setSubmitted] = useState(false);
     const [preisfrage, setPreisfrage] = useState(false);
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
         const fetchReview = async () => {
             try {
-                const response = await fetch(`https://ice-app.de/backend/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
+                const response = await fetch(`${apiUrl}/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
                 const data = await response.json();
                 setAttribute(data.allAttributes.filter(attr => !data.attributes || !data.attributes.includes(attr)));
                 if (data.review) {
@@ -35,7 +36,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
             }
         };
         fetchReview();
-    }, [userId, shop.eisdiele.id]);
+    }, [userId, shop.eisdiele.id, apiUrl]);
 
     const askForPriceUpdate = (preise) => {
         const now = new Date();
@@ -54,7 +55,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
 
     const submit = async () => {
         try {
-            const response = await fetch("https://ice-app.de/backend/submitReview.php", {
+            const response = await fetch(`${apiUrl}/submitReview.php`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -115,7 +116,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, refreshShops, 
 
     const confirmPrice = async () => {
         try {
-            const response = await fetch('https://ice-app.de/backend/submitPrice.php', {
+            const response = await fetch(`${apiUrl}/submitPrice.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

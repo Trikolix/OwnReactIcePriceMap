@@ -14,6 +14,7 @@ function UserSite() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const finalUserId = userIdFromUrl || userIdFromContext;
+    const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     // Add state to manage pagination for check-ins and reviews
     const [checkinPage, setCheckinPage] = useState(1);
@@ -38,7 +39,7 @@ function UserSite() {
     useEffect(() => {
         if (!finalUserId) return;
 
-        fetch(`https://ice-app.de/backend/get_user_stats.php?nutzer_id=${finalUserId}`)
+        fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${finalUserId}`)
             .then((res) => res.json())
             .then((json) => {
                 console.log(json);
@@ -50,7 +51,7 @@ function UserSite() {
                 setError(err);
                 setLoading(false);
             });
-    }, [finalUserId]);
+    }, [finalUserId, apiUrl]);
 
     if (loading) return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>

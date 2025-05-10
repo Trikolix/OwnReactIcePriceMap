@@ -9,10 +9,11 @@ const LoginModal = ({ setShowLoginModal }) => {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const { userId, isLoggedIn, login } = useUser();
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('https://ice-app.de/backend/login.php', {
+      const response = await fetch(`${apiUrl}/login.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -50,7 +51,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
   const handleRegister = async () => {
     try {
-      const response = await fetch('https://ice-app.de/backend/register.php', {
+      const response = await fetch(`${apiUrl}/register.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
