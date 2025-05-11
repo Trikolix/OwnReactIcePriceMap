@@ -22,7 +22,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     useEffect(() => {
             const fetchCheckinData = async () => {
                 try {
-                    const response = await fetch(`${apiUrl}/get_checkin.php?checkin_id=${checkinId}`);
+                    const response = await fetch(`${apiUrl}/checkin/get_checkin.php?checkin_id=${checkinId}`);
                     const data = await response.json();
     
                     if (data.error) {
@@ -85,8 +85,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
             const response = await fetch(
                 checkinId 
-                    ? `${apiUrl}/update_checkin.php` 
-                    : `${apiUrl}/checkin_upload.php`,
+                    ? `${apiUrl}/checkin/update_checkin.php` 
+                    : `${apiUrl}/checkin/checkin_upload.php`,
                 {
                     method: "POST",
                     body: formData
@@ -115,6 +115,41 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             }
         } catch (error) {
             setMessage(`Ein Fehler ist aufgetreten: ${error}`);
+        }
+    };
+
+    const handleDeleteClick = async () => {
+        const confirmDelete = window.confirm("Möchtest du diesen Check-in wirklich löschen? Das Löschen kann nicht rückgängig gemacht werden.");
+        if (!confirmDelete) return;
+
+        try {
+            const response = await fetch(`${apiUrl}/checkin/delete_checkin.php`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: checkinId,
+                    nutzer_id: userId,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.status === "success") {
+                if (onSuccess) onSuccess();
+                setSubmitted(true);
+                setMessage("Checkin erfolgreich gelöscht!");
+                setTimeout(() => {
+                    setShowCheckinForm(false);
+                }, 2000);
+                
+            } else {
+                setMessage("Fehler beim Löschen: " + result.message);
+            }
+        } catch (error) {
+            console.error("Fehler beim Löschen:", error);
+            alert("Ein unbekannter Fehler ist aufgetreten.");
         }
     };
 
@@ -250,6 +285,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </Section>
                     <ButtonGroup>
                         <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
+                        {checkinId && (<><br />
+                            <DeleteButton type="button" onClick={handleDeleteClick} >
+                                Route löschen
+                            </DeleteButton></>
+                        )}
                     </ButtonGroup>
 
                 </Form>)}
@@ -412,3 +452,16 @@ const CurrentImage = styled.img`
   border-radius: 0.5rem;
   margin-bottom: 0.5rem;
 `;
+
+const DeleteButton = styled(Button)`
+  background-color: #d9534f;
+  margin-top: 20px;
+  margin-bottom: -50px;
+  padding: 0.5rem 0.75rem;
+  position: absolute;
+  bottom: 60px;
+  right: 0px;
+  &:hover {
+    background-color:rgb(216, 37, 31);
+  }
+`

@@ -103,7 +103,6 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   };
 
   useEffect(() => {
-    console.log("Shop ID:", shopId);
     if (shopId) {
       fetchShopData(shopId);
       fetchRoutes(shopId, userId);

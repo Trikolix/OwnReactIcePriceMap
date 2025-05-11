@@ -1,27 +1,19 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Content-Type: application/json; charset=utf-8');
-
-require_once __DIR__ . '/db_connect.php';
-require_once __DIR__ . '/evaluators/CountyCountEvaluator.php';
-require_once __DIR__ . '/evaluators/PhotosCountEvaluator.php';
-require_once __DIR__ . '/evaluators/KugeleisCountEvaluator.php';
-require_once __DIR__ . '/evaluators/SofticeCountEvaluator.php';
-require_once __DIR__ . '/evaluators/SundaeCountEvaluator.php';
-require_once __DIR__ . '/evaluators/CheckinCountEvaluator.php';
-require_once __DIR__ . '/evaluators/BundeslandCountEvaluator.php';
-require_once __DIR__ . '/evaluators/FuerstPuecklerEvaluator.php';
-require_once __DIR__ . '/evaluators/PerfectWeekEvaluator.php';
-require_once __DIR__ . '/evaluators/DayStreakEvaluator.php';
-require_once __DIR__ . '/evaluators/AllIceTypesEvaluator.php';
-require_once __DIR__ . '/evaluators/DistanceIceTravelerEvaluator.php';
-require_once __DIR__ . '/evaluators/StammkundeEvaluator.php';
-require_once __DIR__ . '/evaluators/CountryVisitEvaluator.php';
+require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/KugeleisCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/SofticeCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/SundaeCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/CheckinCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/BundeslandCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/FuerstPuecklerEvaluator.php';
+require_once __DIR__ . '/../evaluators/PerfectWeekEvaluator.php';
+require_once __DIR__ . '/../evaluators/DayStreakEvaluator.php';
+require_once __DIR__ . '/../evaluators/AllIceTypesEvaluator.php';
+require_once __DIR__ . '/../evaluators/DistanceIceTravelerEvaluator.php';
+require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
+require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -129,54 +121,72 @@ try {
         respondWithError('Fehlende oder ungültige Pflichtdaten.');
     }
 
-    $bild_url = null;
-    if (isset($_FILES['bild'])) {
-        switch ($_FILES['bild']['error']) {
-            case UPLOAD_ERR_OK:
-                $uploadDir = '../uploads/checkins/';
-                if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-            
-                $tempPath = $_FILES['bild']['tmp_name'];
-                $filename = uniqid('checkin_', true) . '.jpg';
-                $destination = $uploadDir . $filename;
-            
-                try {
-                    resizeImage($tempPath, $destination);
-                    $bild_url = 'uploads/checkins/' . $filename;
-                } catch (Exception $e) {
-                    respondWithError('Bildverarbeitung fehlgeschlagen: ' . $e->getMessage());
-                }
-                break;
-            
-            case UPLOAD_ERR_INI_SIZE:
-            case UPLOAD_ERR_FORM_SIZE:
-                respondWithError('Die hochgeladene Datei ist zu groß.');
-                break;
-            case UPLOAD_ERR_PARTIAL:
-                respondWithError('Die Datei wurde nur teilweise hochgeladen.');
-                break;
-            case UPLOAD_ERR_NO_FILE:
-                // kein Bild ist erlaubt → still akzeptieren
-                break;
-            case UPLOAD_ERR_NO_TMP_DIR:
-            case UPLOAD_ERR_CANT_WRITE:
-            case UPLOAD_ERR_EXTENSION:
-                respondWithError('Fehler beim temporären Speichern der Datei.');
-                break;
-            default:
-                respondWithError('Unbekannter Fehler beim Dateiupload.');
-                break;
+    $bildUrls = [];
+    if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
+        $uploadDir = '../../uploads/checkins/';
+        if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+
+        $beschreibungen = $_POST['bild_beschreibungen'] ?? [];
+        foreach ($_FILES['bilder']['tmp_name'] as $index => $tmpPath)  {
+            switch ($_FILES['bilder']['error'][$index]) {
+                case UPLOAD_ERR_OK:
+
+                    if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+                
+                    $tempPath = $_FILES['bilder']['tmp_name'][$index];
+                    $filename = uniqid('checkin_', true) . '.jpg';
+                    $destination = $uploadDir . $filename;
+                
+                    try {
+                        resizeImage($tempPath, $destination);
+                        $relativePath = 'uploads/checkins/' . $filename;
+                        $beschreibung = $beschreibungen[$index] ?? null;
+                        $bildUrls[] = ['url' => $relativePath, 'beschreibung' => $beschreibung];
+                    } catch (Exception $e) {
+                        respondWithError('Bildverarbeitung fehlgeschlagen: ' . $e->getMessage());
+                    }
+                    break;
+                
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    respondWithError('Die hochgeladene Datei ist zu groß.');
+                    break;
+                case UPLOAD_ERR_PARTIAL:
+                    respondWithError('Die Datei wurde nur teilweise hochgeladen.');
+                    break;
+                case UPLOAD_ERR_NO_FILE:
+                    // kein Bild ist erlaubt → still akzeptieren
+                    break;
+                case UPLOAD_ERR_NO_TMP_DIR:
+                case UPLOAD_ERR_CANT_WRITE:
+                case UPLOAD_ERR_EXTENSION:
+                    respondWithError('Fehler beim temporären Speichern der Datei.');
+                    break;
+                default:
+                    respondWithError('Unbekannter Fehler beim Dateiupload.');
+                    break;
+            }
         }
     }
 
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, bild_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $bild_url]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar]);
     $checkinId = $pdo->lastInsertId();
+
+    if (!empty($bildUrls)) {
+        $insertImgStmt = $pdo->prepare("
+            INSERT INTO bilder (checkin_id, url, beschreibung)
+            VALUES (?, ?, ?)
+        ");
+        foreach ($bildUrls as $bild) {
+            $insertImgStmt->execute([$checkinId, $bild['url'], $bild['beschreibung']]);
+        }
+    }
 
     // Evaluatoren
     $evaluators = [
@@ -191,7 +201,7 @@ try {
         new CountryVisitEvaluator()
     ];
 
-    if ($bild_url !== null) $evaluators[] = new PhotosCountEvaluator();
+    if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
     if (!empty($sorten)) $evaluators[] = new FuerstPuecklerEvaluator();
 
     if ($type === "Kugel") $evaluators[] = new KugeleisCountEvaluator();
@@ -230,6 +240,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    respondWithError('Ein unerwarteter Fehler ist aufgetreten.', 500, $e);
+    respondWithError('Ein unerwarteter Fehler ist aufgetreten.' . $e->getMessage(), 500, $e);
 }
 ?>

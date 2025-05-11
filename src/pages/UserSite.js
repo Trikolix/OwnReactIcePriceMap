@@ -36,22 +36,32 @@ function UserSite() {
     // Add tabs for displaying check-ins and reviews
     const [activeTab, setActiveTab] = useState('checkins');
 
+    const fetchUserData = async (finalUserId) => {
+        try {
+            const response = await fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${finalUserId}`);
+            if (!response.ok) {
+                throw new Error("Fehler beim Abruf der Daten");
+            }
+            const json = await response.json();
+            setData(json);
+            setLoading(false);
+        } catch (err) {
+            console.error("Fehler beim Laden der Dashboard-Daten:", err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
         if (!finalUserId) return;
 
-        fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${finalUserId}`)
-            .then((res) => res.json())
-            .then((json) => {
-                console.log(json);
-                setData(json);
-                setLoading(false);
-            })
-            .catch((err) => {
-                console.error("Fehler beim Laden der Dashboard-Daten:", err);
-                setError(err);
-                setLoading(false);
-            });
-    }, [finalUserId, apiUrl]);
+        fetchUserData(finalUserId);
+    }, [finalUserId]);
+
+    const refreshUser = () => {
+      fetchUserData(finalUserId);
+    };
 
     if (loading) return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -178,7 +188,7 @@ function UserSite() {
                         {activeTab === 'checkins' && (
                             <div>
                                 {displayedCheckins.map((checkin, index) => (
-                                    <CheckinCard key={index} checkin={checkin} />
+                                    <CheckinCard key={index} checkin={checkin} onSuccess={refreshUser} />
                                 ))}
                                 {displayedCheckins.length < data.checkins.length && (
                                     <LoadMoreButton onClick={loadMoreCheckins}>Mehr Checkins laden</LoadMoreButton>
