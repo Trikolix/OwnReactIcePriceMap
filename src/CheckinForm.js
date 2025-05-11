@@ -11,8 +11,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [größenbewertung, setGrößenbewertung] = useState(null);
     const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
-    const [bild, setBild] = useState(null);
-    const [currentBildUrl, setCurrentBildUrl] = useState(null);
+    const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
+    const [deletedBildIds, setDeletedBildIds] = useState([]);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
@@ -23,28 +23,32 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             const fetchCheckinData = async () => {
                 try {
                     const response = await fetch(`${apiUrl}/checkin/get_checkin.php?checkin_id=${checkinId}`);
-                    const data = await response.json();
+                    const checkin = await response.json();
     
-                    if (data.error) {
-                        setMessage(data.error);
+                    if (checkin.error) {
+                        setMessage(checkin.error);
                         return;
                     }
     
-                    if (parseInt(data.checkin.nutzer_id, 10) !== parseInt(userId, 10)) {
+                    if (parseInt(checkin.nutzer_id, 10) !== parseInt(userId, 10)) {
                         setMessage("You aren't allowed to edit this checkin!");
                         setIsAllowed(false);
                         return;
                     }
     
-                    const checkin = data.checkin;
                     setType(checkin.typ);
                     setGeschmackbewertung(checkin.geschmackbewertung);
                     setWaffelbewertung(checkin.waffelbewertung);
                     setGrößenbewertung(checkin.größenbewertung);
                     setPreisleistungsbewertung(checkin.preisleistungsbewertung);
                     setKommentar(checkin.kommentar);
-                    setCurrentBildUrl(checkin.bild_url);
-                    setSorten(data.sorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
+                    setBilder(checkin.bilder.map(b => ({
+                        id: b.id,
+                        url: `https://ice-app.de/${b.url}`,
+                        beschreibung: b.beschreibung || "",
+                        isExisting: true
+                    })));
+                    setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
                 } catch (error) {
                     setMessage(`Ein Fehler ist aufgetreten: ${error}`);
                 }
@@ -79,8 +83,17 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             formData.append("größenbewertung", größenbewertung);
             formData.append("preisleistungsbewertung", preisleistungsbewertung);
             formData.append("kommentar", kommentar);
-            formData.append("bild", bild);
             formData.append("sorten", JSON.stringify(sorten));
+            bilder.forEach((bild, index) => {
+                if (!bild.isExisting) {
+                    formData.append(`bilder[]`, bild.file);
+                    formData.append(`beschreibungen[]`, bild.beschreibung);
+                }
+            });
+            formData.append("bestehende_bilder", JSON.stringify(
+                bilder.filter(b => b.isExisting).map(b => b.id)
+            ));
+            formData.append("deleted_bilder", JSON.stringify(deletedBildIds));
             if (checkinId) formData.append("checkin_id", checkinId);
 
             const response = await fetch(
@@ -94,7 +107,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             );
 
             const data = await response.json();
-            console.log(data);
             if (data.status === "success") {
                 if (checkinId) {
                     setMessage("Checkin erfolgreich aktualisiert!");
@@ -151,6 +163,32 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             console.error("Fehler beim Löschen:", error);
             alert("Ein unbekannter Fehler ist aufgetreten.");
         }
+    };
+
+    const handleBildUpload = (e) => {
+        const files = Array.from(e.target.files);
+        const neueBilder = files.map(file => ({
+            file,
+            previewUrl: URL.createObjectURL(file),
+            beschreibung: ""
+        }));
+        setBilder(prev => [...prev, ...neueBilder]);
+    };
+
+    const updateBildBeschreibung = (index, value) => {
+        const updated = [...bilder];
+        updated[index].beschreibung = value;
+        setBilder(updated);
+    };
+
+    const removeBild = (index) => {
+        const bild = bilder[index];
+        if (bild.isExisting) {
+            setDeletedBildIds(prev => [...prev, bild.id]);
+        }
+        const updated = [...bilder];
+        updated.splice(index, 1);
+        setBilder(updated);
     };
 
     return (showCheckinForm ? (
@@ -271,23 +309,33 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             onChange={(e) => setKommentar(e.target.value)}
                         />
                     </Section>
-
                     <Section>
-                        <Label>Bild hochladen</Label>
-                        {currentBildUrl && (
-                                    <CurrentImage src={`https://ice-app.de/${currentBildUrl}`} alt="Aktuelles Bild" />
-                                )}
-                        <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setBild(e.target.files[0])}
-                        />
+                        <Label>Bilder hochladen</Label>
+                        <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
+
+                        {bilder.map((bild, index) => (
+                            <div key={index} style={{ marginTop: "1rem", border: "1px solid #ccc", padding: "0.5rem" }}>
+                                <img 
+                                    src={bild.previewUrl || bild.url}
+                                    alt={`Bild ${index + 1}`}
+                                    style={{ maxHeight: "150px", width: "auto" }}
+                                />
+                                <Input
+                                    type="text"
+                                    placeholder="Beschreibung eingeben (optional)"
+                                    value={bild.beschreibung}
+                                    onChange={(e) => updateBildBeschreibung(index, e.target.value)}
+                                    style={{ marginTop: "0.5rem", marginBottom: "0.5rem", maxWidth: "100%" }}
+                                />
+                                <DeleteButton type="button" onClick={() => removeBild(index)}>Bild entfernen</DeleteButton>
+                            </div>
+                        ))}
                     </Section>
                     <ButtonGroup>
                         <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
                         {checkinId && (<><br />
                             <DeleteButton type="button" onClick={handleDeleteClick} >
-                                Route löschen
+                                Check-in löschen
                             </DeleteButton></>
                         )}
                     </ButtonGroup>
@@ -455,12 +503,7 @@ const CurrentImage = styled.img`
 
 const DeleteButton = styled(Button)`
   background-color: #d9534f;
-  margin-top: 20px;
-  margin-bottom: -50px;
-  padding: 0.5rem 0.75rem;
-  position: absolute;
-  bottom: 60px;
-  right: 0px;
+  position: relative;
   &:hover {
     background-color:rgb(216, 37, 31);
   }

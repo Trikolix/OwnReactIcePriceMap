@@ -1,5 +1,7 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/lib/checkin.php';
+
 
 // Price Per Landkreis
 $stmtPricePerLandkreis = $pdo->prepare("
@@ -59,34 +61,8 @@ foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
 // Referenz wieder auflösen
 unset($review);
 
-// Latest Checkins
-$stmtCheckins = $pdo->prepare("
-    SELECT c.*, 
-           n.id AS nutzer_id,
-           n.username AS nutzer_name,
-           e.name AS eisdiele_name,
-           e.adresse
-    FROM checkins c
-    JOIN nutzer n ON c.nutzer_id = n.id
-    JOIN eisdielen e ON c.eisdiele_id = e.id
-    ORDER BY c.datum DESC
-    LIMIT 10
-");
-$stmtCheckins->execute();
-$checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
 
-foreach ($checkins as &$checkin) {
-    $stmtSorten = $pdo->prepare("
-        SELECT sortenname, bewertung 
-        FROM checkin_sorten 
-        WHERE checkin_id = :checkinId
-    ");
-    $stmtSorten->execute(['checkinId' => $checkin['id']]);
-    $sorten = $stmtSorten->fetchAll(PDO::FETCH_ASSOC);
-    $checkin['eissorten'] = $sorten;
-}
-unset($checkin); // Referenz auflösen
-
+$checkins = getCheckins(pdo: $pdo, limit: 10);
 // JSON ausgeben
 echo json_encode([
     "pricePerLandkreis" => $pricePerLandkreis,

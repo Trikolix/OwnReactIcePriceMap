@@ -62,21 +62,19 @@ const CheckinCard = ({ checkin, onSuccess }) => {
             </Table>
 
             {checkin.kommentar && <p>{checkin.kommentar}</p>}
-            {console.log(parseInt(checkin.nutzer_id, 10), parseInt(userId, 10))}
             {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
               <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}
           </LeftContent>
-
-          {checkin.bild_url && (
-            <RightContent>
+          <RightContent>
+          {checkin.bilder.map((bild, index) => (
               <Thumbnail
-                src={`https://ice-app.de/${checkin.bild_url}`}
+                src={`https://ice-app.de/${bild.url}`}
                 alt="Checkin Bild"
                 onClick={() => setLightboxOpen(true)}
               />
-            </RightContent>
-          )}
+          ))}
+          </RightContent>
         </ContentWrapper>
       </Card>
 

@@ -182,8 +182,11 @@ const Ranking = () => {
                         </tbody>
                     </Table>
                         <Explanation>
-                            <h4>Erklärung zum Ranking</h4>
+                            <h1>Erklärung zum Ranking</h1>
                             <LeftAlign>
+                                <h2>Wie wird der <em>finale Softeis-Score</em> berechnet?</h2>
+
+                                <h3>1. Einzelbewertung je Check-in</h3>
                                 <p>Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet:</p>
                                 <p>Es gibt einen <strong>Geschmacks-Faktor</strong> welcher sich aus Geschmack und Waffel zusammen setzt.
                                     Der Geschmack des Eises hat dabei eine 4 mal größere Gewichtung als die Waffel.</p>
@@ -197,6 +200,29 @@ const Ranking = () => {
                                 W - Ø Bewertung der Eiswaffel<br />
                                 P - Preis pro Kugel in €<br />
                                 <img src={require('./plv-formel_neu.png')} alt='PLV Formel' />
+
+                                <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
+                                <p>
+                                    Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
+                                </p>
+                                <ul>
+                                    <li><code>gewicht = √(Anzahl Check-ins des Nutzers)</code></li>
+                                    <li><code>gewichteter_score = durchschnittlicher Score × gewicht</code></li>
+                                </ul>
+                                <p>
+                                    Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
+                                </p>
+
+                                <h3>3. Finale Bewertung je Eisdiele</h3>
+                                <p>
+                                    Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
+                                </p>
+                                <pre><code>
+                                    finaler_softeis_score =
+                                    Summe aller gewichteter Scores /
+                                    Summe aller Gewichte
+                                </code></pre>
+                                
                             </LeftAlign>
                         </Explanation></>)}
                     {activeTab === 'softeis' && (<>
@@ -254,7 +280,7 @@ const Ranking = () => {
                             </tbody>
                         </Table>
                         <Explanation>
-                        <h4>Erklärung zum Ranking</h4>
+                        <h1>Erklärung zum Ranking</h1>
                         <LeftAlign>
                             <h2>Wie wird der <em>finale Softeis-Score</em> berechnet?</h2>
 
