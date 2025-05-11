@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 const Ranking = () => {
     const [eisdielenKugel, setEisdielenKugel] = useState([]);
     const [eisdielenSofteis, setEisdielenSofteis] = useState([]);
-    const [sortConfigKugel, setSortConfigKugel] = useState({ key: 'PLV', direction: 'descending' });
+    const [sortConfigKugel, setSortConfigKugel] = useState({ key: 'finaler_score', direction: 'descending' });
     const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'rating', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
@@ -14,7 +14,7 @@ const Ranking = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`${apiUrl}/get_eisdielen_preisleistung.php`);
+                const response = await fetch(`${apiUrl}/get_kugeleis_rating.php`);
                 const data = await response.json();
                 setEisdielenKugel(data);
                 const response2 = await fetch(`${apiUrl}/get_softeis_rating.php`);
@@ -128,48 +128,46 @@ const Ranking = () => {
                                 <th onClick={() => sortTableKugel('avg_geschmack')}>
                                     Geschmack {sortConfigKugel.key === 'avg_geschmack' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('avg_kugelgroesse')}>
-                                    Größe {sortConfigKugel.key === 'avg_kugelgroesse' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableKugel('avg_größe')}>
+                                    Größe {sortConfigKugel.key === 'avg_größe' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('avg_waffel')}>
                                     Waffel {sortConfigKugel.key === 'avg_waffel' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('avg_auswahl')}>
-                                    Anzahl Sorten {sortConfigKugel.key === 'avg_auswahl' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableKugel('preis')}>
+                                    Preis {sortConfigKugel.key === 'preis' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('aktueller_preis')}>
-                                    Preis (€) {sortConfigKugel.key === 'aktueller_preis' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableKugel('finaler_score')}>
+                                    Rating {sortConfigKugel.key === 'finaler_score' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('PLV')}>
-                                    Rating {sortConfigKugel.key === 'PLV' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableKugel('avg_geschmacksfaktor')}>
+                                    Faktor Geschmack {sortConfigKugel.key === 'avg_geschmacksfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('geschmacks_faktor')}>
-                                    Faktor Geschmack {sortConfigKugel.key === 'geschmacks_faktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableKugel('avg_plfaktor')}>
+                                    Faktor Preis-Leistung {sortConfigKugel.key === 'avg_plfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('preisleistungs_faktor')}>
-                                    Faktor Preis-Leistung {sortConfigKugel.key === 'preisleistungs_faktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
-                                </th>
+                                <th >Anzahl Bewertungen</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sortedEisdielenKugel.map((eisdiele, index) => (
                                 <React.Fragment key={index}>
                                     <tr onClick={() => toggleDetails(index)}>
-                                        <td style={{ textAlign: 'left' }}>{eisdiele.eisdielen_name}</td>
+                                        <td style={{ textAlign: 'left' }}>{eisdiele.name}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmack' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmack ? Number(eisdiele.avg_geschmack).toFixed(1) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'avg_kugelgroesse' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_kugelgroesse ? Number(eisdiele.avg_kugelgroesse).toFixed(1) : "–"}</td>
+                                        <td style={sortConfigKugel.key === 'avg_größe' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_größe ? Number(eisdiele.avg_größe).toFixed(1) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_waffel' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_waffel ? Number(eisdiele.avg_waffel).toFixed(1) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'avg_auswahl' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_auswahl ? Number(eisdiele.avg_auswahl).toFixed(0) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'aktueller_preis' ? { fontWeight: 'bold' } : {}}>{eisdiele.aktueller_preis ? Number(eisdiele.aktueller_preis).toFixed(2) : "–"} €</td>
-                                        <td style={sortConfigKugel.key === 'PLV' ? { fontWeight: 'bold' } : {}}>{eisdiele.PLV ? Number(eisdiele.PLV).toFixed(2) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'geschmacks_faktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.geschmacks_faktor ? Number(eisdiele.geschmacks_faktor).toFixed(2) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'preisleistungs_faktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.preisleistungs_faktor ? Number(eisdiele.preisleistungs_faktor).toFixed(2) : "–"}</td>
+                                        <td style={sortConfigKugel.key === 'preis' ? { fontWeight: 'bold' } : {}}>{eisdiele.preis ? Number(eisdiele.preis).toFixed(2) : "–"} €</td>
+                                        <td style={sortConfigKugel.key === 'finaler_score' ? { fontWeight: 'bold' } : {}}>{eisdiele.finaler_score ? Number(eisdiele.finaler_score).toFixed(2) : "–"}</td>
+                                        <td style={sortConfigKugel.key === 'avg_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmacksfaktor ? Number(eisdiele.avg_geschmacksfaktor).toFixed(2) : "–"}</td>
+                                        <td style={sortConfigKugel.key === 'avg_plfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_plfaktor ? Number(eisdiele.avg_plfaktor).toFixed(2) : "–"}</td>
+                                        <td><strong>{eisdiele.checkin_anzahl}</strong> (von {eisdiele.nutzeranzahl} Nutzer/n))</td>
                                     </tr>
                                     <DetailsRow visible={expandedRow === index} className="details-row">
                                         <td colSpan="9">
                                             <DetailsContainer>
 
-                                                <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdielen_id}`}>{eisdiele.eisdielen_name}</CleanLink></h3>
+                                                <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.name}</CleanLink></h3>
                                                 <strong>Adresse: </strong>{eisdiele.adresse}<br />
                                                 <strong>Öffnungszeiten: </strong><br />{eisdiele.openingHours.split(';').map((time, i) => (
                                                     <React.Fragment key={i}>
@@ -262,7 +260,8 @@ const Ranking = () => {
 
                             <h3>1. Einzelbewertung je Check-in</h3>
                             <p>
-                                Für jeden Check-in mit vollständiger Bewertung (Geschmack, Waffel, Preis-Leistung) wird ein Score berechnet:
+                                Für jeden Check-in mit vollständiger Bewertung (Geschmack, Waffel, Preis-Leistung) wird ein Score berechnet:<br />
+                                (Bei Check-ins ohne Waffe entspricht der Geschmacksfaktor dem Geschmack)<br />
                             </p>
                                 <img src={require('./softeis_formel.png')} alt='Formel Softeis Ranking' />
                             

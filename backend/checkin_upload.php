@@ -21,6 +21,7 @@ require_once __DIR__ . '/evaluators/DayStreakEvaluator.php';
 require_once __DIR__ . '/evaluators/AllIceTypesEvaluator.php';
 require_once __DIR__ . '/evaluators/DistanceIceTravelerEvaluator.php';
 require_once __DIR__ . '/evaluators/StammkundeEvaluator.php';
+require_once __DIR__ . '/evaluators/CountryVisitEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -187,6 +188,7 @@ try {
         new AllIceTypesEvaluator(),
         new DistanceIceTravelerEvaluator(),
         new StammkundeEvaluator(),
+        new CountryVisitEvaluator()
     ];
 
     if ($bild_url !== null) $evaluators[] = new PhotosCountEvaluator();
