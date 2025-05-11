@@ -114,7 +114,9 @@ export default OpeningHours;
 
 const Container = styled.div``;
 
-const OpeningHoursContainer = styled.div`
+const OpeningHoursContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isLoggedIn',
+})`
   position: relative;
   cursor: ${({ isLoggedIn }) => (isLoggedIn ? 'pointer' : 'default')};
   width: fit-content;

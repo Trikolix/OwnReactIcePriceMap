@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import styled from 'styled-components';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
@@ -15,7 +15,7 @@ import SubmitReviewModal from './SubmitReviewModal';
 
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
-  const [isFullHeight, setIsFullHeight] = useState(false);
+  const [isfullheight, setIsFullHeight] = useState(false);
   const headerRef = useRef(null);
   const startYRef = useRef(0);
   const { isLoggedIn, userId } = useUser();
@@ -28,41 +28,44 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
-    const handleTouchStart = (e) => {
-      startYRef.current = e.touches[0].clientY;
-    };
+    if (typeof window === "undefined") return;
+    const timeout = setTimeout(() => {
+      const container = headerRef.current;
+      if (!container) return;
+      const handleTouchStart = (e) => {
+        startYRef.current = e.touches[0].clientY;
+      };
 
-    const handleTouchMove = (e) => {
-      e.preventDefault();
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchY - startYRef.current;
+      const handleTouchMove = (e) => {
+        e.preventDefault();
+        const touchY = e.touches[0].clientY;
+        const deltaY = touchY - startYRef.current;
+        console.log("deltaY:", deltaY);
 
-      if (deltaY < -50 && !isFullHeight) {
-        setIsFullHeight(true);
-      } else if (deltaY > 50 && isFullHeight) {
-        setIsFullHeight(false);
-      }
-    };
+        if (deltaY < -50) {
+          setIsFullHeight(true);
+        } else if (deltaY > 50) {
+          setIsFullHeight(false);
+        }
+      };
 
-    const handleTouchEnd = () => {
-      startYRef.current = 0;
-    };
+      const handleTouchEnd = () => {
+        startYRef.current = 0;
+      };
 
-    const container = headerRef.current;
-    if (container) {
       container.addEventListener('touchstart', handleTouchStart);
-      container.addEventListener('touchmove', handleTouchMove);
+      container.addEventListener('touchmove', handleTouchMove, { passive: false });
       container.addEventListener('touchend', handleTouchEnd);
-    }
 
-    return () => {
-      if (container) {
+      return () => {
         container.removeEventListener('touchstart', handleTouchStart);
         container.removeEventListener('touchmove', handleTouchMove);
         container.removeEventListener('touchend', handleTouchEnd);
-      }
-    };
-  }, [isFullHeight]);
+      };
+    }, 100); // Delay to ensure the DOM is ready
+    return () => clearTimeout(timeout);
+  }, []);
+
 
   const fetchShopData = useCallback(async (id) => {
     try {
@@ -135,7 +138,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
   return (
     <>
-      <Container isFullHeight={isFullHeight}>
+      <Container isfullheight={isfullheight}>
         <Header ref={headerRef}>
           <IceShopHeader>{shopData.eisdiele.name}</IceShopHeader>
           <CloseButton onClick={onClose}>✖</CloseButton>
@@ -277,7 +280,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         userId={userId}
         showPriceForm={showPriceForm}
         setShowPriceForm={setShowPriceForm}
-        onSuccess={() => {refreshShop(); refreshMapShops();}}
+        onSuccess={() => { refreshShop(); refreshMapShops(); }}
       />)}
 
       {showReviewForm && (<SubmitReviewModal
@@ -286,7 +289,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         showForm={showReviewForm}
         setShowForm={setShowReviewForm}
         setShowPriceForm={setShowPriceForm}
-        onSuccess={() => {refreshShop(); refreshMapShops();}}
+        onSuccess={() => { refreshShop(); refreshMapShops(); }}
       />)}
       {showCheckinForm && (<CheckinFrom
         shopId={shopData.eisdiele.id}
@@ -303,13 +306,15 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
 export default ShopDetailsView;
 
-const Container = styled.div`
+const Container = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isfullheight',
+})`
   overscroll-behavior: none;
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: ${({ isFullHeight }) => (isFullHeight ? '100%' : '50%')};
+  height: ${({ isfullheight }) => (isfullheight ? '100%' : '50%')};
   background: white;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
   border-radius: 12px 12px 0 0;
