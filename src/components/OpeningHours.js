@@ -79,17 +79,17 @@ const OpeningHours = ({ eisdiele }) => {
 
     return (
         <Container>
-            {eisdiele.openingHours.trim() !== "" && (<strong>Öffnungszeiten:</strong>)}
+            <strong>Öffnungszeiten:</strong>
             <OpeningHoursContainer
                 onClick={isLoggedIn ? handleOpeningHoursClick : undefined}
                 isLoggedIn={isLoggedIn}
                 data-show-tooltip={showTooltip}
             >
-                {eisdiele.openingHours.split(';').map((part, index) => (
+                {eisdiele.openingHours.trim() !== "" ? (eisdiele.openingHours.split(';').map((part, index) => (
                     <div key={index}>
                         {part.trim()}
                     </div>
-                ))}
+                ))) : (<>Keine Öffnungszeiten eingetragen</>)}
                 {showTooltip && (
                     <Tooltip ref={tooltipRef} onClick={handleTooltipClick}>
                         Änderungen an Öffnungszeiten melden
