@@ -7,6 +7,7 @@ import CheckinForm from "../CheckinForm";
 
 const CheckinCard = ({ checkin, onSuccess }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxPicture, setLightBoxPicture] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
@@ -67,11 +68,14 @@ const CheckinCard = ({ checkin, onSuccess }) => {
             )}
           </LeftContent>
           <RightContent>
-          {checkin.bilder.map((bild, index) => (
+          {checkin.bilder && checkin.bilder.map((bild, index) => (
               <Thumbnail
                 src={`https://ice-app.de/${bild.url}`}
                 alt="Checkin Bild"
-                onClick={() => setLightboxOpen(true)}
+                onClick={() => {
+                  setLightboxOpen(true);
+                  setLightBoxPicture(bild);
+                }}
               />
           ))}
           </RightContent>
@@ -82,11 +86,13 @@ const CheckinCard = ({ checkin, onSuccess }) => {
         <LightboxOverlay onClick={() => setLightboxOpen(false)}>
           <LightboxContent onClick={(e) => e.stopPropagation()}>
             <LightboxImage
-              src={`https://ice-app.de/${checkin.bild_url}`}
+              src={`https://ice-app.de/${lightboxPicture.url}`}
               alt="Checkin Bild"
             />
             <LightboxTitle>
-              {checkin.eissorten.map((sorte) => sorte.sortenname).join(", ")} Eis bei {checkin.eisdiele_name}
+              {lightboxPicture.beschreibung ? 
+              (lightboxPicture.beschreibung) :
+               (<>{checkin.eissorten.map((sorte) => sorte.sortenname).join(", ")} Eis bei {checkin.eisdiele_name}</>)}
             </LightboxTitle>
           </LightboxContent>
         </LightboxOverlay>

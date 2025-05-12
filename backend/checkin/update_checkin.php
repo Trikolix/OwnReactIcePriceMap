@@ -1,17 +1,35 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 
+// Hilfsfunktion für Bewertung
+function sanitizeRating($val) {
+    return ($val !== '' && is_numeric($val)) ? floatval($val) : null;
+}
+
+// Bewertung prüfen (zwischen 1.0 und 5.0)
+function validateRatingRange($val, $fieldName) {
+    if ($val === null) return; // null ist erlaubt (optional)
+    if ($val < 1.0 || $val > 5.0) {
+        respondWithError("Ungültiger Wert für $fieldName: muss zwischen 1.0 und 5.0 liegen.");
+    }
+}
+
 $checkinId = $_POST['checkin_id'] ?? null;
 $userId = $_POST['userId'] ?? null;
 $shopId = $_POST['shopId'] ?? null;
 $type = $_POST['type'] ?? null;
-$geschmack = ($_POST['geschmackbewertung'] ?? '') !== '' ? floatval($_POST['geschmackbewertung']) : null;
-$waffel = ($_POST['waffelbewertung'] ?? '') !== '' ? floatval($_POST['waffelbewertung']) : null;
-$größe = ($_POST['größenbewertung'] ?? '') !== '' ? floatval($_POST['größenbewertung']) : null;
-$preisleistungsbewertung = ($_POST['preisleistungsbewertung'] ?? '') !== '' ? floatval($_POST['preisleistungsbewertung']) : null;
+$geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
+$waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
+$größe = sanitizeRating($_POST['größenbewertung'] ?? '');
+$preisleistungsbewertung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
+// Bewertungen validieren
+validateRatingRange($geschmack, 'geschmackbewertung');
+validateRatingRange($waffel, 'waffelbewertung');
+validateRatingRange($größe, 'größenbewertung');
+validateRatingRange($preisleistungsbewertung, 'preisleistungsbewertung');
 $kommentar = $_POST['kommentar'] ?? '';
 $sorten = json_decode($_POST['sorten'] ?? '[]', true);
-$existingPictures = json_decode($_POST['bestehende_bilder'] ?? '[]', true); // erwartet Pfade wie "uploads/checkins/dateiname.jpg"
+$bestehendeBilder = json_decode($_POST['bestehende_bilder'] ?? '[]', true); // erwartet Pfade wie "uploads/checkins/dateiname.jpg"
 $beschreibungen = json_decode($_POST['bild_beschreibungen'] ?? '[]', true);
 
 // Zentrale Fehlerausgabe
@@ -89,10 +107,20 @@ try {
     $pdo->beginTransaction();
 
     // Bilder: alte ermitteln
-    $stmt = $pdo->prepare("SELECT id, url FROM bilder WHERE checkin_id = ?");
+    $stmt = $pdo->prepare("SELECT id, url, beschreibung FROM bilder WHERE checkin_id = ?");
     $stmt->execute([$checkinId]);
     $oldPictures = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Für einfacheren Zugriff indexieren wir die alten Bilder nach ID
+    $oldPicturesById = [];
+    foreach ($oldPictures as $pic) {
+        $oldPicturesById[$pic['id']] = $pic;
+    }
+
+    $bestehendeBilderAssoc = [];
+    foreach ($bestehendeBilder as $bild) {
+        $bestehendeBilderAssoc[$bild['id']] = $bild;
+    }
     // Neue Bilder verarbeiten
     $uploadDir = '../../uploads/checkins/';
     if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
@@ -189,12 +217,25 @@ try {
     $pdo->commit();
 
     // Alte Bilder löschen, die nicht mehr benötigt werden
-    foreach ($oldPictures as $pic) {
-        if (!in_array($pic['id'], $existingPictures)) {
+    foreach ($oldPicturesById as $id => $oldPic) {
+        if (!isset($bestehendeBilderAssoc[$id])) {
+            // Bild wurde gelöscht
             $stmt = $pdo->prepare("DELETE FROM bilder WHERE id = ?");
-            $stmt->execute([$pic['id']]);
-            $filePath = '../../' . $pic['url'];
-            if (file_exists($filePath)) unlink($filePath);
+            $stmt->execute([$id]);
+            // Pfad zur Bilddatei auf dem Server
+            $bild_pfad = __DIR__ . '/../../' . $oldPic['url']; // Anpassen Sie den Pfad entsprechend Ihrer Verzeichnisstruktur
+
+            // Überprüfen, ob die Datei existiert und löschen
+            if (file_exists($bild_pfad)) {
+                unlink($bild_pfad);
+            }
+        } else {
+            // Bild noch da – Beschreibung ggf. aktualisieren
+            $neueBeschreibung = $bestehendeBilderAssoc[$id]['beschreibung'];
+            if ($neueBeschreibung !== $oldPic['beschreibung']) {
+                $stmt = $pdo->prepare("UPDATE bilder SET beschreibung = ? WHERE id = ?");
+                $stmt->execute([$neueBeschreibung, $id]);
+            }
         }
     }
 

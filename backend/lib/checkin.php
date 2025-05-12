@@ -59,7 +59,7 @@ function getCheckinsByEisdieleId(PDO $pdo, int $eisdieleId): array {
     $checkins = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($checkins as &$checkin) {
-        $checkin['eissorten'] = getSortenByCheckinId($pdo, $checkin['id']);
+        $checkin['eissorten'] = getSortenForCheckin($pdo, $checkin['id']);
         $checkin['bilder'] = getBilderForCheckin($pdo, $checkin['id']);
     }
     return $checkins;

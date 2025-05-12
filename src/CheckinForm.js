@@ -12,7 +12,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
-    const [deletedBildIds, setDeletedBildIds] = useState([]);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
@@ -91,9 +90,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
             });
             formData.append("bestehende_bilder", JSON.stringify(
-                bilder.filter(b => b.isExisting).map(b => b.id)
+                bilder.filter(b => b.isExisting).map(b => ({
+                    id: b.id,
+                    beschreibung: b.beschreibung
+                }))
             ));
-            formData.append("deleted_bilder", JSON.stringify(deletedBildIds));
             if (checkinId) formData.append("checkin_id", checkinId);
 
             const response = await fetch(
@@ -183,9 +184,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const removeBild = (index) => {
         const bild = bilder[index];
-        if (bild.isExisting) {
-            setDeletedBildIds(prev => [...prev, bild.id]);
-        }
         const updated = [...bilder];
         updated.splice(index, 1);
         setBilder(updated);
@@ -492,13 +490,6 @@ const Table = styled.table`
   td:last-child {
     width: 30%;
   }
-`;
-
-const CurrentImage = styled.img`
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 0.5rem;
-  margin-bottom: 0.5rem;
 `;
 
 const DeleteButton = styled(Button)`
