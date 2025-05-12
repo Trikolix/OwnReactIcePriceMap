@@ -14,17 +14,15 @@ if (!$checkin_id || !$nutzer_id) {
     exit;
 }
 
-// Zuerst die bild_url abrufen
-$sql_select = "SELECT bild_url FROM checkins WHERE id = :id AND nutzer_id = :nutzer_id";
+// Die Bilder Abrufen, die nur mit dem checkin verknüpft sind
+$sql_select = "SELECT url FROM bilder WHERE checkin_id = :id AND shop_id IS NULL AND bewertung_id IS NULL";
 $stmt_select = $pdo->prepare($sql_select);
-$stmt_select->execute(['id' => $checkin_id, 'nutzer_id' => $nutzer_id]);
-$checkin = $stmt_select->fetch(PDO::FETCH_ASSOC);
+$stmt_select->execute(['id' => $checkin_id]);
+$bilder = $stmt_select->fetchAll();
 
-if ($checkin && !empty($checkin['bild_url'])) {
-    $bild_url = $checkin['bild_url'];
-
+foreach ($bilder as $bild) {
     // Pfad zur Bilddatei auf dem Server
-    $bild_pfad = __DIR__ . '/../../' . $bild_url; // Anpassen Sie den Pfad entsprechend Ihrer Verzeichnisstruktur
+    $bild_pfad = __DIR__ . '/../../' . $bild['url']; // Anpassen Sie den Pfad entsprechend Ihrer Verzeichnisstruktur
 
     // Überprüfen, ob die Datei existiert und löschen
     if (file_exists($bild_pfad)) {
