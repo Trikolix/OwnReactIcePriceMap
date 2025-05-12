@@ -8,6 +8,7 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
 import Impressum from './pages/Impressum';
 import UserSite from './pages/UserSite';
+import VerifyAccount from './pages/VerifyAccount';
 
 const App = () => {
   return (
@@ -22,6 +23,7 @@ const App = () => {
           <Route path="/favoriten" element={<FavoritenListe />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/user/:userId?" element={<UserSite />} />
+          <Route path="/verify" element={<VerifyAccount />} />
         </Routes>
       </UserProvider>
     </Router>

@@ -61,7 +61,7 @@ $stmt->execute([
 ]);
 
 // 7. Bestätigungs-E-Mail senden
-$verifyUrl = "https://ice-app.de/backend/verify.php?token=" . urlencode($token);
+$verifyUrl = "https://ice-app.de/#/verify?token=" . urlencode($token);
 $subject = "Bitte bestätige deine Registrierung";
 $message = "Hallo $username,\n\nBitte bestätige deine Registrierung, indem du auf folgenden Link klickst:\n\n$verifyUrl\n\nViele Grüße\ndein Eis-Team";
 $headers = "From: noreply@ice-app.de";
