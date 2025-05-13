@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
+import Rating from "./components/Rating";
 
 const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceForm, onSuccess }) => {
     console.log(shop);
@@ -156,16 +157,19 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
                     <GridForm>
                         <label>Geschmack:</label>
-                        <Input type="number" min="1.0" max="5.0" step="0.1" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
+                        <Input type="number" min="1.0" max="5.0" step="0.1" placeholder="1.0 - 5.0" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
+                        <Rating stars={geschmack} onRatingSelect={(value) => setGeschmack(value.toFixed(1))} />
 
-                        <label>Kugelgröße:</label>
-                        <Input type="number" min="1.0" max="5.0" step="0.1" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
+                        <label>Größe</label>
+                        <Input type="number" min="1.0" max="5.0" step="0.1" placeholder="1.0 - 5.0" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
+                        <Rating stars={kugelgroesse} onRatingSelect={(value) => setKugelgroesse(value.toFixed(1))} />
 
                         <label>Waffel:</label>
-                        <Input type="number" min="1.0" max="5.0" step="0.1" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
+                        <Input type="number" min="1.0" max="5.0" step="0.1" placeholder="1.0 - 5.0" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
+                        <Rating stars={waffel} onRatingSelect={(value) => setWaffel(value.toFixed(1))} />
 
                         <label>Auswahl:</label>
-                        <Input type="number" min="1" step="1" value={auswahl || ''} onChange={(e) => setAuswahl(parseInt(e.target.value))} />
+                        <Input type="number" min="1" step="1" value={auswahl || ''} placeholder="Anzahl Sorten"onChange={(e) => setAuswahl(parseInt(e.target.value))} />
                     </GridForm>
 
                     <TextAreaGroup>
@@ -273,7 +277,7 @@ const FormTitle = styled.h2`
 
 const GridForm = styled.div`
     display: grid;
-    grid-template-columns: 150px 1fr;
+    grid-template-columns: 30% 30% 30%;
     gap: 8px 16px;
     margin-bottom: 1rem;
     align-items: center;

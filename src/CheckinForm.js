@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
+import Rating from "./components/Rating";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess}) => {
     const [type, setType] = useState("Kugel");
@@ -243,6 +244,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </Section>
 
                     <Table>
+                        <colgroup>
+                          <StyledCol1 />
+                          <StyledCol2 />
+                          <StyledCol3 />
+                        </colgroup>
                         <tbody>
                             <tr>
                                 <td><Label>Bewertung Geschmack:</Label></td>
@@ -252,10 +258,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         step="0.1"
                                         min="1.0"
                                         max="5.0"
+                                        placeholder="1.0 - 5.0"
                                         value={geschmackbewertung}
                                         onChange={(e) => setGeschmackbewertung(e.target.value)}
                                     />
                                 </td>
+                                <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
                             </tr>
                             <tr style={{ display: type === "Kugel" ? "table-row" : "none" }}>
                                 <td><Label>Bewertung Größe:</Label></td>
@@ -265,10 +273,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         step="0.1"
                                         min="1.0"
                                         max="5.0"
+                                        placeholder="1.0 - 5.0"
                                         value={größenbewertung}
                                         onChange={(e) => setGrößenbewertung(e.target.value)}
                                     />
                                 </td>
+                                <td><Rating stars={größenbewertung} onRatingSelect={(value) => setGrößenbewertung(value.toFixed(1))} /></td>
                             </tr>
                             <tr style={{ display: type !== "Kugel" ? "table-row" : "none" }}>
                                 <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
@@ -278,10 +288,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         step="0.1"
                                         min="1.0"
                                         max="5.0"
+                                        placeholder="1.0 - 5.0"
                                         value={preisleistungsbewertung}
                                         onChange={(e) => setPreisleistungsbewertung(e.target.value)}
                                     />
                                 </td>
+                                <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
                             </tr>
                             {type !== "Eisbecher" && (<tr>
                                 <td><Label>Bewertung Waffel:</Label></td>
@@ -291,10 +303,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         step="0.1"
                                         min="1.0"
                                         max="5.0"
+                                        placeholder="1.0 - 5.0"
                                         value={waffelbewertung}
                                         onChange={(e) => setWaffelbewertung(e.target.value)}
                                     />
                                 </td>
+                                <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
                             </tr>)}
                         </tbody>
                     </Table>
@@ -304,6 +318,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         <Textarea
                             rows="5"
                             value={kommentar}
+                            placeholder="Beschreibe wie dein Eis geschmeckt hat. Was hat dich überzeugt, wo ist Verbesserungspotential?"
                             onChange={(e) => setKommentar(e.target.value)}
                         />
                     </Section>
@@ -480,16 +495,24 @@ const Table = styled.table`
 
   td {
     padding: 0.1rem;
-    vertical-align: top;
+    vertical-align: middle;
   }
+  td:nth-child(3) {
+    padding-left: 2rem;
+  }
+`;
 
-  td:first-child {
-    width: 70%;
-  }
+const StyledCol1 = styled.col`
+  width: 50%;
+`;
 
-  td:last-child {
-    width: 30%;
-  }
+const StyledCol2 = styled.col`
+  width: 20%;
+`;
+
+const StyledCol3 = styled.col`
+  width: 30%;
+  padding-left: 1.5rem;
 `;
 
 const DeleteButton = styled(Button)`
