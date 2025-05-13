@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 27. Apr 2025 um 12:11
+-- Erstellungszeit: 13. Mai 2025 um 07:40
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -30,18 +30,25 @@ SET time_zone = "+00:00";
 CREATE TABLE `bundeslaender` (
   `id` int NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `iso_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `iso_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `land_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Daten für Tabelle `bundeslaender`
 --
 
-INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`) VALUES
-(1, 'Thüringen', 'DE-TH'),
-(2, 'Sachsen-Anhalt', 'DE-ST'),
-(3, 'Sachsen', 'DE-SN'),
-(5, 'Brandenburg', 'DE-BB');
+INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
+(1, 'Thüringen', 'DE-TH', 1),
+(2, 'Sachsen-Anhalt', 'DE-ST', 1),
+(3, 'Sachsen', 'DE-SN', 1),
+(5, 'Brandenburg', 'DE-BB', 1),
+(6, 'Nordwesten', NULL, 2),
+(7, 'Bayern', 'DE-BY', 1),
+(8, 'Lombardei', 'IT-25', 3),
+(9, 'Grand Est', 'FR-GES', 4),
+(10, 'Okzitanien', 'FR-OCC', 4),
+(11, 'Luzern', 'CH-LU', 5);
 
 --
 -- Indizes der exportierten Tabellen
@@ -52,7 +59,8 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`) VALUES
 --
 ALTER TABLE `bundeslaender`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`name`);
+  ADD UNIQUE KEY `name` (`name`),
+  ADD KEY `fk_country_id` (`land_id`);
 
 --
 -- AUTO_INCREMENT für exportierte Tabellen
@@ -62,7 +70,17 @@ ALTER TABLE `bundeslaender`
 -- AUTO_INCREMENT für Tabelle `bundeslaender`
 --
 ALTER TABLE `bundeslaender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- Constraints der exportierten Tabellen
+--
+
+--
+-- Constraints der Tabelle `bundeslaender`
+--
+ALTER TABLE `bundeslaender`
+  ADD CONSTRAINT `fk_country_id` FOREIGN KEY (`land_id`) REFERENCES `laender` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

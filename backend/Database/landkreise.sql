@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 27. Apr 2025 um 12:12
+-- Erstellungszeit: 13. Mai 2025 um 07:41
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -30,26 +30,34 @@ SET time_zone = "+00:00";
 CREATE TABLE `landkreise` (
   `id` int NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `bundesland_id` int DEFAULT NULL,
-  `osm_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+  `bundesland_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Daten für Tabelle `landkreise`
 --
 
-INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`, `osm_id`) VALUES
-(3, 'Erzgebirgskreis', 3, '1124357916'),
-(4, 'Mittelsachsen', 3, '381192823'),
-(5, 'Zwickau', 3, '207867238'),
-(6, 'Chemnitz', 3, '99537671'),
-(7, 'Altenburger Land', 1, '540643668'),
-(8, 'Greiz', 1, '11773930100'),
-(9, 'Landkreis Leipzig', 3, '681606787'),
-(10, 'Meißen', 3, '989292060'),
-(11, 'Dresden', 3, '1775886513'),
-(12, 'Vogtlandkreis', 3, '1833110668'),
-(16, 'Oberspreewald-Lausitz - Górne Błota-Łužyca', 5, '56672261');
+INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
+(7, 'Altenburger Land', 1),
+(19, 'Aussiger Region', 6),
+(6, 'Chemnitz', 3),
+(11, 'Dresden', 3),
+(3, 'Erzgebirgskreis', 3),
+(8, 'Greiz', 1),
+(25, 'Hérault', 10),
+(18, 'Karlsbader Region', 6),
+(9, 'Landkreis Leipzig', 3),
+(23, 'Landkreis Tirschenreuth', 7),
+(29, 'Luzern', 11),
+(22, 'Mailand', 8),
+(10, 'Meißen', 3),
+(4, 'Mittelsachsen', 3),
+(24, 'Oberelsass', 9),
+(16, 'Oberspreewald-Lausitz - Górne Błota-Łužyca', 5),
+(17, 'Sächsische Schweiz-Osterzgebirge', 3),
+(12, 'Vogtlandkreis', 3),
+(28, 'Weiden in der Oberpfalz', 7),
+(5, 'Zwickau', 3);
 
 --
 -- Indizes der exportierten Tabellen
@@ -71,7 +79,7 @@ ALTER TABLE `landkreise`
 -- AUTO_INCREMENT für Tabelle `landkreise`
 --
 ALTER TABLE `landkreise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- Constraints der exportierten Tabellen

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 27. Apr 2025 um 12:11
+-- Erstellungszeit: 13. Mai 2025 um 07:39
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -50,7 +50,14 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (9, 'all_ice_types', 'Jede Form von Eis ist wunderbar!', '2025-04-25 01:35:21'),
 (10, 'Fuerst_pueckler', 'Vanille, Erdbeer und Schoko Eis eingecheckt ', '2025-04-25 01:46:35'),
 (11, 'perfect_week', '7 Tage lang jeden Tag Eis eingecheckt ', '2025-04-25 02:04:56'),
-(12, 'bundesland_count', 'Eisdielen in verschiedenen Bundesländern', '2025-04-25 04:48:25');
+(12, 'bundesland_count', 'Eisdielen in verschiedenen Bundesländern', '2025-04-25 04:48:25'),
+(13, 'day_streak', 'Anzahl besuchter Eisdielen an einem tag', '2025-05-04 18:22:58'),
+(14, 'distance_ice_traveler', '2 Eisdielen - 100km Entfernung an einem Tag', '2025-05-07 18:53:11'),
+(15, 'Route_creator', 'Erstelle öffentliche Routen', '2025-05-07 19:40:15'),
+(16, 'private_route_creator', 'Private Routen erstellt', '2025-05-08 12:30:37'),
+(17, 'Stammkunde', 'Anzahl bei gleicher Eisdiele eingecheckt', '2025-05-09 09:22:54'),
+(18, 'Geschmackstreue', 'Anzahl eine Eissorte gegessen', '2025-05-09 09:27:44'),
+(19, 'laender_besucht', 'Eis in bestimmten Ländern eingecheckt', '2025-05-10 11:32:23');
 
 --
 -- Indizes der exportierten Tabellen
@@ -71,7 +78,7 @@ ALTER TABLE `awards`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

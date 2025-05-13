@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 30. Apr 2025 um 10:14
+-- Erstellungszeit: 13. Mai 2025 um 07:40
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -38,7 +38,11 @@ CREATE TABLE `laender` (
 --
 
 INSERT INTO `laender` (`id`, `name`, `country_code`) VALUES
-(1, 'Deutschland', 'de');
+(1, 'Deutschland', 'de'),
+(2, 'Tschechien', 'cz'),
+(3, 'Italien', 'it'),
+(4, 'Frankreich', 'fr'),
+(5, 'Schweiz', 'ch');
 
 --
 -- Indizes der exportierten Tabellen
@@ -59,7 +63,7 @@ ALTER TABLE `laender`
 -- AUTO_INCREMENT für Tabelle `laender`
 --
 ALTER TABLE `laender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

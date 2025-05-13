@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 08. Mai 2025 um 14:27
+-- Erstellungszeit: 13. Mai 2025 um 07:41
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -83,7 +83,7 @@ ALTER TABLE `routen`
 -- AUTO_INCREMENT für Tabelle `routen`
 --
 ALTER TABLE `routen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- Constraints der exportierten Tabellen
