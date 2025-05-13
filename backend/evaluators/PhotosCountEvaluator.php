@@ -37,9 +37,10 @@ class PhotosCountEvaluator extends BaseAwardEvaluator {
 
     private function getPhotosCount(int $userId): int {
         global $pdo;
-        $sql = "SELECT COUNT(id) AS checkins_photos_count
-                FROM checkins
-                WHERE nutzer_id = ? AND bild_url IS NOT NULL";
+        $sql = "SELECT COUNT(DISTINCT c.id) AS checkins_mit_bild
+                FROM checkins c
+                JOIN bilder b ON b.checkin_id = c.id
+                WHERE c.nutzer_id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 

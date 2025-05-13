@@ -180,11 +180,11 @@ try {
 
     if (!empty($bildUrls)) {
         $insertImgStmt = $pdo->prepare("
-            INSERT INTO bilder (checkin_id, url, beschreibung)
-            VALUES (?, ?, ?)
+            INSERT INTO bilder (checkin_id, nutzer_id, url, beschreibung)
+            VALUES (?, ?, ?, ?)
         ");
         foreach ($bildUrls as $bild) {
-            $insertImgStmt->execute([$checkinId, $bild['url'], $bild['beschreibung']]);
+            $insertImgStmt->execute([$checkinId, $userId, $bild['url'], $bild['beschreibung']]);
         }
     }
 
