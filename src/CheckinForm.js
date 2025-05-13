@@ -3,7 +3,7 @@ import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess}) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -17,48 +17,50 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
-            const fetchCheckinData = async () => {
-                try {
-                    const response = await fetch(`${apiUrl}/checkin/get_checkin.php?checkin_id=${checkinId}`);
-                    const checkin = await response.json();
-    
-                    if (checkin.error) {
-                        setMessage(checkin.error);
-                        return;
-                    }
-    
-                    if (parseInt(checkin.nutzer_id, 10) !== parseInt(userId, 10)) {
-                        setMessage("You aren't allowed to edit this checkin!");
-                        setIsAllowed(false);
-                        return;
-                    }
-    
-                    setType(checkin.typ);
-                    setGeschmackbewertung(checkin.geschmackbewertung);
-                    setWaffelbewertung(checkin.waffelbewertung);
-                    setGrößenbewertung(checkin.größenbewertung);
-                    setPreisleistungsbewertung(checkin.preisleistungsbewertung);
-                    setKommentar(checkin.kommentar);
-                    setBilder(checkin.bilder.map(b => ({
-                        id: b.id,
-                        url: `https://ice-app.de/${b.url}`,
-                        beschreibung: b.beschreibung || "",
-                        isExisting: true
-                    })));
-                    setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
-                } catch (error) {
-                    setMessage(`Ein Fehler ist aufgetreten: ${error}`);
+        const fetchCheckinData = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/checkin/get_checkin.php?checkin_id=${checkinId}`);
+                const checkin = await response.json();
+
+                if (checkin.error) {
+                    setMessage(checkin.error);
+                    return;
                 }
-            };
-    
-            if (checkinId) {
-                setShowSortenBewertung(true);
-                fetchCheckinData();
+
+                if (parseInt(checkin.nutzer_id, 10) !== parseInt(userId, 10)) {
+                    setMessage("You aren't allowed to edit this checkin!");
+                    setIsAllowed(false);
+                    return;
+                }
+
+                setType(checkin.typ);
+                setGeschmackbewertung(checkin.geschmackbewertung);
+                setWaffelbewertung(checkin.waffelbewertung);
+                setGrößenbewertung(checkin.größenbewertung);
+                setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                setKommentar(checkin.kommentar);
+                setBilder(checkin.bilder.map(b => ({
+                    id: b.id,
+                    url: `https://ice-app.de/${b.url}`,
+                    beschreibung: b.beschreibung || "",
+                    isExisting: true
+                })));
+                setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
+            } catch (error) {
+                setMessage(`Ein Fehler ist aufgetreten: ${error}`);
             }
-        }, [checkinId, userId, apiUrl]);
+        };
+
+        if (checkinId) {
+            setShowSortenBewertung(true);
+            fetchCheckinData();
+        }
+    }, [checkinId, userId, apiUrl]);
 
     const handleSortenChange = (index, field, value) => {
         const updated = [...sorten];
@@ -99,8 +101,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             if (checkinId) formData.append("checkin_id", checkinId);
 
             const response = await fetch(
-                checkinId 
-                    ? `${apiUrl}/checkin/update_checkin.php` 
+                checkinId
+                    ? `${apiUrl}/checkin/update_checkin.php`
                     : `${apiUrl}/checkin/checkin_upload.php`,
                 {
                     method: "POST",
@@ -114,7 +116,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     setMessage("Checkin erfolgreich aktualisiert!");
                 } else {
                     setMessage("Checkin erfolgreich gespeichert!");
-                }                
+                }
                 setSubmitted(true);
                 if (onSuccess) onSuccess();
                 if (data.new_awards && data.new_awards.length > 0) {
@@ -157,7 +159,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 setTimeout(() => {
                     setShowCheckinForm(false);
                 }, 2000);
-                
+
             } else {
                 setMessage("Fehler beim Löschen: " + result.message);
             }
@@ -195,166 +197,167 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             <Modal>
                 <CloseButton onClick={() => setShowCheckinForm(false)}>×</CloseButton>
                 {isAllowed && (<>
-                {!submitted && (<Form onSubmit={submit}>
-                    <Heading>Eis-Checkin für {shopName} {checkinId && ("bearbeiten")}</Heading>
-                    <Section>
-                        <Label>Eistyp</Label>
-                        <Select value={type} onChange={(e) => setType(e.target.value)}>
-                            <option value="Kugel">Kugel</option>
-                            <option value="Softeis">Softeis</option>
-                            <option value="Eisbecher">Eisbecher</option>
-                        </Select>
-                    </Section>
+                    {!submitted && (<Form onSubmit={submit}>
+                        <Heading>Eis-Checkin für {shopName} {checkinId && ("bearbeiten")}</Heading>
+                        <Section>
+                            <Label>Eistyp</Label>
+                            <Select value={type} onChange={(e) => setType(e.target.value)}>
+                                <option value="Kugel">Kugel</option>
+                                <option value="Softeis">Softeis</option>
+                                <option value="Eisbecher">Eisbecher</option>
+                            </Select>
+                        </Section>
 
-                    <Section>
-                        <Label>Sorten</Label>
-                        {sorten.map((sorte, index) => (
-                            <Row key={index}>
-                                <Input
-                                    type="text"
-                                    placeholder="Sortenname"
-                                    value={sorte.name}
-                                    onChange={(e) => handleSortenChange(index, "name", e.target.value)}
-                                />
-                                {showSortenBewertung && (
+                        <Section>
+                            <Label>Sorten</Label>
+                            {sorten.map((sorte, index) => (
+                                <Row key={index}>
                                     <Input
-                                        type="number"
-                                        step="0.1"
-                                        min="1.0"
-                                        max="5.0"
-                                        value={sorte.bewertung}
-                                        placeholder="Bewertung"
-                                        onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
-                                        style={{ width: "100px" }}
+                                        type="text"
+                                        placeholder="Sortenname"
+                                        value={sorte.name}
+                                        onChange={(e) => handleSortenChange(index, "name", e.target.value)}
                                     />
-                                )}
-                                <RemoveButton type="button" onClick={() => removeSorte(index)}>✕</RemoveButton>
-                            </Row>
-                        ))}
-                        <AddButton type="button" onClick={addSorte}>+ Sorte hinzufügen</AddButton>
-                        <div style={{ marginTop: "0.5rem" }}>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={showSortenBewertung}
-                                    onChange={() => setShowSortenBewertung(!showSortenBewertung)}
-                                /> Sorten einzeln bewerten
-                            </label>
-                        </div>
-                    </Section>
-
-                    <Table>
-                        <colgroup>
-                          <StyledCol1 />
-                          <StyledCol2 />
-                          <StyledCol3 />
-                        </colgroup>
-                        <tbody>
-                            <tr>
-                                <td><Label>Bewertung Geschmack:</Label></td>
-                                <td>
-                                    <Input
-                                        type="number"
-                                        step="0.1"
-                                        min="1.0"
-                                        max="5.0"
-                                        placeholder="1.0 - 5.0"
-                                        value={geschmackbewertung}
-                                        onChange={(e) => setGeschmackbewertung(e.target.value)}
-                                    />
-                                </td>
-                                <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
-                            </tr>
-                            <tr style={{ display: type === "Kugel" ? "table-row" : "none" }}>
-                                <td><Label>Bewertung Größe:</Label></td>
-                                <td>
-                                    <Input
-                                        type="number"
-                                        step="0.1"
-                                        min="1.0"
-                                        max="5.0"
-                                        placeholder="1.0 - 5.0"
-                                        value={größenbewertung}
-                                        onChange={(e) => setGrößenbewertung(e.target.value)}
-                                    />
-                                </td>
-                                <td><Rating stars={größenbewertung} onRatingSelect={(value) => setGrößenbewertung(value.toFixed(1))} /></td>
-                            </tr>
-                            <tr style={{ display: type !== "Kugel" ? "table-row" : "none" }}>
-                                <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
-                                <td>
-                                    <Input
-                                        type="number"
-                                        step="0.1"
-                                        min="1.0"
-                                        max="5.0"
-                                        placeholder="1.0 - 5.0"
-                                        value={preisleistungsbewertung}
-                                        onChange={(e) => setPreisleistungsbewertung(e.target.value)}
-                                    />
-                                </td>
-                                <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
-                            </tr>
-                            {type !== "Eisbecher" && (<tr>
-                                <td><Label>Bewertung Waffel:</Label></td>
-                                <td>
-                                    <Input
-                                        type="number"
-                                        step="0.1"
-                                        min="1.0"
-                                        max="5.0"
-                                        placeholder="1.0 - 5.0"
-                                        value={waffelbewertung}
-                                        onChange={(e) => setWaffelbewertung(e.target.value)}
-                                    />
-                                </td>
-                                <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
-                            </tr>)}
-                        </tbody>
-                    </Table>
-
-                    <Section>
-                        <Label>Kommentar</Label>
-                        <Textarea
-                            rows="5"
-                            value={kommentar}
-                            placeholder="Beschreibe wie dein Eis geschmeckt hat. Was hat dich überzeugt, wo ist Verbesserungspotential?"
-                            onChange={(e) => setKommentar(e.target.value)}
-                        />
-                    </Section>
-                    <Section>
-                        <Label>Bilder hochladen</Label>
-                        <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
-
-                        {bilder.map((bild, index) => (
-                            <div key={index} style={{ marginTop: "1rem", border: "1px solid #ccc", padding: "0.5rem" }}>
-                                <img 
-                                    src={bild.previewUrl || bild.url}
-                                    alt={`Bild ${index + 1}`}
-                                    style={{ maxHeight: "150px", width: "auto" }}
-                                />
-                                <Input
-                                    type="text"
-                                    placeholder="Beschreibung eingeben (optional)"
-                                    value={bild.beschreibung}
-                                    onChange={(e) => updateBildBeschreibung(index, e.target.value)}
-                                    style={{ marginTop: "0.5rem", marginBottom: "0.5rem", maxWidth: "100%" }}
-                                />
-                                <DeleteButton type="button" onClick={() => removeBild(index)}>Bild entfernen</DeleteButton>
+                                    {showSortenBewertung && (
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="1.0"
+                                            max="5.0"
+                                            value={sorte.bewertung}
+                                            placeholder="Bewertung"
+                                            onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
+                                            style={{ width: "100px" }}
+                                        />
+                                    )}
+                                    <RemoveButton type="button" onClick={() => removeSorte(index)}>✕</RemoveButton>
+                                </Row>
+                            ))}
+                            <AddButton type="button" onClick={addSorte}>+ Sorte hinzufügen</AddButton>
+                            <div style={{ marginTop: "0.5rem" }}>
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        checked={showSortenBewertung}
+                                        onChange={() => setShowSortenBewertung(!showSortenBewertung)}
+                                    /> Sorten einzeln bewerten
+                                </label>
                             </div>
-                        ))}
-                    </Section>
-                    <ButtonGroup>
-                        <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
-                        <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>
-                        {checkinId && (<><br />
-                            <DeleteButton type="button" onClick={handleDeleteClick} >
-                                Check-in löschen
-                            </DeleteButton></>
-                        )}
-                    </ButtonGroup>
+                        </Section>
 
-                </Form>)}
+                        <Table>
+                            <colgroup>
+                                <StyledCol1 />
+                                <StyledCol2 />
+                                <StyledCol3 />
+                            </colgroup>
+                            <tbody>
+                                <tr>
+                                    <td><Label>Bewertung Geschmack:</Label></td>
+                                    <td>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="1.0"
+                                            max="5.0"
+                                            placeholder="1.0 - 5.0"
+                                            value={geschmackbewertung}
+                                            onChange={(e) => setGeschmackbewertung(e.target.value)}
+                                        />
+                                    </td>
+                                    <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
+                                </tr>
+                                <tr style={{ display: type === "Kugel" ? "table-row" : "none" }}>
+                                    <td><Label>Bewertung Größe:</Label></td>
+                                    <td>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="1.0"
+                                            max="5.0"
+                                            placeholder="1.0 - 5.0"
+                                            value={größenbewertung}
+                                            onChange={(e) => setGrößenbewertung(e.target.value)}
+                                        />
+                                    </td>
+                                    <td><Rating stars={größenbewertung} onRatingSelect={(value) => setGrößenbewertung(value.toFixed(1))} /></td>
+                                </tr>
+                                <tr style={{ display: type !== "Kugel" ? "table-row" : "none" }}>
+                                    <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
+                                    <td>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="1.0"
+                                            max="5.0"
+                                            placeholder="1.0 - 5.0"
+                                            value={preisleistungsbewertung}
+                                            onChange={(e) => setPreisleistungsbewertung(e.target.value)}
+                                        />
+                                    </td>
+                                    <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
+                                </tr>
+                                {type !== "Eisbecher" && (<tr>
+                                    <td><Label>Bewertung Waffel:</Label></td>
+                                    <td>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="1.0"
+                                            max="5.0"
+                                            placeholder="1.0 - 5.0"
+                                            value={waffelbewertung}
+                                            onChange={(e) => setWaffelbewertung(e.target.value)}
+                                        />
+                                    </td>
+                                    <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
+                                </tr>)}
+                            </tbody>
+                        </Table>
+
+                        <Section>
+                            <Label>Kommentar</Label>
+                            <Textarea
+                                rows="5"
+                                value={kommentar}
+                                placeholder="Beschreibe wie dein Eis geschmeckt hat. Was hat dich überzeugt, wo ist Verbesserungspotential?"
+                                onChange={(e) => setKommentar(e.target.value)}
+                            />
+                        </Section>
+                        <Section>
+                            <Label>Bilder hochladen</Label>
+                            <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
+                            <BilderContainer>
+                                {bilder.map((bild, index) => (
+                                    <div key={index}>
+                                        <BildVorschau
+                                            src={bild.previewUrl || bild.url}
+                                            alt={`Bild ${index + 1}`}
+                                        />
+                                        <Input
+                                            type="text"
+                                            placeholder="Beschreibung eingeben (optional)"
+                                            value={bild.beschreibung}
+                                            onChange={(e) => updateBildBeschreibung(index, e.target.value)}
+                                            style={{ margin: "0.5rem 0", width: "90%" }}
+                                        />
+                                        <DeleteButton type="button" onClick={() => removeBild(index)}>
+                                            Bild entfernen
+                                        </DeleteButton>
+                                    </div>
+                                ))}
+                            </BilderContainer>
+                        </Section>
+                        <ButtonGroup>
+                            <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
+                            <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>
+                            {checkinId && (<><br />
+                                <DeleteButton type="button" onClick={handleDeleteClick} >
+                                    Check-in löschen
+                                </DeleteButton></>
+                            )}
+                        </ButtonGroup>
+                    </Form>)}
                 </>)}
                 <Message>{message}</Message>
                 <NewAwards awards={awards} />
@@ -516,10 +519,45 @@ const StyledCol3 = styled.col`
   padding-left: 1.5rem;
 `;
 
-const DeleteButton = styled(Button)`
-  background-color: #d9534f;
-  position: relative;
-  &:hover {
-    background-color:rgb(216, 37, 31);
+const BilderContainer = styled.div`
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 0.5rem 0;
+
+  /* Optional für schöneres Scrollverhalten */
+  scroll-snap-type: x mandatory;
+
+  & > div {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: white;
+    min-width: 180px;
+    max-width: 220px;
   }
-`
+`;
+
+const BildVorschau = styled.img`
+  max-height: 120px;
+  width: auto;
+  display: block;
+  margin: 0 auto;
+`;
+
+
+const DeleteButton = styled.button`
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+
+  &:hover {
+    background: #d32f2f;
+  }
+`;

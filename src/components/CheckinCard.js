@@ -7,8 +7,6 @@ import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 
 const CheckinCard = ({ checkin, onSuccess }) => {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
