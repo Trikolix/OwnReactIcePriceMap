@@ -7,6 +7,7 @@ import CheckinForm from "../CheckinForm";
 
 const CheckinCard = ({ checkin, onSuccess }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxPicture, setLightBoxPicture] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
@@ -62,21 +63,22 @@ const CheckinCard = ({ checkin, onSuccess }) => {
             </Table>
 
             {checkin.kommentar && <p>{checkin.kommentar}</p>}
-            {console.log(parseInt(checkin.nutzer_id, 10), parseInt(userId, 10))}
             {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
               <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}
           </LeftContent>
-
-          {checkin.bild_url && (
-            <RightContent>
+          <RightContent>
+          {checkin.bilder && checkin.bilder.map((bild, index) => (
               <Thumbnail
-                src={`https://ice-app.de/${checkin.bild_url}`}
+                src={`https://ice-app.de/${bild.url}`}
                 alt="Checkin Bild"
-                onClick={() => setLightboxOpen(true)}
+                onClick={() => {
+                  setLightboxOpen(true);
+                  setLightBoxPicture(bild);
+                }}
               />
-            </RightContent>
-          )}
+          ))}
+          </RightContent>
         </ContentWrapper>
       </Card>
 
@@ -84,11 +86,13 @@ const CheckinCard = ({ checkin, onSuccess }) => {
         <LightboxOverlay onClick={() => setLightboxOpen(false)}>
           <LightboxContent onClick={(e) => e.stopPropagation()}>
             <LightboxImage
-              src={`https://ice-app.de/${checkin.bild_url}`}
+              src={`https://ice-app.de/${lightboxPicture.url}`}
               alt="Checkin Bild"
             />
             <LightboxTitle>
-              {checkin.eissorten.map((sorte) => sorte.sortenname).join(", ")} Eis bei {checkin.eisdiele_name}
+              {lightboxPicture.beschreibung ? 
+              (lightboxPicture.beschreibung) :
+               (<>{checkin.eissorten.map((sorte) => sorte.sortenname).join(", ")} Eis bei {checkin.eisdiele_name}</>)}
             </LightboxTitle>
           </LightboxContent>
         </LightboxOverlay>

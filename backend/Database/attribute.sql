@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 27. Apr 2025 um 12:10
+-- Erstellungszeit: 13. Mai 2025 um 07:39
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -38,9 +38,15 @@ CREATE TABLE `attribute` (
 
 INSERT INTO `attribute` (`id`, `name`) VALUES
 (4, 'ausgefallene Sorten'),
+(10, 'Bubblewaffles'),
+(8, 'Eis zum Mitnehmen '),
 (3, 'Eisbecher im Angebot'),
+(12, 'Gebrannte Mandeln '),
 (7, 'Guter Kaffee '),
 (6, 'schöner Außenbereich'),
+(13, 'Slush'),
+(9, 'Softeis'),
+(11, 'Sonstige Verpflegung'),
 (2, 'tolle Lage'),
 (1, 'vegane Optionen'),
 (5, 'wechselndes Angebot');
@@ -64,7 +70,7 @@ ALTER TABLE `attribute`
 -- AUTO_INCREMENT für Tabelle `attribute`
 --
 ALTER TABLE `attribute`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

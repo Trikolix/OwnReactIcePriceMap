@@ -2,41 +2,35 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from "styled-components";
 import { useUser } from '../context/UserContext';
 
-const OpeningHours = ({ eisdiele }) => {
+const ShopWebsite = ({ eisdiele, onSuccess }) => {
     const [showOverlay, setShowOverlay] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
-    const [newOpeningHours, setNewOpeningHours] = useState(eisdiele.openingHours);
+    const [website, setWebsite] = useState(eisdiele.website);
     const overlayRef = useRef(null);
     const tooltipRef = useRef(null);
-    const { userId, username, isLoggedIn } = useUser();
+    const { isLoggedIn, userId } = useUser();
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const handleReportClick = async () => {
-        if (newOpeningHours === eisdiele.openingHours) {
-            alert('Deine neuen Öffnungszeiten sind identisch mit den alten.');
-            setShowOverlay(false);
-            return;
-        }
 
         try {
-            const response = await fetch(`${apiUrl}/submitNewOpeningHours.php`, {
+            const response = await fetch(`${apiUrl}/submitWebsiteForShop.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    shopName: eisdiele.name,
                     shopId: eisdiele.id,
-                    userId: userId,
-                    username: username,
-                    newOpeningHours: newOpeningHours,
+                    website: website
                 }),
             });
 
             const result = await response.json();
 
             if (result.status === 'success') {
-                alert('Neue Öffnungszeiten erfolgreich gemeldet.');
+                onSuccess && onSuccess();
+                setShowOverlay(false);
+                alert('Website erfolgreich gemeldet.');
             } else {
                 alert('Fehler beim Melden der neuen Öffnungszeiten.');
             }
@@ -55,16 +49,6 @@ const OpeningHours = ({ eisdiele }) => {
         }
     };
 
-    const handleOpeningHoursClick = () => {
-        setShowTooltip(true);
-        setTimeout(() => setShowTooltip(false), 5000); // Tooltip nach 5 Sekunden ausblenden
-    };
-
-    const handleTooltipClick = () => {
-        setShowOverlay(true);
-        setShowTooltip(false); // Tooltip ausblenden, wenn das Overlay geöffnet wird
-    };
-
     useEffect(() => {
         if (showOverlay || showTooltip) {
             document.addEventListener('mousedown', handleClickOutside);
@@ -79,30 +63,28 @@ const OpeningHours = ({ eisdiele }) => {
 
     return (
         <Container>
-            <strong>Öffnungszeiten:</strong>
-            <OpeningHoursContainer
-                onClick={isLoggedIn ? handleOpeningHoursClick : undefined}
+            
+            {eisdiele.website !== "" && eisdiele.website !== null && (
+                <>
+                  <strong>Website:</strong> <a href={eisdiele.website} target="_blank" rel="noopener noreferrer">{eisdiele.website}</a><br />
+                </>
+              )}
+              <WebsiteContainer
+                onClick={isLoggedIn ? setShowOverlay : undefined}
                 isLoggedIn={isLoggedIn}
-                data-show-tooltip={showTooltip}
-            >
-                {eisdiele.openingHours.trim() !== "" ? (eisdiele.openingHours.split(';').map((part, index) => (
-                    <div key={index}>
-                        {part.trim()}
-                    </div>
-                ))) : (<>Keine Öffnungszeiten eingetragen</>)}
-                {showTooltip && (
-                    <Tooltip ref={tooltipRef} onClick={handleTooltipClick}>
-                        Änderungen an Öffnungszeiten melden
-                    </Tooltip>
-                )}
-            </OpeningHoursContainer>
+                >
+              {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (userId == 1 || userId == eisdiele.user_id) && (<>
+                <strong>Website:</strong> <a onClick={() => setShowOverlay(true)}>Website eintragen</a>
+              </>
+              )}
+              </WebsiteContainer>
             {isLoggedIn && showOverlay && (
                 <Overlay ref={overlayRef}>
                     <OverlayContent>
                         <CloseX onClick={() => setShowOverlay(false)}>x</CloseX>
-                        <p>Möchtest du Änderungen an den Öffnungszeiten von <strong>{eisdiele.name}</strong> melden?<br />(Neue Zeilen durch Semikolon getrennt)</p>
-                        <Input rows="3" value={newOpeningHours} onChange={(e) => setNewOpeningHours(e.target.value)} />
-                        <SubmitButton onClick={handleReportClick}>Änderungen melden</SubmitButton>
+                        <p>Website für <strong>{eisdiele.name}</strong> eintragen.<br /></p>
+                        <Input rows="1" placeholder="URL der Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                        <SubmitButton onClick={handleReportClick}>Absenden</SubmitButton>
                     </OverlayContent>
                 </Overlay>
             )}
@@ -110,31 +92,17 @@ const OpeningHours = ({ eisdiele }) => {
     );
 };
 
-export default OpeningHours;
+export default ShopWebsite;
 
 const Container = styled.div``;
 
-const OpeningHoursContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isLoggedIn',
-})`
-  position: relative;
-  cursor: ${({ isLoggedIn }) => (isLoggedIn ? 'pointer' : 'default')};
-  width: fit-content;
-`;
-
-const Tooltip = styled.div`
-  position: absolute;
-  bottom: -25px; /* Abstand unter dem Text */
-  left: 0;
-  background-color: #333;
-  color: #fff;
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  z-index: 1001;
-`;
+const WebsiteContainer = styled.div.withConfig({
+    shouldForwardProp: (prop) => prop !== 'isLoggedIn',
+  })`
+    position: relative;
+    cursor: ${({ isLoggedIn }) => (isLoggedIn ? 'pointer' : 'default')};
+    width: fit-content;
+  `;
 
 const Overlay = styled.div`
   position: fixed;
@@ -150,6 +118,7 @@ const Overlay = styled.div`
 `;
 
 const OverlayContent = styled.div`
+  text-align: center;
   position: relative;
   background: white;
   padding: 20px;
@@ -180,7 +149,7 @@ const SubmitButton = styled.button`
   background-color: #ffb522;
   color: white;
   padding: 6px 12px;
-  margin: 0px 3px 0px 3px;
+  margin-top: 5px;
   border-radius: 4px;
   border: none;
   cursor: pointer;

@@ -126,7 +126,7 @@ try {
         $uploadDir = '../../uploads/checkins/';
         if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
 
-        $beschreibungen = $_POST['bild_beschreibungen'] ?? [];
+        $beschreibungen = $_POST['beschreibungen'] ?? [];
         foreach ($_FILES['bilder']['tmp_name'] as $index => $tmpPath)  {
             switch ($_FILES['bilder']['error'][$index]) {
                 case UPLOAD_ERR_OK:
@@ -180,11 +180,11 @@ try {
 
     if (!empty($bildUrls)) {
         $insertImgStmt = $pdo->prepare("
-            INSERT INTO bilder (checkin_id, url, beschreibung)
-            VALUES (?, ?, ?)
+            INSERT INTO bilder (checkin_id, nutzer_id, url, beschreibung)
+            VALUES (?, ?, ?, ?)
         ");
         foreach ($bildUrls as $bild) {
-            $insertImgStmt->execute([$checkinId, $bild['url'], $bild['beschreibung']]);
+            $insertImgStmt->execute([$checkinId, $userId, $bild['url'], $bild['beschreibung']]);
         }
     }
 

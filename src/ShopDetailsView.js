@@ -6,6 +6,7 @@ import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
 import FavoritenButton from './components/FavoritButton';
 import OpeningHours from './components/OpeningHours';
+import ShopWebsite from './components/ShopWebsite';
 import RouteCard from './components/RouteCard';
 import SubmitRouteForm from './SubmitRouteModal';
 import ShareIcon from './components/ShareButton';
@@ -158,11 +159,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               <strong>Eisdiele in: </strong>{shopData.eisdiele.land} - {shopData.eisdiele.bundesland} - {shopData.eisdiele.landkreis}<br />
               <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
               <OpeningHours eisdiele={shopData.eisdiele} />
-              {shopData.eisdiele.website !== "" && shopData.eisdiele.website !== null && (
-                <>
-                  <strong>Website:</strong> <a href={shopData.eisdiele.website} target="_blank" rel="noopener noreferrer">{shopData.eisdiele.website}</a><br />
-                </>
-              )}
+              <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop}/>
               <h2>Preise</h2>
               {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
               <Table>

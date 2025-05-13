@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/lib/checkin.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 
@@ -56,33 +57,7 @@ $sql7 = "SELECT
          WHERE ua.user_id = ?
          ORDER BY ua.awarded_at DESC";
 
-// User Checkins
-$stmtCheckins = $pdo->prepare("
-    SELECT c.*, 
-           n.id AS nutzer_id,
-           n.username AS nutzer_name,
-           e.name AS eisdiele_name,
-           e.adresse
-    FROM checkins c
-    JOIN nutzer n ON c.nutzer_id = n.id
-    JOIN eisdielen e ON c.eisdiele_id = e.id
-    WHERE c.nutzer_id = :nutzerId
-    ORDER BY c.datum DESC
-    ");
-    $stmtCheckins->execute(['nutzerId' => $nutzerId]);
-    $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($checkins as &$checkin) {
-    $stmtSorten = $pdo->prepare("
-        SELECT sortenname, bewertung 
-        FROM checkin_sorten 
-        WHERE checkin_id = :checkinId
-    ");
-    $stmtSorten->execute(['checkinId' => $checkin['id']]);
-    $sorten = $stmtSorten->fetchAll(PDO::FETCH_ASSOC);
-    $checkin['eissorten'] = $sorten;
-    }
-    unset($checkin); // Referenz auflösen
+$checkins = getCheckinsByNutzerId($pdo, $nutzerId);
 
 // User Reviews
 $stmtReviews = $pdo->prepare("SELECT b.*,
