@@ -4,16 +4,18 @@ import Rating from "./Rating";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import CheckinForm from "../CheckinForm";
+import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 
 const CheckinCard = ({ checkin, onSuccess }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxPicture, setLightBoxPicture] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
   const handleEditClick = () => {
     setShowEditModal(true);
   };
+
 
   return (
     <>
@@ -68,35 +70,18 @@ const CheckinCard = ({ checkin, onSuccess }) => {
             )}
           </LeftContent>
           <RightContent>
-          {checkin.bilder && checkin.bilder.map((bild, index) => (
-              <Thumbnail
-                src={`https://ice-app.de/${bild.url}`}
-                alt="Checkin Bild"
-                onClick={() => {
-                  setLightboxOpen(true);
-                  setLightBoxPicture(bild);
-                }}
-              />
-          ))}
+            <ImageGalleryWithLightbox
+              images={checkin.bilder.map(b => ({
+                url: `https://ice-app.de/${b.url}`,
+                beschreibung: b.beschreibung
+              }))}
+              fallbackTitle={`${checkin.eissorten.map(s => s.sortenname).join(', ')} Eis bei ${checkin.eisdiele_name}`}
+            />
           </RightContent>
         </ContentWrapper>
       </Card>
 
-      {lightboxOpen && (
-        <LightboxOverlay onClick={() => setLightboxOpen(false)}>
-          <LightboxContent onClick={(e) => e.stopPropagation()}>
-            <LightboxImage
-              src={`https://ice-app.de/${lightboxPicture.url}`}
-              alt="Checkin Bild"
-            />
-            <LightboxTitle>
-              {lightboxPicture.beschreibung ? 
-              (lightboxPicture.beschreibung) :
-               (<>{checkin.eissorten.map((sorte) => sorte.sortenname).join(", ")} Eis bei {checkin.eisdiele_name}</>)}
-            </LightboxTitle>
-          </LightboxContent>
-        </LightboxOverlay>
-      )}
+
 
       {showEditModal && (
         <CheckinForm
@@ -142,7 +127,10 @@ const LeftContent = styled.div`
 `;
 
 const RightContent = styled.div`
-  flex: 0 0 auto;
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 8px;
 `;
 
 const Table = styled.table`
@@ -164,15 +152,20 @@ const Table = styled.table`
   }
 `;
 
-const Thumbnail = styled.img`
-  max-width: 150px;
+const ThumbnailWrapper = styled.div`
+  flex: 0 0 auto;
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  position: relative;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s ease-in-out;
+`;
 
-  &:hover {
-    transform: scale(1.05);
-  }
+const ThumbnailImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
 const AttributeSection = styled.div`
@@ -214,30 +207,55 @@ const EditButton = styled.button`
 
 const LightboxOverlay = styled.div`
   position: fixed;
-  inset: 0;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1001;
+  z-index: 1000;
 `;
 
 const LightboxContent = styled.div`
-  max-width: 90%;
-  max-height: 90%;
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
   text-align: center;
 `;
 
 const LightboxImage = styled.img`
   max-width: 100%;
   max-height: 80vh;
-  border-radius: 8px;
+  object-fit: contain;
 `;
 
 const LightboxTitle = styled.div`
+  margin-top: 16px;
   color: white;
-  margin-top: 1rem;
   font-size: 1rem;
-  font-weight: bold;
 `;
 
+const NavButton = styled.button`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 12px;
+  z-index: 1;
+
+  &:hover {
+    color: #ccc;
+  }
+`;
+
+const PrevButton = styled(NavButton)`
+  left: -40px;
+`;
+
+const NextButton = styled(NavButton)`
+  right: -40px;
+`;

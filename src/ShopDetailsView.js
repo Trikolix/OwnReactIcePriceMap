@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
@@ -27,45 +27,45 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [shopData, setShopData] = useState(null);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const handleTouchStart = useCallback((e) => {
+    startYRef.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+    const deltaY = touchY - startYRef.current;
+    console.log("deltaY:", deltaY);
+    if (deltaY < -50) {
+      setIsFullHeight(true);
+    } else if (deltaY > 50) {
+      setIsFullHeight(false);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    startYRef.current = 0;
+  }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const timeout = setTimeout(() => {
-      const container = headerRef.current;
-      if (!container) return;
-      const handleTouchStart = (e) => {
-        startYRef.current = e.touches[0].clientY;
-      };
+    if (typeof window === "undefined" || !headerRef.current ) return;
 
-      const handleTouchMove = (e) => {
-        e.preventDefault();
-        const touchY = e.touches[0].clientY;
-        const deltaY = touchY - startYRef.current;
-        console.log("deltaY:", deltaY);
+    const container = headerRef.current;
 
-        if (deltaY < -50) {
-          setIsFullHeight(true);
-        } else if (deltaY > 50) {
-          setIsFullHeight(false);
-        }
-      };
+    container.addEventListener('touchstart', handleTouchStart);
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
 
-      const handleTouchEnd = () => {
-        startYRef.current = 0;
-      };
+    setIsInitialized(true);
 
-      container.addEventListener('touchstart', handleTouchStart);
-      container.addEventListener('touchmove', handleTouchMove, { passive: false });
-      container.addEventListener('touchend', handleTouchEnd);
-
-      return () => {
-        container.removeEventListener('touchstart', handleTouchStart);
-        container.removeEventListener('touchmove', handleTouchMove);
-        container.removeEventListener('touchend', handleTouchEnd);
-      };
-    }, 100); // Delay to ensure the DOM is ready
-    return () => clearTimeout(timeout);
-  }, []);
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, headerRef.current, isInitialized]);
 
 
   const fetchShopData = useCallback(async (id) => {
@@ -159,7 +159,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               <strong>Eisdiele in: </strong>{shopData.eisdiele.land} - {shopData.eisdiele.bundesland} - {shopData.eisdiele.landkreis}<br />
               <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
               <OpeningHours eisdiele={shopData.eisdiele} />
-              <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop}/>
+              <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
               <h2>Preise</h2>
               {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
               <Table>

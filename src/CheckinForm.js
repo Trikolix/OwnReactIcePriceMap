@@ -346,6 +346,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </Section>
                     <ButtonGroup>
                         <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
+                        <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>
                         {checkinId && (<><br />
                             <DeleteButton type="button" onClick={handleDeleteClick} >
                                 Check-in löschen
