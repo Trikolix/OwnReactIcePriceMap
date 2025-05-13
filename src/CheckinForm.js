@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
+import { Rat } from "lucide-react";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess }) => {
     const [type, setType] = useState("Kugel");
@@ -17,8 +18,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [lightboxIndex, setLightboxIndex] = useState(0);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
@@ -218,7 +217,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         value={sorte.name}
                                         onChange={(e) => handleSortenChange(index, "name", e.target.value)}
                                     />
-                                    {showSortenBewertung && (
+                                    {showSortenBewertung && (<>
                                         <Input
                                             type="number"
                                             step="0.1"
@@ -229,6 +228,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
                                             style={{ width: "100px" }}
                                         />
+                                        <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
+                                        </>
                                     )}
                                     <RemoveButton type="button" onClick={() => removeSorte(index)}>✕</RemoveButton>
                                 </Row>
