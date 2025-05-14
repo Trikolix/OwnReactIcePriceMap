@@ -1,7 +1,10 @@
 <?php
-require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/db_connect.php';
 
-$sql = "WITH bewertete_checkins AS (
+$nutzerId = isset($_GET['nutzer_id']) ? intval($_GET['nutzer_id']) : null;
+
+$sql = "
+WITH bewertete_checkins AS (
     SELECT
         nutzer_id,
         eisdiele_id,
@@ -21,7 +24,8 @@ $sql = "WITH bewertete_checkins AS (
         typ = 'Softeis'
         AND geschmackbewertung IS NOT NULL
         AND waffelbewertung IS NOT NULL
-        AND preisleistungsbewertung IS NOT NULL
+        AND preisleistungsbewertung IS NOT NULL" .
+        ($nutzerId ? " AND nutzer_id = :nutzerId" : "") . "
 ),
 nutzer_scores AS (
     SELECT
@@ -60,10 +64,14 @@ JOIN eisdielen e ON e.id = g.eisdiele_id
 GROUP BY g.eisdiele_id, e.name
 ORDER BY finaler_softeis_score DESC;";
 
-// SQL ausführen
-$stmt = $pdo->query($sql);
+// SQL vorbereiten und ausführen
+$stmt = $pdo->prepare($sql);
+if ($nutzerId) {
+    $stmt->bindValue(':nutzerId', $nutzerId, PDO::PARAM_INT);
+}
+$stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // JSON-Ausgabe
-echo json_encode($eisdielen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE )
+echo json_encode($eisdielen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 ?>
