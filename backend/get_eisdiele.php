@@ -84,7 +84,24 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $bewertungen = $stmt->fetch();
 
-// 4. Attribute mit Häufigkeit abrufen
+// 4. Scores für Kugel, Softeis und Eisbecher abrufen
+$stmt = $pdo->prepare("
+SELECT 
+    e.id AS eisdiele_id,
+    ks.finaler_kugel_score,
+    ss.finaler_softeis_score,
+    es.finaler_eisbecher_score
+FROM eisdielen e
+LEFT JOIN kugel_scores ks ON ks.eisdiele_id = e.id
+LEFT JOIN softeis_scores ss ON ss.eisdiele_id = e.id
+LEFT JOIN eisbecher_scores es ON es.eisdiele_id = e.id
+WHERE e.id = :eisdieleId
+");
+$stmt->bindParam(':eisdieleId', $eisdiele_id);
+$stmt->execute();
+$score = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// 5. Attribute mit Häufigkeit abrufen
 $stmt = $pdo->prepare("
     SELECT a.name, COUNT(*) as anzahl
     FROM bewertung_attribute ba
@@ -97,7 +114,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $attribute = $stmt->fetchAll();
 
-// 5. Alle Reviews holen
+// 6. Alle Reviews holen
 $stmtReviews = $pdo->prepare("SELECT b.*,
                                      e.name AS eisdiele_name,
                                      n.username AS nutzer_name,
@@ -134,6 +151,11 @@ $response = [
     "preise" => [
         "kugel" => $kugel_preis ?: null,
         "softeis" => $softeis_preis ?: null
+    ],
+    "scores" => [
+        "kugel" => isset($score["finaler_kugel_score"]) ? round($score["finaler_kugel_score"], 2) : null,
+        "softeis" => isset($score["finaler_softeis_score"]) ? round($score["finaler_softeis_score"], 2) : null,
+        "eisbecher" => isset($score["finaler_eisbecher_score"]) ? round($score["finaler_eisbecher_score"], 2) : null
     ],
     "bewertungen" => [
         "geschmack" => isset($bewertungen["geschmack"]) ? round($bewertungen["geschmack"], 2) : null,

@@ -153,19 +153,21 @@ const IceCreamRadar = () => {
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
-    if (selectedOption === "Kugeleis") return shop.kugel_preis !== null;
-    if (selectedOption === "Softeis") return shop.softeis_preis !== null;
-    if (selectedOption === "Rating") return shop.PLV !== null;
+    if (selectedOption === "Kugel: Preis") return shop.kugel_preis !== null;
+    if (selectedOption === "Softeis: Preis") return shop.softeis_preis !== null;
+    if (selectedOption === "Kugel: Rating ") return shop.finaler_kugel_score !== null;
+    if (selectedOption === "Softeis: Rating ") return shop.finaler_softeis_score !== null;
+    if (selectedOption === "Eisbecher: Rating ") return shop.finaler_eisbecher_score !== null;
     if (selectedOption === "Favoriten") return shop.is_favorit === 1;
-    if (selectedOption === "Geschmack") return shop.avg_geschmack !== null;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
   const prices = (selectedOption === "Alle" || selectedOption === "Favoriten") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
-    selectedOption === "Kugeleis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
-      selectedOption === "Softeis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
-        selectedOption === "Rating" ? filteredShops.map(shop => shop.PLV).filter(plv => plv !== null) :
-          selectedOption === "Geschmack" ? filteredShops.map(shop => shop.avg_geschmack).filter(avg_geschmack => avg_geschmack !== null) : null;
+    selectedOption === "Kugel: Preis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
+      selectedOption === "Softeis: Preis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
+        selectedOption === "Kugel: Rating " ? filteredShops.map(shop => shop.finaler_kugel_score).filter(kugelscore => kugelscore !== null) :
+          selectedOption === "Softeis: Rating " ? filteredShops.map(shop => shop.finaler_softeis_score).filter(softeisscore => softeisscore !== null) :
+            selectedOption === "Eisbecher: Rating " ? filteredShops.map(shop => shop.finaler_softeis_score).filter(becherscore => becherscore !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -199,7 +201,7 @@ const IceCreamRadar = () => {
       />
       <LogoContainer>
         <DropdownSelect
-          options={["Alle", "Kugeleis", "Softeis", "Rating", "Favoriten", "Geschmack"]}
+          options={["Alle", "Favoriten", "Kugel: Preis", "Softeis: Preis", "Kugel: Rating ", "Softeis: Rating ", "Eisbecher: Rating "]}
           onChange={(selectedOption) => {
             console.log("Ausgewählt:", selectedOption);
             setSelectedOption(selectedOption);

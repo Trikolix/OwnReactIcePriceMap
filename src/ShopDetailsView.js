@@ -150,8 +150,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         </Header>
         <Tabs>
           <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-          <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
           <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
+          <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>  
         </Tabs>
         <Content>
           {activeTab === 'info' &&
@@ -183,32 +183,32 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
                   </tr>)}
               </Table>
               {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
-              {shopData.bewertungen && (shopData.bewertungen.geschmack || shopData.bewertungen.auswahl || shopData.bewertungen.kugelgroesse) ? (
+              {( shopData.bewertungen.auswahl || shopData.scores.kugel || shopData.scores.softeis || shopData.scores.eisbecher || shopData.attribute?.length > 0) ? (
                 <>
-                  <h2>Durchschnitt aus {(shopData.reviews.length)} Bewertung(en)</h2>
+                  <h2>Durchschnittliche Bewertung</h2>
                   <Table>
-                    {shopData.bewertungen.geschmack !== null && (
+                    {shopData.scores.kugel !== null && (
                       <tr>
-                        <th>Geschmack:</th>
+                        <th>Kugeleis:</th>
                         <td>
-                          <Rating stars={shopData.bewertungen.geschmack} />{" "}
-                          <strong>{shopData.bewertungen.geschmack}</strong>
+                          <Rating stars={shopData.scores.kugel} />{" "}
+                          <strong>{shopData.scores.kugel}</strong>
                         </td>
                       </tr>)}
-                    {shopData.bewertungen.waffel !== null && (
+                    {shopData.scores.softeis !== null && (
                       <tr>
-                        <th>Waffel:</th>
+                        <th>Softeis:</th>
                         <td>
-                          <Rating stars={shopData.bewertungen.waffel} />{" "}
-                          <strong>{shopData.bewertungen.waffel}</strong>
+                          <Rating stars={shopData.scores.softeis} />{" "}
+                          <strong>{shopData.scores.softeis}</strong>
                         </td>
                       </tr>)}
-                    {shopData.bewertungen.kugelgroesse !== null && (
+                    {shopData.scores.eisbecher !== null && (
                       <tr>
-                        <th>Größe:</th>
+                        <th>Eisbecher:</th>
                         <td>
-                          <Rating stars={shopData.bewertungen.kugelgroesse} />{" "}
-                          <strong>{shopData.bewertungen.kugelgroesse}</strong>
+                          <Rating stars={shopData.scores.eisbecher} />{" "}
+                          <strong>{shopData.scores.eisbecher}</strong>
                         </td>
                       </tr>)}
                     {shopData.bewertungen.auswahl !== null && (
@@ -235,6 +235,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
                   Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br />
                 </>
               )}
+              {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis-Besuch einchecken</Button></ButtonContainer>)}
               {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
               <h2>Komoot Routen</h2>
               {routes.length < 1 && (<>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</>)}

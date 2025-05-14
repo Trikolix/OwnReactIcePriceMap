@@ -156,25 +156,13 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     <FormTitle>{shop.eisdiele.name} bewerten</FormTitle>
 
                     <GridForm>
-                        <label>Geschmack:</label>
-                        <Input type="number" min="1.0" max="5.0" step="0.1" placeholder="1.0 - 5.0" value={geschmack || ''} onChange={(e) => setGeschmack(parseFloat(e.target.value))} />
-                        <Rating stars={geschmack} onRatingSelect={(value) => setGeschmack(value.toFixed(1))} />
-
-                        <label>Größe</label>
-                        <Input type="number" min="1.0" max="5.0" step="0.1" placeholder="1.0 - 5.0" value={kugelgroesse || ''} onChange={(e) => setKugelgroesse(parseFloat(e.target.value))} />
-                        <Rating stars={kugelgroesse} onRatingSelect={(value) => setKugelgroesse(value.toFixed(1))} />
-
-                        <label>Waffel:</label>
-                        <Input type="number" min="1.0" max="5.0" step="0.1" placeholder="1.0 - 5.0" value={waffel || ''} onChange={(e) => setWaffel(parseFloat(e.target.value))} />
-                        <Rating stars={waffel} onRatingSelect={(value) => setWaffel(value.toFixed(1))} />
-
                         <label>Auswahl:</label>
-                        <Input type="number" min="1" step="1" value={auswahl || ''} placeholder="Anzahl Sorten"onChange={(e) => setAuswahl(parseInt(e.target.value))} />
+                        <Input type="number" min="1" step="1" value={auswahl || ''} placeholder="Anzahl Sorten" onChange={(e) => setAuswahl(parseInt(e.target.value))} />
                     </GridForm>
 
                     <TextAreaGroup>
-                        <label>Beschreibung:</label>
-                        <TextArea rows="7" value={beschreibung} onChange={(e) => setBeschreibung(e.target.value)} />
+                        <label>Bewertung:</label>
+                        <TextArea rows="7" value={beschreibung} placeholder="Beschreibe wie du die Eisdiele im allgemeinen findest. Ambiente, Lage, Service etc. Für Geschmacksberichte gibt es die Check-in Funktion." onChange={(e) => setBeschreibung(e.target.value)} />
                     </TextAreaGroup>
 
                     <AttributeSection>

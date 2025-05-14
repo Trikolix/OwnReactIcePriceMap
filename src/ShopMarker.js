@@ -14,10 +14,10 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
 
   let displayPrice;
   switch (true) {
-    case selectedOption === "Softeis" && shop.softeis_preis !== null:
+    case selectedOption === "Softeis: Preis" && shop.softeis_preis !== null:
       displayPrice = `${Number(shop.softeis_preis).toFixed(2)}`;
       break;
-    case selectedOption === "Kugeleis" && shop.kugel_preis !== null:
+    case selectedOption === "Kugel: Preis" && shop.kugel_preis !== null:
       displayPrice = `${Number(shop.kugel_preis).toFixed(2)}`;
       break;
     case (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.kugel_preis != null:
@@ -26,24 +26,27 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
     case (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.softeis_preis != null:
       displayPrice = `${Number(shop.softeis_preis).toFixed(2)}`;
       break;
-    case selectedOption === "Rating" && plv !== null:
-      displayPrice = `${Number(plv).toFixed(2)}`;
+    case selectedOption === "Kugel: Rating " && plv !== null:
+      displayPrice = `${Number(shop.finaler_kugel_score).toFixed(2)}`;
       break;
-    case selectedOption === "Geschmack" && shop.avg_geschmack !== null:
-      displayPrice = `${Number(shop.avg_geschmack).toFixed(2)}`;
+    case selectedOption === "Softeis: Rating " && plv !== null:
+      displayPrice = `${Number(shop.finaler_softeis_score).toFixed(2)}`;
+      break;
+    case selectedOption === "Eisbecher: Rating " && plv !== null:
+      displayPrice = `${Number(shop.finaler_eisbecher_score).toFixed(2)}`;
       break;
     default:
       displayPrice = '?';
   }
   let backgroundColor;
-  if (selectedOption === "Rating" || selectedOption === "Geschmack") {
+  if (selectedOption === "Kugel: Rating " || selectedOption === "Softeis: Rating " || selectedOption === "Eisbecher: Rating ") {
     backgroundColor = getColorBasedOnPrice(displayPrice, maxPrice, minPrice);
   } else {
     backgroundColor = getColorBasedOnPrice(displayPrice, minPrice, maxPrice);
   }
   
   
-  if (displayPrice !== '?' && (selectedOption === "Softeis" || selectedOption === "Kugeleis" || selectedOption === "Alle" || selectedOption === "Favoriten")) {
+  if (displayPrice !== '?' && (selectedOption === "Softeis: Preis" || selectedOption === "Kugel: Preis" || selectedOption === "Alle" || selectedOption === "Favoriten")) {
     displayPrice = `${Number(displayPrice).toFixed(2)} €`;
   }
 
