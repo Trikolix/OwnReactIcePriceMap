@@ -9,6 +9,9 @@ import FavoritenListe from './pages/FavoritenListe';
 import Impressum from './pages/Impressum';
 import UserSite from './pages/UserSite';
 import VerifyAccount from './pages/VerifyAccount';
+import AGB from './pages/AGB';
+import Datenschutz from './pages/Datenschutz';
+import Community from './pages/Community';
 
 const App = () => {
   return (
@@ -24,6 +27,9 @@ const App = () => {
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/user/:userId?" element={<UserSite />} />
           <Route path="/verify" element={<VerifyAccount />} />
+          <Route path="/agb" element={<AGB />} />
+          <Route path="/datenschutz" element={<Datenschutz />} />
+          <Route path="/community" element={<Community />} />
         </Routes>
       </UserProvider>
     </Router>

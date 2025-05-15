@@ -57,6 +57,25 @@ function resizeImage($sourcePath, $destinationPath, $maxDim = 1200, $quality = 7
     switch ($mime) {
         case 'image/jpeg':
             $srcImage = imagecreatefromjpeg($sourcePath);
+            // EXIF nur für JPEG
+            $exif = @exif_read_data($sourcePath);
+            if (!empty($exif['Orientation'])) {
+                $orientation = $exif['Orientation'];
+                switch ($orientation) {
+                    case 3:
+                        $srcImage = imagerotate($srcImage, 180, 0);
+                        break;
+                    case 6:
+                        $srcImage = imagerotate($srcImage, -90, 0);
+                        break;
+                    case 8:
+                        $srcImage = imagerotate($srcImage, 90, 0);
+                        break;
+                }
+                // Neue Größe holen, falls gedreht
+                $width = imagesx($srcImage);
+                $height = imagesy($srcImage);
+            }
             break;
         case 'image/png':
             $srcImage = imagecreatefrompng($sourcePath);

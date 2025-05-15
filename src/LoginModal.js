@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useUser } from './context/UserContext';
+import { Link } from 'react-router-dom';
 
 const LoginModal = ({ setShowLoginModal }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -9,6 +10,8 @@ const LoginModal = ({ setShowLoginModal }) => {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const { userId, isLoggedIn, login } = useUser();
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   const handleLogin = async () => {
@@ -50,6 +53,10 @@ const LoginModal = ({ setShowLoginModal }) => {
   };
 
   const handleRegister = async () => {
+    if (!acceptedTerms) {
+      setTermsError(true);
+      return;
+    }
     try {
       const response = await fetch(`${apiUrl}/register.php`, {
         method: 'POST',
@@ -120,6 +127,25 @@ const LoginModal = ({ setShowLoginModal }) => {
             required
           /><br />
 
+          {isRegisterMode && (
+            <div style={{ margin: '1rem 0' }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={() => {
+                    setAcceptedTerms(!acceptedTerms);
+                    setTermsError(false);
+                  }}
+                  style={{ marginRight: '0.5rem' }}
+                />
+                Ich akzeptiere die{' '}
+                <StyledLink to="/agb" target="_blank">AGB</StyledLink>,{' '}
+                <StyledLink to="/datenschutz" target="_blank">Datenschutzerklärung</StyledLink> und{' '}
+                <StyledLink to="/community" target="_blank">Community-Richtlinien</StyledLink>.
+              </label>
+              {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
+            </div>)}
 
           <SubmitButton type="submit">{isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
         </form>
@@ -170,4 +196,18 @@ const SmallButton = styled.button`
   border-radius: 12px;
   font-weight: bold;
   cursor: pointer;
+`;
+
+const StyledLink = styled(Link)`
+  color: #0077cc;
+  text-decoration: underline;
+  &:hover {
+    color: #005999;
+  }
+`;
+
+const ErrorText = styled.p`
+  color: red;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
 `;
