@@ -192,25 +192,34 @@ export default SubmitRouteForm;
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  height: 100dvh;
+  width: 100vw;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1001;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 `;
 
 const Modal = styled.div`
-  background: white;
-  padding: 2rem;
+  background-color: #fff;
+  padding: 1rem;
   border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
+  width: 95vw;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
+  
+  @media (max-height: 600px) {
+    max-height: 95vh;
+    padding: 0.5rem;
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+  }
 `;
 
 const CloseButton = styled.button`
@@ -234,7 +243,7 @@ const Label = styled.label`
 `;
 
 const TextArea = styled.textarea`
-  width: 100%;
+  width: 95%;
   padding: 0.5rem;
   margin-top: 0.5rem;
   border-radius: 8px;

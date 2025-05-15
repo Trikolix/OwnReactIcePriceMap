@@ -372,23 +372,34 @@ export default CheckinForm;
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
+  height: 100dvh;
+  width: 100vw;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1001;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 `;
 
 const Modal = styled.div`
   background-color: #fff;
   padding: 1rem;
   border-radius: 16px;
-  width: 100%;
-  max-width: 450px;
-  max-height: 100vh;
+  width: 95vw;
+  max-width: 550px;
+  max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   position: relative;
+  box-sizing: border-box;
+  scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
+  
+  @media (max-height: 600px) {
+    max-height: 95vh;
+    padding: 0.5rem;
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+  }
 `;
 
 const CloseButton = styled.button`

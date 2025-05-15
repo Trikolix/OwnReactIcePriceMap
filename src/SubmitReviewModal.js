@@ -227,6 +227,8 @@ export default SubmitReviewModal;
 
 const ModalOverlay = styled.div`
     position: fixed;
+    height: 100dvh;
+    width: 100vw;
     top: 0; left: 0; right: 0; bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
@@ -239,12 +241,20 @@ const ModalContent = styled.div`
     background-color: #fff;
     padding: 1rem;
     border-radius: 16px;
-    width: 100%;
-    max-width: 450px;
-    max-height: 100vh;
+    width: 95vw;
+    max-width: 550px;
+    max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     position: relative;
+    box-sizing: border-box;
+    scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
+    
+    @media (max-height: 600px) {
+      max-height: 95vh;
+      padding: 0.5rem;
+      padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+    }
 `;
 
 const CloseButton = styled.button`

@@ -137,25 +137,35 @@ const Overlay = styled.div`
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1002;
   overflow-y: auto;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 `;
 
 const Modal = styled.div`
   background-color: #fff;
   padding: 1rem;
+  padding-bottom: calc(2.5rem + env(safe-area-inset-bottom)); /* für Button & iPhone-Navigation */
   border-radius: 16px;
-  width: 100%;
+  width: 95vw;
   max-width: 450px;
-  max-height: 100vh;
+  max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   position: relative;
+  box-sizing: border-box;
+  scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
+  
+  @media (max-height: 600px) {
+    max-height: 95vh;
+    padding: 0.5rem;
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+  }
 `;
 
 const Title = styled.h2`
