@@ -4,24 +4,7 @@ CREATE OR REPLACE VIEW eisbecher_scores AS WITH bewertete_checkins AS(
         eisdiele_id,
         geschmackbewertung,
         preisleistungsbewertung,
-        CASE WHEN waffelbewertung IS NULL THEN(geschmackbewertung / 5.0) -- nur Geschmack
-        ELSE((4 * geschmackbewertung + waffelbewertung) / 25.0) -- 4x Geschmack + 1x Waffel
-		END AS geschmacksfaktor,
-ROUND(
-    1 + 4 *(
-        (
-            0.7 *(
-                CASE WHEN waffelbewertung IS NULL THEN(geschmackbewertung / 5.0) ELSE(
-                    (
-                        4 * geschmackbewertung + waffelbewertung
-                    ) / 25.0
-                )
-            END
-        ) + 0.3 * preisleistungsbewertung
-    ) / 2.2
-),
-4
-) AS score
+        ROUND(0.7 * geschmackbewertung + 0.3 * preisleistungsbewertung, 2) AS score
 FROM
     checkins
 WHERE
@@ -33,7 +16,6 @@ nutzer_scores AS(
         nutzer_id,
         COUNT(*) AS checkin_count,
         AVG(score) AS durchschnitt_score,
-        AVG(geschmacksfaktor) AS durchschnitt_geschmacksfaktor,
         AVG(geschmackbewertung) AS durchschnitt_geschmack,
         AVG(preisleistungsbewertung) AS durchschnitt_preisleistung
     FROM
@@ -49,7 +31,6 @@ gewichtete_scores AS(
         SQRT(checkin_count) AS gewicht,
         durchschnitt_score * SQRT(checkin_count) AS gewichteter_score,
         durchschnitt_geschmack * SQRT(checkin_count) AS gewichteter_geschmack,
-        durchschnitt_geschmacksfaktor * SQRT(checkin_count) AS gewichteter_geschmacksfaktor,
         durchschnitt_preisleistung * SQRT(checkin_count) AS gewichteter_preisleistung
     FROM
         nutzer_scores
@@ -66,11 +47,6 @@ SELECT
         0),
         2
     ) AS avg_geschmack,
-    ROUND(
-        SUM(g.gewichteter_geschmacksfaktor) / NULLIF(SUM(g.gewicht),
-        0),
-        2
-    ) AS avg_geschmacksfaktor,
     ROUND(
         SUM(g.gewichteter_preisleistung) / NULLIF(SUM(g.gewicht),
         0),

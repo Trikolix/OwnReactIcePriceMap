@@ -6,8 +6,10 @@ import { Link } from "react-router-dom";
 const Ranking = () => {
     const [eisdielenKugel, setEisdielenKugel] = useState([]);
     const [eisdielenSofteis, setEisdielenSofteis] = useState([]);
+    const [eisdielenEisbecher, setEisdielenEisbecher] = useState([]);
     const [sortConfigKugel, setSortConfigKugel] = useState({ key: 'finaler_score', direction: 'descending' });
-    const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'rating', direction: 'descending' });
+    const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'finaler_softeis_score', direction: 'descending' });
+    const [sortConfigEisbecher, setSortConfigEisbehcer] = useState({ key: 'finaler_eisbecher_score', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
@@ -20,6 +22,9 @@ const Ranking = () => {
                 const response2 = await fetch(`${apiUrl}/get_softeis_rating.php`);
                 const data2 = await response2.json();
                 setEisdielenSofteis(data2);
+                const response3 = await fetch(`${apiUrl}/get_eisbecher_rating.php`);
+                const data3 = await response3.json();
+                setEisdielenEisbecher(data3);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -42,6 +47,14 @@ const Ranking = () => {
             direction = 'ascending';
         }
         setSortConfigSofteis({ key, direction });
+    };
+
+    const sortTableEisbecher = (key) => {
+        let direction = 'descending';
+        if (sortConfigEisbecher.key === key && sortConfigEisbecher.direction === 'descending') {
+            direction = 'ascending';
+        }
+        setSortConfigEisbehcer({ key, direction });
     };
 
     const sortedEisdielenKugel = React.useMemo(() => {
@@ -94,6 +107,31 @@ const Ranking = () => {
         return sortableItems;
     }, [eisdielenSofteis, sortConfigSofteis]);
 
+    const sortedEisdielenEisbecher = React.useMemo(() => {
+        let sortableItems = [...eisdielenEisbecher];
+        if (sortConfigEisbecher.key !== null) {
+            sortableItems.sort((a, b) => {
+                let aValue = a[sortConfigEisbecher.key];
+                let bValue = b[sortConfigEisbecher.key];
+
+                // Convert to numbers if possible
+                if (!isNaN(aValue) && !isNaN(bValue)) {
+                    aValue = parseFloat(aValue);
+                    bValue = parseFloat(bValue);
+                }
+
+                if (aValue < bValue) {
+                    return sortConfigEisbecher.direction === 'ascending' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfigEisbecher.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [eisdielenEisbecher, sortConfigEisbecher]);
+
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
     };
@@ -119,6 +157,12 @@ const Ranking = () => {
                             onClick={() => setActiveTab('softeis')}
                         >
                             Softeis
+                        </TabButton>
+                        <TabButton
+                            active={activeTab === 'eisbecher'}
+                            onClick={() => setActiveTab('eisbecher')}
+                        >
+                            Eisbecher
                         </TabButton>
                     </TabContainer>
                     {activeTab === 'kugel' && (<><Table>
@@ -146,7 +190,9 @@ const Ranking = () => {
                                 <th onClick={() => sortTableKugel('avg_plfaktor')}>
                                     Faktor Preis-Leistung {sortConfigKugel.key === 'avg_plfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th >Anzahl Bewertungen</th>
+                                <th onClick={() => sortTableKugel('checkin_anzahl')}>
+                                    Anzahl Bewertungen {sortConfigKugel.key === 'checkin_anzahl' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -161,7 +207,7 @@ const Ranking = () => {
                                         <td style={sortConfigKugel.key === 'finaler_score' ? { fontWeight: 'bold' } : {}}>{eisdiele.finaler_score ? Number(eisdiele.finaler_score).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmacksfaktor ? Number(eisdiele.avg_geschmacksfaktor).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_plfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_plfaktor ? Number(eisdiele.avg_plfaktor).toFixed(2) : "–"}</td>
-                                        <td><strong>{eisdiele.checkin_anzahl}</strong> (von {eisdiele.nutzeranzahl} Nutzer/n))</td>
+                                        <td style={sortConfigKugel.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>{eisdiele.checkin_anzahl} (von {eisdiele.nutzeranzahl} Nutzer/n)</td>
                                     </tr>
                                     <DetailsRow visible={expandedRow === index} className="details-row">
                                         <td colSpan="9">
@@ -184,45 +230,59 @@ const Ranking = () => {
                         <Explanation>
                             <h1>Erklärung zum Ranking</h1>
                             <LeftAlign>
-                                <h2>Wie wird der <em>finale Softeis-Score</em> berechnet?</h2>
+                                <ScoreExplanation>
+                                    <h2>Wie wird das Rating für Kugeleis berechnet?</h2>
 
-                                <h3>1. Einzelbewertung je Check-in</h3>
-                                <p>Die Preis-Leistungsverhältnis wird nach folgender Formel berechnet:</p>
-                                <p>Es gibt einen <strong>Geschmacks-Faktor</strong> welcher sich aus Geschmack und Waffel zusammen setzt.
-                                    Der Geschmack des Eises hat dabei eine 4 mal größere Gewichtung als die Waffel.</p>
-                                <p>Als zweites gibt es einen <strong>Preisleistungs-Faktor</strong>, welcher das Verhältnis von Kugel zu Preis wieder spiegelt.<br />
-                                    Der Wert ergibt 1, wenn eine Kugel die Größenbewertung von 5.0 bei einem Preis von 1,50€ bekommt.<br />
-                                    Es ist also möglich, dass eine Eisdiele einen Preis-Leistungsfakto größer 1 hat, wenn sie sehr große Kugeln für unter 1,50€ anbietet.</p>
-                                <p>Der Geschmacksfaktor und der Preis/Leistungsfaktor werden gewichtet miteinander mulitpliziert,
-                                    wobei <strong>Geschmack mit 70%</strong> gewichtet wird und  <strong>Preis-Leistung mit 30%.</strong></p>
-                                G - Ø Bewertung des Geschmacks<br />
-                                K - Ø Bewertung der Kugelgröße<br />
-                                W - Ø Bewertung der Eiswaffel<br />
-                                P - Preis pro Kugel in €<br />
-                                <img src={require('./plv-formel_neu.png')} alt='PLV Formel' />
+                                    <h3>1. Einzelbewertung je Check-in</h3>
+                                    <p>
+                                        Für jeden Check-in für Kugeleis wird ein Score berechnet:<br />
+                                        Dieser Score setzt sich aus zwei Faktoren zusammen:
+                                        <ul>
+                                            <li>
+                                                <strong>Geschmacksfaktor:</strong> Der Geschmack zählt viermal so viel wie die Waffel. Wenn keine Waffel bewertet wurde, zählt nur der Geschmack.
+                                            </li>
+                                            <li>
+                                                <strong>Preis-Leistungs-Faktor:</strong> Dieser Wert berechnet sich aus der Kugelgröße im Verhältnis zum Preis. <br />
+                                                Eine Kugel mit Größe <code>5.0</code> bei einem Preis von <code>1,50 €</code> ergibt den Wert <code>5.0</code>.<br />
+                                                Der Preis-Leistungs-Faktor kann bei großen Kugeln und Preisen unter 1,50 € Werte von über 5 annehmen und bei Preisen über 1,50 € und sehr kleinen Kugeln Werte von unter 1 annehmen.
 
-                                <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
-                                <p>
-                                    Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
-                                </p>
-                                <ul>
-                                    <li><code>gewicht = √(Anzahl Check-ins des Nutzers)</code></li>
-                                    <li><code>gewichteter_score = durchschnittlicher Score × gewicht</code></li>
-                                </ul>
-                                <p>
-                                    Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
-                                </p>
+                                            </li>
+                                            <li>
+                                                <strong>Finaler Score:</strong> Geschmack (70 %) + Preis-Leistung (30 %), gewichtet zu einem Gesamtwert zwischen ca. <code>1.0</code> und <code>5.0</code>.
+                                            </li>
+                                        </ul>
+                                    </p>
 
-                                <h3>3. Finale Bewertung je Eisdiele</h3>
-                                <p>
-                                    Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
-                                </p>
-                                <pre><code>
-                                    finaler_softeis_score =
-                                    Summe aller gewichteter Scores /
-                                    Summe aller Gewichte
-                                </code></pre>
-                                
+
+                                    <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
+                                    <p>
+                                        Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
+                                    </p>
+                                    <ul>
+                                        <li><strong>gewicht:</strong> <code>√(Anzahl Check-ins des Nutzers)</code></li>
+                                        <li><strong>gewichteter Score: </strong> <code>durchschnittlicher Score × gewicht</code></li>
+                                    </ul>
+                                    <p>
+                                        Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
+                                    </p>
+
+                                    <h3>3. Finale Bewertung je Eisdiele</h3>
+                                    <p>
+                                        Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
+                                    </p>
+                                    <ul>
+                                        <li><strong>Rating: </strong><code>Summe aller gewichteter Scores / Summe aller Gewichte</code></li>
+                                    </ul>
+
+                                    <h3>Beispiel:</h3>
+                                    <ul>
+                                        <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
+                                        <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
+                                    </ul>
+                                    <p>
+                                        <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
+                                    </p>
+                                </ScoreExplanation>
                             </LeftAlign>
                         </Explanation></>)}
                     {activeTab === 'softeis' && (<>
@@ -230,17 +290,23 @@ const Ranking = () => {
                             <thead>
                                 <tr>
                                     <th>Eisdiele</th>
-                                    <th onClick={() => sortTableSofteis('finaler_softeis_score')}>
-                                        Gesamtwertung {sortConfigSofteis.key === 'finaler_softeis_score' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
-                                    </th>
                                     <th onClick={() => sortTableSofteis('avg_geschmack')}>
                                         Geschmack {sortConfigSofteis.key === 'avg_geschmack' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
-                                    <th onClick={() => sortTableSofteis('avg_waffel')}>
+                                    <th onClick={() => sortTableKugel('avg_waffel')}>
                                         Waffel {sortConfigSofteis.key === 'avg_waffel' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
                                     <th onClick={() => sortTableSofteis('avg_preisleistung')}>
                                         Preis-Leistung {sortConfigSofteis.key === 'avg_preisleistung' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                    <th onClick={() => sortTableSofteis('finaler_softeis_score')}>
+                                        Rating {sortConfigSofteis.key === 'finaler_softeis_score' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                    <th onClick={() => sortTableSofteis('finaler_geschmacksfaktor')}>
+                                        Geschmacksfaktor {sortConfigSofteis.key === 'finaler_geschmacksfaktor' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                    <th onClick={() => sortTableSofteis('checkin_anzahl')}>
+                                        Anzahl Bewertungen {sortConfigSofteis.key === 'checkin_anzahl' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
                                 </tr>
                             </thead>
@@ -249,9 +315,6 @@ const Ranking = () => {
                                     <React.Fragment key={index}>
                                         <tr onClick={() => toggleDetails(`softeis-${index}`)}>
                                             <td style={{ textAlign: 'left' }}>{eisdiele.name}</td>
-                                            <td style={sortConfigSofteis.key === 'finaler_softeis_score' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.finaler_softeis_score.toFixed(2)}
-                                            </td>
                                             <td style={sortConfigSofteis.key === 'avg_geschmack' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.avg_geschmack.toFixed(1)}
                                             </td>
@@ -260,6 +323,126 @@ const Ranking = () => {
                                             </td>
                                             <td style={sortConfigSofteis.key === 'avg_preisleistung' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.avg_preisleistung.toFixed(1)}
+                                            </td>
+                                            <td style={sortConfigSofteis.key === 'finaler_softeis_score' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.finaler_softeis_score.toFixed(2)}
+                                            </td>
+                                            <td style={sortConfigSofteis.key === 'finaler_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.finaler_geschmacksfaktor.toFixed(2)}
+                                            </td>
+                                            <td style={sortConfigSofteis.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.checkin_anzahl} (von {eisdiele.anzahl_nutzer} Nutzer/n))
+                                            </td>
+                                        </tr>
+                                        <DetailsRow visible={expandedRow === `softeis-${index}`} className="details-row">
+                                            <td colSpan="7">
+                                                <DetailsContainer>
+                                                    <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.name}</CleanLink></h3>
+                                                    <strong>Adresse: </strong>{eisdiele.adresse}<br />
+                                                    <strong>Öffnungszeiten: </strong><br />{eisdiele.openingHours?.split(';').map((time, i) => (
+                                                        <React.Fragment key={i}>
+                                                            {time}<br />
+                                                        </React.Fragment>
+                                                    ))}
+                                                </DetailsContainer>
+                                            </td>
+                                        </DetailsRow>
+                                    </React.Fragment>
+                                ))}
+                            </tbody>
+                        </Table>
+                        <Explanation>
+                            <h1>Erklärung zum Ranking</h1>
+                            <LeftAlign>
+                                <ScoreExplanation>
+                                    <h2>Wie wird das Rating für Softeis berechnet?</h2>
+
+                                    <h3>1. Einzelbewertung je Check-in</h3>
+                                    <p>
+                                        Für jeden Check-in für Softeis wird ein Score berechnet:<br />
+                                        Dieser Score setzt sich aus zwei Faktoren zusammen:
+                                        <ul>
+                                            <li>
+                                                <strong>Geschmacksfaktor:</strong> Der Geschmack zählt viermal so viel wie die Waffel. Wenn keine Waffel bewertet wurde, zählt nur der Geschmack.
+                                            </li>
+                                            <li>
+                                                <strong>Preis-Leistungs-Faktor:</strong> Wird direkt durch den Nutzer als Wert zwischen <code>1.0</code> und <code>5.0</code> bewertet.
+                                            </li>
+                                            <li>
+                                                <strong>Finaler Score:</strong> Geschmack (70 %) + Preis-Leistung (30 %), gewichtet zu einem Gesamtwert zwischen ca. <code>1.0</code> und <code>5.0</code>.
+                                            </li>
+                                        </ul>
+                                    </p>
+
+
+                                    <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
+                                    <p>
+                                        Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
+                                    </p>
+                                    <ul>
+                                        <li><strong>gewicht:</strong> <code>√(Anzahl Check-ins des Nutzers)</code></li>
+                                        <li><strong>gewichteter Score: </strong> <code>durchschnittlicher Score × gewicht</code></li>
+                                    </ul>
+                                    <p>
+                                        Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
+                                    </p>
+
+                                    <h3>3. Finale Bewertung je Eisdiele</h3>
+                                    <p>
+                                        Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
+                                    </p>
+                                    <ul>
+                                        <li><strong>Rating: </strong><code>Summe aller gewichteter Scores / Summe aller Gewichte</code></li>
+                                    </ul>
+
+
+                                    <h3>Beispiel:</h3>
+                                    <ul>
+                                        <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
+                                        <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
+                                    </ul>
+                                    <p>
+                                        <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
+                                    </p>
+                                </ScoreExplanation>
+                            </LeftAlign>
+                        </Explanation></>
+                    )}
+                    {activeTab === 'eisbecher' && (<>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>Eisdiele</th>
+                                    <th onClick={() => sortTableEisbecher('avg_geschmack')}>
+                                        Geschmack {sortConfigEisbecher.key === 'avg_geschmack' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                    <th onClick={() => sortTableEisbecher('avg_preisleistung')}>
+                                        Preis-Leistung {sortConfigEisbecher.key === 'avg_preisleistung' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                    <th onClick={() => sortTableEisbecher('finaler_eisbecher_score')}>
+                                        Rating {sortConfigEisbecher.key === 'finaler_eisbecher_score' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                    <th onClick={() => sortTableEisbecher('checkin_anzahl')}>
+                                        Anzahl Bewertungen {sortConfigEisbecher.key === 'checkin_anzahl' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sortedEisdielenEisbecher.map((eisdiele, index) => (
+                                    <React.Fragment key={index}>
+                                        <tr onClick={() => toggleDetails(`softeis-${index}`)}>
+                                            <td style={{ textAlign: 'left' }}>{eisdiele.name}</td>
+                                            <td style={sortConfigEisbecher.key === 'avg_geschmack' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.avg_geschmack.toFixed(1)}
+                                            </td>
+                                            <td style={sortConfigEisbecher.key === 'avg_preisleistung' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.avg_preisleistung.toFixed(1)}
+                                            </td>
+                                            <td style={sortConfigEisbecher.key === 'finaler_eisbecher_score' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.finaler_eisbecher_score.toFixed(2)}
+                                            </td>
+                                            <td style={sortConfigEisbecher.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>
+                                                {eisdiele.checkin_anzahl} (von {eisdiele.anzahl_nutzer} Nutzer/n))
                                             </td>
                                         </tr>
                                         <DetailsRow visible={expandedRow === `softeis-${index}`} className="details-row">
@@ -280,62 +463,55 @@ const Ranking = () => {
                             </tbody>
                         </Table>
                         <Explanation>
-                        <h1>Erklärung zum Ranking</h1>
-                        <LeftAlign>
-                            <h2>Wie wird der <em>finale Softeis-Score</em> berechnet?</h2>
+                            <h1>Erklärung zum Ranking</h1>
+                            <LeftAlign>
+                                <ScoreExplanation>
+                                    <h2>Wie wird der <em>finale Eisbecher-Score</em> berechnet?</h2>
 
-                            <h3>1. Einzelbewertung je Check-in</h3>
-                            <p>
-                                Für jeden Check-in mit vollständiger Bewertung (Geschmack, Waffel, Preis-Leistung) wird ein Score berechnet:<br />
-                                (Bei Check-ins ohne Waffe entspricht der Geschmacksfaktor dem Geschmack)<br />
-                            </p>
-                                <img src={require('./softeis_formel.png')} alt='Formel Softeis Ranking' />
-                            
-                            <p>
-                                Dieser Score liegt immer zwischen <strong>1,0</strong> und <strong>5,0</strong>.<br />
-                                Wie auch beim Kugeleis-Ranking, wird der <strong>Geschmack mit 70%</strong> gewichtet,<br />
-                                wobei innerhalb des Geschmacksfaktors der <strong>Eisgeschmack 4 mal mehr Gewicht als der<br />
-                                Waffelgeschmack</strong> hat.<br />
-                                Der <strong>Preis-Leistungsfaktor wird mit 30%</strong> gewichtet.
-                            </p>
+                                    <h3>1. Einzelbewertung je Check-in</h3>
+                                    <p>
+                                        Für jeden Check-in wird ein Score berechnet:<br />
+                                        <ul>
+                                            <li>
+                                                <strong>Score: </strong><code> Geschmack * 0,7 + Preis-Leistung * 0,3</code><br />
+                                            </li>
+                                        </ul>
+                                    </p>
 
-                            <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
-                            <p>
-                                Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
-                            </p>
-                            <ul>
-                                <li><code>gewicht = √(Anzahl Check-ins des Nutzers)</code></li>
-                                <li><code>gewichteter_score = durchschnittlicher Score × gewicht</code></li>
-                            </ul>
-                            <p>
-                                Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
-                            </p>
+                                    <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
+                                    <p>
+                                        Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
+                                    </p>
+                                    <ul>
+                                        <li><strong>gewicht:</strong> <code>√(Anzahl Check-ins des Nutzers)</code></li>
+                                        <li><strong>gewichteter Score: </strong> <code>durchschnittlicher Score × gewicht</code></li>
+                                    </ul>
+                                    <p>
+                                        Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
+                                    </p>
 
-                            <h3>3. Finale Bewertung je Eisdiele</h3>
-                            <p>
-                                Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
-                            </p>
-                            <pre><code>
-                                finaler_softeis_score =
-                                Summe aller gewichteter Scores /
-                                Summe aller Gewichte
-                            </code></pre>
-                            <p>
-                                Das ergibt eine faire und vergleichbare Endbewertung zwischen 1,0 und 5,0.
-                            </p>
+                                    <h3>3. Finale Bewertung je Eisdiele</h3>
+                                    <p>
+                                        Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
+                                    </p>
+                                    <ul>
+                                        <li><strong>Rating: </strong><code>Summe aller gewichteter Scores / Summe aller Gewichte</code></li>
+                                    </ul>
 
-                            <h3>Beispiel:</h3>
-                            <ul>
-                                <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
-                                <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
-                            </ul>
-                            <p>
-                                <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
-                            </p>
-                        </LeftAlign>
-                    </Explanation></>
+
+                                    <h3>Beispiel:</h3>
+                                    <ul>
+                                        <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
+                                        <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
+                                    </ul>
+                                    <p>
+                                        <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
+                                    </p>
+                                </ScoreExplanation>
+                            </LeftAlign>
+                        </Explanation></>
                     )}
-                    
+
                 </TableContainer>
             </Container>
         </>
@@ -440,4 +616,36 @@ const TabButton = styled.button`
 
 const TabContent = styled.div`
   margin-top: 1rem;
+`;
+
+const ScoreExplanation = styled.div`
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+  font-size: 1rem;
+  color: #333;
+
+  h3 {
+    margin-top: 0;
+    font-size: 1.25rem;
+    color: #444;
+  }
+
+  ul {
+    padding-left: 1.2rem;
+    list-style-type: "🍧​ ";
+  }
+
+  strong {
+    color: #222;
+  }
+
+  code {
+    background: #efefef;
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
+  }
 `;

@@ -8,22 +8,19 @@ WITH bewertete_checkins AS (
         c.größenbewertung,
         p.preis,
         CASE
-            WHEN c.waffelbewertung IS NULL THEN (c.geschmackbewertung / 5.0)             -- nur Geschmack
-            ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 25.0)                -- 4x Geschmack + 1x Waffel
+            WHEN c.waffelbewertung IS NULL THEN c.geschmackbewertung
+            ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 5.0)
         END AS geschmacksfaktor,
-        -- Preis-Leistungs-Faktor: größe / preis bezogen auf Referenzwert 5 / 1.5 = 3.33
-        (c.größenbewertung / p.preis) / (5.0 / 1.5) AS preisleistungsfaktor,
+        ((c.größenbewertung / p.preis) / (5.0 / 1.5) * 5.0) AS preisleistungsfaktor,
         ROUND(
-            1 + 4 * (
-                0.7 * (
-                    CASE
-                        WHEN c.waffelbewertung IS NULL THEN (c.geschmackbewertung / 5.0)
-                        ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 25.0)
-                    END
-                )
-                +
-                0.3 * ((c.größenbewertung / p.preis) / (5.0 / 1.5))
-            ), 4
+            0.7 * (
+                CASE
+                    WHEN c.waffelbewertung IS NULL THEN c.geschmackbewertung
+                    ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 5.0)
+                END
+            ) +
+            0.3 * ((c.größenbewertung / p.preis) / (5.0 / 1.5)) * 5.0,
+            4
         ) AS score
     FROM checkins c
     JOIN preise p ON c.eisdiele_id = p.eisdiele_id

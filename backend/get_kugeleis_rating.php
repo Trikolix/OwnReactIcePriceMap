@@ -1,6 +1,8 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 
+$nutzerId = isset($_GET['nutzer_id']) ? intval($_GET['nutzer_id']) : null;
+
 $sql = "WITH bewertete_checkins AS (
     SELECT
         c.nutzer_id,
@@ -10,23 +12,20 @@ $sql = "WITH bewertete_checkins AS (
         c.größenbewertung,
         p.preis,
         CASE
-    		WHEN c.waffelbewertung IS NULL THEN (c.geschmackbewertung / 5.0)             -- nur Geschmack
-    		ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 25.0)                -- 4x Geschmack + 1x Waffel
-		END AS geschmacksfaktor,
-        -- Preis-Leistungs-Faktor: größe / preis bezogen auf Referenzwert 5 / 1.5 = 3.33
-        (c.größenbewertung / p.preis) / (5.0 / 1.5) AS preisleistungsfaktor,
+            WHEN c.waffelbewertung IS NULL THEN c.geschmackbewertung
+            ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 5.0)
+        END AS geschmacksfaktor,
+        ((c.größenbewertung / p.preis) / (5.0 / 1.5) * 5.0) AS preisleistungsfaktor,
         ROUND(
-    1 + 4 * (
-        0.7 * (
-            CASE
-                WHEN c.waffelbewertung IS NULL THEN (c.geschmackbewertung / 5.0)
-                ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 25.0)
-            END
-        )
-        +
-        0.3 * ((c.größenbewertung / p.preis) / (5.0 / 1.5))
-    ), 4
-) AS score
+            0.7 * (
+                CASE
+                    WHEN c.waffelbewertung IS NULL THEN c.geschmackbewertung
+                    ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 5.0)
+                END
+            ) +
+            0.3 * ((c.größenbewertung / p.preis) / (5.0 / 1.5)) * 5.0,
+            4
+        ) AS score
     FROM checkins c
     JOIN preise p ON c.eisdiele_id = p.eisdiele_id
         AND p.typ = 'kugel'
@@ -39,7 +38,8 @@ $sql = "WITH bewertete_checkins AS (
     WHERE
         c.typ = 'Kugel'
         AND c.geschmackbewertung IS NOT NULL
-        AND c.größenbewertung IS NOT NULL
+        AND c.größenbewertung IS NOT NULL" .
+        ($nutzerId ? " AND nutzer_id = :nutzerId" : "") . "
 ),
 nutzer_scores AS (
     SELECT
@@ -112,8 +112,12 @@ GROUP BY f.eisdiele_id, e.name, e.adresse, e.openingHours, f.finaler_score,
          f.avg_geschmack, f.avg_waffel, f.avg_größe, f.nutzeranzahl, p.preis
 ORDER BY finaler_score DESC";
 
-// SQL ausführen
-$stmt = $pdo->query($sql);
+// SQL vorbereiten und ausführen
+$stmt = $pdo->prepare($sql);
+if ($nutzerId) {
+    $stmt->bindValue(':nutzerId', $nutzerId, PDO::PARAM_INT);
+}
+$stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // JSON-Ausgabe

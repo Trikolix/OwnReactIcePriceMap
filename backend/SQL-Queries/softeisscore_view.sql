@@ -4,24 +4,17 @@ CREATE OR REPLACE VIEW softeis_scores AS WITH bewertete_checkins AS(
         eisdiele_id,
         geschmackbewertung,
         preisleistungsbewertung,
-        CASE WHEN waffelbewertung IS NULL THEN(geschmackbewertung / 5.0) -- nur Geschmack
-        ELSE((4 * geschmackbewertung + waffelbewertung) / 25.0) -- 4x Geschmack + 1x Waffel
+        CASE WHEN waffelbewertung IS NULL THEN geschmackbewertung
+        ELSE((4 * geschmackbewertung + waffelbewertung) / 5.0)
 		END AS geschmacksfaktor,
-ROUND(
-    1 + 4 *(
-        (
-            0.7 *(
-                CASE WHEN waffelbewertung IS NULL THEN(geschmackbewertung / 5.0) ELSE(
-                    (
-                        4 * geschmackbewertung + waffelbewertung
-                    ) / 25.0
-                )
-            END
-        ) + 0.3 * preisleistungsbewertung
-    ) / 2.2
-),
-4
-) AS score
+        ROUND(
+            0.7 * (
+                CASE
+                    WHEN waffelbewertung IS NULL THEN geschmackbewertung
+                    ELSE (4 * geschmackbewertung + waffelbewertung) / 5.0
+                END
+            ) + 0.3 * preisleistungsbewertung, 2
+        ) AS score
 FROM
     checkins
 WHERE
