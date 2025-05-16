@@ -61,6 +61,29 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
     }
   };
 
+  const handleGeocode = async () => {
+    if (!adresse) return;
+
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        setLatitude(parseFloat(lat));
+        setLongitude(parseFloat(lon));
+      } else {
+        alert("Adresse konnte nicht gefunden werden.");
+      }
+    } catch (error) {
+      console.error("Geocoding Fehler:", error);
+    }
+  };
+  const handleAddressBlur = () => {
+    if (!latitude && !longitude) {
+      handleGeocode();
+    }
+  };
+
   return showForm && (
     <Overlay>
       <Modal>
@@ -72,12 +95,12 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
         }}>
           <Group>
             <label>Name:</label>
-            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required="true" />
           </Group>
 
           <Group>
             <label>Adresse:</label>
-            <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} />
+            <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} onBlur={handleAddressBlur} />
           </Group>
 
           <LocationPicker
@@ -86,6 +109,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
             setLatitude={setLatitude}
             setLongitude={setLongitude}
           />
+          <ButtonGroup><SmallerButton onClick={handleGeocode}>Position aus Adresse bestimmen</SmallerButton></ButtonGroup>
 
           <GroupInline>
             <Group>
@@ -95,6 +119,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
                 step="0.000001"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
+                required="true"
               />
             </Group>
             <Group>
@@ -104,6 +129,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
                 step="0.000001"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
+                required="true"
               />
             </Group>
           </GroupInline>
@@ -115,7 +141,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
 
           <Group>
             <label>Website (optional):</label>
-            <Input type="text"  value={website} onChange={(e) => setWebsite(e.target.value)} />
+            <Input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </Group>
 
           <ButtonGroup>
@@ -215,6 +241,15 @@ const ButtonGroup = styled.div`
 `;
 
 const SubmitButton = styled.button`
+  background-color: #ffb522;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+`;
+const SmallerButton = styled.button`
   background-color: #ffb522;
   color: white;
   border: none;

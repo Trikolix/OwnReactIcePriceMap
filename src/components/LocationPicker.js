@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Leaflet Marker Icons fix (sonst fehlen sie manchmal)
@@ -11,14 +11,25 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png'
 });
 
+const RecenterMap = ({ lat, lng }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([lat, lng], map.getZoom(), {
+      animate: true
+    });
+  }, [lat, lng, map]);
+
+  return null;
+};
+
 const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude }) => {
-  const [markerPosition, setMarkerPosition] = useState([latitude, longitude]);
+  const position = [latitude, longitude];
 
   const MapClickHandler = () => {
     useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng;
-        setMarkerPosition([lat, lng]);
         setLatitude(lat.toFixed(6));
         setLongitude(lng.toFixed(6));
       }
@@ -34,17 +45,17 @@ const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude }) => {
       />
       <MapClickHandler />
       <Marker
-        position={markerPosition}
+        position={position}
         draggable={true}
         eventHandlers={{
           dragend: (e) => {
             const { lat, lng } = e.target.getLatLng();
-            setMarkerPosition([lat, lng]);
             setLatitude(lat.toFixed(6));
             setLongitude(lng.toFixed(6));
           }
         }}
       />
+      <RecenterMap lat={latitude} lng={longitude} />
     </MapContainer>
   );
 };
