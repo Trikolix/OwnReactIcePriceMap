@@ -614,10 +614,6 @@ const TabButton = styled.button`
   }
 `;
 
-const TabContent = styled.div`
-  margin-top: 1rem;
-`;
-
 const ScoreExplanation = styled.div`
   background: #f9f9f9;
   padding: 1.5rem;

@@ -16,7 +16,7 @@ import CheckinFrom from './CheckinForm';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 
-const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops, onHeightChange }) => {
+const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const headerRef = useRef(null);
   const startYRef = useRef(0);
@@ -85,13 +85,6 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops, o
   const refreshRoutes = () => {
     fetchRoutes(shopId, userId);
   };
-
-  useEffect(() => {
-  if (onHeightChange && headerRef.current) {
-    const height = headerRef.current.getBoundingClientRect().height;
-    onHeightChange(height);
-  }
-}, [headerRef.current, onHeightChange]);
 
   useEffect(() => {
     if (shopId) {

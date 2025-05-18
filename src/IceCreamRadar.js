@@ -28,7 +28,6 @@ const IceCreamRadar = () => {
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
-  const [detailViewHeight, setDetailViewHeight] = useState(0);
 
   const { shopId } = useParams();
   const navigate = useNavigate();
@@ -288,7 +287,6 @@ const IceCreamRadar = () => {
           shopId={activeShop.eisdiele.id}
           setIceCreamShops={setIceCreamShops}
           refreshMapShops={refreshShops}
-          onHeightChange={(height) => setDetailViewHeight(height)}
           onClose={() => {
             setActiveShop(null);
             setShowDetailsView(false);

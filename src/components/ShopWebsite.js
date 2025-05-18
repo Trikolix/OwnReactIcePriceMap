@@ -73,7 +73,7 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
                 onClick={isLoggedIn ? setShowOverlay : undefined}
                 isLoggedIn={isLoggedIn}
                 >
-              {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (userId == 1 || userId == eisdiele.user_id) && (<>
+              {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (userId === 1 || userId === eisdiele.user_id) && (<>
                 <strong>Website:</strong> <a onClick={() => setShowOverlay(true)}>Website eintragen</a>
               </>
               )}
