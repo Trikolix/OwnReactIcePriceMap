@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 
 const LoginModal = ({ setShowLoginModal }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
   const [message, setMessage] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,6 +14,8 @@ const LoginModal = ({ setShowLoginModal }) => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
 
   const handleLogin = async () => {
     try {
@@ -80,6 +83,25 @@ const LoginModal = ({ setShowLoginModal }) => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/userManagement/reset_password_request.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail })
+      });
+
+      const data = await response.json();
+      setResetMessage(data.message);
+      if (data.status === 'success') {
+        setResetEmail('');
+      }
+    } catch (error) {
+      console.error("Fehler beim Passwort-Reset:", error);
+      setResetMessage("Ein Fehler ist aufgetreten. Bitte erneut versuchen.");
+    }
+  };
+
   const resetForm = () => {
     setMessage('');
     setUsername('');
@@ -97,21 +119,26 @@ const LoginModal = ({ setShowLoginModal }) => {
     <div className="modal-overlay" style={{ zIndex: '1002' }}>
       <div className="modal-content" style={{ position: 'relative', zIndex: '1002' }}>
         <CloseX onClick={closeLoginForm}>x</CloseX>
-        <h2>{isRegisterMode ? "Registrieren" : "Login"}</h2>
+        <h2>{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</h2>
 
         <form onSubmit={(e) => {
           e.preventDefault();
-          isRegisterMode ? handleRegister() : handleLogin();
+          if (isResetMode) {
+            handlePasswordReset();
+          } else if (isRegisterMode) {
+            handleRegister();
+          } else {
+            handleLogin();
+          }
         }}>
-          <input
+          {!isResetMode && (<input
             type="text"
             placeholder="Benutzername"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-          />
-          {isRegisterMode && (
-            <input
+          />)}
+          {isRegisterMode && (<input
               type="email"
               placeholder="E-Mail"
               value={email}
@@ -119,14 +146,46 @@ const LoginModal = ({ setShowLoginModal }) => {
               required
             />
           )}
-          <input
+          {!isResetMode && (<><input
             type="password"
             placeholder="Passwort"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-          /><br />
+          /><br /></>)}
+          {!isRegisterMode && !isResetMode && (
+                <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsResetMode(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#0077cc',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    Passwort vergessen?
+                  </button>
+                </p>
+              )}
 
+          {isResetMode && (
+            <>
+              <input
+                type="email"
+                placeholder="E-Mail-Adresse"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+              />
+              <p style={{ fontSize: '0.9rem' }}>
+                Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen.
+              </p>
+            </>
+          )}
           {isRegisterMode && (
             <div style={{ margin: '1rem 0' }}>
               <label>
@@ -147,13 +206,17 @@ const LoginModal = ({ setShowLoginModal }) => {
               {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
             </div>)}
 
-          <SubmitButton type="submit">{isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
+          <SubmitButton type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
         </form>
 
         <p>{message}</p>
         {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
 
-        {!isRegisterMode ? (
+        {isResetMode ? (
+          <p>
+            <SmallButton onClick={() => setIsResetMode(false)}>Zurück zum Login</SmallButton>
+          </p>
+        ) : !isRegisterMode ? (
           <p>Noch keinen Account? <SmallButton onClick={() => setIsRegisterMode(true)}>Registrieren</SmallButton></p>
         ) : (
           <p>Bereits registriert? <SmallButton onClick={() => setIsRegisterMode(false)}>Zurück zum Login</SmallButton></p>

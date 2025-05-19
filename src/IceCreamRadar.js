@@ -14,10 +14,12 @@ import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
+import ResetPasswordModal from "./components/ResetPasswordModal";
 
 const IceCreamRadar = () => {
+  const location = useLocation();
   const [iceCreamShops, setIceCreamShops] = useState([]);
   const [activeShop, setActiveShop] = useState(null);
   const cachedBounds = useRef([]);
@@ -29,8 +31,16 @@ const IceCreamRadar = () => {
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
-  const { shopId } = useParams();
+  const { shopId, token } = useParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log("useEffect", location.pathname)
+    console.log("token", token)
+    if (location.pathname === "/login") {
+      setShowLoginModal(true);
+    }
+  }, [location]);
 
   const fetchAndCenterShop = async (id) => {
     try {
@@ -274,6 +284,9 @@ const IceCreamRadar = () => {
           </Marker>
         )}
       </MapContainer>
+      {token && (
+        <ResetPasswordModal resetToken={token} isOpen={true} onClose={() => (window.location.href = "/#/login")} />
+      )}
       {showLoginModal &&
         <LoginModal
           userId={userId}
