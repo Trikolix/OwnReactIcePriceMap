@@ -48,13 +48,13 @@ const Header = ({ refreshShops }) => {
         </BurgerMenu>
         {menuOpen && (
           <Menu ref={menuRef}>
-            <MenuItemLink to="/">Eis-Karte</MenuItemLink>
-            <MenuItemLink to="/ranking">Eisdielen Ranking</MenuItemLink>
-            <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
+            <MenuItemLink to="/">Eisdielen-Karte</MenuItemLink>
+            <MenuItemLink to="/ranking">Top Eisdielen</MenuItemLink>
+            <MenuItemLink to="/dashboard">Aktivitäten</MenuItemLink>
             {isLoggedIn ? (
               <>
-                <MenuItemLink to={`/user/${userId}`} className="logged-in">{username} Nutzerseite</MenuItemLink>
-                <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Neue Eisdiele eintragen</MenuItem>
+                <MenuItemLink to={`/user/${userId}`} className="logged-in">Profil ({username})</MenuItemLink>
+                <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
                 <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>

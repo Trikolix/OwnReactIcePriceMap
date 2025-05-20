@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
+import NewAwards from "./components/NewAwards";
 
 const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceForm, onSuccess }) => {
     console.log(shop);
@@ -16,6 +17,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [submitted, setSubmitted] = useState(false);
     const [preisfrage, setPreisfrage] = useState(false);
     const [showAllAttributes, setShowAllAttributes] = useState(false)
+    const [awards, setAwards] = useState([]);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
@@ -131,18 +133,29 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 })
             });
             const data = await response.json();
+            let localAwards = null;
             data.forEach(element => {
-                if (element.status === 'success') {
-                    onSuccess && onSuccess();
-                    setMessage('Preis erfolgreich bestätigt!');
-                    setTimeout(() => {
-                        setShowForm(false);
-                    }, 1000);
-                } else {
-                    setMessage(`Fehler beim Bestätigen vom Preis: ${element.message}`);
-                    return;
+                if (element.typ) {
+                    if (element.status === 'success') {
+                        onSuccess();
+                        setSubmitted(true);
+                        setMessage('Preis erfolgreich gemeldet!');
+                    } else {
+                        setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
+                        return;
+                    }
+                } else if (element.new_awards) {
+                    setAwards(element.new_awards);
+                    localAwards = element.new_awards;
                 }
             });
+            if (localAwards && localAwards.length !== 0) {
+                console.log("Neue Auszeichnungen:", localAwards);
+            } else {
+                setTimeout(() => {
+                    setShowForm(false);
+                }, 2000);
+            }
         } catch (error) {
 
         }
@@ -199,6 +212,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 {(submitted && !preisfrage) ? (
                     <Message>Vielen Dank für dein Review!</Message>
                 ) : (<Message>{message}</Message>)}
+                <NewAwards awards={awards} />
 
                 {preisfrage && (
                     <>

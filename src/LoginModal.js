@@ -19,7 +19,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch(`${apiUrl}/login.php`, {
+      const response = await fetch(`${apiUrl}/userManagement/login.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -61,7 +61,7 @@ const LoginModal = ({ setShowLoginModal }) => {
       return;
     }
     try {
-      const response = await fetch(`${apiUrl}/register.php`, {
+      const response = await fetch(`${apiUrl}/userManagement/register.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,7 +182,7 @@ const LoginModal = ({ setShowLoginModal }) => {
                 required
               />
               <p style={{ fontSize: '0.9rem' }}>
-                Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen.
+                { resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen."}
               </p>
             </>
           )}

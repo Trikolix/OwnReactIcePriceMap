@@ -19,33 +19,6 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
       </Header>
 
       <Table>
-        {review.geschmack !== null && (
-          <tr>
-            <th>Geschmack:</th>
-            <td>
-              <Rating stars={review.geschmack} />{" "}
-              <strong>{review.geschmack}</strong>
-            </td>
-          </tr>
-        )}
-        {review.kugelgroesse !== null && (
-          <tr>
-            <th>Größe:</th>
-            <td>
-              <Rating stars={review.kugelgroesse} />{" "}
-              <strong>{review.kugelgroesse}</strong>
-            </td>
-          </tr>
-        )}
-        {review.waffel !== null && (
-          <tr>
-            <th>Waffel:</th>
-            <td>
-              <Rating stars={review.waffel} />{" "}
-              <strong>{review.waffel}</strong>
-            </td>
-          </tr>
-        )}
         {review.auswahl !== null && (
           <tr>
             <th>Auswahl:</th>

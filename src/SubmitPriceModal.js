@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styled from 'styled-components';
+import NewAwards from './components/NewAwards.js'
 const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuccess }) => {
 
     const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
@@ -8,6 +9,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
     const [additionalInfoSofteisPreis, setAdditionalInfoSofteisPreis] = useState(shop.preise?.softeis?.beschreibung ? shop.preise.softeis.beschreibung : null);
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [awards, setAwards] = useState([]);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const submit = async () => {
@@ -36,24 +38,34 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
             }));
             const data = await response.json();
             console.log(data);
+            let localAwards = null;
             data.forEach(element => {
-                if (element.status === 'success') {
-                    onSuccess();
-                    setSubmitted(true);
-                    setMessage('Preis erfolgreich gemeldet!');
-                } else {
-                    setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
-                    return;
+                if (element.typ) {
+                    if (element.status === 'success') {
+                        onSuccess();
+                        setSubmitted(true);
+                        setMessage('Preis erfolgreich gemeldet!');
+                    } else {
+                        setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
+                        return;
+                    }
+                } else if (element.new_awards) {
+                    setAwards(element.new_awards);
+                    localAwards = element.new_awards;
                 }
             });
-            setTimeout(() => {
-                setMessage('');
-                setShowPriceForm(false);
-                setKugelPreis(null);
-                setAdditionalInfoKugelPreis(null);
-                setSofteiPreis(null);
-                setAdditionalInfoSofteisPreis(null);
-            }, 2000);
+            if (localAwards && localAwards.length !== 0) {
+                console.log("Neue Auszeichnungen:", localAwards);
+            } else {
+                setTimeout(() => {
+                    setMessage('');
+                    setShowPriceForm(false);
+                    setKugelPreis(null);
+                    setAdditionalInfoKugelPreis(null);
+                    setSofteiPreis(null);
+                    setAdditionalInfoSofteisPreis(null);
+                }, 2000);
+            }
         } catch (error) {
 
         }
@@ -64,56 +76,57 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 <CloseButton onClick={() => setShowPriceForm(false)}>×</CloseButton>
                 <Heading>Preis für {shop.eisdiele.name} einreichen</Heading>
                 {!submitted && (<>
-                <Label>
-                    Preis pro Kugel:
-                    <Input
-                        type="number"
-                        min="1.0"
-                        max="5.0"
-                        step="0.1"
-                        placeholder="0.0"
-                        value={kugelPreis ?? ''}
-                        onChange={(e) => setKugelPreis(e.target.value)}
-                    />
-                    €
-                </Label>
+                    <Label>
+                        Preis pro Kugel:
+                        <Input
+                            type="number"
+                            min="1.0"
+                            max="5.0"
+                            step="0.1"
+                            placeholder="0.0"
+                            value={kugelPreis ?? ''}
+                            onChange={(e) => setKugelPreis(e.target.value)}
+                        />
+                        €
+                    </Label>
 
-                <Label>
-                    Zusatzbeschreibung für die Kugel:
-                    <TextArea
-                        rows={3}
-                        value={additionalInfoKugelPreis}
-                        onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)}
-                    />
-                </Label>
+                    <Label>
+                        Zusatzbeschreibung für die Kugel:
+                        <TextArea
+                            rows={3}
+                            value={additionalInfoKugelPreis}
+                            onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)}
+                        />
+                    </Label>
 
-                <Label>
-                    Preis für Softeis:
-                    <Input
-                        type="number"
-                        min="1.0"
-                        max="5.0"
-                        step="0.1"
-                        placeholder="0.0"
-                        value={softeisPreis ?? ''}
-                        onChange={(e) => setSofteiPreis(e.target.value)}
-                    />
-                    €
-                </Label>
+                    <Label>
+                        Preis für Softeis:
+                        <Input
+                            type="number"
+                            min="1.0"
+                            max="5.0"
+                            step="0.1"
+                            placeholder="0.0"
+                            value={softeisPreis ?? ''}
+                            onChange={(e) => setSofteiPreis(e.target.value)}
+                        />
+                        €
+                    </Label>
 
-                <Label>
-                    Zusatzbeschreibung für Softeis:
-                    <TextArea
-                        rows={3}
-                        value={additionalInfoSofteisPreis}
-                        onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)}
-                    />
-                </Label>
-                <ButtonGroup>
-                    <SubmitButton onClick={submit}>Einreichen</SubmitButton>
-                </ButtonGroup>
+                    <Label>
+                        Zusatzbeschreibung für Softeis:
+                        <TextArea
+                            rows={3}
+                            value={additionalInfoSofteisPreis}
+                            onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)}
+                        />
+                    </Label>
+                    <ButtonGroup>
+                        <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                    </ButtonGroup>
                 </>)}
                 <Message>{message}</Message>
+                <NewAwards awards={awards} />
             </Modal>
         </Overlay>) : null;
 };

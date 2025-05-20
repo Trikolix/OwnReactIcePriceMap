@@ -50,6 +50,10 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
     };
 
     useEffect(() => {
+      console.log(eisdiele.website);
+      console.log(isLoggedIn);
+      console.log(userId);
+      console.log(eisdiele.user_id);
         if (showOverlay || showTooltip) {
             document.addEventListener('mousedown', handleClickOutside);
         } else {
