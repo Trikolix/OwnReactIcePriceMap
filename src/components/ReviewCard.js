@@ -29,7 +29,7 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
         )}
       </Table>
 
-      {review.beschreibung && <p>{review.beschreibung}</p>}
+      {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
 
       {review.bewertung_attribute?.length > 0 && (
         <AttributeSection>

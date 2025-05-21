@@ -62,7 +62,7 @@ const CheckinCard = ({ checkin, onSuccess }) => {
               </tr>)}
             </Table>
 
-            {checkin.kommentar && <p>{checkin.kommentar}</p>}
+            {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
             {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
               <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}

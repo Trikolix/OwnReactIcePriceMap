@@ -61,7 +61,7 @@ const Header = ({ refreshShops }) => {
             ) : (
               <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
             )}
-            <MenuItemLink to="/impressum">Impressum</MenuItemLink>
+            <MenuItemLink to="/impressum">Über diese Website</MenuItemLink>
           </Menu>
         )}
       </HeaderContainer>

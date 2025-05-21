@@ -35,8 +35,6 @@ const IceCreamRadar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("useEffect", location.pathname)
-    console.log("token", token)
     if (location.pathname === "/login") {
       setShowLoginModal(true);
     }
