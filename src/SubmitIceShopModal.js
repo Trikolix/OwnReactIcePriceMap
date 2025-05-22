@@ -136,7 +136,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
 
           <Group>
             <label>Öffnungszeiten (optional):</label>
-            <Textarea value={openingHours} placeholder="Zeilenumbruch durch Semikolon ;" onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+            <Textarea value={openingHours} placeholder="z.B. Mo-Fr: 12-18 Uhr" onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
           </Group>
 
           <Group>

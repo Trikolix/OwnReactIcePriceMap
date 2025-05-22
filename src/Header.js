@@ -130,7 +130,7 @@ const Menu = styled.nav`
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1002;
   cursor: pointer;
   color: white;
 `;

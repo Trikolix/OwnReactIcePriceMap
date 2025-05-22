@@ -86,7 +86,7 @@ const OpeningHours = ({ eisdiele }) => {
                 data-show-tooltip={showTooltip}
             >
                 {eisdiele.openingHours.trim() !== "" ? (eisdiele.openingHours.split(';').map((part, index) => (
-                    <div key={index}>
+                    <div key={index} style={{ whiteSpace: 'pre-wrap' }}>
                         {part.trim()}
                     </div>
                 ))) : (<>Keine Öffnungszeiten eingetragen</>)}

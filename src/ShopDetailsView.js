@@ -356,15 +356,6 @@ const AnimatedContainer = styled(animated.div)`
   overflow: hidden;
 `;
 
-const DragHandle = styled.div`
-  width: 40px;
-  height: 5px;
-  background: #ccc;
-  border-radius: 3px;
-  margin: 10px auto;
-  cursor: pointer;
-`;
-
 const Container = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'isfullheight',
 })`

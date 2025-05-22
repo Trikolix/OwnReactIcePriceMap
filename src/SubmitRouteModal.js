@@ -9,6 +9,11 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const [beschreibung, setBeschreibung] = useState("");
     const [typ, setTyp] = useState("Rennrad");
     const [isPrivat, setisPrivat] = useState(false);
+    const [name, setName] = useState("");
+    const [laenge_km, setLaenge_km] = useState("");
+    const [hoehenmeter, setHoehenmeter] = useState("");
+    const [schwierigkeit, setSchwierigkeit] = useState("leicht");
+    const [embedCode, setEmbedCode] = useState("");
     const { userId } = useUser();
     const [message, setMessage] = useState("");
     const [submitted, setSubmitted] = useState(false);
@@ -19,11 +24,16 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     useEffect(() => {
         if (existingRoute) {
             setUrl(existingRoute.url || "");
+            setName(existingRoute.name || "");
             setBeschreibung(existingRoute.beschreibung || "");
             setTyp(existingRoute.typ || "Rennrad");
             setisPrivat(!existingRoute.ist_oeffentlich);
+            setLaenge_km(existingRoute.laenge_km || "");
+            setHoehenmeter(existingRoute.hoehenmeter || "");
+            setSchwierigkeit(existingRoute.schwierigkeit || "leicht");
+            setEmbedCode(existingRoute.embed_code || "");
         }
-    }, [existingRoute]);
+    }, [existingRoute, userId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,10 +42,18 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
             eisdiele_id: shopId,
             nutzer_id: userId,
             url,
+            name,
             beschreibung,
             typ,
             ist_oeffentlich: isPrivat ? 0 : 1,
+            laenge_km,
+            hoehenmeter,
+            schwierigkeit,
         };
+
+        if (userId === "1") {
+            routeData.embed_code = embedCode;
+        }
 
         // Bei Bearbeitung ID hinzufügen
         if (existingRoute) {
@@ -60,7 +78,12 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 setMessage(existingRoute ? "Route erfolgreich aktualisiert!" : "Route erfolgreich hinzugefügt!");
                 setUrl("");
                 setBeschreibung("");
-                setTyp("Wanderung");
+                setTyp("Rennrad");
+                setName("");
+                setLaenge_km("");
+                setHoehenmeter("");
+                setSchwierigkeit("leicht");
+                setEmbedCode("");
                 setisPrivat(false);
                 setSubmitted(true);
                 if (onSuccess) onSuccess();
@@ -128,13 +151,26 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 </Heading>
 
                 {!submitted && (<>
+                    <Group>
+                        <Label>
+                            Routenname:
+                            <InputName
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="z. B. 'Rund um Eisdiele X'"
+                                required
+                            />
+                        </Label>
+                    </Group>
+
                     <Label>
-                        Embedded Komoot Route:
+                        URL:
                         <TextArea
-                            rows={3}
+                            rows={2}
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
-                            placeholder="Bei Komoot auf 'Teilen' klicken -> 'Einbetten' -> In voller Breite einbetten / Höhe und Breite 100% x 440 -> Code zum Einbetten kopieren"
+                            placeholder="URL zur Komoot / Stava / Outdooractive Route"
                             required
                         />
                     </Label>
@@ -161,6 +197,36 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                     </Label>
 
                     <Label>
+                        Länge (km):
+                        <Input
+                            type="number"
+                            step="0.1"
+                            value={laenge_km}
+                            onChange={(e) => setLaenge_km(e.target.value)}
+                            placeholder="z. B. 42.3"
+                        />
+                    </Label>
+
+                    <Label>
+                        Höhenmeter:
+                        <Input
+                            type="number"
+                            value={hoehenmeter}
+                            onChange={(e) => setHoehenmeter(e.target.value)}
+                            placeholder="z. B. 680"
+                        />
+                    </Label>
+
+                    <Label>
+                        Schwierigkeit:
+                        <Select value={schwierigkeit} onChange={(e) => setSchwierigkeit(e.target.value)}>
+                            <option value="leicht">Leicht</option>
+                            <option value="mittel">Mittel</option>
+                            <option value="schwer">Schwer</option>
+                        </Select>
+                    </Label>
+
+                    <Label>
                         Private Tour:
                         <Checkbox
                             type="checkbox"
@@ -168,6 +234,18 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                             onChange={(e) => setisPrivat(e.target.checked)}
                         />
                     </Label>
+
+                    {userId === "1" && (
+                        <Label>
+                            Embed Code (Admin):
+                            <TextArea
+                                rows={3}
+                                value={embedCode}
+                                onChange={(e) => setEmbedCode(e.target.value)}
+                                placeholder="<iframe ...></iframe>"
+                            />
+                        </Label>
+                    )}
                     <ButtonGroup>
                         <SubmitButton type="submit" onClick={handleSubmit}>
                             {existingRoute ? "Änderungen speichern" : "Route einreichen"}
@@ -252,7 +330,6 @@ const TextArea = styled.textarea`
 
 const Select = styled.select`
   padding: 0.5rem;
-  margin-bottom: 1rem;
   margin-left: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -298,4 +375,20 @@ const Message = styled.p`
 
 const Checkbox = styled.input`
   margin-right: 0.5rem;
+`;
+const Input = styled.input`
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-left: 0.25rem;
+  margin-top: 0.25rem;
+`;
+const InputName = styled(Input)`
+  min-width: 94%;
+  `;
+const Group = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
 `;
