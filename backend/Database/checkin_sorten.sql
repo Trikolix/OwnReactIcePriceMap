@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 13. Mai 2025 um 07:40
+-- Erstellungszeit: 23. Mai 2025 um 11:16
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -43,7 +43,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (3, 2, 'Tiramisu', '3.3'),
 (4, 3, 'Amarena-Kirsch', '4.5'),
 (5, 3, 'Cookies', '4.5'),
-(6, 4, 'Salted Caramel', '4.8'),
 (7, 5, 'Schokolade', '2.6'),
 (8, 5, 'Heidelbeere', '3.8'),
 (9, 6, 'Erdnuss', '5.0'),
@@ -74,12 +73,8 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (42, 26, 'Bella Ciao', '4.8'),
 (49, 39, 'Schoko/Vanille', '4.7'),
 (56, 52, 'Heidelbeere', '4.6'),
-(57, 53, 'Marzipan', '5.0'),
-(58, 53, 'Cookies', '5.0'),
 (59, 54, 'Wildpreiselbeere', '4.6'),
 (60, 55, 'Straciatella', '2.5'),
-(62, 57, 'Straciatella', '2.8'),
-(63, 57, 'Pfirsich-Maracuja', '2.0'),
 (67, 60, 'Waldmeister', '4.0'),
 (68, 61, 'Vanille', '4.5'),
 (69, 62, 'Joghurt-Sanddorn', '4.6'),
@@ -88,8 +83,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (77, 58, 'Mohn Marzipan ', '4.6'),
 (84, 66, 'Himbeere', '4.6'),
 (85, 66, 'Nougat', '4.6'),
-(90, 67, 'Eierlikör-Nougat ', '4.9'),
-(91, 67, 'Quark-Zitrone', '4.8'),
 (96, 68, 'Schoko-Kirsch', '5.0'),
 (97, 68, 'Baileys', '4.9'),
 (100, 69, 'Cheesecake-Waldbeere', '4.5'),
@@ -97,12 +90,12 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (103, 70, 'Erdbeere-Vanille', '4.5'),
 (108, 75, 'Butterkeks', '4.7'),
 (111, 78, 'Schoko/Vanille', '4.9'),
-(115, 73, 'Straciatella', '3.9'),
+(115, 73, 'Stracciatella', '3.9'),
 (116, 73, 'Amarena', '3.4'),
 (117, 72, 'Vanille/Karamell', '3.0'),
 (118, 77, 'Amerettini ', '4.9'),
 (123, 82, 'Spaghetti Eis', '5.0'),
-(124, 83, 'Milchreiseis', '4.8'),
+(124, 83, 'Milchreis', '4.8'),
 (125, 83, 'Butterkeks', '4.8'),
 (129, 79, 'Eisbecher \"Orion\"', '4.5'),
 (130, 88, 'Karamell', '4.9'),
@@ -112,7 +105,7 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (138, 90, 'Schokolade', '4.3'),
 (152, 103, 'Schoko/Vanille', '4.5'),
 (160, 112, 'Vanille/Erdbeere', '4.0'),
-(163, 113, 'Schoko Vanille', '4.4'),
+(163, 113, 'Schoko/Vanille', '4.4'),
 (164, 114, 'Schoko/Vanille ', '4.4'),
 (165, 115, 'Cookies ', '5.0'),
 (170, 116, 'Schokolade', '3.0'),
@@ -121,8 +114,43 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (173, 74, 'Schoko/Vanille', '4.6'),
 (175, 19, 'Dunkle Schokolade', '4.5'),
 (179, 122, 'Gummibären ', '4.6'),
-(180, 123, 'Danielle/Mango', '5.0'),
-(181, 23, 'Schoko/Vanille', '4.7');
+(180, 123, 'Vanille/Mango', '5.0'),
+(181, 23, 'Schoko/Vanille', '4.7'),
+(191, 125, 'Caipirinha ', '4.4'),
+(192, 125, 'Mango ', '3.9'),
+(193, 125, 'Schokolade', '4.8'),
+(194, 126, 'Milchreis', '4.7'),
+(197, 127, 'Erdbeere', '4.4'),
+(198, 127, 'Himbeerkuss', '4.4'),
+(199, 128, 'Stracciatella', '4.3'),
+(206, 130, 'Schokolade', '4.8'),
+(207, 130, 'Mango', '2.8'),
+(210, 4, 'Salted Caramel', '4.8'),
+(226, 129, 'Schokolade', '4.7'),
+(227, 129, 'Tiramisu', '4.7'),
+(228, 129, 'Marshmallow', '4.7'),
+(231, 134, 'Zitrone ', '4.6'),
+(232, 134, 'Weiße Schoko-Crisp', '4.8'),
+(235, 131, 'Erdbeere', '2.0'),
+(236, 131, 'Schokolade', '4.3'),
+(240, 136, 'Schoko-Vanille', '5.0'),
+(241, 53, 'Marzipan', '5.0'),
+(242, 53, 'Cookies', '5.0'),
+(245, 137, 'Joghurt Rote Grütze', '4.8'),
+(246, 137, 'Schoko-Mint', '4.8'),
+(247, 138, 'Schoko', '4.5'),
+(248, 139, 'Mango', '4.9'),
+(253, 140, 'Raffaello ', '3.0'),
+(254, 140, 'Bueno', '4.5'),
+(255, 67, 'Eierlikör-Nougat ', '4.8'),
+(256, 67, 'Quark-Zitrone', '4.7'),
+(257, 135, 'Zimt', '4.7'),
+(258, 141, 'Schoko-Vanille', '4.5'),
+(261, 143, 'Schoko-Vanille ', '4.8'),
+(262, 142, 'Salted-Butter-Caramel', '4.7'),
+(263, 142, 'Malaga', '4.3'),
+(264, 57, 'Stracciatella', '2.8'),
+(265, 57, 'Pfirsich-Maracuja', '2.0');
 
 --
 -- Indizes der exportierten Tabellen
@@ -143,7 +171,7 @@ ALTER TABLE `checkin_sorten`
 -- AUTO_INCREMENT für Tabelle `checkin_sorten`
 --
 ALTER TABLE `checkin_sorten`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=266;
 
 --
 -- Constraints der exportierten Tabellen

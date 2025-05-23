@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 13. Mai 2025 um 07:39
+-- Erstellungszeit: 23. Mai 2025 um 11:14
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -42,11 +42,11 @@ INSERT INTO `attribute` (`id`, `name`) VALUES
 (8, 'Eis zum Mitnehmen '),
 (3, 'Eisbecher im Angebot'),
 (12, 'Gebrannte Mandeln '),
-(7, 'Guter Kaffee '),
+(7, 'guter Kaffee '),
 (6, 'schöner Außenbereich'),
 (13, 'Slush'),
 (9, 'Softeis'),
-(11, 'Sonstige Verpflegung'),
+(11, 'sonstige Verpflegung'),
 (2, 'tolle Lage'),
 (1, 'vegane Optionen'),
 (5, 'wechselndes Angebot');

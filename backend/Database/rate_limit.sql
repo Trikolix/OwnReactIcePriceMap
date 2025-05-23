@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 13. Mai 2025 um 07:41
+-- Erstellungszeit: 23. Mai 2025 um 11:18
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -45,7 +45,9 @@ INSERT INTO `rate_limit` (`id`, `ip_address`, `timestamp`) VALUES
 (17, '2003:ca:6f20:1364:ff2c:86f3:b934:f34f', '2025-05-06 21:38:09'),
 (18, '2a00:20:b2c6:4274:5032:cdff:feac:556b', '2025-05-12 16:51:32'),
 (19, '91.0.62.133', '2025-05-12 19:13:09'),
-(20, '91.0.62.133', '2025-05-12 19:13:11');
+(20, '91.0.62.133', '2025-05-12 19:13:11'),
+(21, '2a02:810a:900d:3600:fe:46b3:1cf6:b765', '2025-05-19 19:09:16'),
+(22, '2a00:20:b2de:5770:64f4:96a5:8d2e:cb89', '2025-05-22 06:56:36');
 
 --
 -- Indizes der exportierten Tabellen
@@ -65,7 +67,7 @@ ALTER TABLE `rate_limit`
 -- AUTO_INCREMENT für Tabelle `rate_limit`
 --
 ALTER TABLE `rate_limit`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 13. Mai 2025 um 07:39
+-- Erstellungszeit: 23. Mai 2025 um 11:15
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -50,12 +50,14 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (166, 2),
 (177, 2),
 (179, 2),
+(191, 2),
 (95, 3),
 (97, 3),
 (108, 3),
 (122, 3),
 (145, 3),
 (160, 3),
+(189, 3),
 (8, 4),
 (19, 4),
 (32, 4),
@@ -70,6 +72,9 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (145, 4),
 (146, 4),
 (163, 4),
+(184, 4),
+(189, 4),
+(194, 4),
 (145, 5),
 (4, 6),
 (22, 6),
@@ -86,6 +91,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (166, 6),
 (177, 6),
 (179, 6),
+(194, 6),
 (76, 7),
 (125, 7),
 (179, 7),
@@ -95,6 +101,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (162, 8),
 (163, 8),
 (179, 8),
+(192, 8),
 (10, 9),
 (25, 9),
 (146, 9),
@@ -102,9 +109,14 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (157, 9),
 (177, 9),
 (179, 9),
+(184, 9),
+(191, 9),
+(192, 9),
 (139, 10),
+(184, 10),
 (177, 11),
 (179, 11),
+(188, 11),
 (179, 12),
 (179, 13);
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 13. Mai 2025 um 07:39
+-- Erstellungszeit: 23. Mai 2025 um 11:15
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -112,7 +112,13 @@ INSERT INTO `bewertungen` (`id`, `eisdiele_id`, `nutzer_id`, `geschmack`, `kugel
 (174, 115, 1, '4.0', '3.5', '2.8', 2, 'Hier gibt es ausschließlich Softeis in zwei Geschmackskombinationen.\n\nSo cremig das Softeis ist, so schnell war es auch verputzt.\nBei Waffel und Größe muss ich ein paar Abzüge machen und der Geschmack war etwas künstlich, aber ich vermute damit muss man bei Erdbeer Softeis rechnen.', '2025-05-10 12:38:00'),
 (177, 125, 2, '4.4', '3.8', '4.0', 1, 'Sehr schöner Zwischenstopp. Direkt am Teich mit vielen Sitzmöglichkeiten. Außerdem gibt\'s dort auch viel sonstige Verpflegung. Softeis leider nur eine Größe und nur Schoko Vanille. War aber solide. Die Waffel ist knusprig und im Stile einer kugeleiswaffel', '2025-05-10 13:25:42'),
 (179, 162, 11, '4.5', '4.0', '4.0', 10, 'Eisdiele mit einer kleinen Wiese und Sitz sowie Spielmöglichkeiten. Manchmal seltsame Kunden. Sehr Kinderfreundlich. Topings möglich', '2025-05-10 18:52:44'),
-(181, 117, 1, '4.6', '4.8', '3.8', 16, 'Eine sehr große Kugel Eis, der Gummibären Geschmack war interessant und lecker und tatsächlich fällt mir keine bessere Beschreibung ein als \'hat authentisch nach Gummibärchen geschmeckt\' 😅 Die Waffel ist eher im Mittelfeld an zu siedeln.', '2025-05-12 15:41:50');
+(181, 117, 1, '4.6', '4.8', '3.8', 16, 'Eine sehr große Kugel Eis, der Gummibären Geschmack war interessant und lecker und tatsächlich fällt mir keine bessere Beschreibung ein als \'hat authentisch nach Gummibärchen geschmeckt\' 😅 Die Waffel ist eher im Mittelfeld an zu siedeln.', '2025-05-12 15:41:50'),
+(184, 28, 1, '4.4', '4.3', '5.0', 6, 'Ein sehr ausgefallenes Konzept. Bei n\'Eis zapfen wählt man einen Becher oder eine Waffel und kann sich dann beliebig 6 Sorten Softeis und einer großen Auswahl an Toppings ein Eis (oder auch eher einen Eisbecher) zusammen stellen.\nNeben Softeis kann man sich wohl auch Hot-Dogs zusammenstellen. Das teste ich aber erst, sobald ich eine App für Hot-Dogs entwickelt habe :D', '2025-05-13 14:31:59'),
+(188, 163, 8, '3.6', '3.6', '4.2', 7, 'Es gab keine Eistheke - man bekommt die Sorten genannt und muss sich blind entscheiden. \n\nGeschmacklich i.O. wobei das Erdbeereis etwas künstlich geschmeckt hat - Schokolade hingegen war durchaus lecker. \n\nBonus war die Riesenwaffel in der die zwei Kugeln aber etwas verloren aussahen. \n', '2025-05-14 19:53:06'),
+(189, 165, 1, NULL, NULL, NULL, 24, '\"Marschner\'s Eiscafé\", kein anderes Lokal hat wohl in der Region so eine Bekanntheit und einen Ruhm für Eisgenuss.\nUm so herber war der Schock, als die Eisdiele letztes Jahr auf einmal geschlossen hatte und die Zukunft ungewiss war.\nHeute (am 15.05) öffnete die Eisdiele mit dem alten Betreiber wieder ihre Pforten!\nEs gibt eine große Auswahl an ausgefallenen Sorten und ein Preis System von 1,80€ / 2,00€ / 2,20€ pro Kugel.\n\nSchön ist der neu angelegt Park in unmittelbarer Nähe.', '2025-05-15 11:48:10'),
+(191, 145, 1, NULL, NULL, NULL, 16, '', '2025-05-18 11:31:11'),
+(192, 9, 25, NULL, NULL, NULL, NULL, 'Gutes Softeis! Es ist erhältlich in den Sorten Schoko-Vanille oder Erdbeer-Vanille. Sitzgelegenheiten gibt es draußen & drinnen. ', '2025-05-19 17:14:02'),
+(194, 60, 2, NULL, NULL, NULL, 22, 'Schöner belebter Außenbereich und auch zum Reinsetzen. Nun zum Eis:\nSo muss Mango schmecken! Vielfältiges Angebot und sehr lecker. Die Waffel ist nicht billig, aber auch nicht zu trocken, war mir sehr angenehm. Leider nur etwas kleine Kugeln', '2025-05-20 19:32:49');
 
 --
 -- Indizes der exportierten Tabellen
