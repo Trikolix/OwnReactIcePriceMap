@@ -1,4 +1,4 @@
-import { Marker, Popup } from "react-leaflet";
+import { Marker } from "react-leaflet";
 import L from "leaflet";
 
 const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxPrice, plv, selectedOption }) => {
@@ -44,8 +44,8 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
   } else {
     backgroundColor = getColorBasedOnPrice(displayPrice, minPrice, maxPrice);
   }
-  
-  
+
+
   if (displayPrice !== '?' && (selectedOption === "Softeis: Preis" || selectedOption === "Kugel: Preis" || selectedOption === "Alle" || selectedOption === "Favoriten")) {
     displayPrice = `${Number(displayPrice).toFixed(2)} €`;
   }
@@ -64,14 +64,11 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
         click: () => {
           console.log("Marker clicked:", shop);
           fetchShopDetails(shop);
-           fetchAndCenterShop(shop.eisdielen_id);
-          },
+          fetchAndCenterShop(shop.eisdielen_id);
+        },
       }}
     >
-      <Popup>
-          <h3>{shop.eisdielen_name}</h3>
-      </Popup>
-      </Marker>
+    </Marker>
   );
 };
 

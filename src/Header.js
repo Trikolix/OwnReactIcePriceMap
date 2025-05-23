@@ -48,20 +48,20 @@ const Header = ({ refreshShops }) => {
         </BurgerMenu>
         {menuOpen && (
           <Menu ref={menuRef}>
-            <MenuItemLink to="/">Eis-Karte</MenuItemLink>
-            <MenuItemLink to="/ranking">Eisdielen Ranking</MenuItemLink>
-            <MenuItemLink to="/dashboard">Dashboard</MenuItemLink>
+            <MenuItemLink to="/">Eisdielen-Karte</MenuItemLink>
+            <MenuItemLink to="/ranking">Top Eisdielen</MenuItemLink>
+            <MenuItemLink to="/dashboard">Aktivitäten</MenuItemLink>
             {isLoggedIn ? (
               <>
-                <MenuItemLink to={`/user/${userId}`} className="logged-in">{username} Nutzerseite</MenuItemLink>
-                <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Neue Eisdiele eintragen</MenuItem>
+                <MenuItemLink to={`/user/${userId}`} className="logged-in">Profil ({username})</MenuItemLink>
+                <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
                 <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (
               <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
             )}
-            <MenuItemLink to="/impressum">Impressum</MenuItemLink>
+            <MenuItemLink to="/impressum">Über diese Website</MenuItemLink>
           </Menu>
         )}
       </HeaderContainer>
@@ -130,7 +130,7 @@ const Menu = styled.nav`
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1002;
   cursor: pointer;
   color: white;
 `;

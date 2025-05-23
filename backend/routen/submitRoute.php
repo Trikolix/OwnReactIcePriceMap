@@ -3,15 +3,84 @@ require_once  __DIR__ . '/../db_connect.php';
 require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
 
+// Validiert eine URL auf erlaubte Routenanbieter und extrahiert die Basis-URL
+function validateAndCleanUrl(string $url): ?string {
+    $allowedHosts = [
+        'komoot.com' => '#https:\/\/www\.komoot\.com\/(?:de-de\/)?tour\/\d+#',
+        'strava.com' => '#https:\/\/www\.strava\.com\/routes\/\d+#',
+        'outdooractive.com' => '#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)?[a-z]+\/\d+#'
+    ];
+
+    foreach ($allowedHosts as $host => $pattern) {
+        if (preg_match($pattern, $url, $matches)) {
+            return rtrim($matches[0], '/') . '/';
+        }
+    }
+    return null;
+}
+
+function generateKomootEmbedCode($url) {
+    $parsedUrl = parse_url($url);
+
+    if (!isset($parsedUrl['host']) || strpos($parsedUrl['host'], 'komoot.com') === false) {
+        return null;
+    }
+
+    // Pfad extrahieren, z.B. "/de-de/tour/12345678"
+    $path = $parsedUrl['path'] ?? '';
+    if (!preg_match('#/tour/(\d+)#', $path, $matches)) {
+        return null;
+    }
+    $tourId = $matches[1];
+
+    // share_token aus den Query-Parametern extrahieren
+    if (!isset($parsedUrl['query'])) {
+        return null;
+    }
+    parse_str($parsedUrl['query'], $queryParams);
+    if (!isset($queryParams['share_token'])) {
+        return null;
+    }
+    $shareToken = htmlspecialchars($queryParams['share_token'], ENT_QUOTES, 'UTF-8');
+
+    // Embed-Code erzeugen
+    return '<iframe src="https://www.komoot.com/de-de/tour/' . $tourId . '/embed?share_token=' . $shareToken . '" width="640" height="440" frameborder="0" scrolling="no"></iframe>';
+}
+
+function nullIfEmpty($value) {
+    return ($value === '' || !isset($value)) ? null : $value;
+}
+
+
 try {
     // Daten aus der Anfrage holen
     $data = json_decode(file_get_contents('php://input'), true);
+    
+    // Pflichtfelder
     $eisdiele_id = $data['eisdiele_id'] ?? null;
     $nutzer_id = $data['nutzer_id'] ?? null;
     $url = $data['url'] ?? null;
-    $beschreibung = $data['beschreibung'] ?? null;
     $typ = $data['typ'] ?? null;
+
+    // Optional: Nur Admins dürfen Embed-Code mitgeben
+    $is_admin = ($nutzer_id === "1");
+    if ($is_admin) {
+        if (!isset($data['embed_code']) || $data['embed_code'] === '') {
+            $embed_code = generateKomootEmbedCode($url);
+        } else {
+            $embed_code = $data['embed_code'];
+        }
+    } else {
+        $embed_code = generateKomootEmbedCode($url);
+    }
+
+     // Zusatzdaten
+    $beschreibung = $data['beschreibung'] ?? null;
     $ist_oeffentlich = $data['ist_oeffentlich'] ?? false;
+    $name = $data['name'] ?? '';
+    $laenge_km   = nullIfEmpty($data['laenge_km'] ?? null);
+    $hoehenmeter = nullIfEmpty($data['hoehenmeter'] ?? null);
+    $schwierigkeit = $data['schwierigkeit'] ?? null;
     
     if (!$eisdiele_id || !$nutzer_id || !$url || !$typ) {
         echo json_encode([
@@ -20,17 +89,32 @@ try {
     ]);
         exit;
     }
+
+    $cleanUrl = validateAndCleanUrl($url);
+    if (!$cleanUrl) {
+        echo json_encode(['status' => 'error', 'message' => 'Ungültige oder nicht unterstützte Routen-URL']);
+        exit;
+    }
     
     // SQL-Abfrage vorbereiten
-    $sql = "INSERT INTO routen (eisdiele_id, nutzer_id, url, beschreibung, typ, ist_oeffentlich) VALUES (:eisdiele_id, :nutzer_id, :url, :beschreibung, :typ, :ist_oeffentlich)";
+    $sql = "INSERT INTO routen 
+        (eisdiele_id, nutzer_id, url, embed_code, beschreibung, typ, ist_oeffentlich, name, laenge_km, hoehenmeter, schwierigkeit) 
+        VALUES 
+        (:eisdiele_id, :nutzer_id, :url, :embed_code, :beschreibung, :typ, :ist_oeffentlich, :name, :laenge_km, :hoehenmeter, :schwierigkeit)";
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         'eisdiele_id' => $eisdiele_id,
         'nutzer_id' => $nutzer_id,
-        'url' => $url,
+        'url' => $cleanUrl,
+        'embed_code' => $embed_code,
         'beschreibung' => $beschreibung,
         'typ' => $typ,
-        'ist_oeffentlich' => $ist_oeffentlich
+        'ist_oeffentlich' => $ist_oeffentlich,
+        'name' => $name,
+        'laenge_km' => $laenge_km,
+        'hoehenmeter' => $hoehenmeter,
+        'schwierigkeit' => $schwierigkeit
     ]);
 
     // Evaluatoren

@@ -62,7 +62,7 @@ const CheckinCard = ({ checkin, onSuccess }) => {
               </tr>)}
             </Table>
 
-            {checkin.kommentar && <p>{checkin.kommentar}</p>}
+            {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
             {parseInt(checkin.nutzer_id, 10) === parseInt(userId, 10) && (
               <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}
@@ -150,22 +150,6 @@ const Table = styled.table`
   }
 `;
 
-const ThumbnailWrapper = styled.div`
-  flex: 0 0 auto;
-  width: 100px;
-  height: 100px;
-  overflow: hidden;
-  position: relative;
-  border-radius: 8px;
-  cursor: pointer;
-`;
-
-const ThumbnailImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
-
 const AttributeSection = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -199,61 +183,4 @@ const EditButton = styled.button`
   &:hover {
     background-color: #005f8a;
   }
-`;
-
-// ---------- Lightbox ----------
-
-const LightboxOverlay = styled.div`
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const LightboxContent = styled.div`
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-  text-align: center;
-`;
-
-const LightboxImage = styled.img`
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-`;
-
-const LightboxTitle = styled.div`
-  margin-top: 16px;
-  color: white;
-  font-size: 1rem;
-`;
-
-const NavButton = styled.button`
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 2rem;
-  color: white;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 12px;
-  z-index: 1;
-
-  &:hover {
-    color: #ccc;
-  }
-`;
-
-const PrevButton = styled(NavButton)`
-  left: -40px;
-`;
-
-const NextButton = styled(NavButton)`
-  right: -40px;
 `;

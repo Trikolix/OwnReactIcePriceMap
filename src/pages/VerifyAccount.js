@@ -28,7 +28,7 @@ export default function VerifyAccount() {
       .catch(() => {
         setStatus("Fehler bei der Verifizierung.");
       });
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, apiUrl]);
 
   return (
     <div className="p-4">

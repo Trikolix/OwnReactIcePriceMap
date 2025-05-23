@@ -50,6 +50,10 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
     };
 
     useEffect(() => {
+      console.log("website", eisdiele.website);
+      console.log("isLoggedIn", isLoggedIn);
+      console.log("userId", userId);
+      console.log("eisdiele.user_id", eisdiele.user_id);
         if (showOverlay || showTooltip) {
             document.addEventListener('mousedown', handleClickOutside);
         } else {
@@ -73,7 +77,7 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
                 onClick={isLoggedIn ? setShowOverlay : undefined}
                 isLoggedIn={isLoggedIn}
                 >
-              {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (userId == 1 || userId == eisdiele.user_id) && (<>
+              {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (userId === 1 || userId === eisdiele.user_id) && (<>
                 <strong>Website:</strong> <a onClick={() => setShowOverlay(true)}>Website eintragen</a>
               </>
               )}

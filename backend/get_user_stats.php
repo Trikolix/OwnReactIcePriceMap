@@ -3,6 +3,7 @@ require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
+$curUserId = intval($_GET['cur_user_id']);
 
 // Nutzername ermitteln
 $sql1 = "SELECT username, erstellt_am AS erstellungsdatum
@@ -73,6 +74,16 @@ $stmtReviews = $pdo->prepare("SELECT b.*,
 $stmtReviews->execute(['nutzerId' => $nutzerId]);
 $reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);
 
+// User Routen
+$stmtRouten = $pdo->prepare("SELECT r.*, n.username
+        FROM routen r
+        JOIN nutzer n ON r.nutzer_id = n.id
+        WHERE r.nutzer_id = :nutzer_id AND (r.ist_oeffentlich = TRUE OR r.nutzer_id = :cur_user_id)
+        ORDER BY r.erstellt_am DESC");
+$stmtRouten->execute(['nutzer_id' => $nutzerId, 'cur_user_id' => $curUserId]);
+
+$routen = $stmtRouten->fetchAll(PDO::FETCH_ASSOC);
+
 // Bewertungen durchgehen und Attribute anhängen
 foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
     $stmtAttr = $pdo->prepare("
@@ -112,6 +123,8 @@ try {
     }
     $stats["checkins"] = $checkins; // Checkins hinzufügen
     $stats["reviews"] = $reviews; // Reviews hinzufügen
+    $stats["routen"] = $routen; // Routen hinzufügen
+
     echo json_encode($stats);
 
 } catch (PDOException $e) {

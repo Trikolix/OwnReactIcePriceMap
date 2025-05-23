@@ -6,211 +6,238 @@ import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
 import ReviewCard from "../components/ReviewCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import RouteCard from '../components/RouteCard';
 
 function UserSite() {
-    const { userId: userIdFromUrl } = useParams();
-    const { userId: userIdFromContext } = useUser();
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const finalUserId = userIdFromUrl || userIdFromContext;
-    const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const { userId: userIdFromUrl } = useParams();
+  const { userId: userIdFromContext } = useUser();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const finalUserId = userIdFromUrl || userIdFromContext;
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
-    // Add state to manage pagination for check-ins and reviews
-    const [checkinPage, setCheckinPage] = useState(1);
-    const [reviewPage, setReviewPage] = useState(1);
-    const [awardPage, setAwardPage] = useState(1);
+  // Add state to manage pagination for check-ins and reviews
+  const [checkinPage, setCheckinPage] = useState(1);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [awardPage, setAwardPage] = useState(1);
+  const [routePage, setRoutePage] = useState(1);
 
-    const loadMoreCheckins = () => {
-        setCheckinPage((prevPage) => prevPage + 1);
-    };
 
-    const loadMoreReviews = () => {
-        setReviewPage((prevPage) => prevPage + 1);
-    };
+  const loadMoreCheckins = () => {
+    setCheckinPage((prevPage) => prevPage + 1);
+  };
 
-    const loadMoreAwards = () => {
-        setAwardPage((prevPage) => prevPage + 1);
-    };
+  const loadMoreReviews = () => {
+    setReviewPage((prevPage) => prevPage + 1);
+  };
 
-    // Add tabs for displaying check-ins and reviews
-    const [activeTab, setActiveTab] = useState('checkins');
+  const loadMoreAwards = () => {
+    setAwardPage((prevPage) => prevPage + 1);
+  };
 
-    const fetchUserData = async (finalUserId) => {
-        try {
-            const response = await fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${finalUserId}`);
-            if (!response.ok) {
-                throw new Error("Fehler beim Abruf der Daten");
-            }
-            const json = await response.json();
-            setData(json);
-            setLoading(false);
-        } catch (err) {
-            console.error("Fehler beim Laden der Dashboard-Daten:", err);
-            setError(err);
-        } finally {
-            setLoading(false);
-        }
+  const loadMoreRoutes = () => {
+    setRoutePage((prevPage) => prevPage + 1);
+  };
+
+
+  // Add tabs for displaying check-ins and reviews
+  const [activeTab, setActiveTab] = useState('checkins');
+
+  const fetchUserData = async (finalUserId) => {
+    try {
+      const response = await fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${finalUserId}&cur_user_id=${userIdFromContext}`);
+      if (!response.ok) {
+        throw new Error("Fehler beim Abruf der Daten");
+      }
+      const json = await response.json();
+      setData(json);
+      setLoading(false);
+    } catch (err) {
+      console.error("Fehler beim Laden der Dashboard-Daten:", err);
+      setError(err);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    useEffect(() => {
-        if (!finalUserId) return;
+  useEffect(() => {
+    if (!finalUserId) return;
 
-        fetchUserData(finalUserId);
-    }, [finalUserId]);
+    fetchUserData(finalUserId);
+  }, [finalUserId]);
 
-    const refreshUser = () => {
-      fetchUserData(finalUserId);
-    };
+  const refreshUser = () => {
+    fetchUserData(finalUserId);
+  };
 
-    if (loading) return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-            <Header />
-            <div style={{ width: '100vw', backgroundColor: 'white', height: '100vh' }}>
-                <DashboardWrapper>
-                    <HeaderDiv>
-                        <h1>Nutzerseite</h1>
-                        <p>Lade Dashboard Daten...</p>
-                    </HeaderDiv>
-                </DashboardWrapper>
-            </div >
-        </div >
-    );
-    if (error !== null) return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-            <Header />
-            <div style={{ width: '100vw', backgroundColor: 'white' }}>
-                <DashboardWrapper>
-                    <HeaderDiv>
-                        <h1>Nutzerseite</h1>
-                        <p>Fehler beim Abruf der Daten</p>
-                    </HeaderDiv>
-                </DashboardWrapper>
-            </div >
-        </div >
-    );
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+      <Header />
+      <div style={{ width: '100vw', backgroundColor: 'white', height: '100vh' }}>
+        <DashboardWrapper>
+          <HeaderDiv>
+            <h1>Nutzerseite</h1>
+            <p>Lade Dashboard Daten...</p>
+          </HeaderDiv>
+        </DashboardWrapper>
+      </div >
+    </div >
+  );
+  if (error !== null) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+      <Header />
+      <div style={{ width: '100vw', backgroundColor: 'white' }}>
+        <DashboardWrapper>
+          <HeaderDiv>
+            <h1>Nutzerseite</h1>
+            <p>Fehler beim Abruf der Daten</p>
+          </HeaderDiv>
+        </DashboardWrapper>
+      </div >
+    </div >
+  );
 
-    // Filter check-ins and reviews based on the current page
-    const displayedCheckins = data.checkins.slice(0, checkinPage * 5);
-    const displayedReviews = data.reviews.slice(0, reviewPage * 5);
-    const displayedAwards = data.user_awards.slice(0, awardPage * 6);
+  // Filter check-ins and reviews based on the current page
+  const displayedCheckins = data.checkins.slice(0, checkinPage * 5);
+  const displayedReviews = data.reviews.slice(0, reviewPage * 5);
+  const displayedAwards = data.user_awards.slice(0, awardPage * 6);
+  const displayedRoutes = data.routen.slice(0, routePage * 5);
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-            <Header />
-            <div style={{ width: '100vw', backgroundColor: 'white' }}>
-                <DashboardWrapper>
-                    <HeaderDiv>
-                        <h1>Nutzerseite von {data.nutzername}</h1>
-                        <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
-                    </HeaderDiv>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+      <Header />
+      <div style={{ width: '100vw', backgroundColor: 'white' }}>
+        <DashboardWrapper>
+          <HeaderDiv>
+            <h1>Nutzerseite von {data.nutzername}</h1>
+            <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+          </HeaderDiv>
 
-                    <IceCreamStatsWrapper>
-                        <IceCreamSection>
-                            <h3>Eisarten gegessen</h3>
-                            <List>
-                                <li>Kugeleis: {data.eisarten.Kugel ? data.eisarten.Kugel : '0'}</li>
-                                <li>Softeis: {data.eisarten.Softeis ? data.eisarten.Softeis : '0'}</li>
-                                <li>Eisbecher: {data.eisarten.Eisbecher ? data.eisarten.Eisbecher : '0'}</li>
-                            </List>
-                        </IceCreamSection>
-                        <IceCreamSection>
-                            <h3>Top 5 Geschmacksrichtungen</h3>
-                            <List>
-                                {data.top_5_geschmacksrichtung.map((sorte, i) => (
-                                    <li key={i}>{sorte.sortenname} ({sorte.anzahl}x)</li>
-                                ))}
-                            </List>
-                        </IceCreamSection>
-                    </IceCreamStatsWrapper>
+          <IceCreamStatsWrapper>
+            <IceCreamSection>
+              <h3>Eisarten gegessen</h3>
+              <List>
+                <li>Kugeleis: {data.eisarten.Kugel ? data.eisarten.Kugel : '0'}</li>
+                <li>Softeis: {data.eisarten.Softeis ? data.eisarten.Softeis : '0'}</li>
+                <li>Eisbecher: {data.eisarten.Eisbecher ? data.eisarten.Eisbecher : '0'}</li>
+              </List>
+            </IceCreamSection>
+            <IceCreamSection>
+              <h3>Top 5 Geschmacksrichtungen</h3>
+              <List>
+                {data.top_5_geschmacksrichtung.map((sorte, i) => (
+                  <li key={i}>{sorte.sortenname} ({sorte.anzahl}x)</li>
+                ))}
+              </List>
+            </IceCreamSection>
+          </IceCreamStatsWrapper>
 
-                    <StatsSection>
-                        <StatBox>
-                            <h2>{data.eisdielen_besucht}</h2>
-                            <p>verschiedene Eisdielen besucht</p>
-                        </StatBox>
-                        <StatBox>
-                            <h2>{data.anzahl_checkins}</h2>
-                            <p>Check-ins</p>
-                        </StatBox>
-                        <StatBox>
-                            <h2>{(data.eisarten.Kugel + data.eisarten.Softeis) ? (data.eisarten.Kugel + data.eisarten.Softeis) : '0'}</h2>
-                            <p>Portionen Eis gegessen</p>
-                        </StatBox>
-                    </StatsSection>
+          <StatsSection>
+            <StatBox>
+              <h2>{data.eisdielen_besucht}</h2>
+              <p>verschiedene Eisdielen besucht</p>
+            </StatBox>
+            <StatBox>
+              <h2>{data.anzahl_checkins}</h2>
+              <p>Check-ins</p>
+            </StatBox>
+            <StatBox>
+              <h2>{(data.eisarten.Kugel + data.eisarten.Softeis) ? (data.eisarten.Kugel + data.eisarten.Softeis) : '0'}</h2>
+              <p>Portionen Eis gegessen</p>
+            </StatBox>
+          </StatsSection>
 
-                    <h3>Awards</h3>
-                    <AwardsGrid>
-                        {displayedAwards.map((award, index) => (
-                            <AwardCard key={index}>
-                                <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
-                                <AwardTitle>{award.title_de}</AwardTitle>
-                                <AwardDescription>{award.description_de}</AwardDescription>
-                                <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
-                            </AwardCard>
-                        ))}
-{displayedAwards.length < data.user_awards.length && (
-                                    <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
-                                )}
-                    </AwardsGrid>
+          <h3>Awards</h3>
+          <AwardsGrid>
+            {displayedAwards.map((award, index) => (
+              <AwardCard key={index}>
+                <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
+                <AwardTitle>{award.title_de}</AwardTitle>
+                <AwardDescription>{award.description_de}</AwardDescription>
+                <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
+              </AwardCard>
+            ))}
+            {displayedAwards.length < data.user_awards.length && (
+              <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+            )}
+          </AwardsGrid>
 
-                    <Section>
-                        <h3>Verschiedene Eisdielen pro Landkreise</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={data.eisdielen_pro_landkreis} layout="vertical" margin={{ left: 50 }}>
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="landkreis" type="category" width={150} />
-                                <Tooltip />
-                                <Bar dataKey="anzahl" fill="#4bc0c0" radius={[0, 5, 5, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Section>
+          <Section>
+            <h3>Verschiedene Eisdielen pro Landkreise</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data.eisdielen_pro_landkreis} layout="vertical" margin={{ left: 50 }}>
+                <XAxis type="number" hide />
+                <YAxis dataKey="landkreis" type="category" width={150} />
+                <Tooltip />
+                <Bar dataKey="anzahl" fill="#4bc0c0" radius={[0, 5, 5, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Section>
 
-                    <Section>
-                    <h3>Neuste Beiträge von {data.nutzername}</h3>
-                    <TabContainer>                      
-                        <TabButton
-                            active={activeTab === 'checkins'}
-                            onClick={() => setActiveTab('checkins')}
-                        >
-                            Check-ins
-                        </TabButton>
-                        <TabButton
-                            active={activeTab === 'reviews'}
-                            onClick={() => setActiveTab('reviews')}
-                        >
-                            Reviews
-                        </TabButton>
-                    </TabContainer>
-                    </Section>
+          <Section>
+            <h3>Neuste Beiträge von {data.nutzername}</h3>
+            <TabContainer>
+              <TabButton
+                active={activeTab === 'checkins'}
+                onClick={() => setActiveTab('checkins')}
+              >
+                Check-ins
+              </TabButton>
+              <TabButton
+                active={activeTab === 'reviews'}
+                onClick={() => setActiveTab('reviews')}
+              >
+                Reviews
+              </TabButton>
+              {displayedRoutes.length > 0 && (
+                <TabButton
+                  active={activeTab === 'routen'}
+                  onClick={() => setActiveTab('routen')}
+                >
+                  Routen
+                </TabButton>
+              )}
+            </TabContainer>
+          </Section>
 
-                    <TabContent>
-                        {activeTab === 'checkins' && (
-                            <div>
-                                {displayedCheckins.map((checkin, index) => (
-                                    <CheckinCard key={index} checkin={checkin} onSuccess={refreshUser} />
-                                ))}
-                                {displayedCheckins.length < data.checkins.length && (
-                                    <LoadMoreButton onClick={loadMoreCheckins}>Mehr Checkins laden</LoadMoreButton>
-                                )}
-                            </div>
-                        )}
+          <TabContent>
+            {activeTab === 'checkins' && (
+              <div>
+                {displayedCheckins.map((checkin, index) => (
+                  <CheckinCard key={index} checkin={checkin} onSuccess={refreshUser} />
+                ))}
+                {displayedCheckins.length < data.checkins.length && (
+                  <LoadMoreButton onClick={loadMoreCheckins}>Mehr Checkins laden</LoadMoreButton>
+                )}
+              </div>
+            )}
 
-                        {activeTab === 'reviews' && (
-                            <div>
-                                {displayedReviews.map((review, index) => (
-                                    <ReviewCard key={index} review={review} />
-                                ))}
-                                {displayedReviews.length < data.reviews.length && (
-                                    <LoadMoreButton onClick={loadMoreReviews}>Mehr Reviews laden</LoadMoreButton>
-                                )}
-                            </div>
-                        )}
-                    </TabContent>
-                </DashboardWrapper>
-            </div>
-        </div >
-    );
+            {activeTab === 'reviews' && (
+              <div>
+                {displayedReviews.map((review, index) => (
+                  <ReviewCard key={index} review={review} />
+                ))}
+                {displayedReviews.length < data.reviews.length && (
+                  <LoadMoreButton onClick={loadMoreReviews}>Mehr Reviews laden</LoadMoreButton>
+                )}
+              </div>
+            )}
+            {activeTab === 'routen' && (
+              <div>
+                {displayedRoutes.map((route, index) => (
+                  <RouteCard key={index} route={route} shopId={route.eisdiele_id} shopName={route.eisdiele_name} onSuccess={refreshUser}  />
+                ))}
+                {displayedReviews.length < data.reviews.length && (
+                  <LoadMoreButton onClick={loadMoreRoutes}>Mehr Routen laden</LoadMoreButton>
+                )}
+              </div>
+            )}
+          </TabContent>
+        </DashboardWrapper>
+      </div>
+    </div >
+  );
 }
 
 export default UserSite;

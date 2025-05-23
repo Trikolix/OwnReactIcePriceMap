@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
-import { Rat } from "lucide-react";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess }) => {
     const [type, setType] = useState("Kugel");
@@ -185,7 +184,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     };
 
     const removeBild = (index) => {
-        const bild = bilder[index];
         const updated = [...bilder];
         updated.splice(index, 1);
         setBilder(updated);
@@ -229,7 +227,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             style={{ width: "100px" }}
                                         />
                                         <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
-                                        </>
+                                    </>
                                     )}
                                     <RemoveButton type="button" onClick={() => removeSorte(index)}>✕</RemoveButton>
                                 </Row>
@@ -392,7 +390,7 @@ const Modal = styled.div`
   overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   position: relative;
-  box-sizing: border-box;
+   box-sizing: border-box;
   scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
   
   @media (max-height: 600px) {

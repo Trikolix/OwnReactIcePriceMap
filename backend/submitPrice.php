@@ -1,5 +1,7 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/evaluators/PriceSubmitCountEvaluator.php';
+
 
 // Funktion zum Senden / Aktualisieren der Preise
 function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis) {
@@ -32,7 +34,7 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
             $response[] = ['typ' => 'kugel', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
         }
 
-        if ($softeisPreis !== null) {
+        if ($softeisPreis !== null && $softeisPreis !== '') {
             $sql = $additionalInfoSofteisPreis != null ? 
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`)
                 VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW())
@@ -57,6 +59,22 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
             $stmt->execute();
             $response[] = ['typ' => 'softeis', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
         }
+
+        // Evaluatoren
+    $evaluators = [
+        new PriceSubmitCountEvaluator()
+    ];
+
+    $newAwards = [];
+    foreach ($evaluators as $evaluator) {
+        try {
+            $evaluated = $evaluator->evaluate($userId);
+            $newAwards = array_merge($newAwards, $evaluated);
+        } catch (Exception $e) {
+            error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
+        }
+    }
+    $response[] = ['new_awards' => $newAwards];
     } catch (PDOException $e) {
         $response[] = ['status' => 'error', 'message' => $e->getMessage()];
     }

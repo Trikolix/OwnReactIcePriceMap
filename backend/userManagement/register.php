@@ -1,8 +1,5 @@
 <?php
-header('Content-Type: application/json');
-
-// 1. DB-Verbindung
-require 'db_connect.php'; // enthält $pdo = new PDO(...);
+require_once  __DIR__ . '/../db_connect.php';
 
 // 1. Rate-Limiting prüfen
 $ipAddress = $_SERVER['REMOTE_ADDR'];

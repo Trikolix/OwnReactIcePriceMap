@@ -1,5 +1,5 @@
 <?php
-require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/../db_connect.php';
 
 // Funktion zum Überprüfen des Logins
 function checkLogin($pdo, $inputUsername, $inputPassword) {
