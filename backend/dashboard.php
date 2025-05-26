@@ -25,7 +25,7 @@ FROM   (SELECT e.id AS eisdiele_id,
        JOIN bundeslaender b
          ON l.bundesland_id = b.id
 WHERE  ep.kugel_preis IS NOT NULL
-GROUP  BY ep.landkreis_id
+GROUP  BY ep.landkreis_id, l.name, b.name
 ORDER  BY durchschnittlicher_kugelpreis ASC; 
 ");
 $stmtPricePerLandkreis->execute();

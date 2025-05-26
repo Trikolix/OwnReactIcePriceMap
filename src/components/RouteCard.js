@@ -60,7 +60,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
             <TitleWrapper>
               <RouteType>{routeDisplayMap[route.typ]}: <strong>{route.name}</strong></RouteType>
               <AuthorDate>
-                von <UserLink to={`/user/${route.nutzer_id}`}>{route.username}</UserLink>{" "}
+                von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name}</UserLink>{" "}
                 <TypText> (Erstellt am: {new Date(route.erstellt_am).toLocaleDateString()})</TypText>
               </AuthorDate>
             </TitleWrapper>

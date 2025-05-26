@@ -3,6 +3,7 @@ import React from 'react';
 import { UserProvider } from './context/UserContext';
 import IceCreamRadar from './IceCreamRadar';
 import DashBoard from './pages/DashBoard';
+import Statistics from './pages/Statistics';
 import Ranking from './pages/Ranking';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
@@ -24,6 +25,7 @@ const App = () => {
           <Route path="/login" element={<IceCreamRadar />} />
           <Route path="/resetToken/:token" element={<IceCreamRadar />} />
           <Route path="/dashboard" element={<DashBoard />} />
+          <Route path="/statistics" element={<Statistics />} />
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/favoriten" element={<FavoritenListe />} />
           <Route path="/impressum" element={<Impressum />} />

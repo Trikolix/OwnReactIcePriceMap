@@ -73,6 +73,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const submit = async (e) => {
         e.preventDefault();
+
+        if (submitted) return; // verhindert mehrfaches Absenden
+        setSubmitted(true);    // sofort blockieren
+
         try {
             const formData = new FormData();
             formData.append("userId", userId);
@@ -115,7 +119,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 } else {
                     setMessage("Checkin erfolgreich gespeichert!");
                 }
-                setSubmitted(true);
                 if (onSuccess) onSuccess();
                 if (data.new_awards && data.new_awards.length > 0) {
                     setAwards(data.new_awards);
@@ -129,6 +132,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             }
         } catch (error) {
             setMessage(`Ein Fehler ist aufgetreten: ${error}`);
+            setSubmitted(false); // erneutes Absenden erlauben
         }
     };
 
@@ -348,7 +352,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             </BilderContainer>
                         </Section>
                         <ButtonGroup>
-                            <Button type="submit">{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
+                            <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
                             <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>
                             {checkinId && (<><br />
                                 <DeleteButton type="button" onClick={handleDeleteClick} >
