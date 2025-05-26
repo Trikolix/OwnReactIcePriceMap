@@ -17,7 +17,6 @@ const CheckinCard = ({ checkin, onSuccess }) => {
 
   return (
     <>
-      {console.log('checkincard', checkin)}
       <Card>
         <ContentWrapper>
           <LeftContent>
