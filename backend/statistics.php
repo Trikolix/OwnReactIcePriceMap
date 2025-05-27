@@ -107,6 +107,19 @@ LIMIT 20;
 $stmtMostActiveUsers->execute();
 $mostActiveUsers = $stmtMostActiveUsers->fetchAll(PDO::FETCH_ASSOC);
 
+$stmtMostEatenFlavours = $pdo->prepare("
+SELECT 
+checkin_sorten.`sortenname`,
+checkins.typ,
+AVG(checkin_sorten.bewertung) AS bewertung,
+COUNT(checkin_sorten.id) as anzahl
+FROM checkin_sorten
+JOIN checkins ON checkins.id = checkin_sorten.checkin_id
+GROUP BY checkin_sorten.`sortenname`, checkins.typ
+ORDER BY anzahl DESC, bewertung DESC;
+");
+$stmtMostEatenFlavours->execute();
+$mostEatenFlavours = $stmtMostEatenFlavours->fetchAll(PDO::FETCH_ASSOC);
 
 // Latest Reviews
 $stmtReviews = $pdo->prepare("SELECT b.*,
@@ -144,6 +157,7 @@ echo json_encode([
     "pricePerLandkreis" => $pricePerLandkreis,
     "pricePerBundesland" => $pricePerBundesland,
     "mostActiveUsers" => $mostActiveUsers,
+    "mostEatenFlavours" => $mostEatenFlavours,
     "reviews" => $reviews,
     "checkins" => $checkins
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
