@@ -80,13 +80,13 @@ function DashBoard() {
 
             switch (typ) {
               case 'checkin':
-                return <CheckinCard key={`checkin-${id}`} checkin={data} />;
+                return <CheckinCard key={`checkin-${id}`} checkin={data} onSuccess={fetchDashboard}/>;
               case 'bewertung':
                 return <ReviewCard key={`bewertung-${id}`} review={data} />;
               case 'route':
-                return <RouteCard key={`route-${id}`} route={data} />;
+                return <RouteCard key={`route-${id}`} route={data} onSuccess={fetchDashboard}/>;
               case 'eisdiele':
-                return <ShopCard key={`eisdiele-${id}`} iceShop={data} />;
+                return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={fetchDashboard}/>;
               default:
                 return null;
             }

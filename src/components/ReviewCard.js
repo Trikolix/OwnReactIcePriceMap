@@ -1,6 +1,5 @@
 import React from "react";
 import styled from "styled-components";
-import Rating from "./Rating";
 import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
 
@@ -39,7 +38,7 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
         </AttributeSection>
       )}
 
-      {parseInt(review.nutzer_id, 10) === parseInt(userId, 10) && setShowReviewForm && (
+      {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
         <EditButton onClick={() => setShowReviewForm(true)}>Bearbeiten</EditButton>
       )}
     </Card>

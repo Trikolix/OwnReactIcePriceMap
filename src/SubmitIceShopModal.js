@@ -3,13 +3,21 @@ import styled from "styled-components";
 import LocationPicker from "./components/LocationPicker";
 import NewAwards from "./components/NewAwards";
 
-const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userLatitude = null, userLongitude = null }) => {
-  const [name, setName] = useState("");
-  const [adresse, setAdresse] = useState("");
-  const [website, setWebsite] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [openingHours, setOpeningHours] = useState("");
+const SubmitIceShopModal = ({
+  showForm,
+  setShowForm,
+  userId,
+  refreshShops,
+  userLatitude = null,
+  userLongitude = null,
+  existingIceShop = null
+}) => {
+  const [name, setName] = useState(existingIceShop?.name || "");
+  const [adresse, setAdresse] = useState(existingIceShop?.adresse || "");
+  const [website, setWebsite] = useState(existingIceShop?.website || "");
+  const [latitude, setLatitude] = useState(existingIceShop?.latitude || "");
+  const [longitude, setLongitude] = useState(existingIceShop?.longitude || "");
+  const [openingHours, setOpeningHours] = useState(existingIceShop?.openingHours || "");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [awards, setAwards] = useState([]);
@@ -17,31 +25,44 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
 
   const submit = async () => {
     try {
-      console.log("refreshShops:", refreshShops, typeof refreshShops);
-      const response = await fetch(`${apiUrl}/submitIceShop.php`, {
+      const endpoint = existingIceShop
+        ? `${apiUrl}/updateIceShop.php`
+        : `${apiUrl}/submitIceShop.php`;
+
+      const body = {
+        name,
+        adresse,
+        website,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        openingHours,
+        userId
+      };
+
+      if (existingIceShop) {
+        body.shopId = existingIceShop.id;
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          adresse,
-          website,
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
-          openingHours,
-          userId
-        })
+        body: JSON.stringify(body)
       });
+
       const data = await response.json();
+
       if (data.status === "success") {
-        setMessage("Eisdiele erfolgreich hinzugefügt!");
+        setMessage(existingIceShop ? "Eisdiele erfolgreich aktualisiert!" : "Eisdiele erfolgreich hinzugefügt!");
         setSubmitted(true);
         refreshShops();
+
         setName("");
         setAdresse("");
         setWebsite("");
         setLatitude("");
         setLongitude("");
         setOpeningHours("{}");
+
         if (data.new_awards && data.new_awards.length > 0) {
           setAwards(data.new_awards);
         } else {
@@ -88,7 +109,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
     <Overlay>
       <Modal>
         <CloseX onClick={() => setShowForm(false)}>×</CloseX>
-        <Title>Neue Eisdiele eintragen</Title>
+        <Title>{existingIceShop ? "Eisdiele bearbeiten" : "Neue Eisdiele eintragen"}</Title>
         {!submitted && (<form onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -109,7 +130,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
             setLatitude={setLatitude}
             setLongitude={setLongitude}
           />
-          <ButtonGroup><SmallerButton onClick={handleGeocode}>Position aus Adresse bestimmen</SmallerButton></ButtonGroup>
+          <ButtonGroup><SmallerButton type="button" onClick={handleGeocode}>Position aus Adresse bestimmen</SmallerButton></ButtonGroup>
 
           <GroupInline>
             <Group>
@@ -145,7 +166,7 @@ const SubmitIceShopModal = ({ showForm, setShowForm, userId, refreshShops, userL
           </Group>
 
           <ButtonGroup>
-            <SubmitButton type="submit">Einreichen</SubmitButton>
+            <SubmitButton type="submit">{existingIceShop ? "Aktualisieren" : "Einreichen"}</SubmitButton>
           </ButtonGroup>
         </form>)}
 
