@@ -100,7 +100,7 @@ const OpeningHours = ({ eisdiele }) => {
                 <Overlay ref={overlayRef}>
                     <OverlayContent>
                         <CloseX onClick={() => setShowOverlay(false)}>x</CloseX>
-                        <p>Möchtest du Änderungen an den Öffnungszeiten von <strong>{eisdiele.name}</strong> melden?<br />(Neue Zeilen durch Semikolon getrennt)</p>
+                        <p>Möchtest du Änderungen an den Öffnungszeiten von <strong>{eisdiele.name}</strong> melden?<br /></p>
                         <Input rows="3" value={newOpeningHours} onChange={(e) => setNewOpeningHours(e.target.value)} />
                         <SubmitButton onClick={handleReportClick}>Änderungen melden</SubmitButton>
                     </OverlayContent>

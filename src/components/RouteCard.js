@@ -71,7 +71,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
 
             {route.beschreibung && <Description>{route.beschreibung}</Description>}
 
-            {parseInt(route.nutzer_id, 10) === parseInt(userId, 10) && (
+            {Number(route.nutzer_id) === Number(userId) && (
               <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
             )}
           </LeftContent>
@@ -156,19 +156,9 @@ const RouteLink = styled.a`
   }
 `;
 
-const RouteName = styled.span`
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: #333;
-`;
-
 const AuthorDate = styled.div`
   font-size: 0.85rem;
   color: #777;
-  margin-bottom: 0.7rem;
-`;
-
-const RouteInfo = styled.div`
   margin-bottom: 0.7rem;
 `;
 

@@ -1,36 +1,34 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
-require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['openingHours']) || !isset($data['userId'])) {
+if (!isset($data['shopId']) || !isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['userId'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
     exit;
 }
 
-$checkStmt = $pdo->prepare("
-    SELECT id FROM eisdielen
-    WHERE name = :name
-    AND (
-        6371 * acos(
-            cos(radians(:lat)) * cos(radians(latitude)) *
-            cos(radians(longitude) - radians(:lon)) +
-            sin(radians(:lat)) * sin(radians(latitude))
-        )
-    ) < 0.2
-");
-$checkStmt->execute([
-    ':name' => $data['name'],
-    ':lat' => floatval($data['latitude']),
-    ':lon' => floatval($data['longitude'])
-]);
+$eisdieleId = intval($data['shopId']);
+$userId = intval($data['userId']);
 
-if ($checkStmt->fetch()) {
-    echo json_encode([
-        "status" => "error",
-        "message" => "Eine Eisdiele mit diesem Namen ist bereits in der Nähe vorhanden."
-    ]);
+// Hole ursprünglichen Eintrag
+$stmt = $pdo->prepare("SELECT user_id, erstellt_am FROM eisdielen WHERE id = ?");
+$stmt->execute([$eisdieleId]);
+$eisdiele = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$eisdiele) {
+    echo json_encode(["status" => "error", "message" => "Eisdiele nicht gefunden"]);
+    exit;
+}
+
+// Berechtigungsprüfung
+$isAdmin = $userId === 1;
+$isOwner = $userId === intval($eisdiele['user_id']);
+$createdAt = strtotime($eisdiele['erstellt_am']);
+$isRecent = (time() - $createdAt) <= 6 * 3600; // 6 Stunden
+
+if (!$isAdmin && !($isOwner && $isRecent)) {
+    echo json_encode(["status" => "error", "message" => "Keine Berechtigung zum Bearbeiten"]);
     exit;
 }
 
@@ -48,7 +46,6 @@ function getLocationDetailsFromCoords($lat, $lon) {
     if (!isset($data['address']['state'])) {
         return null;
     }
-    // 'county' -> fallback 'city' -> fallback 'town' -> fallback 'village'
     $landkreis = $data['address']['county'] ?? $data['address']['city'] ?? $data['address']['town'] ?? $data['address']['village'] ?? null;
     return [
         'land' => $data['address']['country'],
@@ -57,7 +54,6 @@ function getLocationDetailsFromCoords($lat, $lon) {
         'bundesland_iso' => $data['address']['ISO3166-2-lvl4'] ?? null,
         'landkreis' => $landkreis,
     ];
-    return null;
 }
 
 function getOrCreateLandId($pdo, $land, $country_code = null) {
@@ -93,16 +89,21 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId) {
     return $pdo->lastInsertId();
 }
 
-$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :userId, :landkreisId, :bundeslandId, :landId)";
-$stmt = $pdo->prepare($sql);
-
 $lat = $data['latitude'];
 $lon = $data['longitude'];
 $location = getLocationDetailsFromCoords($lat, $lon);
+
 if ($location) {
     $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
     $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'], $landId);
     $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
+
+    $sql = "UPDATE eisdielen 
+            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
+                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId
+            WHERE id = :id";
+    $stmt = $pdo->prepare($sql);
+
     try {
         $stmt->execute([
             ':name' => $data['name'],
@@ -111,29 +112,16 @@ if ($location) {
             ':longitude' => floatval($data['longitude']),
             ':website' => $data['website'],
             ':openingHours' => $data['openingHours'],
-            ':userId' => intval($data['userId']),
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId,
-            ':landId' => $landId
+            ':landId' => $landId,
+            ':id' => intval($data['shopId'])
         ]);
-        // Evaluate Awards
-        $evaluators = [
-            new IceShopSubmitCountEvaluator()
-        ];
-        
-        $newAwards = [];
-        foreach ($evaluators as $evaluator) {
-            $newAwards = array_merge($newAwards, $evaluator->evaluate($data['userId']));
-        }
-        echo json_encode([
-            "status" => "success",
-            'new_awards' => $newAwards
-        ]);
+        echo json_encode(["status" => "success"]);
     } catch (PDOException $e) {
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }
 } else {
     echo json_encode(["status" => "error", "message" => "Konnte Land/Bundesland/Landkreis nicht bestimmen."]);
 }
-
 ?>
