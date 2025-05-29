@@ -4,7 +4,7 @@ require_once  __DIR__ . '/../db_connect.php';
 // Funktion zur URL-Validierung und Kürzung
 function validateAndCleanUrl(string $url): ?string {
     $allowedHosts = [
-        'komoot.com' => '#https:\/\/www\.komoot\.com\/(?:de-de\/)?tour\/\d+#',
+        'komoot.com' => '#https:\/\/www\.komoot\.(com|de)\/(?:de-de\/)?tour\/\d+#',
         'strava.com' => '#https:\/\/www\.strava\.com\/routes\/\d+#',
         'outdooractive.com' => '#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)?[a-z]+\/\d+#'
     ];
@@ -20,7 +20,10 @@ function validateAndCleanUrl(string $url): ?string {
 function generateKomootEmbedCode($url) {
     $parsedUrl = parse_url($url);
 
-    if (!isset($parsedUrl['host']) || strpos($parsedUrl['host'], 'komoot.com') === false) {
+    if (
+        !isset($parsedUrl['host']) ||
+        !preg_match('/komoot\.(com|de)$/', $parsedUrl['host'])
+    ) {
         return null;
     }
 
