@@ -54,7 +54,7 @@ const SubmitIceShopModal = ({
       if (data.status === "success") {
         setMessage(existingIceShop ? "Eisdiele erfolgreich aktualisiert!" : "Eisdiele erfolgreich hinzugefügt!");
         setSubmitted(true);
-        refreshShops();
+        if (refreshShops) {refreshShops();}
 
         setName("");
         setAdresse("");
