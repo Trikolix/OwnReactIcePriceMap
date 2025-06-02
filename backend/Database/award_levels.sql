@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:15
+-- Erstellungszeit: 02. Jun 2025 um 14:22
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -45,7 +45,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (7, 1, 1, 3, 'uploads/award_icons/682d6347e611e_ChatGPT Image 21. Mai 2025, 07_22_15.png', 'Grenzgänger mit Geschmack', 'Du hast Eisdielen in 3 verschiedenen Landkreisen besucht! Dein Eishunger kennt keine Gemeindegrenzen – du bist auf süßer Entdeckungsreise.'),
 (8, 1, 2, 5, 'uploads/award_icons/682ee7ea544cd_ChatGPT Image 22. Mai 2025, 10_48_34.png', 'Der Landkreis-Löffler', '5 Landkreise, 5 mal Eisliebe neu entdeckt! Du weißt: Jede Region hat ihre eigene Kugel-Philosophie – und du bist mittendrin.'),
 (9, 1, 3, 7, 'uploads/award_icons/68303be9f0d21_ChatGPT Image 23. Mai 2025, 11_10_57.png', 'Kreisläufer auf Eis-Mission', '7 Landkreise voller Kugelkunst liegen hinter dir! Du bist ein echter Eis-Explorer, dein Gaumen hat schon fast einen eigenen Reisepass.'),
-(10, 1, 4, 10, 'uploads/award_icons/682d6448599c9_ChatGPT Image 21. Mai 2025, 07_26_47.png', 'Der Eis-Nomade', '10 Landkreise, 10 mal Glück! Wo du auftauchst, schmilzt das Eis – und die Herzen gleich mit. Du bist die mobile Legende der Schleckkultur.'),
+(10, 1, 4, 10, 'uploads/award_icons/68329e1a3e97d_1000080565.png', 'Der Eis-Nomade', '10 Landkreise, 10 mal Glück! Wo du auftauchst, schmilzt das Eis – und die Herzen gleich mit. Du bist die mobile Legende der Schleckkultur.'),
 (11, 1, 5, 20, 'uploads/award_icons/682d64a4a0d8b_21. Mai 2025, 07_12_42.png', 'Der Landkr(eis)könig', '20 Landkreise? Du bist die höchste Eisdielen-Instanz im Umkreis von 200 Kilometern. Wer dir folgt, folgt dem Geschmack.'),
 (12, 6, 1, 1, 'uploads/awards/award_6808d7097cc6e.png', 'Erster Schnappschuss', 'Du hast dein allererstes Foto eingereicht – ein historischer Moment! Jetzt wissen wir: Du kannst nicht nur Eis essen, sondern auch knipsen.'),
 (13, 6, 3, 20, 'uploads/awards/award_6808d733e0df6.png', 'Der Eisfluencer', '20 visuelle Eiswerke später: Du bringst Glanz in jede Waffel und Stil in jeden Becher. Insta-worthy durch und durch!'),
@@ -98,7 +98,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (68, 15, 3, 5, 'uploads/awards/award_681dc92f54104.png', 'GPS-Gourmet', 'Dein Geschmack kennt nicht nur bei Eis keine Grenzen – auch bei der Routenwahl liegst du goldrichtig! Du hast bereits 5 öffentliche Routen erstellt.'),
 (69, 17, 1, 10, 'uploads/awards/award_681dc99975457.png', 'Stammkunde', 'Du bist nicht einfach ein Gast – du bist Institution! Zehnmal hast du derselben Eisdiele die Treue gehalten. Ob für das beste Pistazieneis der Stadt oder die charmante Kugelverkäuferin: Deine Loyalität ist preisverdächtig – und jetzt offiziell ausgezeichnet!'),
 (70, 16, 1, 1, 'uploads/awards/award_681dc9f04fbaf.png', 'Eis-Schmuggler-Route', 'Du hast eine Route nur für dich geplant – ein exklusiver Weg zum Eisgenuss im Verborgenen!'),
-(71, 18, 1, 20, 'uploads/awards/award_681dcab3633d6.png', 'Geschmackstreue', 'Vanille? Zitrone? Mango-Chili? Egal welche Sorte – du hast dich entschieden. Über 20-mal treu geblieben und jeder Kugel mit Hingabe begegnet. Diese geschmackliche Konsequenz verdient Respekt – und diesen Award.'),
+(71, 18, 1, 20, 'uploads/award_icons/68332a2d9e6c7_Design ohne Titel (1).png', 'Geschmackstreue', 'Vanille? Zitrone? Mango-Chili? Egal welche Sorte – du hast dich entschieden. Über 20-mal treu geblieben und jeder Kugel mit Hingabe begegnet. Diese geschmackliche Konsequenz verdient Respekt – und diesen Award.'),
 (72, 15, 4, 10, 'uploads/awards/award_681f3091364e2.png', 'Routen-Ritter', 'Zehn Wege zur eisigen Ehre – du bringst Menschen auf Kurs in Sachen Genuss!'),
 (74, 15, 5, 20, 'uploads/awards/award_681f3556122df.png', 'Komootisseur', 'Du bist nicht nur Eisliebhaber, sondern auch echter Pfadfinder des guten Geschmacks! Du hast bereits 20 öffentliche Routen erstellt.'),
 (75, 19, 1, 3, 'uploads/awards/award_681f39a9cd717.png', 'Gelato Italiano', 'Du hast Eis in Italien eingecheckt – dort, wo die süßeste Versuchung zuhause ist!'),
@@ -108,8 +108,26 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (80, 5, 6, 50, 'uploads/awards/award_682394c3a8d40.png', 'Eiskrone', 'Fünfzig Eisbecher – das ist nicht nur Leidenschaft, das ist Legende.\r\nDu hast dich zur wahren Majestät der gefrorenen Genüsse emporgeschleckt.\r\nDie Krone gehört dir – und sie ist aus Waffel. 👑🍦'),
 (81, 4, 4, 20, 'uploads/awards/award_6823957de5bd5.png', 'Softeismeister', 'Zwanzigmal purer Genuss auf der Zunge – du bist ein wahrer Wirbelwind im Reich der cremigen Krönchen!'),
 (82, 4, 5, 50, 'uploads/awards/award_68239653bb960.png', 'Der Eis-Overlord: 50 Softeis besiegt', 'Dieser besondere Award wird an all jene verliehen, die sich tapfer durch 50 Softeisportionen gekämpft haben – eine wahre Meisterleistung der Zuckergeschmacksnerven und Ausdauer! Der Weg zu diesem Preis ist nicht nur ein süßer Genuss, sondern auch eine wahre Herausforderung für den Gaumen. Herzlichen Glückwunsch für deinen eisigen Ehrgeiz!'),
-(83, 7, 6, 100, 'uploads/awards/award_68272fab9b4be.png', 'Legendärer Preis-Entdecker', 'Du hast Einhundert Eisdielen mit Preisangaben versorgt – dein Preisradar ist legendär! Diese goldene Trophäe mit edlem Schliff und funkelnden Details zeichnet deinen Beitrag zur Eis-Transparenz gebührend aus.'),
-(84, 7, 7, 250, 'uploads/awards/award_68272fbbc517e.png', 'Eispreis-König der Nation', 'Du hast die magische Marke von 250 Preis-Meldungen durchbrochen – und damit Eisdielen-Geschichte geschrieben. Dieser prunkvolle Award mit farbigen Edelsteinen ist das Zeichen deiner unermüdlichen Suche nach der Wahrheit in der Waffel.');
+(83, 7, 6, 100, 'uploads/award_icons/683325db311a5_100 Preise Gemeldet Abzeichen.png', 'Legendärer Preis-Entdecker', 'Du hast Einhundert Eisdielen mit Preisangaben versorgt – dein Preisradar ist legendär! Diese goldene Trophäe mit edlem Schliff und funkelnden Details zeichnet deinen Beitrag zur Eis-Transparenz gebührend aus.'),
+(84, 7, 7, 250, 'uploads/award_icons/6832e49da2b7c_1000080604.png', 'Eispreis-König der Nation', 'Du hast die magische Marke von 250 Preis-Meldungen durchbrochen – und damit Eisdielen-Geschichte geschrieben. Dieser prunkvolle Award mit farbigen Edelsteinen ist das Zeichen deiner unermüdlichen Suche nach der Wahrheit in der Waffel.'),
+(85, 19, 3, 4, 'uploads/award_icons/683556e2a20b3_ChatGPT Image 27. Mai 2025, 08_06_28.png', 'glace française', 'Eisurlaub in Frankreich – auf die deutsch-französische Eis-Freundschaft!'),
+(86, 19, 4, 35, 'uploads/award_icons/6833295d2be12_Design ohne Titel.png', 'Polskie Lody', 'Du hast Eis in Polen gegessen!'),
+(87, 20, 1, 1, 'uploads/award_icons/6837d0690f24c_1000081125.png', 'Eis-Kultur-Award Chemnitz 2025', 'Für den herausragenden kulturellen Beitrag, im Jahr 2025 ein Eis in Chemnitz, der Kulturhauptstadt Europas, genossen zu haben.\r\nMit jedem Löffel wurde nicht nur der Gaumen verwöhnt, sondern auch ein Zeichen gesetzt – für die genussvolle Verbindung von Hochkultur und Himbeerbecher.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.'),
+(88, 19, 5, 44, 'uploads/award_icons/68354fb6a80f6_ChatGPT Image 27. Mai 2025, 07_36_06.png', 'Helado Hola', 'Ein Eis unter spanischer Sonne – ¡delicioso!'),
+(89, 19, 6, 17, 'uploads/award_icons/683550383d8de_ChatGPT Image 27. Mai 2025, 07_38_42.png', 'Pagoto please', 'Ein eiskalter Genuss zwischen Olivenhainen und Ouzo.'),
+(90, 19, 7, 13, 'uploads/award_icons/683550cc2849b_ChatGPT Image 27. Mai 2025, 07_40_53.png', 'Is-Tid', 'Skandinavisch cool: Ein dänisches Eis am Hafen.'),
+(91, 19, 8, 31, 'uploads/award_icons/683558cb9de16_ChatGPT Image 27. Mai 2025, 08_15_16.png', 'Ijs-Tijd', 'Zwischen Grachten und Gouda: Eispause in den Niederlanden.'),
+(92, 21, 1, 3, 'uploads/award_icons/6837e19c05c5e_1000081127.png', 'weltweit genossen ', 'Du hast in 3 verschiedenen Ländern Eis genossen.'),
+(93, 19, 9, 36, 'uploads/award_icons/6837e32f5d75c_1000081129.png', 'Gelado português', 'Hat ein Eis in Portugal genossen – wo Sonne, Küste und Geschmack aufeinandertreffen.'),
+(94, 19, 10, 48, 'uploads/award_icons/683c0e2f0c852_IT\'S TEA ICE TIME.png', 'It\'s ice time!', 'Ein Eis im Vereinigten Königreich? Mutig – und stilvoll! Zwischen Regen und Royals hast du dich zum Eis bekannt.'),
+(95, 19, 11, 10, 'uploads/award_icons/683c0eb5ac027_ChatGPT Image 1. Juni 2025, 10_24_45.png', 'Echt belgisch!', 'Du hast in Belgien Eis gegessen – dort, wo sich Schokolade, Waffeln und Weltklasse-Geschmack vereinen. Très délicieux, sehr lekker!'),
+(96, 20, 2, 2, 'uploads/award_icons/683c0f1dbb800_ChatGPT Image 1. Juni 2025, 10_27_41.png', 'Eis-Kultur-Award Nova Gorica 2025', 'Für den herausragenden kulturellen Beitrag, im Jahr 2025 ein Eis in Nova Gorica, der Kulturhauptstadt Europas, genossen zu haben.\r\nMit jedem Löffel wurde nicht nur der Gaumen verwöhnt, sondern auch ein Zeichen gesetzt – für die genussvolle Verbindung von Hochkultur und Himbeerbecher.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.'),
+(97, 20, 3, 3, 'uploads/award_icons/683c0f674860d_ChatGPT Image 1. Juni 2025, 10_28_55.png', 'Kulturkugel-Kombi 2025', 'Dieser besondere Award ehrt alle, die 2025 in beiden Europäischen Kulturhauptstädten – Chemnitz und Nova Gorica – Eis gegessen haben. Symbolisch verbindet eine stilisierte Brücke die zwei Städte über kulturelle Grenzen hinweg. Eisgenuss trifft Kulturverständnis – ein Zeichen für Entdeckergeist, Geschmack und Europa ohne Grenzen.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.'),
+(98, 9, 2, 2, 'uploads/award_icons/683d524864263_3b4ce87d-8909-4c1d-ad1f-074e0b736c19.png', 'Eine softe Kugel', 'An einem Tag hast du ein Softeis und ein Kugeleis gegessen. Du hast den Geschmackskampf hautnah miterlebt und kannst nun selbst entscheiden, welches besser schmeckt!'),
+(100, 22, 1, 1, 'uploads/award_icons/683d615fa5b6d_Design ohne Titel (2).png', 'Eisvulkanologe Thüringens', 'Wer 30 Eis in Thüringen schleckt, darf sich mit Fug und Recht Eisvulkanologe Thüringens nennen. Vom Eisbecher auf dem Erfurter Domplatz bis zur Kugel im Thüringer Wald – dieser Titel würdigt deinen kühlen Forschergeist zwischen Bratwurst und Burgruinen.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.'),
+(101, 22, 4, 18, 'uploads/award_icons/683d63b404630_ChatGPT Image 2. Juni 2025, 10_34_22.png', 'Berliner Eisdiplom', 'Du hast 30-mal Eis in der Hauptstadt gegessen? Dann bekommst du das Berliner Eisdiplom! Zwischen Späti, Street Art und Spree ist dein Geschmack genauso vielfältig wie die Stadt selbst.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.'),
+(102, 22, 3, 7, 'uploads/award_icons/683d64a4e6bed_ChatGPT Image 2. Juni 2025, 10_44_18.png', 'Bayerischer Eiskrone-Träger', '30 Eis in Bayern? Das ist königlich! Mit diesem Titel wirst du Teil des süßesten Hofstaats des Südens – ein Eiskrone-Träger durch und durch'),
+(103, 22, 2, 3, 'uploads/award_icons/683d64c9f2c51_Kein Titel (1024 x 1024 px).png', 'Kurfürstlicher Eisexperte Sachsens', 'Du hast dich durch die Kugeln des Königreichs geschleckt – von der Leipziger Pfefferminzschnitte bis zum Erzgebirgs-Kirschtraum. Mit 30 Eis in Sachsen auf dem Zähler bist du jetzt offiziell Kurfürstlicher Eisexperte Sachsens!\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.');
 
 --
 -- Indizes der exportierten Tabellen
@@ -130,7 +148,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
 
 --
 -- Constraints der exportierten Tabellen
