@@ -14,6 +14,7 @@ require_once __DIR__ . '/../evaluators/AllIceTypesEvaluator.php';
 require_once __DIR__ . '/../evaluators/DistanceIceTravelerEvaluator.php';
 require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
+require_once __DIR__ . '/../evaluators/Chemnitz2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/BundeslandExperteEvaluator.php';
 
 // Preflight OPTIONS-Request
@@ -219,6 +220,7 @@ try {
         new DistanceIceTravelerEvaluator(),
         new StammkundeEvaluator(),
         new CountryVisitEvaluator(),
+        new Chemnitz2025Evaluator(),
         new BundeslandExperteEvaluator()
     ];
 
