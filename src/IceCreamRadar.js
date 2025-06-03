@@ -29,6 +29,7 @@ const IceCreamRadar = () => {
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
 
   const { shopId, token } = useParams();
   const navigate = useNavigate();
@@ -111,10 +112,10 @@ const IceCreamRadar = () => {
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
-    if (mapRef.current && userPosition && !shopId) {
+    if (mapRef.current && userPosition && !shopId && !hasInteractedWithMap) {
       mapRef.current.setView(userPosition, 14);
     }
-  }, [userPosition, shopId]);
+  }, [userPosition, shopId, hasInteractedWithMap]);
 
 
   // Funktion zum Filtern der Eisdielen
@@ -192,6 +193,11 @@ const IceCreamRadar = () => {
         zoom={14}
         style={{ flex: 1, width: '100%' }}
         ref={mapRef}
+        whenCreated={(mapInstance) => {
+          mapInstance.on('dragstart zoomstart', () => {
+            setHasInteractedWithMap(true);
+          });
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
