@@ -12,6 +12,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [größenbewertung, setGrößenbewertung] = useState(null);
     const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
     const [kommentar, setKommentar] = useState("");
+    const [anreise, setAnreise] = useState("");
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
@@ -30,7 +31,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     return;
                 }
 
-                if (parseInt(checkin.nutzer_id, 10) !== parseInt(userId, 10)) {
+                if (Number(checkin.nutzer_id) !== Number(userId)) {
                     setMessage("You aren't allowed to edit this checkin!");
                     setIsAllowed(false);
                     return;
@@ -42,6 +43,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 setGrößenbewertung(checkin.größenbewertung);
                 setPreisleistungsbewertung(checkin.preisleistungsbewertung);
                 setKommentar(checkin.kommentar);
+                setAnreise(checkin.anreise || "");
                 setBilder(checkin.bilder.map(b => ({
                     id: b.id,
                     url: `https://ice-app.de/${b.url}`,
@@ -88,6 +90,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             formData.append("preisleistungsbewertung", preisleistungsbewertung);
             formData.append("kommentar", kommentar);
             formData.append("sorten", JSON.stringify(sorten));
+            formData.append("anreise", anreise);
             bilder.forEach((bild, index) => {
                 if (!bild.isExisting) {
                     formData.append(`bilder[]`, bild.file);
@@ -317,6 +320,18 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 </tr>)}
                             </tbody>
                         </Table>
+
+                        <Section>
+                            <Label>Wie bist du zur Eisdiele gekommen?</Label>
+                            <Select value={anreise} onChange={(e) => setAnreise(e.target.value)}>
+                                <option value="">Bitte wählen</option>
+                                <option value="Fahrrad">Fahrrad</option>
+                                <option value="Motorrad">Motorrad</option>
+                                <option value="Zu Fuß">Zu Fuß</option>
+                                <option value="Auto">Auto</option>
+                                <option value="Sonstiges">Sonstiges</option>
+                            </Select>
+                        </Section>
 
                         <Section>
                             <Label>Kommentar</Label>

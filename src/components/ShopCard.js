@@ -22,10 +22,16 @@ const ShopCard = ({ iceShop, onSuccess }) => {
   return (<>
 
     <Card>
+      <DateText dateTime={iceShop.erstellt_am}>
+        {new Date(iceShop.erstellt_am).toLocaleDateString("de-DE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}
+      </DateText>
       <Header>
         <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}
         <strong><CleanLink to={`/map/activeShop/${iceShop.id}`}>{iceShop.name}</CleanLink></strong> erstellt.{" "}
-        <DateText>(am {formatDate(iceShop.erstellt_am)})</DateText>
       </Header>
       <strong>Adresse:</strong> {iceShop.adresse || "keine Adresse eingetagen"}<br />
       <OpeningHours eisdiele={iceShop} />
@@ -56,33 +62,50 @@ const CleanLink = styled(Link)`
 `;
 
 const Card = styled.div`
-  background: #f9f9f9;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const Header = styled.div`
   margin-bottom: 1rem;
 `;
 
-const DateText = styled.em`
-  font-size: 0.85rem;
-  color: #777;
-`;
-
 const EditButton = styled.button`
-  background-color: #0077b6;
+  align-self: flex-start;
+  background-color: #339af0;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
-  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
   font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: #005f8a;
+    background-color: #228be6;
   }
+`;
+
+const DateText = styled.time`
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 0.85rem;
+  color: #777;
+  font-style: italic;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 `;
 

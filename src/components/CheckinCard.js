@@ -9,6 +9,13 @@ import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 const CheckinCard = ({ checkin, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
+  const anreiseIcons = {
+    Fahrrad: "🚲",
+    Motorrad: "🏍️",
+    "Zu Fuß": "🚶",
+    Auto: "🚗",
+    Sonstiges: "❓"
+  };
 
   const handleEditClick = () => {
     setShowEditModal(true);
@@ -18,17 +25,28 @@ const CheckinCard = ({ checkin, onSuccess }) => {
   return (
     <>
       <Card>
+        <DateText dateTime={checkin.datum}>
+          {new Date(checkin.datum).toLocaleDateString("de-DE", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </DateText>
         <ContentWrapper>
           <LeftContent>
-            <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat am{" "}{new Date(checkin.datum).toLocaleDateString()}{" "}
+            <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat 
             bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
 
-            <AttributeSection>
-              <strong>Sorten:</strong>
-              {checkin.eissorten.map((sorte, index) => (
-                <AttributeBadge key={index}>{sorte.sortenname} ({sorte.bewertung}&#9733;)</AttributeBadge>
-              ))}
-            </AttributeSection>
+            {checkin.eissorten && checkin.eissorten.length > 0 && (
+              <AttributeSection>
+                <strong>Sorten:</strong>
+                {checkin.eissorten.map((sorte, index) => (
+                  <AttributeBadge key={index}>
+                    {sorte.sortenname} ({sorte.bewertung}&#9733;)
+                  </AttributeBadge>
+                ))}
+              </AttributeSection>
+            )}
 
             <Table>
               {checkin.geschmackbewertung !== null && (<tr>
@@ -60,6 +78,13 @@ const CheckinCard = ({ checkin, onSuccess }) => {
                 </td>
               </tr>)}
             </Table>
+            {checkin.anreise && checkin.anreise !== "" && (
+              <ArrivalInfo>
+                <ArrivalBadge>
+                  {anreiseIcons[checkin.anreise] || "📍"} Anreise: <strong>{checkin.anreise}</strong>
+                </ArrivalBadge>
+              </ArrivalInfo>
+            )}
 
             {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
             {Number(checkin.nutzer_id) === Number(userId) && (
@@ -105,17 +130,23 @@ const CleanLink = styled(Link)`
 `;
 
 const Card = styled.div`
-  background: #f9f9f9;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const ContentWrapper = styled.div`
   display: flex;
-  gap: 1.5rem;
   flex-wrap: wrap;
+  gap: 2rem;
 `;
 
 const LeftContent = styled.div`
@@ -131,24 +162,29 @@ const RightContent = styled.div`
 `;
 
 const Table = styled.table`
-  border-spacing: 0.5rem 0.25rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+
+  th, td {
+    padding: 0.4rem 0.5rem;
+    text-align: left;
+  }
 
   th {
-    text-align: left;
-    vertical-align: top;
-    white-space: nowrap;
-    color: #555;
-    font-weight: normal;
-    padding-right: 0.5rem;
+    color: #666;
+    font-weight: 500;
+    width: 140px;
   }
 
   td {
-    vertical-align: top;
+    font-weight: 500;
+  }
+
+  tr:not(:last-child) {
+    border-bottom: 1px solid #eee;
   }
 `;
-
 const AttributeSection = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -170,16 +206,46 @@ const TypText = styled.em`
 `;
 
 const EditButton = styled.button`
-  background-color: #0077b6;
+  align-self: flex-start;
+  background-color: #339af0;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
   font-size: 0.9rem;
-  margin-top: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: #005f8a;
+    background-color: #228be6;
   }
+`;
+
+const ArrivalInfo = styled.div`
+  margin: 1rem 0;
+`;
+
+const ArrivalBadge = styled.div`
+  display: inline-block;
+  background-color: #ffe5b4;
+  color: #8a4f00;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+`;
+
+const DateText = styled.time`
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 0.85rem;
+  color: #777;
+  font-style: italic;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 `;

@@ -55,13 +55,19 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
   return (
     <>
       <Card>
+        <DateText dateTime={route.erstellt_am}>
+          {new Date(route.erstellt_am).toLocaleDateString("de-DE", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </DateText>
         <ContentWrapper>
           <LeftContent>
             <TitleWrapper>
               <RouteType>{routeDisplayMap[route.typ]}: <strong>{route.name}</strong></RouteType>
               <AuthorDate>
                 von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name}</UserLink>{" "}
-                <TypText> (Erstellt am: {new Date(route.erstellt_am).toLocaleDateString()})</TypText>
               </AuthorDate>
             </TitleWrapper>
 
@@ -103,11 +109,17 @@ const UserLink = styled(Link)`
 `;
 
 const Card = styled.div`
-  background: #f9f9f9;
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -181,15 +193,31 @@ const TypText = styled.em`
 `;
 
 const EditButton = styled.button`
-  background-color: #0077b6;
+  align-self: flex-start;
+  background-color: #339af0;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
   font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: #005f8a;
+    background-color: #228be6;
   }
+`;
+
+const DateText = styled.time`
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 0.85rem;
+  color: #777;
+  font-style: italic;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 `;

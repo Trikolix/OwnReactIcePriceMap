@@ -129,6 +129,11 @@ try {
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
     $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
+    $anreise = $_POST['anreise'] ?? null;
+    $erlaubteAnreisen = ['Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Sonstiges'];
+    if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
+        respondWithError('Ungültige Anreiseart.');
+    }
     // Bewertungen validieren
     validateRatingRange($geschmack, 'geschmackbewertung');
     validateRatingRange($waffel, 'waffelbewertung');
@@ -193,10 +198,10 @@ try {
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise]);
     $checkinId = $pdo->lastInsertId();
 
     if (!empty($bildUrls)) {
