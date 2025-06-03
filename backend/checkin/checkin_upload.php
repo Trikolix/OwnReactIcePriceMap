@@ -130,7 +130,7 @@ try {
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
     $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
     $anreise = $_POST['anreise'] ?? null;
-    $erlaubteAnreisen = ['Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Sonstiges'];
+    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Sonstiges'];
     if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
         respondWithError('Ungültige Anreiseart.');
     }
@@ -214,6 +214,16 @@ try {
         }
     }
 
+    // Metadaten des neuen Checkins laden
+    $checkinMeta = $pdo->prepare("
+        SELECT c.id, c.anreise, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land
+        FROM checkins c
+        JOIN eisdielen e ON c.eisdiele_id = e.id
+        WHERE c.id = ?
+    ");
+    $checkinMeta->execute([$checkinId]);
+    $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
+
     // Evaluatoren
     $evaluators = [
         new CountyCountEvaluator(),
@@ -238,6 +248,10 @@ try {
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
+        if ($evaluator instanceof MetadataAwareEvaluator) {
+            $evaluator->setCheckinMetadata($meta);
+        }
+
         try {
             $evaluated = $evaluator->evaluate($userId);
             $newAwards = array_merge($newAwards, $evaluated);

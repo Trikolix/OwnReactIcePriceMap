@@ -1,13 +1,24 @@
 <?php
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
+require_once  __DIR__ . '/MetadataAwareEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class BundeslandExperteEvaluator extends BaseAwardEvaluator {
+class BundeslandExperteEvaluator extends BaseAwardEvaluator implements MetadataAwareEvaluator {
     const AWARD_ID = 22;
+
+    private array $checkinMeta = [];
+
+    public function setCheckinMetadata(array $meta): void {
+        $this->checkinMeta = $meta;
+    }
 
     public function evaluate(int $userId): array {
         global $pdo;
         
+        if (empty($this->checkinMeta['bundesland'])) {
+            throw new Exception("Bundesland-Information fehlt");
+        }
+        $bundesland = $this->checkinMeta['bundesland'];
 
         $achievements = [];
 
@@ -22,21 +33,23 @@ class BundeslandExperteEvaluator extends BaseAwardEvaluator {
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
             $bundeslandId = (int)$levelData['threshold'];
-            $meetsRequirement = $this->getIceCountBundesland($userId, $bundeslandId);
+            if ((int)$bundesland == $bundeslandId) {
+                $iceCount = $this->getIceCountBundesland($userId, $bundeslandId);
 
-            if ($meetsRequirement && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
-                $achievements[] = [
-                    'award_id' => self::AWARD_ID,
-                    'level' => $level,
-                    'message' => $levelData['description_de'],
-                    'icon' => $levelData['icon_path'],
-                ];
+                if ($iceCount >= 30 && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+                    $achievements[] = [
+                        'award_id' => self::AWARD_ID,
+                        'level' => $level,
+                        'message' => $levelData['description_de'],
+                        'icon' => $levelData['icon_path'],
+                    ];
+                }
             }
         }
         return $achievements;
     }
 
-    private function getIceCountBundesland(int $userId, int $bundeslandId): bool {
+    private function getIceCountBundesland(int $userId, int $bundeslandId): int {
         global $pdo;
         $sql = "SELECT COUNT(s.id) AS anzahl_eis
          FROM checkins c
@@ -46,7 +59,7 @@ class BundeslandExperteEvaluator extends BaseAwardEvaluator {
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['userId' => $userId, 'bundeslandId' => $bundeslandId]);
 
-        return (int)$stmt->fetchColumn() >= 30 ;
+        return (int)$stmt->fetchColumn();
     }
 }
 ?>
