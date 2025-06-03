@@ -163,7 +163,6 @@ const RightContent = styled.div`
 
 const Table = styled.table`
   border-collapse: collapse;
-  width: 100%;
   margin: 1rem 0;
 
   th, td {
@@ -174,7 +173,7 @@ const Table = styled.table`
   th {
     color: #666;
     font-weight: 500;
-    width: 140px;
+    width: 90px;
   }
 
   td {
