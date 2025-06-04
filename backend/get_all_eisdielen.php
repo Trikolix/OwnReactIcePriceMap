@@ -1,14 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 
-if (!isset($_GET["minLat"]) || !isset($_GET["maxLat"]) || !isset($_GET["minLon"]) || !isset($_GET["maxLon"])) {
-    echo json_encode(["error" => "Bitte minLat, minLon, maxLat und maxLon als Parameter übergeben!"]);
-    exit;
-}
-$minLat = (float) $_GET['minLat'];
-$minLon = (float) $_GET['minLon'];
-$maxLat = (float) $_GET['maxLat'];
-$maxLon = (float) $_GET['maxLon'];
 $userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
 
 $sql = "SELECT  
@@ -74,18 +66,11 @@ LEFT JOIN kugel_scores ks ON ks.eisdiele_id = e.id
 LEFT JOIN softeis_scores ss ON ss.eisdiele_id = e.id
 LEFT JOIN eisbecher_scores es ON es.eisdiele_id = e.id
 
--- Geografischer Filter
-WHERE e.latitude BETWEEN :minLat AND :maxLat 
-AND e.longitude BETWEEN :minLon AND :maxLon;
 ORDER BY finaler_kugel_score DESC, 
          finaler_softeis_score DESC, 
          finaler_eisbecher_score DESC;";
 $stmt = $pdo->prepare($sql);
 // Parameter binden
-$stmt->bindParam(':minLat', $minLat);
-$stmt->bindParam(':maxLat', $maxLat);
-$stmt->bindParam(':minLon', $minLon);
-$stmt->bindParam(':maxLon', $maxLon);
 $stmt->bindParam(':userId', $userId);
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);

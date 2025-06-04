@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:19
+-- Erstellungszeit: 26. Mai 2025 um 12:36
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -43,6 +43,7 @@ INSERT INTO `attribute` (`id`, `name`) VALUES
 (3, 'Eisbecher im Angebot'),
 (12, 'Gebrannte Mandeln '),
 (7, 'guter Kaffee '),
+(14, 'Italienisch '),
 (6, 'schöner Außenbereich'),
 (13, 'Slush'),
 (9, 'Softeis'),
@@ -87,7 +88,8 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (16, 'private_route_creator', 'Private Routen erstellt', '2025-05-08 12:30:37'),
 (17, 'Stammkunde', 'Anzahl bei gleicher Eisdiele eingecheckt', '2025-05-09 09:22:54'),
 (18, 'Geschmackstreue', 'Anzahl eine Eissorte gegessen', '2025-05-09 09:27:44'),
-(19, 'laender_besucht', 'Eis in bestimmten Ländern eingecheckt', '2025-05-10 11:32:23');
+(19, 'laender_besucht', 'Eis in bestimmten Ländern eingecheckt', '2025-05-10 11:32:23'),
+(20, 'chemnitz2025', 'Chemnitz 2025: Kulturhauptstadt Europas', '2025-05-25 14:38:19');
 
 -- --------------------------------------------------------
 
@@ -113,7 +115,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (7, 1, 1, 3, 'uploads/award_icons/682d6347e611e_ChatGPT Image 21. Mai 2025, 07_22_15.png', 'Grenzgänger mit Geschmack', 'Du hast Eisdielen in 3 verschiedenen Landkreisen besucht! Dein Eishunger kennt keine Gemeindegrenzen – du bist auf süßer Entdeckungsreise.'),
 (8, 1, 2, 5, 'uploads/award_icons/682ee7ea544cd_ChatGPT Image 22. Mai 2025, 10_48_34.png', 'Der Landkreis-Löffler', '5 Landkreise, 5 mal Eisliebe neu entdeckt! Du weißt: Jede Region hat ihre eigene Kugel-Philosophie – und du bist mittendrin.'),
 (9, 1, 3, 7, 'uploads/award_icons/68303be9f0d21_ChatGPT Image 23. Mai 2025, 11_10_57.png', 'Kreisläufer auf Eis-Mission', '7 Landkreise voller Kugelkunst liegen hinter dir! Du bist ein echter Eis-Explorer, dein Gaumen hat schon fast einen eigenen Reisepass.'),
-(10, 1, 4, 10, 'uploads/award_icons/682d6448599c9_ChatGPT Image 21. Mai 2025, 07_26_47.png', 'Der Eis-Nomade', '10 Landkreise, 10 mal Glück! Wo du auftauchst, schmilzt das Eis – und die Herzen gleich mit. Du bist die mobile Legende der Schleckkultur.'),
+(10, 1, 4, 10, 'uploads/award_icons/68329e1a3e97d_1000080565.png', 'Der Eis-Nomade', '10 Landkreise, 10 mal Glück! Wo du auftauchst, schmilzt das Eis – und die Herzen gleich mit. Du bist die mobile Legende der Schleckkultur.'),
 (11, 1, 5, 20, 'uploads/award_icons/682d64a4a0d8b_21. Mai 2025, 07_12_42.png', 'Der Landkr(eis)könig', '20 Landkreise? Du bist die höchste Eisdielen-Instanz im Umkreis von 200 Kilometern. Wer dir folgt, folgt dem Geschmack.'),
 (12, 6, 1, 1, 'uploads/awards/award_6808d7097cc6e.png', 'Erster Schnappschuss', 'Du hast dein allererstes Foto eingereicht – ein historischer Moment! Jetzt wissen wir: Du kannst nicht nur Eis essen, sondern auch knipsen.'),
 (13, 6, 3, 20, 'uploads/awards/award_6808d733e0df6.png', 'Der Eisfluencer', '20 visuelle Eiswerke später: Du bringst Glanz in jede Waffel und Stil in jeden Becher. Insta-worthy durch und durch!'),
@@ -166,7 +168,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (68, 15, 3, 5, 'uploads/awards/award_681dc92f54104.png', 'GPS-Gourmet', 'Dein Geschmack kennt nicht nur bei Eis keine Grenzen – auch bei der Routenwahl liegst du goldrichtig! Du hast bereits 5 öffentliche Routen erstellt.'),
 (69, 17, 1, 10, 'uploads/awards/award_681dc99975457.png', 'Stammkunde', 'Du bist nicht einfach ein Gast – du bist Institution! Zehnmal hast du derselben Eisdiele die Treue gehalten. Ob für das beste Pistazieneis der Stadt oder die charmante Kugelverkäuferin: Deine Loyalität ist preisverdächtig – und jetzt offiziell ausgezeichnet!'),
 (70, 16, 1, 1, 'uploads/awards/award_681dc9f04fbaf.png', 'Eis-Schmuggler-Route', 'Du hast eine Route nur für dich geplant – ein exklusiver Weg zum Eisgenuss im Verborgenen!'),
-(71, 18, 1, 20, 'uploads/awards/award_681dcab3633d6.png', 'Geschmackstreue', 'Vanille? Zitrone? Mango-Chili? Egal welche Sorte – du hast dich entschieden. Über 20-mal treu geblieben und jeder Kugel mit Hingabe begegnet. Diese geschmackliche Konsequenz verdient Respekt – und diesen Award.'),
+(71, 18, 1, 20, 'uploads/award_icons/68332a2d9e6c7_Design ohne Titel (1).png', 'Geschmackstreue', 'Vanille? Zitrone? Mango-Chili? Egal welche Sorte – du hast dich entschieden. Über 20-mal treu geblieben und jeder Kugel mit Hingabe begegnet. Diese geschmackliche Konsequenz verdient Respekt – und diesen Award.'),
 (72, 15, 4, 10, 'uploads/awards/award_681f3091364e2.png', 'Routen-Ritter', 'Zehn Wege zur eisigen Ehre – du bringst Menschen auf Kurs in Sachen Genuss!'),
 (74, 15, 5, 20, 'uploads/awards/award_681f3556122df.png', 'Komootisseur', 'Du bist nicht nur Eisliebhaber, sondern auch echter Pfadfinder des guten Geschmacks! Du hast bereits 20 öffentliche Routen erstellt.'),
 (75, 19, 1, 3, 'uploads/awards/award_681f39a9cd717.png', 'Gelato Italiano', 'Du hast Eis in Italien eingecheckt – dort, wo die süßeste Versuchung zuhause ist!'),
@@ -176,8 +178,11 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (80, 5, 6, 50, 'uploads/awards/award_682394c3a8d40.png', 'Eiskrone', 'Fünfzig Eisbecher – das ist nicht nur Leidenschaft, das ist Legende.\r\nDu hast dich zur wahren Majestät der gefrorenen Genüsse emporgeschleckt.\r\nDie Krone gehört dir – und sie ist aus Waffel. 👑🍦'),
 (81, 4, 4, 20, 'uploads/awards/award_6823957de5bd5.png', 'Softeismeister', 'Zwanzigmal purer Genuss auf der Zunge – du bist ein wahrer Wirbelwind im Reich der cremigen Krönchen!'),
 (82, 4, 5, 50, 'uploads/awards/award_68239653bb960.png', 'Der Eis-Overlord: 50 Softeis besiegt', 'Dieser besondere Award wird an all jene verliehen, die sich tapfer durch 50 Softeisportionen gekämpft haben – eine wahre Meisterleistung der Zuckergeschmacksnerven und Ausdauer! Der Weg zu diesem Preis ist nicht nur ein süßer Genuss, sondern auch eine wahre Herausforderung für den Gaumen. Herzlichen Glückwunsch für deinen eisigen Ehrgeiz!'),
-(83, 7, 6, 100, 'uploads/awards/award_68272fab9b4be.png', 'Legendärer Preis-Entdecker', 'Du hast Einhundert Eisdielen mit Preisangaben versorgt – dein Preisradar ist legendär! Diese goldene Trophäe mit edlem Schliff und funkelnden Details zeichnet deinen Beitrag zur Eis-Transparenz gebührend aus.'),
-(84, 7, 7, 250, 'uploads/awards/award_68272fbbc517e.png', 'Eispreis-König der Nation', 'Du hast die magische Marke von 250 Preis-Meldungen durchbrochen – und damit Eisdielen-Geschichte geschrieben. Dieser prunkvolle Award mit farbigen Edelsteinen ist das Zeichen deiner unermüdlichen Suche nach der Wahrheit in der Waffel.');
+(83, 7, 6, 100, 'uploads/award_icons/683325db311a5_100 Preise Gemeldet Abzeichen.png', 'Legendärer Preis-Entdecker', 'Du hast Einhundert Eisdielen mit Preisangaben versorgt – dein Preisradar ist legendär! Diese goldene Trophäe mit edlem Schliff und funkelnden Details zeichnet deinen Beitrag zur Eis-Transparenz gebührend aus.'),
+(84, 7, 7, 250, 'uploads/award_icons/6832e49da2b7c_1000080604.png', 'Eispreis-König der Nation', 'Du hast die magische Marke von 250 Preis-Meldungen durchbrochen – und damit Eisdielen-Geschichte geschrieben. Dieser prunkvolle Award mit farbigen Edelsteinen ist das Zeichen deiner unermüdlichen Suche nach der Wahrheit in der Waffel.'),
+(85, 19, 3, 4, 'uploads/award_icons/6833285a82d19_Glace FRANÇAIS.png', 'glace française', 'Eisurlaub in Frankreich – auf die deutsch-französische Eis-Freundschaft!'),
+(86, 19, 4, 35, 'uploads/award_icons/6833295d2be12_Design ohne Titel.png', 'Polskie Lody', 'Du hast Eis in Polen gegessen!'),
+(87, 20, 1, 1, 'uploads/award_icons/68332c15b4b5f_95c8ec54-3917-4bf6-8382-a5cb218a096f.png', 'Eis-Kultur-Award Chemnitz 2025', 'Für den herausragenden kulturellen Beitrag, im Jahr 2025 ein Eis in Chemnitz, der Kulturhauptstadt Europas, genossen zu haben.\r\nMit jedem Löffel wurde nicht nur der Gaumen verwöhnt, sondern auch ein Zeichen gesetzt – für die genussvolle Verbindung von Hochkultur und Himbeerbecher.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.');
 
 -- --------------------------------------------------------
 
@@ -276,7 +281,8 @@ INSERT INTO `bewertungen` (`id`, `eisdiele_id`, `nutzer_id`, `geschmack`, `kugel
 (189, 165, 1, NULL, NULL, NULL, 24, '\"Marschner\'s Eiscafé\", kein anderes Lokal hat wohl in der Region so eine Bekanntheit und einen Ruhm für Eisgenuss.\nUm so herber war der Schock, als die Eisdiele letztes Jahr auf einmal geschlossen hatte und die Zukunft ungewiss war.\nHeute (am 15.05) öffnete die Eisdiele mit dem alten Betreiber wieder ihre Pforten!\nEs gibt eine große Auswahl an ausgefallenen Sorten und ein Preis System von 1,80€ / 2,00€ / 2,20€ pro Kugel.\n\nSchön ist der neu angelegt Park in unmittelbarer Nähe.', '2025-05-15 11:48:10'),
 (191, 145, 1, NULL, NULL, NULL, 16, '', '2025-05-18 11:31:11'),
 (192, 9, 25, NULL, NULL, NULL, NULL, 'Gutes Softeis! Es ist erhältlich in den Sorten Schoko-Vanille oder Erdbeer-Vanille. Sitzgelegenheiten gibt es draußen & drinnen. ', '2025-05-19 17:14:02'),
-(194, 60, 2, NULL, NULL, NULL, 22, 'Schöner belebter Außenbereich und auch zum Reinsetzen. Nun zum Eis:\nSo muss Mango schmecken! Vielfältiges Angebot und sehr lecker. Die Waffel ist nicht billig, aber auch nicht zu trocken, war mir sehr angenehm. Leider nur etwas kleine Kugeln', '2025-05-20 19:32:49');
+(194, 60, 2, NULL, NULL, NULL, 22, 'Schöner belebter Außenbereich und auch zum Reinsetzen. Nun zum Eis:\nSo muss Mango schmecken! Vielfältiges Angebot und sehr lecker. Die Waffel ist nicht billig, aber auch nicht zu trocken, war mir sehr angenehm. Leider nur etwas kleine Kugeln', '2025-05-20 19:32:49'),
+(196, 175, 2, NULL, NULL, NULL, 7, 'Sehr lecker italienisches Eis! Gute Kugelgröße. Ich hatte Fragola😜 einfach mega schön hier!', '2025-05-25 11:28:20');
 
 -- --------------------------------------------------------
 
@@ -375,7 +381,8 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (179, 11),
 (188, 11),
 (179, 12),
-(179, 13);
+(179, 13),
+(196, 14);
 
 -- --------------------------------------------------------
 
@@ -472,7 +479,9 @@ INSERT INTO `bilder` (`id`, `nutzer_id`, `url`, `checkin_id`, `shop_id`, `bewert
 (90, 2, 'uploads/checkins/checkin_682cd88ee60319.13545651.jpg', 139, NULL, NULL, '', '2025-05-20 19:31:27'),
 (91, 1, 'uploads/checkins/checkin_682dde0989da53.09815305.jpg', 141, NULL, NULL, '', '2025-05-21 14:07:05'),
 (92, 1, 'uploads/checkins/checkin_682f3466601311.17972328.jpg', 142, NULL, NULL, '', '2025-05-22 14:27:50'),
-(93, 19, 'uploads/checkins/checkin_682f38f031db78.71212780.jpg', 143, NULL, NULL, 'Kleines Softeis für 2€. Schoko-Vanille ', '2025-05-22 14:47:12');
+(93, 19, 'uploads/checkins/checkin_682f38f031db78.71212780.jpg', 143, NULL, NULL, 'Kleines Softeis für 2€. Schoko-Vanille ', '2025-05-22 14:47:12'),
+(94, 1, 'uploads/checkins/checkin_6831ce2156aa21.96875772.jpg', 144, NULL, NULL, '', '2025-05-24 13:48:17'),
+(95, 2, 'uploads/checkins/checkin_6832ff2a2ccf54.14858973.jpg', 145, NULL, NULL, '', '2025-05-25 11:29:46');
 
 -- --------------------------------------------------------
 
@@ -501,7 +510,8 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
 (8, 'Lombardei', 'IT-25', 3),
 (9, 'Grand Est', 'FR-GES', 4),
 (10, 'Okzitanien', 'FR-OCC', 4),
-(11, 'Luzern', 'CH-LU', 5);
+(11, 'Luzern', 'CH-LU', 5),
+(12, 'Trentino-Südtirol', 'IT-32', 3);
 
 -- --------------------------------------------------------
 
@@ -609,7 +619,9 @@ INSERT INTO `checkins` (`id`, `nutzer_id`, `eisdiele_id`, `datum`, `typ`, `gesch
 (140, 25, 165, '2025-05-21 08:12:34', 'Kugel', '4.5', '4.0', '4.0', NULL, '', NULL),
 (141, 1, 9, '2025-05-21 16:07:05', 'Softeis', '4.5', '1.8', '3.0', '4.0', 'Nach etlichen Checkins anderer Nutzer, wollte ich doch auch mal wieder die Eisdiele meiner Kindheit austesten.\r\nDie klassische Softeis Kombi Schoko-Vanille hat nicht enttäuscht, hat mich aber auch nicht aus den Socken gehauen.\r\n\r\nEin solides Softeis in guter Lage.', NULL),
 (142, 1, 51, '2025-05-22 16:27:50', 'Kugel', '4.5', '4.3', '4.2', NULL, 'Direkt auf dem Altmarkt Zwickau gelegen, mit großem Außensitzbereich liegt das Dolce Freddo. \nEs gibt eine große Auswahl ausgefallener Sorten, die sich bunt und zu großen Haufen geschichtet auftürmen.\n\nMeine zwei Kugeln Salted-Butter-Caramel und Malaga wurden von der freundlichen Bedienung in einer vernünftigen Größe in einer knusprigen Waffel portionieriert.\n\nDas Eis war sehr sahnig / cremig und intensiv von Geschmack.\nMir fast schon etwas zu intensiv. Karamell oder Rosinenstückchen waren zu missen. Insgesamt aber schon ein leckeres Eis.', NULL),
-(143, 19, 9, '2025-05-22 16:47:12', 'Softeis', '4.8', '2.5', NULL, '4.0', 'Anlaufstelle Nr. 1 für Softeis in der näheren Umgebung.\nGeschmacklich top. Die Waffel ist eher von der \"pappigen\" Art, da ist noch Luft nach oben.', NULL);
+(143, 19, 9, '2025-05-22 16:47:12', 'Softeis', '4.8', '2.5', NULL, '4.0', 'Anlaufstelle Nr. 1 für Softeis in der näheren Umgebung.\nGeschmacklich top. Die Waffel ist eher von der \"pappigen\" Art, da ist noch Luft nach oben.', NULL),
+(144, 1, 174, '2025-05-24 15:48:17', 'Eisbecher', '4.5', NULL, NULL, '3.5', 'Ich hatte einen Becher gemischtes Eis mit Sahne. Für 7,50€ bekommt man da 3 Kugeln Eis nach Wahl. Die Kombination aus Straciatella, Mango und Schokolade war ganz gut. Für den Preis hätte es aber allgemein mehr sein können.', NULL),
+(145, 2, 175, '2025-05-25 13:29:46', 'Kugel', '4.9', '3.5', '4.4', NULL, 'Erdbeer ist absolut natürlich und frisch - einfach lecker! ', NULL);
 
 -- --------------------------------------------------------
 
@@ -740,7 +752,11 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (262, 142, 'Salted-Butter-Caramel', '4.7'),
 (263, 142, 'Malaga', '4.3'),
 (264, 57, 'Stracciatella', '2.8'),
-(265, 57, 'Pfirsich-Maracuja', '2.0');
+(265, 57, 'Pfirsich-Maracuja', '2.0'),
+(269, 144, 'Straciatella ', '4.3'),
+(270, 144, 'Schokolade ', '4.7'),
+(271, 144, 'Mango ', '4.4'),
+(272, 145, 'Erdbeer', '4.9');
 
 -- --------------------------------------------------------
 
@@ -877,7 +893,7 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (107, 'Sperlich\'s \"EISZEIT\"', 'Giebelstraße 2, 03222 Lübbenau/Spreewald', '', 51.861938, 13.938499, 'So-Fr: 14-18 Uhr ', '2025-04-21 05:23:30', 1, 16, 5, 1),
 (109, 'Eiscafé Sothis', 'Str. d. Einheit 20, 09569 Flöha', '', 50.853367, 13.113309, 'derzeit geschlossen', '2025-04-21 14:48:28', 1, 4, 3, 1),
 (111, 'Klatt-Eis Eismanufaktur', 'Mittweidaer Str. 102, 09648 Mittweida', '', 51.000374, 12.899914, 'So: 13-18 Uhr', '2025-04-21 15:04:29', 1, 4, 3, 1),
-(112, 'Eis-Pinguin', 'Puschkinstraße 4, 09112 Chemnitz', 'https://www.eisice-pinguin.de', 50.830437, 12.900225, 'Coming soon', '2025-04-21 15:08:49', 1, 6, 3, 1),
+(112, 'Eis-Pinguin', 'Puschkinstraße 4, 09112 Chemnitz', 'https://www.eisice-pinguin.de', 50.830437, 12.900225, 'Di-So: 13-18 Uhr', '2025-04-21 15:08:49', 1, 6, 3, 1),
 (113, 'Eiscafé Caramello', 'Bahnhofstraße 2, 04651 Bad Lausick', '', 51.143497, 12.648633, 'Mo-So: 11-18 Uhr', '2025-04-22 05:43:44', 1, 9, 3, 1),
 (114, ' Eisdiele Krause', 'Markt 2, 09306 Wechselburg', '', 51.004692, 12.773902, '', '2025-04-22 08:34:25', 1, 4, 3, 1),
 (115, 'Eisgarten an der Kaßbergauffahrt', 'Theaterstraße 60, 09111 Chemnitz', '', 50.833527, 12.915260, 'Mo-So 12-18 Uhr', '2025-04-22 11:09:10', 3, 6, 3, 1),
@@ -924,7 +940,9 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (170, 'Zeisigwaldschänke', 'Forststraße 100, 09131 Chemnitz', 'http://www.zeisigwaldschaenke.de/', 50.845589, 12.963314, 'Mo-So: 12-17 Uhr', '2025-05-21 11:27:45', 1, 6, 3, 1),
 (171, 'Gran Gelato', 'Hauptmarkt 17-18, 08056 Zwickau', 'http://www.grangelato.de/', 50.717999, 12.497528, 'Mo-So: 10-19 Uhr', '2025-05-21 12:25:02', 1, 5, 3, 1),
 (172, 'Imbiss der Bäckerei und Konditorei Seifert', 'Alte Flockenstraße 7, 09385 Lugau/Erzgeb.', '', 50.772354, 12.786156, 'Di - Fr: 5:00 - 17:00 Uhr;\nSa: 5:30 - 10:30 Uhr', '2025-05-23 07:58:57', 1, 3, 3, 1),
-(173, 'Das Eiscafé Lichtenstein', 'Rosengasse 4, 09350 Lichtenstein/Sachsen', '', 50.756748, 12.630780, 'Sa & So: 13:30 - 17:30 Uhr', '2025-05-23 08:03:00', 1, 5, 3, 1);
+(173, 'Das Eiscafé Lichtenstein', 'Rosengasse 4, 09350 Lichtenstein/Sachsen', '', 50.756748, 12.630780, 'Sa & So: 13:30 - 17:30 Uhr', '2025-05-23 08:03:00', 1, 5, 3, 1),
+(174, 'Café Raabe', 'Oberfrohnaer Str. 72, 09117 Chemnitz', 'https://www.caferaabe.de/', 50.826595, 12.832847, 'Mo-Mi: 11-18 Uhr\nSa-So: 11-18 Uhr', '2025-05-24 13:43:43', 1, 6, 3, 1),
+(175, 'JoePiada', '', '', 46.437492, 11.692028, '', '2025-05-25 11:26:52', 2, 30, 12, 3);
 
 -- --------------------------------------------------------
 
@@ -1081,6 +1099,7 @@ CREATE TABLE `landkreise` (
 INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (7, 'Altenburger Land', 1),
 (19, 'Aussiger Region', 6),
+(30, 'Autonome Provinz Trient', 12),
 (6, 'Chemnitz', 3),
 (11, 'Dresden', 3),
 (3, 'Erzgebirgskreis', 3),
@@ -1140,7 +1159,10 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `erstellt_am`,
 (22, 'Eispfote', 'franziska.scharbrodt@gmail.com', '$2y$12$G5YgrJCPvp5sAEqBUSpOk.KuYG9DRO3SL8fVX/py3pn/Yz5Z9MMsK', '2025-05-06 19:38:09', 1, NULL),
 (23, 'Holzmichl', 'michael.knoof@web.de', '$2y$12$W00hzmTBdIS2Yq3f9mDupODHtH/FJfr0RmldhSKxR6XLqNKZzua7u', '2025-05-12 14:51:32', 1, NULL),
 (25, 'alvaperez12', 'theresa.anna.perez@googlemail.com', '$2y$12$52IxywCiQd0kR8O2wGc9zeCOst2r8Fyj0dKVX8jiqkbXBPWtJpl3e', '2025-05-19 17:09:16', 1, NULL),
-(26, 'moritz', 'moritzlistner1@gmail.com', '$2y$12$fByEoYTP8KAUwoXCgko/6Oxm34xb/3HzYqEv2PX7e65aOy86T9e5a', '2025-05-22 04:56:36', 1, NULL);
+(26, 'moritz', 'moritzlistner1@gmail.com', '$2y$12$fByEoYTP8KAUwoXCgko/6Oxm34xb/3HzYqEv2PX7e65aOy86T9e5a', '2025-05-22 04:56:36', 1, NULL),
+(27, 'Ben', 'ben.merb@gmail.com', '$2y$12$AH0w57pnJh95.OQensCn4OQQ4.xw.PND4I7MR83VEE/7XMg.Y3/EG', '2025-05-25 05:40:47', 1, NULL),
+(28, 'Radolph', 'ralph@raumausstattung-kretz.de', '$2y$12$VahKmrDf4Sv0O7JAwo7W2.gQRSKfgv8g8nd6seT65rtuSzhGcJCni', '2025-05-26 08:21:07', 0, '6464eeed42bd6bfa51fef5f6020e9fe6ffc881afbbff0d47c8881f70a5e51012'),
+(29, 'KingGC', 'mrupkalwis@gmx.de', '$2y$12$xtWKYNcALSnMhHRuCtgagufSO1rAucyIxvy.USFAfbqFxg9W6uZRa', '2025-05-26 08:31:08', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -1316,7 +1338,10 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (209, 60, 'kugel', '1.60', 'Premiumsorten 1,90€', 2, '2025-05-20 19:32:53'),
 (210, 170, 'kugel', '2.50', NULL, 1, '2025-05-21 11:27:54'),
 (213, 9, 'kugel', '1.50', NULL, 19, '2025-05-22 14:48:07'),
-(214, 9, 'softeis', '2.00', 'Kleines Softeis - 2,00 €\nGroßes Softeis - 3,00 €', 19, '2025-05-22 14:48:07');
+(214, 9, 'softeis', '2.00', 'Kleines Softeis - 2,00 €\nGroßes Softeis - 3,00 €', 19, '2025-05-22 14:48:07'),
+(216, 112, 'softeis', '2.20', 'Größe S: 2,20€\nGröße M: 2,90€\nGröße L: 3,90€', 1, '2025-05-25 04:09:21'),
+(217, 175, 'kugel', '1.80', NULL, 2, '2025-05-25 11:27:04'),
+(218, 170, 'kugel', '2.50', '10 Sorten handgemachtes Eis nur mit natürlichen Zutaten.Schokolade und Erdbeere sind wirklich ihr Geld wert.', 29, '2025-05-26 08:43:47');
 
 -- --------------------------------------------------------
 
@@ -1344,7 +1369,10 @@ INSERT INTO `rate_limit` (`id`, `ip_address`, `timestamp`) VALUES
 (19, '91.0.62.133', '2025-05-12 19:13:09'),
 (20, '91.0.62.133', '2025-05-12 19:13:11'),
 (21, '2a02:810a:900d:3600:fe:46b3:1cf6:b765', '2025-05-19 19:09:16'),
-(22, '2a00:20:b2de:5770:64f4:96a5:8d2e:cb89', '2025-05-22 06:56:36');
+(22, '2a00:20:b2de:5770:64f4:96a5:8d2e:cb89', '2025-05-22 06:56:36'),
+(23, '2a02:3100:2849:dd00:61ef:1600:9f26:1f1a', '2025-05-25 07:40:46'),
+(24, '2003:fa:3734:f800:9320:7944:1a1d:ae84', '2025-05-26 10:21:07'),
+(25, '2001:9e8:e2c:df00:1884:ea3d:8cc9:3634', '2025-05-26 10:31:07');
 
 -- --------------------------------------------------------
 
@@ -1531,7 +1559,13 @@ INSERT INTO `user_awards` (`id`, `user_id`, `award_id`, `level`, `awarded_at`) V
 (165, 19, 2, 1, '2025-05-22 14:47:12'),
 (166, 19, 6, 1, '2025-05-22 14:47:12'),
 (167, 19, 4, 1, '2025-05-22 14:47:12'),
-(168, 19, 7, 1, '2025-05-22 14:48:07');
+(168, 19, 7, 1, '2025-05-22 14:48:07'),
+(169, 1, 2, 6, '2025-05-24 13:48:17'),
+(170, 1, 6, 4, '2025-05-24 13:48:17'),
+(171, 2, 19, 1, '2025-05-25 11:29:46'),
+(172, 2, 2, 4, '2025-05-25 11:29:53'),
+(173, 2, 6, 2, '2025-05-25 11:29:53'),
+(174, 29, 7, 1, '2025-05-26 08:43:47');
 
 -- --------------------------------------------------------
 
@@ -1719,19 +1753,19 @@ ALTER TABLE `user_awards`
 -- AUTO_INCREMENT für Tabelle `attribute`
 --
 ALTER TABLE `attribute`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
 
 --
 -- AUTO_INCREMENT für Tabelle `bewertungen`
@@ -1743,31 +1777,31 @@ ALTER TABLE `bewertungen`
 -- AUTO_INCREMENT für Tabelle `bilder`
 --
 ALTER TABLE `bilder`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
 
 --
 -- AUTO_INCREMENT für Tabelle `bundeslaender`
 --
 ALTER TABLE `bundeslaender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT für Tabelle `checkins`
 --
 ALTER TABLE `checkins`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=144;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
 
 --
 -- AUTO_INCREMENT für Tabelle `checkin_sorten`
 --
 ALTER TABLE `checkin_sorten`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=266;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=274;
 
 --
 -- AUTO_INCREMENT für Tabelle `eisdielen`
 --
 ALTER TABLE `eisdielen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=176;
 
 --
 -- AUTO_INCREMENT für Tabelle `laender`
@@ -1779,13 +1813,13 @@ ALTER TABLE `laender`
 -- AUTO_INCREMENT für Tabelle `landkreise`
 --
 ALTER TABLE `landkreise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT für Tabelle `nutzer`
 --
 ALTER TABLE `nutzer`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT für Tabelle `passwort_reset_tokens`
@@ -1797,13 +1831,13 @@ ALTER TABLE `passwort_reset_tokens`
 -- AUTO_INCREMENT für Tabelle `preise`
 --
 ALTER TABLE `preise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=219;
 
 --
 -- AUTO_INCREMENT für Tabelle `rate_limit`
 --
 ALTER TABLE `rate_limit`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT für Tabelle `routen`
@@ -1815,7 +1849,7 @@ ALTER TABLE `routen`
 -- AUTO_INCREMENT für Tabelle `user_awards`
 --
 ALTER TABLE `user_awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=169;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=175;
 
 --
 -- Constraints der exportierten Tabellen

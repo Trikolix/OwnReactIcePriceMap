@@ -108,7 +108,7 @@ $stmt = $pdo->prepare("
     JOIN attribute a ON ba.attribut_id = a.id
     JOIN bewertungen b ON ba.bewertung_id = b.id
     WHERE b.eisdiele_id = ?
-    GROUP BY a.id
+    GROUP BY a.id, a.name
     ORDER BY anzahl DESC
 ");
 $stmt->execute([$eisdiele_id]);

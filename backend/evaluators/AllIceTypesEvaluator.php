@@ -22,8 +22,15 @@ class AllIceTypesEvaluator extends BaseAwardEvaluator {
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
             $threshold = (int)$levelData['threshold'];
+            $meetsCriteria = false;
 
-            if ($count >= $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+            if ($level === 1) {
+                $meetsCriteria = $this->hasAllIceTypes($userId);
+            } elseif ($level === 2) {
+                $meetsCriteria = $this->hasConeAndSoftIceSameDay($userId);
+            }
+
+            if ($meetsCriteria && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                 $achievements[] = [
                     'award_id' => self::AWARD_ID,
                     'level' => $level,
@@ -37,13 +44,34 @@ class AllIceTypesEvaluator extends BaseAwardEvaluator {
 
     private function hasAllIceTypes(int $userId): int {
         global $pdo;
-        $sql = "SELECT (COUNT(DISTINCT c.typ) = 3) AS has_all_ice_types
-                FROM checkins c
-                WHERE c.nutzer_id = ?";
+        $sql = "SELECT COUNT(DISTINCT typ) AS type_count
+                FROM checkins
+                WHERE nutzer_id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
+        $typeCount = (int)$stmt->fetchColumn();
+        
+        return $typeCount >= 3;
+    }
 
-        return (int)$stmt->fetchColumn();
+    private function hasConeAndSoftIceSameDay(int $userId): bool {
+        global $pdo;
+
+        // Finde alle Tage, an denen der Nutzer mindestens Softeis UND Kugel hatte
+        $sql = "
+            SELECT DATE(datum) as tag
+            FROM checkins
+            WHERE nutzer_id = :userId AND typ IN ('Kugel', 'Softeis')
+            GROUP BY DATE(datum)
+            HAVING COUNT(DISTINCT typ) = 2
+            LIMIT 1
+        ";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['userId' => $userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result !== false;
     }
 }
 ?>

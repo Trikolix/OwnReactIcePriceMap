@@ -1,7 +1,7 @@
 import { Marker } from "react-leaflet";
 import L from "leaflet";
 
-const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxPrice, plv, selectedOption }) => {
+const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxPrice, selectedOption }) => {
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
     if (price === null || isNaN(price)) {
       return 'grey';
@@ -20,33 +20,33 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
     case selectedOption === "Kugel: Preis" && shop.kugel_preis !== null:
       displayPrice = `${Number(shop.kugel_preis).toFixed(2)}`;
       break;
-    case (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.kugel_preis != null:
+    case (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") && shop.kugel_preis != null:
       displayPrice = `${Number(shop.kugel_preis).toFixed(2)}`;
       break;
-    case (selectedOption === "Alle" || selectedOption === "Favoriten") && shop.softeis_preis != null:
+    case (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") && shop.softeis_preis != null:
       displayPrice = `${Number(shop.softeis_preis).toFixed(2)}`;
       break;
-    case selectedOption === "Kugel: Rating " && plv !== null:
+    case selectedOption === "Kugel: Rating":
       displayPrice = `${Number(shop.finaler_kugel_score).toFixed(2)}`;
       break;
-    case selectedOption === "Softeis: Rating " && plv !== null:
+    case selectedOption === "Softeis: Rating":
       displayPrice = `${Number(shop.finaler_softeis_score).toFixed(2)}`;
       break;
-    case selectedOption === "Eisbecher: Rating " && plv !== null:
+    case selectedOption === "Eisbecher: Rating":
       displayPrice = `${Number(shop.finaler_eisbecher_score).toFixed(2)}`;
       break;
     default:
       displayPrice = '?';
   }
   let backgroundColor;
-  if (selectedOption === "Kugel: Rating " || selectedOption === "Softeis: Rating " || selectedOption === "Eisbecher: Rating ") {
+  if (selectedOption === "Kugel: Rating" || selectedOption === "Softeis: Rating" || selectedOption === "Eisbecher: Rating") {
     backgroundColor = getColorBasedOnPrice(displayPrice, maxPrice, minPrice);
   } else {
     backgroundColor = getColorBasedOnPrice(displayPrice, minPrice, maxPrice);
   }
 
 
-  if (displayPrice !== '?' && (selectedOption === "Softeis: Preis" || selectedOption === "Kugel: Preis" || selectedOption === "Alle" || selectedOption === "Favoriten")) {
+  if (displayPrice !== '?' && (selectedOption === "Softeis: Preis" || selectedOption === "Kugel: Preis" || selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht")) {
     displayPrice = `${Number(displayPrice).toFixed(2)} €`;
   }
 

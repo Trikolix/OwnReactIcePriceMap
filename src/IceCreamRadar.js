@@ -22,7 +22,6 @@ const IceCreamRadar = () => {
   const location = useLocation();
   const [iceCreamShops, setIceCreamShops] = useState([]);
   const [activeShop, setActiveShop] = useState(null);
-  const cachedBounds = useRef([]);
   const [clustering, setClustering] = useState(true);
   const [selectedOption, setSelectedOption] = useState("Alle");
   const mapRef = useRef(null);
@@ -30,6 +29,7 @@ const IceCreamRadar = () => {
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
 
   const { shopId, token } = useParams();
   const navigate = useNavigate();
@@ -58,16 +58,9 @@ const IceCreamRadar = () => {
     }
   }, [shopId]);
 
-  const fetchIceCreamShops = async (bounds) => {
-    if (cachedBounds.current.some(cached =>
-      bounds.minLat >= cached.minLat && bounds.maxLat <= cached.maxLat &&
-      bounds.minLon >= cached.minLon && bounds.maxLon <= cached.maxLon
-    )) return;
-
-    cachedBounds.current.push(bounds);
-
+  const fetchIceCreamShops = async () => {
     try {
-      const query = `${apiUrl}/get_eisdielen_boundingbox.php?minLat=${bounds.minLat}&maxLat=${bounds.maxLat}&minLon=${bounds.minLon}&maxLon=${bounds.maxLon}&userId=${userId}`;
+      const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       setIceCreamShops(data);
@@ -78,16 +71,13 @@ const IceCreamRadar = () => {
 
   const refreshShops = async () => {
     console.log("refreshShops");
-    const bounds = mapRef.current?.getBounds();
-    if (!bounds) return;
 
     try {
-      const query = `${apiUrl}/get_eisdielen_boundingbox.php?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}&minLon=${bounds.getWest()}&maxLon=${bounds.getEast()}&userId=${userId}`;
+      const query = `${apiUrl}/get_all_eisdielen.php?&userId=${userId}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);
       setIceCreamShops(data);
-      cachedBounds.current = [];
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
@@ -122,55 +112,31 @@ const IceCreamRadar = () => {
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
-    if (mapRef.current && userPosition && !shopId) {
+    if (mapRef.current && userPosition && !shopId && !hasInteractedWithMap) {
       mapRef.current.setView(userPosition, 14);
     }
-  }, [userPosition, shopId]);
+  }, [userPosition, shopId, hasInteractedWithMap]);
 
-  const MapEventHandler = () => {
-    const map = useMap();
-
-    // useMemo, damit die throttled Funktion nicht bei jedem Render neu erstellt wird
-    const throttledFetch = useMemo(() => {
-      return throttle((bounds) => {
-        fetchIceCreamShops(bounds);
-      }, 1000); // 1000 ms = 1 Sekunde
-    }, []);
-
-    useEffect(() => {
-      const onMoveEnd = () => {
-        const bounds = map.getBounds();
-        const newBounds = {
-          minLat: bounds.getSouth(),
-          maxLat: bounds.getNorth(),
-          minLon: bounds.getWest(),
-          maxLon: bounds.getEast()
-        };
-        throttledFetch(newBounds);
-      };
-      map.on('moveend', onMoveEnd);
-      return () => map.off('moveend', onMoveEnd);
-    }, [map, throttledFetch]);
-    return null;
-  };
 
   // Funktion zum Filtern der Eisdielen
   const filteredShops = iceCreamShops.filter(shop => {
     if (selectedOption === "Kugel: Preis") return shop.kugel_preis !== null;
     if (selectedOption === "Softeis: Preis") return shop.softeis_preis !== null;
-    if (selectedOption === "Kugel: Rating ") return shop.finaler_kugel_score !== null;
-    if (selectedOption === "Softeis: Rating ") return shop.finaler_softeis_score !== null;
-    if (selectedOption === "Eisbecher: Rating ") return shop.finaler_eisbecher_score !== null;
+    if (selectedOption === "Kugel: Rating") return shop.finaler_kugel_score !== null;
+    if (selectedOption === "Softeis: Rating") return shop.finaler_softeis_score !== null;
+    if (selectedOption === "Eisbecher: Rating") return shop.finaler_eisbecher_score !== null;
     if (selectedOption === "Favoriten") return shop.is_favorit === 1;
+    if (selectedOption === "Besucht") return Number(shop.has_visited) === 1;
+    if (selectedOption === "Nicht besucht") return Number(shop.has_visited) === 0;
     return true;
   });
   // Berechne den minimalen und maximalen Preis
-  const prices = (selectedOption === "Alle" || selectedOption === "Favoriten") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
+  const prices = (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
     selectedOption === "Kugel: Preis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
       selectedOption === "Softeis: Preis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
-        selectedOption === "Kugel: Rating " ? filteredShops.map(shop => shop.finaler_kugel_score).filter(kugelscore => kugelscore !== null) :
-          selectedOption === "Softeis: Rating " ? filteredShops.map(shop => shop.finaler_softeis_score).filter(softeisscore => softeisscore !== null) :
-            selectedOption === "Eisbecher: Rating " ? filteredShops.map(shop => shop.finaler_softeis_score).filter(becherscore => becherscore !== null) : null;
+        selectedOption === "Kugel: Rating" ? filteredShops.map(shop => shop.finaler_kugel_score).filter(kugelscore => kugelscore !== null) :
+          selectedOption === "Softeis: Rating" ? filteredShops.map(shop => shop.finaler_softeis_score).filter(softeisscore => softeisscore !== null) :
+            selectedOption === "Eisbecher: Rating" ? filteredShops.map(shop => shop.finaler_softeis_score).filter(becherscore => becherscore !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
@@ -181,21 +147,27 @@ const IceCreamRadar = () => {
     }
   };
 
-  const InitialFetch = ({ onInitialFetch }) => {
-    const map = useMap();
+  useEffect(() => {
+    if (userId !== undefined) {
+      fetchIceCreamShops();
+    }
+  }, [userId]);
 
-    useEffect(() => {
-      const bounds = map.getBounds();
-      onInitialFetch({
-        minLat: bounds.getSouth(),
-        maxLat: bounds.getNorth(),
-        minLon: bounds.getWest(),
-        maxLon: bounds.getEast(),
-      });
-    }, [map, onInitialFetch]);
+  const baseOptions = [
+    "Alle",
+    "Kugel: Preis",
+    "Softeis: Preis",
+    "Kugel: Rating",
+    "Softeis: Rating",
+    "Eisbecher: Rating"
+  ];
+  // Nur wenn userId gesetzt ist, Favoriten hinzufügen
+  const userOptions = userId ? ["Favoriten"] : [];
 
-    return null;
-  };
+  // Wenn userId === 1, zusätzlich "Besucht" und "Nicht besucht"
+  const visitOptions = Number(userId) === 1 ? ["Besucht", "Nicht besucht"] : [];
+
+  const options = [...baseOptions, ...userOptions, ...visitOptions];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -204,7 +176,7 @@ const IceCreamRadar = () => {
       />
       <LogoContainer>
         <DropdownSelect
-          options={["Alle", "Favoriten", "Kugel: Preis", "Softeis: Preis", "Kugel: Rating ", "Softeis: Rating ", "Eisbecher: Rating "]}
+          options={options}
           onChange={(selectedOption) => {
             console.log("Ausgewählt:", selectedOption);
             setSelectedOption(selectedOption);
@@ -221,15 +193,16 @@ const IceCreamRadar = () => {
         zoom={14}
         style={{ flex: 1, width: '100%' }}
         ref={mapRef}
+        whenCreated={(mapInstance) => {
+          mapInstance.on('dragstart zoomstart', () => {
+            setHasInteractedWithMap(true);
+          });
+        }}
       >
-
-        <InitialFetch onInitialFetch={fetchIceCreamShops} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-
-        <MapEventHandler />
         {activeShop && <MapCenterOnShop shop={activeShop} />}
         {clustering ? ( // show the clustered
           <MarkerClusterGroup maxClusterRadius={25}>
@@ -241,7 +214,6 @@ const IceCreamRadar = () => {
                   selectedOption={selectedOption}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
-                  plv={shop.PLV}
                   fetchShopDetails={fetchShopDetails}
                   fetchAndCenterShop={fetchAndCenterShop}
                 />
@@ -257,7 +229,6 @@ const IceCreamRadar = () => {
                 selectedOption={selectedOption}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
-                plv={shop.PLV}
                 fetchShopDetails={fetchShopDetails}
                 fetchAndCenterShop={fetchAndCenterShop}
               />

@@ -14,6 +14,8 @@ require_once __DIR__ . '/../evaluators/AllIceTypesEvaluator.php';
 require_once __DIR__ . '/../evaluators/DistanceIceTravelerEvaluator.php';
 require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
+require_once __DIR__ . '/../evaluators/Chemnitz2025Evaluator.php';
+require_once __DIR__ . '/../evaluators/BundeslandExperteEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -127,6 +129,11 @@ try {
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
     $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
+    $anreise = $_POST['anreise'] ?? null;
+    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Sonstiges'];
+    if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
+        respondWithError('Ungültige Anreiseart.');
+    }
     // Bewertungen validieren
     validateRatingRange($geschmack, 'geschmackbewertung');
     validateRatingRange($waffel, 'waffelbewertung');
@@ -191,10 +198,10 @@ try {
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise]);
     $checkinId = $pdo->lastInsertId();
 
     if (!empty($bildUrls)) {
@@ -207,6 +214,16 @@ try {
         }
     }
 
+    // Metadaten des neuen Checkins laden
+    $checkinMeta = $pdo->prepare("
+        SELECT c.id, c.anreise, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land
+        FROM checkins c
+        JOIN eisdielen e ON c.eisdiele_id = e.id
+        WHERE c.id = ?
+    ");
+    $checkinMeta->execute([$checkinId]);
+    $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
+
     // Evaluatoren
     $evaluators = [
         new CountyCountEvaluator(),
@@ -217,7 +234,9 @@ try {
         new AllIceTypesEvaluator(),
         new DistanceIceTravelerEvaluator(),
         new StammkundeEvaluator(),
-        new CountryVisitEvaluator()
+        new CountryVisitEvaluator(),
+        new Chemnitz2025Evaluator(),
+        new BundeslandExperteEvaluator()
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -229,6 +248,10 @@ try {
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
+        if ($evaluator instanceof MetadataAwareEvaluator) {
+            $evaluator->setCheckinMetadata($meta);
+        }
+
         try {
             $evaluated = $evaluator->evaluate($userId);
             $newAwards = array_merge($newAwards, $evaluated);

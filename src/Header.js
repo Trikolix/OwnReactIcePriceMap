@@ -51,6 +51,7 @@ const Header = ({ refreshShops }) => {
             <MenuItemLink to="/">Eisdielen-Karte</MenuItemLink>
             <MenuItemLink to="/ranking">Top Eisdielen</MenuItemLink>
             <MenuItemLink to="/dashboard">Aktivitäten</MenuItemLink>
+            <MenuItemLink to="/statistics">Statistiken</MenuItemLink>
             {isLoggedIn ? (
               <>
                 <MenuItemLink to={`/user/${userId}`} className="logged-in">Profil ({username})</MenuItemLink>

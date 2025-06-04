@@ -3,8 +3,8 @@ require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/MetadataAwareEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareEvaluator {
-    const AWARD_ID = 19;
+class BundeslandExperteEvaluator extends BaseAwardEvaluator implements MetadataAwareEvaluator {
+    const AWARD_ID = 22;
 
     private array $checkinMeta = [];
 
@@ -14,13 +14,13 @@ class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareE
 
     public function evaluate(int $userId): array {
         global $pdo;
+        
+        if (empty($this->checkinMeta['bundesland'])) {
+            throw new Exception("Bundesland-Information fehlt");
+        }
+        $bundesland = $this->checkinMeta['bundesland'];
 
         $achievements = [];
-
-        if (empty($this->checkinMeta['land'])) {
-            throw new Exception("Land-Information fehlt");
-        }
-        $land = $this->checkinMeta['land'];
 
         // Hole alle Level für diesen Award aus der Datenbank
         $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
@@ -32,9 +32,11 @@ class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareE
 
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
-            $landId = (int)$levelData['threshold'];
-            if ((int)$land == $landId) {
-                if ($this->hasVisitedCountry($userId, $landId) && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+            $bundeslandId = (int)$levelData['threshold'];
+            if ((int)$bundesland == $bundeslandId) {
+                $iceCount = $this->getIceCountBundesland($userId, $bundeslandId);
+
+                if ($iceCount >= 30 && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                     $achievements[] = [
                         'award_id' => self::AWARD_ID,
                         'level' => $level,
@@ -47,17 +49,17 @@ class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareE
         return $achievements;
     }
 
-    private function hasVisitedCountry(int $userId, int $landId): bool {
+    private function getIceCountBundesland(int $userId, int $bundeslandId): int {
         global $pdo;
-        $sql = "SELECT 
-	                COUNT(c.id)
-                FROM `checkins` c
-                JOIN eisdielen e ON c.eisdiele_id = e.id
-                WHERE c.`nutzer_id` = ? AND e.land_id = ?;";
+        $sql = "SELECT COUNT(s.id) AS anzahl_eis
+         FROM checkins c
+         JOIN checkin_sorten s ON s.checkin_id = c.id
+		 JOIN eisdielen e ON e.id = c.eisdiele_id
+         WHERE c.nutzer_id = :userId AND e.bundesland_id = :bundeslandId;";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userId, $landId]);
+        $stmt->execute(['userId' => $userId, 'bundeslandId' => $bundeslandId]);
 
-        return (bool)$stmt->fetchColumn() > 0;
+        return (int)$stmt->fetchColumn();
     }
 }
 ?>

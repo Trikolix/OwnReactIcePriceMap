@@ -14,9 +14,15 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute([':userId' => $userId, ':shopId' => $shopId]);
 $review = $stmt->fetch();
 
-$stmtAllAttr = $pdo->prepare("SELECT name FROM attribute");
+$stmtAllAttr = $pdo->prepare("
+    SELECT a.name
+    FROM attribute a
+    LEFT JOIN bewertung_attribute ba ON a.id = ba.attribut_id
+    GROUP BY a.name
+    ORDER BY COUNT(ba.attribut_id) DESC, a.name ASC
+");
 $stmtAllAttr->execute();
-$allAttributes = $stmtAllAttr->fetchAll(PDO::FETCH_COLUMN);
+$allAttributes = array_map('trim', $stmtAllAttr->fetchAll(PDO::FETCH_COLUMN));
 if ($review) {
     // Attribute zur Bewertung abfragen
     $stmtAttr = $pdo->prepare("

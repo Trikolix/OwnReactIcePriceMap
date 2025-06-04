@@ -9,6 +9,31 @@ if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude'
     exit;
 }
 
+$checkStmt = $pdo->prepare("
+    SELECT id FROM eisdielen
+    WHERE name = :name
+    AND (
+        6371 * acos(
+            cos(radians(:lat)) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians(:lon)) +
+            sin(radians(:lat)) * sin(radians(latitude))
+        )
+    ) < 0.2
+");
+$checkStmt->execute([
+    ':name' => $data['name'],
+    ':lat' => floatval($data['latitude']),
+    ':lon' => floatval($data['longitude'])
+]);
+
+if ($checkStmt->fetch()) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Eine Eisdiele mit diesem Namen ist bereits in der Nähe vorhanden."
+    ]);
+    exit;
+}
+
 function getLocationDetailsFromCoords($lat, $lon) {
     $url = "https://nominatim.openstreetmap.org/reverse?lat={$lat}&lon={$lon}&format=json&addressdetails=1&accept-language=de";
     $opts = [
@@ -20,19 +45,47 @@ function getLocationDetailsFromCoords($lat, $lon) {
     $json = file_get_contents($url, false, $context);
     $data = json_decode($json, true);
 
-    if (!isset($data['address']['state'])) {
-        return null;
+    if (!isset($data['address']['country'])) {
+        return null; // abbrechen, wenn nichts Brauchbares da ist
     }
+    
+     $address = $data['address'];
+
+     // Bundesland / Region fallback
+    $bundesland = $address['state']
+        ?? $address['region']
+        ?? $address['state_district']
+        ?? $address['county']
+        ?? $address['municipality']
+        ?? $address['town']
+        ?? $address['city']
+        ?? $address['village']
+        ?? $address['postcode']
+        ?? 'Unbekannt';
+
     // 'county' -> fallback 'city' -> fallback 'town' -> fallback 'village'
-    $landkreis = $data['address']['county'] ?? $data['address']['city'] ?? $data['address']['town'] ?? $data['address']['village'] ?? null;
+    $landkreis = $address['county']
+        ?? $address['city']
+        ?? $address['town']
+        ?? $address['village']
+        ?? null;
+
+    // ISO-Level automatisch bestimmen
+    $iso = null;
+    foreach ($address as $key => $value) {
+        if (strpos($key, 'ISO3166-2') !== false) {
+            $iso = $value;
+            break;
+        }
+    }
+
     return [
-        'land' => $data['address']['country'],
-        "country_code" => $data['address']['country_code'],
-        'bundesland' => $data['address']['state'],
-        'bundesland_iso' => $data['address']['ISO3166-2-lvl4'] ?? null,
+        'land' => $address['country'],
+        'country_code' => $address['country_code'],
+        'bundesland' => $bundesland,
+        'bundesland_iso' => $iso,
         'landkreis' => $landkreis,
     ];
-    return null;
 }
 
 function getOrCreateLandId($pdo, $land, $country_code = null) {
@@ -76,16 +129,24 @@ $lon = $data['longitude'];
 $location = getLocationDetailsFromCoords($lat, $lon);
 if ($location) {
     $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
-    $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'], $landId);
-    $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
+
+    $bundeslandId = null;
+    $landkreisId = null;
+    if (!empty($location['bundesland'])) {
+        $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'] ?? null, $landId);
+    }
+
+    if (!empty($location['landkreis']) && $bundeslandId !== null) {
+        $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
+    }
     try {
         $stmt->execute([
             ':name' => $data['name'],
             ':adresse' => $data['adresse'],
             ':latitude' => floatval($data['latitude']),
             ':longitude' => floatval($data['longitude']),
-            ':website' => $data['website'],
-            ':openingHours' => $data['openingHours'],
+            ':website' => $data['website'] ?? null,
+            ':openingHours' => $data['openingHours'] ?? null,
             ':userId' => intval($data['userId']),
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId,
