@@ -18,15 +18,16 @@ function getCheckinById(PDO $pdo, int $id): ?array {
 
     $checkin['eissorten'] = getSortenForCheckin($pdo, $id);
     $checkin['bilder'] = getBilderForCheckin($pdo, $id);
-
-    // 🟡 Kommentaranzahl ergänzen
-    $stmtKommentare = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE checkin_id = :id");
-    $stmtKommentare->execute(['id' => $id]);
-    $checkin['commentCount'] = (int) $stmtKommentare->fetchColumn();
+    $checkin['commentCount'] = getCommentCountForCheckin($pdo, $id);
 
     return $checkin;
 }
 
+function getCommentCountForCheckin(PDO $pdo, int $checkinId): int {
+    $stmtKommentare = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE checkin_id = :id");
+    $stmtKommentare->execute(['id' => $checkinId]);
+    return (int) $stmtKommentare->fetchColumn();
+}
 function getSortenForCheckin(PDO $pdo, int $checkinId): array {
     $stmt = $pdo->prepare("
         SELECT sortenname, bewertung
@@ -66,6 +67,7 @@ function getCheckinsByEisdieleId(PDO $pdo, int $eisdieleId): array {
     foreach ($checkins as &$checkin) {
         $checkin['eissorten'] = getSortenForCheckin($pdo, $checkin['id']);
         $checkin['bilder'] = getBilderForCheckin($pdo, $checkin['id']);
+        $checkin['commentCount'] = getCommentCountForCheckin($pdo, $checkin['id']);
     }
     return $checkins;
 }

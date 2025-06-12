@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
+import { useSearchParams } from 'react-router-dom';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
 import ReviewCard from './components/ReviewCard';
@@ -31,6 +32,15 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const [currentHeight, setCurrentHeight] = useState(window.innerHeight * 0.5);
   const [{ height }, api] = useSpring(() => ({ height: currentHeight }));
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const focusCheckinId = searchParams.get("focusCheckin");
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const minHeight = window.innerHeight * 0.3;
   const maxHeight = window.innerHeight * 1;
@@ -132,6 +142,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               setShowReviewForm={setShowReviewForm}
               routes={routes}
               refreshRoutes={refreshRoutes}
+              focusCheckinId={focusCheckinId}
             />
           </Content>
         </AnimatedContainer>
@@ -163,6 +174,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               setShowReviewForm={setShowReviewForm}
               routes={routes}
               refreshRoutes={refreshRoutes}
+
+              focusCheckinId={focusCheckinId}
             />
           </Content>
         </Container>)}
@@ -202,7 +215,20 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
     </>);
 };
-const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes }) => {
+const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes, focusCheckinId }) => {
+  const checkinRefs = useRef({});
+
+  useEffect(() => {
+    if (
+      activeTab === 'checkins' &&
+      focusCheckinId &&
+      shopData?.checkins?.length &&
+      checkinRefs.current[focusCheckinId]
+    ) {
+      checkinRefs.current[focusCheckinId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeTab, shopData?.checkins, focusCheckinId]);
+
   const calculateTimeDifference = (dateString) => {
     const currentDate = new Date();
     const pastDate = new Date(dateString);
@@ -318,14 +344,25 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
       </div>
     );
   } else if (activeTab === 'checkins') {
-    return (<div>
-      <h2>CheckIns</h2>
-      {shopData.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
-      {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
-      {shopData.checkins && (shopData.checkins.map((checkin, index) => (
-        <CheckinCard key={index} checkin={checkin} onSuccess={refreshShop} />
-      )))}
-    </div>);
+    return (
+      <div>
+        <h2>CheckIns</h2>
+        {shopData.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
+        {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
+        {shopData.checkins && (shopData.checkins.map((checkin, index) => (
+          <div
+            key={checkin.id}
+            ref={(el) => checkinRefs.current[checkin.id] = el}
+          >
+            <CheckinCard
+              key={checkin.id}
+              checkin={checkin}
+              onSuccess={refreshShop}
+              showComments={checkin.id.toString() === focusCheckinId?.toString()}
+            />
+          </div>
+        )))}
+      </div>);
   } else if (activeTab === 'reviews') {
     return (<div>
       <h2>Bewertungen</h2>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, forwardRef, useEffect } from "react";
 import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
@@ -7,10 +7,17 @@ import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
 
-const CheckinCard = ({ checkin, onSuccess }) => {
+const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
-  const [showComments, setShowComments] = useState(false);
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments); // initial true, wenn übergeben
+
+  useEffect(() => {
+    if (showComments) {
+      setAreCommentsVisible(true);
+    }
+  }, [showComments]);
+
   const anreiseIcons = {
     Fahrrad: "🚲",
     Motorrad: "🏍️",
@@ -26,7 +33,7 @@ const CheckinCard = ({ checkin, onSuccess }) => {
 
   return (
     <>
-      <Card>
+      <Card ref={ref}>
         <DateText dateTime={checkin.datum}>
           {new Date(checkin.datum).toLocaleDateString("de-DE", {
             day: "numeric",
@@ -104,12 +111,12 @@ const CheckinCard = ({ checkin, onSuccess }) => {
           </RightContent>
         </ContentWrapper>
         <CommentToggle
-          title={showComments ? "Kommentare ausblenden" : "Kommentare einblenden"}
-          onClick={() => setShowComments(!showComments)}
+          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
         >
           💬 {checkin.commentCount || 0} Kommentar(e)
         </CommentToggle>
-        {showComments && <CommentSection checkinId={checkin.id} />}
+        {areCommentsVisible && <CommentSection checkinId={checkin.id} />}
       </Card>
 
 
@@ -127,7 +134,7 @@ const CheckinCard = ({ checkin, onSuccess }) => {
       )}
     </>
   );
-};
+});
 
 export default CheckinCard;
 

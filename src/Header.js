@@ -4,6 +4,7 @@ import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link } from 'react-router-dom';
+import NotificationBell from './components/NotificationBell';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,7 +41,7 @@ const Header = ({ refreshShops }) => {
         <LogoContainer>
           <a href="/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
         </LogoContainer>
-
+        {isLoggedIn && <NotificationBell />}
         <BurgerMenu onClick={toggleMenu}>
           <span />
           <span />
