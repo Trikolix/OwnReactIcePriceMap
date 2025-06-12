@@ -240,23 +240,41 @@ const Td = styled.td`
 const TabContainer = styled.div`
   display: flex;
   justify-content: center;
+  flex-wrap: wrap; /* Tabs umbrechen, wenn nötig */
+  gap: 0.5rem;
   margin-bottom: 1rem;
+
+  @media (max-width: 600px) {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: wrap;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 0.5rem;
+    width: 100%;
+  }
 `;
 
 const TabButton = styled.button`
-  padding: 0.5rem 1rem;
-  margin: 0 0.5rem;
+  padding: 0.4rem 0.8rem;
+  margin: 0;
   background-color: ${(props) => (props.active ? '#0077b6' : '#f0f0f0')};
   color: ${(props) => (props.active ? 'white' : '#333')};
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
+  white-space: nowrap;
 
   &:hover {
     background-color: ${(props) => (props.active ? '#005f8a' : '#e0e0e0')};
   }
+
+  @media (max-width: 600px) {
+    font-size: 0.875rem;
+    padding: 0.3rem 0.6rem;
+  }
 `;
+
 
 const TabContent = styled.div`
   margin-top: 1rem;

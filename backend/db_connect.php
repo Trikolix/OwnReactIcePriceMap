@@ -3,7 +3,10 @@ $DEBUG_MODE = false;
 
 $allowed_origins = [
     'https://ice-app.de',
-    'https://ice-app.4lima.de'
+    'https://ice-app.4lima.de',
+    'http://www.ice-app.de/',
+    'https://www.ice-app.de/',
+    'www.ice-app.de'
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? null;

@@ -19,6 +19,11 @@ function getCheckinById(PDO $pdo, int $id): ?array {
     $checkin['eissorten'] = getSortenForCheckin($pdo, $id);
     $checkin['bilder'] = getBilderForCheckin($pdo, $id);
 
+    // 🟡 Kommentaranzahl ergänzen
+    $stmtKommentare = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE checkin_id = :id");
+    $stmtKommentare->execute(['id' => $id]);
+    $checkin['commentCount'] = (int) $stmtKommentare->fetchColumn();
+
     return $checkin;
 }
 

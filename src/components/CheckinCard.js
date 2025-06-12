@@ -5,10 +5,12 @@ import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
+import CommentSection from "./CommentSection";
 
 const CheckinCard = ({ checkin, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
+  const [showComments, setShowComments] = useState(false);
   const anreiseIcons = {
     Fahrrad: "🚲",
     Motorrad: "🏍️",
@@ -34,7 +36,7 @@ const CheckinCard = ({ checkin, onSuccess }) => {
         </DateText>
         <ContentWrapper>
           <LeftContent>
-            <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat 
+            <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat
             bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
 
             {checkin.eissorten && checkin.eissorten.length > 0 && (
@@ -101,6 +103,13 @@ const CheckinCard = ({ checkin, onSuccess }) => {
             />
           </RightContent>
         </ContentWrapper>
+        <CommentToggle
+          title={showComments ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setShowComments(!showComments)}
+        >
+          💬 {checkin.commentCount || 0} Kommentar(e)
+        </CommentToggle>
+        {showComments && <CommentSection checkinId={checkin.id} />}
       </Card>
 
 
@@ -247,4 +256,19 @@ const DateText = styled.time`
   display: flex;
   align-items: center;
   gap: 0.25rem;
+`;
+
+const CommentToggle = styled.button`
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #339af0;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.25rem 0;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;

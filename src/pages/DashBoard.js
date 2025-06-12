@@ -8,11 +8,6 @@ import ShopCard from './../components/ShopCard';
 
 
 function DashBoard() {
-  const [data, setData] = useState({
-    pricePerLandkreis: [],
-    reviews: [],
-    checkins: [],
-  });
 
   const [activities, setActivities] = useState([]);
 
@@ -22,19 +17,6 @@ function DashBoard() {
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   const fetchDashboard = async () => {
-    fetch(`${apiUrl}/dashboard.php`)
-      .then((res) => res.json())
-      .then((json) => {
-        console.log(json);
-        setData(json);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Fehler beim Laden der Dashboard-Daten:", err);
-        setError(err);
-        setLoading(false);
-      });
-
     fetch(`${apiUrl}/activity_feed.php`)
       .then((res) => res.json())
       .then((json) => {
