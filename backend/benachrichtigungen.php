@@ -15,7 +15,7 @@ if ($action === 'list' && isset($_GET['nutzer_id'])) {
     $nutzerId = (int)$_GET['nutzer_id'];
 
     $stmt = $pdo->prepare("
-        SELECT id, typ, referenz_id, text, ist_gelesen, erstellt_am
+        SELECT id, typ, referenz_id, text, ist_gelesen, erstellt_am, zusatzdaten
         FROM benachrichtigungen
         WHERE empfaenger_id = :uid
         ORDER BY erstellt_am DESC

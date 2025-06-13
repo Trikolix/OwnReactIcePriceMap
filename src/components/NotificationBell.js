@@ -55,12 +55,17 @@ const NotificationBell = () => {
         }
     };
 
-    const handleNotificationClick = (id, istGelesen)  => {
-        if (!istGelesen) {
-            markAsRead(id);
+    const handleNotificationClick = (notification)  => {
+        if (!notification.ist_gelesen) {
+            markAsRead(notification.id);
         }
-        // Optional: Weiterleitung o. ä.
-        // z.B. navigate(`/benachrichtigung/${id}`);
+        if (notification.typ === 'kommentar') {
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            if (data.checkin_id && data.eisdiele_id) {
+                const url = `/#/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
+                window.location.href = url;
+            }
+        }
     };
 
     const unreadCount = notifications.filter((n) => !n.ist_gelesen).length;
@@ -81,7 +86,7 @@ const NotificationBell = () => {
                                 <NotificationItem
                                     key={n.id}
                                     gelesen={n.ist_gelesen}
-                                    onClick={() => handleNotificationClick(n.id, n.ist_gelesen)}
+                                    onClick={() => handleNotificationClick(n)}
                                 >
                                     <Message>{n.text}</Message>
                                     <Time>
@@ -107,7 +112,6 @@ export default NotificationBell;
 const BellWrapper = styled.div`
   position: relative;
   margin-left: 15px;
-  z-index: 1100;
 `;
 
 const BellButton = styled.button`
@@ -140,6 +144,7 @@ const Dropdown = styled.div`
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
+  z-index: 1100;
 `;
 
 const NotificationList = styled.ul`

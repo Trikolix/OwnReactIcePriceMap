@@ -29,8 +29,6 @@ switch ("$method:$action") {
         break;
 }
 
-// === FUNKTIONEN ===
-
 function createKommentar($pdo) {
     $input = json_decode(file_get_contents('php://input'), true);
     $checkinId = (int)$input['checkin_id'];
@@ -53,19 +51,56 @@ function createKommentar($pdo) {
     $stmt->execute([$checkinId, $nutzerId, $kommentar]);
     $kommentarId = $pdo->lastInsertId();
 
-    // Checkin-Autor ermitteln
-    $stmt = $pdo->prepare("SELECT nutzer_id FROM checkins WHERE id = ?");
-    $stmt->execute([$checkinId]);
-    $checkinAutorId = $stmt->fetchColumn();
+    // Checkin-Autor und Shop-ID ermitteln
+    $stmt = $pdo->prepare("
+        SELECT c.nutzer_id AS autor_id, c.eisdiele_id, n.username AS kommentator_name
+        FROM checkins c
+        JOIN nutzer n ON n.id = ?
+        WHERE c.id = ?
+    ");
+    $stmt->execute([$nutzerId, $checkinId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    $checkinAutorId = $row['autor_id'];
+    $eisdieleId = $row['eisdiele_id'];
+    $kommentatorName = $row['kommentator_name'];
+
+    $zusatzdaten = json_encode([
+            'checkin_id' => $checkinId,
+            'eisdiele_id' => $eisdieleId,
+            'kommentar_id' => $kommentarId
+        ]);
+
+    // 1. Benachrichtigung an Check-in-Autor
     if ($checkinAutorId && $checkinAutorId != $nutzerId) {
-        // Benachrichtigung speichern
         $stmt = $pdo->prepare("
-            INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text)
-            VALUES (?, 'kommentar', ?, ?)
+            INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
+            VALUES (?, 'kommentar', ?, ?, ?)
         ");
-        $text = "Jemand hat deinen Check-in kommentiert.";
-        $stmt->execute([$checkinAutorId, $kommentarId, $text]);
+        $text = "$kommentatorName hat deinen Check-in kommentiert.";
+        
+        $stmt->execute([$checkinAutorId, $kommentarId, $text, $zusatzdaten]);
+    }
+
+    // 2. Andere Kommentierende benachrichtigen
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT nutzer_id
+        FROM kommentare
+        WHERE checkin_id = ? AND nutzer_id NOT IN (?, ?)
+    ");
+    $stmt->execute([$checkinId, $nutzerId, $checkinAutorId]);
+    $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if ($beteiligteIds) {
+        $text = "$kommentatorName hat einen Check-in kommentiert, den du auch kommentiert hast.";
+        $stmt = $pdo->prepare("
+            INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
+            VALUES (?, 'kommentar', ?, ?, ?)
+        ");
+
+        foreach ($beteiligteIds as $beteiligterId) {
+            $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
+        }
     }
 
     echo json_encode([
@@ -147,6 +182,11 @@ function deleteKommentar($pdo) {
         return;
     }
 
+    // Zuerst Benachrichtigung löschen
+    $stmt = $pdo->prepare("DELETE FROM benachrichtigungen WHERE typ = 'kommentar' AND referenz_id = ?");
+    $stmt->execute([$kommentarId]);
+
+    // Dann Kommentar löschen
     $stmt = $pdo->prepare("DELETE FROM kommentare WHERE id = ?");
     $stmt->execute([$kommentarId]);
 
