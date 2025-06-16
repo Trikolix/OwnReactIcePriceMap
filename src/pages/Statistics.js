@@ -19,6 +19,9 @@ function Statistics() {
 
   const [activeTab, setActiveTab] = useState('landkreisPreis');
 
+  const [expandedFlavour, setExpandedFlavour] = useState(null);
+  const [flavourDetails, setFlavourDetails] = useState({});
+
   const fetchDashboard = async () => {
     fetch(`${apiUrl}/statistics.php`)
       .then((res) => res.json())
@@ -37,6 +40,25 @@ function Statistics() {
   useEffect(() => {
     fetchDashboard();
   }, []);
+
+  const loadFlavourDetails = async (sortenname, iceType) => {
+    const key = `${sortenname}__${iceType}`;
+
+    if (flavourDetails[key]) {
+      setExpandedFlavour(expandedFlavour === key ? null : key);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/getBestShopsByFlavour.php?sortenname=${encodeURIComponent(sortenname)}&iceType=${encodeURIComponent(iceType)}`);
+      const json = await res.json();
+      setFlavourDetails(prev => ({ ...prev, [key]: json }));
+      setExpandedFlavour(key);
+    } catch (err) {
+      console.error("Fehler beim Laden der Details:", err);
+    }
+  };
+
 
 
   if (loading) return (
@@ -58,34 +80,34 @@ function Statistics() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header />
       <div style={{ width: '100vw', height: '100vh', backgroundColor: 'white' }}>
-      <Title>Statistiken</Title>
-      <Container>
-        <TabContainer>
-          <TabButton
-            active={activeTab === 'landkreisPreis'}
-            onClick={() => setActiveTab('landkreisPreis')}
-          >
-            Ø Kugelpreis pro Landkreis
-          </TabButton>
-          <TabButton
-            active={activeTab === 'bundeslandPreis'}
-            onClick={() => setActiveTab('bundeslandPreis')}
-          >
-            Ø Kugelpreis pro Bundesland
-          </TabButton>
-          <TabButton
-            active={activeTab === 'mostPopularFlavours'}
-            onClick={() => setActiveTab('mostPopularFlavours')}
-          >
-            beliebteste Eissorten
-          </TabButton>
-          <TabButton
-            active={activeTab === 'activeUsers'}
-            onClick={() => setActiveTab('activeUsers')}
-          >
-            aktivste Benutzer
-          </TabButton>
-        </TabContainer>
+        <Title>Statistiken</Title>
+        <Container>
+          <TabContainer>
+            <TabButton
+              active={activeTab === 'landkreisPreis'}
+              onClick={() => setActiveTab('landkreisPreis')}
+            >
+              Ø Kugelpreis pro Landkreis
+            </TabButton>
+            <TabButton
+              active={activeTab === 'bundeslandPreis'}
+              onClick={() => setActiveTab('bundeslandPreis')}
+            >
+              Ø Kugelpreis pro Bundesland
+            </TabButton>
+            <TabButton
+              active={activeTab === 'mostPopularFlavours'}
+              onClick={() => setActiveTab('mostPopularFlavours')}
+            >
+              beliebteste Eissorten
+            </TabButton>
+            <TabButton
+              active={activeTab === 'activeUsers'}
+              onClick={() => setActiveTab('activeUsers')}
+            >
+              aktivste Benutzer
+            </TabButton>
+          </TabContainer>
 
           <TabContent>
             {activeTab === 'landkreisPreis' && (<div>
@@ -146,15 +168,41 @@ function Statistics() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.mostEatenFlavours.map((entry) => (
-                    <tr>
-                      <Td>{entry.sortenname}</Td>
-                      <Td>{entry.typ}</Td>
-                      <Td>{entry.anzahl}</Td>
-                      <Td>{parseFloat(entry.bewertung).toFixed(2)}</Td>            
-                    </tr>
-                  ))}
+                  {data.mostEatenFlavours.map((entry, idx) => {
+                    const key = `${entry.sortenname}__${entry.typ}`;
+                    const isExpanded = expandedFlavour === key;
+                    const details = flavourDetails[key] || [];
+
+                    return (
+                      <React.Fragment key={key}>
+                        <tr onClick={() => loadFlavourDetails(entry.sortenname, entry.typ)} style={{ cursor: 'pointer' }}>
+                          <Td>{entry.sortenname}</Td>
+                          <Td>{entry.typ}</Td>
+                          <Td>{entry.anzahl}</Td>
+                          <Td>{parseFloat(entry.bewertung).toFixed(2)}</Td>
+                        </tr>
+                        <tr>
+                          <Td colSpan="4" style={{ padding: 0, border: 'none' }}>
+                            <ExpandContainer expanded={isExpanded}>
+                              {details.length > 0 ? (
+                                <DetailList>
+                                  {details.map((eisdiele) => (
+                                    <li key={eisdiele.eisdiele_id}>
+                                      <strong><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.eisdiele_name}</CleanLink></strong>: Ø {parseFloat(eisdiele.durchschnittsbewertung).toFixed(2)}
+                                    </li>
+                                  ))}
+                                </DetailList>
+                              ) : (
+                                <EmptyText>Keine Daten verfügbar</EmptyText>
+                              )}
+                            </ExpandContainer>
+                          </Td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
+
               </Table>
             </div>
             )}
@@ -188,7 +236,7 @@ function Statistics() {
             </div>
             )}
           </TabContent>
-      </Container>
+        </Container>
       </div>
     </div>
   )
@@ -285,4 +333,30 @@ const UserLink = styled(Link)`
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+`;
+
+const ExpandContainer = styled.div`
+  max-height: ${(props) => (props.expanded ? '500px' : '0')};
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+  background-color: #fafafa;
+  padding: ${(props) => (props.expanded ? '0.5rem 1rem' : '0 1rem')};
+`;
+
+const DetailList = styled.ul`
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  list-style-type: disc;
+  font-size: 0.95rem;
+`;
+
+const EmptyText = styled.div`
+  padding: 0.5rem;
+  font-style: italic;
+  color: #777;
+`;
+
+const CleanLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
 `;

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Jun 2025 um 14:22
+-- Erstellungszeit: 16. Jun 2025 um 10:56
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -117,7 +117,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (89, 19, 6, 17, 'uploads/award_icons/683550383d8de_ChatGPT Image 27. Mai 2025, 07_38_42.png', 'Pagoto please', 'Ein eiskalter Genuss zwischen Olivenhainen und Ouzo.'),
 (90, 19, 7, 13, 'uploads/award_icons/683550cc2849b_ChatGPT Image 27. Mai 2025, 07_40_53.png', 'Is-Tid', 'Skandinavisch cool: Ein dänisches Eis am Hafen.'),
 (91, 19, 8, 31, 'uploads/award_icons/683558cb9de16_ChatGPT Image 27. Mai 2025, 08_15_16.png', 'Ijs-Tijd', 'Zwischen Grachten und Gouda: Eispause in den Niederlanden.'),
-(92, 21, 1, 3, 'uploads/award_icons/6837e19c05c5e_1000081127.png', 'weltweit genossen ', 'Du hast in 3 verschiedenen Ländern Eis genossen.'),
+(92, 21, 1, 2, 'uploads/award_icons/684017e5d43b1_ChatGPT Image 4. Juni 2025, 11_54_03.png', 'Welt-Eis-Einsteiger', 'Du hast Eis in 2 verschiedenen Ländern gegessen. Ein kleiner Schritt für die Welt – ein großer für deinen Geschmackssinn!'),
 (93, 19, 9, 36, 'uploads/award_icons/6837e32f5d75c_1000081129.png', 'Gelado português', 'Hat ein Eis in Portugal genossen – wo Sonne, Küste und Geschmack aufeinandertreffen.'),
 (94, 19, 10, 48, 'uploads/award_icons/683c0e2f0c852_IT\'S TEA ICE TIME.png', 'It\'s ice time!', 'Ein Eis im Vereinigten Königreich? Mutig – und stilvoll! Zwischen Regen und Royals hast du dich zum Eis bekannt.'),
 (95, 19, 11, 10, 'uploads/award_icons/683c0eb5ac027_ChatGPT Image 1. Juni 2025, 10_24_45.png', 'Echt belgisch!', 'Du hast in Belgien Eis gegessen – dort, wo sich Schokolade, Waffeln und Weltklasse-Geschmack vereinen. Très délicieux, sehr lekker!'),
@@ -127,7 +127,24 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (100, 22, 1, 1, 'uploads/award_icons/683d615fa5b6d_Design ohne Titel (2).png', 'Eisvulkanologe Thüringens', 'Wer 30 Eis in Thüringen schleckt, darf sich mit Fug und Recht Eisvulkanologe Thüringens nennen. Vom Eisbecher auf dem Erfurter Domplatz bis zur Kugel im Thüringer Wald – dieser Titel würdigt deinen kühlen Forschergeist zwischen Bratwurst und Burgruinen.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.'),
 (101, 22, 4, 18, 'uploads/award_icons/683d63b404630_ChatGPT Image 2. Juni 2025, 10_34_22.png', 'Berliner Eisdiplom', 'Du hast 30-mal Eis in der Hauptstadt gegessen? Dann bekommst du das Berliner Eisdiplom! Zwischen Späti, Street Art und Spree ist dein Geschmack genauso vielfältig wie die Stadt selbst.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.'),
 (102, 22, 3, 7, 'uploads/award_icons/683d64a4e6bed_ChatGPT Image 2. Juni 2025, 10_44_18.png', 'Bayerischer Eiskrone-Träger', '30 Eis in Bayern? Das ist königlich! Mit diesem Titel wirst du Teil des süßesten Hofstaats des Südens – ein Eiskrone-Träger durch und durch'),
-(103, 22, 2, 3, 'uploads/award_icons/683d64c9f2c51_Kein Titel (1024 x 1024 px).png', 'Kurfürstlicher Eisexperte Sachsens', 'Du hast dich durch die Kugeln des Königreichs geschleckt – von der Leipziger Pfefferminzschnitte bis zum Erzgebirgs-Kirschtraum. Mit 30 Eis in Sachsen auf dem Zähler bist du jetzt offiziell Kurfürstlicher Eisexperte Sachsens!\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.');
+(103, 22, 2, 3, 'uploads/award_icons/683d64c9f2c51_Kein Titel (1024 x 1024 px).png', 'Kurfürstlicher Eisexperte Sachsens', 'Du hast dich durch die Kugeln des Königreichs geschleckt – von der Leipziger Pfefferminzschnitte bis zum Erzgebirgs-Kirschtraum. Mit 30 Eis in Sachsen auf dem Zähler bist du jetzt offiziell Kurfürstlicher Eisexperte Sachsens!\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.'),
+(104, 22, 5, 19, 'uploads/award_icons/683eb6e1dc97d_ChatGPT Image 3. Juni 2025, 10_47_24.png', 'Hansestädtischer Eiskapitän Hamburgs', 'Wer sich durch 30 Hamburger Kugeln geschleckt hat, wird zum Hansestädtischen Eiskapitän befördert. Zwischen Alster, Hafen und Hafeneis zeigt sich: die Zunge ist dein Kompass.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.'),
+(105, 22, 6, 2, 'uploads/award_icons/683eb8dee9fe2_ChatGPT Image 3. Juni 2025, 10_56_49.png', 'Eisreformator Sachsen-Anhalts', 'Für wahre Genießer, die mindestens 30 Kugeln Eis im Land der Reformation verspeist haben.'),
+(106, 22, 7, 5, 'uploads/award_icons/683eb979c4c51_ChatGPT Image 3. Juni 2025, 10_59_25.png', 'Preußischer Eiskanzler Brandenburgs', 'Verliehen an Eisliebhaber, die sich den preußischen Genussstandards in mindestens 30 Portionen Eis in Brandenburg unterzogen haben.'),
+(107, 22, 8, 17, 'uploads/award_icons/683eba2ab9a29_ChatGPT Image 3. Juni 2025, 11_02_12.png', 'Schleckbaron von Baden-Württemberg', 'Für standesgemäßen Genuss süddeutscher Eisfreuden – 30 Eisportionen im Baden-Württembergischen Ländle vernascht.'),
+(108, 22, 9, 15, 'uploads/award_icons/6841b9472aa30_ChatGPT Image 5. Juni 2025, 17_35_23.png', 'Eisgraf von Hessen', 'Frankfurter Kranz ist was für Anfänger – echte Genießer:innen holen sich 30 Portionen Eis aus allen Ecken Hessens. Vom Fachwerk-Flair bis zum Skyline-Scooping: Wer hier ausdauernd löffelt, wird zum Eisgrafen gekrönt – natürlich mit extra Sahne auf dem Wappeneis.'),
+(109, 21, 2, 3, NULL, 'Eis-Grenzgänger', '3 Länder, 3 Kugeln, 3x Glück. Du bist bereit, Grenzen für Eis zu überschreiten!'),
+(110, 21, 3, 5, NULL, 'Eis-Entdecker', 'Du hast die halbe Welt für Eis erkundet – 5 Länder, 5 Geschmacksexplosionen!'),
+(111, 21, 4, 7, NULL, 'Kugel-Weltenbummler', 'Eis in 7 Ländern? Dein Löffel ist ein Kompass. Und der zeigt immer Richtung Eisdiele!'),
+(112, 21, 5, 10, NULL, 'Eis-Diplomat', 'Du hast Eis auf 10 internationalen Bühnen genossen. Wenn es um Eis geht, bist du ein Global Player!'),
+(113, 22, 10, 22, 'uploads/award_icons/6841ba5b2a3fa_ChatGPT Image 5. Juni 2025, 17_37_08.png', 'Norddeutscher Eishengst Niedersachsens', 'Wer 30 Kugeln Eis zwischen der Lüneburger Heide und den Nordseewellen verputzt hat, verdient mehr als Applaus – er oder sie galoppiert direkt in den Kreis der „Eishengste“. Ob mit Sand zwischen den Zehen oder Kuhglocken im Ohr: Diese Auszeichnung ist nichts für Zuckerscheue.'),
+(114, 22, 11, 23, 'uploads/award_icons/6841bb25c3e02_ChatGPT Image 5. Juni 2025, 17_40_31.png', 'Eislandgraf Nordrhein-Westfalens', 'Drei Kugeln, drei Symbole, ein Titel: Wer im Schatten des Doms, am Pott oder entlang des Rheins mindestens 30 Portionen Eis verdrückt, darf sich mit Fug und Recht Eislandgraf nennen. Der Adelstitel mit Sahnehaube für alle, die sich durch die kulinarischen Regionen NRWs geschleckt haben.'),
+(115, 22, 12, 21, 'uploads/award_icons/6847eb206d221_ChatGPT Image 10. Juni 2025, 10_16_15.png', 'Küstenschlecker Mecklenburg-Vorpommerns', 'Verliehen an echte Eis-Lotsen der Ostsee! Wer 30 Portionen Eis zwischen Seebrücken, Möwen und Sanddünen geschleckt hat, darf sich stolz „Küstenschlecker“ nennen. Dieser Orden weht mit salziger Brise und cremiger Würde – mit extra Sahne on top!'),
+(116, 23, 1, 1, 'uploads/award_icons/684fb689be56d_ChatGPT Image 16. Juni 2025, 08_15_28.png', 'Sattelstart-Award', 'Du hast deine erste Eisdiele auf zwei Rädern erobert – willkommen in der Community der Eis-Radler!'),
+(117, 23, 2, 3, 'uploads/award_icons/684fb75051017_ChatGPT Image 16. Juni 2025, 08_16_11.png', 'Bronzene Speiche', 'Drei Touren, drei Kugeln – du trittst nicht nur in die Pedale, sondern auch in die Hall of Cream!'),
+(118, 23, 3, 5, 'uploads/award_icons/684fb77d65ed7_ChatGPT Image 16. Juni 2025, 08_19_33.png', 'Silberkurbel', 'Fünfmal Eis per Rad – du kombinierst Ausdauer mit Genuss. Die silberne Kurbel ist dein Antrieb.'),
+(119, 23, 4, 10, 'uploads/award_icons/684fb7b93dcb1_ChatGPT Image 16. Juni 2025, 08_20_30.png', 'Goldene Kette', 'Zehnmal bist du auf dem goldenen Weg zur perfekten Kugel – deine Kette glänzt wie dein Ehrgeiz.'),
+(120, 23, 5, 50, 'uploads/award_icons/684fb84b4fd82_ChatGPT Image 16. Juni 2025, 08_22_59.png', 'Eislegende auf Rädern', 'Du bist eine Legende des Eisradelns. 50 Touren sprechen für Stil, Ausdauer und echten Geschmack.');
 
 --
 -- Indizes der exportierten Tabellen
@@ -148,7 +165,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
 
 --
 -- Constraints der exportierten Tabellen

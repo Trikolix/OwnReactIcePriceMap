@@ -16,6 +16,8 @@ require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
 require_once __DIR__ . '/../evaluators/Chemnitz2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/BundeslandExperteEvaluator.php';
+require_once __DIR__ . '/../evaluators/CyclingCountEvaluator.php';
+
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -245,6 +247,8 @@ try {
     if ($type === "Kugel") $evaluators[] = new KugeleisCountEvaluator();
     elseif ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
+
+    if ($anreise === 'Fahrrad') $evaluators[] = new CyclingCountEvaluator();
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {

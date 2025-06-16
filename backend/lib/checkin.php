@@ -133,6 +133,7 @@ function getCheckinsByNutzerId(PDO $pdo, int $nutzerId): array {
     foreach ($checkins as &$checkin) {
         $checkin['eissorten'] = getSortenForCheckin($pdo, $checkin['id']);
         $checkin['bilder'] = getBilderForCheckin($pdo, $checkin['id']);
+        $checkin['commentCount'] = getCommentCountForCheckin($pdo, $checkin['id']);
     }
     return $checkins;
 }
