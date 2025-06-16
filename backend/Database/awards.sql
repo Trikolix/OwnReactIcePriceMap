@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:15
+-- Erstellungszeit: 16. Jun 2025 um 11:25
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -57,7 +57,11 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (16, 'private_route_creator', 'Private Routen erstellt', '2025-05-08 12:30:37'),
 (17, 'Stammkunde', 'Anzahl bei gleicher Eisdiele eingecheckt', '2025-05-09 09:22:54'),
 (18, 'Geschmackstreue', 'Anzahl eine Eissorte gegessen', '2025-05-09 09:27:44'),
-(19, 'laender_besucht', 'Eis in bestimmten Ländern eingecheckt', '2025-05-10 11:32:23');
+(19, 'laender_besucht', 'Eis in bestimmten Ländern eingecheckt', '2025-05-10 11:32:23'),
+(20, 'chemnitz2025', 'Chemnitz 2025: Kulturhauptstadt Europas', '2025-05-25 14:38:19'),
+(21, 'laender_count', 'Eis in unterschiedlichen Ländern gegessen', '2025-05-29 04:23:21'),
+(22, 'bundesland_experte', 'Mehr als 30 Eis in einem Bundesland', '2025-06-02 08:19:17'),
+(23, 'cycling_count', 'Anzahl per Fahrrad besuche Eisdielen', '2025-06-16 06:14:49');
 
 --
 -- Indizes der exportierten Tabellen
@@ -78,7 +82,7 @@ ALTER TABLE `awards`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

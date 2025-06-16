@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:16
+-- Erstellungszeit: 16. Jun 2025 um 11:27
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -67,6 +67,7 @@ INSERT INTO `favoriten` (`nutzer_id`, `eisdiele_id`, `hinzugefuegt_am`) VALUES
 (1, 98, '2025-04-12 17:50:22'),
 (1, 101, '2025-04-13 15:48:02'),
 (1, 106, '2025-05-05 13:10:02'),
+(1, 112, '2025-05-26 22:00:49'),
 (1, 122, '2025-04-27 16:40:49'),
 (1, 125, '2025-04-29 10:40:23'),
 (1, 127, '2025-05-01 01:40:05'),

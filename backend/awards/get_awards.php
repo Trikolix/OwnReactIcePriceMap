@@ -10,7 +10,7 @@ try {
 
     // Für jeden Award die Levels holen
     foreach ($awards as &$award) {
-        $stmtLevel = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
+        $stmtLevel = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                     FROM award_levels 
                                     WHERE award_id = ? 
                                     ORDER BY level ASC");

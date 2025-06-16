@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:15
+-- Erstellungszeit: 16. Jun 2025 um 11:26
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -118,7 +118,33 @@ INSERT INTO `bewertungen` (`id`, `eisdiele_id`, `nutzer_id`, `geschmack`, `kugel
 (189, 165, 1, NULL, NULL, NULL, 24, '\"Marschner\'s Eiscafé\", kein anderes Lokal hat wohl in der Region so eine Bekanntheit und einen Ruhm für Eisgenuss.\nUm so herber war der Schock, als die Eisdiele letztes Jahr auf einmal geschlossen hatte und die Zukunft ungewiss war.\nHeute (am 15.05) öffnete die Eisdiele mit dem alten Betreiber wieder ihre Pforten!\nEs gibt eine große Auswahl an ausgefallenen Sorten und ein Preis System von 1,80€ / 2,00€ / 2,20€ pro Kugel.\n\nSchön ist der neu angelegt Park in unmittelbarer Nähe.', '2025-05-15 11:48:10'),
 (191, 145, 1, NULL, NULL, NULL, 16, '', '2025-05-18 11:31:11'),
 (192, 9, 25, NULL, NULL, NULL, NULL, 'Gutes Softeis! Es ist erhältlich in den Sorten Schoko-Vanille oder Erdbeer-Vanille. Sitzgelegenheiten gibt es draußen & drinnen. ', '2025-05-19 17:14:02'),
-(194, 60, 2, NULL, NULL, NULL, 22, 'Schöner belebter Außenbereich und auch zum Reinsetzen. Nun zum Eis:\nSo muss Mango schmecken! Vielfältiges Angebot und sehr lecker. Die Waffel ist nicht billig, aber auch nicht zu trocken, war mir sehr angenehm. Leider nur etwas kleine Kugeln', '2025-05-20 19:32:49');
+(194, 60, 2, NULL, NULL, NULL, 22, 'Schöner belebter Außenbereich und auch zum Reinsetzen. Nun zum Eis:\nSo muss Mango schmecken! Vielfältiges Angebot und sehr lecker. Die Waffel ist nicht billig, aber auch nicht zu trocken, war mir sehr angenehm. Leider nur etwas kleine Kugeln', '2025-05-20 19:32:49'),
+(196, 175, 2, NULL, NULL, NULL, 7, 'Sehr lecker italienisches Eis! Gute Kugelgröße. Ich hatte Fragola😜 einfach mega schön hier!', '2025-05-25 11:28:20'),
+(197, 176, 2, NULL, NULL, NULL, 3, 'Passt schon, aber kein Tourziel unbedingt wert', '2025-05-26 11:16:14'),
+(198, 177, 8, NULL, NULL, NULL, 19, 'Leckeres Eis mit vielen interessanten Sorten, ein Bonus sind die schwarzen Waffeln ', '2025-05-26 15:07:11'),
+(199, 56, 1, NULL, NULL, NULL, 18, 'Sehr schönes Café in toller Lage mit großem Außensitzbereich und einer tollen Auswahl an Eissorten 😍\nDie Gegend lädt zu einem Ausflug ein und das Café ist auf jeden Fall einen Besuch wert.', '2025-05-27 13:45:41'),
+(200, 89, 33, NULL, NULL, NULL, 20, '', '2025-05-27 16:41:31'),
+(201, 184, 32, NULL, NULL, NULL, NULL, 'Hier findest du verschiedene Sorten Softeis, aber auch ein tolles Angebot an Bubblewaffeln. Askir Fresh besitzt eine kleine Sitzecke, auch einen kleinen Radständer. Da sich der Große Garten gleich in der Nähe befindet empfiehlt es sich meiner Meinung nach, vorallem an warmen Sommertagen, sich dann dort ein gemütliches Plätzchen auf einer Wiese oder Bank zu suchen. Im Sommer kann es hier gerade bei den Bubblewaffeln zu ein bisschen Wartezeit kommen. ', '2025-05-28 05:19:51'),
+(202, 170, 1, NULL, NULL, NULL, 10, '', '2025-05-28 05:23:08'),
+(203, 112, 1, NULL, NULL, NULL, 4, 'Hier gibt es lediglich Softeis, dafür 4 verschiedene Sorten und mit verschiedenen Toppings und Saußen. Es gibt auch immer vegane Optionen.\nDirekt anliegend ist der Gerhard-Hauptmann Platz ein schöner Park mit Spielplatz.', '2025-05-28 11:24:47'),
+(205, 4, 1, NULL, NULL, NULL, 1, 'Es gibt hier immer nur eine Sorte im Angebot, diese wechselt aber ständig.\nSehr schöner Gartenbereich der zum Verweilen einlädt, nette Verkäuferin die mir auch schon öfters die Trinkflaschen fürs Fahrrad aufgefüllt hat.', '2025-05-29 13:57:37'),
+(206, 21, 1, NULL, NULL, NULL, 13, 'Eine gute Auswahl ausgefallener Sorten, die man so nicht überall findet. Dazu gibt es auch Softeis, Eisbecher und einen schönen Außenbereich wo man sein Eis gemütlich in der Sonne essen kann.', '2025-05-30 14:17:39'),
+(207, 193, 2, NULL, NULL, NULL, 2, 'Hier gibt\'s zum Bubbletea auch Softeis. Entweder Schoko/Vanille oder Melone/Mango. Als kleines Früchtchen hatte ich das zweite. Hatte im Becher bestellt, die Waffel sah standardmäßig für Softeis aus. Das kleine Eis an sich hatte eine okay Größe für den Preis. Geschmacklich wars nicht überragend, aber auch nicht schlecht.', '2025-05-30 16:23:56'),
+(208, 194, 39, NULL, NULL, NULL, 16, 'Sehr nettes Personal, super leckere Eissorten mit großer Auswahl', '2025-05-30 16:39:38'),
+(211, 195, 41, NULL, NULL, NULL, 10, 'Lieblingscafé am Nordufer des Cosspudener See, im Torhaus des Kees\'schen Parks. Eis draußen am Pavillon aber auch drinnen. Überschaubares Kugel-Angebot aber immer neue, ausgefallene Kreationen.\nViele weitere leckere Speisen, großes phantastisches Kuchenangebot. Herrlicher Außenbereich für jede Witterung, auch Rastplatz für mitgebrachte Speisen, drinnen zwei Etagen, jeden Tag 2 Suppen, großartiges Frühstücksbuffet.\nIm Winter frische Waffeln.', '2025-05-30 22:19:22'),
+(213, 150, 1, NULL, NULL, NULL, 18, 'Gelegen im Erdgeschoss eines Plattenbaus liegt das Eiscafé Roßberg. Draußen gibt es einen schönen und großen Sitzbereich im Grünen.', '2025-05-31 12:03:53'),
+(215, 199, 40, NULL, NULL, NULL, 2, 'Tolles Eis!', '2025-06-01 15:37:35'),
+(216, 200, 40, NULL, NULL, NULL, NULL, 'Stracciatella und Caramel Sorbet, sehr köstlich', '2025-06-01 19:10:58'),
+(221, 201, 40, NULL, NULL, NULL, NULL, 'Super', '2025-06-01 19:16:06'),
+(223, 202, 2, NULL, NULL, NULL, 1, 'Sehr solides Softeis, leider nur Schoko/Vanille, aber dennoch sehr lecker und sahnig bzw. Cremig. Waffel ist Standard für softeis. Die Größe ist für das Geld auch iO :)', '2025-06-01 19:59:10'),
+(224, 204, 41, NULL, NULL, NULL, 14, 'Selbstbedienung.\nSoft- und Kugeleis mit Liebe produziert. \nGetränke, Shakes und Eisbecher\n\nGroßer Freisitz mit Tischen und Bänken. Bäume und Pavillon sorgen für Schatten.\n\nVor dem Zaun gibt es einen Eisautomaten!\n', '2025-06-02 14:49:18'),
+(225, 205, 1, NULL, NULL, NULL, 16, 'Kleines Lokal mit Eis-Fenster zur Straße.\nEs gibt Kugeleis und Softeis.\nDas Kugeleis hat mich nicht ganz überzeugt, das Softeis was die Kunden hinter mir hatten sah aber sehr gut aus, das werde ich wohl noch mal probieren 🤓', '2025-06-03 13:57:32'),
+(226, 3, 1, NULL, NULL, NULL, 14, 'Kleines uriges Lokal, direkt am Marktplatz. Unter anderem gibt es Schwarzbier-Eis.\n', '2025-06-03 15:16:49'),
+(230, 65, 1, NULL, NULL, NULL, 21, 'Ein großes altes Gebäude mit Eisdiele. Alles etwas in die Jahre gekommen und es gibt einen Spendenaufruf zum Erhalt des Gebäudes.\nAber die Eisdiele ist absolut genial, super Preise, sehr leckeres Eis, große Portionen, tolle Sorten und nettes Personal.\nEinen Besuch wert!', '2025-06-04 07:12:42'),
+(234, 35, 1, NULL, NULL, NULL, 19, 'Direkt am Marktplatz in Chemnitz gelegen, gibt es hier Kaffee, Kuchen und auch einen Straßenverlauf für Eis.\n', '2025-06-04 12:39:55'),
+(239, 207, 2, NULL, NULL, NULL, 6, 'Kleine Eisdiele in der Gaststätte beim Campingplatz. Ich hatte eine Kugel Schoko und eine Erdbeere. Geschmacklich ganz solide, aber für den Preis ziemlich klein :/', '2025-06-08 13:33:22'),
+(240, 47, 2, NULL, NULL, NULL, 2, 'Es gibt hier zwar auch Kugeleis, ich würde aber nur das Softeis empfehlen. Das ist mega lecker und auch wirklich groß für den kleinen Preis', '2025-06-14 13:18:26'),
+(241, 70, 1, NULL, NULL, NULL, 18, 'Schön gelegener Bäcker / Café mit Recht großen Eisangebot.\nWenn man draußen sitze hat man Blick auf die Wolkensteiner Schweiz.', '2025-06-15 12:39:46');
 
 --
 -- Indizes der exportierten Tabellen

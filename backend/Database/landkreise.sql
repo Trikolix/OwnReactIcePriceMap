@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 01. Jun 2025 um 10:49
+-- Erstellungszeit: 16. Jun 2025 um 11:27
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -41,10 +41,16 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (7, 'Altenburger Land', 1),
 (19, 'Aussiger Region', 6),
 (30, 'Autonome Provinz Trient', 12),
+(37, 'Berlin', 18),
+(35, 'Bezirk Zürich', 16),
 (31, 'Bozen', 12),
 (6, 'Chemnitz', 3),
+(39, 'Dahme-Spreewald', 5),
 (11, 'Dresden', 3),
+(38, 'Erfurt', 1),
 (3, 'Erzgebirgskreis', 3),
+(34, 'Frankfurt am Main', 15),
+(36, 'Freiburg im Breisgau', 17),
 (33, 'Gorizia', 14),
 (8, 'Greiz', 1),
 (25, 'Hérault', 10),
@@ -83,7 +89,7 @@ ALTER TABLE `landkreise`
 -- AUTO_INCREMENT für Tabelle `landkreise`
 --
 ALTER TABLE `landkreise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- Constraints der exportierten Tabellen

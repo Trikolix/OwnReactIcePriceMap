@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:16
+-- Erstellungszeit: 16. Jun 2025 um 11:26
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -106,7 +106,7 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (62, 'Eiscafé Cortina Zwönitz', 'Annaberger Str. 2, 08297 Zwönitz', '', 50.629707, 12.813651, 'Mo-So: 9:30-20 Uhr', '2025-04-03 05:10:35', 1, 3, 3, 1),
 (63, 'Café Milchbubi', 'Lange G. 20, 08297 Zwönitz', '', 50.630199, 12.810021, 'Di-Do: 13-18 Uhr; Fr-So: 13-19 Uhr', '2025-04-04 04:58:21', 1, 3, 3, 1),
 (64, 'Marschner\'s Eisdiele', 'Chemnitzer Str. 1, 09380 Thalheim/Erzgeb.', '', 50.703686, 12.852109, '', '2025-04-04 05:02:29', 1, 3, 3, 1),
-(65, 'Eiscafé zum Römer', 'Hauptstraße 29, 08412 Werdau', '', 50.714363, 12.387291, 'So: 13-17 Uhr', '2025-04-05 11:15:53', 1, 5, 3, 1),
+(65, 'Eiscafé zum Römer', 'Hauptstraße 29, 08412 Werdau', 'https://maps.app.goo.gl/VS66yhGyEEMhm5qa9', 50.714363, 12.387291, 'Fr-So: 13-17 Uhr', '2025-04-05 11:15:53', 1, 5, 3, 1),
 (66, 'Hofcafe Päßler', 'Schulstraße 1, 08427 Fraureuth', '', 50.681396, 12.365823, 'Mo-Do: 14-18 Uhr; Sa-So: 14-18 Uhr', '2025-04-05 11:20:34', 1, 5, 3, 1),
 (67, 'Jannys Eis', 'Herrengasse 14, 08451 Crimmitschau', '', 50.815258, 12.386800, 'Mo-Sa: 11-18 Uhr; So: 14-18 Uhr', '2025-04-05 16:37:11', 1, 5, 3, 1),
 (68, 'Eiscafé Fraureuth', 'Hauptstraße 78, 08427 Fraureuth', '', 50.703167, 12.355584, 'Mi-Fr: 13-17 Uhr; Sa: 13-17:30 Uhr; So: 13-18 Uhr', '2025-04-05 16:42:27', 1, 5, 3, 1),
@@ -141,9 +141,9 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (105, 'Café Eisbär', 'Zschopauer Str. 26, 09496 Marienberg', '', 50.652615, 13.161110, 'Mo-So: 14-17 Uhr', '2025-04-15 19:41:57', 1, 3, 3, 1),
 (106, 'Eismanufaktur Lipp', 'Kleine Kirchgasse 57, 09456 Annaberg-Buchholz', 'http://eismanufaktur-lipp.de/', 50.578262, 13.007279, 'Mi-So: 13-18 Uhr', '2025-04-15 19:45:26', 1, 3, 3, 1),
 (107, 'Sperlich\'s \"EISZEIT\"', 'Giebelstraße 2, 03222 Lübbenau/Spreewald', '', 51.861938, 13.938499, 'So-Fr: 14-18 Uhr ', '2025-04-21 05:23:30', 1, 16, 5, 1),
-(109, 'Eiscafé Sothis', 'Str. d. Einheit 20, 09569 Flöha', '', 50.853367, 13.113309, 'derzeit geschlossen', '2025-04-21 14:48:28', 1, 4, 3, 1),
+(109, 'Eiscafé Sothis', 'Str. d. Einheit 20, 09569 Flöha', 'https://maps.app.goo.gl/LWpHbmthakJq4e6e7', 50.853367, 13.113309, 'derzeit geschlossen', '2025-04-21 14:48:28', 1, 4, 3, 1),
 (111, 'Klatt-Eis Eismanufaktur', 'Mittweidaer Str. 102, 09648 Mittweida', '', 51.000374, 12.899914, 'So: 13-18 Uhr', '2025-04-21 15:04:29', 1, 4, 3, 1),
-(112, 'Eis-Pinguin', 'Puschkinstraße 4, 09112 Chemnitz', 'https://www.eisice-pinguin.de', 50.830437, 12.900225, 'Coming soon', '2025-04-21 15:08:49', 1, 6, 3, 1),
+(112, 'Eis-Pinguin', 'Puschkinstraße 4, 09112 Chemnitz', 'https://www.eisice-pinguin.de', 50.830437, 12.900225, 'Di-So: 13-18 Uhr', '2025-04-21 15:08:49', 1, 6, 3, 1),
 (113, 'Eiscafé Caramello', 'Bahnhofstraße 2, 04651 Bad Lausick', '', 51.143497, 12.648633, 'Mo-So: 11-18 Uhr', '2025-04-22 05:43:44', 1, 9, 3, 1),
 (114, ' Eisdiele Krause', 'Markt 2, 09306 Wechselburg', '', 51.004692, 12.773902, '', '2025-04-22 08:34:25', 1, 4, 3, 1),
 (115, 'Eisgarten an der Kaßbergauffahrt', 'Theaterstraße 60, 09111 Chemnitz', '', 50.833527, 12.915260, 'Mo-So 12-18 Uhr', '2025-04-22 11:09:10', 3, 6, 3, 1),
@@ -174,8 +174,6 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (147, 'Eisgarten-Sonnenschein (Lösermühle)', 'An d. Lösermühle 1, 09544 Neuhausen/Erzgebirge', 'https://loesermuehle.de/eiskarte/', 50.691113, 13.489707, 'Mi-So: 13-18 Uhr', '2025-05-06 11:07:22', 1, 4, 3, 1),
 (149, 'Eis-Karli', 'Albert-Schweitzer-Straße 36, 08209 Auerbach/Vogtland', 'https://maps.app.goo.gl/e3m14MdHRxjbQCwb9', 50.512085, 12.385431, 'Mo-So: 13-17 Uhr', '2025-05-08 04:05:55', 1, 12, 3, 1),
 (150, 'Eiscafé Roßberg', 'Zwickauer Str. 104, 08468 Reichenbach im Vogtland', 'https://maps.app.goo.gl/Jux29G113wzxWghc6', 50.629913, 12.308249, 'Di-Sa: 10-18 Uhr;So: 13-18 Uhr', '2025-05-08 06:55:38', 1, 12, 3, 1),
-(151, 'Gelato Fatto Con Amore', 'Corso Magenta, 30, 20121 Milano MI, Italien', 'https://maps.app.goo.gl/WhDs4zHwC8jv4JEN9', 45.466072, 9.177474, 'Di-So: 12-22 Uhr', '2025-05-08 08:54:55', 1, 22, 8, 3),
-(152, 'Venchi Cioccolato e Gelato', 'Via Giuseppe Mengoni, 1, 20121 Milano MI, Italien', 'https://it.venchi.com/', 45.465229, 9.188667, 'Mo-So: 10-22:30 Uhr', '2025-05-08 09:03:44', 1, 22, 8, 3),
 (153, 'Eiscafé Silvio', 'Unterer Markt 4, 92681 Erbendorf', 'https://maps.app.goo.gl/KPoQzeJKXBjwXBBf9', 49.837658, 12.047334, 'Mo: 11-19 Uhr;Di: Ruhetag;Mi-So:11-19 Uhr', '2025-05-08 09:07:50', 1, 23, 7, 1),
 (154, 'Amorino Gelato - Colmar', '54 Rue des Clefs, 68000 Colmar, Frankreich', 'https://maps.app.goo.gl/V4yu8cSVktvXmQdB7', 48.079197, 7.357572, 'Mo-Do: 12-19 Uhr; Fr-Sa: 12-21 Uhr; So: 12-19 Uhr', '2025-05-08 09:11:11', 1, 24, 9, 4),
 (155, 'Justine au Pays des Glaces', '47 Av. Louis Tudesq, 34140 Bouzigues, Frankreich', 'https://justine-glaces.fr/', 43.448586, 3.655041, 'Mo-So: 14-18:30 Uhr', '2025-05-08 09:13:39', 1, 25, 10, 4),
@@ -190,7 +188,36 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (170, 'Zeisigwaldschänke', 'Forststraße 100, 09131 Chemnitz', 'http://www.zeisigwaldschaenke.de/', 50.845589, 12.963314, 'Mo-So: 12-17 Uhr', '2025-05-21 11:27:45', 1, 6, 3, 1),
 (171, 'Gran Gelato', 'Hauptmarkt 17-18, 08056 Zwickau', 'http://www.grangelato.de/', 50.717999, 12.497528, 'Mo-So: 10-19 Uhr', '2025-05-21 12:25:02', 1, 5, 3, 1),
 (172, 'Imbiss der Bäckerei und Konditorei Seifert', 'Alte Flockenstraße 7, 09385 Lugau/Erzgeb.', '', 50.772354, 12.786156, 'Di - Fr: 5:00 - 17:00 Uhr;\nSa: 5:30 - 10:30 Uhr', '2025-05-23 07:58:57', 1, 3, 3, 1),
-(173, 'Das Eiscafé Lichtenstein', 'Rosengasse 4, 09350 Lichtenstein/Sachsen', '', 50.756748, 12.630780, 'Sa & So: 13:30 - 17:30 Uhr', '2025-05-23 08:03:00', 1, 5, 3, 1);
+(173, 'Das Eiscafé Lichtenstein', 'Rosengasse 4, 09350 Lichtenstein/Sachsen', '', 50.756748, 12.630780, 'Sa & So: 13:30 - 17:30 Uhr', '2025-05-23 08:03:00', 1, 5, 3, 1),
+(174, 'Café Raabe', 'Oberfrohnaer Str. 72, 09117 Chemnitz', 'https://www.caferaabe.de/', 50.826595, 12.832847, 'Mo-Mi: 11-18 Uhr\nSa-So: 11-18 Uhr', '2025-05-24 13:43:43', 1, 6, 3, 1),
+(175, 'JoePiada', 'Troi Giovanni Francesco Bernard, 38036 Pera TN, Italien', 'http://www.centralepera.it/', 46.437492, 11.692028, 'Di-So: 6:30 - 22 Uhr', '2025-05-25 11:26:52', 2, 30, 12, 3),
+(176, 'Alpenrosenhof', 'Via Passo Pennes, 39040 Campo di Trens Autonome Provinz Bozen - Südtirol, Italien', 'https://www.penserjoch.com/', 46.818745, 11.439940, '', '2025-05-26 11:13:31', 2, 31, 12, 3),
+(177, 'Linné Gelato-Café-Brasserie', 'August-Bebel-Straße 49, 08393 Meerane', 'https://www.cafe-linne-meerane.de/', 50.850136, 12.466893, 'Mo-So: 10-18 Uhr', '2025-05-26 14:56:04', 8, 5, 3, 1),
+(178, 'Eis Café da papu Waldenburg', 'Weinkellergasse 6, 08396 Waldenburg', 'https://maps.app.goo.gl/9dEPDNUWpmcJMDrE6', 50.874386, 12.601501, 'Mo-So: 11 - 18 Uhr', '2025-05-26 21:15:36', 31, 5, 3, 1),
+(179, 'Café Klatsch - Andreas Wörl', 'Altenburger Str. 83, 08396 Waldenburg', 'https://www.goldener-hahn-niederwinkel.de/cafe-klatsch/speisekarte/', 50.878597, 12.594275, 'Di - Fr: 11-17 Uhr \nSa + So: 13 - 17 Uhr', '2025-05-26 21:18:55', 31, 5, 3, 1),
+(180, 'Willy Vanilli', 'Helmut-Schön-Allee 2b', 'https://www.willyvanilli.de/', 51.042793, 13.749791, 'Mo-So: 11 - 20 Uhr', '2025-05-27 11:02:07', 32, 11, 3, 1),
+(183, 'Eiscafé Venezia', 'Hauptstraße 2a, 01097 Dresden', 'https://www.venezia-dresden.de/', 51.058308, 13.742371, 'Mo-So: 10:30-20:30 Uhr', '2025-05-28 04:47:13', 32, 11, 3, 1),
+(184, 'Askir Fresh', 'An der Pikardie 10, 01277 Dresden', 'https://askir.de/fresh/', 51.033634, 13.775443, 'Do-So: 14-18 Uhr\nbei Sonnenschein und warmen Temperaturen --> eher in der Sommerzeit', '2025-05-28 05:04:35', 32, 11, 3, 1),
+(185, 'Sächsische Eismanufaktur', 'Schloßstraße 14, 01067 Dresden', 'https://www.eis-manufaktur.de/', 51.051601, 13.737552, 'Mo-So: 11-20 Uhr', '2025-05-28 05:53:57', 32, 11, 3, 1),
+(186, 'Eiscafé Hannelore', 'Coschützer Str. 10, 01187 Dresden', 'https://eiscafe-hannelore.com/', 51.028530, 13.705952, 'Mo-So: 14 - 18 Uhr', '2025-05-28 06:48:24', 32, 11, 3, 1),
+(188, 'Terence Hill Eis Saloon', 'Hauptstraße 33, 01097 Dresden', 'https://www.gelateriagirotti.de/', 51.061417, 13.744174, 'vorübergehend geschlossen', '2025-05-28 09:25:44', 32, 11, 3, 1),
+(192, 'Café Fleming', 'Marktplatz 14 08118 Hartenstein ', 'https://cafefleming.de/', 50.661465, 12.670937, 'Montag: Geschlossen\nDienstag: Geschlossen\nMi & Do: 11:00-17:00\nFreitag: 11:00-22:00\nSa & So: 14:00-18:00', '2025-05-30 14:56:10', 37, 5, 3, 1),
+(193, 'e.n.h. ', 'Rosenhof 11, 09111 Chemnitz', '', 50.831444, 12.917711, 'Mo-Sa 11:00-18:00\nSo 12:00-16:00', '2025-05-30 16:21:39', 2, 6, 3, 1),
+(194, 'Bühlers Da Vinci Eisdiele ', 'Hauptmarkt 9, 09366 Stollberg', 'https://buehlers-restaurant.de/', 50.708088, 12.778840, 'Di-Fr: 11-18 Uhr\nSa:    13:30-18 Uhr\nSo:    11-18 Uhr', '2025-05-30 16:38:13', 39, 3, 3, 1),
+(195, 'BROT & KEES - natürlich lecker', 'Kees\'scher Park 1, 04416 Markkleeberg', 'www.brotundkees.de', 51.279816, 12.356114, 'Di-So 9-18', '2025-05-30 22:05:14', 41, 9, 3, 1),
+(196, 'Cukrana', '79, T. G. Masaryka 11, 357 33 Loket, Tschechien', '', 50.186623, 12.752911, '', '2025-05-31 18:24:45', 4, 18, 6, 2),
+(199, 'Eiswerker', 'Schweizer Straße 22 Frankfurt am Main ', '', 50.103844, 8.678872, 'Täglich 11 -22.00', '2025-06-01 15:33:03', 40, 34, 15, 1),
+(200, 'Hasta', 'Zwinglipl. 3, 8001 Zürich', 'https://maps.app.goo.gl/Cw3jDbWyHtXQTLaf7', 47.370426, 8.544234, 'Mo - So: 12.30-18.30', '2025-06-01 19:10:12', 40, 35, 16, 5),
+(201, 'Eiscafé Gelatogioia & Bistrogioia', 'Eschholzstraße 76, 79115 Freiburg im Breisgau, Deutschland', 'https://maps.app.goo.gl/8bC4o9uAnR9tbEwt6', 47.996853, 7.834734, 'Mo-Do: 9-19 Uhr\nFr-So: 9-21 Uhr', '2025-06-01 19:13:35', 40, 36, 17, 1),
+(202, 'Imbiss Rußdorfer Sonnenbad', 'Am Gemeindewald 1, 09212 Limbach-Oberfrohna', 'https://limbomar.de/sonnenbad/', 50.856434, 12.726626, 'bei schönem Wetter\nMo-So: 10-20 Uhr\n', '2025-06-01 19:54:47', 2, 5, 3, 1),
+(204, 'Eisdiele und Eisautomat Borkmann', 'Hauptstraße 202, 04416 Markkleeberg ', 'https://maps.app.goo.gl/1kHWr8apSvTAKm417', 51.261765, 12.377600, 'täglich: 13-18 Uhr\nSamstag geschlossen ', '2025-06-02 14:41:17', 41, 9, 3, 1),
+(205, 'Eiscafé Florenzia', 'Str. d. Freundschaft 50, 04654 Frohburg', 'https://maps.app.goo.gl/HKn6cHJB8kmVCz6X9', 51.054703, 12.555630, 'Mo-Sa: 14-17 Uhr\nSo: 13-17 Uhr', '2025-06-03 13:56:09', 1, 9, 3, 1),
+(206, 'Eisdiele Gloria', 'Drei-Quellen-Straße 23, 99094 Erfurt', '', 50.957378, 11.002856, '', '2025-06-03 14:19:29', 30, 38, 1, 1),
+(207, 'Zum Seeblick', 'Neuendorfer Str. 5, 15913 Märkische Heide', 'http://www.zum-seeblick.com/', 52.129330, 13.943363, 'Mi-So: 12-20 Uhr', '2025-06-08 13:31:30', 2, 39, 5, 1),
+(208, 'Eis Café Venezia', 'Äußere Plauensche Str. 2, 08056 Zwickau', 'https://maps.app.goo.gl/LodzV7YpLLjJNUMt8', 50.719460, 12.491761, 'Mo-Sa: 11:30-18 Uhr\nSo: 12:30-18 Uhr', '2025-06-11 14:40:41', 47, 5, 3, 1),
+(209, 'Safran', 'Promenadenstraße 5, 09111 Chemnitz', '', 50.839531, 12.914777, '', '2025-06-13 17:54:08', 1, 6, 3, 1),
+(210, 'Ziegenhof Winter', '', '', 50.810127, 12.646865, 'Wochende 14-18 Uhr', '2025-06-14 13:56:32', 8, 5, 3, 1),
+(211, 'Neumanns Eisterrasse', 'Schloßallee 2, 01468 Moritzburg', 'http://www.neumannseis.de/', 51.164249, 13.678179, 'täglich: 11-18 Uhr', '2025-06-16 08:21:05', 1, 10, 3, 1);
 
 --
 -- Indizes der exportierten Tabellen
@@ -214,7 +241,7 @@ ALTER TABLE `eisdielen`
 -- AUTO_INCREMENT für Tabelle `eisdielen`
 --
 ALTER TABLE `eisdielen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
 
 --
 -- Constraints der exportierten Tabellen

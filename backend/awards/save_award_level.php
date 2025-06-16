@@ -4,6 +4,7 @@ require_once '../db_connect.php';
 $award_id = intval($_POST['award_id']);
 $level = intval($_POST['level']);
 $threshold = intval($_POST['threshold']);
+$ep = $_POST['ep'] ?? 0;
 $title_de = $_POST['title_de'] ?? '';
 $description_de = $_POST['description_de'] ?? '';
 
@@ -31,11 +32,11 @@ if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] === UPLOAD_ERR_
 
 // Wenn vorhanden: UPDATE, sonst INSERT
 if ($existing) {
-    $stmt = $pdo->prepare("UPDATE award_levels SET threshold = ?, title_de = ?, description_de = ?, icon_path = ? WHERE award_id = ? AND level = ?");
-    $stmt->execute([$threshold, $title_de, $description_de, $newIconPath, $award_id, $level]);
+    $stmt = $pdo->prepare("UPDATE award_levels SET threshold = ?, ep = ?,title_de = ?, description_de = ?, icon_path = ? WHERE award_id = ? AND level = ?");
+    $stmt->execute([$threshold, $ep, $title_de, $description_de, $newIconPath, $award_id, $level]);
 } else {
-    $stmt = $pdo->prepare("INSERT INTO award_levels (award_id, level, threshold, title_de, description_de, icon_path) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$award_id, $level, $threshold, $title_de, $description_de, $newIconPath]);
+    $stmt = $pdo->prepare("INSERT INTO award_levels (award_id, level, threshold, ep, icon_path, title_de, description_de) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$award_id, $level, $threshold, $ep, $icon_path, $title_de, $description_de]);
 }
 
 header('Location: index.html');

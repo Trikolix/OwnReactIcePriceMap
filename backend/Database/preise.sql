@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Mai 2025 um 11:18
+-- Erstellungszeit: 16. Jun 2025 um 11:28
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -50,8 +50,8 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (7, 16, 'kugel', '1.50', 'Premiumsorten - 2.00€', 1, '2025-03-15 05:05:28'),
 (8, 17, 'kugel', '2.00', NULL, 1, '2025-03-15 05:05:28'),
 (9, 18, 'kugel', '2.00', NULL, 1, '2025-03-16 09:51:22'),
-(10, 21, 'kugel', '1.70', NULL, 1, '2025-03-16 16:21:45'),
-(11, 21, 'softeis', '2.50', 'kleines Softeis - 2.50€\r\ngroßes Softeis - 3.00 €', 1, '2025-03-16 16:21:45'),
+(10, 21, 'kugel', '1.70', 'Premiumsorten 2€', 1, '2025-05-30 14:17:54'),
+(11, 21, 'softeis', '2.50', 'kleines Softeis - 2.50€\r\ngroßes Softeis - 3.00 €', 1, '2025-05-30 14:17:54'),
 (12, 22, 'kugel', '1.20', NULL, 1, '2024-03-01 06:47:55'),
 (13, 10, 'kugel', '1.80', 'Premiumsorten - 2.30 €', 1, '2025-03-27 12:12:09'),
 (14, 28, 'softeis', '3.00', 'Je nach Größe und Art der Waffel / Becher zwischen 3.00€ und 8.00€', 1, '2025-05-13 17:12:24'),
@@ -92,8 +92,8 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (68, 62, 'kugel', '2.00', NULL, 1, '2025-04-04 04:59:58'),
 (69, 64, 'kugel', '1.90', NULL, 1, '2025-04-04 05:03:15'),
 (70, 46, 'kugel', '1.80', NULL, 1, '2025-04-04 12:36:30'),
-(71, 65, 'kugel', '1.00', NULL, 1, '2025-04-05 11:18:17'),
-(72, 65, 'softeis', '1.00', 'Kleines Softeis - 1,00 €\nGroßes Softeis - 2,00 €', 1, '2025-04-05 11:18:17'),
+(71, 65, 'kugel', '1.00', NULL, 1, '2025-05-31 13:17:26'),
+(72, 65, 'softeis', '1.00', 'Kleines Softeis - 1,00 €\nGroßes Softeis - 2,00 €', 1, '2025-05-31 13:17:26'),
 (73, 66, 'kugel', '1.40', NULL, 1, '2025-04-05 11:20:48'),
 (74, 33, 'softeis', '3.20', 'Kleines Softeis - 3,20 €\nGroßes Softeis - 4,00 €', 1, '2025-04-05 14:35:21'),
 (75, 67, 'kugel', '1.70', NULL, 1, '2025-04-05 16:39:21'),
@@ -159,7 +159,7 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (172, 118, 'softeis', '2.50', 'Großes Softeis 3,50€ / Super Softeis 4,50€', 5, '2025-05-05 09:31:59'),
 (173, 139, 'kugel', '2.50', NULL, 5, '2025-05-06 18:27:27'),
 (174, 149, 'kugel', '1.00', NULL, 1, '2023-05-08 06:47:45'),
-(178, 150, 'kugel', '1.20', NULL, 1, '2025-02-08 07:56:08'),
+(178, 150, 'kugel', '1.20', NULL, 1, '2025-05-31 12:03:20'),
 (179, 161, 'kugel', '4.49', NULL, 1, '2025-05-09 10:59:12'),
 (186, 115, 'softeis', '2.00', 'Großes Softeis - 4€', 1, '2025-05-10 12:34:36'),
 (187, 125, 'softeis', '2.80', 'Keine unterschiedlichen Größen / Preise', 2, '2025-05-10 13:25:48'),
@@ -181,7 +181,48 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (209, 60, 'kugel', '1.60', 'Premiumsorten 1,90€', 2, '2025-05-20 19:32:53'),
 (210, 170, 'kugel', '2.50', NULL, 1, '2025-05-21 11:27:54'),
 (213, 9, 'kugel', '1.50', NULL, 19, '2025-05-22 14:48:07'),
-(214, 9, 'softeis', '2.00', 'Kleines Softeis - 2,00 €\nGroßes Softeis - 3,00 €', 19, '2025-05-22 14:48:07');
+(214, 9, 'softeis', '2.00', 'Kleines Softeis - 2,00 €\nGroßes Softeis - 3,00 €', 19, '2025-05-22 14:48:07'),
+(216, 112, 'softeis', '2.20', 'Größe S: 2,20€\nGröße M: 2,90€\nGröße L: 3,90€', 1, '2025-05-25 04:09:21'),
+(217, 175, 'kugel', '1.80', NULL, 2, '2025-05-25 11:27:04'),
+(218, 170, 'kugel', '2.50', '10 Sorten handgemachtes Eis nur mit natürlichen Zutaten.Schokolade und Erdbeere sind wirklich ihr Geld wert.', 29, '2025-05-26 08:43:47'),
+(219, 176, 'kugel', '1.80', NULL, 2, '2025-05-26 11:13:46'),
+(220, 177, 'kugel', '1.80', 'Premiumsorten 2.20€', 8, '2025-05-26 15:07:35'),
+(221, 180, 'softeis', '2.00', 'Klein 2,00 €\nMittel 2,20 €\nGroß 2,50 €\nStreusel 0,30 €\nFrosteis 2,20 €\nSlush 3,00 €', 32, '2025-05-27 13:30:32'),
+(222, 56, 'kugel', '1.80', NULL, 1, '2025-05-27 13:38:43'),
+(223, 89, 'kugel', '1.50', 'sehr gute Größe zu einem sehr guten Preis ', 33, '2025-05-27 16:40:57'),
+(224, 184, 'softeis', '2.80', 'Klein 2,80 €\nGroß 3,80 €', 32, '2025-05-28 05:09:53'),
+(225, 65, 'kugel', '1.00', NULL, 36, '2025-05-28 09:53:44'),
+(226, 65, 'softeis', '1.00', 'Kleines Softeis - 1,00 €\nGroßes Softeis - 2,00 €', 36, '2025-05-28 09:53:44'),
+(228, 23, 'kugel', '1.20', NULL, 1, '2025-05-29 12:21:13'),
+(229, 4, 'kugel', '2.50', 'Kleines Softeis 2,50€ - großes Softeis 3,50€', 1, '2025-05-29 13:51:57'),
+(232, 193, 'softeis', '2.50', 'Klein 2,50€\nGroß 3,50€', 2, '2025-05-30 16:24:38'),
+(233, 194, 'kugel', '2.00', 'Einige Premiumsorten, die etwas teurer sind', 39, '2025-05-30 16:40:54'),
+(234, 194, 'softeis', '2.50', 'Kleines Softeis: 2,50€\nGroßes Softeis: 3,50€', 39, '2025-05-30 16:40:54'),
+(235, 185, 'kugel', '2.50', NULL, 31, '2025-05-30 18:49:43'),
+(236, 193, 'softeis', '2.50', 'Klein 2,50€\nGroß 3,50€', 1, '2025-05-30 21:37:07'),
+(237, 195, 'kugel', '1.90', 'Waffel oder Becher, alles Bio, auch vegan, viele besondere Sorten.', 41, '2025-05-30 22:11:08'),
+(238, 195, 'softeis', '2.20', 'Schokolade, Vanille oder gemischt\nWaffel oder Becher\nPortion groß: 4,20 €', 41, '2025-05-30 22:11:08'),
+(242, 199, 'kugel', '2.00', NULL, 40, '2025-06-01 15:36:17'),
+(243, 200, 'kugel', '4.00', NULL, 40, '2025-06-01 19:11:07'),
+(244, 201, 'kugel', '1.80', NULL, 40, '2025-06-01 19:17:44'),
+(245, 202, 'softeis', '2.50', 'Klein 2,50€\nGroß 3,50€', 2, '2025-06-01 19:55:10'),
+(246, 204, 'kugel', '1.70', 'Ca.14 Sorten', 41, '2025-06-02 14:45:03'),
+(247, 204, 'softeis', '2.50', 'Schoko, Vanille, gemischt\nKlein 2,50\nGroß 3,50', 41, '2025-06-02 14:45:03'),
+(248, 205, 'kugel', '1.50', NULL, 1, '2025-06-03 13:57:01'),
+(249, 205, 'softeis', '2.00', 'Kleines Softeis 2€ - \nGroßes Softeis 3€', 1, '2025-06-03 13:57:01'),
+(250, 3, 'kugel', '1.70', '20 Cent Aufpreis für Pappbecher ', 1, '2025-06-03 15:17:26'),
+(252, 206, 'kugel', '1.70', NULL, 30, '2025-06-03 18:04:48'),
+(253, 35, 'kugel', '2.00', 'Im Restaurant 2,60€\nFür 1€ Aufpreis gibt es Soezialwaffeln', 1, '2025-06-04 12:44:20'),
+(255, 207, 'kugel', '1.80', 'Für Streusel nochmal 20ct', 2, '2025-06-08 13:33:41'),
+(256, 127, 'kugel', '1.60', NULL, 23, '2025-06-08 19:20:53'),
+(257, 105, 'kugel', '1.50', NULL, 23, '2025-06-08 19:24:36'),
+(258, 105, 'softeis', '2.50', 'Kleines Softeis', 23, '2025-06-08 19:24:36'),
+(259, 209, 'kugel', '3.00', 'Safran Eis - 5€', 1, '2025-06-13 17:54:46'),
+(260, 47, 'kugel', '1.00', 'Premiumsorten - 1,50 €', 2, '2025-06-14 13:18:35'),
+(261, 47, 'softeis', '1.50', 'Großes Softeis - 2,50 €', 2, '2025-06-14 13:18:35'),
+(262, 210, 'kugel', '1.70', NULL, 8, '2025-06-14 14:04:37'),
+(263, 70, 'kugel', '1.75', 'Im Haus 2€', 1, '2025-06-15 12:34:49'),
+(264, 106, 'kugel', '1.80', NULL, 23, '2025-06-15 17:43:09');
 
 --
 -- Indizes der exportierten Tabellen
@@ -203,7 +244,7 @@ ALTER TABLE `preise`
 -- AUTO_INCREMENT für Tabelle `preise`
 --
 ALTER TABLE `preise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=265;
 
 --
 -- Constraints der exportierten Tabellen
