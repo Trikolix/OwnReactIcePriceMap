@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 16. Jun 2025 um 11:26
+-- Erstellungszeit: 17. Jun 2025 um 07:34
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -47,7 +47,7 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (68, 61, 'Vanille', '4.5'),
 (69, 62, 'Joghurt-Sanddorn', '4.6'),
 (102, 71, 'Mango', '4.5'),
-(103, 70, 'Erdbeere-Vanille', '4.5'),
+(103, 70, 'Erdbeer/Vanille', '4.5'),
 (111, 78, 'Schoko/Vanille', '4.9'),
 (123, 82, 'Spaghetti Eis', '5.0'),
 (124, 83, 'Milchreis', '4.8'),
@@ -90,8 +90,8 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (287, 154, 'Mango ', '5.0'),
 (288, 154, 'Treuener Schokolade', '5.0'),
 (296, 123, 'Vanille/Mango', '5.0'),
-(305, 160, 'Schoko- Trüffel ', '4.9'),
-(306, 160, 'Erdbeer ', '4.6'),
+(305, 160, 'Schoko-Trüffel ', '4.9'),
+(306, 160, 'Erdbeere', '4.6'),
 (307, 161, 'Melone/Mango', '3.8'),
 (308, 162, 'Brombeere', '4.5'),
 (309, 162, 'Schmand-Heidelbeere', '5.0'),
@@ -103,11 +103,11 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (342, 171, 'Pistazie ', '5.0'),
 (343, 172, 'Stracciatella ', '5.0'),
 (344, 172, 'Mango ', '5.0'),
-(345, 172, 'Schoko', '5.0'),
+(345, 172, 'Schokolade', '5.0'),
 (346, 172, 'Salted Caramel ', '5.0'),
 (348, 174, 'Stracciatella ', '4.8'),
 (349, 175, 'Schoko/Vanille', '4.1'),
-(350, 176, 'Schoko', '5.0'),
+(350, 176, 'Schokolade', '5.0'),
 (351, 168, 'Rhabarber-Kokos', '5.0'),
 (352, 167, 'Apfelringe ', '4.9'),
 (353, 167, 'Smarties', '5.0'),
@@ -123,7 +123,7 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (363, 155, 'Gesalzenes Karamell mit Erdnüssen ', '4.8'),
 (364, 153, 'Limoncello ', '4.8'),
 (365, 153, 'Kinder Bueno ', '4.8'),
-(366, 144, 'Straciatella ', '4.3'),
+(366, 144, 'Stracciatella ', '4.3'),
 (367, 144, 'Schokolade ', '4.7'),
 (368, 144, 'Mango ', '4.4'),
 (369, 142, 'Salted-Butter-Caramel', '4.7'),
@@ -139,7 +139,7 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (379, 125, 'Schokolade', '4.8'),
 (380, 122, 'Gummibären ', '4.6'),
 (381, 112, 'Vanille/Erdbeere', '4.0'),
-(382, 102, 'Eierlikör-Nougat ', '4.6'),
+(382, 102, 'Eierlikör-Nougat', '4.6'),
 (383, 90, 'Waldbeere', '4.8'),
 (384, 90, 'Schokolade', '4.3'),
 (385, 79, 'Eisbecher \"Orion\"', '4.5'),
@@ -153,7 +153,7 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (393, 69, 'Cheesecake-Waldbeere', '4.5'),
 (394, 68, 'Schoko-Kirsch', '5.0'),
 (395, 68, 'Baileys', '4.9'),
-(396, 67, 'Eierlikör-Nougat ', '4.8'),
+(396, 67, 'Eierlikör-Nougat', '4.8'),
 (397, 67, 'Quark-Zitrone', '4.7'),
 (398, 66, 'Himbeere', '4.6'),
 (399, 66, 'Nougat', '4.6'),
@@ -182,7 +182,7 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (422, 17, 'Kalter Hund', '4.9'),
 (423, 16, 'gebrannte Mandeln', '4.9'),
 (424, 11, 'Erdbeerkäsekuchen ', '4.6'),
-(425, 10, 'Weiße Schokolade mit Himbeere', '4.7'),
+(425, 10, 'Weiße Schokolade - Himbeere', '4.7'),
 (426, 10, 'Nuss-Nougat', '4.7'),
 (427, 10, 'Chilli Schokolade', '4.8'),
 (428, 10, 'Dubai Style', '4.6'),
@@ -199,26 +199,26 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (439, 3, 'Cookies', '4.5'),
 (440, 2, 'Nogger', '3.5'),
 (441, 2, 'Tiramisu', '3.3'),
-(445, 180, 'Joghurt- Heidelbeere', '4.5'),
+(445, 180, 'Joghurt-Heidelbeere', '4.5'),
 (446, 180, 'Schokolade ', '4.5'),
 (449, 179, 'Trüffel', '3.8'),
 (450, 178, 'Weiße Schokolade - Himbeere', '4.6'),
 (453, 181, 'Kinder Bueno', '4.8'),
-(454, 182, 'Schoko', '4.2'),
+(454, 182, 'Schokolade', '4.2'),
 (455, 182, 'Erdbeere', '4.2'),
 (456, 183, 'Raffaello ', '4.0'),
 (457, 184, 'Nutella-Yoghurt ', '3.5'),
 (458, 184, 'Hasenuss', '4.0'),
-(459, 185, 'Raffaelo', '4.9'),
+(459, 185, 'Raffaello', '4.9'),
 (460, 185, 'Waldmeister', '4.6'),
 (461, 185, 'Maracuja', '5.0'),
-(462, 185, 'Himbeer', '5.0'),
-(463, 186, 'Erdbeer+Vanille ', '4.8'),
+(462, 185, 'Himbeere', '5.0'),
+(463, 186, 'Erdbeer/Vanille ', '4.8'),
 (466, 187, 'Gesalzenes Karamel', '3.0'),
-(467, 188, 'Himbeer', '4.1'),
+(467, 188, 'Himbeere', '4.1'),
 (468, 188, 'Bacio ', '4.2'),
-(469, 189, 'Schoko-Vanille ', '4.6'),
-(470, 190, 'Schoko Vanille', '4.8'),
+(469, 189, 'Schoko/Vanille ', '4.6'),
+(470, 190, 'Schoko/Vanille', '4.8'),
 (471, 191, 'Bier ', '4.7'),
 (472, 191, 'Nutella ', '5.0'),
 (473, 191, 'Pistazie', '4.4'),
@@ -226,7 +226,9 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (479, 192, 'Himbeer-Honigmelone', '4.6'),
 (480, 192, 'Rocher', '4.2'),
 (481, 193, 'Banane ', '4.0'),
-(482, 193, 'Pfirsich-Joghurt ', '5.0');
+(482, 193, 'Pfirsich-Joghurt ', '5.0'),
+(483, 194, 'Vanille ', '3.6'),
+(484, 194, 'Himbeere', '4.9');
 
 --
 -- Indizes der exportierten Tabellen
@@ -247,7 +249,7 @@ ALTER TABLE `checkin_sorten`
 -- AUTO_INCREMENT für Tabelle `checkin_sorten`
 --
 ALTER TABLE `checkin_sorten`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=483;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=485;
 
 --
 -- Constraints der exportierten Tabellen

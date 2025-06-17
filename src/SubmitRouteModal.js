@@ -30,7 +30,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
             setisPrivat(!existingRoute.ist_oeffentlich);
             setLaenge_km(existingRoute.laenge_km || "");
             setHoehenmeter(existingRoute.hoehenmeter || "");
-            setSchwierigkeit(existingRoute.schwierigkeit || "leicht");
+            setSchwierigkeit(existingRoute.schwierigkeit || "Leicht");
             setEmbedCode(existingRoute.embed_code || "");
         }
     }, [existingRoute, userId]);
@@ -220,9 +220,9 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                     <Label>
                         Schwierigkeit:
                         <Select value={schwierigkeit} onChange={(e) => setSchwierigkeit(e.target.value)}>
-                            <option value="leicht">Leicht</option>
-                            <option value="mittel">Mittel</option>
-                            <option value="schwer">Schwer</option>
+                            <option value="Leicht">Leicht</option>
+                            <option value="Mittel">Mittel</option>
+                            <option value="Schwer">Schwer</option>
                         </Select>
                     </Label>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
+import SorteAutocomplete from "./components/SorteAutocomplete";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess }) => {
     const [type, setType] = useState("Kugel");
@@ -18,6 +19,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
+    const [alleSorten, setAlleSorten] = useState([]);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
@@ -60,6 +62,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             setShowSortenBewertung(true);
             fetchCheckinData();
         }
+        fetch(`${apiUrl}/checkin/sorten.php`)
+            .then((res) => res.json())
+            .then((data) => {
+                setAlleSorten(data);
+            })
+            .catch((error) => {
+                console.error("Fehler beim Laden der Sorten:", error);
+            });
     }, [checkinId, userId, apiUrl]);
 
     const handleSortenChange = (index, field, value) => {
@@ -216,11 +226,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             <Label>Sorten</Label>
                             {sorten.map((sorte, index) => (
                                 <Row key={index}>
-                                    <Input
-                                        type="text"
-                                        placeholder="Sortenname"
+                                    <SorteAutocomplete
                                         value={sorte.name}
-                                        onChange={(e) => handleSortenChange(index, "name", e.target.value)}
+                                        onChange={(val) => handleSortenChange(index, val)}
+                                        alleSorten={alleSorten[type] || []}
                                     />
                                     {showSortenBewertung && (<>
                                         <Input
