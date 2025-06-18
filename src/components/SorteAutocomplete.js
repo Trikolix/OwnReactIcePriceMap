@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 
 export default function SorteAutocomplete({ value, onChange, alleSorten }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value || "");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    setInputValue(value || "");
+  }, [value]);
 
   function normalizeSorteName(name) {
     return name

@@ -17,6 +17,8 @@ require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
 require_once __DIR__ . '/../evaluators/Chemnitz2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/BundeslandExperteEvaluator.php';
 require_once __DIR__ . '/../evaluators/CyclingCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/WalkCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/BikeCountEvaluator.php';
 
 
 // Preflight OPTIONS-Request
@@ -249,6 +251,9 @@ try {
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
 
     if ($anreise === 'Fahrrad') $evaluators[] = new CyclingCountEvaluator();
+    elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
+    elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
+
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {

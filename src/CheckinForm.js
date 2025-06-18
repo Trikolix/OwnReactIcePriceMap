@@ -228,7 +228,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <Row key={index}>
                                     <SorteAutocomplete
                                         value={sorte.name}
-                                        onChange={(val) => handleSortenChange(index, val)}
+                                        onChange={(val) => handleSortenChange(index, "name", val)}
+                                        placeholder="Sortenname"
                                         alleSorten={alleSorten[type] || []}
                                     />
                                     {showSortenBewertung && (<>

@@ -3,11 +3,11 @@ require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
 class CyclingCountEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 4;
+    const AWARD_ID = 23;
 
     public function evaluate(int $userId): array {
         global $pdo;
-        $count = $this->getKugeleisCount($userId);
+        $count = $this->getCyclingCount($userId);
 
         $achievements = [];
 
@@ -35,11 +35,11 @@ class CyclingCountEvaluator extends BaseAwardEvaluator {
         return $achievements;
     }
 
-    private function getKugeleisCount(int $userId): int {
+    private function getCyclingCount(int $userId): int {
         global $pdo;
         $sql = "SELECT COUNT(id) AS checkins_count
                 FROM checkins
-                WHERE nutzer_id = ? AND typ = 'Softeis'";
+                WHERE nutzer_id = ? AND anreise = 'Fahrrad'";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 

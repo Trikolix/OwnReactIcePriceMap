@@ -7,7 +7,7 @@ class CountyCountEvaluator extends BaseAwardEvaluator {
 
     public function evaluate(int $userId): array {
         global $pdo;
-        $count = $this->getReviewCount($userId);   
+        $count = $this->getCountyCount($userId);   
          
         $achievements = [];
     
@@ -35,7 +35,7 @@ class CountyCountEvaluator extends BaseAwardEvaluator {
         return $achievements;
     }
     
-    private function getReviewCount(int $userId): int {
+    private function getCountyCount(int $userId): int {
         global $pdo;
         $sql = "SELECT COUNT(DISTINCT s.landkreis_id) AS landkreis_count
                 FROM checkins c

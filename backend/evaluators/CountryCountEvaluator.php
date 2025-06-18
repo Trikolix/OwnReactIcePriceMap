@@ -2,15 +2,15 @@
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class KugeleisCountEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 3;
+class CountryCountEvaluator extends BaseAwardEvaluator {
+    const AWARD_ID = 21;
 
     public function evaluate(int $userId): array {
         global $pdo;
-        $count = $this->getKugeleisCount($userId);
-
+        $count = $this->getCountryCount($userId);   
+         
         $achievements = [];
-
+    
         // Hole alle Level für diesen Award aus der Datenbank
         $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
                                FROM award_levels 
@@ -34,21 +34,17 @@ class KugeleisCountEvaluator extends BaseAwardEvaluator {
         }
         return $achievements;
     }
-
-    private function getKugeleisCount(int $userId): int {
+    
+    private function getCountryCount(int $userId): int {
         global $pdo;
-        $sql = "SELECT
-                    COUNT(s.id) AS anzahl_eis
-                FROM
-                    checkins c
-                JOIN checkin_sorten s ON
-                    s.checkin_id = c.id
-                WHERE
-                    c.nutzer_id = 1 AND c.typ = 'Kugel';";
+        $sql = "SELECT COUNT(DISTINCT s.land_id) AS land_count
+                FROM checkins c
+                JOIN eisdielen s ON c.eisdiele_id = s.id
+                WHERE c.nutzer_id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
-
-        return (int)$stmt->fetchColumn();
+    
+        return $stmt->fetchColumn();
     }
 }
 ?>

@@ -101,7 +101,7 @@ function UserSite() {
   // Filter check-ins and reviews based on the current page
   const displayedCheckins = data.checkins.slice(0, checkinPage * 5);
   const displayedReviews = data.reviews.slice(0, reviewPage * 5);
-  const displayedAwards = data.user_awards.slice(0, awardPage * 6);
+  const displayedAwards = data.user_awards.slice(0, awardPage * 4);
   const displayedRoutes = data.routen.slice(0, routePage * 5);
 
   return (
@@ -308,7 +308,7 @@ const List = styled.ul`
 
 const AwardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 
   @media (max-width: 768px) {
@@ -329,7 +329,7 @@ const AwardCard = styled.div`
 `;
 
 const AwardImage = styled.img`
-  height: 150px;
+  height: 200px;
 
   @media (max-width: 768px) {
     height: 100px;
