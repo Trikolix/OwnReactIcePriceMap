@@ -1,5 +1,6 @@
 <?php
 require_once '../db_connect.php';
+header('Content-Type: application/json');
 
 $code = $_POST['code'] ?? '';
 $category = $_POST['category'] ?? '';
@@ -9,7 +10,6 @@ if ($code !== '') {
     $stmt->execute([$code, $category]);
 }
 
-header('Location: index.html');
-exit;
+echo json_encode(['success' => true]);
 
 ?>

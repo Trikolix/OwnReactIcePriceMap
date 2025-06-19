@@ -1,5 +1,6 @@
 <?php
 require_once '../db_connect.php';
+header('Content-Type: application/json');
 
 // Zielverzeichnis für Uploads
 $uploadDir = '../../uploads/awards/';
@@ -34,7 +35,8 @@ try {
         (award_id, level, threshold, icon_path, title_de, description_de) 
         VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([$award_id, $level, $threshold, $icon_path, $title_de, $description_de]);
-    header("Location: index.html");
+    echo json_encode(['success' => true]);
 } catch (Exception $e) {
-    die("Fehler beim Einfügen: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
