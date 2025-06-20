@@ -2,15 +2,15 @@
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class DifferentIceShopCountEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 28;
+class GeschmacksvielfaltEvaluator. extends BaseAwardEvaluator {
+    const AWARD_ID = 30;
 
     public function evaluate(int $userId): array {
         global $pdo;
-        $count = $this->getDifferentIceShopCount($userId);   
-         
+        $count = $this->getIceFlavourCount($userId);
+
         $achievements = [];
-    
+
         // Hole alle Level für diesen Award aus der Datenbank
         $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
                                FROM award_levels 
@@ -34,16 +34,17 @@ class DifferentIceShopCountEvaluator extends BaseAwardEvaluator {
         }
         return $achievements;
     }
-    
-    private function getDifferentIceShopCount(int $userId): int {
+
+    private function getIceFlavourCount(int $userId): int {
         global $pdo;
-        $sql = "SELECT COUNT(DISTINCT eisdiele_id) AS iceshop_count
-                FROM checkins
-                WHERE nutzer_id = ?";
+        $sql = "SELECT COUNT(DISTINCT(s.sortenname)) AS anzahl
+                FROM checkin_sorten s
+                JOIN checkins c ON s.checkin_id = c.id
+                WHERE c.nutzer_id = ?;";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
-    
-        return $stmt->fetchColumn();
+
+        return (int)$stmt->fetchColumn();
     }
 }
 ?>
