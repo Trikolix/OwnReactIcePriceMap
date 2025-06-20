@@ -23,6 +23,7 @@ require_once __DIR__ . '/../evaluators/GeschmackstreueEvaluator.php';
 require_once __DIR__ . '/../evaluators/AwardCollectorEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceSummerEvaluator.php';
 require_once __DIR__ . '/../evaluators/DifferentIceShopCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/GeschmacksvielfaltEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -246,6 +247,7 @@ try {
         new BundeslandExperteEvaluator(),
         new IceSummerEvaluator(),
         new DifferentIceShopCountEvaluator(),
+        new GeschmacksvielfaltEvaluator(),
         new AwardCollectorEvaluator()
     ];
 
