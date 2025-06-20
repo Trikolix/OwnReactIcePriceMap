@@ -1,9 +1,9 @@
 <?php
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
-require_once  __DIR__ . '/MetadataAwareEvaluator.php';
+require_once  __DIR__ . '/MetadataAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareEvaluator {
+class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwardEvaluator {
     const AWARD_ID = 19;
 
     private array $checkinMeta = [];

@@ -1,6 +1,7 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/evaluators/PriceSubmitCountEvaluator.php';
+require_once  __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
 
 
 // Funktion zum Senden / Aktualisieren der Preise
@@ -62,7 +63,8 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
         // Evaluatoren
     $evaluators = [
-        new PriceSubmitCountEvaluator()
+        new PriceSubmitCountEvaluator(),
+        new AwardCollectorEvaluator()
     ];
 
     $newAwards = [];

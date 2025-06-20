@@ -1,5 +1,5 @@
 <?php
-interface MetadataAwareEvaluator {
+interface MetadataAwardEvaluator {
     public function setCheckinMetadata(array $meta): void;
 }
 ?>
