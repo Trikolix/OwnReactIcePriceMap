@@ -38,12 +38,13 @@ class IceSummerEvaluator extends BaseAwardEvaluator {
     }
 
     private function getCheckinForSummerCount(int $userId, int $year): int {
+        global $pdo;
         $sql = "SELECT COUNT(*) AS anzahl_checkins
                 FROM checkins
                 WHERE nutzer_id = :userId
                 AND datum BETWEEN :startDate AND :endDate";
 
-        $stmt = $this->pdo->prepare($sql);
+        $stmt = $pdo->prepare($sql);
 
         // Set the parameters
         $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);

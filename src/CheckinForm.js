@@ -4,7 +4,7 @@ import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess }) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -20,7 +20,22 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [awards, setAwards] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
+    const [preisfrage, setPreisfrage] = useState(false);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+    const askForPriceUpdate = (preise) => {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        // Helper: prüft, ob ein Eintrag null ist oder dessen letztes_update zu alt ist
+        const isNullOrTooOld = (eintrag) => {
+            if (!eintrag) return true;
+            const updateDate = new Date(eintrag.letztes_update);
+            return isNaN(updateDate.getTime()) || updateDate < sevenDaysAgo;
+        };
+
+        return isNullOrTooOld(preise.kugel) && isNullOrTooOld(preise.softeis);
+    };
 
     useEffect(() => {
         const fetchCheckinData = async () => {
@@ -132,13 +147,22 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 } else {
                     setMessage("Checkin erfolgreich gespeichert!");
                 }
+
                 if (onSuccess) onSuccess();
                 if (data.new_awards && data.new_awards.length > 0) {
                     setAwards(data.new_awards);
+                    if (shop && askForPriceUpdate(shop.preise)) {
+                        setPreisfrage(true);
+                    }
+
                 } else {
-                    setTimeout(() => {
-                        setShowCheckinForm(false);
-                    }, 2000);
+                    if (shop && askForPriceUpdate(shop.preise)) {
+                        setPreisfrage(true);
+                    } else {
+                        setTimeout(() => {
+                            setShowCheckinForm(false);
+                        }, 2000);
+                    }
                 }
             } else {
                 setMessage(`Fehler: ${data.message}`);
@@ -205,6 +229,56 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         updated.splice(index, 1);
         setBilder(updated);
     };
+
+    const openSubmitPriceForm = () => {
+        setShowCheckinForm(false);
+        setShowPriceForm(true);
+    };
+
+    const confirmPrice = async () => {
+        try {
+            const response = await fetch(`${apiUrl}/submitPrice.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    shopId: shop.eisdiele.id,
+                    userId: userId,
+                    kugelPreis: shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null,
+                    additionalInfoKugelPreis: shop.preise?.kugel?.beschreibung ? shop.preise.kugel.beschreibung : null,
+                    softeisPreis: shop.preise?.softeis?.preis ? shop.preise.softeis.preis : null,
+                    additionalInfoSofteisPreis: shop.preise?.softeis?.beschreibung ? shop.preise.softeis.beschreibung : null
+                })
+            });
+            const data = await response.json();
+            let localAwards = null;
+            data.forEach(element => {
+                if (element.typ) {
+                    if (element.status === 'success') {
+                        onSuccess();
+                        setSubmitted(true);
+                        setMessage('Preis erfolgreich gemeldet!');
+                    } else {
+                        setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
+                        return;
+                    }
+                } else if (element.new_awards) {
+                    setAwards(element.new_awards);
+                    localAwards = element.new_awards;
+                }
+            });
+            if (localAwards && localAwards.length !== 0) {
+                console.log("Neue Auszeichnungen:", localAwards);
+            } else {
+                setTimeout(() => {
+                    setShowCheckinForm(false);
+                }, 2000);
+            }
+        } catch (error) {
+
+        }
+    }
 
     return (showCheckinForm ? (
         <Overlay>
@@ -339,6 +413,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <option value="Motorrad">Motorrad</option>
                                 <option value="Zu Fuß">Zu Fuß</option>
                                 <option value="Auto">Auto</option>
+                                <option value="Bus / Bahn">Bus / Bahn</option>
                                 <option value="Sonstiges">Sonstiges</option>
                             </Select>
                         </Section>
@@ -388,7 +463,24 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </Form>)}
                 </>)}
                 <Message>{message}</Message>
+                {preisfrage && (
+                    <>
+                        <Text>Stimmt der Preis von <strong>{shop.eisdiele.name}</strong> noch?</Text>
+                        <p>
+                            Kugelpreis: <strong>{shop.preise?.kugel?.preis ?? "keine Meldung"} €</strong><br />
+                            Softeispreis: <strong>{shop.preise?.softeis?.preis ?? "keine Meldung"} €</strong>
+                        </p>
+                        <ButtonGroup>
+                            {(shop.preise?.kugel?.preis || shop.preise?.softeis?.preis) && (
+                                <SubmitButton onClick={confirmPrice}>Stimmt noch</SubmitButton>)}
+                            <SubmitButton onClick={() => openSubmitPriceForm()}>Änderung vorschlagen</SubmitButton>
+                            <SubmitButton onClick={() => setShowCheckinForm(false)}>Schließen</SubmitButton>
+                        </ButtonGroup>
+                    </>
+                )}
                 <NewAwards awards={awards} />
+
+                
             </Modal>
         </Overlay>) : null
     );
@@ -599,4 +691,19 @@ const DeleteButton = styled.button`
   &:hover {
     background: #d32f2f;
   }
+`;
+
+const Text = styled.p`
+    font-size: 1.1rem;
+    margin-top: 1rem;
+`;
+
+const SubmitButton = styled.button`
+    background-color: #ffb522;
+    color: white;
+    padding: 6px 12px;
+    margin: 0px 3px 0px 3px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
 `;

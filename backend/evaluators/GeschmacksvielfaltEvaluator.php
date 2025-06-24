@@ -2,7 +2,7 @@
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class GeschmacksvielfaltEvaluator. extends BaseAwardEvaluator {
+class GeschmacksvielfaltEvaluator extends BaseAwardEvaluator {
     const AWARD_ID = 30;
 
     public function evaluate(int $userId): array {
