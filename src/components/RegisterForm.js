@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 
-const RegisterForm = ({ onSuccess, onClose, inviteLink = null }) => {
+const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -11,6 +11,7 @@ const RegisterForm = ({ onSuccess, onClose, inviteLink = null }) => {
     const [termsError, setTermsError] = useState(false);
 
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+    console.log("inviteCode", inviteCode);
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -28,7 +29,7 @@ const RegisterForm = ({ onSuccess, onClose, inviteLink = null }) => {
                     username,
                     email,
                     password,
-                    inviteLink // wird optional mitgesendet
+                    inviteCode
                 })
             });
 

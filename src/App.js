@@ -36,7 +36,7 @@ const App = () => {
           <Route path="/datenschutz" element={<Datenschutz />} />
           <Route path="/community" element={<Community />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/register/:inviteLink" element={<RegisterPage />} />
+          <Route path="/register/:inviteCode" element={<RegisterPage />} />
         </Routes>
       </UserProvider>
     </Router>

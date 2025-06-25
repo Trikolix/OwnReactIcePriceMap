@@ -24,6 +24,18 @@ $data = json_decode(file_get_contents('php://input'), true);
 $username = trim($data['username']);
 $email = trim($data['email']);
 $password = $data['password'];
+$inviteCode = $data['inviteCode'] ?? null;
+
+$invitedById = null;
+
+if ($inviteCode) {
+    $stmt = $pdo->prepare("SELECT id FROM nutzer WHERE invite_code = ?");
+    $stmt->execute([$inviteCode]);
+    $inviter = $stmt->fetch();
+    if ($inviter) {
+        $invitedById = $inviter['id'];
+    }
+}
 
 // 3. Validierung
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -47,14 +59,21 @@ if ($stmt->fetch()) {
 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 $token = bin2hex(random_bytes(32));
 
+function generateInviteCode($length = 10) {
+    return bin2hex(random_bytes($length / 2)); // z. B. "a8f3bc91ed"
+}
+$invite_code = generateInviteCode();
+
 // 6. In DB speichern
-$stmt = $pdo->prepare("INSERT INTO nutzer (username, email, password_hash, verification_token) 
-                       VALUES (:username, :email, :password_hash, :token)");
+$stmt = $pdo->prepare("INSERT INTO nutzer (username, email, password_hash, verification_token, invited_by, invite_code) 
+                       VALUES (:username, :email, :password_hash, :token, :invited_by, :invite_code)");
 $stmt->execute([
     'username' => $username,
     'email' => $email,
     'password_hash' => $passwordHash,
-    'token' => $token
+    'token' => $token, 
+    'invited_by' => $invitedById,
+    'invite_code' => $invite_code
 ]);
 
 // 7. Bestätigungs-E-Mail senden

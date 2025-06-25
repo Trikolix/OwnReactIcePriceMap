@@ -115,6 +115,7 @@ function UserSite() {
           <HeaderDiv>
             <h1>Nutzerseite von {data.nutzername}</h1>
             <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+            <p>Einladungslink: <a href="https://ice-app.de/#/register/{data.invite_code}">https://ice-app.de/#/register/{data.invite_code}</a></p>
             <LevelDisplay levelInfo={data.level_info} />
           </HeaderDiv>
 
