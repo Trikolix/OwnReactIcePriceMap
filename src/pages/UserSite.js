@@ -105,6 +105,8 @@ function UserSite() {
   const displayedAwards = data.user_awards.slice(0, awardPage * 4);
   const displayedRoutes = data.routen.slice(0, routePage * 5);
 
+  const totalIcePortions = (data.eisarten.Kugel || 0) + (data.eisarten.Softeis || 0) + (data.eisarten.Eisbecher || 0);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header />
@@ -145,7 +147,7 @@ function UserSite() {
               <p>Check-ins</p>
             </StatBox>
             <StatBox>
-              <h2>{(data.eisarten.Kugel + data.eisarten.Softeis) ? (data.eisarten.Kugel + data.eisarten.Softeis) : '0'}</h2>
+              <h2>{totalIcePortions}</h2>
               <p>Portionen Eis gegessen</p>
             </StatBox>
           </StatsSection>
