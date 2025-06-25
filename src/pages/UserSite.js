@@ -7,6 +7,7 @@ import CheckinCard from "../components/CheckinCard";
 import ReviewCard from "../components/ReviewCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import RouteCard from '../components/RouteCard';
+import LevelDisplay from '../components/LevelDisplay';
 
 function UserSite() {
   const { userId: userIdFromUrl } = useParams();
@@ -112,6 +113,7 @@ function UserSite() {
           <HeaderDiv>
             <h1>Nutzerseite von {data.nutzername}</h1>
             <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+            <LevelDisplay levelInfo={data.level_info} />
           </HeaderDiv>
 
           <IceCreamStatsWrapper>
