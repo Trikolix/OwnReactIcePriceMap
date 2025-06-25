@@ -51,6 +51,7 @@ $sql7 = "SELECT
              al.title_de,
              al.description_de,
              al.icon_path,
+             al.ep,
              ua.awarded_at
          FROM user_awards ua
          JOIN award_levels al 

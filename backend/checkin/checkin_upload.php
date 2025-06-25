@@ -141,7 +141,7 @@ try {
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
     $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
     $anreise = $_POST['anreise'] ?? null;
-    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Öffis', 'Sonstiges'];
+    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
     if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
         respondWithError('Ungültige Anreiseart.');
     }

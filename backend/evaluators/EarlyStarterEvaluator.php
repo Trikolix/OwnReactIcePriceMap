@@ -10,7 +10,7 @@ class EarlyStarterEvaluator extends BaseAwardEvaluator {
 
         $achievements = [];
         // Hole alle Level für diesen Award aus der Datenbank
-        $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
+        $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                FROM award_levels 
                                WHERE award_id = :awardId 
                                ORDER BY level ASC");
@@ -28,6 +28,7 @@ class EarlyStarterEvaluator extends BaseAwardEvaluator {
                     'level' => $level,
                     'message' => $levelData['description_de'],
                     'icon' => $levelData['icon_path'],
+                    'ep' => (int)$levelData['ep'],
                 ];
             }
         }

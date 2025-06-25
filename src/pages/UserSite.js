@@ -152,6 +152,7 @@ function UserSite() {
           <AwardsGrid>
             {displayedAwards.map((award, index) => (
               <AwardCard key={index}>
+                <EPBadge>{award.ep} EP ✨</EPBadge>
                 <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
                 <AwardTitle>{award.title_de}</AwardTitle>
                 <AwardDescription>{award.description_de}</AwardDescription>
@@ -322,6 +323,7 @@ const AwardCard = styled.div`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 16px;
   text-align: center;
+  position: relative;
 
   @media (max-width: 768px) {
     padding: 12px;
@@ -350,6 +352,26 @@ const AwardDate = styled.span`
   font-size: 0.75rem;
   color: #999;
   margin-top: 8px;
+`;
+
+const EPBadge = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #FFD700, #FFC107);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+  animation: popIn 0.4s ease-out;
+
+  @keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 `;
 
 const IceCreamStatsWrapper = styled.div`

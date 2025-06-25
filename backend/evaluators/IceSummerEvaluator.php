@@ -13,7 +13,7 @@ class IceSummerEvaluator extends BaseAwardEvaluator {
         $cur_year = date('Y');
 
         // Hole das Level für das aktuelle Jahr für diesen Award aus der Datenbank
-        $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
+        $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                FROM award_levels 
                                WHERE award_id = :awardId AND level = :year");
         $stmt->execute(['awardId' => self::AWARD_ID, 'year' => $cur_year]);
@@ -31,6 +31,7 @@ class IceSummerEvaluator extends BaseAwardEvaluator {
                     'level' => $level,
                     'message' => $levelData['description_de'],
                     'icon' => $levelData['icon_path'],
+                    'ep' => (int)$levelData['ep'],
                 ];
             }
         }
