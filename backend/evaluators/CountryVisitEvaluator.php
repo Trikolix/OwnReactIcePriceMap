@@ -1,9 +1,9 @@
 <?php
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
-require_once  __DIR__ . '/MetadataAwareEvaluator.php';
+require_once  __DIR__ . '/MetadataAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareEvaluator {
+class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwardEvaluator {
     const AWARD_ID = 19;
 
     private array $checkinMeta = [];
@@ -23,7 +23,7 @@ class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareE
         $land = $this->checkinMeta['land'];
 
         // Hole alle Level für diesen Award aus der Datenbank
-        $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de 
+        $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                FROM award_levels 
                                WHERE award_id = :awardId 
                                ORDER BY level ASC");
@@ -40,6 +40,7 @@ class CountryVisitEvaluator extends BaseAwardEvaluator implements MetadataAwareE
                         'level' => $level,
                         'message' => $levelData['description_de'],
                         'icon' => $levelData['icon_path'],
+                        'ep' => (int)$levelData['ep'],
                     ];
                 }
             }

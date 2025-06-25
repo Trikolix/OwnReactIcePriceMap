@@ -2,15 +2,13 @@
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
 
-class PhotosCountEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 6;
+class EarlyStarterEvaluator extends BaseAwardEvaluator {
+    const AWARD_ID = 26;
 
     public function evaluate(int $userId): array {
-        global $pdo;
-        $count = $this->getPhotosCount($userId);
+        global $pdo;        
 
         $achievements = [];
-
         // Hole alle Level für diesen Award aus der Datenbank
         $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                FROM award_levels 
@@ -22,8 +20,9 @@ class PhotosCountEvaluator extends BaseAwardEvaluator {
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
             $threshold = (int)$levelData['threshold'];
+            $fullfillsAward = $this->isQuickstarter($userId, $threshold);
 
-            if ($count >= $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+            if ($fullfillsAward && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                 $achievements[] = [
                     'award_id' => self::AWARD_ID,
                     'level' => $level,
@@ -36,16 +35,30 @@ class PhotosCountEvaluator extends BaseAwardEvaluator {
         return $achievements;
     }
 
-    private function getPhotosCount(int $userId): int {
+    /**
+     * Prüft, ob der Nutzer zu den ersten $threshold Nutzern gehört,
+     * die einen Check-in gemacht haben (nach frühestem Datum).
+     */
+    function isQuickstarter(int $nutzerId, $threshold): bool {
         global $pdo;
-        $sql = "SELECT COUNT(DISTINCT c.id) AS checkins_mit_bild
+        $sql = "
+            SELECT nutzer_id
+            FROM (
+                SELECT c.nutzer_id, MIN(c.datum) AS first_checkin
                 FROM checkins c
-                JOIN bilder b ON b.checkin_id = c.id
-                WHERE c.nutzer_id = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userId]);
+                GROUP BY c.nutzer_id
+                ORDER BY first_checkin ASC
+                LIMIT ?
+            ) AS early_users;
+        ";    
 
-        return (int)$stmt->fetchColumn();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(1, $threshold, PDO::PARAM_INT);
+        $stmt->execute();
+        $quickstarterIds = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);     
+
+        return in_array($nutzerId, $quickstarterIds);
     }
+
 }
 ?>

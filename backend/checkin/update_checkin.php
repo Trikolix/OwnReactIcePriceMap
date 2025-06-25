@@ -23,7 +23,7 @@ $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
 $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
 $preisleistungsbewertung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
 $anreise = $_POST['anreise'] ?? '';
-$erlaubteAnreisen = ['Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Sonstiges'];
+$erlaubteAnreisen = ['Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
 if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
     respondWithError('Ungültige Anreiseart.');
 }

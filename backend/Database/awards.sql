@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 16. Jun 2025 um 11:25
+-- Erstellungszeit: 23. Jun 2025 um 10:41
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -61,7 +61,17 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (20, 'chemnitz2025', 'Chemnitz 2025: Kulturhauptstadt Europas', '2025-05-25 14:38:19'),
 (21, 'laender_count', 'Eis in unterschiedlichen Ländern gegessen', '2025-05-29 04:23:21'),
 (22, 'bundesland_experte', 'Mehr als 30 Eis in einem Bundesland', '2025-06-02 08:19:17'),
-(23, 'cycling_count', 'Anzahl per Fahrrad besuche Eisdielen', '2025-06-16 06:14:49');
+(23, 'cycling_count', 'Anzahl per Fahrrad besuche Eisdielen', '2025-06-16 06:14:49'),
+(24, 'walk_count', 'Eisdielen zu Fuß besucht', '2025-06-18 06:38:30'),
+(25, 'bike_count', 'Eisdielen mit Motorrad besucht', '2025-06-18 06:47:10'),
+(26, 'early_starter', 'Für die ersten aktiven Nutzer', '2025-06-19 07:53:43'),
+(27, 'ice_summer', 'Hat mehrere Eis in einem Sommer gegessen', '2025-06-19 07:55:52'),
+(28, 'different_iceshops', 'Verschiedene Eisdielen besucht', '2025-06-19 07:59:22'),
+(29, 'award_collector', 'Hat mehrere Awards gesammelt', '2025-06-19 08:21:19'),
+(30, 'geschmacksvielfalt', 'Verschieden Eissorten gegessen', '2025-06-19 09:17:45'),
+(31, 'iceportions_per_week', 'Eisportionen in einer Woche eingecheckt', '2025-06-23 05:54:38'),
+(32, 'detailed_checkin', 'Mindestanzahl Zeichen bei Checkin', '2025-06-23 08:00:18'),
+(33, 'detailed_checkin-count', 'Anzahl ausführlicher Rezensionen', '2025-06-23 08:09:03');
 
 --
 -- Indizes der exportierten Tabellen
@@ -82,7 +92,7 @@ ALTER TABLE `awards`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -1,6 +1,7 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
+require_once  __DIR__ . '/lib/levelsystem.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 $curUserId = intval($_GET['cur_user_id']);
@@ -51,6 +52,7 @@ $sql7 = "SELECT
              al.title_de,
              al.description_de,
              al.icon_path,
+             al.ep,
              ua.awarded_at
          FROM user_awards ua
          JOIN award_levels al 
@@ -59,6 +61,7 @@ $sql7 = "SELECT
          ORDER BY ua.awarded_at DESC";
 
 $checkins = getCheckinsByNutzerId($pdo, $nutzerId);
+$levelInfo = getLevelInformationForUser($pdo, $nutzerId);
 
 // User Reviews
 $stmtReviews = $pdo->prepare("SELECT b.*,
@@ -124,6 +127,7 @@ try {
     $stats["checkins"] = $checkins; // Checkins hinzufügen
     $stats["reviews"] = $reviews; // Reviews hinzufügen
     $stats["routen"] = $routen; // Routen hinzufügen
+    $stats["level_info"] = $levelInfo; // Level Info hinzufügen
 
     echo json_encode($stats);
 

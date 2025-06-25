@@ -19,6 +19,13 @@ require_once __DIR__ . '/../evaluators/BundeslandExperteEvaluator.php';
 require_once __DIR__ . '/../evaluators/CyclingCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/WalkCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/BikeCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/GeschmackstreueEvaluator.php';
+require_once __DIR__ . '/../evaluators/AwardCollectorEvaluator.php';
+require_once __DIR__ . '/../evaluators/IceSummerEvaluator.php';
+require_once __DIR__ . '/../evaluators/DifferentIceShopCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/GeschmacksvielfaltEvaluator.php';
+require_once __DIR__ . '/../evaluators/EarlyStarterEvaluator.php';
+
 
 
 // Preflight OPTIONS-Request
@@ -134,7 +141,7 @@ try {
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
     $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
     $anreise = $_POST['anreise'] ?? null;
-    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Sonstiges'];
+    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
     if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
         respondWithError('Ungültige Anreiseart.');
     }
@@ -240,7 +247,12 @@ try {
         new StammkundeEvaluator(),
         new CountryVisitEvaluator(),
         new Chemnitz2025Evaluator(),
-        new BundeslandExperteEvaluator()
+        new BundeslandExperteEvaluator(),
+        new IceSummerEvaluator(),
+        new DifferentIceShopCountEvaluator(),
+        new GeschmacksvielfaltEvaluator(),
+        new EarlyStarterEvaluator(),
+        new AwardCollectorEvaluator()
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -257,7 +269,7 @@ try {
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
-        if ($evaluator instanceof MetadataAwareEvaluator) {
+        if ($evaluator instanceof MetadataAwardEvaluator) {
             $evaluator->setCheckinMetadata($meta);
         }
 

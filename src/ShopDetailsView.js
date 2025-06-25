@@ -211,6 +211,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         showCheckinForm={showCheckinForm}
         setShowCheckinForm={setShowCheckinForm}
         onSuccess={refreshShop}
+        shop={shopData}
+        setShowPriceForm={setShowPriceForm}
       />)}
 
     </>);
