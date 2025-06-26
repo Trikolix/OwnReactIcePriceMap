@@ -52,6 +52,28 @@ function Impressum() {
                 </Section>
 
                 <Section>
+                    <Heading>🎯 EP-System – So sammelst du Punkte!</Heading>
+                    <p>
+                        Wer mitmacht, wird belohnt! Für jede Aktion bekommst du Erfahrungspunkte (EP), mit denen du dein Level steigern kannst.
+                        Je aktiver du bist, desto mehr EP bekommst du – und desto mehr Spaß macht’s.
+                    </p>
+                    <ul>
+                        <li><Bold>Check-in ohne Bild:</Bold> 30 EP</li>
+                        <li><Bold>Check-in mit Bild:</Bold> 45 EP</li>
+                        <li><Bold>Bewertung abgeben:</Bold> 20 EP</li>
+                        <li><Bold>Preis melden:</Bold> 15 EP</li>
+                        <li><Bold>Route teilen:</Bold> 20 EP</li>
+                        <li><Bold>Eisdiele eintragen:</Bold> 5 EP (nach erstem Checkin bei der Eisdiele: 25 EP)</li>
+                        <li><Bold>Nutzer werben:</Bold> 10 EP (sobald der neue Nutzer seinen ersten Check-in macht: 250 EP!)</li>
+                        <li><Bold>Awards:</Bold> Jeder Award gibt individuell nach Schwierigkeit EP. (10-2000 EP)</li>
+                    </ul>
+                    <p>
+                        Viel Spaß beim Eis essen, EP sammeln und Level aufsteigen!
+                    </p>
+                </Section>
+
+
+                <Section>
                     <Heading>❓ Häufige Fragen (FAQ)</Heading>
                     <FAQItem>
                         <SubHeading>Warum ist meine Lieblingseisdiele noch nicht drin?</SubHeading>

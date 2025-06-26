@@ -3,7 +3,6 @@ import RegisterForm from '../components/RegisterForm';
 import { useParams } from 'react-router-dom';
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
-import InviteLinkGenerator from '../components/InviteLinkGenerator';
 
 const RegisterPage = () => {
     const { inviteCode } = useParams();
@@ -16,7 +15,6 @@ const RegisterPage = () => {
                 {isLoggedIn ? (
                     <div style={styles.messageBox}>
                         <h2>Du bist bereits eingeloggt.</h2>
-                        <InviteLinkGenerator />
                     </div>
                 ) : (
                     <div style={styles.formBox}>

@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `benachrichtigungen` (
   `id` int NOT NULL,
   `empfaenger_id` int NOT NULL,
-  `typ` enum('kommentar') COLLATE utf8mb4_general_ci NOT NULL,
+  `typ` enum('kommentar', 'new_user') COLLATE utf8mb4_general_ci NOT NULL,
   `referenz_id` int NOT NULL,
   `text` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `ist_gelesen` tinyint(1) DEFAULT '0',
