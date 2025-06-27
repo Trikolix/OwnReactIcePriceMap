@@ -18,6 +18,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [preisfrage, setPreisfrage] = useState(false);
     const [showAllAttributes, setShowAllAttributes] = useState(false)
     const [awards, setAwards] = useState([]);
+    const [levelUpInfo, setLevelUpInfo] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {

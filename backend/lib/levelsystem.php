@@ -159,4 +159,36 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
     return isset($result['ep_gesamt']) ? (int)$result['ep_gesamt'] : 0;
 }
 
+function updateUserLevelIfChanged(PDO $pdo, int $userId): ?array {
+    $levelInfo = getLevelInformationForUser($pdo, $userId);
+
+    if (!$levelInfo) {
+        return null;
+    }
+
+    // Aktuelles Level laut DB abrufen
+    $stmt = $pdo->prepare("SELECT current_level FROM nutzer WHERE id = :id");
+    $stmt->execute(['id' => $userId]);
+    $currentLevel = (int) $stmt->fetchColumn();
+
+    // Wenn neues Level höher → updaten + Rückgabe zur Anzeige im Frontend
+    if ($levelInfo['level'] > $currentLevel) {
+        $update = $pdo->prepare("UPDATE nutzer SET current_level = :newLevel WHERE id = :id");
+        $update->execute([
+            'newLevel' => $levelInfo['level'],
+            'id' => $userId
+        ]);
+
+        // Rückgabe für Frontend (z. B. Level-Up-Modal)
+        return [
+            'level_up' => true,
+            'new_level' => $levelInfo['level'],
+            'level_name' => $levelInfo['level_name'],
+            'ep_current' => $levelInfo['ep_current']
+        ];
+    }
+
+    return ['level_up' => false];
+}
+
 ?>

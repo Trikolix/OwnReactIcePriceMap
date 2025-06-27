@@ -18,6 +18,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const [message, setMessage] = useState("");
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
+    const [levelUpInfo, setLevelUpInfo] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     // Wenn bestehende Route übergeben, Felder vorausfüllen
@@ -87,9 +88,16 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 setisPrivat(false);
                 setSubmitted(true);
                 if (onSuccess) onSuccess();
-                if (result.new_awards && result.new_awards.length > 0) {
-                    console.log("Neue Auszeichnungen:", result.new_awards);
-                    setAwards(result.new_awards);
+                if (result.level_up || result.new_awards && result.new_awards.length > 0) {
+                    if (result.level_up) {
+                      setLevelUpInfo({
+                        level: result.new_level,
+                        level_name: result.level_name,
+                      });
+                    }
+                    if (result.new_awards?.length > 0) {
+                      setAwards(result.new_awards);
+                    }
                 } else {
                     setTimeout(() => {
                         setShowForm(false);
@@ -260,6 +268,13 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                         )}
                     </ButtonGroup></>)}
                 <Message>{message}</Message>
+                {levelUpInfo && (
+                  <LevelInfo>
+                    <h2>🎉 Level-Up!</h2>
+                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                    <p><em>{levelUpInfo.level_name}</em></p>
+                  </LevelInfo>
+                )}
                 <NewAwards awards={awards} />
             </Modal>
         </Overlay>) : null;
@@ -391,4 +406,9 @@ const Group = styled.div`
   display: flex;
   flex-direction: column;
   margin-bottom: 0.5rem;
+`;
+const LevelInfo = styled.div`
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
 `;

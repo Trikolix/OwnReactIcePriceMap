@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/KugeleisCountEvaluator.php';
@@ -296,10 +297,16 @@ try {
         }
     }
 
+    $levelChange = updateUserLevelIfChanged($pdo, $userId);
+
+    // JSON-Antwort vorbereiten
     echo json_encode([
         'status' => 'success',
         'checkin_id' => $checkinId,
-        'new_awards' => $newAwards
+        'new_awards' => $newAwards,
+        'level_up' => $levelChange['level_up'] ?? false,
+        'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
     ]);
 
 } catch (Exception $e) {

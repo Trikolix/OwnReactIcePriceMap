@@ -10,6 +10,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
+    const [levelUpInfo, setLevelUpInfo] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const submit = async () => {
@@ -52,6 +53,11 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 } else if (element.new_awards) {
                     setAwards(element.new_awards);
                     localAwards = element.new_awards;
+                } else if (element.level_up) {
+                    setLevelUpInfo({
+                        level: element.new_level,
+                        level_name: element.level_name,
+                      });                    
                 }
             });
             if (localAwards && localAwards.length !== 0) {
@@ -126,6 +132,13 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     </ButtonGroup>
                 </>)}
                 <Message>{message}</Message>
+                {levelUpInfo && (
+                  <LevelInfo>
+                    <h2>🎉 Level-Up!</h2>
+                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                    <p><em>{levelUpInfo.level_name}</em></p>
+                  </LevelInfo>
+                )}
                 <NewAwards awards={awards} />
             </Modal>
         </Overlay>) : null;
@@ -215,4 +228,10 @@ const SubmitButton = styled.button`
 const Message = styled.p`
   margin-top: 1rem;
   font-style: italic;
+`;
+
+const LevelInfo = styled.div`
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
 `;
