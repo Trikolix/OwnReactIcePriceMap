@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/KugeleisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/SofticeCountEvaluator.php';
@@ -246,6 +247,7 @@ try {
         new DistanceIceTravelerEvaluator(),
         new StammkundeEvaluator(),
         new CountryVisitEvaluator(),
+        new CountryCountEvaluator(),
         new Chemnitz2025Evaluator(),
         new BundeslandExperteEvaluator(),
         new IceSummerEvaluator(),
