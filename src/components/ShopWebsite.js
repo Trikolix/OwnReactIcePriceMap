@@ -68,11 +68,23 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
     return (
         <Container>
             
-            {eisdiele.website !== "" && eisdiele.website !== null && (
-                <>
-                  <strong>Website:</strong> <a href={eisdiele.website} target="_blank" rel="noopener noreferrer">{eisdiele.website}</a><br />
-                </>
-              )}
+            {eisdiele.website && (
+  <>
+    <strong>Website:</strong>{" "}
+    <a
+      href={
+        eisdiele.website.startsWith("http://") || eisdiele.website.startsWith("https://")
+          ? eisdiele.website
+          : `https://${eisdiele.website}`
+      }
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {eisdiele.website}
+    </a>
+    <br />
+  </>
+)}
               <WebsiteContainer
                 onClick={isLoggedIn ? setShowOverlay : undefined}
                 isLoggedIn={isLoggedIn}
