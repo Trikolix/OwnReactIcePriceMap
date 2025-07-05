@@ -6,12 +6,13 @@ class CountryCountEvaluator extends BaseAwardEvaluator {
     const AWARD_ID = 21;
 
     public function evaluate(int $userId): array {
-        global $pdo;
-        $count = $this->getCountryCount($userId);   
-         
+        $visitedCountries = $this->getVisitedCountryCodes($userId);
+        $countryCount = count($visitedCountries);
+
         $achievements = [];
-    
+
         // Hole alle Level für diesen Award aus der Datenbank
+        global $pdo;
         $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                FROM award_levels 
                                WHERE award_id = :awardId 
@@ -23,7 +24,7 @@ class CountryCountEvaluator extends BaseAwardEvaluator {
             $level = (int)$levelData['level'];
             $threshold = (int)$levelData['threshold'];
 
-            if ($count >= $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+            if ($countryCount >= $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                 $achievements[] = [
                     'award_id' => self::AWARD_ID,
                     'level' => $level,
@@ -33,19 +34,20 @@ class CountryCountEvaluator extends BaseAwardEvaluator {
                 ];
             }
         }
+
         return $achievements;
     }
-    
-    private function getCountryCount(int $userId): int {
+
+    private function getVisitedCountryCodes(int $userId): array {
         global $pdo;
-        $sql = "SELECT COUNT(DISTINCT s.land_id) AS land_count
+        $sql = "SELECT DISTINCT s.land_id
                 FROM checkins c
                 JOIN eisdielen s ON c.eisdiele_id = s.id
                 WHERE c.nutzer_id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
-    
-        return $stmt->fetchColumn();
+
+        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'land_id');
     }
 }
 ?>
