@@ -3,6 +3,9 @@ require_once  __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/ReferredUsersEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
+require_once __DIR__ . '/../evaluators/CommentCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
+ 
 try {
     // Nutzer-ID prüfen
     if (!isset($_GET['nutzer_id']) || !is_numeric($_GET['nutzer_id'])) {
@@ -20,7 +23,9 @@ try {
     // Award-Evaluatoren durchlaufen
     $evaluators = [
         new ReferredUsersEvaluator(),
-        new CountryVisitEvaluator()
+        new CountryVisitEvaluator(),
+        new CommentCountEvaluator(),
+        new WeekStreakEvaluator()
         // weitere Evaluatoren können hier ergänzt werden
     ];
  
