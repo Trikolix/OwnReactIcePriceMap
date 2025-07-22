@@ -155,6 +155,41 @@ Frostige Grüße ❄️
 Deine Ice-App
 EOT;
 
+// Insert in die Statistik-Tabelle
+$stmt = $pdo->prepare("
+    INSERT INTO wochenstatistiken (
+        start_datum, end_datum,
+        neue_nutzer, neue_eisdielen, aktive_nutzer,
+        checkins, portionen, laender_mit_checkins,
+        gesamt_nutzer, gesamt_checkins, gesamt_eisdielen,
+        verteilung_checkins_typ, verteilung_anreise, verteilung_bild
+    )
+    VALUES (
+        :start_datum, :end_datum,
+        :neue_nutzer, :neue_eisdielen, :aktive_nutzer,
+        :checkins, :portionen, :laender_mit_checkins,
+        :gesamt_nutzer, :gesamt_checkins, :gesamt_eisdielen,
+        :verteilung_checkins_typ, :verteilung_anreise, :verteilung_bild
+    )
+");
+
+$stmt->execute([
+    'start_datum' => $wochenstart->format('Y-m-d'),
+    'end_datum' => $wochenende->format('Y-m-d'),
+    'neue_nutzer' => $neueNutzer,
+    'neue_eisdielen' => $neueEisdielen,
+    'aktive_nutzer' => $aktiveNutzer,
+    'checkins' => $checkins,
+    'portionen' => $portionen,
+    'laender_mit_checkins' => $laenderMitCheckins,
+    'gesamt_nutzer' => $gesamtNutzer,
+    'gesamt_checkins' => $gesamtCheckins,
+    'gesamt_eisdielen' => $gesamtEisdielen,
+    'verteilung_checkins_typ' => json_encode($checkinsNachTyp),
+    'verteilung_anreise' => json_encode($checkinsNachAnreise),
+    'verteilung_bild' => json_encode($checkinsNachBild)
+]);
+
 // --- E-Mail versenden ---
 mail($empfaenger1, $betreff, $nachricht, $absender);
 mail($empfaenger2, $betreff, $nachricht, $absender);
