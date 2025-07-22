@@ -24,12 +24,48 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE datum BETWEEN :start 
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkins = $stmt->fetchColumn();
 
-// 3. Nutzer mit Check-ins
+// 3. Verteilung der Check-ins nach Typ
+$stmt = $pdo->prepare("
+    SELECT typ, COUNT(*) as anzahl
+    FROM checkins
+    WHERE datum BETWEEN :start AND :ende
+    GROUP BY typ
+");
+$stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
+$checkinsNachTyp = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 4. Verteilung der Check-ins nach Anreise
+$stmt = $pdo->prepare("
+    SELECT anreise, COUNT(*) as anzahl
+    FROM checkins
+    WHERE datum BETWEEN :start AND :ende
+    GROUP BY anreise
+");
+$stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
+$checkinsNachAnreise = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 5. Verteilung der Check-ins mit oder ohne Bild
+$stmt = $pdo->prepare("
+    SELECT
+        CASE
+            WHEN b.id IS NOT NULL THEN 'Mit Bild'
+            ELSE 'Ohne Bild'
+        END as bild_status,
+        COUNT(c.id) as anzahl
+    FROM checkins c
+    LEFT JOIN bilder b ON c.id = b.checkin_id
+    WHERE c.datum BETWEEN :start AND :ende
+    GROUP BY bild_status
+");
+$stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
+$checkinsNachBild = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 6. Nutzer mit Check-ins
 $stmt = $pdo->prepare("SELECT COUNT(DISTINCT nutzer_id) FROM checkins WHERE datum BETWEEN :start AND :ende");
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $aktiveNutzer = $stmt->fetchColumn();
 
-// 4. Eisportionen
+// 7. Eisportionen
 $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM checkin_sorten
     WHERE checkin_id IN (
@@ -39,12 +75,12 @@ $stmt = $pdo->prepare("
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $portionen = $stmt->fetchColumn();
 
-// 5. Neue Eisdielen
+// 8. Neue Eisdielen
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM eisdielen WHERE erstellt_am BETWEEN :start AND :ende");
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $neueEisdielen = $stmt->fetchColumn();
 
-// 6. Unterschiedliche Länder mit Check-ins
+// 9. Unterschiedliche Länder mit Check-ins
 $stmt = $pdo->prepare("
     SELECT COUNT(DISTINCT e.land_id)
     FROM checkins c
@@ -54,13 +90,13 @@ $stmt = $pdo->prepare("
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $laenderMitCheckins = $stmt->fetchColumn();
 
-// 7. Gesamtanzahl Nutzer
+// 10. Gesamtanzahl Nutzer
 $gesamtNutzer = $pdo->query("SELECT COUNT(*) FROM nutzer")->fetchColumn();
 
-// 8. Gesamtanzahl Check-ins
+// 11. Gesamtanzahl Check-ins
 $gesamtCheckins = $pdo->query("SELECT COUNT(*) FROM checkins")->fetchColumn();
 
-// 9. Gesamtanzahl Eisdielen
+// 12. Gesamtanzahl Eisdielen
 $gesamtEisdielen = $pdo->query("SELECT COUNT(*) FROM eisdielen")->fetchColumn();
 
 // --- Mailtext erstellen ---
@@ -76,19 +112,44 @@ Hier ist dein wöchentlicher Ice-App Report für den Zeitraum
 $datumStart – $datumEnde:
 
 📊 Wochenstatistik:
-🧑‍💻 Neue Nutzer:                 $neueNutzer
-📍 Neue Eisdielen:              $neueEisdielen
+🧑‍💻 Neue Nutzer: $neueNutzer
+📍 Neue Eisdielen: $neueEisdielen
 
-👥 Aktive Nutzer:               $aktiveNutzer
-✅ Check-ins insgesamt:         $checkins
-🍦 Eisportionen gegessen:       $portionen
-🌍 Länder mit Check-ins:        $laenderMitCheckins
+👥 Aktive Nutzer: $aktiveNutzer
+✅ Check-ins insgesamt: $checkins
+🍦 Eisportionen gegessen: $portionen
+🌍 Länder mit Check-ins: $laenderMitCheckins
 
+📊 Check-in Verteilung:
+🍧 Nach Typ:
+
+EOT;
+
+// Check-in Verteilung nach Typ hinzufügen
+foreach ($checkinsNachTyp as $typ) {
+    $nachricht .= "  - {$typ['typ']}: {$typ['anzahl']}\n";
+}
+
+$nachricht .= "\n🚗 Nach Anreise:\n";
+
+// Check-in Verteilung nach Anreise hinzufügen
+foreach ($checkinsNachAnreise as $anreise) {
+    $nachricht .= "  - {$anreise['anreise']}: {$anreise['anzahl']}\n";
+}
+
+$nachricht .= "\n📸 Mit oder ohne Bild:\n";
+
+// Check-in Verteilung mit oder ohne Bild hinzufügen
+foreach ($checkinsNachBild as $bild) {
+    $nachricht .= "  - {$bild['bild_status']}: {$bild['anzahl']}\n";
+}
+
+$nachricht .= <<<EOT
 
 📈 Gesamtzahlen:
-👤 Gesamtanzahl Nutzer:         $gesamtNutzer
-📌 Gesamtanzahl Check-ins:      $gesamtCheckins
-🏪 Gesamtanzahl Eisdielen:      $gesamtEisdielen
+👤 Gesamtanzahl Nutzer: $gesamtNutzer
+📌 Gesamtanzahl Check-ins: $gesamtCheckins
+🏪 Gesamtanzahl Eisdielen: $gesamtEisdielen
 
 Frostige Grüße ❄️
 Deine Ice-App
