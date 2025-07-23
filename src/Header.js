@@ -6,7 +6,7 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
 import NewAwards from './components/NewAwards';
-
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -18,6 +18,8 @@ const Header = ({ refreshShops }) => {
   const [newAwards, setNewAwards] = useState([]);
   const [showOverlay, setShowOverlay] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -42,7 +44,7 @@ const Header = ({ refreshShops }) => {
   }, [menuOpen]);
 
   useEffect(() => {
-     if (!userId) return;
+    if (!userId) return;
     const checkLevelInterval = setInterval(() => {
       checkForLevelUp();
     }, 5 * 60 * 1000); // alle 5 Minuten
@@ -52,6 +54,60 @@ const Header = ({ refreshShops }) => {
 
     return () => clearInterval(checkLevelInterval);
   }, [userId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const scanCode = params.get("scan");
+
+    if (scanCode) {
+      // ✅ QR-Code erkannt – weiterverarbeiten
+      console.log("Scan-Code erkannt:", scanCode);
+
+      // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
+      // Anfrage vorbereiten
+      const payload = {
+        code: scanCode,
+      };
+
+      if (userId) {
+        payload["nutzer_id"] = userId;
+      } else {
+        console.log("no userId found")
+      }
+      fetch(`${apiUrl}/api/qr_scan.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Antwort von API:", data);
+          if (data.status === "success") {
+            // Optional: Erfolgsmeldung anzeigen
+            alert(data.message);
+          } else {
+            console.error("Scan fehlgeschlagen:", data.message);
+          }
+        })
+        .catch((err) => {
+          console.error("Fehler beim Senden des QR-Codes:", err);
+        })
+        .finally(() => {
+          // ✅ Parameter aus URL entfernen, ohne Reload
+          params.delete("scan");
+          const newSearch = params.toString();
+          navigate(
+            {
+              pathname: location.pathname,
+              search: newSearch ? `?${newSearch}` : "",
+            },
+            { replace: true }
+          );
+        });
+    }
+  }, [location]);
 
   const checkForLevelUp = async () => {
     try {
