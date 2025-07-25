@@ -32,4 +32,20 @@ abstract class BaseAwardEvaluator implements AwardEvaluator {
             'level' => $level
         ]);
     }
+
+    protected function storeAwardIfNewWithDate(int $userId, int $awardId, int $level, string $awardedAt): bool {
+    if ($this->hasAward($userId, $awardId, $level)) {
+        return false;
+    }
+
+    global $pdo;
+    $stmt = $pdo->prepare("INSERT INTO user_awards (user_id, award_id, level, awarded_at) 
+                           VALUES (:userId, :awardId, :level, :awardedAt)");
+    return $stmt->execute([
+        'userId' => $userId,
+        'awardId' => $awardId,
+        'level' => $level,
+        'awardedAt' => $awardedAt
+    ]);
+}
 }

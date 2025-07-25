@@ -27,6 +27,9 @@ require_once __DIR__ . '/../evaluators/DifferentIceShopCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/GeschmacksvielfaltEvaluator.php';
 require_once __DIR__ . '/../evaluators/EarlyStarterEvaluator.php';
 require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
+require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
+require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
+require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -253,7 +256,10 @@ try {
         new GeschmacksvielfaltEvaluator(),
         new EarlyStarterEvaluator(),
         new AwardCollectorEvaluator(),
-        new WeekStreakEvaluator()
+        new WeekStreakEvaluator(),
+        new IcePortionsPerWeekEvaluator(),
+        new DetailedCheckinEvaluator(),
+        new DetailedCheckinCountEvaluator()
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();

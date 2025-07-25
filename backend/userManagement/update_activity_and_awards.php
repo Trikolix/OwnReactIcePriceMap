@@ -5,6 +5,8 @@ require_once __DIR__ . '/../evaluators/ReferredUsersEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
 require_once __DIR__ . '/../evaluators/CommentCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
+require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
+require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
  
 try {
     // Nutzer-ID prüfen
@@ -25,7 +27,9 @@ try {
         new ReferredUsersEvaluator(),
         new CountryVisitEvaluator(),
         new CommentCountEvaluator(),
-        new WeekStreakEvaluator()
+        new WeekStreakEvaluator(),
+        new IcePortionsPerWeekEvaluator(),
+        new DetailedCheckinEvaluator()
         // weitere Evaluatoren können hier ergänzt werden
     ];
  
