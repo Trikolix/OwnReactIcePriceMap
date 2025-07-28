@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Jul 2025 um 13:11
+-- Erstellungszeit: 28. Jul 2025 um 18:09
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Datenbank: `db_439770_3`
+-- Datenbank: `db_439770_2`
 --
 
 -- --------------------------------------------------------
@@ -29,12 +29,14 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `qr_codes` (
   `id` bigint UNSIGNED NOT NULL,
-  `code` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `valid_from` timestamp NULL DEFAULT NULL,
   `valid_until` timestamp NULL DEFAULT NULL,
-  `award_type` text COLLATE utf8mb4_general_ci,
+  `award_type` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `icon_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `usage_limit` int DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -42,8 +44,8 @@ CREATE TABLE `qr_codes` (
 -- Daten für Tabelle `qr_codes`
 --
 
-INSERT INTO `qr_codes` (`id`, `code`, `description`, `created_at`, `valid_from`, `valid_until`, `award_type`, `usage_limit`) VALUES
-(1, '01b6e70282', 'Cycle The Loop', '2025-07-23 05:12:05', NULL, '2025-08-03 21:59:59', NULL, 0);
+INSERT INTO `qr_codes` (`id`, `name`, `code`, `description`, `created_at`, `valid_from`, `valid_until`, `award_type`, `icon_path`, `usage_limit`) VALUES
+(1, 'One More Loop', '01b6e70282', 'Du hast den limitierten One More Loop Award gescannt. Besuche bis zum 10. August eine Eisdiele per Rad (optimal natürlich direkt während des Brevet) und checke einen Besuch ein um den Award zu bekommen.', '2025-07-23 03:12:05', NULL, '2025-08-10 21:59:59', NULL, 'uploads/award_icons/688132889a1fe_OneMoreLoop_clouds.png', 0);
 
 --
 -- Indizes der exportierten Tabellen

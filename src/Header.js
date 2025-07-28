@@ -5,6 +5,7 @@ import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
+import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -16,6 +17,7 @@ const Header = ({ refreshShops }) => {
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
   const [newAwards, setNewAwards] = useState([]);
+  const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const location = useLocation();
@@ -65,15 +67,9 @@ const Header = ({ refreshShops }) => {
 
       // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
       // Anfrage vorbereiten
-      const payload = {
-        code: scanCode,
-      };
+      const payload = { code: scanCode };
+      if (userId) { payload["nutzer_id"] = userId; }
 
-      if (userId) {
-        payload["nutzer_id"] = userId;
-      } else {
-        console.log("no userId found")
-      }
       fetch(`${apiUrl}/api/qr_scan.php`, {
         method: "POST",
         headers: {
@@ -85,8 +81,29 @@ const Header = ({ refreshShops }) => {
         .then((data) => {
           console.log("Antwort von API:", data);
           if (data.status === "success") {
-            // Optional: Erfolgsmeldung anzeigen
-            alert(data.message);
+            // 🧠 Wenn nicht eingeloggt → lokal speichern
+            if (!userId) {
+              const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+              if (!stored.includes(scanCode)) {
+                stored.push(scanCode);
+                localStorage.setItem("pendingQrScans", JSON.stringify(stored));
+              }
+            }
+
+            // ✅ Modal anzeigen
+            console.log("setModalData", {
+              icon: data.icon,
+              name: data.name,
+              description: data.description,
+              needsLogin: !userId,
+              userId: userId,
+            });
+            setModalData({
+              icon: data.icon,
+              name: data.name,
+              description: data.description,
+              needsLogin: !userId,
+            });
           } else {
             console.error("Scan fehlgeschlagen:", data.message);
           }
@@ -108,6 +125,30 @@ const Header = ({ refreshShops }) => {
         });
     }
   }, [location]);
+
+  useEffect(() => {
+  if (!userId) return;
+
+  const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+  if (stored.length > 0) {
+    stored.forEach((code) => {
+      fetch(`${apiUrl}/api/qr_scan.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, nutzer_id: userId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("QR-Scan nach Login übertragen:", data);
+        })
+        .catch((err) => {
+          console.error("Fehler beim Nachsenden des QR-Codes:", err);
+        });
+    });
+
+    localStorage.removeItem("pendingQrScans");
+  }
+}, [userId]);
 
   const checkForLevelUp = async () => {
     try {
@@ -202,6 +243,12 @@ const Header = ({ refreshShops }) => {
           <NewAwards awards={newAwards} />
         </Overlay>
       )}
+      <QrScanModal
+            open={modalData !== null}
+            onClose={() => setModalData(null)}
+            data={modalData}
+            needsLogin={modalData?.needsLogin}
+          />
     </>
   );
 };

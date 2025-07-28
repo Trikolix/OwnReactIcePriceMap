@@ -50,8 +50,12 @@ if ($nutzerId) {
 // Erfolgreich
 echo json_encode([
   'status' => 'success',
+  "id" => $qrCode["id"],  
   "award_type" => $qrCode["award_type"],
+  "name" => $qrCode["name"],
+  "icon" => $qrCode["icon_path"], 
   "description" => $qrCode["description"],
+  "saved" => $nutzerId ? true : false,
   "message" => $nutzerId ? "Scan gespeichert" : "Scan erkannt – bitte einloggen oder registrieren"
 ]);
 

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../evaluators/CommentCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
 require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
+require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
  
 try {
     // Nutzer-ID prüfen
@@ -29,7 +30,8 @@ try {
         new CommentCountEvaluator(),
         new WeekStreakEvaluator(),
         new IcePortionsPerWeekEvaluator(),
-        new DetailedCheckinEvaluator()
+        new DetailedCheckinEvaluator(),
+        new DetailedCheckinCountEvaluator()
         // weitere Evaluatoren können hier ergänzt werden
     ];
  
