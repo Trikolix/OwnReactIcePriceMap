@@ -30,6 +30,7 @@ require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
 require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/OneMoreLoopEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -269,7 +270,10 @@ try {
     elseif ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
 
-    if ($anreise === 'Fahrrad') $evaluators[] = new CyclingCountEvaluator();
+    if ($anreise === 'Fahrrad') {
+        $evaluators[] = new CyclingCountEvaluator();
+        $evaluators[] = new OneMoreLoopEvaluator();
+    }
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
 
