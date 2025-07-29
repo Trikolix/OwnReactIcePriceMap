@@ -10,7 +10,7 @@ class OneMoreLoopEvaluator extends BaseAwardEvaluator {
         $achievements = [];
 
         // Prüfe: Hat Nutzer den QR Code mit ID 1 gescannt?
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM qr_code_scans WHERE nutzer_id = :userId AND qr_code_id = 1");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM user_qr_scans WHERE user_id = :userId AND qr_code_id = 1");
         $stmt->execute(['userId' => $userId]);
         $hasScanned = $stmt->fetchColumn() > 0;
 
@@ -40,7 +40,7 @@ class OneMoreLoopEvaluator extends BaseAwardEvaluator {
         $targetLevel = $hasCheckin ? 2 : 1;
 
         // Prüfe, ob Nutzer schon diese oder höhere Stufe hat
-        $stmt = $pdo->prepare("SELECT MAX(level) FROM nutzer_awards WHERE nutzer_id = :userId AND award_id = :awardId");
+        $stmt = $pdo->prepare("SELECT MAX(level) FROM user_awards WHERE user_id = :userId AND award_id = :awardId");
         $stmt->execute(['userId' => $userId, 'awardId' => self::AWARD_ID]);
         $currentLevel = (int) $stmt->fetchColumn();
 
@@ -48,7 +48,7 @@ class OneMoreLoopEvaluator extends BaseAwardEvaluator {
 
         // Lösche ggf. niedrigere Stufe, um mit höherer zu ersetzen
         if ($currentLevel > 0 && $currentLevel < $targetLevel) {
-            $stmt = $pdo->prepare("DELETE FROM nutzer_awards WHERE nutzer_id = :userId AND award_id = :awardId");
+            $stmt = $pdo->prepare("DELETE FROM user_awards WHERE user_id = :userId AND award_id = :awardId");
             $stmt->execute(['userId' => $userId, 'awardId' => self::AWARD_ID]);
         }
 

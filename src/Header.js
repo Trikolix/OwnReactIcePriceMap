@@ -95,14 +95,14 @@ const Header = ({ refreshShops }) => {
               icon: data.icon,
               name: data.name,
               description: data.description,
-              needsLogin: !userId,
+              needsLogin: !data.saved,
               userId: userId,
             });
             setModalData({
               icon: data.icon,
               name: data.name,
               description: data.description,
-              needsLogin: !userId,
+              needsLogin: !data.saved,
             });
           } else {
             console.error("Scan fehlgeschlagen:", data.message);
