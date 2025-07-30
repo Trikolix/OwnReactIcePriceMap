@@ -18,6 +18,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
+    const [levelUpInfo, setLevelUpInfo] = useState(null);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -149,8 +150,17 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
-                if (data.new_awards && data.new_awards.length > 0) {
-                    setAwards(data.new_awards);
+                if (data.level_up || data.new_awards && data.new_awards.length > 0) {
+                    if (data.level_up) {
+                      setLevelUpInfo({
+                        level: data.new_level,
+                        level_name: data.level_name,
+                      });
+                    }
+                    if (data.new_awards?.length > 0) {
+                      setAwards(data.new_awards);
+                    }
+                    
                     if (shop && askForPriceUpdate(shop.preise)) {
                         setPreisfrage(true);
                     }
@@ -478,9 +488,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </ButtonGroup>
                     </>
                 )}
-                <NewAwards awards={awards} />
-
-                
+                {levelUpInfo && (
+                  <LevelInfo>
+                    <h2>🎉 Level-Up!</h2>
+                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                    <p><em>{levelUpInfo.level_name}</em></p>
+                  </LevelInfo>
+                )}
+                <NewAwards awards={awards} />                
             </Modal>
         </Overlay>) : null
     );
@@ -706,4 +721,10 @@ const SubmitButton = styled.button`
     border-radius: 4px;
     border: none;
     cursor: pointer;
+`;
+
+const LevelInfo = styled.div`
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
 `;

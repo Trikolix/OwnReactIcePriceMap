@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
+require_once  __DIR__ . '/../lib/levelsystem.php';
 require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
 
@@ -135,11 +136,16 @@ try {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
         }
     }
+
+    $levelChange = updateUserLevelIfChanged($pdo, $nutzer_id);
     
     echo json_encode([
         'status' => 'success',
         'message' => 'Route erfolgreich eingetragen',
-        'new_awards' => $newAwards
+        'new_awards' => $newAwards,
+        'level_up' => $levelChange['level_up'] ?? false,
+        'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

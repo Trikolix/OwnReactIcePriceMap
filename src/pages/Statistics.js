@@ -17,7 +17,7 @@ function Statistics() {
 
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
-  const [activeTab, setActiveTab] = useState('landkreisPreis');
+  const [activeTab, setActiveTab] = useState('activeUsers');
 
   const [expandedFlavour, setExpandedFlavour] = useState(null);
   const [flavourDetails, setFlavourDetails] = useState({});
@@ -84,6 +84,18 @@ function Statistics() {
         <Container>
           <TabContainer>
             <TabButton
+              active={activeTab === 'activeUsers'}
+              onClick={() => setActiveTab('activeUsers')}
+            >
+              aktivste Benutzer
+            </TabButton>
+            <TabButton
+              active={activeTab === 'mostPopularFlavours'}
+              onClick={() => setActiveTab('mostPopularFlavours')}
+            >
+              beliebteste Eissorten
+            </TabButton>
+            <TabButton
               active={activeTab === 'landkreisPreis'}
               onClick={() => setActiveTab('landkreisPreis')}
             >
@@ -94,18 +106,6 @@ function Statistics() {
               onClick={() => setActiveTab('bundeslandPreis')}
             >
               Ø Kugelpreis pro Bundesland
-            </TabButton>
-            <TabButton
-              active={activeTab === 'mostPopularFlavours'}
-              onClick={() => setActiveTab('mostPopularFlavours')}
-            >
-              beliebteste Eissorten
-            </TabButton>
-            <TabButton
-              active={activeTab === 'activeUsers'}
-              onClick={() => setActiveTab('activeUsers')}
-            >
-              aktivste Benutzer
             </TabButton>
           </TabContainer>
 
@@ -208,27 +208,34 @@ function Statistics() {
             )}
 
             {activeTab === 'activeUsers' && (<div>
-              <Title>aktivste Benutzer</Title>
+
+              <Title>Benutzer nach Level</Title>
               <Table>
                 <thead>
                   <tr>
                     <Th>Nutzer</Th>
+                    <Th>EP Gesamt</Th>
                     <Th>Checkins</Th>
-                    <Th>Reviews</Th>
+                    <Th>Bewertungen</Th>
                     <Th>Preismeldungen</Th>
                     <Th>Routen</Th>
-                    <Th>Eisdielen</Th>
+                    <Th>EP Eisdielen</Th>
+                    <Th>EP geworbene Nutzer</Th>
+                    <Th>EP Awards</Th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.mostActiveUsers.map((entry) => (
-                    <tr key={entry.user_id}>
-                      <Td><UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink></Td>
-                      <Td>{entry.checkins}</Td>
-                      <Td>{entry.reviews}</Td>
-                      <Td>{entry.preismeldungen}</Td>
-                      <Td>{entry.routen}</Td>
-                      <Td>{entry.eisdielen}</Td>
+                  {data.usersByLevel.map((entry) => (
+                    <tr key={entry.nutzer_id}>
+                      <Td><UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink></Td>
+                      <Td><strong>{entry.ep_gesamt}</strong></Td>
+                      <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
+                      <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
+                      <Td>{entry.anzahl_preismeldungen} ({entry.ep_preismeldungen}EP)</Td>
+                      <Td>{entry.anzahl_routen} ({entry.ep_routen}EP)</Td>
+                      <Td>{entry.ep_eisdielen} EP</Td>
+                      <Td>{entry.ep_geworbene_nutzer} EP</Td>
+                      <Td>{entry.ep_awards} EP</Td>
                     </tr>
                   ))}
                 </tbody>

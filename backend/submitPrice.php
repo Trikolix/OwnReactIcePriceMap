@@ -1,7 +1,8 @@
 <?php
-require_once  __DIR__ . '/db_connect.php';
-require_once  __DIR__ . '/evaluators/PriceSubmitCountEvaluator.php';
-require_once  __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
+require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/levelsystem.php';
+require_once __DIR__ . '/evaluators/PriceSubmitCountEvaluator.php';
+require_once __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
 
 
 // Funktion zum Senden / Aktualisieren der Preise
@@ -77,6 +78,15 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
         }
     }
     $response[] = ['new_awards' => $newAwards];
+
+    $levelChange = updateUserLevelIfChanged($pdo, $userId);
+    $response[] = [
+        'level_up' => $levelChange['level_up'] ?? false,
+        'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
+    ];
+
+
     } catch (PDOException $e) {
         $response[] = ['status' => 'error', 'message' => $e->getMessage()];
     }

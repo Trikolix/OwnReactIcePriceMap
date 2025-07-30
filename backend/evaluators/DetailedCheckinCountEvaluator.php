@@ -1,29 +1,29 @@
 <?php
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
- 
-class CountryVisitEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 19;
- 
+
+class DetailedCheckinCountEvaluator extends BaseAwardEvaluator {
+    const AWARD_ID = 33;
+
     public function evaluate(int $userId): array {
-        $visitedCountries = $this->getVisitedCountryCodes($userId); // z. B. ['DE', 'FR', 'IT']
-        $achievements = [];
- 
         global $pdo;
+        $count = $this->getDetailedCheckinCount($userId);
+
+        $achievements = [];
+
+        // Hole alle Level für diesen Award aus der Datenbank
         $stmt = $pdo->prepare("SELECT level, threshold, icon_path, title_de, description_de, ep
                                FROM award_levels 
                                WHERE award_id = :awardId 
                                ORDER BY level ASC");
         $stmt->execute(['awardId' => self::AWARD_ID]);
         $levels = $stmt->fetchAll(PDO::FETCH_ASSOC);
- 
+
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
-            $requiredCountryCode = $levelData['threshold']; // z. B. 'IT'
- 
-            if (in_array($requiredCountryCode, $visitedCountries, true) &&
-                $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
- 
+            $threshold = (int)$levelData['threshold'];
+
+            if ($count >= $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                 $achievements[] = [
                     'award_id' => self::AWARD_ID,
                     'level' => $level,
@@ -33,20 +33,22 @@ class CountryVisitEvaluator extends BaseAwardEvaluator {
                 ];
             }
         }
- 
         return $achievements;
     }
- 
-    private function getVisitedCountryCodes(int $userId): array {
+
+    private function getDetailedCheckinCount(int $userId): int {
         global $pdo;
-        $sql = "SELECT DISTINCT s.land_id
-                FROM checkins c
-                JOIN eisdielen s ON c.eisdiele_id = s.id
-                WHERE c.nutzer_id = ? AND s.land_id IS NOT NULL";
+
+        $sql = "SELECT COUNT(*) 
+                FROM checkins 
+                WHERE nutzer_id = :userId 
+                  AND CHAR_LENGTH(kommentar) > 250";
+
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userId]);
- 
-        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'land_id');
+        $stmt->execute(['userId' => $userId]);
+
+        return (int)$stmt->fetchColumn();
     }
+
 }
 ?>

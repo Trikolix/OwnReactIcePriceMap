@@ -68,6 +68,8 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
                 COALESCE(a.ep, 0) AS ep_awards,
                 -- EP durch eingetragene Eisdielen (mit und ohne Check-ins)
                 COALESCE(e.ep, 0) AS ep_eisdielen,
+                -- EP durch geworbene Nutzer
+                COALESCE(gw.ep, 0) AS ep_geworbene_nutzer,
                 -- EP gesamt
                 (
                     COALESCE(ci_ohne_bild.count, 0) * 30 +
@@ -76,7 +78,8 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
                     COALESCE(pm.count, 0) * 15 +
                     COALESCE(r.count, 0) * 20 +
                     COALESCE(a.ep, 0) +
-                    COALESCE(e.ep, 0) 
+                    COALESCE(e.ep, 0) +
+                    COALESCE(gw.ep, 0)
                 ) AS ep_gesamt
             FROM nutzer n
             -- Check-ins ohne Bild
@@ -134,10 +137,58 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
                 LEFT JOIN checkins c ON c.eisdiele_id = e.id
                 GROUP BY e.user_id
             ) e ON e.user_id = n.id
+            -- EP durch geworbene Nutzer (10 oder 250 je nach Aktivität)
+            LEFT JOIN (
+                SELECT 
+                    n.invited_by AS nutzer_id,
+                    SUM(
+                        CASE 
+                            WHEN EXISTS (
+                                SELECT 1 FROM checkins c WHERE c.nutzer_id = n.id
+                            ) THEN 250
+                            ELSE 10
+                        END
+                    ) AS ep
+                FROM nutzer n
+                WHERE n.is_verified = 1 AND n.invited_by IS NOT NULL
+                GROUP BY n.invited_by
+            ) gw ON gw.nutzer_id = n.id
             WHERE n.id = :userid");
     $stmt->execute(['userid' => $userId]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     return isset($result['ep_gesamt']) ? (int)$result['ep_gesamt'] : 0;
+}
+
+function updateUserLevelIfChanged(PDO $pdo, int $userId): ?array {
+    $levelInfo = getLevelInformationForUser($pdo, $userId);
+
+    if (!$levelInfo) {
+        return null;
+    }
+
+    // Aktuelles Level laut DB abrufen
+    $stmt = $pdo->prepare("SELECT current_level FROM nutzer WHERE id = :id");
+    $stmt->execute(['id' => $userId]);
+    $currentLevel = (int) $stmt->fetchColumn();
+
+    // Wenn neues Level höher → updaten + Rückgabe zur Anzeige im Frontend
+    if ($levelInfo['level'] > $currentLevel) {
+        $update = $pdo->prepare("UPDATE nutzer SET current_level = :newLevel WHERE id = :id");
+        $update->execute([
+            'newLevel' => $levelInfo['level'],
+            'id' => $userId
+        ]);
+
+        // Rückgabe für Frontend (z. B. Level-Up-Modal)
+        return [
+            'level_up' => true,
+            'new_level' => $levelInfo['level'],
+            'level_name' => $levelInfo['level_name'],
+            'ep_current' => $levelInfo['ep_current']
+        ];
+    }
+
+    return ['level_up' => false];
 }
 
 ?>

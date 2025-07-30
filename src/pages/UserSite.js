@@ -12,6 +12,8 @@ import LevelDisplay from '../components/LevelDisplay';
 function UserSite() {
   const { userId: userIdFromUrl } = useParams();
   const { userId: userIdFromContext } = useUser();
+  const isOwnProfile = userIdFromUrl === userIdFromContext;
+  const [showToast, setShowToast] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,6 +74,17 @@ function UserSite() {
     fetchUserData(finalUserId);
   };
 
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    } catch (err) {
+      console.error('Fehler beim Kopieren:', err);
+      alert('Kopieren fehlgeschlagen.');
+    }
+  };
+
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header />
@@ -105,6 +118,8 @@ function UserSite() {
   const displayedAwards = data.user_awards.slice(0, awardPage * 4);
   const displayedRoutes = data.routen.slice(0, routePage * 5);
 
+  const totalIcePortions = (data.eisarten.Kugel || 0) + (data.eisarten.Softeis || 0) + (data.eisarten.Eisbecher || 0);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header />
@@ -113,6 +128,17 @@ function UserSite() {
           <HeaderDiv>
             <h1>Nutzerseite von {data.nutzername}</h1>
             <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+            {isOwnProfile && (
+              <Einladungsbox>
+                <h3>Lade neue Nutzer ein und verdiene extra EP ✨</h3>
+                <LinkContainer>
+                  Dein Einladungslink:
+                  <Input value={`https://ice-app.de/#/register/${data.invite_code}`} readOnly />
+                  <CopyButton onClick={() => copyToClipboard(`https://ice-app.de/#/register/${data.invite_code}`)}>Kopieren</CopyButton>
+                </LinkContainer>
+                {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
+              </Einladungsbox>
+            )}
             <LevelDisplay levelInfo={data.level_info} />
           </HeaderDiv>
 
@@ -145,7 +171,7 @@ function UserSite() {
               <p>Check-ins</p>
             </StatBox>
             <StatBox>
-              <h2>{(data.eisarten.Kugel + data.eisarten.Softeis) ? (data.eisarten.Kugel + data.eisarten.Softeis) : '0'}</h2>
+              <h2>{totalIcePortions}</h2>
               <p>Portionen Eis gegessen</p>
             </StatBox>
           </StatsSection>
@@ -433,4 +459,53 @@ const TabButton = styled.button`
 
 const TabContent = styled.div`
   margin-top: 1rem;
+`;
+
+const Einladungsbox = styled.div`
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 12px;
+`;
+
+const LinkContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+`;
+
+const Input = styled.input`
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: monospace;
+`;
+
+const CopyButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #0077b6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  &:hover {
+    background-color: #005f8a;
+  }
+`;
+
+const Toast = styled.div`
+  margin-top: 1rem;
+  background-color: #4caf50;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  animation: fadeOut 2.5s ease forwards;
+
+  @keyframes fadeOut {
+    0%   { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
 `;

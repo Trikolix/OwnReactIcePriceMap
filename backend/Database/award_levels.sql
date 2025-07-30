@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Jun 2025 um 10:42
+-- Erstellungszeit: 27. Jun 2025 um 13:19
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -135,9 +135,9 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (107, 22, 8, 17, 'uploads/award_icons/683eba2ab9a29_ChatGPT Image 3. Juni 2025, 11_02_12.png', 'Schleckbaron von Baden-Württemberg', 'Für standesgemäßen Genuss süddeutscher Eisfreuden – 30 Eisportionen im Baden-Württembergischen Ländle vernascht.', 350),
 (108, 22, 9, 15, 'uploads/award_icons/6841b9472aa30_ChatGPT Image 5. Juni 2025, 17_35_23.png', 'Eisgraf von Hessen', 'Frankfurter Kranz ist was für Anfänger – echte Genießer:innen holen sich 30 Portionen Eis aus allen Ecken Hessens. Vom Fachwerk-Flair bis zum Skyline-Scooping: Wer hier ausdauernd löffelt, wird zum Eisgrafen gekrönt – natürlich mit extra Sahne auf dem Wappeneis.', 350),
 (109, 21, 2, 3, 'uploads/award_icons/6855040a85f06_ChatGPT Image 20. Juni 2025, 08_47_00.png', 'Eis-Grenzgänger', '3 Länder, 3 Kugeln, 3x Glück. Du bist bereit, Grenzen für Eis zu überschreiten!', 50),
-(110, 21, 3, 5, 'uploads/award_icons/6857f8edee1d0_ChatGPT Image 22. Juni 2025, 14_36_32.png', 'Welt-Eis-Abenteurer', 'Du hast die Eiskugeln dieser Welt erkundet – in fünf verschiedenen Ländern! Ob Sorbet in Spanien oder Matcha in Japan: Dein Geschmack kennt keine Grenzen. Ein echter Abenteurer der Eisvielfalt!', 150),
-(111, 21, 4, 7, NULL, 'Kugel-Weltenbummler', 'Eis in 7 Ländern? Dein Löffel ist ein Kompass. Und der zeigt immer Richtung Eisdiele!', 250),
-(112, 21, 5, 10, NULL, 'Eis-Diplomat', 'Du hast Eis auf 10 internationalen Bühnen genossen. Wenn es um Eis geht, bist du ein Global Player!', 500),
+(110, 21, 3, 5, 'uploads/award_icons/68594cb14a2bf_ChatGPT Image 23. Juni 2025, 12_43_19.png', 'Welt-Eis-Abenteurer', 'Du hast die Eiskugeln dieser Welt erkundet – in fünf verschiedenen Ländern! Ob Sorbet in Spanien oder Matcha in Japan: Dein Geschmack kennt keine Grenzen. Ein echter Abenteurer der Eisvielfalt!', 150),
+(111, 21, 4, 7, 'uploads/award_icons/685af308e3da1_ChatGPT Image 24. Juni 2025, 20_48_05.png', 'Welt-Eis-Entdecker', 'Du hast die Welt auf der Suche nach neuen Geschmackserlebnissen durchquert – sieben Länder, sieben Kugeln voller Abenteuer. Dein Gaumen kennt keine Grenzen!', 250),
+(112, 21, 5, 10, 'uploads/award_icons/685af428a8f48_ChatGPT Image 24. Juni 2025, 20_52_58.png', 'Welt-Eis-Legende', 'Zehn Länder, zehn einzigartige Eiskugeln – du bist nicht einfach nur unterwegs, du bist eine lebende Legende der internationalen Eiskultur!', 500),
 (113, 22, 10, 22, 'uploads/award_icons/6841ba5b2a3fa_ChatGPT Image 5. Juni 2025, 17_37_08.png', 'Norddeutscher Eishengst Niedersachsens', 'Wer 30 Kugeln Eis zwischen der Lüneburger Heide und den Nordseewellen verputzt hat, verdient mehr als Applaus – er oder sie galoppiert direkt in den Kreis der „Eishengste“. Ob mit Sand zwischen den Zehen oder Kuhglocken im Ohr: Diese Auszeichnung ist nichts für Zuckerscheue.', 350),
 (114, 22, 11, 23, 'uploads/award_icons/6841bb25c3e02_ChatGPT Image 5. Juni 2025, 17_40_31.png', 'Eislandgraf Nordrhein-Westfalens', 'Drei Kugeln, drei Symbole, ein Titel: Wer im Schatten des Doms, am Pott oder entlang des Rheins mindestens 30 Portionen Eis verdrückt, darf sich mit Fug und Recht Eislandgraf nennen. Der Adelstitel mit Sahnehaube für alle, die sich durch die kulinarischen Regionen NRWs geschleckt haben.', 350),
 (115, 22, 12, 21, 'uploads/award_icons/6847eb206d221_ChatGPT Image 10. Juni 2025, 10_16_15.png', 'Küstenschlecker Mecklenburg-Vorpommerns', 'Verliehen an echte Eis-Lotsen der Ostsee! Wer 30 Portionen Eis zwischen Seebrücken, Möwen und Sanddünen geschleckt hat, darf sich stolz „Küstenschlecker“ nennen. Dieser Orden weht mit salziger Brise und cremiger Würde – mit extra Sahne on top!', 350),
@@ -154,7 +154,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (126, 25, 1, 1, 'uploads/award_icons/6852625b2b0f0_8aa6f840-d8d5-4019-89dd-18a39fda82bf.png', 'The Gourmet Biker Junior', 'Du hast deine erste Eisdiele mit dem Motorrad besucht und damit bewiesen, dass du ein wahrer Abenteurer bist. Der Wind in den Haaren und Eis in der Hand – was will man mehr?', 30),
 (127, 24, 3, 10, 'uploads/award_icons/6852629166b13_ChatGPT Image 18. Juni 2025, 08_48_41.png', 'Silberne Schleckspur', 'Dein Weg ist gepflastert mit Schritten – und Eisklecksen. Zehnmal hast du gezeigt: wahre Schlecker gehen zu Fuß.', 100),
 (128, 24, 4, 20, 'uploads/award_icons/6853b4ad09744_ChatGPT Image 19. Juni 2025, 08_54_28.png', 'Goldener Eiswanderer', 'Zwanzigmal hast du dich erhoben, bist gegangen – nicht für Ruhm, sondern für Eis. Und das mit Stil.', 200),
-(129, 26, 1, 50, 'uploads/award_icons/6856585489d6e_1000085614.png', 'IceRocket Quickstarter', 'Du bist mit Vollgas in die Ice-App gestartet – als einer der ersten 50 Nutzer hast du die Eisdielenwelt aufgemischt und dabei Spuren im Eis hinterlassen. Der IceRocket Quickstarter-Award ehrt deinen frühen, frostig-flotten Einstieg. Danke, dass du die Rakete gezündet hast!', 50),
+(129, 26, 1, 50, 'uploads/award_icons/685954b959375_ChatGPT Image 23. Juni 2025, 15_18_54.png', 'IceRocket Quickstarter', 'Du bist mit Vollgas in die Ice-App gestartet – als einer der ersten 50 Nutzer hast du die Eisdielenwelt aufgemischt und dabei Spuren im Eis hinterlassen. Der IceRocket Quickstarter-Award ehrt deinen frühen, frostig-flotten Einstieg. Danke, dass du die Rakete gezündet hast!', 50),
 (130, 27, 2025, 20, 'uploads/award_icons/6855058fe49e5_ChatGPT Image 20. Juni 2025, 08_53_58.png', 'Sommer-Eis-Champion 2025', 'Verliehen an Nutzer, die im Sommer 2025 mindestens 20 Eis eingecheckt und damit ihre Leidenschaft für Eis bewiesen haben.', 150),
 (132, 28, 1, 25, 'uploads/award_icons/68554970623f1_Designer.png', 'Eis-Spürnase', 'Für Nutzer, die 25 verschiedene Eisdielen aufgespürt und sich durch die süße Vielfalt gekostet haben.', 150),
 (133, 28, 2, 50, 'uploads/award_icons/685655abd490a_1000085612.png', 'Meister der Eisschlemmerei', 'Verliehen an Nutzer, die in 50 verschiedenen Eisdielen waren und sich als wahre Meister der Eisschlemmerei erwiesen haben.', 300),
@@ -171,21 +171,25 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (144, 22, 14, 28, 'uploads/award_icons/6853eef8a2de4_ChatGPT Image 19. Juni 2025, 13_05_05.png', 'Eisritter vom Rhein', '30 Kugeln Eis in Rheinland-Pfalz? Dann bist du würdig, den Titel Eisritter vom Rhein zu tragen! Ob in Koblenz, Trier oder am Weinstand – du hast Ehre, Mut und ein eiskaltes Herz… zumindest bei Erdbeer-Sorbet.', 350),
 (145, 22, 15, 29, 'uploads/award_icons/6853efa529c68_ChatGPT Image 19. Juni 2025, 13_08_11.png', 'Grill-Eisfürst des Saarlands', 'Du hast 30 Kugeln Eis im Saarland geschafft – wahrscheinlich direkt nach der dritten Grillparty! Als Grill-Eisfürst des Saarlands hast du nicht nur die Zunge fürs Eis, sondern auch den Magen für Bratwurst-Dessert-Kombinationen. Respekt!', 350),
 (146, 22, 16, 30, 'uploads/award_icons/6855023e66842_ChatGPT Image 20. Juni 2025, 08_39_37.png', 'Eisdeichgraf von Schleswig-Holstein', 'Wer 30 Portionen Eis nördlich der Elbe schafft, trotzt Wind, Wellen und Watt. Der Eisdeichgraf von Schleswig-Holstein steht fest wie der Deich und schmilzt nur bei Vanille. Ein Titel für echte Küstengenießer!', 350),
-(147, 25, 2, 3, NULL, 'Dreifacher Eiskurvenkratzer', 'Dreimal mit dem Motorrad zur Eisdiele gedüst – du kennst die süßesten Kurven der Stadt. Dein Geschmack für Abenteuer und Eis ist unübertroffen!', 50),
-(148, 25, 3, 5, NULL, 'Fünfsterne-Eisrocker', 'Fünf Eisdielen mit dem Motorrad besucht? Du rockst die Straßen und die Eistheken gleichermaßen. Ein wahrer Meister des süßen Fahrspaßes!', 80),
-(149, 25, 4, 10, NULL, 'Zehnfacher Kugelblitz', 'Zehnmal mit dem Motorrad zur Eisdiele – du bist ein wahrer Kugelblitz auf zwei Rädern. Nichts kann dich aufhalten, wenn es um Geschwindigkeit und Genuss geht!', 100),
-(150, 25, 5, 50, NULL, 'Eisiger Straßenkönig', 'Fünfzig Eisdielen mit dem Motorrad besucht – du bist der unangefochtene König der Straßen und der Eistheken. Dein Ruf als Eisiger Straßenkönig eilt dir voraus!', 250),
+(147, 25, 2, 3, 'uploads/award_icons/685c0c51a867b_dreifacher_kurvenkratzer.png', 'Dreifacher Eiskurvenkratzer', 'Dreimal mit dem Motorrad zur Eisdiele gedüst – du kennst die süßesten Kurven der Stadt. Dein Geschmack für Abenteuer und Eis ist unübertroffen!', 50),
+(148, 25, 3, 5, 'uploads/award_icons/685c0c92ba762_fünfsterne_rocker.png', 'Fünfsterne-Eisrocker', 'Fünf Eisdielen mit dem Motorrad besucht? Du rockst die Straßen und die Eistheken gleichermaßen. Ein wahrer Meister des süßen Fahrspaßes!', 80),
+(149, 25, 4, 10, 'uploads/award_icons/685da21235bb9_zehnfacher-kugelblitz.png', 'Zehnfacher Kugelblitz', 'Zehnmal mit dem Motorrad zur Eisdiele – du bist ein wahrer Kugelblitz auf zwei Rädern. Nichts kann dich aufhalten, wenn es um Geschwindigkeit und Genuss geht!', 100),
+(150, 25, 5, 50, 'uploads/award_icons/685da21ab9089_eisiger-straßenkönig.png', 'Eisiger Straßenkönig', 'Fünfzig Eisdielen mit dem Motorrad besucht – du bist der unangefochtene König der Straßen und der Eistheken. Dein Ruf als Eisiger Straßenkönig eilt dir voraus!', 250),
 (151, 27, 2026, 20, NULL, 'Sommer-Eis-Champion 2026', 'Verliehen an Nutzer, die im Sommer 2026 mindestens 20 Eis eingecheckt und damit ihre Leidenschaft für Eis bewiesen haben.', 150),
-(152, 31, 1, 10, NULL, 'Eisintensive Woche', 'Du hast es in einer Woche auf über 10 Portionen Eis gebracht. Eine beachtliche Leistung – da war der Löffel sicher im Dauereinsatz.', 100),
-(153, 31, 2, 15, NULL, 'Extrem-Eiswoche', '15 Portionen Eis in sieben Tagen – das ist keine normale Woche, das ist eine Mission. Du lebst den Eistraum und brauchst wahrscheinlich ein Kugel-Abo.', 150),
-(154, 31, 3, 20, NULL, 'Eis-Exzess-Woche', '20 oder mehr Portionen Eis in einer einzigen Woche?! Das ist kein Versehen – das ist Hingabe. Du bist der Endgegner jeder Eisdiele.', 250),
-(155, 32, 1, 300, NULL, 'Wortakrobat', 'Du hast eine Rezension mit mehr als 300 Zeichen verfasst – ein erstes Meisterwerk der Worte. Du bringst mehr als nur schnelle Eindrücke aufs Papier!', 30),
-(156, 32, 2, 500, NULL, 'Erzählmeister', 'Mit deinem ausführlichen Check-in von über 500 Zeichen beweist du Liebe zum Detail. Du erzählst Geschichten, statt nur Bewertungen zu schreiben', 60),
-(157, 32, 3, 1000, NULL, 'Romanverfasser', 'Du hast die Kunst der Eisrezension perfektioniert: Mehr als 1.000 Zeichen, fundiert und unterhaltsam – ein echter Genuss für Leser und Eisdielen gleichermaßen!', 100),
-(158, 32, 4, 2000, NULL, 'Wortgigant', 'Deine Rezension sprengt alle Grenzen: Über 2.000 Zeichen voller Beobachtung, Meinung und Stil. Du bist ein literarischer Riese unter den Eisverkostern!', 200),
+(152, 31, 1, 10, 'uploads/award_icons/685a5c209eb7d_EISINTENSIVE WOCHE_20250624_040652_0000.png', 'Eisintensive Woche', 'Du hast es in einer Woche auf über 10 Portionen Eis gebracht. Eine beachtliche Leistung – da war der Löffel sicher im Dauereinsatz.', 100),
+(153, 31, 2, 15, 'uploads/award_icons/685a5c2aecc4d_ChatGPT Image 24. Juni 2025, 06_41_40.png', 'Extrem-Eiswoche', '15 Portionen Eis in sieben Tagen – das ist keine normale Woche, das ist eine Mission. Du lebst den Eistraum und brauchst wahrscheinlich ein Kugel-Abo.', 150),
+(154, 31, 3, 20, 'uploads/award_icons/685ba25cf021b_ChatGPT Image 25. Juni 2025, 09_16_19.png', 'Eis-Exzess-Woche', '20 oder mehr Portionen Eis in einer einzigen Woche?! Das ist kein Versehen – das ist Hingabe. Du bist der Endgegner jeder Eisdiele.', 250),
+(155, 32, 1, 300, 'uploads/award_icons/685ba3e0b3f5a_ChatGPT Image 25. Juni 2025, 09_22_55.png', 'Wortakrobat', 'Du hast eine Rezension mit mehr als 300 Zeichen verfasst – ein erstes Meisterwerk der Worte. Du bringst mehr als nur schnelle Eindrücke aufs Papier!', 30),
+(156, 32, 2, 500, 'uploads/award_icons/685e49f2bfefe_generation-88ae017f-96a4-4b60-9624-857fe950ef25.png', 'Erzählmeister', 'Mit deinem ausführlichen Check-in von über 500 Zeichen beweist du Liebe zum Detail. Du erzählst Geschichten, statt nur Bewertungen zu schreiben', 60),
+(157, 32, 3, 1000, 'uploads/award_icons/685e487ebfb9a_generation-5c861d47-3aa6-4cce-bc49-1f82102fd2ce.png', 'Romanverfasser', 'Du hast die Kunst der Eisrezension perfektioniert: Mehr als 1.000 Zeichen, fundiert und unterhaltsam – ein echter Genuss für Leser und Eisdielen gleichermaßen!', 100),
+(158, 32, 4, 2000, 'uploads/award_icons/685e4a3c81032_generation-4f76212c-770c-446d-9792-3e75daf4df16.png', 'Wortgigant', 'Deine Rezension sprengt alle Grenzen: Über 2.000 Zeichen voller Beobachtung, Meinung und Stil. Du bist ein literarischer Riese unter den Eisverkostern!', 200),
 (159, 33, 1, 5, NULL, 'Tiefschreiber', 'Fünf Rezensionen mit mehr als 300 Zeichen – du bleibst dran und gehst in die Tiefe. Deine Bewertungen sind mehr als oberflächliche Notizen – sie zeigen echtes Engagement.', 50),
 (160, 33, 2, 10, NULL, 'Detailverliebt', 'Du hast bereits 10 ausführliche Rezensionen geschrieben – ein klarer Beweis dafür, dass dir kein Eis entgeht. Du gehst mit Begeisterung ins Detail und teilst es mit der Welt!', 100),
-(161, 33, 3, 25, NULL, 'Rezensionsprofi', 'Mit 25 detaillierten Rezensionen gehörst du zur Elite der Eisexperten. Deine Ausdauer und Qualität heben dich von der Masse ab – du bist ein echter Profi in Sachen Feedback!', 250);
+(161, 33, 3, 25, NULL, 'Rezensionsprofi', 'Mit 25 detaillierten Rezensionen gehörst du zur Elite der Eisexperten. Deine Ausdauer und Qualität heben dich von der Masse ab – du bist ein echter Profi in Sachen Feedback!', 250),
+(162, 34, 1, 1, 'uploads/award_icons/685da2344b9a9_eis-freund-zur-hilfe.png', 'Ein Eis-Freund zur Hilfe!', 'Du hast bereits einen Nutzer geworben, sich bei der ice-app zu registrieren. Zusammen macht Eis schleckern und ein checken doch gleich doppelt Spaß!', 150),
+(163, 34, 2, 2, 'uploads/award_icons/685da42415ab9_team-schleck.png', 'Team Schleck', 'Du hast schon zwei Eis-Freunde für die Ice-App begeistert – gemeinsam seid ihr jetzt ein echtes Schleck-Team! Eisdiele für Eisdiele wird euer Genussnetz größer! 🍦👬', 150),
+(164, 34, 3, 3, NULL, 'Eis-Gang aktiv!', 'Drei geworbene Nutzer! Eure Eis-Gang ist jetzt nicht mehr zu stoppen – ob Himbeere, Zitrone oder Cookie: Ihr checkt alles ein, was schmeckt! 🍨💪', 150),
+(165, 34, 4, 5, NULL, 'Schleckfluencer', 'Fünf neue Eis-Fans dank dir – du bist ein wahrer Schleckfluencer! Die Eisdielenwelt liegt dir zu Füßen, und deine Empfehlungen sind Gold wert! 📱🍦🌟', 150);
 
 --
 -- Indizes der exportierten Tabellen
@@ -206,7 +210,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=162;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- Constraints der exportierten Tabellen

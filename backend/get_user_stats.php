@@ -7,7 +7,7 @@ $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 $curUserId = intval($_GET['cur_user_id']);
 
 // Nutzername ermitteln
-$sql1 = "SELECT username, erstellt_am AS erstellungsdatum
+$sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code
          FROM nutzer WHERE id = ?";
 
 // Anzahl unterschiedlicher besuchter Eisdielen
@@ -115,6 +115,7 @@ try {
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 $stats['nutzername'] = $row['username'];
                 $stats['erstellungsdatum'] = $row['erstellungsdatum'];
+                $stats['invite_code'] = $row['invite_code'] ?? null;
                 break;
             case 1: $stats['eisdielen_besucht'] = $stmt->fetchColumn(); break;
             case 2: $stats['anzahl_checkins'] = $stmt->fetchColumn(); break;

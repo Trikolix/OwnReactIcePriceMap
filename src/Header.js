@@ -5,6 +5,9 @@ import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
+import QrScanModal from "./components/QrScanModal";
+import NewAwards from './components/NewAwards';
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,6 +15,13 @@ const Header = ({ refreshShops }) => {
   const { userId, username, isLoggedIn, userPosition, login, logout } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const [newAwards, setNewAwards] = useState([]);
+  const [modalData, setModalData] = useState(null);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -34,6 +44,135 @@ const Header = ({ refreshShops }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const checkLevelInterval = setInterval(() => {
+      checkForLevelUp();
+    }, 5 * 60 * 1000); // alle 5 Minuten
+
+    // sofort einmal ausführen (optional)
+    checkForLevelUp();
+
+    return () => clearInterval(checkLevelInterval);
+  }, [userId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const scanCode = params.get("scan");
+
+    if (scanCode) {
+      // ✅ QR-Code erkannt – weiterverarbeiten
+      console.log("Scan-Code erkannt:", scanCode);
+
+      // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
+      // Anfrage vorbereiten
+      const payload = { code: scanCode };
+      if (userId) { payload["nutzer_id"] = userId; }
+
+      fetch(`${apiUrl}/api/qr_scan.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Antwort von API:", data);
+          if (data.status === "success") {
+            // 🧠 Wenn nicht eingeloggt → lokal speichern
+            if (!userId) {
+              const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+              if (!stored.includes(scanCode)) {
+                stored.push(scanCode);
+                localStorage.setItem("pendingQrScans", JSON.stringify(stored));
+              }
+            }
+
+            // ✅ Modal anzeigen
+            console.log("setModalData", {
+              icon: data.icon,
+              name: data.name,
+              description: data.description,
+              needsLogin: !data.saved,
+              userId: userId,
+            });
+            setModalData({
+              icon: data.icon,
+              name: data.name,
+              description: data.description,
+              needsLogin: !data.saved,
+            });
+          } else {
+            console.error("Scan fehlgeschlagen:", data.message);
+          }
+        })
+        .catch((err) => {
+          console.error("Fehler beim Senden des QR-Codes:", err);
+        })
+        .finally(() => {
+          // ✅ Parameter aus URL entfernen, ohne Reload
+          params.delete("scan");
+          const newSearch = params.toString();
+          navigate(
+            {
+              pathname: location.pathname,
+              search: newSearch ? `?${newSearch}` : "",
+            },
+            { replace: true }
+          );
+        });
+    }
+  }, [location]);
+
+  useEffect(() => {
+  if (!userId) return;
+
+  const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+  if (stored.length > 0) {
+    stored.forEach((code) => {
+      fetch(`${apiUrl}/api/qr_scan.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, nutzer_id: userId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("QR-Scan nach Login übertragen:", data);
+        })
+        .catch((err) => {
+          console.error("Fehler beim Nachsenden des QR-Codes:", err);
+        });
+    });
+
+    localStorage.removeItem("pendingQrScans");
+  }
+}, [userId]);
+
+  const checkForLevelUp = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/userManagement/update_activity_and_awards.php?nutzer_id=${userId}`);
+      const data = await response.json();
+
+      if (data.level_up || (data.new_awards && data.new_awards.length > 0)) {
+        if (data.level_up) {
+          setLevelUpInfo({
+            level: data.new_level,
+            level_name: data.level_name,
+          });
+        }
+
+        if (data.new_awards?.length > 0) {
+          setNewAwards(data.new_awards);
+        }
+
+        setShowOverlay(true);
+      }
+    } catch (error) {
+      console.error('Level-Check fehlgeschlagen:', error);
+    }
+  };
 
   return (
     <>
@@ -85,6 +224,31 @@ const Header = ({ refreshShops }) => {
           userLongitude={userPosition ? userPosition[1] : 12.92}
         />
       )}
+      {showOverlay && (
+        <Overlay>
+          <CloseButton onClick={() => {
+            setShowOverlay(false);
+            setLevelUpInfo(null);
+            setNewAwards([]);
+          }}>&times;</CloseButton>
+
+          {levelUpInfo && (
+            <>
+              <h2>🎉 Level-Up!</h2>
+              <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+              <p><em>{levelUpInfo.level_name}</em></p>
+            </>
+          )}
+
+          <NewAwards awards={newAwards} />
+        </Overlay>
+      )}
+      <QrScanModal
+            open={modalData !== null}
+            onClose={() => setModalData(null)}
+            data={modalData}
+            needsLogin={modalData?.needsLogin}
+          />
     </>
   );
 };
@@ -168,5 +332,41 @@ const MenuItemLink = styled(Link)`
   &:hover {
     background: rgb(206, 137, 0);
     color: white;
+  }
+`;
+
+const Overlay = styled.div`
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: white;
+  padding: 2rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  text-align: center;
+  animation: fadeIn 0.4s ease-out;
+  max-width: 90%;
+  width: 320px;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-50%) scale(0.9); }
+    to   { opacity: 1; transform: translateX(-50%) scale(1); }
+  }
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+
+  &:hover {
+    color: #000;
   }
 `;

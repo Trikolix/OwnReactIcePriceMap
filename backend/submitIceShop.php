@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -161,9 +162,15 @@ if ($location) {
         foreach ($evaluators as $evaluator) {
             $newAwards = array_merge($newAwards, $evaluator->evaluate($data['userId']));
         }
+
+        $levelChange = updateUserLevelIfChanged($pdo, $data['userId']);
+
         echo json_encode([
             "status" => "success",
-            'new_awards' => $newAwards
+            'new_awards' => $newAwards,
+            'level_up' => $levelChange['level_up'] ?? false,
+            'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+            'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
         ]);
     } catch (PDOException $e) {
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);

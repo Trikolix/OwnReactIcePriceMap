@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
@@ -26,8 +27,11 @@ require_once __DIR__ . '/../evaluators/IceSummerEvaluator.php';
 require_once __DIR__ . '/../evaluators/DifferentIceShopCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/GeschmacksvielfaltEvaluator.php';
 require_once __DIR__ . '/../evaluators/EarlyStarterEvaluator.php';
-
-
+require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
+require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
+require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
+require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/OneMoreLoopEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -254,7 +258,11 @@ try {
         new DifferentIceShopCountEvaluator(),
         new GeschmacksvielfaltEvaluator(),
         new EarlyStarterEvaluator(),
-        new AwardCollectorEvaluator()
+        new AwardCollectorEvaluator(),
+        new WeekStreakEvaluator(),
+        new IcePortionsPerWeekEvaluator(),
+        new DetailedCheckinEvaluator(),
+        new DetailedCheckinCountEvaluator()
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -264,7 +272,10 @@ try {
     elseif ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
 
-    if ($anreise === 'Fahrrad') $evaluators[] = new CyclingCountEvaluator();
+    if ($anreise === 'Fahrrad') {
+        $evaluators[] = new CyclingCountEvaluator();
+        $evaluators[] = new OneMoreLoopEvaluator();
+    }
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
 
@@ -298,10 +309,16 @@ try {
         }
     }
 
+    $levelChange = updateUserLevelIfChanged($pdo, $userId);
+
+    // JSON-Antwort vorbereiten
     echo json_encode([
         'status' => 'success',
         'checkin_id' => $checkinId,
-        'new_awards' => $newAwards
+        'new_awards' => $newAwards,
+        'level_up' => $levelChange['level_up'] ?? false,
+        'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
     ]);
 
 } catch (Exception $e) {
