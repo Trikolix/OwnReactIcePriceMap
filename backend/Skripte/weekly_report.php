@@ -24,6 +24,11 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE datum BETWEEN :start 
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkins = $stmt->fetchColumn();
 
+// 3. Neu errungene Awards
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM user_awards WHERE awarded_at BETWEEN :start AND :ende");
+$stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
+$neueAwards = $stmt->fetchColumn();
+
 // 3. Verteilung der Check-ins nach Typ
 $stmt = $pdo->prepare("
     SELECT typ, COUNT(*) as anzahl
@@ -119,6 +124,7 @@ $datumStart – $datumEnde:
 ✅ Check-ins insgesamt: $checkins
 🍦 Eisportionen gegessen: $portionen
 🌍 Länder mit Check-ins: $laenderMitCheckins
+🏆 Neue Awards: $neueAwards
 
 📊 Check-in Verteilung:
 🍧 Nach Typ:

@@ -19,6 +19,7 @@ const Header = ({ refreshShops }) => {
   const [newAwards, setNewAwards] = useState([]);
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showGewinnspiel, setShowGewinnspiel] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
@@ -127,28 +128,28 @@ const Header = ({ refreshShops }) => {
   }, [location]);
 
   useEffect(() => {
-  if (!userId) return;
+    if (!userId) return;
 
-  const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
-  if (stored.length > 0) {
-    stored.forEach((code) => {
-      fetch(`${apiUrl}/api/qr_scan.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, nutzer_id: userId }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("QR-Scan nach Login übertragen:", data);
+    const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+    if (stored.length > 0) {
+      stored.forEach((code) => {
+        fetch(`${apiUrl}/api/qr_scan.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, nutzer_id: userId }),
         })
-        .catch((err) => {
-          console.error("Fehler beim Nachsenden des QR-Codes:", err);
-        });
-    });
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("QR-Scan nach Login übertragen:", data);
+          })
+          .catch((err) => {
+            console.error("Fehler beim Nachsenden des QR-Codes:", err);
+          });
+      });
 
-    localStorage.removeItem("pendingQrScans");
-  }
-}, [userId]);
+      localStorage.removeItem("pendingQrScans");
+    }
+  }, [userId]);
 
   const checkForLevelUp = async () => {
     try {
@@ -177,6 +178,10 @@ const Header = ({ refreshShops }) => {
   return (
     <>
       <HeaderContainer>
+        <GewinnspielIcon onClick={() => setShowGewinnspiel(true)}>
+          <img src={require('./Gewinnspiel2.png')} alt="Gewinnspiel" />
+        </GewinnspielIcon>
+
         <LogoContainer>
           <a href="/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
         </LogoContainer>
@@ -243,12 +248,28 @@ const Header = ({ refreshShops }) => {
           <NewAwards awards={newAwards} />
         </Overlay>
       )}
+      {showGewinnspiel && (
+        <Overlay>
+          <CloseButton onClick={() => setShowGewinnspiel(false)}>&times;</CloseButton>
+          <h2>🎉 Eisbecher-Gewinnspiel</h2>
+          <p>
+            Gewinne einen <strong>Eisbecher</strong> deiner Wahl! Das Gewinnspiel läuft bis zum <strong>31.08.</strong>
+          </p>
+          <ul style={{ textAlign: 'left' }}>
+            <li>📸 Mache im Aktionszeitraum mindestens einen Check-in mit Bild.</li>
+            <li>🎟️ Jeder gültige Check-in zählt als Los.</li>
+            <li>👫 Wenn du Freunde wirbst, steigen deine Gewinnchancen.</li>
+          </ul>
+          <p>Die Auslosung erfolgt Anfang September. Viel Glück! 🍀</p>
+          <button onClick={() => setShowGewinnspiel(false)}>Mitmachen!</button>
+        </Overlay>
+      )}
       <QrScanModal
-            open={modalData !== null}
-            onClose={() => setModalData(null)}
-            data={modalData}
-            needsLogin={modalData?.needsLogin}
-          />
+        open={modalData !== null}
+        onClose={() => setModalData(null)}
+        data={modalData}
+        needsLogin={modalData?.needsLogin}
+      />
     </>
   );
 };
@@ -272,6 +293,9 @@ const LogoContainer = styled.div`
 
 const Logo = styled.img`
   height: 100px;
+  @media (max-width: 768px) {
+    height: 60px;
+  }
 `;
 
 const BurgerMenu = styled.div`
@@ -368,5 +392,27 @@ const CloseButton = styled.button`
 
   &:hover {
     color: #000;
+  }
+`;
+
+const GewinnspielIcon = styled.div`
+  cursor: pointer;
+  margin-right: 10px;
+
+  img {
+    width: 80px;
+    height: 80px;
+    transition: transform 0.2s;
+  }
+
+  &:hover img {
+    transform: scale(1.1);
+  }
+
+  @media (max-width: 768px) {
+    img {
+      width: 50px;
+      height: 50px;
+    }
   }
 `;

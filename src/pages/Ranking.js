@@ -316,19 +316,19 @@ const Ranking = () => {
                                         <tr onClick={() => toggleDetails(`softeis-${index}`)}>
                                             <td style={{ textAlign: 'left' }}>{eisdiele.name}</td>
                                             <td style={sortConfigSofteis.key === 'avg_geschmack' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.avg_geschmack.toFixed(1)}
+                                                {eisdiele.avg_geschmack ? eisdiele.avg_geschmack.toFixed(1) : '-'}
                                             </td>
                                             <td style={sortConfigSofteis.key === 'avg_waffel' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.avg_waffel.toFixed(1)}
+                                                {eisdiele.avg_waffel ? eisdiele.avg_waffel.toFixed(1) : '-'}
                                             </td>
                                             <td style={sortConfigSofteis.key === 'avg_preisleistung' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.avg_preisleistung.toFixed(1)}
+                                                {eisdiele.avg_preisleistung ? eisdiele.avg_preisleistung.toFixed(1) : '-'}
                                             </td>
                                             <td style={sortConfigSofteis.key === 'finaler_softeis_score' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.finaler_softeis_score.toFixed(2)}
+                                                {eisdiele.finaler_softeis_score ? eisdiele.finaler_softeis_score.toFixed(2) : '-'}
                                             </td>
                                             <td style={sortConfigSofteis.key === 'finaler_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.finaler_geschmacksfaktor.toFixed(2)}
+                                                {eisdiele.finaler_geschmacksfaktor ? eisdiele.finaler_geschmacksfaktor.toFixed(2) : '-'}
                                             </td>
                                             <td style={sortConfigSofteis.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.checkin_anzahl} (von {eisdiele.anzahl_nutzer} Nutzer/n))
