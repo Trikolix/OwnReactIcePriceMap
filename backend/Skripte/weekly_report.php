@@ -51,12 +51,9 @@ $checkinsNachAnreise = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 5. Verteilung der Check-ins mit oder ohne Bild
 $stmt = $pdo->prepare("
-    SELECT
-        CASE
-            WHEN b.id IS NOT NULL THEN 'Mit Bild'
-            ELSE 'Ohne Bild'
-        END as bild_status,
-        COUNT(c.id) as anzahl
+    SELECT 
+        CASE WHEN b.id IS NOT NULL THEN 'Mit Bild' ELSE 'Ohne Bild' END AS bild_status,
+        COUNT(DISTINCT c.id) AS anzahl
     FROM checkins c
     LEFT JOIN bilder b ON c.id = b.checkin_id
     WHERE c.datum BETWEEN :start AND :ende
