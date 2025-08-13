@@ -75,6 +75,7 @@ $stmt->execute([
     'invited_by' => $invitedById,
     'invite_code' => $invite_code
 ]);
+$userId = $pdo->lastInsertId();
 
 // 7. Bestätigungs-E-Mail senden
 $verifyUrl = "https://ice-app.de/#/verify?token=" . urlencode($token);
@@ -86,7 +87,26 @@ $mailSent = mail($email, $subject, $message, $headers);
 
 // Info Mail an Admini senden
 $subject = "Neue Registrierung";
-$message = "Es hat sich ein neuer Nzter bei ice-app.de registriert.\n\nBenutzername: $username\nE-Mail: $email\n\nViele Grüße\ndein Eis-Team";
+$message = <<<EOD
+Es hat sich ein neuer Nutzer bei ice-app.de registriert.
+
+Benutzername: $username
+E-Mail: $email
+Link zum Profil: https://ice-app.de/#/user/$userId
+EOD;
+
+// Zusätzliche Zeile hinzufügen, falls invited_by gesetzt ist
+if ($invited_by != null) {
+    $message .= "\nEingeladen von: $invited_by";
+}
+
+$message .= <<<EOD
+
+
+Viele Grüße
+dein Eis-Team
+EOD;
+
 $headers = "From: noreply@ice-app.de";
 
 $mailSent2 = mail("admin@ice-app.de", $subject, $message, $headers);

@@ -1,6 +1,5 @@
-import { React, useState, useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import throttle from 'lodash.throttle';
+import { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
@@ -14,7 +13,7 @@ import DropdownSelect from './components/DropdownSelect';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
-import { useLocation, useSearchParams, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 
@@ -28,6 +27,7 @@ const IceCreamRadar = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+  const [initialCenter, setInitialCenter] = useState(userPosition || [50.833707, 12.919187]);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
 
@@ -95,20 +95,20 @@ const IceCreamRadar = () => {
 
   // Geoposition des Nutzers laden
   useEffect(() => {
-    if (navigator.geolocation) {
+    if (!userPosition && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setUserPosition([latitude, longitude]);
+          const newPos = [latitude, longitude];
+          setUserPosition(newPos); // speichert im localStorage
+          setInitialCenter(newPos); // nur einmal fürs initiale Laden
         },
         (error) => {
           console.error('Fehler beim Abrufen der Position:', error);
         }
       );
-    } else {
-      console.error('Geolocation wird nicht unterstützt.');
     }
-  }, [setUserPosition]);
+  }, [userPosition, setUserPosition]);
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
@@ -189,7 +189,7 @@ const IceCreamRadar = () => {
       </LogoContainer>
 
       <MapContainer
-        center={userPosition || [50.833707, 12.919187]}
+        center={initialCenter}
         zoom={14}
         style={{ flex: 1, width: '100%' }}
         ref={mapRef}
