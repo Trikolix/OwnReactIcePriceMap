@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
+import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 
 const ReviewCard = ({ review, setShowReviewForm }) => {
   const { userId } = useUser();
@@ -16,6 +17,8 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
             day: "numeric",
             month: "long",
             year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
           })}
         </DateText>
       <Header>
@@ -36,13 +39,20 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
 
       {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
 
-      {review.bewertung_attribute?.length > 0 && (
+      {review.attributes?.length > 0 && (
         <AttributeSection>
-          {review.bewertung_attribute.map((attr, i) => (
+          {review.attributes.map((attr, i) => (
             <AttributeBadge key={i}>{attr}</AttributeBadge>
           ))}
         </AttributeSection>
       )}
+      <ImageGalleryWithLightbox
+              images={review.bilder.map(b => ({
+                url: `https://ice-app.de/${b.url}`,
+                beschreibung: b.beschreibung
+              }))}
+              fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
+            />
 
       {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
         <EditButton onClick={() => setShowReviewForm(true)}>Bearbeiten</EditButton>

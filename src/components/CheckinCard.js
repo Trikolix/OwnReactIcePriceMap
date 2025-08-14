@@ -38,7 +38,9 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
           {new Date(checkin.datum).toLocaleDateString("de-DE", {
             day: "numeric",
             month: "long",
-            year: "numeric",
+            year: "numeric", 
+            hour: "numeric",
+            minute: "numeric",
           })}
         </DateText>
         <ContentWrapper>

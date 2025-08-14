@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/image_upload.php';
 
 // Hilfsfunktion für Bewertung
 function sanitizeRating($val) {
@@ -23,7 +24,7 @@ $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
 $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
 $preisleistungsbewertung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
 $anreise = $_POST['anreise'] ?? '';
-$erlaubteAnreisen = ['Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
+$erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
 if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
     respondWithError('Ungültige Anreiseart.');
 }
@@ -47,71 +48,6 @@ function respondWithError($message, $httpCode = 400, $exception = null) {
     }
     echo json_encode(['status' => 'error', 'message' => $message]);
     exit;
-}
-
-function resizeImage($sourcePath, $destinationPath, $maxDim = 1200, $quality = 75) {
-    $imgInfo = getimagesize($sourcePath);
-    if (!$imgInfo) {
-        throw new Exception('Ungültige Bilddatei.');
-    }
-
-    [$width, $height] = $imgInfo;
-    $mime = $imgInfo['mime'];
-
-    // Bildquelle laden
-    switch ($mime) {
-        case 'image/jpeg':
-            $srcImage = imagecreatefromjpeg($sourcePath);
-            // EXIF nur für JPEG
-            $exif = @exif_read_data($sourcePath);
-            if (!empty($exif['Orientation'])) {
-                $orientation = $exif['Orientation'];
-                switch ($orientation) {
-                    case 3:
-                        $srcImage = imagerotate($srcImage, 180, 0);
-                        break;
-                    case 6:
-                        $srcImage = imagerotate($srcImage, -90, 0);
-                        break;
-                    case 8:
-                        $srcImage = imagerotate($srcImage, 90, 0);
-                        break;
-                }
-                // Neue Größe holen, falls gedreht
-                $width = imagesx($srcImage);
-                $height = imagesy($srcImage);
-            }
-            break;
-        case 'image/png':
-            $srcImage = imagecreatefrompng($sourcePath);
-            break;
-        case 'image/webp':
-            $srcImage = imagecreatefromwebp($sourcePath);
-            break;
-        default:
-            throw new Exception('Nicht unterstützter Bildtyp: ' . $mime);
-    }
-
-    // Neue Dimensionen berechnen
-    $ratio = $width / $height;
-    if ($width > $height) {
-        $newWidth = $maxDim;
-        $newHeight = $maxDim / $ratio;
-    } else {
-        $newHeight = $maxDim;
-        $newWidth = $maxDim * $ratio;
-    }
-
-    $newWidth = (int) round($newWidth);
-    $newHeight = (int) round($newHeight);
-    $newImage = imagecreatetruecolor($newWidth, $newHeight);
-    imagecopyresampled($newImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-    // Immer als JPEG speichern
-    imagejpeg($newImage, $destinationPath, $quality);
-
-    imagedestroy($srcImage);
-    imagedestroy($newImage);
 }
 
 // Validierung
@@ -151,51 +87,18 @@ try {
 
     $bildUrls = [];
     if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
-        $uploadDir = '../../uploads/checkins/';
-        if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-
-        $beschreibungen = $_POST['beschreibungen'] ?? [];
-        foreach ($_FILES['bilder']['tmp_name'] as $index => $tmpPath)  {
-            switch ($_FILES['bilder']['error'][$index]) {
-                case UPLOAD_ERR_OK:
-
-                    if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-                
-                    $tempPath = $_FILES['bilder']['tmp_name'][$index];
-                    $filename = uniqid('checkin_', true) . '.jpg';
-                    $destination = $uploadDir . $filename;
-                
-                    try {
-                        resizeImage($tempPath, $destination);
-                        $relativePath = 'uploads/checkins/' . $filename;
-                        $beschreibung = $beschreibungen[$index] ?? null;
-                        $bildUrls[] = ['url' => $relativePath, 'beschreibung' => $beschreibung];
-                    } catch (Exception $e) {
-                        respondWithError('Bildverarbeitung fehlgeschlagen: ' . $e->getMessage());
-                    }
-                    break;
-                
-                case UPLOAD_ERR_INI_SIZE:
-                case UPLOAD_ERR_FORM_SIZE:
-                    respondWithError('Die hochgeladene Datei ist zu groß.');
-                    break;
-                case UPLOAD_ERR_PARTIAL:
-                    respondWithError('Die Datei wurde nur teilweise hochgeladen.');
-                    break;
-                case UPLOAD_ERR_NO_FILE:
-                    // kein Bild ist erlaubt → still akzeptieren
-                    break;
-                case UPLOAD_ERR_NO_TMP_DIR:
-                case UPLOAD_ERR_CANT_WRITE:
-                case UPLOAD_ERR_EXTENSION:
-                    respondWithError('Fehler beim temporären Speichern der Datei.');
-                    break;
-                default:
-                    respondWithError('Unbekannter Fehler beim Dateiupload.');
-                    break;
-            }
+        try {
+            $bildUrls = processUploadedImages(
+                $_FILES['bilder'],
+                '../../uploads/checkins/',
+                'checkin_',
+                $_POST['beschreibungen'] ?? []
+            );
+        } catch (Exception $e) {
+            respondWithError($e->getMessage());
         }
     }
+
 
     if ($type === "Kugel") {$preisleistungsbewertung = null;} else {$größe = null;}
     if ($type === "Eisbecher") {$waffel = null;}
@@ -210,11 +113,11 @@ try {
 
     if (!empty($bildUrls)) {
         $insertImgStmt = $pdo->prepare("
-            INSERT INTO bilder (checkin_id, url, beschreibung, nutzer_id)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO bilder (checkin_id, url, beschreibung, nutzer_id, shop_id)
+            VALUES (?, ?, ?, ?, ?)
         ");
         foreach ($bildUrls as $bild) {
-            $insertImgStmt->execute([$checkinId, $bild['url'], $bild['beschreibung'], $userId]);
+            $insertImgStmt->execute([$checkinId, $bild['url'], $bild['beschreibung'], $userId, $shopId]);
         }
     }
 

@@ -14,29 +14,60 @@ if (!$checkin_id || !$nutzer_id) {
     exit;
 }
 
-// Die Bilder Abrufen, die nur mit dem checkin verknüpft sind
-$sql_select = "SELECT url FROM bilder WHERE checkin_id = :id AND shop_id IS NULL AND bewertung_id IS NULL";
-$stmt_select = $pdo->prepare($sql_select);
-$stmt_select->execute(['id' => $checkin_id]);
-$bilder = $stmt_select->fetchAll();
+try {
+    // Transaktion starten
+    $pdo->beginTransaction();
 
-foreach ($bilder as $bild) {
-    // Pfad zur Bilddatei auf dem Server
-    $bild_pfad = __DIR__ . '/../../' . $bild['url']; // Anpassen Sie den Pfad entsprechend Ihrer Verzeichnisstruktur
+    // Bilder zum Checkin holen
+    $sql_select = "
+        SELECT url 
+        FROM bilder 
+        WHERE checkin_id = :id 
+          AND bewertung_id IS NULL
+    ";
+    $stmt_select = $pdo->prepare($sql_select);
+    $stmt_select->execute(['id' => $checkin_id]);
+    $bilder = $stmt_select->fetchAll(PDO::FETCH_ASSOC);
 
-    // Überprüfen, ob die Datei existiert und löschen
-    if (file_exists($bild_pfad)) {
-        unlink($bild_pfad);
+    // Bild-Einträge aus DB löschen
+    $sql_delete_bilder = "
+        DELETE FROM bilder 
+        WHERE checkin_id = :id
+    ";
+    $stmt_delete_bilder = $pdo->prepare($sql_delete_bilder);
+    $stmt_delete_bilder->execute(['id' => $checkin_id]);
+
+    // Checkin löschen
+    $sql_delete_checkin = "
+        DELETE FROM checkins 
+        WHERE id = :id AND nutzer_id = :nutzer_id
+    ";
+    $stmt_delete_checkin = $pdo->prepare($sql_delete_checkin);
+    $stmt_delete_checkin->execute([
+        'id' => $checkin_id,
+        'nutzer_id' => $nutzer_id
+    ]);
+
+    // Transaktion abschließen
+    $pdo->commit();
+
+    // Dateien erst NACH erfolgreichem Commit löschen
+    foreach ($bilder as $bild) {
+        $bild_pfad = __DIR__ . '/../../' . $bild['url'];
+        if (file_exists($bild_pfad)) {
+            unlink($bild_pfad);
+        }
     }
+
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Checkin inklusive Bilder erfolgreich gelöscht'
+    ]);
+} catch (Exception $e) {
+    $pdo->rollBack();
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Fehler beim Löschen: ' . $e->getMessage()
+    ]);
 }
-
-// SQL-Abfrage vorbereiten
-$sql = "DELETE FROM checkins WHERE id = :id AND nutzer_id = :nutzer_id";
-$stmt = $pdo->prepare($sql);
-$stmt->execute(['id' => $checkin_id, 'nutzer_id' => $nutzer_id]);
-
-echo json_encode([
-    'status' => 'success',
-    'message' => 'Checkin erfolgreich gelöscht'
-]);
 ?>

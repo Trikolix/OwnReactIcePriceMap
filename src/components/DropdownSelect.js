@@ -25,6 +25,10 @@ const DropdownButton = styled.button`
   &:hover {
     background-color: #ffcb4c;
   }
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const DropdownList = styled.ul`

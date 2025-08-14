@@ -302,4 +302,7 @@ const YellowButton = styled.button`
   &:hover {
     background-color: #ffcb4c;
   }
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
 `;

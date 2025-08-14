@@ -1,6 +1,7 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
+require_once  __DIR__ . '/lib/review.php';
 
 // Eisdiele-ID aus Anfrage holen
 $eisdiele_id = isset($_GET['eisdiele_id']) ? intval($_GET['eisdiele_id']) : 0;
@@ -29,7 +30,7 @@ if (!$eisdiele) {
     exit();
 }
 
-// aktuellsten Kugelpreis abrufen
+// 2. aktuellsten Kugelpreis abrufen
 $stmt = $pdo->prepare("
     SELECT 
         'kugel' AS typ,
@@ -47,7 +48,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $kugel_preis = $stmt->fetch();
 
-// aktuellsten Softeispreis abrufen
+// 3. aktuellsten Softeispreis abrufen
 $stmt = $pdo->prepare("
     SELECT
         'softeis' AS typ,
@@ -70,14 +71,10 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $softeis_preis = $stmt->fetch();
 
-
-// 3. Durchschnittliche Bewertungen berechnen
+// 4. Durchschnittliche Auswahl berechnen
 $stmt = $pdo->prepare("
-    SELECT 
-        AVG(geschmack) as geschmack,
-        AVG(kugelgroesse) as kugelgroesse,
-        AVG(auswahl) as auswahl,
-        AVG(waffel) as waffel
+    SELECT
+        AVG(auswahl) as auswahl
     FROM bewertungen
     WHERE eisdiele_id = ?
 ");
@@ -115,34 +112,9 @@ $stmt->execute([$eisdiele_id]);
 $attribute = $stmt->fetchAll();
 
 // 6. Alle Reviews holen
-$stmtReviews = $pdo->prepare("SELECT b.*,
-                                     e.name AS eisdiele_name,
-                                     n.username AS nutzer_name,
-                                     n.id AS nutzer_id                            
-                              FROM bewertungen b
-                              JOIN eisdielen e ON b.eisdiele_id = e.id
-                              JOIN nutzer n ON b.nutzer_id = n.id
-                              WHERE b.eisdiele_id = ?
-                              ORDER BY b.erstellt_am DESC
-                            ");
-$stmtReviews->execute([$eisdiele_id]);
-$reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);
+$reviews = getReviewsByEisdieleId($pdo, $eisdiele_id);
 
-// Bewertungen durchgehen und Attribute anhängen
-foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
-    $stmtAttr = $pdo->prepare("
-        SELECT a.name 
-        FROM bewertung_attribute ba 
-        JOIN attribute a ON ba.attribut_id = a.id 
-        WHERE ba.bewertung_id = :bewertungId
-    ");
-    $stmtAttr->execute(['bewertungId' => $review['id']]);
-    $attributes = $stmtAttr->fetchAll(PDO::FETCH_COLUMN);
-    $review['bewertung_attribute'] = $attributes;
-}
-// Referenz wieder auflösen
-unset($review);
-
+// 7. Alle Checkins holen
 $checkins = getCheckinsByEisdieleId($pdo, $eisdiele_id);
 
 // JSON-Antwort erstellen
@@ -158,10 +130,7 @@ $response = [
         "eisbecher" => isset($score["finaler_eisbecher_score"]) ? round($score["finaler_eisbecher_score"], 2) : null
     ],
     "bewertungen" => [
-        "geschmack" => isset($bewertungen["geschmack"]) ? round($bewertungen["geschmack"], 2) : null,
-        "kugelgroesse" => isset($bewertungen["kugelgroesse"]) ? round($bewertungen["kugelgroesse"], 2) : null,
-        "waffel" => isset($bewertungen["waffel"]) ? round($bewertungen["waffel"], 2) : null,
-        "auswahl" => isset($bewertungen["auswahl"]) ? round($bewertungen["auswahl"], 2) : null,
+        "auswahl" => isset($bewertungen["auswahl"]) ? round($bewertungen["auswahl"], 2) : null
     ],
     "attribute" => $attribute,
     "reviews" => $reviews,

@@ -13,6 +13,8 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [attribute, setAttribute] = useState([]);
     const [selectedAttributes, setSelectedAttributes] = useState([]);
     const [neuesAttribut, setNeuesAttribut] = useState("");
+    const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
+    const [deletedBildIds, setDeletedBildIds] = useState([]);
 
     const [submitted, setSubmitted] = useState(false);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -24,7 +26,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     useEffect(() => {
         const fetchReview = async () => {
             try {
-                const response = await fetch(`${apiUrl}/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
+                const response = await fetch(`${apiUrl}/review/getReview.php?userId=${userId}&shopId=${shop.eisdiele.id}`);
                 const data = await response.json();
                 setAttribute(data.allAttributes.filter(attr => !data.attributes || !data.attributes.includes(attr)));
                 if (data.review) {
@@ -34,6 +36,13 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     setAuswahl(data.review.auswahl);
                     setBeschreibung(data.review.beschreibung);
                     setSelectedAttributes(data.attributes);
+
+                    setBilder(data.bilder.map(b => ({
+                        id: b.id,
+                        url: `https://ice-app.de/${b.url}`,
+                        beschreibung: b.beschreibung || "",
+                        isExisting: true
+                    })));
                 }
             } catch (error) {
                 console.error("Fehler beim Abrufen der Bewertung", error);
@@ -59,22 +68,34 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
     const submit = async () => {
         try {
-            const response = await fetch(`${apiUrl}/submitReview.php`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    userId,
-                    shopId: shop.eisdiele.id,
-                    geschmack,
-                    kugelgroesse,
-                    waffel,
-                    auswahl,
-                    beschreibung,
-                    selectedAttributes
-                })
+            const formData = new FormData();
+            formData.append("userId", userId);
+            formData.append("shopId", shop.eisdiele.id);
+            formData.append("geschmack", geschmack);
+            formData.append("kugelgroesse", kugelgroesse);
+            formData.append("waffel", waffel);
+            formData.append("auswahl", auswahl);
+            formData.append("beschreibung", beschreibung);
+            selectedAttributes.forEach(attr => formData.append('selectedAttributes[]', attr));
+            bilder.forEach((bild, index) => {
+                if (!bild.isExisting) {
+                    formData.append(`bilder[]`, bild.file);
+                    formData.append(`beschreibungen[]`, bild.beschreibung);
+                }
             });
+            formData.append("bestehende_bilder", JSON.stringify(
+                bilder.filter(b => b.isExisting).map(b => ({
+                    id: b.id,
+                    beschreibung: b.beschreibung
+                }))
+            ));
+            formData.append("deleted_bild_ids", JSON.stringify(deletedBildIds));
+            const response = await fetch(`${apiUrl}/review/submitReview.php`,
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
             const data = await response.json();
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
@@ -161,6 +182,33 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
         }
     }
+
+    const handleBildUpload = (e) => {
+        const files = Array.from(e.target.files);
+        const neueBilder = files.map(file => ({
+            file,
+            previewUrl: URL.createObjectURL(file),
+            beschreibung: ""
+        }));
+        setBilder(prev => [...prev, ...neueBilder]);
+    };
+
+    const updateBildBeschreibung = (index, value) => {
+        const updated = [...bilder];
+        updated[index].beschreibung = value;
+        setBilder(updated);
+    };
+
+    const removeBild = (index) => {
+        const updated = [...bilder];
+        const [removed] = updated.splice(index, 1);
+        setBilder(updated);
+
+        if (removed.isExisting && removed.id) {
+            setDeletedBildIds(prev => [...prev, removed.id]);
+        }
+    };
+
     return showForm ? (
         <ModalOverlay>
             <ModalContent>
@@ -205,7 +253,30 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                             <SubmitButton onClick={handleNewAttribute}>Hinzufügen</SubmitButton>
                         </AddAttributeRow>
                     </AttributeSection>
-
+                    <Section>
+                        <Label>Bilder hochladen</Label>
+                        <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
+                        <BilderContainer>
+                            {bilder.map((bild, index) => (
+                                <div key={index}>
+                                    <BildVorschau
+                                        src={bild.previewUrl || bild.url}
+                                        alt={`Bild ${index + 1}`}
+                                    />
+                                    <Input
+                                        type="text"
+                                        placeholder="Beschreibung eingeben (optional)"
+                                        value={bild.beschreibung}
+                                        onChange={(e) => updateBildBeschreibung(index, e.target.value)}
+                                        style={{ margin: "0.5rem 0", width: "90%" }}
+                                    />
+                                    <DeleteButton type="button" onClick={() => removeBild(index)}>
+                                        Bild entfernen
+                                    </DeleteButton>
+                                </div>
+                            ))}
+                        </BilderContainer>
+                    </Section>
                     <ButtonGroup>
                         <SubmitButton onClick={submit}>Einreichen</SubmitButton>
                     </ButtonGroup>
@@ -383,4 +454,56 @@ const Message = styled.p`
 const Text = styled.p`
     font-size: 1.1rem;
     margin-top: 1rem;
+`;
+
+const Section = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+`;
+
+const BilderContainer = styled.div`
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 0.5rem 0;
+
+  /* Optional für schöneres Scrollverhalten */
+  scroll-snap-type: x mandatory;
+
+  & > div {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: white;
+    min-width: 180px;
+    max-width: 220px;
+  }
+`;
+
+const BildVorschau = styled.img`
+  max-height: 120px;
+  width: auto;
+  display: block;
+  margin: 0 auto;
+`;
+
+const DeleteButton = styled.button`
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+
+  &:hover {
+    background: #d32f2f;
+  }
 `;
