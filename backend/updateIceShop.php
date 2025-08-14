@@ -43,15 +43,45 @@ function getLocationDetailsFromCoords($lat, $lon) {
     $json = file_get_contents($url, false, $context);
     $data = json_decode($json, true);
 
-    if (!isset($data['address']['state'])) {
-        return null;
+    if (!isset($data['address']['country'])) {
+        return null; // abbrechen, wenn nichts Brauchbares da ist
     }
-    $landkreis = $data['address']['county'] ?? $data['address']['city'] ?? $data['address']['town'] ?? $data['address']['village'] ?? null;
+    
+     $address = $data['address'];
+
+     // Bundesland / Region fallback
+    $bundesland = $address['state']
+        ?? $address['region']
+        ?? $address['state_district']
+        ?? $address['county']
+        ?? $address['municipality']
+        ?? $address['town']
+        ?? $address['city']
+        ?? $address['village']
+        ?? $address['postcode']
+        ?? 'Unbekannt';
+
+    // 'county' -> fallback 'city' -> fallback 'town' -> fallback 'village'
+    $landkreis = $address['county']
+        ?? $address['city']
+        ?? $address['town']
+        ?? $address['village']
+        ?? null;
+
+    // ISO-Level automatisch bestimmen
+    $iso = null;
+    foreach ($address as $key => $value) {
+        if (strpos($key, 'ISO3166-2') !== false) {
+            $iso = $value;
+            break;
+        }
+    }
+
     return [
-        'land' => $data['address']['country'],
-        "country_code" => $data['address']['country_code'],
-        'bundesland' => $data['address']['state'],
-        'bundesland_iso' => $data['address']['ISO3166-2-lvl4'] ?? null,
+        'land' => $address['country'],
+        'country_code' => $address['country_code'],
+        'bundesland' => $bundesland,
+        'bundesland_iso' => $iso,
         'landkreis' => $landkreis,
     ];
 }
