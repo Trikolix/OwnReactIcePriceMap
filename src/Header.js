@@ -179,7 +179,7 @@ const Header = ({ refreshShops }) => {
     <>
       <HeaderContainer>
         <GewinnspielIcon onClick={() => setShowGewinnspiel(true)}>
-          <img src={require('./Gewinnspiel2.png')} alt="Gewinnspiel" />
+          <img src={require('./aktion.png')} alt="Gewinnspiel" />
         </GewinnspielIcon>
 
         <LogoContainer>
@@ -208,6 +208,7 @@ const Header = ({ refreshShops }) => {
               <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
             )}
             <MenuItemLink to="/impressum">Über diese Website</MenuItemLink>
+            <MenuItemLink to="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank">Instagram</MenuItemLink>
           </Menu>
         )}
       </HeaderContainer>
@@ -253,15 +254,15 @@ const Header = ({ refreshShops }) => {
           <CloseButton onClick={() => setShowGewinnspiel(false)}>&times;</CloseButton>
           <h2>🎉 Eisbecher-Gewinnspiel</h2>
           <p>
-            Gewinne einen <strong>Eisbecher</strong> deiner Wahl! Das Gewinnspiel läuft bis zum <strong>31.08.</strong>
+            Gewinne einen <strong>Eisbecher</strong> deiner Wahl! Das Gewinnspiel läuft vom <strong>28.07.</strong> bis zum <strong>31.08.</strong>
           </p>
           <ul style={{ textAlign: 'left' }}>
             <li>📸 Mache im Aktionszeitraum mindestens einen Check-in mit Bild.</li>
             <li>🎟️ Jeder gültige Check-in zählt als Los.</li>
-            <li>👫 Wenn du Freunde wirbst, steigen deine Gewinnchancen.</li>
+            <li>👫 Jeder geworbene aktive Nutzer, zählt als 5 Lose.</li>
           </ul>
           <p>Die Auslosung erfolgt Anfang September. Viel Glück! 🍀</p>
-          <button onClick={() => setShowGewinnspiel(false)}>Mitmachen!</button>
+          <button onClick={() => setShowGewinnspiel(false)}>Alles Klar!</button>
         </Overlay>
       )}
       <QrScanModal
