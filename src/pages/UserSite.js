@@ -92,7 +92,7 @@ function UserSite() {
         <DashboardWrapper>
           <HeaderDiv>
             <h1>Nutzerseite</h1>
-            <p>Lade Dashboard Daten...</p>
+            <p>Lade Nutzer Daten...</p>
           </HeaderDiv>
         </DashboardWrapper>
       </div >
@@ -277,6 +277,7 @@ const DashboardWrapper = styled.div`
   margin: 0 auto;
   padding: 2rem 1rem;
   height: 100%;
+  overflow: auto; /* Scrollen nur hier */
 `;
 
 const HeaderDiv = styled.div`

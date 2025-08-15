@@ -1,7 +1,7 @@
 import Header from './../Header';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 
 
@@ -17,10 +17,18 @@ function Statistics() {
 
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
-  const [activeTab, setActiveTab] = useState('activeUsers');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'activeUsers';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [expandedFlavour, setExpandedFlavour] = useState(null);
   const [flavourDetails, setFlavourDetails] = useState({});
+
+  // Tab wechseln und URL aktualisieren
+  const changeTab = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }); // setzt ?tab=...
+  };
 
   const fetchDashboard = async () => {
     fetch(`${apiUrl}/statistics.php`)
@@ -85,25 +93,25 @@ function Statistics() {
           <TabContainer>
             <TabButton
               active={activeTab === 'activeUsers'}
-              onClick={() => setActiveTab('activeUsers')}
+              onClick={() => changeTab('activeUsers')}
             >
               aktivste Benutzer
             </TabButton>
             <TabButton
               active={activeTab === 'mostPopularFlavours'}
-              onClick={() => setActiveTab('mostPopularFlavours')}
+              onClick={() => changeTab('mostPopularFlavours')}
             >
               beliebteste Eissorten
             </TabButton>
             <TabButton
               active={activeTab === 'landkreisPreis'}
-              onClick={() => setActiveTab('landkreisPreis')}
+              onClick={() => changeTab('landkreisPreis')}
             >
               Ø Kugelpreis pro Landkreis
             </TabButton>
             <TabButton
               active={activeTab === 'bundeslandPreis'}
-              onClick={() => setActiveTab('bundeslandPreis')}
+              onClick={() => changeTab('bundeslandPreis')}
             >
               Ø Kugelpreis pro Bundesland
             </TabButton>
@@ -269,12 +277,6 @@ const Title = styled.h2`
   text-align: center;
 `;
 
-const Section = styled.div`
-  flex: 1 1 300px;
-  max-width: 900px;
-  min-width: 300px;
-`;
-
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
@@ -333,6 +335,7 @@ const TabButton = styled.button`
 
 const TabContent = styled.div`
   margin-top: 1rem;
+  overflow: auto; /* Scrollen nur hier */
 `;
 
 
