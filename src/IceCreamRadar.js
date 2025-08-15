@@ -162,12 +162,9 @@ const IceCreamRadar = () => {
     "Eisbecher: Rating"
   ];
   // Nur wenn userId gesetzt ist, Favoriten hinzufügen
-  const userOptions = userId ? ["Favoriten"] : [];
+  const userOptions = userId ? ["Favoriten", "Besucht", "Nicht besucht"] : [];
 
-  // Wenn userId === 1, zusätzlich "Besucht" und "Nicht besucht"
-  const visitOptions = Number(userId) === 1 ? ["Besucht", "Nicht besucht"] : [];
-
-  const options = [...baseOptions, ...userOptions, ...visitOptions];
+  const options = [...baseOptions, ...userOptions];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
