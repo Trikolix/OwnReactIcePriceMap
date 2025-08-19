@@ -15,13 +15,13 @@ $sql = "WITH bewertete_checkins AS (
             ELSE (4 * geschmackbewertung + waffelbewertung) / 5.0
         END AS geschmacksfaktor,
         ROUND(
-    0.7 * (
-        CASE
-            WHEN waffelbewertung IS NULL THEN geschmackbewertung
-            ELSE (4 * geschmackbewertung + waffelbewertung) / 5.0
-        END
-    ) + 0.3 * preisleistungsbewertung, 2
-) AS score
+            0.7 * (
+                CASE
+                    WHEN waffelbewertung IS NULL THEN geschmackbewertung
+                    ELSE (4 * geschmackbewertung + waffelbewertung) / 5.0
+                END
+            ) + 0.3 * preisleistungsbewertung, 2
+        ) AS score
     FROM checkins
     WHERE
         typ = 'Softeis'
@@ -46,6 +46,7 @@ gewichtete_scores AS (
     SELECT
         eisdiele_id,
         nutzer_id,
+        checkin_count,
         SQRT(checkin_count) AS gewicht,
         durchschnitt_geschmacksfaktor * SQRT(checkin_count) AS gewichteter_geschmacksfaktor,
         durchschnitt_score * SQRT(checkin_count) AS gewichteter_score,
@@ -59,7 +60,7 @@ SELECT
     e.name,
     e.adresse,
     e.openingHours,
-    COUNT(*) AS checkin_anzahl,
+    SUM(g.checkin_count) AS checkin_anzahl,
     COUNT(DISTINCT g.nutzer_id) AS anzahl_nutzer,
     ROUND(SUM(g.gewichteter_geschmacksfaktor) / NULLIF(SUM(g.gewicht), 0), 2) AS finaler_geschmacksfaktor,
     ROUND(SUM(g.gewichteter_score) / NULLIF(SUM(g.gewicht), 0), 2) AS finaler_softeis_score,
