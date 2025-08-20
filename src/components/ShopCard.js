@@ -24,10 +24,12 @@ const ShopCard = ({ iceShop, onSuccess }) => {
     <Card>
       <DateText dateTime={iceShop.erstellt_am}>
         {new Date(iceShop.erstellt_am).toLocaleDateString("de-DE", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}
+            day: "numeric",
+            month: "long",
+            year: "numeric", 
+            hour: "numeric",
+            minute: "numeric",
+          })}
       </DateText>
       <Header>
         <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}

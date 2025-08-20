@@ -59,7 +59,9 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
           {new Date(route.erstellt_am).toLocaleDateString("de-DE", {
             day: "numeric",
             month: "long",
-            year: "numeric",
+            year: "numeric", 
+            hour: "numeric",
+            minute: "numeric",
           })}
         </DateText>
         <ContentWrapper>

@@ -1,114 +1,141 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
+require_once  __DIR__ . '/lib/review.php';
 
-function getActivityFeed(PDO $pdo): array {
+function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $activities = [];
 
-    // 🟢 CHECKINS holen
+    // 🟢 CHECKINS
     $stmtCheckins = $pdo->prepare("
         SELECT id, datum AS erstellt_am
         FROM checkins
+        WHERE datum >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+          AND datum < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
         ORDER BY erstellt_am DESC
-        LIMIT 30
     ");
-    $stmtCheckins->execute();
+    $stmtCheckins->execute([
+        'offsetPlusDays' => $offsetDays + $days,
+        'offset'         => $offsetDays
+    ]);
     $checkinIds = $stmtCheckins->fetchAll(PDO::FETCH_COLUMN);
-
     foreach ($checkinIds as $id) {
         $checkin = getCheckinById($pdo, $id);
         if ($checkin) {
             $activities[] = [
                 'typ' => 'checkin',
-                'id' => $checkin['id'],
-                'data' => $checkin
+                'id'  => $checkin['id'],
+                'data'=> $checkin
             ];
         }
     }
 
-    // 🟡 BEWERTUNGEN holen
-    $stmtReviews = $pdo->prepare("
-        SELECT b.*,
-               e.name AS eisdiele_name,
-               n.username AS nutzer_name,
-               n.id AS nutzer_id
-        FROM bewertungen b
-        JOIN eisdielen e ON b.eisdiele_id = e.id
-        JOIN nutzer n ON b.nutzer_id = n.id
-        ORDER BY b.erstellt_am DESC
-        LIMIT 10
-    ");
-    $stmtReviews->execute();
-    $reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($reviews as &$review) {
-        $stmtAttr = $pdo->prepare("
-            SELECT a.name 
-            FROM bewertung_attribute ba 
-            JOIN attribute a ON ba.attribut_id = a.id 
-            WHERE ba.bewertung_id = :bewertungId
-        ");
-        $stmtAttr->execute(['bewertungId' => $review['id']]);
-        $review['bewertung_attribute'] = $stmtAttr->fetchAll(PDO::FETCH_COLUMN);
-
+    // 🟡 BEWERTUNGEN
+    $reviews = getLatestReviews($pdo, $offsetDays, $days);
+    foreach ($reviews as $review) {
         $activities[] = [
-            'typ' => 'bewertung',
-            'id' => $review['id'],
+            'typ'  => 'bewertung',
+            'id'   => $review['id'],
             'data' => $review
         ];
     }
 
-    // 🔵 ROUTEN holen
+    // 🔵 ROUTEN
     $stmtRouten = $pdo->prepare("
         SELECT r.*, n.username AS nutzer_name
         FROM routen r
         JOIN nutzer n ON r.nutzer_id = n.id
         WHERE r.ist_oeffentlich = TRUE
+          AND r.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+          AND r.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
         ORDER BY r.erstellt_am DESC
-        LIMIT 10
     ");
-    $stmtRouten->execute();
+    $stmtRouten->execute([
+        'offsetPlusDays' => $offsetDays + $days,
+        'offset'         => $offsetDays
+    ]);
     $routen = $stmtRouten->fetchAll(PDO::FETCH_ASSOC);
-
     foreach ($routen as $route) {
         $activities[] = [
-            'typ' => 'route',
-            'id' => $route['id'],
+            'typ'  => 'route',
+            'id'   => $route['id'],
             'data' => $route
         ];
     }
 
-    // 🔷 OPTIONAL: Eisdielen-Einträge hinzufügen (falls sinnvoll)
-    
+    // 🔷 Eisdielen
     $stmtEisdielen = $pdo->prepare("
         SELECT e.*, n.username AS nutzer_name
         FROM eisdielen e
         JOIN nutzer n ON e.user_id = n.id
+        WHERE e.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+          AND e.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
         ORDER BY e.erstellt_am DESC
-        LIMIT 10
     ");
-    $stmtEisdielen->execute();
+    $stmtEisdielen->execute([
+        'offsetPlusDays' => $offsetDays + $days,
+        'offset'         => $offsetDays
+    ]);
     $eisdielen = $stmtEisdielen->fetchAll(PDO::FETCH_ASSOC);
-
     foreach ($eisdielen as $shop) {
         $activities[] = [
-            'typ' => 'eisdiele',
-            'id' => $shop['id'],
+            'typ'  => 'eisdiele',
+            'id'   => $shop['id'],
             'data' => $shop
         ];
     }
 
-    // 🔄 Aktivitäten nach Datum sortieren (optional)
+    // 🔄 Nach Datum sortieren
     usort($activities, function ($a, $b) {
-      $dateA = $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
-      $dateB = $b['data']['erstellt_am'] ?? $b['data']['datum'] ?? null;
-      return strtotime($dateB) <=> strtotime($dateA);
+        $dateA = $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
+        $dateB = $b['data']['erstellt_am'] ?? $b['data']['datum'] ?? null;
+        return strtotime($dateB) <=> strtotime($dateA);
     });
 
     return $activities;
 }
 
-echo json_encode(getActivityFeed($pdo));
-// echo json_encode($feed);
+/**
+ * Flexible Wrapper
+ */
+function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 7, int $minCount = 20): array {
+    $activities = [];
+    $offset = $offsetDays ?? 0; // Tage zurück vom heutigen Tag
+    $earliestDate = '2025-04-01'; // manuell gesetzt, Datum der allerersten Aktivität
 
+    while (count($activities) < $minCount) {
+        $batch = getActivityFeed($pdo, $offset, $days);
+
+        if (!empty($batch)) {
+            $activities = array_merge($activities, $batch);
+        }
+
+        // Berechne das Datum des nächsten Batches
+        $nextBatchDate = date('Y-m-d', strtotime("-" . ($offset + $days) . " days"));
+
+        // Abbruch, wenn wir das früheste Datum erreicht haben
+        if ($nextBatchDate < $earliestDate) {
+            break;
+        }
+
+        // Offset für nächsten Batch erhöhen
+        $offset += $days;
+    }
+
+    // Meta-Daten vorbereiten
+    $meta['count']      = count($activities);
+    $meta['hasMore']    = (end($activities)['data']['erstellt_am'] ?? end($activities)['data']['datum'] ??  null) > $earliestDate;
+    $meta['nextOffset'] = $offset;
+
+    return [
+        'meta'       => $meta,
+        'activities' => $activities
+    ];
+}
+
+// Parameter aus Request
+$offsetParam = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+$result = getActivityFeedFlexible($pdo, $offsetParam, 7, 20);
+
+echo json_encode($result);
 ?>
