@@ -15,6 +15,7 @@ import AGB from './pages/AGB';
 import Datenschutz from './pages/Datenschutz';
 import Community from './pages/Community';
 import RegisterPage from './pages/RegisterPage';
+import Challenges from './pages/Challenges';
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
           <Route path="/community" element={<Community />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/register/:inviteCode" element={<RegisterPage />} />
+          <Route path="/challenge" element={<Challenges />} />
         </Routes>
       </UserProvider>
     </Router>

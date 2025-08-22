@@ -24,6 +24,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [preisfrage, setPreisfrage] = useState(false);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
+    const getUserLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                (err) => reject(err.message)
+            );
+        });
+    };
+
     const askForPriceUpdate = (preise) => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -131,6 +141,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             ));
             if (checkinId) formData.append("checkin_id", checkinId);
 
+            try {
+                const location = await getUserLocation();
+                formData.append("lat", location.lat);
+                formData.append("lon", location.lon);
+            } catch (e) {
+                console.warn("Kein Standort verfügbar, Checkin wird ohne Vor-Ort-Bonus gespeichert.");
+            }
+
             const response = await fetch(
                 checkinId
                     ? `${apiUrl}/checkin/update_checkin.php`
@@ -150,7 +168,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
-                if (data.level_up || data.new_awards && data.new_awards.length > 0) {
+                if (data.level_up || (data.new_awards && data.new_awards.length > 0)) {
                     if (data.level_up) {
                       setLevelUpInfo({
                         level: data.new_level,

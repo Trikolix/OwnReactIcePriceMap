@@ -32,6 +32,8 @@ require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
 require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
+
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -74,6 +76,34 @@ try {
     $userId = $_POST['userId'] ?? null;
     $shopId = $_POST['shopId'] ?? null;
     $type = $_POST['type'] ?? null;
+    $latUser = $_POST['lat'] ?? null;
+    $lonUser = $_POST['lon'] ?? null;
+
+    $isOnSite = 0;
+    if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
+        // Hole Shop-Koordinaten
+        $stmt = $pdo->prepare("SELECT latitude, longitude FROM eisdielen WHERE id = ?");
+        $stmt->execute([$shopId]);
+        $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($shop)) {
+            $latShop = $shop['latitude'];
+            $lonShop = $shop['longitude'];
+
+            $earthRadius = 6371000; // in Metern
+            $dLat = deg2rad($latShop - $latUser);
+            $dLon = deg2rad($lonShop - $lonUser);
+            $a = sin($dLat/2) * sin($dLat/2) +
+                 cos(deg2rad($latUser)) * cos(deg2rad($latShop)) *
+                 sin($dLon/2) * sin($dLon/2);
+            $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+            $distance = $earthRadius * $c; // Distanz in Metern
+
+            if ($distance <= 300) { // Checkin vor Ort
+                $isOnSite = 1;
+            }
+
+        }
+    }
 
     $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
@@ -114,10 +144,10 @@ try {
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise, is_on_site)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise, $isOnSite]);
     $checkinId = $pdo->lastInsertId();
 
     if (!empty($bildUrls)) {
@@ -177,6 +207,10 @@ try {
     }
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
+
+    if ($isOnSite) {
+        $evaluators[] = new OnSiteEvaluator();
+    }
 
 
     $newAwards = [];
