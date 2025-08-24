@@ -11,11 +11,7 @@ if ($nutzer_id <= 0) {
 try {
     $stmt = $pdo->prepare("
         SELECT 
-            c.id,
-            c.nutzer_id,
-            c.difficulty,
-            c.type,
-            c.valid_until,
+            c.*,
             e.id AS shop_id,
             e.name AS shop_name,
             e.adresse AS shop_address

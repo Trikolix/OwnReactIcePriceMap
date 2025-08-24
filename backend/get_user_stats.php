@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/levelsystem.php';
+require_once  __DIR__ . '/lib/review.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 $curUserId = intval($_GET['cur_user_id']);
@@ -64,18 +65,7 @@ $checkins = getCheckinsByNutzerId($pdo, $nutzerId);
 $levelInfo = getLevelInformationForUser($pdo, $nutzerId);
 
 // User Reviews
-$stmtReviews = $pdo->prepare("SELECT b.*,
-                                     e.name AS eisdiele_name,
-                                     n.username AS nutzer_name,
-                                     n.id AS nutzer_id                            
-                              FROM bewertungen b
-                              JOIN eisdielen e ON b.eisdiele_id = e.id
-                              JOIN nutzer n ON b.nutzer_id = n.id
-                              WHERE b.nutzer_id = :nutzerId
-                              ORDER BY b.erstellt_am DESC
-                            ");
-$stmtReviews->execute(['nutzerId' => $nutzerId]);
-$reviews = $stmtReviews->fetchAll(PDO::FETCH_ASSOC);
+$reviews = getReviewsByNutzerId($pdo, $nutzerId);
 
 // User Routen
 $stmtRouten = $pdo->prepare("SELECT r.*, n.username
@@ -87,18 +77,6 @@ $stmtRouten->execute(['nutzer_id' => $nutzerId, 'cur_user_id' => $curUserId]);
 
 $routen = $stmtRouten->fetchAll(PDO::FETCH_ASSOC);
 
-// Bewertungen durchgehen und Attribute anhängen
-foreach ($reviews as &$review) { // ACHTUNG: Referenz verwenden (&$review)
-    $stmtAttr = $pdo->prepare("
-        SELECT a.name 
-        FROM bewertung_attribute ba 
-        JOIN attribute a ON ba.attribut_id = a.id 
-        WHERE ba.bewertung_id = :bewertungId
-    ");
-    $stmtAttr->execute(['bewertungId' => $review['id']]);
-    $attributes = $stmtAttr->fetchAll(PDO::FETCH_COLUMN);
-    $review['bewertung_attribute'] = $attributes;
-}
 // Referenz wieder auflösen
 unset($review);
 

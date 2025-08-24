@@ -13,14 +13,14 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
   return (
     <Card>
       <DateText dateTime={review.erstellt_am}>
-          {new Date(review.erstellt_am).toLocaleDateString("de-DE", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          })}
-        </DateText>
+        {new Date(review.erstellt_am).toLocaleDateString("de-DE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        })}
+      </DateText>
       <Header>
         <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
         <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
@@ -46,14 +46,15 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
           ))}
         </AttributeSection>
       )}
-      <ImageGalleryWithLightbox
-              images={review.bilder.map(b => ({
-                url: `https://ice-app.de/${b.url}`,
-                beschreibung: b.beschreibung
-              }))}
-              fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
-            />
-
+      {review.bilder?.length > 0 && (
+        <ImageGalleryWithLightbox
+          images={review.bilder.map(b => ({
+            url: `https://ice-app.de/${b.url}`,
+            beschreibung: b.beschreibung
+          }))}
+          fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
+        />
+      )}
       {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
         <EditButton onClick={() => setShowReviewForm(true)}>Bearbeiten</EditButton>
       )}

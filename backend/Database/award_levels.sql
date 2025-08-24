@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 27. Jun 2025 um 13:19
+-- Erstellungszeit: 24. Aug 2025 um 10:27
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -97,7 +97,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (66, 15, 1, 1, 'uploads/awards/award_681bb7932be9e.png', 'Wege zum Glück', 'Du hast deine erste Route geteilt – der Weg zum Eis ist jetzt offiziell schöner geworden!\r\n', 20),
 (67, 15, 2, 3, 'uploads/awards/award_681bb847b0a75.png', 'Touren Tüftler ', 'Drei geniale Routen – du weißt einfach, wie man Rad- und Eisfreude perfekt kombiniert!', 30),
 (68, 15, 3, 5, 'uploads/awards/award_681dc92f54104.png', 'GPS-Gourmet', 'Dein Geschmack kennt nicht nur bei Eis keine Grenzen – auch bei der Routenwahl liegst du goldrichtig! Du hast bereits 5 öffentliche Routen erstellt.', 50),
-(69, 17, 1, 10, 'uploads/awards/award_681dc99975457.png', 'Stammkunde', 'Du bist nicht einfach ein Gast – du bist Institution! Zehnmal hast du derselben Eisdiele die Treue gehalten. Ob für das beste Pistazieneis der Stadt oder die charmante Kugelverkäuferin: Deine Loyalität ist preisverdächtig – und jetzt offiziell ausgezeichnet!', 250),
+(69, 17, 1, 3, 'uploads/award_icons/689eef01c150c_Wiederholungstäter Medaille mit Eisdiele.png', 'Wiederholungstäter', 'Du warst schon drei Mal in derselben Eisdiele – das ist der Anfang einer wunderbaren Freundschaft. Willkommen im Club der Wiederholungstäter!', 50),
 (70, 16, 1, 1, 'uploads/awards/award_681dc9f04fbaf.png', 'Eis-Schmuggler-Route', 'Du hast eine Route nur für dich geplant – ein exklusiver Weg zum Eisgenuss im Verborgenen!', 20),
 (71, 18, 1, 20, 'uploads/award_icons/68332a2d9e6c7_Design ohne Titel (1).png', 'Geschmackstreue', 'Vanille? Zitrone? Mango-Chili? Egal welche Sorte – du hast dich entschieden. Über 20-mal treu geblieben und jeder Kugel mit Hingabe begegnet. Diese geschmackliche Konsequenz verdient Respekt – und diesen Award.', 400),
 (72, 15, 4, 10, 'uploads/awards/award_681f3091364e2.png', 'Routen-Ritter', 'Zehn Wege zur eisigen Ehre – du bringst Menschen auf Kurs in Sachen Genuss!', 80),
@@ -158,9 +158,9 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (130, 27, 2025, 20, 'uploads/award_icons/6855058fe49e5_ChatGPT Image 20. Juni 2025, 08_53_58.png', 'Sommer-Eis-Champion 2025', 'Verliehen an Nutzer, die im Sommer 2025 mindestens 20 Eis eingecheckt und damit ihre Leidenschaft für Eis bewiesen haben.', 150),
 (132, 28, 1, 25, 'uploads/award_icons/68554970623f1_Designer.png', 'Eis-Spürnase', 'Für Nutzer, die 25 verschiedene Eisdielen aufgespürt und sich durch die süße Vielfalt gekostet haben.', 150),
 (133, 28, 2, 50, 'uploads/award_icons/685655abd490a_1000085612.png', 'Meister der Eisschlemmerei', 'Verliehen an Nutzer, die in 50 verschiedenen Eisdielen waren und sich als wahre Meister der Eisschlemmerei erwiesen haben.', 300),
-(134, 28, 3, 75, 'uploads/award_icons/6856565765b8c_1000085613.png', 'Eiskalt erwischt', 'Für Nutzer, die 75 Eisdielen besucht haben und dabei eiskalt erwischt wurden – aber nur von der Leidenschaft für Eis!', 450),
-(135, 28, 4, 100, NULL, 'Jahrhundertschlemmer', 'An Nutzer, die 100 verschiedene Eisdielen besucht haben und damit bewiesen haben, dass sie die ultimativen Jahrhundertschlemmer sind.', 600),
-(136, 28, 5, 150, NULL, 'Unerschöpflicher Eisvulkan', 'Für Nutzer, die 150 Eisdielen erkundet haben und deren Liebe zum Eis schier unerschöpflich ist wie ein Vulkan.', 1200),
+(134, 28, 3, 75, 'uploads/award_icons/6866ddab69192_1000087713.png', 'Gelato-Globetrotter', 'Du hast 75 Eisdielen entdeckt – dein Löffel kennt keine Grenzen mehr!', 450),
+(135, 28, 4, 100, 'uploads/award_icons/6866ddfdaf5ad_1000087714.png', 'Eiskugel-Kenner', '100 besuchte Eisdielen – du bist offiziell ein Experte für cremigen Genuss!', 600),
+(136, 28, 5, 125, 'uploads/award_icons/6866dec3b85b3_1000087715.png', 'Frozen Flavor Master', '125 Orte, unzählige Sorten – du hast den gefrorenen Geschmack gemeistert.', 1200),
 (137, 29, 1, 20, 'uploads/award_icons/6853c93fd0c73_5377454365360648820.png', 'Award-Sammler', 'Du hast 20 verschiedene Awards gesammelt. Aber dein Platz 1 bleibt immer noch das Eis.', 100),
 (138, 24, 5, 50, 'uploads/award_icons/6853d461688b7_ChatGPT Image 19. Juni 2025, 11_10_13.png', 'Wandernde Eismythos', 'Man spricht in Legenden von dir – der, der 50-mal zu Fuß ging, dem Ruf des Eises folgend. Ein Pilger der Schleckkunst.', 500),
 (139, 30, 1, 20, 'uploads/award_icons/6857f5837992d_ChatGPT Image 22. Juni 2025, 14_21_25.png', 'Eisvielfalt-Pionier', 'Du hast 20 verschiedene Eissorten probiert! Dein Geschmackshorizont dehnt sich aus – Vanille, Erdbeere und darüber hinaus. Willkommen im Club der Abwechslung!', 150),
@@ -183,13 +183,73 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (156, 32, 2, 500, 'uploads/award_icons/685e49f2bfefe_generation-88ae017f-96a4-4b60-9624-857fe950ef25.png', 'Erzählmeister', 'Mit deinem ausführlichen Check-in von über 500 Zeichen beweist du Liebe zum Detail. Du erzählst Geschichten, statt nur Bewertungen zu schreiben', 60),
 (157, 32, 3, 1000, 'uploads/award_icons/685e487ebfb9a_generation-5c861d47-3aa6-4cce-bc49-1f82102fd2ce.png', 'Romanverfasser', 'Du hast die Kunst der Eisrezension perfektioniert: Mehr als 1.000 Zeichen, fundiert und unterhaltsam – ein echter Genuss für Leser und Eisdielen gleichermaßen!', 100),
 (158, 32, 4, 2000, 'uploads/award_icons/685e4a3c81032_generation-4f76212c-770c-446d-9792-3e75daf4df16.png', 'Wortgigant', 'Deine Rezension sprengt alle Grenzen: Über 2.000 Zeichen voller Beobachtung, Meinung und Stil. Du bist ein literarischer Riese unter den Eisverkostern!', 200),
-(159, 33, 1, 5, NULL, 'Tiefschreiber', 'Fünf Rezensionen mit mehr als 300 Zeichen – du bleibst dran und gehst in die Tiefe. Deine Bewertungen sind mehr als oberflächliche Notizen – sie zeigen echtes Engagement.', 50),
-(160, 33, 2, 10, NULL, 'Detailverliebt', 'Du hast bereits 10 ausführliche Rezensionen geschrieben – ein klarer Beweis dafür, dass dir kein Eis entgeht. Du gehst mit Begeisterung ins Detail und teilst es mit der Welt!', 100),
-(161, 33, 3, 25, NULL, 'Rezensionsprofi', 'Mit 25 detaillierten Rezensionen gehörst du zur Elite der Eisexperten. Deine Ausdauer und Qualität heben dich von der Masse ab – du bist ein echter Profi in Sachen Feedback!', 250),
+(159, 33, 1, 5, 'uploads/award_icons/68643f8799aff_1000087392.png', 'Tiefschreiber', 'Fünf Rezensionen mit mehr als 250 Zeichen – du bleibst dran und gehst in die Tiefe. Deine Bewertungen sind mehr als oberflächliche Notizen – sie zeigen echtes Engagement.', 50),
+(160, 33, 2, 10, 'uploads/award_icons/68643fd547cc9_1000087393.png', 'Detailverliebt', 'Du hast bereits 10 ausführliche Rezensionen geschrieben – ein klarer Beweis dafür, dass dir kein Eis entgeht. Du gehst mit Begeisterung ins Detail und teilst es mit der Welt!', 100),
+(161, 33, 3, 25, 'uploads/award_icons/6864408186b83_1000087394.png', 'Rezensionsprofi', 'Mit 25 detaillierten Rezensionen gehörst du zur Elite der Eisexperten. Deine Ausdauer und Qualität heben dich von der Masse ab – du bist ein echter Profi in Sachen Feedback!', 250),
 (162, 34, 1, 1, 'uploads/award_icons/685da2344b9a9_eis-freund-zur-hilfe.png', 'Ein Eis-Freund zur Hilfe!', 'Du hast bereits einen Nutzer geworben, sich bei der ice-app zu registrieren. Zusammen macht Eis schleckern und ein checken doch gleich doppelt Spaß!', 150),
 (163, 34, 2, 2, 'uploads/award_icons/685da42415ab9_team-schleck.png', 'Team Schleck', 'Du hast schon zwei Eis-Freunde für die Ice-App begeistert – gemeinsam seid ihr jetzt ein echtes Schleck-Team! Eisdiele für Eisdiele wird euer Genussnetz größer! 🍦👬', 150),
-(164, 34, 3, 3, NULL, 'Eis-Gang aktiv!', 'Drei geworbene Nutzer! Eure Eis-Gang ist jetzt nicht mehr zu stoppen – ob Himbeere, Zitrone oder Cookie: Ihr checkt alles ein, was schmeckt! 🍨💪', 150),
-(165, 34, 4, 5, NULL, 'Schleckfluencer', 'Fünf neue Eis-Fans dank dir – du bist ein wahrer Schleckfluencer! Die Eisdielenwelt liegt dir zu Füßen, und deine Empfehlungen sind Gold wert! 📱🍦🌟', 150);
+(164, 34, 3, 3, 'uploads/award_icons/68632cb80239d_1000087158.png', 'Eis-Gang aktiv!', 'Drei geworbene Nutzer! Eure Eis-Gang ist jetzt nicht mehr zu stoppen – ob Himbeere, Zitrone oder Cookie: Ihr checkt alles ein, was schmeckt! 🍨💪', 150),
+(165, 34, 4, 5, 'uploads/award_icons/68643e3627189_1000087391.png', 'Schleckfluencer', 'Fünf neue Eis-Fans dank dir – du bist ein wahrer Schleckfluencer! Die Eisdielenwelt liegt dir zu Füßen, und deine Empfehlungen sind Gold wert! 📱🍦🌟', 150),
+(166, 19, 15, 22, 'uploads/award_icons/6862eb0507cee_1000087148.png', 'SLADOLED U HRVATSKOJ', 'Eisgenuss an der Adriaküste! Ob in Dubrovniks Altstadt, am Strand von Split oder in Istriens Dörfern – dieser Badge feiert dein Eisabenteuer im sonnenverwöhnten Kroatien.', 30),
+(167, 19, 16, 43, 'uploads/award_icons/6862129341362_1000086910.png', 'SLADOLED V SLOVENIJI', 'Ein Eis zwischen Alpen und Adria! Ob in Ljubljana, am Bleder See oder in Piran – dieser Badge belohnt deinen cremigen Genuss im grünen Herzen Europas.', 30),
+(168, 19, 17, 34, 'uploads/award_icons/6862eb86d399c_1000087149.png', 'EISZEIT IN ÖSTERREICH', 'Stracciatella mit Alpenglühen – dieser Badge ehrt dein Eisvergnügen in der Alpenrepublik. Egal ob Wien, Salzburg oder Tirol – Hauptsache cremig!', 30),
+(169, 19, 18, 5, 'uploads/award_icons/6862ec81d8bc7_1000087150.png', 'GLACE SUISSE', 'Ob am Vierwaldstättersee, in Zürich oder in den Walliser Alpen – du hast dir ein Eis in der Schweiz gegönnt. Dieser Badge belohnt kühle Genussmomente im Land der Schokolade.', 30),
+(170, 19, 19, 12, 'uploads/award_icons/68632be7bd136_1000087151.png', 'SLADOLED V BALGARIYA', 'Ein Eis in Bulgarien – ob in der Altstadt von Plowdiw, am Goldstrand oder am Fuße des Rila-Gebirges. Dieser Award feiert deinen eiskalten Moment im Land der Rosen.', 30),
+(171, 19, 20, 6, 'uploads/award_icons/68632c2ac6e1a_1000087156.png', 'AKULLORË NË SHQIPËRI', 'Eisgenuss mit Adria-Ausblick! Dieser Award würdigt dein Eis in Albanien – von den Stränden der Riviera bis zu den Burgen von Gjirokastra.', 30),
+(172, 19, 21, 21, 'uploads/award_icons/68656bda711b2_1000087551.png', 'AKULLORË NË KOSOVË', 'Ein Eis in den Bergen von Prizren oder auf dem Boulevard von Pristina – dieser Award ehrt dein cremiges Erlebnis im jüngsten Land Europas.', 30),
+(173, 19, 22, 33, 'uploads/award_icons/686609f381fc7_1000087557.png', 'IS I NORGE', 'Ein Eis mit Blick auf Fjorde, rote Fischerhäuschen oder Mitternachtssonne – dieser Badge feiert deine kalte Köstlichkeit im hohen Norden.', 30),
+(174, 19, 23, 15, 'uploads/award_icons/68660a5b1e7c2_1000087558.png', 'JÄÄTELÖ SUOMESSA', 'Von Helsinki bis Lappland – ein Eis in Finnland ist etwas ganz Besonderes. Dieser Badge ehrt den Geschmack der stillen Seen und nordischen Wälder.', 30),
+(175, 28, 6, 150, NULL, 'König der Kugeln', '150 Eisdielen! Du herrschst über das Reich der süßen Kugeln.', 1400),
+(176, 19, 24, 19, 'uploads/award_icons/6869856fc1b8a_1000088249.png', 'ÍS Á ÍSLANDI', 'Ein Eis im Land aus Feuer und Eis – wer das geschafft hat, trotzt nicht nur Vulkanen, Gletschern und Nordlichtern, sondern genießt mit Stil. Dieser Award ehrt deine frostige Leckerei auf der magischen Insel Island.', 30),
+(177, 19, 25, 52, 'uploads/award_icons/686c9b6fbc4ec_1000088892.png', 'SCOOP IN THE STATES', 'Ob New York, Kalifornien oder Texas – ein Eis in den Vereinigten Staaten ist mehr als nur Dessert. Dieser Badge feiert deinen eiskalten Genuss im Land der unbegrenzten Möglichkeiten.', 30),
+(178, 19, 26, 98, 'uploads/award_icons/686c9bfed3ea1_1000088893.png', 'CRÈME GLACÉE AU CANADA', 'Ein Eis unter Ahornbäumen, an einem der tausend Seen oder vor den Rockies – Kanada bietet nicht nur Natur, sondern auch eiskalte Genussmomente.', 30),
+(179, 19, 27, 97, 'uploads/award_icons/686c9cb2370ed_1000088898.png', 'HELADO EN MÉXICO', 'Von Paletas am Strand bis zur Eisdiele in Oaxaca – dieser Award feiert dein cremiges Abenteuer zwischen Farben, Kultur und Sonne.', 30),
+(180, 34, 5, 10, 'uploads/award_icons/686df3dc84092_1000089096.png', 'Der Eisprophet', 'Du hast zehn neue Eis-Fans zur Ice-App geführt – dein Wort hat Kugelgewicht! Überall, wo du gehst, folgen dir Eisliebhaber. Dein Einfluss ist legendär, deine Empfehlungen eine Offenbarung. ', 1000),
+(181, 35, 1, 1, 'uploads/award_icons/687e1403ec406_Kein Titel (1024 x 1024 px).png', 'Eisflüsterer', 'Der erste Kommentar bei einem Check-In eines anderen Nutzers. Noch leise, aber mit Geschmack. Der Anfang deiner Meinungsmacht.', 15),
+(182, 35, 2, 5, 'uploads/award_icons/687e14505a46a_Design ohne Titel.png', 'Waffelphilosoph', 'Du redest nicht nur übers Eis – du interpretierst es. Und das gleich mehrfach. Du hast bereits 5 oder mehr Check-Ins anderer Nutzer kommentiert.', 50),
+(183, 35, 3, 20, 'uploads/award_icons/687e148e9d273_Design ohne Titel (1).png', 'Kommentar-Crusher', 'Deine Meinungen haben Biss – knackig, ehrlich, unterhaltsam. Du hinterlässt überall Spuren. 20 oder mehr Kommentare unter fremden Check-Ins.', 120),
+(184, 35, 4, 50, 'uploads/award_icons/687e8f35d5078_Design ohne Titel (1).png', 'Meister der Eisworte', 'Du bist zur Legende geworden. Deine Kommentare sind so beliebt wie Gratis-Toppings. 50 oder mehr Kommentare unter fremden Check-Ins.', 250),
+(185, 36, 1, 2, 'uploads/award_icons/687c7ba7002f9_1000092451.png', '2 Wochen Eis-Streak', 'Zwei Wochen Eisgenuss am Stück – du bist auf dem besten Weg zum Eis-Profi!', 20),
+(186, 36, 2, 3, 'uploads/award_icons/687c7c3b24023_1000092452.png', '3 Wochen Eis-Streak', 'Drei Wochen, drei Kugeln Glück – deine Bronze-Streak glänzt!', 40),
+(187, 36, 3, 4, 'uploads/award_icons/687e113779c1c_ChatGPT Image 21. Juli 2025, 12_05_26.png', '4 Wochen Eis-Streak', 'Ein ganzer Monat wöchentlich mindestens ein Eis – du bist nicht aufzuhalten!', 50),
+(188, 36, 4, 5, 'uploads/award_icons/687e117aef866_ChatGPT Image 21. Juli 2025, 12_07_14.png', '5 Wochen Eis-Streak', 'Fünf Wochen mit Geschmack – der Goldstatus gehört dir!', 60),
+(189, 36, 5, 6, 'uploads/award_icons/687e11bd1ec94_ChatGPT Image 21. Juli 2025, 12_08_28.png', '6 Wochen Eis-Streak', 'Sechs Wochen im Eis-Flow – das ist Hingabe!', 70),
+(190, 36, 6, 7, 'uploads/award_icons/687e12e877325_ChatGPT Image 21. Juli 2025, 12_13_28.png', '7 Wochen Eis-Streak', 'Sieben Wochen ohne Pause – du bist ein echter Eis-Juwel!', 80),
+(191, 36, 7, 8, 'uploads/award_icons/687e15119dbaf_8 Wochen Eis-Streak Abzeichen.png', '8 Wochen Eis-Streak', 'Acht Wochen Königsklasse – dein Eisreich wächst!', 90),
+(192, 36, 8, 9, 'uploads/award_icons/688099ae2ca9e_ChatGPT Image 23. Juli 2025, 10_13_10.png', '9 Wochen Eis-Streak', 'Neun Wochen legendärer Eisgenuss – du bist eine Legende!', 100),
+(193, 37, 2, 1, 'uploads/award_icons/687f848e85a70_Einmal mehr Schleife Abzeichen.png', 'OneMoreLoop meets IceCream', 'Limited Edition Award für Teilnehmer von „Cycle the Loop“ 2025! Du kannst nicht nur Eis schlecken, sondern auch Rad fahren!', 400),
+(194, 36, 9, 10, 'uploads/award_icons/688099f7f1c28_ChatGPT Image 23. Juli 2025, 10_13_55.png', '10 Wochen Eis-Streak', 'Zehn Wochen durchgehalten – du bist jetzt offiziell Eis-Veteran! Dein Einsatz für gefrorene Genüsse ist legendär. Dieser Award steht für Ausdauer, Disziplin und eine eiskalte Leidenschaft.', 110),
+(195, 36, 10, 11, 'uploads/award_icons/68809ba3c4a8d_11 Wochen Eis-Streak Emblem.png', '11 Wochen Eis-Streak', 'Elf Wochen am Stück Eis – deine Zunge kennt keinen Winterschlaf! Du bist ein Eis-Held auf Marathonkurs. Nur wenige halten so lange durch.', 120),
+(196, 37, 1, 0, 'uploads/award_icons/688132889a1fe_OneMoreLoop_clouds.png', 'Vorschau: OneMoreLoop', 'Du hast den limitierten One More Loop Award gescannt. Besuche bis zum 10. August eine Eisdiele per Rad (optimal natürlich direkt während des Brevet) und checke einen Besuch ein um den Award zu bekommen.', 0),
+(197, 36, 11, 12, 'uploads/award_icons/6881370d5234f_ChatGPT Image 23. Juli 2025, 21_23_07.png', '12 Wochen Eis-Streak', 'Zwölf Wochen – ein ganzes Quartal voller eiskalter Leidenschaft! Du hast bewiesen, dass der Eis-Streak kein Zufall ist. Ein wahres Meisterwerk der Genusskunst.', 130),
+(198, 36, 12, 13, 'uploads/award_icons/688137280585b_ChatGPT Image 23. Juli 2025, 21_23_11.png', '13 Wochen Eis-Streak', 'Du hast 13 Wochen lang in Folge Eis geschleckt – eine Leistung wie aus einem Eispalast! Dieser Award ist eine Hommage an deine eisige Entschlossenheit.', 140),
+(199, 36, 13, 14, 'uploads/award_icons/688137444aad8_ChatGPT Image 23. Juli 2025, 21_23_15.png', '14 Wochen Eis-Streak', '14 Wochen, 14 Mal pures Eisglück! Du bist auf dem besten Weg zur ewigen Eislegende – fast schon übermenschlich konsequent!', 150),
+(200, 36, 14, 15, 'uploads/award_icons/688363a948da7_ChatGPT Image 25. Juli 2025, 12_59_42.png', '15 Wochen Eis-Streak', '15 Wochen Eis – du bist offiziell im Olymp der Schleckenden angekommen. Dieser Award ist ein Monument deiner eisigen Ausdauer.', 160),
+(201, 36, 15, 16, 'uploads/award_icons/68836437ee947_ChatGPT Image 25. Juli 2025, 13_01_56.png', '16 Wochen Eis-Streak', 'Du hast 16 Wochen ununterbrochen Eis eingecheckt. Deine Disziplin ist legendär – dieser Award gleicht einem Artefakt aus einer eisigen Parallelwelt.', 170),
+(202, 36, 16, 17, 'uploads/award_icons/688364eccf399_ChatGPT Image 25. Juli 2025, 13_05_07.png', '17 Wochen Eis-Streak', 'Ein Symbol ewiger Hingabe an den gefrorenen Genuss – dieser Award zelebriert 17 Wochen ununterbrochener Eisliebe. Nur die Beharrlichsten erreichen diesen süßen Meilenstein.', 180),
+(205, 36, 17, 18, 'uploads/award_icons/6893f61d42598_1000095909.png', '18 Wochen Eis-Streak', '18 Wochen, 18 Kugeln, 18 Gründe zu feiern! Dieses Emblem ist der frostige Ritterschlag für wahre Ausdauer auf der Reise durch das Eisreich.', 190),
+(206, 36, 18, 19, 'uploads/award_icons/6893f650d4046_1000095910.png', '19 Wochen Eis-Streak', '19 Wochen auf Eis – nicht im Winterschlaf, sondern mit Löffel bewaffnet auf süßer Mission! Dieser Award ehrt die fast mythische Konstanz deiner Eisdielen-Tour.', 200),
+(207, 36, 19, 20, 'uploads/award_icons/6893f68f3d2d3_1000095911.png', '20 Wochen Eis-Streak', '20 Wochen lang dem Ruf der Eisdiele gefolgt – du bist jetzt offiziell ein Eis-Orakel. Dieses Emblem markiert den Beginn deiner Legende!', 210),
+(208, 36, 20, 21, 'uploads/award_icons/689eec7635e47_ChatGPT Image 15. Aug. 2025, 10_14_35.png', '21 Wochen Eis-Streak', 'Ein Symbol purer Hingabe – dieser magische Orden ehrt 21 Wochen voller eiskalter Entschlossenheit. Die Eiskugeln tanzen wie Planeten um ein Zentrum aus Sahne und Fantasie.', 220),
+(209, 36, 21, 22, 'uploads/award_icons/689eeca124cc8_ChatGPT Image 15. Aug. 2025, 10_15_11.png', '22 Wochen Eis-Streak', 'Zweiundzwanzig Wochen süßer Beständigkeit – gekrönt durch ein mystisches Eiscreme-Labyrinth, in dem jeder Weg zur nächsten Kugel führt.', 230),
+(210, 36, 22, 23, 'uploads/award_icons/689eeda1b54ae_ChatGPT Image 15. Aug. 2025, 10_19_25.png', '23 Wochen Eis-Streak', 'Ein Denkmal aus Eis – dieser Orden ehrt 23 Wochen voller Schleckfreude mit einer leuchtenden Kugelpyramide, gebaut auf purem Durchhaltevermögen.', 240),
+(211, 36, 23, 24, 'uploads/award_icons/689eee2f7e03f_ChatGPT Image 15. Aug. 2025, 10_21_57.png', '24 Wochen Eis-Streak', 'Ein halbes Jahr voller Eis! Dieser legendäre Orden zeigt ein verzaubertes Riesenrad – jede Gondel eine andere Sorte, jede Umdrehung ein Triumph.', 250),
+(212, 17, 3, 10, 'uploads/award_icons/689ef016cabf5_ChatGPT Image 15. Aug. 2025, 10_27_42.png', 'Eis-Connaisseur', 'Zehn Besuche – du bist nicht nur ein Fan, du bist Teil des Inventars! Vielleicht gibt\'s bald eine Kugel auf\'s Haus?', 250),
+(213, 17, 2, 5, 'uploads/award_icons/689eefbf803ed_ChatGPT Image 15. Aug. 2025, 10_28_29.png', 'Stammkunde', 'Fünf Mal dieselbe Kugel? Du weißt genau, wo es dir schmeckt. Deine Treue zahlt sich aus – willkommen auf der nächsten Stufe!', 100),
+(214, 17, 4, 20, 'uploads/award_icons/689ef042a59b7_ChatGPT Image 15. Aug. 2025, 10_30_30.png', 'Ehrenkunde Platin', '20 Besuche! Man kennt deinen Namen, deinen Lieblingsgeschmack und deine Lieblingsbank. Du bist offiziell Eisadel!', 500),
+(215, 38, 1, 1, 'uploads/award_icons/68aaa8a44cab7_1000098624.png', 'Instant-Checkin', 'Du hast dein Eis direkt an der Eisdiele eingecheckt (< 300m Entfernung).', 15),
+(216, 39, 1, 1, 'uploads/award_icons/68a93e3423015_1000098402.png', 'Öffi-Eis Scout', 'Für den ersten mutigen Ausflug zur Eisdiele mit den Öffis. Ein kleiner Schritt für dich, ein großer für dein Eisabenteuer.', 30),
+(217, 39, 2, 3, 'uploads/award_icons/68a93e750459a_1000098403.png', 'Bronzener Schleck-Passagier', 'Drei Eisdielen mit Bus und Bahn erreicht – jetzt bist du mehr als nur ein Gelegenheits-Schlecker.', 50),
+(218, 39, 3, 5, 'uploads/award_icons/68a93eb5d6451_1000098404.png', 'Silberner Kugel-Kurier', 'Fünfmal Eis mit den Öffis erobert – jetzt rollt der Genuss schon wie auf Schienen.', 80),
+(219, 39, 4, 10, 'uploads/award_icons/68a93f23e3509_1000098405.png', 'Goldener Schleck-Express', 'Zehn Eisdielen mit Bus, Bahn & Tram erreicht – der goldene Express bringt dich immer zum Eis.', 100),
+(220, 39, 5, 20, 'uploads/award_icons/68a93fc0f1e52_1000098406.png', 'Legendärer Eis-Nomade', 'Zwanzig Eisdielen mit den Öffis besucht – du bist jetzt eine Legende des urbanen Schlemmens.', 250),
+(221, 40, 1, 0, NULL, 'European Peace Ride 2025', 'Der Besitzer dieses Emblems ist stolzer Teilnehmer des EPR 2025 und zeigt wie Kultur und Völkerverständigung per Rad funktioniert. Check noch ein Eis per Rad ein um den vollständigen Award zu erhalten.', 0),
+(222, 40, 2, 1, NULL, 'European Peace Ride 2025 meets Ice Cream', 'Für Teilnehmer des European Peace Rides 2025, die während des EPR ein Eis eingecheckt haben. Du verbindest Radfahrer mit europäischer Eis-Schleck-Kultur', 600),
+(223, 38, 2, 3, 'uploads/award_icons/68aaa970ef6f5_1000098625.png', '3 Eis direkt vor Ort ', 'Schon die dritte Kugel direkt vor Ort eingecheckt – du bist immer top aktuell auf der Ice-App unterwegs!', 25);
+INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`, `title_de`, `description_de`, `ep`) VALUES
+(224, 38, 3, 7, 'uploads/award_icons/68aaaa017047f_1000098626.png', '7 Eis direkt vor Ort ', 'Mit 7 Eis die du direkt vor Ort eingecheckt hast, beweist du New-Reporter Qualitäten!', 50),
+(225, 38, 4, 15, 'uploads/award_icons/68aaaab3e3d47_1000098627.png', '15 Eis direkt vor Ort ', 'Schön 15 mal hast du die Eis-App direkt vor Ort gezückt und berichtet. Das ist Dedication!', 100),
+(226, 38, 5, 30, 'uploads/award_icons/68aaac26bdc94_1000098628.png', '30 Eis direkt vor Ort ', 'Dreißig Vor-Ort-Check-ins – kein Eis bleibt unentdeckt, du berichtest live von der Eisdielen-Front!', 250);
 
 --
 -- Indizes der exportierten Tabellen
@@ -210,7 +270,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
 
 --
 -- Constraints der exportierten Tabellen

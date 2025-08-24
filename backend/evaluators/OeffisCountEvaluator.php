@@ -40,7 +40,7 @@ class OeffisCountEvaluator extends BaseAwardEvaluator {
         global $pdo;
         $sql = "SELECT COUNT(id) AS checkins_count
                 FROM checkins
-                WHERE nutzer_id = ? AND anreise = 'Oeffis'";
+                WHERE nutzer_id = ? AND anreise = 'Bus / Bahn'";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 

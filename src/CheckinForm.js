@@ -3,6 +3,7 @@ import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
+import ChallengesAwarded from "./components/ChallengesAwarded";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop }) => {
     const [type, setType] = useState("Kugel");
@@ -19,6 +20,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
+    const [challenges, setChallenges] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -168,17 +170,23 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
-                if (data.level_up || (data.new_awards && data.new_awards.length > 0)) {
+                console.log("Server-Antwort:", data);
+                console.log((data.completed_challenge !== null));
+                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
                     if (data.level_up) {
-                      setLevelUpInfo({
-                        level: data.new_level,
-                        level_name: data.level_name,
-                      });
+                        setLevelUpInfo({
+                            level: data.new_level,
+                            level_name: data.level_name,
+                        });
                     }
                     if (data.new_awards?.length > 0) {
-                      setAwards(data.new_awards);
+                        setAwards(data.new_awards);
                     }
-                    
+                    if (data.completed_challenge !== null) {
+                        console.log("Abgeschlossene Challenges:", data.completed_challenge);
+                        setChallenges(data.completed_challenge);
+                    }
+
                     if (shop && askForPriceUpdate(shop.preise)) {
                         setPreisfrage(true);
                     }
@@ -507,13 +515,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </>
                 )}
                 {levelUpInfo && (
-                  <LevelInfo>
-                    <h2>🎉 Level-Up!</h2>
-                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
-                    <p><em>{levelUpInfo.level_name}</em></p>
-                  </LevelInfo>
+                    <LevelInfo>
+                        <h2>🎉 Level-Up!</h2>
+                        <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                        <p><em>{levelUpInfo.level_name}</em></p>
+                    </LevelInfo>
                 )}
-                <NewAwards awards={awards} />                
+                <NewAwards awards={awards} />
+                <ChallengesAwarded challenge={challenges} />
             </Modal>
         </Overlay>) : null
     );

@@ -107,30 +107,26 @@ function Challenges() {
     return `${diffHours}h ${diffMinutes}min`;
   };
 
+  const activeChallenges = challenges.filter(c => !c.completed);
+  const completedChallenges = challenges.filter(c => c.completed);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
       <Container>
         <Title>Challenges</Title>
-        <Explanation>
-          Challenges sind zufällige Eisdielen, die du in einem bestimmten Umkreis
-          besuchen musst. Für den erfolgreichen Check-In erhältst du Extra-EP und Awards.
-          Je schwieriger die Challenge (weiter entfernte Eisdiele), desto mehr Punkte kannst du sammeln.
-          Wichtig: der Check-In muss <b>vor Ort (maximal 300m Distanz zur Eisdiele)</b> erfolgen!
-        </Explanation>
 
         {!isLoggedIn ? (
-          <p>Bitte melde dich an, um deine Favoriten zu sehen.</p>
+          <p>Bitte melde dich an, um deine Challenges zu sehen, oder neue zu erhalten.</p>
         ) : (
           <>
+            <h3>Aktive Challenges</h3>
             {loading && <p>Lade Challenges...</p>}
-            {error && <ErrorBox>{error}</ErrorBox>}
-            {challenges.length === 0 && !loading && <p>Noch keine Challenges aktiv.</p>}
 
-            {challenges.length === 0 ? (
+            {activeChallenges.length === 0 ? (
               <NoChallenges>Du hast aktuell keine aktiven Challenges.</NoChallenges>
             ) : (
-              challenges.map((ch) => (
+              activeChallenges.map((ch) => (
                 <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
                   <h3><CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink></h3>
                   <p>{ch.shop_address}</p>
@@ -140,15 +136,27 @@ function Challenges() {
               ))
             )}
 
+            {completedChallenges.length > 0 && (
+              <>
+                <h3>Abgeschlossene Challenges</h3>
+                {completedChallenges.map((ch) => (
+                  <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
+                    <CardContent>
+                      <div>
+                        <h3><CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink></h3>
+                        <p>{ch.shop_address}</p>
+                        <DifficultyLabel>{ch.difficulty.toUpperCase()} – {ch.type === "daily" ? "Daily" : "Weekly"}</DifficultyLabel>
+                        <Countdown>Abgeschlossen am: {ch.completed_at ? new Date(ch.completed_at).toLocaleString() : "–"}</Countdown>
+                      </div>
+                      <Trophy>🏆</Trophy>
+                    </CardContent>
+                  </ChallengeCard>
+                ))}
+              </>
+            )}
+
             <h3>Neue Challenge generieren</h3>
-            <p>
-              Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
-              Anhand deines aktuellen Standorts wird eine zufällige Eisdiele in der Nähe ausgewählt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
-              Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br></br>
-              Falls eine Daily-Challange nach 18 Uhr genereriert wird, gilt diese für den nächsten Tag.<br></br>
-              Falls eine Weekly-Challange an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br></br>
-              Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfällt diese und du kannst eine neue generieren.
-            </p>
+            {error && <ErrorBox>{error}</ErrorBox>}
 
             <SelectionWrapper>
               <SelectBox value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
@@ -164,7 +172,23 @@ function Challenges() {
               <GenerateButton onClick={handleGenerateChallenge} disabled={generating}>
                 {generating ? "Erstelle..." : "Neue Challenge generieren"}
               </GenerateButton>
+              
             </SelectionWrapper>
+            <p>
+              Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
+              Anhand deines aktuellen Standorts wird eine zufällige Eisdiele in der Nähe ausgewählt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
+              Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br></br>
+              Falls eine Daily-Challange nach 18 Uhr genereriert wird, gilt diese für den nächsten Tag.<br></br>
+              Falls eine Weekly-Challange an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br></br>
+              Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfällt diese und du kannst eine neue generieren.
+            </p>
+
+            <Explanation>
+              Challenges sind zufällige Eisdielen, die du in einem bestimmten Umkreis
+              besuchen musst. Für den erfolgreichen Check-In erhältst du Extra-EP und Awards.
+              Je schwieriger die Challenge (weiter entfernte Eisdiele), desto mehr Punkte kannst du sammeln.
+              Wichtig: der Check-In muss <b>vor Ort (maximal 300m Distanz zur Eisdiele)</b> erfolgen!
+            </Explanation>
 
           </>
         )}
@@ -184,26 +208,38 @@ const CleanLink = styled(Link)`
 const Container = styled.div`
   padding: 1rem;
   background-color: white;
-  height: 100vh;
-  max-width: 800px;
-  align-self: center;
-`;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 800px;  /* Desktop: breite Mitte */
+  margin: 0 auto;    /* zentriert das Ganze */
 
+  @media (max-width: 600px) {
+    max-width: 95%;   /* Text läuft nicht bis zum Rand */
+    padding: 0.8rem;  /* kleineres Padding für Handy */
+  }
+`;
 const Title = styled.h2`
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: 1rem;
   text-align: center;
+
+  @media (max-width: 600px) {
+    font-size: 1.25rem;
+  }
 `;
 
 const Explanation = styled.div`
   background: #fff3cd;
   border: 1px solid #ffeeba;
-  padding: 15px;
+  padding: 12px;
   border-radius: 12px;
   font-size: 14px;
   margin-bottom: 20px;
-  line-height: 1.5;
+  line-height: 1.4;
+  @media (max-width: 600px) {
+    font-size: 13px;
+  }
 `;
 
 const NoChallenges = styled.div`
@@ -220,6 +256,10 @@ const ChallengeCard = styled.div`
   padding: 15px;
   margin-bottom: 15px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+
+  @media (max-width: 600px) {
+    padding: 12px;
+  }
 `;
 
 const DifficultyLabel = styled.div`
@@ -239,7 +279,12 @@ const SelectionWrapper = styled.div`
   justify-content: center;
   gap: 15px;
   margin: 20px 0;
-  padding-bottom: 30px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
 `;
 
 const SelectBox = styled.select`
@@ -249,6 +294,12 @@ const SelectBox = styled.select`
   font-size: 1rem;
   background: #f8f9fa;
   cursor: pointer;
+
+  @media (max-width: 600px) {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
   &:focus {
     outline: none;
     border-color: #339af0;
@@ -265,13 +316,36 @@ const GenerateButton = styled.button`
   border-radius: 8px;
   border: none;
   cursor: pointer;
+
   &:hover {
     background: #236eacff;
   }
-`;
 
+  @media (max-width: 600px) {
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+`;
 
 const ErrorBox = styled.div`
   color: red;
   margin-bottom: 10px;
+`;
+
+const CardContent = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+`;
+
+const Trophy = styled.div`
+  font-size: 46px;
+  margin-left: 10px;
 `;

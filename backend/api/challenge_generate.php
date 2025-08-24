@@ -75,8 +75,8 @@ try {
     $randomShop = $eisdielen[array_rand($eisdielen)];
 
     // Valid-Until setzen
-    if ($type === 'daily') {
-        $now = new DateTime();
+    $now = new DateTime();
+    if ($type === 'daily') {        
         if ((int)$now->format('H') >= 18) {
             // nach 18 Uhr → gültig bis morgen 23:59:59
             $validUntil = $now->modify('tomorrow')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
@@ -86,12 +86,7 @@ try {
         }
     } else {
         // weekly → bis kommenden Sonntag 23:59:59
-        $now = new DateTime();
-        $validUntil = $now->modify('sunday this week')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-        if ($validUntil < $now->format('Y-m-d H:i:s')) {
-            // falls schon Sonntag, auf nächsten Sonntag gehen
-            $validUntil = $now->modify('next sunday')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-        }
+        $validUntil = $now->modify('next sunday')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
     }
 
     // Challenge eintragen

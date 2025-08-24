@@ -33,6 +33,7 @@ require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
+require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -192,7 +193,7 @@ try {
         new WeekStreakEvaluator(),
         new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),
-        new DetailedCheckinCountEvaluator()
+        new DetailedCheckinCountEvaluator(),
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -207,8 +208,46 @@ try {
     }
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
+    elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
 
     if ($isOnSite) {
+        // Aktive Challenge suchen
+        $stmt = $pdo->prepare("
+            SELECT c.id, c.nutzer_id, c.eisdiele_id, c.type, c.difficulty, c.created_at, c.valid_until, c.completed, e.name AS shop_name, e.adresse AS shop_address
+            FROM challenges c
+            JOIN eisdielen e ON c.eisdiele_id = e.id
+            WHERE nutzer_id = :userId
+              AND c.eisdiele_id = :shopId
+              AND c.completed = 0
+              AND c.valid_until >= NOW()
+            ORDER BY c.created_at ASC
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':userId' => $userId,
+            ':shopId' => $shopId
+        ]);
+        $challenge = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $completedChallenge = null;
+        if ($challenge) {
+            // Challenge auf completed setzen
+            $update = $pdo->prepare("UPDATE challenges SET completed = 1, completed_at = NOW() WHERE id = :id");
+            $update->execute([':id' => $challenge['id']]);
+
+            // für Response vorbereiten
+            $completedChallenge = [
+                'id' => $challenge['id'],
+                'type' => $challenge['type'],
+                'difficulty' => $challenge['difficulty'],
+                'created_at' => $challenge['created_at'],
+                'valid_until' => $challenge['valid_until'],
+                'eisdiele_id' => $challenge['eisdiele_id'],
+                'shop_name' => $challenge['shop_name'],
+                'shop_address' => $challenge['shop_address'],
+                'completed_at' => date('Y-m-d H:i:s')
+            ];
+        }
         $evaluators[] = new OnSiteEvaluator();
     }
 
@@ -251,7 +290,8 @@ try {
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
-        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
+        'completed_challenge' => $completedChallenge ?? null
     ]);
 
 } catch (Exception $e) {
