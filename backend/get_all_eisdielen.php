@@ -10,19 +10,61 @@ $sql = "SELECT
     e.latitude,
     e.longitude,
 
-    -- Letzter gemeldeter Preis für Kugel-Eis
+    -- Letzter gemeldeter Preis für Kugel-Eis mit Währung
     (SELECT p1.preis 
      FROM preise p1 
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
      ORDER BY p1.gemeldet_am DESC 
      LIMIT 1) AS kugel_preis,
+     
+    (SELECT w1.symbol 
+     FROM preise p1 
+     LEFT JOIN waehrungen w1 ON p1.waehrung_id = w1.id
+     WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
+     ORDER BY p1.gemeldet_am DESC 
+     LIMIT 1) AS kugel_waehrung,
 
-    -- Letzter gemeldeter Preis für Softeis
+    -- Kugel-Preis in Euro umgerechnet
+    (SELECT 
+        CASE 
+            WHEN w1.code = 'EUR' THEN p1.preis
+            ELSE ROUND(p1.preis * COALESCE(wk1.kurs, 1), 2)
+        END
+     FROM preise p1 
+     LEFT JOIN waehrungen w1 ON p1.waehrung_id = w1.id
+     LEFT JOIN wechselkurse wk1 ON p1.waehrung_id = wk1.von_waehrung_id 
+         AND wk1.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
+     WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
+     ORDER BY p1.gemeldet_am DESC 
+     LIMIT 1) AS kugel_preis_eur,
+
+    -- Letzter gemeldeter Preis für Softeis mit Währung
     (SELECT p2.preis 
      FROM preise p2 
      WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
      ORDER BY p2.gemeldet_am DESC 
      LIMIT 1) AS softeis_preis,
+     
+    (SELECT w2.symbol 
+     FROM preise p2 
+     LEFT JOIN waehrungen w2 ON p2.waehrung_id = w2.id
+     WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
+     ORDER BY p2.gemeldet_am DESC 
+     LIMIT 1) AS softeis_waehrung,
+
+    -- Softeis-Preis in Euro umgerechnet
+    (SELECT 
+        CASE 
+            WHEN w2.code = 'EUR' THEN p2.preis
+            ELSE ROUND(p2.preis * COALESCE(wk2.kurs, 1), 2)
+        END
+     FROM preise p2 
+     LEFT JOIN waehrungen w2 ON p2.waehrung_id = w2.id
+     LEFT JOIN wechselkurse wk2 ON p2.waehrung_id = wk2.von_waehrung_id 
+         AND wk2.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
+     WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
+     ORDER BY p2.gemeldet_am DESC 
+     LIMIT 1) AS softeis_preis_eur,
 
     -- Favoritenstatus des Nutzers
     CASE 

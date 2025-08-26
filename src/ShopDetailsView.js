@@ -267,7 +267,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
             <tr>
               <th>Kugelpreis:</th>
               <td>
-                <strong>{shopData.preise?.kugel?.preis?.toFixed(2) ? shopData.preise.kugel.preis.toFixed(2) : "-"} € </strong>
+                <strong>{shopData.preise?.kugel?.preis?.toFixed(2) ?? "-"} {shopData.preise?.kugel?.waehrung_symbol ?? "€"} </strong>
                 {shopData.preise?.kugel?.beschreibung ? (<>({shopData.preise.kugel.beschreibung}) </>) : <></>}
                 <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.kugel.letztes_update)} aktualisiert)</span>
               </td>
@@ -276,7 +276,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
             <tr>
               <th>Softeispreis:</th>
               <td>
-                <strong>{shopData.preise?.softeis?.preis?.toFixed(2) ? shopData.preise.softeis.preis.toFixed(2) : "-"} € </strong>
+                <strong>{shopData.preise?.softeis?.preis?.toFixed(2) ?? "-"} {shopData.preise?.softeis?.waehrung_symbol ?? "€"} </strong>
                 {shopData.preise?.softeis?.beschreibung ? (<>({shopData.preise.softeis.beschreibung}) </>) : <></>}
                 <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.softeis.letztes_update)} aktualisiert)</span>
               </td>
