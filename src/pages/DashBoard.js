@@ -5,6 +5,7 @@ import ReviewCard from "./../components/ReviewCard";
 import CheckinCard from './../components/CheckinCard';
 import RouteCard from './../components/RouteCard';
 import ShopCard from './../components/ShopCard';
+import AwardCard from './../components/AwardCard';
 
 function DashBoard() {
   const [activities, setActivities] = useState([]);
@@ -92,6 +93,8 @@ function DashBoard() {
                 return <RouteCard key={`route-${id}`} route={data} onSuccess={reload} />;
               case 'eisdiele':
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
+              case 'award':
+                return <AwardCard key={`award-${id}`} award={data} />;
               default:
                 return null;
             }

@@ -85,6 +85,42 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
         ];
     }
 
+    // Awards
+    $stmtAwards = $pdo->prepare("
+        SELECT ua.id,
+               ua.user_id,
+               n.username AS user_name,
+               ua.award_id,
+               ua.level,
+               ua.awarded_at AS datum,
+               al.ep,
+               al.title_de,
+               al.description_de,
+               al.icon_path
+        FROM user_awards ua
+        JOIN award_levels al 
+          ON ua.award_id = al.award_id 
+         AND ua.level = al.level
+        JOIN nutzer n
+          ON ua.user_id = n.id
+        WHERE al.ep >= 50
+          AND ua.awarded_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+          AND ua.awarded_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+        ORDER BY ua.awarded_at DESC;;");
+    $stmtAwards->execute([
+        'offsetPlusDays' => $offsetDays + $days,
+        'offset'         => $offsetDays
+    ]);
+    $awards = $stmtAwards->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($awards as $award) {
+        $activities[] = [
+            'typ'  => 'award',
+            'id'   => $award['id'],
+            'data' => $award
+        ];
+    }
+
+
     // 🔄 Nach Datum sortieren
     usort($activities, function ($a, $b) {
         $dateA = $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
