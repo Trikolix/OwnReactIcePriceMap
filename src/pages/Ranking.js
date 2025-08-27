@@ -172,23 +172,20 @@ const Ranking = () => {
                                 <th onClick={() => sortTableKugel('avg_geschmack')}>
                                     Geschmack {sortConfigKugel.key === 'avg_geschmack' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('avg_größe')}>
-                                    Größe {sortConfigKugel.key === 'avg_größe' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
-                                </th>
                                 <th onClick={() => sortTableKugel('avg_waffel')}>
                                     Waffel {sortConfigKugel.key === 'avg_waffel' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('preis')}>
                                     Preis {sortConfigKugel.key === 'preis' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
+                                <th onClick={() => sortTableKugel('avg_plfaktor')}>
+                                    Preis-Leistung {sortConfigKugel.key === 'avg_plfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
                                 <th onClick={() => sortTableKugel('finaler_score')}>
                                     Rating {sortConfigKugel.key === 'finaler_score' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('avg_geschmacksfaktor')}>
                                     Faktor Geschmack {sortConfigKugel.key === 'avg_geschmacksfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
-                                </th>
-                                <th onClick={() => sortTableKugel('avg_plfaktor')}>
-                                    Faktor Preis-Leistung {sortConfigKugel.key === 'avg_plfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('checkin_anzahl')}>
                                     Anzahl Bewertungen {sortConfigKugel.key === 'checkin_anzahl' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
@@ -201,12 +198,14 @@ const Ranking = () => {
                                     <tr onClick={() => toggleDetails(index)}>
                                         <td style={{ textAlign: 'left' }}>{eisdiele.name}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmack' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmack ? Number(eisdiele.avg_geschmack).toFixed(1) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'avg_größe' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_größe ? Number(eisdiele.avg_größe).toFixed(1) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_waffel' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_waffel ? Number(eisdiele.avg_waffel).toFixed(1) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'preis' ? { fontWeight: 'bold' } : {}}>{eisdiele.preis ? Number(eisdiele.preis).toFixed(2) : "–"} €</td>
+                                        <td style={sortConfigKugel.key === 'preis' ? { fontWeight: 'bold' } : {}}>
+                                            {eisdiele.kugel_preis_eur ? Number(eisdiele.kugel_preis_eur).toFixed(2) : "–"} €
+                                            {eisdiele.kugel_waehrung != "€" && eisdiele.kugel_preis ? " ("+ Number(eisdiele.kugel_preis).toFixed(2) + " " + eisdiele.kugel_waehrung  + ")" : ""}
+                                        </td>
+                                        <td style={sortConfigKugel.key === 'avg_plfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_preisleistung ? Number(eisdiele.avg_preisleistung).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'finaler_score' ? { fontWeight: 'bold' } : {}}>{eisdiele.finaler_score ? Number(eisdiele.finaler_score).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmacksfaktor ? Number(eisdiele.avg_geschmacksfaktor).toFixed(2) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'avg_plfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_plfaktor ? Number(eisdiele.avg_plfaktor).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>{eisdiele.checkin_anzahl} (von {eisdiele.nutzeranzahl} Nutzer/n)</td>
                                     </tr>
                                     <DetailsRow visible={expandedRow === index} className="details-row">
