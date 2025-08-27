@@ -70,8 +70,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 setType(checkin.typ);
                 setGeschmackbewertung(checkin.geschmackbewertung);
                 setWaffelbewertung(checkin.waffelbewertung);
-                setGrößenbewertung(checkin.größenbewertung);
-                setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                if (checkin.preisleistungsbewertung == null && checkin.größenbewertung != null) {
+                    setPreisleistungsbewertung(checkin.größenbewertung);
+                } else {
+                    setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                }
                 setKommentar(checkin.kommentar);
                 setAnreise(checkin.anreise || "");
                 setBilder(checkin.bilder.map(b => ({
@@ -393,22 +396,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                     </td>
                                     <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
                                 </tr>
-                                <tr style={{ display: type === "Kugel" ? "table-row" : "none" }}>
-                                    <td><Label>Bewertung Größe:</Label></td>
-                                    <td>
-                                        <Input
-                                            type="number"
-                                            step="0.1"
-                                            min="1.0"
-                                            max="5.0"
-                                            placeholder="1.0 - 5.0"
-                                            value={größenbewertung}
-                                            onChange={(e) => setGrößenbewertung(e.target.value)}
-                                        />
-                                    </td>
-                                    <td><Rating stars={größenbewertung} onRatingSelect={(value) => setGrößenbewertung(value.toFixed(1))} /></td>
-                                </tr>
-                                <tr style={{ display: type !== "Kugel" ? "table-row" : "none" }}>
+                                <tr>
                                     <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
                                     <td>
                                         <Input

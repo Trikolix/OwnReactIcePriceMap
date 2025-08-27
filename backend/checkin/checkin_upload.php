@@ -72,7 +72,26 @@ function respondWithError($message, $httpCode = 400, $exception = null) {
     exit;
 }
 
+function logProfiling($userId, $shopId, $profiling, $evaluatorTimings) {
+    $logEntry = [
+        'timestamp'  => date('Y-m-d H:i:s'),
+        'userId'     => $userId,
+        'shopId'     => $shopId,
+        'profiling'  => $profiling,
+        'evaluators' => $evaluatorTimings
+    ];
+    file_put_contents(
+        __DIR__ . '/../logs/profiling.log',
+        json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
+        FILE_APPEND
+    );
+}
+
 try {
+
+    $__profiling = [];
+    $__profiling['start'] = microtime(true);
+
     // Eingabedaten
     $userId = $_POST['userId'] ?? null;
     $shopId = $_POST['shopId'] ?? null;
@@ -80,6 +99,29 @@ try {
     $latUser = $_POST['lat'] ?? null;
     $lonUser = $_POST['lon'] ?? null;
 
+    $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
+    $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
+    $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
+    $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
+    $anreise = $_POST['anreise'] ?? null;
+    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
+    if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
+        respondWithError('Ungültige Anreiseart.');
+    }
+    // Bewertungen validieren
+    validateRatingRange($geschmack, 'geschmackbewertung');
+    validateRatingRange($waffel, 'waffelbewertung');
+    validateRatingRange($größe, 'größenbewertung');
+    validateRatingRange($preisleistung, 'preisleistungsbewertung');
+    $kommentar = $_POST['kommentar'] ?? '';
+    $sorten = json_decode($_POST['sorten'] ?? '[]', true);
+    if (!is_array($sorten)) $sorten = [];
+
+    if (!$userId || !$shopId || !$type) {
+        respondWithError('Fehlende oder ungültige Pflichtdaten.');
+    }
+
+    // Checkin vor Ort?
     $isOnSite = 0;
     if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
         // Hole Shop-Koordinaten
@@ -105,29 +147,9 @@ try {
 
         }
     }
+    $__profiling['after_onsitecheck'] = microtime(true);
 
-    $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
-    $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
-    $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
-    $preisleistung = sanitizeRating($_POST['preisleistungsbewertung'] ?? '');
-    $anreise = $_POST['anreise'] ?? null;
-    $erlaubteAnreisen = ['', 'Fahrrad', 'Motorrad', 'Zu Fuß', 'Auto', 'Bus / Bahn', 'Sonstiges'];
-    if ($anreise !== null && !in_array($anreise, $erlaubteAnreisen)) {
-        respondWithError('Ungültige Anreiseart.');
-    }
-    // Bewertungen validieren
-    validateRatingRange($geschmack, 'geschmackbewertung');
-    validateRatingRange($waffel, 'waffelbewertung');
-    validateRatingRange($größe, 'größenbewertung');
-    validateRatingRange($preisleistung, 'preisleistungsbewertung');
-    $kommentar = $_POST['kommentar'] ?? '';
-    $sorten = json_decode($_POST['sorten'] ?? '[]', true);
-    if (!is_array($sorten)) $sorten = [];
-
-    if (!$userId || !$shopId || !$type) {
-        respondWithError('Fehlende oder ungültige Pflichtdaten.');
-    }
-
+    // Bilder verarbeiten
     $bildUrls = [];
     if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
         try {
@@ -141,6 +163,8 @@ try {
             respondWithError($e->getMessage());
         }
     }
+
+    $__profiling['after_picturehandling'] = microtime(true);
 
 
     // INSERT in `checkins`
@@ -170,6 +194,7 @@ try {
     ");
     $checkinMeta->execute([$checkinId]);
     $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
+    $__profiling['after_insert'] = microtime(true);
 
     // Evaluatoren
     $evaluators = [
@@ -251,9 +276,11 @@ try {
         $evaluators[] = new OnSiteEvaluator();
     }
 
+    $evaluatorTimings = [];
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
+        $t0 = microtime(true);
         if ($evaluator instanceof MetadataAwardEvaluator) {
             $evaluator->setCheckinMetadata($meta);
         }
@@ -264,7 +291,11 @@ try {
         } catch (Exception $e) {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
         }
+        $t1 = microtime(true);
+        $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
     }
+
+    $__profiling['after_evaluators'] = microtime(true);
 
     // Sorten speichern
     if (!empty($sorten)) {
@@ -280,8 +311,22 @@ try {
             }
         }
     }
+    $__profiling['after_sorten'] = microtime(true);
 
     $levelChange = updateUserLevelIfChanged($pdo, $userId);
+    $__profiling['after_level'] = microtime(true);
+
+    $profilingDurations = [
+        'onsitecheck' => round(($__profiling['after_onsitecheck'] - $__profiling['start']) * 1000, 2) . " ms",
+        'picturehandling' => round(($__profiling['after_picturehandling'] - $__profiling['after_onsitecheck']) * 1000, 2) . " ms",
+        'insert'      => round(($__profiling['after_insert'] - $__profiling['after_picturehandling']) * 1000, 2) . " ms",
+        'evaluators'  => round(($__profiling['after_evaluators'] - $__profiling['after_insert']) * 1000, 2) . " ms",
+        'sorten'      => round(($__profiling['after_sorten'] - $__profiling['after_evaluators']) * 1000, 2) . " ms",
+        'levelsystem' => round(($__profiling['after_level'] - $__profiling['after_sorten']) * 1000, 2) . " ms",
+        'total'       => round(($__profiling['after_level'] - $__profiling['start']) * 1000, 2) . " ms"
+    ];
+
+    logProfiling($userId, $shopId, $profilingDurations, $evaluatorTimings);
 
     // JSON-Antwort vorbereiten
     echo json_encode([

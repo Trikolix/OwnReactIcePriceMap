@@ -99,10 +99,6 @@ try {
         }
     }
 
-
-    if ($type === "Kugel") {$preisleistungsbewertung = null;} else {$größe = null;}
-    if ($type === "Eisbecher") {$waffel = null;}
-
     // Update in Tabelle `checkins`
     $stmt = $pdo->prepare("
         UPDATE checkins

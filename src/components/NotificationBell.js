@@ -114,7 +114,7 @@ export default NotificationBell;
 
 const BellWrapper = styled.div`
   position: relative;
-  margin-left: 15px;
+  margin-right: 10px;
 `;
 
 const BellButton = styled.button`
