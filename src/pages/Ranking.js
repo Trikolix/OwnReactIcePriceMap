@@ -246,7 +246,6 @@ const Ranking = () => {
                                                 Zuvor wurde der Preis-Leistungs-Faktor automatisch aus der Kugelgröße im Verhältnis zum Preis berechnet.
                                                 Eine Kugel mit Größe <code>5.0</code> bei einem Preis von <code>1,50 €</code> ergab beispielsweise den Wert <code>5.0</code>.
                                                 Dabei konnten bei großen Kugeln und Preisen unter 1,50 € Werte von über 5 entstehen, während bei sehr kleinen Kugeln und Preisen über 1,50 € Werte unter 1 möglich waren.
-
                                             </li>
                                             <li>
                                                 <strong>Finaler Score:</strong> Geschmack (70 %) + Preis-Leistung (30 %), gewichtet zu einem Gesamtwert zwischen ca. <code>1.0</code> und <code>5.0</code>.
