@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 26. Aug 2025 um 12:47
+-- Erstellungszeit: 28. Aug 2025 um 14:25
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 23. Jul 2025 um 13:12
+-- Erstellungszeit: 28. Aug 2025 um 14:27
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Datenbank: `db_439770_3`
+-- Datenbank: `db_439770_2`
 --
 
 -- --------------------------------------------------------
@@ -39,7 +39,13 @@ CREATE TABLE `user_qr_scans` (
 --
 
 INSERT INTO `user_qr_scans` (`id`, `user_id`, `qr_code_id`, `scanned_at`) VALUES
-(1, 1, 1, '2025-07-23 10:57:57');
+(1, 1, 1, '2025-07-30 09:25:50'),
+(2, 101, 1, '2025-08-01 16:43:31'),
+(3, 103, 1, '2025-08-02 05:27:16'),
+(4, 108, 1, '2025-08-04 08:32:38'),
+(5, 111, 1, '2025-08-05 14:45:49'),
+(6, 1, 2, '2025-08-07 10:49:22'),
+(7, 1, 3, '2025-08-07 10:53:47');
 
 --
 -- Indizes der exportierten Tabellen
@@ -61,7 +67,7 @@ ALTER TABLE `user_qr_scans`
 -- AUTO_INCREMENT für Tabelle `user_qr_scans`
 --
 ALTER TABLE `user_qr_scans`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

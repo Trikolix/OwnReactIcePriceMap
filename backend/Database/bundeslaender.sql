@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 16. Jun 2025 um 11:26
+-- Erstellungszeit: 28. Aug 2025 um 14:24
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -59,7 +59,42 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
 (19, 'Hamburg', 'DE-HH', 1),
 (21, 'Mecklenburg-Vorpommern', 'DE-MV', 1),
 (22, 'Niedersachsen', 'DE-NI', 1),
-(23, 'Nordrhein-Westfalen', 'DE-NW', 1);
+(23, 'Nordrhein-Westfalen', 'DE-NW', 1),
+(24, 'Zypern', 'CY-04', 50),
+(25, 'Provinz Jämtland', 'SE-Z', 40),
+(26, 'Apulien', 'IT-LE', 3),
+(27, 'Bremen', 'DE-HB', 1),
+(28, 'Rheinland-Pfalz', 'DE-RP', 1),
+(29, 'Saarland', 'DE-SL', 1),
+(30, 'Schleswig-Holstein', 'DE-SH', 1),
+(31, 'Bezirk Tel-Aviv', 'IL-TA', 51),
+(32, 'Pesaro und Urbino', 'IT-PU', 3),
+(33, 'Tirol', 'AT-7', 34),
+(34, 'Auvergne-Rhone-Alpen', 'FR-38', 4),
+(35, 'Gespanschaft Istrien', 'HR-18', 22),
+(36, 'Höfuðborgarsvæðið', 'IS-1', 19),
+(37, 'Neu-Aquitanien', 'FR-33', 4),
+(38, 'Massachusetts', 'US-MA', 52),
+(39, 'Schottland', 'GB-HLD', 48),
+(40, 'Budapest', 'HU-BU', 46),
+(41, 'Zentrum-Loiretal', 'FR-37', 4),
+(42, 'Pays de la Loire', 'FR-49', 4),
+(43, 'Bretagne', 'FR-35', 4),
+(44, 'New Hampshire', 'US-NH', 52),
+(45, 'Ostflandern', 'BE-VOV', 10),
+(46, 'Venetien', 'IT-VE', 3),
+(47, 'Normandie', 'FR-14', 4),
+(48, 'Metropolitanes Frankreich', 'FR-75C', 4),
+(49, 'Nordfrankreich', 'FR-80', 4),
+(50, 'Limburg', 'NL-LI', 31),
+(51, 'Bern', 'CH-BE', 5),
+(52, 'Pennsylvania', 'US-PA', 52),
+(53, 'New Jersey', 'US-NJ', 52),
+(54, 'New York', 'US-NY', 52),
+(55, 'Braga', 'PT-03', 36),
+(56, 'Lissabon', 'PT-11', 36),
+(57, 'Katalonien', 'ES-B', 44),
+(58, 'Region Kreta', 'GR-M', 17);
 
 --
 -- Indizes der exportierten Tabellen
@@ -81,7 +116,7 @@ ALTER TABLE `bundeslaender`
 -- AUTO_INCREMENT für Tabelle `bundeslaender`
 --
 ALTER TABLE `bundeslaender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- Constraints der exportierten Tabellen

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 24. Aug 2025 um 10:27
+-- Erstellungszeit: 28. Aug 2025 um 14:23
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -113,7 +113,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (84, 7, 7, 250, 'uploads/award_icons/6832e49da2b7c_1000080604.png', 'Eispreis-König der Nation', 'Du hast die magische Marke von 250 Preis-Meldungen durchbrochen – und damit Eisdielen-Geschichte geschrieben. Dieser prunkvolle Award mit farbigen Edelsteinen ist das Zeichen deiner unermüdlichen Suche nach der Wahrheit in der Waffel.', 1000),
 (85, 19, 3, 4, 'uploads/award_icons/683556e2a20b3_ChatGPT Image 27. Mai 2025, 08_06_28.png', 'glace française', 'Eisurlaub in Frankreich – auf die deutsch-französische Eis-Freundschaft!', 30),
 (86, 19, 4, 35, 'uploads/award_icons/685148fa4544f_ChatGPT Image 17. Juni 2025, 12_50_48.png', 'Lody Polskie', 'Du hast Eis in Polen gegessen!', 30),
-(87, 20, 1, 1, 'uploads/award_icons/6837d0690f24c_1000081125.png', 'Eis-Kultur-Award Chemnitz 2025', 'Für den herausragenden kulturellen Beitrag, im Jahr 2025 ein Eis in Chemnitz, der Kulturhauptstadt Europas, genossen zu haben.\r\nMit jedem Löffel wurde nicht nur der Gaumen verwöhnt, sondern auch ein Zeichen gesetzt – für die genussvolle Verbindung von Hochkultur und Himbeerbecher.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.', 50),
+(87, 20, 1, 1, 'uploads/award_icons/6837d0690f24c_1000081125.png', 'Eis-Kultur-Award Chemnitz 2025', 'Für den kulturellen Beitrag, 2025 in Chemnitz – der Kulturhauptstadt Europas – ein Eis genossen zu haben. Mit jedem Löffel wurde Hochkultur mit Himbeerbecher verbunden. Denn wahre Kultur steckt nicht nur in Museen, sondern auch in Waffeln.', 50),
 (88, 19, 5, 44, 'uploads/award_icons/68354fb6a80f6_ChatGPT Image 27. Mai 2025, 07_36_06.png', 'Helado Hola', 'Ein Eis unter spanischer Sonne – ¡delicioso!', 30),
 (89, 19, 6, 17, 'uploads/award_icons/683550383d8de_ChatGPT Image 27. Mai 2025, 07_38_42.png', 'Pagoto please', 'Ein eiskalter Genuss zwischen Olivenhainen und Ouzo.', 30),
 (90, 19, 7, 13, 'uploads/award_icons/683550cc2849b_ChatGPT Image 27. Mai 2025, 07_40_53.png', 'Is-Tid', 'Skandinavisch cool: Ein dänisches Eis am Hafen.', 30),
@@ -122,8 +122,8 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (93, 19, 9, 36, 'uploads/award_icons/6837e32f5d75c_1000081129.png', 'Gelado português', 'Hat ein Eis in Portugal genossen – wo Sonne, Küste und Geschmack aufeinandertreffen.', 30),
 (94, 19, 10, 48, 'uploads/award_icons/685263071b0b1_ChatGPT Image 18. Juni 2025, 08_30_59.png', 'Scoop in the UK', 'Ein Eis im Vereinigten Königreich? Mutig – und stilvoll! Zwischen Regen und Royals hast du dich zum Eis bekannt.', 30),
 (95, 19, 11, 10, 'uploads/award_icons/685246103f22e_ChatGPT Image 18. Juni 2025, 06_50_25.png', 'Echt belgisch!', 'Du hast in Belgien Eis gegessen – dort, wo sich Schokolade, Waffeln und Weltklasse-Geschmack vereinen. Très délicieux, sehr lekker!', 30),
-(96, 20, 2, 2, 'uploads/award_icons/683c0f1dbb800_ChatGPT Image 1. Juni 2025, 10_27_41.png', 'Eis-Kultur-Award Nova Gorica 2025', 'Für den herausragenden kulturellen Beitrag, im Jahr 2025 ein Eis in Nova Gorica, der Kulturhauptstadt Europas, genossen zu haben.\r\nMit jedem Löffel wurde nicht nur der Gaumen verwöhnt, sondern auch ein Zeichen gesetzt – für die genussvolle Verbindung von Hochkultur und Himbeerbecher.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.', 50),
-(97, 20, 3, 3, 'uploads/award_icons/683c0f674860d_ChatGPT Image 1. Juni 2025, 10_28_55.png', 'Kulturkugel-Kombi 2025', 'Dieser besondere Award ehrt alle, die 2025 in beiden Europäischen Kulturhauptstädten – Chemnitz und Nova Gorica – Eis gegessen haben. Symbolisch verbindet eine stilisierte Brücke die zwei Städte über kulturelle Grenzen hinweg. Eisgenuss trifft Kulturverständnis – ein Zeichen für Entdeckergeist, Geschmack und Europa ohne Grenzen.\r\nWeil wahre Kultur nicht nur in Museen, sondern auch in Waffeln steckt.\r\nChemnitz bedankt sich für diesen eiskalten Akt europäischer Verbundenheit.', 150),
+(96, 20, 2, 2, 'uploads/award_icons/683c0f1dbb800_ChatGPT Image 1. Juni 2025, 10_27_41.png', 'Eis-Kultur-Award Nova Gorica 2025', 'Für den Genuss eines Eises 2025 in Nova Gorica, Europas Kulturhauptstadt. Ein Hoch auf die Verbindung von Hochkultur und Himbeerbecher – denn wahre Kultur steckt auch in der Waffel.', 50),
+(97, 20, 3, 3, 'uploads/award_icons/683c0f674860d_ChatGPT Image 1. Juni 2025, 10_28_55.png', 'Kulturkugel-Kombi 2025', 'Dieser Award ehrt alle, die 2025 in Chemnitz und Nova Gorica Eis genossen haben. Eine symbolische Brücke verbindet beide Städte – Eisgenuss trifft Kulturverständnis. Denn wahre Kultur steckt nicht nur in Museen, sondern auch in Waffeln.', 150),
 (98, 9, 2, 2, 'uploads/award_icons/683d524864263_3b4ce87d-8909-4c1d-ad1f-074e0b736c19.png', 'Eine softe Kugel', 'An einem Tag hast du ein Softeis und ein Kugeleis gegessen. Du hast den Geschmackskampf hautnah miterlebt und kannst nun selbst entscheiden, welches besser schmeckt!', 100),
 (100, 22, 1, 1, 'uploads/award_icons/683d615fa5b6d_Design ohne Titel (2).png', 'Eisvulkanologe Thüringens', 'Wer 30 Eis in Thüringen schleckt, darf sich mit Fug und Recht Eisvulkanologe Thüringens nennen. Vom Eisbecher auf dem Erfurter Domplatz bis zur Kugel im Thüringer Wald – dieser Titel würdigt deinen kühlen Forschergeist zwischen Bratwurst und Burgruinen.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.', 350),
 (101, 22, 4, 18, 'uploads/award_icons/683d63b404630_ChatGPT Image 2. Juni 2025, 10_34_22.png', 'Berliner Eisdiplom', 'Du hast 30-mal Eis in der Hauptstadt gegessen? Dann bekommst du das Berliner Eisdiplom! Zwischen Späti, Street Art und Spree ist dein Geschmack genauso vielfältig wie die Stadt selbst.\r\nEine Ehre, die einst nur August der Starke persönlich zuteilwurde.', 350),
@@ -243,13 +243,14 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (218, 39, 3, 5, 'uploads/award_icons/68a93eb5d6451_1000098404.png', 'Silberner Kugel-Kurier', 'Fünfmal Eis mit den Öffis erobert – jetzt rollt der Genuss schon wie auf Schienen.', 80),
 (219, 39, 4, 10, 'uploads/award_icons/68a93f23e3509_1000098405.png', 'Goldener Schleck-Express', 'Zehn Eisdielen mit Bus, Bahn & Tram erreicht – der goldene Express bringt dich immer zum Eis.', 100),
 (220, 39, 5, 20, 'uploads/award_icons/68a93fc0f1e52_1000098406.png', 'Legendärer Eis-Nomade', 'Zwanzig Eisdielen mit den Öffis besucht – du bist jetzt eine Legende des urbanen Schlemmens.', 250),
-(221, 40, 1, 0, NULL, 'European Peace Ride 2025', 'Der Besitzer dieses Emblems ist stolzer Teilnehmer des EPR 2025 und zeigt wie Kultur und Völkerverständigung per Rad funktioniert. Check noch ein Eis per Rad ein um den vollständigen Award zu erhalten.', 0),
-(222, 40, 2, 1, NULL, 'European Peace Ride 2025 meets Ice Cream', 'Für Teilnehmer des European Peace Rides 2025, die während des EPR ein Eis eingecheckt haben. Du verbindest Radfahrer mit europäischer Eis-Schleck-Kultur', 600),
-(223, 38, 2, 3, 'uploads/award_icons/68aaa970ef6f5_1000098625.png', '3 Eis direkt vor Ort ', 'Schon die dritte Kugel direkt vor Ort eingecheckt – du bist immer top aktuell auf der Ice-App unterwegs!', 25);
-INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`, `title_de`, `description_de`, `ep`) VALUES
+(221, 40, 1, 0, 'uploads/award_icons/68b001c6bf26f_EPR_2025_cloud.png', 'European Peace Ride 2025', 'Der Besitzer dieses Emblems ist stolzer Teilnehmer des EPR 2025 und zeigt wie Kultur und Völkerverständigung per Rad funktioniert. Check noch ein Eis per Rad ein um den vollständigen Award zu erhalten.', 0),
+(222, 40, 2, 1, 'uploads/award_icons/68af8ce4be4de_1000099125.png', 'EPR 2025 meets Ice-App', 'Für Teilnehmer des European Peace Rides 2025, die während des EPR ein Eis eingecheckt haben. Du verbindest Radfahrer mit europäischer Eis-Schleck-Kultur', 600),
+(223, 38, 2, 3, 'uploads/award_icons/68aaa970ef6f5_1000098625.png', '3 Eis direkt vor Ort ', 'Schon die dritte Kugel direkt vor Ort eingecheckt – du bist immer top aktuell auf der Ice-App unterwegs!', 25),
 (224, 38, 3, 7, 'uploads/award_icons/68aaaa017047f_1000098626.png', '7 Eis direkt vor Ort ', 'Mit 7 Eis die du direkt vor Ort eingecheckt hast, beweist du New-Reporter Qualitäten!', 50),
 (225, 38, 4, 15, 'uploads/award_icons/68aaaab3e3d47_1000098627.png', '15 Eis direkt vor Ort ', 'Schön 15 mal hast du die Eis-App direkt vor Ort gezückt und berichtet. Das ist Dedication!', 100),
 (226, 38, 5, 30, 'uploads/award_icons/68aaac26bdc94_1000098628.png', '30 Eis direkt vor Ort ', 'Dreißig Vor-Ort-Check-ins – kein Eis bleibt unentdeckt, du berichtest live von der Eisdielen-Front!', 250);
+INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`, `title_de`, `description_de`, `ep`) VALUES
+(227, 38, 6, 50, 'uploads/award_icons/68acb99202488_ChatGPT Image 25. Aug. 2025, 21_27_49.png', 'Breaking-Ice-Legende', '50 Mal direkt vor Ort eingecheckt – du bist die ultimative Live-Quelle für Eisdielen-Sensationen!', 600);
 
 --
 -- Indizes der exportierten Tabellen
@@ -270,7 +271,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=228;
 
 --
 -- Constraints der exportierten Tabellen
