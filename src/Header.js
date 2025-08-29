@@ -202,7 +202,8 @@ const Header = ({ refreshShops }) => {
                 <MenuItemLink to={`/user/${userId}`} className="logged-in">Profil ({username})</MenuItemLink>
                 <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
-                {userId == 1 && (<MenuItemLink to="/challenge" className="logged-in">Challanges</MenuItemLink>)}
+                {userId == 1 && (<MenuItemLink to="/challenge" className="logged-in">Challenges</MenuItemLink>)}
+                {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in">Systemmeldung erstellen</MenuItemLink>)}
                 <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (
@@ -255,14 +256,13 @@ const Header = ({ refreshShops }) => {
           <CloseButton onClick={() => setShowGewinnspiel(false)}>&times;</CloseButton>
           <h2>🎉 Eisbecher-Gewinnspiel</h2>
           <p>
-            Gewinne einen <strong>Eisbecher</strong> deiner Wahl! Das Gewinnspiel läuft vom <strong>28.07.</strong> bis zum <strong>31.08.</strong>
+            Das letzte Gewinnspiel lief vom <strong>28.07.</strong> bis zum <strong>31.08</strong> und ist nun vorbei.<br></br> Gewonnen hat:
           </p>
-          <ul style={{ textAlign: 'left' }}>
-            <li>📸 Mache im Aktionszeitraum mindestens einen Check-in mit Bild.</li>
-            <li>🎟️ Jeder gültige Check-in zählt als Los.</li>
-            <li>👫 Jeder geworbene aktive Nutzer, zählt als 5 Lose.</li>
-          </ul>
-          <p>Die Auslosung erfolgt Anfang September. Viel Glück! 🍀</p>
+          <strong><UserLink to={`/user/8`} className="logged-in">🏆 Enkiboy 🏆</UserLink></strong>
+          <p>Herzlichen Glückwunsch zu deinem Gewinn! Du wurdest bereits kontaktiert.</p>
+          <p>
+            Vielen Dank an alle Teilnehmer! Die nächste Aktion kommt bestimmt.
+          </p>
           <button onClick={() => setShowGewinnspiel(false)}>Alles Klar!</button>
         </Overlay>
       )}
@@ -417,4 +417,11 @@ const GewinnspielIcon = styled.div`
       height: 50px;
     }
   }
+`;
+
+const UserLink = styled(Link)`
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.2rem;
 `;

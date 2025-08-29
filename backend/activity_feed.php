@@ -103,10 +103,11 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
          AND ua.level = al.level
         JOIN nutzer n
           ON ua.user_id = n.id
-        WHERE al.ep >= 50
+        WHERE (al.ep >= 50
+          OR al.award_id = 19)
           AND ua.awarded_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
           AND ua.awarded_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
-        ORDER BY ua.awarded_at DESC;;");
+        ORDER BY ua.awarded_at DESC;");
     $stmtAwards->execute([
         'offsetPlusDays' => $offsetDays + $days,
         'offset'         => $offsetDays

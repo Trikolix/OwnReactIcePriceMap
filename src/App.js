@@ -15,6 +15,7 @@ import Datenschutz from './pages/Datenschutz';
 import Community from './pages/Community';
 import RegisterPage from './pages/RegisterPage';
 import Challenges from './pages/Challenges';
+import SystemmeldungForm from './components/SystemmeldungForm';
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/register/:inviteCode" element={<RegisterPage />} />
           <Route path="/challenge" element={<Challenges />} />
+          <Route path="/systemmeldungenform" element={<SystemmeldungForm />} />
         </Routes>
       </UserProvider>
     </Router>
