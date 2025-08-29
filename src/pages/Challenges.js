@@ -178,8 +178,8 @@ function Challenges() {
               Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
               Anhand deines aktuellen Standorts wird eine zufällige Eisdiele in der Nähe ausgewählt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
               Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br></br>
-              Falls eine Daily-Challange nach 18 Uhr genereriert wird, gilt diese für den nächsten Tag.<br></br>
-              Falls eine Weekly-Challange an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br></br>
+              Falls eine Daily-Challenge nach 18 Uhr genereriert wird, gilt diese für den nächsten Tag.<br></br>
+              Falls eine Weekly-Challenge an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br></br>
               Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfällt diese und du kannst eine neue generieren.
             </p>
 

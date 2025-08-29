@@ -89,11 +89,11 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
                 </td>
               </tr>)}
             </Table>
-            {checkin.anreise && checkin.anreise !== "" && (
+            {(checkin.anreise && checkin.anreise !== "" || checkin.is_on_site) && (
               <ArrivalInfo>
-                <ArrivalBadge>
-                  {anreiseIcons[checkin.anreise] || "📍"} Anreise: <strong>{checkin.anreise}</strong>
-                </ArrivalBadge>
+                {checkin.anreise && checkin.anreise !== "" && (
+                <ArrivalBadge>{anreiseIcons[checkin.anreise] || "📍"} Anreise: <strong>{checkin.anreise}</strong></ArrivalBadge>) }
+                {checkin.is_on_site !== 0 && (<OnSiteBadge>📍 Direkt vor Ort eingecheckt</OnSiteBadge>)}
               </ArrivalInfo>
             )}
 
@@ -247,6 +247,18 @@ const ArrivalBadge = styled.div`
   display: inline-block;
   background-color: #ffe5b4;
   color: #8a4f00;
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+`;
+
+const OnSiteBadge = styled.div`
+  display: inline-block;
+  background-color: #ffb4b4ff;
+  color: #8a0000ff;
   padding: 0.5rem 1rem;
   border-radius: 999px;
   font-size: 0.85rem;
