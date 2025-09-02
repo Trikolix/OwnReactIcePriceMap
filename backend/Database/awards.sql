@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:23
+-- Erstellungszeit: 02. Sep 2025 um 10:20
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -78,7 +78,8 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (37, 'one_more_loop', 'Für Teilnehmer vom OneMoreLoop Brevet', '2025-07-22 12:29:25'),
 (38, 'on_site_checkins', 'Checkins direkt vor Ort', '2025-08-22 08:13:26'),
 (39, 'oeffis_count', 'Anzahl Eisdielen mit Öffis besucht', '2025-08-23 04:03:45'),
-(40, 'epr_2025', 'European Peace Ride 2025', '2025-08-23 04:30:43');
+(40, 'epr_2025', 'European Peace Ride 2025', '2025-08-23 04:30:43'),
+(41, 'daily_challanges', 'Tägliche Challenges abgeschlossen', '2025-08-30 00:38:29');
 
 --
 -- Indizes der exportierten Tabellen
@@ -99,7 +100,7 @@ ALTER TABLE `awards`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

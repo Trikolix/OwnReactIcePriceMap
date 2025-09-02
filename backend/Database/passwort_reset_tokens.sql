@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:26
+-- Erstellungszeit: 02. Sep 2025 um 10:23
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -48,7 +48,8 @@ INSERT INTO `passwort_reset_tokens` (`id`, `nutzer_id`, `token`, `expires_at`, `
 (6, 88, 'f8dd9670909bfdf83d9dc6de7ef7d013bf17725c212f4b750ce6f17506da9b7d', '2025-07-14 22:30:04', 1),
 (7, 88, 'd7387f7b7fae2366c2df4c7af1d2be05087533e00f0083882edd44c63f090bcb', '2025-07-14 22:32:39', 1),
 (8, 88, 'e982ef90ad214c0ce251ae2daba0f6f7b63871fe83b59d116ada081a66130c12', '2025-07-14 22:33:19', 0),
-(9, 116, 'c3b4c9fa2d0da52024499d789282c2d68ec3f04c179d047489b83b754136ef19', '2025-08-10 16:18:32', 1);
+(9, 116, 'c3b4c9fa2d0da52024499d789282c2d68ec3f04c179d047489b83b754136ef19', '2025-08-10 16:18:32', 1),
+(10, 125, '1eb126615b22a84e209e76d8d0e22c9d9192449139f34209ff2b664f3c757e40', '2025-08-29 20:46:38', 1);
 
 --
 -- Indizes der exportierten Tabellen
@@ -70,7 +71,7 @@ ALTER TABLE `passwort_reset_tokens`
 -- AUTO_INCREMENT für Tabelle `passwort_reset_tokens`
 --
 ALTER TABLE `passwort_reset_tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- Constraints der exportierten Tabellen

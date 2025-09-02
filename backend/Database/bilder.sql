@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:24
+-- Erstellungszeit: 02. Sep 2025 um 10:21
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -540,7 +540,38 @@ INSERT INTO `bilder` (`id`, `nutzer_id`, `url`, `checkin_id`, `shop_id`, `bewert
 (521, 1, 'uploads/bewertungen/bewertung_68af20c5af5188.14245712.jpg', NULL, 353, 366, '', '2025-08-27 15:14:14'),
 (522, 62, 'uploads/checkins/checkin_68af4652c63a33.49638853.jpg', 494, 425, NULL, '', '2025-08-27 17:54:27'),
 (523, 53, 'uploads/bewertungen/bewertung_68af50cdb0e251.93801549.jpg', NULL, 423, 369, '', '2025-08-27 18:39:10'),
-(524, 53, 'uploads/checkins/checkin_68af520085de72.64400006.jpg', 495, 423, NULL, '', '2025-08-27 18:44:17');
+(524, 53, 'uploads/checkins/checkin_68af520085de72.64400006.jpg', 495, 423, NULL, '', '2025-08-27 18:44:17'),
+(525, 1, 'uploads/checkins/checkin_68b1b25e8a0ea8.45833915.jpg', 497, 88, NULL, '', '2025-08-29 13:59:58'),
+(526, 1, 'uploads/checkins/checkin_68b1d063c8d024.86042014.jpg', 498, 423, NULL, '', '2025-08-29 16:08:04'),
+(527, 1, 'uploads/bewertungen/bewertung_68b1d2a3b3fd50.66925040.jpg', NULL, 423, 371, '', '2025-08-29 16:17:40'),
+(528, 1, 'uploads/bewertungen/bewertung_68b1d2a3cce2d1.57439095.jpg', NULL, 423, 371, '', '2025-08-29 16:17:40'),
+(529, 125, 'uploads/checkins/checkin_68b1ee696b3ac1.79768501.jpg', 499, 430, NULL, '', '2025-08-29 18:16:09'),
+(530, 48, 'uploads/checkins/checkin_68b2021a8fbf73.49030069.jpg', 500, 431, NULL, '', '2025-08-29 19:40:12'),
+(531, 48, 'uploads/checkins/checkin_68b2021b787632.93915525.jpg', 500, 431, NULL, '', '2025-08-29 19:40:12'),
+(532, 1, 'uploads/checkins/checkin_68b2e0b72d7364.56865304.jpg', 502, 432, NULL, '', '2025-08-30 11:29:59'),
+(533, 1, 'uploads/bewertungen/bewertung_68b2e0e7766397.88968949.jpg', NULL, 432, 375, '', '2025-08-30 11:30:47'),
+(534, 1, 'uploads/checkins/checkin_68b2f2620301a9.79005950.jpg', 504, 435, NULL, '', '2025-08-30 12:45:22'),
+(535, 1, 'uploads/bewertungen/bewertung_68b2f2dfc091d4.18861119.jpg', NULL, 435, 376, '', '2025-08-30 12:47:28'),
+(536, 1, 'uploads/bewertungen/bewertung_68b2f2e018e441.78285618.jpg', NULL, 435, 376, '', '2025-08-30 12:47:28'),
+(537, 40, 'uploads/checkins/checkin_68b31952e72778.16499209.jpg', 505, 436, NULL, '', '2025-08-30 15:31:31'),
+(539, 96, 'uploads/checkins/checkin_68b45da0a40a82.54222363.jpg', 508, 293, NULL, '', '2025-08-31 14:35:13'),
+(540, 1, 'uploads/checkins/checkin_68b464069d8bf6.96898930.jpg', 509, 101, NULL, '', '2025-08-31 15:02:30'),
+(541, 1, 'uploads/bewertungen/bewertung_68b46428356835.45533986.jpg', NULL, 101, 95, '', '2025-08-31 15:03:04'),
+(542, 1, 'uploads/bewertungen/bewertung_68b464285574f4.84359776.jpg', NULL, 101, 95, '', '2025-08-31 15:03:04'),
+(543, 22, 'uploads/checkins/checkin_68b4668bac02a6.17680507.jpg', 511, 101, NULL, '', '2025-08-31 15:13:16'),
+(544, 22, 'uploads/checkins/checkin_68b467a1530f76.48107087.jpg', 512, 423, NULL, '', '2025-08-31 15:17:53'),
+(545, 108, 'uploads/checkins/checkin_68b48956b17241.22952673.jpg', 510, 111, NULL, 'Mit viel Schlagsahne', '2025-08-31 17:41:42'),
+(546, 5, 'uploads/checkins/checkin_68b495131c8656.46178442.jpg', 513, 435, NULL, '', '2025-08-31 18:31:47'),
+(547, 40, 'uploads/checkins/checkin_68b4986ff22632.94754653.jpg', 515, 433, NULL, '', '2025-08-31 18:46:08'),
+(548, 53, 'uploads/checkins/checkin_68b49a9964e618.01309888.jpg', 516, 440, NULL, '', '2025-08-31 18:55:21'),
+(549, 1, 'uploads/bewertungen/bewertung_68b59cbc562aa0.20071666.jpg', NULL, 104, 380, '', '2025-09-01 13:16:44'),
+(550, 1, 'uploads/checkins/checkin_68b59cdfd65354.05399577.jpg', 517, 104, NULL, '', '2025-09-01 13:17:20'),
+(551, 1, 'uploads/checkins/checkin_68b5a68abd0056.25618646.jpg', 518, 127, NULL, '', '2025-09-01 13:58:35'),
+(552, 1, 'uploads/bewertungen/bewertung_68b5a6cae108d6.06151879.jpg', NULL, 127, 381, '', '2025-09-01 13:59:39'),
+(553, 96, 'uploads/checkins/checkin_68b5bd80e52dd2.05396703.jpg', 519, 165, NULL, '', '2025-09-01 15:36:33'),
+(554, 118, 'uploads/checkins/checkin_68b5f2296e4911.68645151.jpg', 520, 441, NULL, '<3', '2025-09-01 19:21:14'),
+(555, 2, 'uploads/bewertungen/bewertung_68b5f2949a7916.22506024.jpg', NULL, 442, 383, 'Schoko Eis', '2025-09-01 19:23:01'),
+(556, 2, 'uploads/checkins/checkin_68b5f302f05773.02578210.jpg', 521, 442, NULL, '', '2025-09-01 19:24:51');
 
 --
 -- Indizes der exportierten Tabellen
@@ -564,7 +595,7 @@ ALTER TABLE `bilder`
 -- AUTO_INCREMENT für Tabelle `bilder`
 --
 ALTER TABLE `bilder`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=525;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=557;
 
 --
 -- Constraints der exportierten Tabellen

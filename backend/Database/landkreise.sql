@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:25
+-- Erstellungszeit: 02. Sep 2025 um 10:22
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -71,6 +71,8 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (33, 'Gorizia', 14),
 (77, 'Grafton County', 44),
 (8, 'Greiz', 1),
+(106, 'Hauptstadt Prag', 59),
+(105, 'Heidelberg', 17),
 (25, 'Hérault', 10),
 (65, 'Highland', 39),
 (74, 'Ille-et-Vilaine', 43),
@@ -87,6 +89,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (84, 'Landkreis Harz', 2),
 (61, 'Landkreis Heilbronn', 17),
 (9, 'Landkreis Leipzig', 3),
+(110, 'Landkreis Rhön-Grabfeld', 7),
 (71, 'Landkreis Rosenheim', 7),
 (23, 'Landkreis Tirschenreuth', 7),
 (69, 'Landkreis Waldeck-Frankenberg', 15),
@@ -104,6 +107,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (32, 'Neu-Görz', 13),
 (90, 'New York County', 54),
 (96, 'Niederampurien', 57),
+(109, 'Nordsachsen', 3),
 (24, 'Oberelsass', 9),
 (100, 'Oberspreewald-Lausitz', 5),
 (16, 'Oberspreewald-Lausitz - Górne Błota-Łužyca', 5),
@@ -121,6 +125,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (83, 'Somme', 49),
 (99, 'Sondrio', 8),
 (62, 'Suffolk County', 38),
+(108, 'Swinemünde', 60),
 (79, 'Venezia', 46),
 (97, 'Verona', 46),
 (86, 'Verwaltungskreis Bern-Mittelland', 51),
@@ -128,6 +133,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (75, 'Vorpommern-Greifswald', 21),
 (28, 'Weiden in der Oberpfalz', 7),
 (94, 'Wiesbaden', 15),
+(107, 'Wittenberg', 2),
 (64, 'Würzburg', 7),
 (5, 'Zwickau', 3),
 (43, 'Δήμος Αγίας Νάπας', 24),
@@ -154,7 +160,7 @@ ALTER TABLE `landkreise`
 -- AUTO_INCREMENT für Tabelle `landkreise`
 --
 ALTER TABLE `landkreise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=111;
 
 --
 -- Constraints der exportierten Tabellen

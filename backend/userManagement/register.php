@@ -96,8 +96,8 @@ Link zum Profil: https://ice-app.de/#/user/$userId
 EOD;
 
 // Zusätzliche Zeile hinzufügen, falls invited_by gesetzt ist
-if ($invited_by != null) {
-    $message .= "\nEingeladen von: $invited_by";
+if ($invitedById != null) {
+    $message .= "\nEingeladen von: https://ice-app.de/#/user/$invitedById";
 }
 
 $message .= <<<EOD

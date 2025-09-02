@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:23
+-- Erstellungszeit: 02. Sep 2025 um 10:20
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -250,7 +250,12 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (225, 38, 4, 15, 'uploads/award_icons/68aaaab3e3d47_1000098627.png', '15 Eis direkt vor Ort ', 'Schön 15 mal hast du die Eis-App direkt vor Ort gezückt und berichtet. Das ist Dedication!', 100),
 (226, 38, 5, 30, 'uploads/award_icons/68aaac26bdc94_1000098628.png', '30 Eis direkt vor Ort ', 'Dreißig Vor-Ort-Check-ins – kein Eis bleibt unentdeckt, du berichtest live von der Eisdielen-Front!', 250);
 INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`, `title_de`, `description_de`, `ep`) VALUES
-(227, 38, 6, 50, 'uploads/award_icons/68acb99202488_ChatGPT Image 25. Aug. 2025, 21_27_49.png', 'Breaking-Ice-Legende', '50 Mal direkt vor Ort eingecheckt – du bist die ultimative Live-Quelle für Eisdielen-Sensationen!', 600);
+(227, 38, 6, 50, 'uploads/award_icons/68acb99202488_ChatGPT Image 25. Aug. 2025, 21_27_49.png', 'Breaking-Ice-Legende', '50 Mal direkt vor Ort eingecheckt – du bist die ultimative Live-Quelle für Eisdielen-Sensationen!', 600),
+(228, 41, 1, 1, 'uploads/award_icons/68b2484edcdca_1000099335.png', '1 Tägliche Challenge abgeschlossen', 'Du hast deine erste tägliche Challenge abgeschlossen – der Beginn deiner Eisabenteuer!', 100),
+(229, 41, 2, 2, 'uploads/award_icons/68b248a0a9b82_1000099336.png', '2 Tägliche Challenges abgeschlossen', 'Bereits 2 mal den Ruf der täglichen Challenges erfolgreich gefolgt. ', 100),
+(230, 41, 3, 3, 'uploads/award_icons/68b69857ea7d7_3 Tägliche Herausforderungen Abgeschlossen.png', '3 Tägliche Challenges abgeschlossen', 'Bereits 3 mal den Ruf der täglichen Challenges erfolgreich gefolgt. ', 100),
+(231, 41, 4, 4, 'uploads/award_icons/68b6986a32c0e_4 Tägliche Herausforderungen Abgeschlossen.png', '4 Tägliche Challenges abgeschlossen', 'Bereits 4 mal den Ruf der täglichen Challenges erfolgreich gefolgt. ', 100),
+(232, 41, 5, 5, 'uploads/award_icons/68b6987852309_5 tägliche Herausforderungen abgeschlossen.png', '5 Tägliche Challenges abgeschlossen', 'Bereits 5 mal den Ruf der täglichen Challenges erfolgreich gefolgt. ', 100);
 
 --
 -- Indizes der exportierten Tabellen
@@ -271,7 +276,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=228;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=233;
 
 --
 -- Constraints der exportierten Tabellen

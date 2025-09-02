@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:25
+-- Erstellungszeit: 02. Sep 2025 um 10:22
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -56,7 +56,7 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (7, 'Bistro & Eiscafe Zur Mel', 'Schulstraße 5, 08309 Eibenstock', '', 50.496216, 12.596914, 'Di-So: 11-17 Uhr', '2025-03-14 06:41:51', 1, 3, 3, 1),
 (8, 'Bravo Eiscafe & Bistro - Vollmershain', 'Dorfstraße 70, 04626 Vollmershain', '', 50.851028, 12.306548, 'Di-Fr: 14-22 Uhr\nSa: 13-21 Uhr\nSo: 12-19 Uhr', '2025-03-14 06:41:51', 1, 7, 1, 1),
 (9, 'Eisdiele Dietz', 'Hauptstraße 6, 09355 Gersdorf', '', 50.780605, 12.699031, 'Mi-So: 13-18 Uhr', '2025-03-14 06:41:51', 1, 5, 3, 1),
-(10, 'BELLA CIAO', 'Altmarkt 17, 09337 Hohenstein-Ernstthal', '', 50.802425, 12.708078, 'Mo-So: 12-20 Uhr\nVom 31.08.25-31.03.26 geschlossen', '2025-03-14 06:41:51', 1, 5, 3, 1),
+(10, 'BELLA CIAO', 'Altmarkt 17, 09337 Hohenstein-Ernstthal', '', 50.802425, 12.708078, 'Mo-So: 12-20 Uhr\nVom 31.08.25 - 28.02.26 geschlossen', '2025-03-14 06:41:51', 1, 5, 3, 1),
 (11, 'Corina Heil Eiscafé Fantasy', 'Altmarkt 32, 09337 Hohenstein-Ernstthal', '', 50.802147, 12.706420, 'Di: 12:30-18 Uhr\nMi: 11-18 Uhr\nDo-So: 12:30-18 Uhr', '2025-03-14 06:41:51', 1, 5, 3, 1),
 (12, 'Hübschmanns Eislädl', 'Alte Marienberger Str. 2, 09432 Großolbersdorf', '', 50.724041, 13.092184, 'Sa-So: 14-18 Uhr', '2025-03-14 06:44:00', 1, 3, 3, 1),
 (13, 'Eiscafé Börner', 'Lange Str. 22, 09569 Oederan', '', 50.859116, 13.167559, 'Mo-So: 13-18 Uhr', '2025-03-14 06:44:00', 1, 4, 3, 1),
@@ -277,7 +277,7 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (268, 'GILLY pâtissier chocolatier glacier', '48 Rue du Général de Gaulle, 38520 Le Bourg-d\'Oisans, Frankreich', '', 45.054401, 6.031163, '', '2025-06-29 15:36:49', 1, 51, 34, 4),
 (269, 'L\'atelier d\'écrin glacé', '19 Av. de la République, 38520 Le Bourg-d\'Oisans, Frankreich', '', 45.054810, 6.029787, 'Mo: Ruhetag\nDi-Sa: 8-12 & 14-18:30 Uhr\nSo: 8-12 Uhr', '2025-06-29 15:38:26', 1, 51, 34, 4),
 (270, 'Das Eiscafé · Am Brandenburger Tor', 'Brandenburger Str. 70, 14467 Potsdam', '', 52.399769, 13.048787, '', '2025-06-29 16:54:55', 23, 52, 5, 1),
-(271, 'Bioladen Remse', '', '', 50.854378, 12.568687, '', '2025-06-29 18:11:31', 52, 5, 3, 1),
+(271, 'Bioladen Remse', 'August-Bebel-Straße 34, 08373 Remse', 'https://bioladen-remse.de/', 50.854378, 12.568687, 'Mo, Mi, Do, Fr: 9-12 Uhr & 14-18 Uhr', '2025-06-29 18:11:31', 52, 5, 3, 1),
 (272, 'Caffe Bar Adriatic', 'Ul. Titova Riva 15, 52212, Fažana, Kroatien', '', 44.925823, 13.802862, '', '2025-06-29 21:15:24', 53, 53, 35, 22),
 (273, 'Berries', 'Dr.-Charlotte-Krenzer-Straße 1C, 09337 Hohenstein-Ernstthal', 'https://www.instagram.com/berries_cold_and_sweet/?hl=de', 50.806881, 12.749924, 'Mo - Fr 13:00- 18:00 Uhr\nSa - So 11:00 - 18:00 Uhr', '2025-06-29 21:18:59', 4, 5, 3, 1),
 (275, 'Re del gelato', '', '', 44.926075, 13.802937, '', '2025-06-30 18:23:47', 53, 53, 35, 22),
@@ -424,7 +424,23 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (422, 'Kiosk am Waldbad', '', '', 50.702011, 12.715725, 'täglich 11.00 - 18.00 Uhr', '2025-08-26 15:53:56', 22, 3, 3, 1),
 (423, 'Ice Cream United Chemnitz', 'Innere Klosterstraße 4, 09111 Chemnitz', 'https://www.icecreamunited.com/', 50.833447, 12.918319, 'täglich 11-19 Uhr', '2025-08-27 11:56:53', 53, 6, 3, 1),
 (424, 'Chillbox Chania', 'Karaoli & Dimitriou 8 731 32 Chania Crete Greece', 'chillbox.gr/en', 35.516113, 24.018089, '', '2025-08-27 13:44:22', 74, 104, 58, 17),
-(425, 'Softeis-Stand Heringsdorf', 'Dünenstraße, 17419 Heringsdorf', '', 53.943409, 14.187812, '', '2025-08-27 17:43:56', 62, 75, 21, 1);
+(425, 'Softeis-Stand Heringsdorf', 'Dünenstraße, 17419 Heringsdorf', '', 53.943409, 14.187812, '', '2025-08-27 17:43:56', 62, 75, 21, 1),
+(426, 'Eiscafé Venezia', 'Erbische Str. 9, 09599 Freiberg', 'https://veneziafreiberg.de/', 50.916046, 13.344702, 'täglich: 9-19 Uhr', '2025-08-28 14:28:20', 1, 4, 3, 1),
+(427, 'Jannys Eis', 'Burgstraße 6, 09599 Freiberg', 'http://www.jannys-eis.com/', 50.917381, 13.343878, 'täglich: 11-18 Uhr', '2025-08-28 14:33:11', 1, 4, 3, 1),
+(428, 'Eiscafé Rialto', 'Breite Str. 6, 04720 Döbeln', 'https://maps.app.goo.gl/yTggXRnKBgHrJ6Uh9', 51.120594, 13.119741, 'Mo-Sa: 10-19 Uhr\nSo: 11-19 Uhr', '2025-08-28 14:35:33', 1, 4, 3, 1),
+(429, 'Jannys Eis', 'Augustusburger Str. 189, 09127 Chemnitz', 'http://www.jannys-eis.com/', 50.831818, 12.953403, 'Mo-Fr: 12-18 Uhr\nSa: 13-17 Uhr\nSo: 12-18 Uhr', '2025-08-29 07:34:46', 1, 6, 3, 1),
+(430, 'illegally tasty', 'Rathausstraße 58, Heidelberg', 'https://www.illegallytasty.de', 49.378811, 8.691839, '', '2025-08-29 17:53:20', 125, 105, 17, 1),
+(431, 'Murano Gelato', 'Malostranské nám. 24, 118 00 Malá Strana, Tschechien', 'https://maps.app.goo.gl/rfcyGSFqSue3AhSr6', 50.087685, 14.404700, 'Mo-So: 9:00-22:00 Uhr', '2025-08-29 19:33:50', 48, 106, 59, 2),
+(432, 'Eiscafé Venezia', 'Markt 8, 06886 Lutherstadt Wittenberg', 'https://maps.app.goo.gl/NWm5DEK5V3U3J5LW6', 51.865925, 12.644400, 'Mo-Sa: 11-18 Uhr\nSo: 12-18 Uhr', '2025-08-30 10:42:09', 1, 107, 2, 1),
+(433, 'Fresco! Il Gelato Italiano Chiado', 'Calçada do Combro 14, 1200-109 Lisboa, Portugal', '', 38.711002, -9.146206, '10 - 0 Uhr', '2025-08-30 10:53:48', 40, 92, 56, 36),
+(434, 'Cafe29', '', '', 53.919273, 14.246021, '', '2025-08-30 12:11:04', 62, 108, 60, 35),
+(435, 'Eisdiele Gelato Togo', '', '', 51.684349, 12.733160, 'Täglich: 12-18 Uhr', '2025-08-30 12:39:37', 1, 107, 2, 1),
+(436, 'UAO by MÚ', 'R. Dom Pedro V 145, 1250-094 Lisboa, Portugal', '', 38.715656, -9.145902, '', '2025-08-30 15:18:16', 40, 92, 56, 36),
+(437, 'Nannarella', 'R. Nova da Piedade 64A, 1200-299 Lisboa, Portugal', '', 38.714161, -9.153173, '12-22 Uhr', '2025-08-30 15:40:08', 40, 92, 56, 36),
+(439, 'Eiscafé \"Zum kleinen Pony\"', 'Beckwitzer Str. 26, 04889 Belgern-Schildau', '', 51.475826, 13.007709, '', '2025-08-31 18:37:28', 53, 109, 3, 1),
+(440, 'Eisdiele Wermsdorf', '', '', 51.281322, 12.937725, '', '2025-08-31 18:51:46', 53, 109, 3, 1),
+(441, 'Eisdiele Adriana', 'Marktplatz 18, Bischofsheim in der Rhön', '', 50.401630, 10.007059, '\n', '2025-09-01 19:16:02', 118, 110, 7, 1),
+(442, 'Simmel Bäcker', 'Chemnitzer Straße 93, 09224 Chemnitz Grüna ', '', 50.810436, 12.786911, '', '2025-09-01 19:20:40', 2, 6, 3, 1);
 
 --
 -- Indizes der exportierten Tabellen
@@ -448,7 +464,7 @@ ALTER TABLE `eisdielen`
 -- AUTO_INCREMENT für Tabelle `eisdielen`
 --
 ALTER TABLE `eisdielen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=426;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=443;
 
 --
 -- Constraints der exportierten Tabellen

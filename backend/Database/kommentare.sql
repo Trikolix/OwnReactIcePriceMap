@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:25
+-- Erstellungszeit: 02. Sep 2025 um 10:22
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -110,7 +110,10 @@ INSERT INTO `kommentare` (`id`, `checkin_id`, `nutzer_id`, `kommentar`, `erstell
 (76, 467, 96, 'Oh,das war natürlich nicht beabsichtigt. Danke', '2025-08-18 02:59:08'),
 (77, 473, 2, 'Das Softeis sieht aber auch echt gut aus ^^', '2025-08-23 19:01:49'),
 (78, 471, 2, 'Da muss ich auch dringend mal hin', '2025-08-23 19:02:29'),
-(79, 492, 1, 'Einen schönen Urlaub dir! 😎☀️', '2025-08-27 14:05:51');
+(79, 492, 1, 'Einen schönen Urlaub dir! 😎☀️', '2025-08-27 14:05:51'),
+(80, 499, 1, 'Willkommen auf der Ice-App 🫶🏼\nUnd vielen Dank für den Checkin, sieht echt nach sehr gutem Eis aus 😋', '2025-08-29 19:07:15'),
+(81, 448, 2, 'Fehlt da aber nicht die Kugel auf dem Bild?🤣', '2025-09-01 19:14:29'),
+(82, 519, 2, 'Da muss ich auch mal wieder hin', '2025-09-01 19:25:43');
 
 --
 -- Indizes der exportierten Tabellen
@@ -132,7 +135,7 @@ ALTER TABLE `kommentare`
 -- AUTO_INCREMENT für Tabelle `kommentare`
 --
 ALTER TABLE `kommentare`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- Constraints der exportierten Tabellen

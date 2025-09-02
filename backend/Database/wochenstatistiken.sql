@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:27
+-- Erstellungszeit: 02. Sep 2025 um 10:25
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -71,7 +71,8 @@ INSERT INTO `wochenstatistiken` (`id`, `start_datum`, `end_datum`, `neue_nutzer`
 (18, '2025-07-28', '2025-08-03', 9, 15, 12, 27, 49, 3, 95, 349, 354, '2025-08-04 04:00:06', '[{\"typ\": \"Kugel\", \"anzahl\": 26}, {\"typ\": \"Softeis\", \"anzahl\": 1}]', '[{\"anzahl\": 6, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 20, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"Auto\"}]', '[{\"anzahl\": 1, \"bild_status\": \"Ohne Bild\"}, {\"anzahl\": 35, \"bild_status\": \"Mit Bild\"}]'),
 (19, '2025-08-04', '2025-08-10', 7, 8, 14, 30, 46, 3, 102, 380, 362, '2025-08-11 04:00:10', '[{\"typ\": \"Kugel\", \"anzahl\": 21}, {\"typ\": \"Eisbecher\", \"anzahl\": 4}, {\"typ\": \"Softeis\", \"anzahl\": 5}]', '[{\"anzahl\": 3, \"anreise\": \"\"}, {\"anzahl\": 10, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 10, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 5, \"anreise\": \"Auto\"}, {\"anzahl\": 1, \"anreise\": \"Motorrad\"}, {\"anzahl\": 1, \"anreise\": \"Bus / Bahn\"}]', '[{\"anzahl\": 30, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 7, \"bild_status\": \"Ohne Bild\"}]'),
 (20, '2025-08-11', '2025-08-17', 3, 8, 12, 19, 24, 3, 105, 399, 370, '2025-08-18 04:00:07', '[{\"typ\": \"Softeis\", \"anzahl\": 4}, {\"typ\": \"Kugel\", \"anzahl\": 15}]', '[{\"anzahl\": 10, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 4, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 3, \"anreise\": \"\"}, {\"anzahl\": 2, \"anreise\": \"Auto\"}]', '[{\"anzahl\": 13, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 6, \"bild_status\": \"Ohne Bild\"}]'),
-(21, '2025-08-18', '2025-08-24', 3, 3, 5, 9, 13, 1, 108, 408, 373, '2025-08-25 04:00:07', '[{\"typ\": \"Softeis\", \"anzahl\": 2}, {\"typ\": \"Kugel\", \"anzahl\": 7}]', '[{\"anzahl\": 7, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 1, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"Motorrad\"}]', '[{\"anzahl\": 9, \"bild_status\": \"Mit Bild\"}]');
+(21, '2025-08-18', '2025-08-24', 3, 3, 5, 9, 13, 1, 108, 408, 373, '2025-08-25 04:00:07', '[{\"typ\": \"Softeis\", \"anzahl\": 2}, {\"typ\": \"Kugel\", \"anzahl\": 7}]', '[{\"anzahl\": 7, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 1, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"Motorrad\"}]', '[{\"anzahl\": 9, \"bild_status\": \"Mit Bild\"}]'),
+(22, '2025-08-25', '2025-08-31', 6, 18, 14, 30, 49, 6, 114, 438, 391, '2025-09-01 04:00:11', '[{\"typ\": \"Kugel\", \"anzahl\": 24}, {\"typ\": \"Softeis\", \"anzahl\": 5}, {\"typ\": \"Eisbecher\", \"anzahl\": 1}]', '[{\"anzahl\": 12, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 5, \"anreise\": \"Auto\"}, {\"anzahl\": 12, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"\"}]', '[{\"anzahl\": 22, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 8, \"bild_status\": \"Ohne Bild\"}]');
 
 --
 -- Indizes der exportierten Tabellen
@@ -91,7 +92,7 @@ ALTER TABLE `wochenstatistiken`
 -- AUTO_INCREMENT für Tabelle `wochenstatistiken`
 --
 ALTER TABLE `wochenstatistiken`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

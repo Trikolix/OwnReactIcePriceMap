@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:24
+-- Erstellungszeit: 02. Sep 2025 um 10:21
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -94,7 +94,9 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
 (55, 'Braga', 'PT-03', 36),
 (56, 'Lissabon', 'PT-11', 36),
 (57, 'Katalonien', 'ES-B', 44),
-(58, 'Region Kreta', 'GR-M', 17);
+(58, 'Region Kreta', 'GR-M', 17),
+(59, 'Prag', 'CZ-10', 2),
+(60, 'Woiwodschaft Westpommern', 'PL-32', 35);
 
 --
 -- Indizes der exportierten Tabellen
@@ -116,7 +118,7 @@ ALTER TABLE `bundeslaender`
 -- AUTO_INCREMENT für Tabelle `bundeslaender`
 --
 ALTER TABLE `bundeslaender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- Constraints der exportierten Tabellen

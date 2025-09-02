@@ -10,6 +10,7 @@ require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
  
 try {
     // Nutzer-ID prüfen
@@ -36,6 +37,7 @@ try {
         new DetailedCheckinCountEvaluator(),
         new StammkundeEvaluator(),
         new OeffisCountEvaluator(),
+        new EPR2025Evaluator(),
         // weitere Evaluatoren können hier ergänzt werden
     ];
  

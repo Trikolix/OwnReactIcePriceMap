@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:25
+-- Erstellungszeit: 02. Sep 2025 um 10:22
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -107,9 +107,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (349, 175, 'Schoko/Vanille', '4.1'),
 (350, 176, 'Schokolade', '5.0'),
 (351, 168, 'Rhabarber-Kokos', '5.0'),
-(356, 165, 'Rhabarber ', '4.7'),
-(357, 164, 'Amadeus Style ', '4.9'),
-(358, 164, 'Limette Gurke', '4.9'),
 (359, 159, 'Bienenstich', '4.9'),
 (360, 159, 'Quacota', '4.9'),
 (361, 156, 'Vanille/Rhabarber ', '5.0'),
@@ -152,7 +149,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (402, 58, 'Mohn Marzipan ', '4.6'),
 (403, 57, 'Stracciatella', '2.8'),
 (404, 57, 'Pfirsich-Maracuja', '2.0'),
-(405, 55, 'Stracciatella', '2.5'),
 (406, 54, 'Wildpreiselbeere', '4.6'),
 (407, 53, 'Marzipan', '5.0'),
 (408, 53, 'Cookies', '5.0'),
@@ -170,10 +166,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (422, 17, 'Kalter Hund', '4.9'),
 (423, 16, 'gebrannte Mandeln', '4.9'),
 (424, 11, 'Erdbeerkäsekuchen ', '4.6'),
-(425, 10, 'Weiße Schokolade - Himbeere', '4.7'),
-(426, 10, 'Nuss-Nougat', '4.7'),
-(427, 10, 'Chilli Schokolade', '4.8'),
-(428, 10, 'Dubai Style', '4.6'),
 (433, 6, 'Erdnuss', '5.0'),
 (434, 6, 'Weiße Schokolade ', '4.9'),
 (435, 5, 'Schokolade', '2.6'),
@@ -281,8 +273,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (574, 249, 'Dunkle Schokolade', '4.5'),
 (575, 250, 'Schokolade', '4.5'),
 (576, 251, 'Wassermelone ', '4.3'),
-(577, 252, 'Stracciatella', '4.8'),
-(578, 252, 'Salted Caramel', '4.8'),
 (581, 253, 'Erdbeere', '5.0'),
 (582, 253, 'Kakao ', '3.5'),
 (585, 254, 'Vanille Sauerkirsche', '4.9'),
@@ -691,7 +681,61 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (1153, 493, 'Nuss-Nougat-Praline', '4.9'),
 (1154, 494, 'Vanille-Mango', '4.1'),
 (1155, 495, 'Salted Caramel', '4.0'),
-(1156, 495, 'Heidelbeer-Cheesecake', '4.0');
+(1156, 495, 'Heidelbeer-Cheesecake', '4.0'),
+(1157, 496, 'Blueberry-Cheesecake', '4.5'),
+(1158, 496, 'Peanutbutter', '4.5'),
+(1159, 55, 'Stracciatella', '2.5'),
+(1164, 497, 'Schoko/Vanille', '3.2'),
+(1167, 498, 'Peanutbutter', '4.7'),
+(1168, 498, 'Zitrone', '3.5'),
+(1169, 499, 'Zimt', '5.0'),
+(1170, 499, 'Weiße Schokolade - Pistazie', '5.0'),
+(1171, 500, 'Oreo', '5.0'),
+(1172, 501, 'Dubai Style', '4.5'),
+(1173, 501, 'Stracciatella Nutella', '4.3'),
+(1174, 501, 'Stracciatella Pistazie', '3.8'),
+(1177, 502, 'Weiße Schokolade', '4.7'),
+(1178, 502, 'Mozart', '3.7'),
+(1179, 503, 'Kirsch-Joghurt', '4.1'),
+(1180, 504, 'Salted Caramel', '4.2'),
+(1181, 504, 'Heidelbeere', '4.5'),
+(1182, 505, 'Pistacchio Bronte', '5.0'),
+(1183, 505, 'Vaniglia Madagasker', '5.0'),
+(1184, 506, 'Kirsch-Amaretto', '4.5'),
+(1185, 507, 'Yogurella', NULL),
+(1186, 508, 'Zitrone', '4.5'),
+(1187, 508, 'Strawberry-Cheesecake', '4.5'),
+(1192, 511, 'Johannisbeer-Vanille', '4.2'),
+(1193, 512, 'Cappuccino ', '4.3'),
+(1194, 509, 'Salted Caramel', '5.0'),
+(1195, 509, 'Brombeer Holunder', '4.6'),
+(1196, 165, 'Rhabarber ', '4.7'),
+(1197, 164, 'Amadeus Style ', '4.9'),
+(1198, 164, 'Limette Gurke', '4.9'),
+(1199, 10, 'Weiße Schokolade - Himbeere', '4.7'),
+(1200, 10, 'Nuss-Nougat', '4.7'),
+(1201, 10, 'Chilli Schokolade', '4.8'),
+(1202, 10, 'Dubai Style', '4.6'),
+(1203, 510, 'Pistazie', '5.0'),
+(1204, 510, 'Mango', '5.0'),
+(1205, 513, 'Quark-Sanddorn-Orange', '4.2'),
+(1206, 513, 'Brombeere', '4.2'),
+(1207, 514, 'Schoko/Vanille', '4.8'),
+(1208, 515, 'Stracciatella', '4.8'),
+(1209, 515, 'Dubai Style', '4.8'),
+(1210, 516, 'Beerenfrüchte', '4.5'),
+(1211, 516, 'Apfel', '4.5'),
+(1212, 517, 'Heidelbeer-Vanille', '4.0'),
+(1213, 518, 'Tante Elfriedas Kokosmakronen ', '5.0'),
+(1214, 518, 'Multifruchtsorbet', '4.7'),
+(1215, 519, 'Joghuretta', '4.0'),
+(1216, 520, 'Mokka', '5.0'),
+(1217, 520, 'Natur-Joghurt', '5.0'),
+(1218, 520, 'Schokolade', '5.0'),
+(1219, 520, 'Pistazie', '5.0'),
+(1220, 521, 'Schokolade', '3.9'),
+(1221, 252, 'Stracciatella', '4.8'),
+(1222, 252, 'Salted Caramel', '4.8');
 
 --
 -- Indizes der exportierten Tabellen
@@ -712,7 +756,7 @@ ALTER TABLE `checkin_sorten`
 -- AUTO_INCREMENT für Tabelle `checkin_sorten`
 --
 ALTER TABLE `checkin_sorten`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1157;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1223;
 
 --
 -- Constraints der exportierten Tabellen

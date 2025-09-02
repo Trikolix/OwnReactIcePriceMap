@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:26
+-- Erstellungszeit: 02. Sep 2025 um 10:23
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -111,8 +111,8 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (93, 72, 'kugel', '1.70', 'Premiumsorten 2€', 1, '2025-04-12 09:39:02', 1),
 (94, 98, 'kugel', '1.10', NULL, 1, '2025-04-16 14:49:12', 1),
 (95, 100, 'kugel', '1.50', NULL, 1, '2025-04-14 10:50:50', 1),
-(101, 101, 'kugel', '1.20', NULL, 1, '2025-04-14 14:06:06', 1),
-(103, 101, 'softeis', '1.70', 'Mittel - 2,20 €\nGroß - 2,70 €', 1, '2025-04-14 14:06:06', 1),
+(101, 101, 'kugel', '1.20', NULL, 1, '2025-09-01 04:19:45', 1),
+(103, 101, 'softeis', '1.70', 'Klein 1,70 € - Mittel 2,20 € -\nGroß 2,70 €', 1, '2025-09-01 04:19:45', 1),
 (106, 10, 'kugel', '1.80', 'Premiumsorten - 2.30 €', 4, '2025-04-20 15:40:45', 1),
 (107, 9, 'kugel', '1.50', NULL, 4, '2025-04-21 14:52:33', 1),
 (108, 9, 'softeis', '2.00', 'Kleines Softeis - 2,00 €\nGroßes Softeis - 3,00 €', 4, '2025-04-21 14:52:33', 1),
@@ -516,7 +516,35 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (610, 423, 'kugel', '2.00', NULL, 53, '2025-08-27 11:57:11', 1),
 (611, 424, 'kugel', '3.00', NULL, 74, '2025-08-27 13:46:40', 1),
 (612, 353, 'kugel', '2.00', NULL, 1, '2025-08-27 15:04:05', 1),
-(613, 425, 'softeis', '2.00', NULL, 62, '2025-08-27 17:51:01', 1);
+(613, 425, 'softeis', '2.00', NULL, 62, '2025-08-27 17:51:01', 1),
+(614, 88, 'softeis', '2.50', 'Kleines Softeis: 2,50€ - mittleres Softeis ??? - großes Softeis ???', 1, '2025-08-29 14:02:03', 1),
+(616, 430, 'kugel', '1.80', 'XL ⌀ 5,5 cm ', 125, '2025-08-29 18:47:09', 1),
+(617, 423, 'kugel', '2.00', NULL, 1, '2025-08-29 17:58:32', 1),
+(619, 430, 'kugel', '1.60', 'XS ⌀ 3,5 cm ', 125, '2025-08-29 18:45:35', 1),
+(621, 431, 'kugel', '70.00', NULL, 48, '2025-08-29 19:34:54', 1),
+(623, 431, 'kugel', '0.70', NULL, 48, '2025-08-29 19:35:13', 1),
+(624, 431, 'kugel', '2.86', NULL, 48, '2025-08-29 19:35:34', 1),
+(625, 433, 'kugel', '1.85', 'Minimum 2 Sorten für 3.90', 40, '2025-08-30 10:55:54', 1),
+(626, 432, 'kugel', '1.70', NULL, 1, '2025-08-30 11:29:10', 1),
+(627, 434, 'kugel', '9.00', NULL, 62, '2025-08-30 12:16:25', 16),
+(630, 435, 'kugel', '1.50', NULL, 1, '2025-08-30 12:40:07', 1),
+(631, 435, 'softeis', '2.50', 'Kleines Softeis 2,50€ - großes Softeis 3,50€', 1, '2025-08-30 12:40:07', 1),
+(632, 436, 'kugel', '2.05', 'Min. 2 Sorten = 4.10', 40, '2025-08-30 15:20:05', 1),
+(633, 2, 'kugel', '2.00', NULL, 94, '2025-08-31 10:15:02', 1),
+(634, 35, 'kugel', '2.00', 'Im Restaurant 2,60€\nFür 1€ Aufpreis gibt es Soezialwaffeln', 111, '2025-08-31 12:46:19', 1),
+(636, 293, 'kugel', '2.00', NULL, 96, '2025-08-31 14:33:26', 1),
+(637, 101, 'kugel', '1.20', NULL, 22, '2025-08-31 15:10:04', 1),
+(638, 101, 'softeis', '1.70', 'Mittel - 2,20 €\nGroß - 2,70 €', 22, '2025-08-31 15:10:04', 1),
+(649, 439, 'kugel', '1.00', NULL, 53, '2025-08-31 18:38:36', 1),
+(650, 439, 'softeis', '1.80', 'Alle Größen von klein bis XXL', 53, '2025-08-31 18:38:36', 1),
+(651, 440, 'kugel', '1.00', NULL, 53, '2025-08-31 18:53:48', 1),
+(652, 440, 'softeis', '1.50', NULL, 53, '2025-08-31 18:53:48', 1),
+(655, 104, 'softeis', '1.50', NULL, 1, '2025-09-01 13:15:09', 1),
+(656, 127, 'kugel', '1.60', NULL, 1, '2025-09-01 14:00:11', 1),
+(658, 127, 'softeis', '2.50', 'Kleines Softeis 2,50€ - großes Softeis 3,50€', 1, '2025-09-01 14:00:11', 1),
+(659, 165, 'kugel', '1.80', 'Kategorie Zwei: 2€ / Kategorie 3: 2,20€', 96, '2025-09-01 15:36:36', 1),
+(660, 442, 'kugel', '1.60', 'Pistazie 1,80€', 2, '2025-09-01 19:20:59', 1),
+(661, 441, 'kugel', '1.80', NULL, 118, '2025-09-01 19:21:40', 1);
 
 --
 -- Indizes der exportierten Tabellen
@@ -539,7 +567,7 @@ ALTER TABLE `preise`
 -- AUTO_INCREMENT für Tabelle `preise`
 --
 ALTER TABLE `preise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=614;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=662;
 
 --
 -- Constraints der exportierten Tabellen

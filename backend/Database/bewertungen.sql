@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:24
+-- Erstellungszeit: 02. Sep 2025 um 10:20
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -247,7 +247,16 @@ INSERT INTO `bewertungen` (`id`, `eisdiele_id`, `nutzer_id`, `geschmack`, `kugel
 (362, 38, 1, NULL, NULL, NULL, 13, 'Direkt auf dem Marktplatz gelegen  viele Sitzplätze außen wie auch Innen.', '2025-08-25 13:59:50'),
 (365, 422, 1, NULL, NULL, NULL, 10, 'Direkt am Waldbadneuwürschnitz gelegen gibt es einen kleinen Imbiss, wo es Kugeleis und auch eine Sorte Softeis gibt.', '2025-08-26 16:08:27'),
 (366, 353, 1, NULL, NULL, NULL, 17, 'Das Schild Design, die Sorten und der Geschmack lässt darauf schließen, dass es hier das gleiche Eis gibt wie beim Eiscafé Elisenhof.\r\nWas aber tatsächlich eines meiner Lieblings-Eis ist 😋', '2025-08-27 15:13:24'),
-(369, 423, 53, NULL, NULL, NULL, 16, 'Neu eröffnete Eisdiele der Podolski Kette. Schön eingerichtet und auch ein schöner Außenbereich auf der Klosterstraße. Hier fühlt man sich wohl.', '2025-08-27 18:39:09');
+(369, 423, 53, NULL, NULL, NULL, 16, 'Neu eröffnete Eisdiele der Podolski Kette. Schön eingerichtet und auch ein schöner Außenbereich auf der Klosterstraße. Hier fühlt man sich wohl.', '2025-08-27 18:39:09'),
+(370, 88, 1, NULL, NULL, NULL, 2, 'Hier gibt\'s neben Kuchen, Kaffee und Brötchen auch Softeis. Es gibt Schoko, Vanille gemischt oder einzeln.', '2025-08-29 14:01:09'),
+(371, 423, 1, NULL, NULL, NULL, 16, 'Hier sind die Eissorten in Rühr Maschinen gelagert, wo sie wirklich regelmäßig neu gerührt werden, was das Eis sehr cremig macht.\r\nAnsonsten mitten in der Innenstadt von Chemnitz gelegen mit vielen Sitzmöglichkeiten außen und netten Service.', '2025-08-29 16:17:39'),
+(373, 433, 40, NULL, NULL, NULL, 12, 'Schöne Eisdiele mit kremigen Sorten in einer beliebten Gegend von Lissabon ', '2025-08-30 10:56:36'),
+(375, 432, 1, NULL, NULL, NULL, 20, '', '2025-08-30 11:30:47'),
+(376, 435, 1, NULL, NULL, NULL, 17, '', '2025-08-30 12:47:27'),
+(378, 439, 53, NULL, NULL, NULL, 6, 'Kleine und feine Eisdiele ', '2025-08-31 18:39:39'),
+(380, 104, 1, NULL, NULL, NULL, 2, 'Unscheinbar in zweiter Reihe gelegen befindet sich das kleine, charmante Eis-Café. Es gibt zwei Sorten Softeis und verschiedene (Eis)Kaffe Kreationen.', '2025-09-01 13:16:44'),
+(381, 127, 1, NULL, NULL, NULL, 18, 'Mitten in der Fußgängerzone gibt es hier am Eisfenster Softeis und viele Sorten Kugeleis zu kaufen. Direkt davor gibt es einige Sitzmöglichkeiten.', '2025-09-01 13:59:38'),
+(383, 442, 2, NULL, NULL, NULL, 7, 'Falls du nach dem Einkauf Lust auf ein Eis hast, bekommst du direkt noch beim Bäcker vor Ort eins. Auch wenn es kein Highlight ist, schmeckt es nicht schlecht. Leider sind die Kugeln für den Preis recht klein ', '2025-09-01 19:23:00');
 
 --
 -- Indizes der exportierten Tabellen

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Aug 2025 um 14:24
+-- Erstellungszeit: 02. Sep 2025 um 10:21
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -56,6 +56,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (344, 1),
 (350, 1),
 (354, 1),
+(381, 1),
 (11, 2),
 (22, 2),
 (32, 2),
@@ -131,6 +132,9 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (360, 2),
 (365, 2),
 (369, 2),
+(373, 2),
+(375, 2),
+(378, 2),
 (11, 3),
 (22, 3),
 (95, 3),
@@ -162,10 +166,13 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (355, 3),
 (358, 3),
 (362, 3),
+(378, 3),
+(383, 3),
 (8, 4),
 (19, 4),
 (32, 4),
 (56, 4),
+(95, 4),
 (97, 4),
 (113, 4),
 (120, 4),
@@ -225,6 +232,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (351, 4),
 (353, 4),
 (359, 4),
+(381, 4),
 (145, 5),
 (205, 5),
 (208, 5),
@@ -300,12 +308,16 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (361, 6),
 (362, 6),
 (369, 6),
+(375, 6),
+(378, 6),
+(380, 6),
 (76, 7),
 (125, 7),
 (179, 7),
 (211, 7),
 (303, 7),
 (340, 7),
+(95, 8),
 (130, 8),
 (145, 8),
 (148, 8),
@@ -348,6 +360,8 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (343, 8),
 (344, 8),
 (350, 8),
+(373, 8),
+(378, 8),
 (10, 9),
 (25, 9),
 (118, 9),
@@ -388,6 +402,9 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (354, 9),
 (358, 9),
 (365, 9),
+(370, 9),
+(380, 9),
+(381, 9),
 (139, 10),
 (184, 10),
 (201, 10),
@@ -452,6 +469,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (352, 23),
 (354, 23),
 (360, 23),
+(383, 23),
 (6, 24),
 (19, 24),
 (241, 24),
@@ -462,6 +480,8 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (320, 24),
 (343, 24),
 (366, 24),
+(370, 24),
+(383, 24),
 (7, 25),
 (10, 25),
 (191, 25),
@@ -469,10 +489,15 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (320, 25),
 (362, 25),
 (366, 25),
+(371, 25),
+(383, 25),
 (345, 26),
 (348, 26),
 (352, 26),
-(360, 26);
+(360, 26),
+(370, 26),
+(371, 26),
+(383, 26);
 
 --
 -- Indizes der exportierten Tabellen
