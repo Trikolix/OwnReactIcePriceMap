@@ -24,6 +24,10 @@ const Header = ({ refreshShops }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const canAccessChallenges = (userId) => {
+    return [1, 2, 13, 118].includes(Number(userId));
+  }
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
@@ -125,7 +129,7 @@ const Header = ({ refreshShops }) => {
           );
         });
     }
-  }, [location]);
+  }, [location, userId, apiUrl, navigate]);
 
   useEffect(() => {
     if (!userId) return;
@@ -202,7 +206,8 @@ const Header = ({ refreshShops }) => {
                 <MenuItemLink to={`/user/${userId}`} className="logged-in">Profil ({username})</MenuItemLink>
                 <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
-                {userId == 1 && (<MenuItemLink to="/challenge" className="logged-in">Challenges</MenuItemLink>)}
+                {canAccessChallenges(userId) && (<MenuItemLink to="/challenge" className="logged-in">Challenges</MenuItemLink>)}
+                
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in">Systemmeldung erstellen</MenuItemLink>)}
                 <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>

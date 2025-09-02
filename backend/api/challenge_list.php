@@ -18,8 +18,9 @@ try {
         FROM challenges c
         JOIN eisdielen e ON c.eisdiele_id = e.id
         WHERE c.nutzer_id = :nutzer_id
-          AND c.valid_until > NOW()
-        ORDER BY c.valid_until ASC
+          AND (c.valid_until > NOW()
+          OR c.`completed`)
+        ORDER BY c.completed_at DESC, c.valid_until ASC
     ");
     $stmt->execute(['nutzer_id' => $nutzer_id]);
     $challenges = $stmt->fetchAll(PDO::FETCH_ASSOC);
