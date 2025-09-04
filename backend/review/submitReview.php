@@ -53,6 +53,13 @@ if (!$userId || !$shopId) {
 }
 
 try {
+    // Convert empty string or invalid values to null
+    if ($auswahl === '' || $auswahl === 'null' || !is_numeric($auswahl)) {
+        $auswahl = null;
+    } else {
+        $auswahl = (int)$auswahl;
+    }
+
     // 2. Bewertung einfügen oder updaten (ON DUPLICATE KEY UPDATE nur wenn eindeutiger Key definiert)
     $sql = "INSERT INTO bewertungen (eisdiele_id, nutzer_id, auswahl, beschreibung) 
             VALUES (:shopId, :userId, :auswahl, :beschreibung) 

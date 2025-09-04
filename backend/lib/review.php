@@ -17,8 +17,15 @@ function getReviewById(PDO $pdo, int $reviewId): ?array {
 
     $review['attribute'] = getAttributesForReview($pdo, $reviewId);
     $review['bilder'] = getBilderForReview($pdo, $reviewId);
-
+    $review['commentCount'] = getCommentCountForReview($pdo, $id);
+    
     return $review;
+}
+
+function getCommentCountForReview(PDO $pdo, int $reviewId): int {
+    $stmtKommentare = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE bewertung_id = :id");
+    $stmtKommentare->execute(['id' => $reviewId]);
+    return (int) $stmtKommentare->fetchColumn();
 }
 
 function getReviewByUserAndShop(PDO $pdo, int $userId, int $shopId): ?array {
@@ -34,6 +41,7 @@ function getReviewByUserAndShop(PDO $pdo, int $userId, int $shopId): ?array {
 
     $review['attribute'] = getAttributesForReview($pdo, $review['id']);
     $review['bilder'] = getBilderForReview($pdo, $review['id']);
+    $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
 
     return $review;
 }
@@ -57,6 +65,7 @@ function getReviewsByEisdieleId(PDO $pdo, int $shopId): array {
     foreach ($reviews as &$review) {
         $review['attributes'] = getAttributesForReview($pdo, $review['id']);
         $review['bilder'] = getBilderForReview($pdo, $review['id']);
+        $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
     }
 
     return $reviews;
@@ -81,6 +90,7 @@ function getReviewsByNutzerId(PDO $pdo, int $userId): array {
     foreach ($reviews as &$review) {
         $review['attributes'] = getAttributesForReview($pdo, $review['id']);
         $review['bilder'] = getBilderForReview($pdo, $review['id']);
+        $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
     }
 
     return $reviews;
@@ -109,6 +119,7 @@ function getLatestReviews(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     foreach ($reviews as &$review) {
         $review['attributes'] = getAttributesForReview($pdo, $review['id']);
         $review['bilder']     = getBilderForReview($pdo, $review['id']);
+        $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
     }
 
     return $reviews;

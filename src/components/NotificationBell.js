@@ -71,6 +71,12 @@ const NotificationBell = () => {
                 const url = `/#/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
                 window.location.href = url;
             }
+        } else if (notification.typ === 'kommentar_bewertung') {
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            if (data.bewertung_id && data.eisdiele_id) {
+                const url = `/#/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
+                window.location.href = url;
+            }
         } else if (notification.typ === 'new_user') {
             const url = `/#/user/${notification.referenz_id}`;
             window.location.href = url;
