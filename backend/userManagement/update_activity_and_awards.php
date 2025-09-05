@@ -12,6 +12,7 @@ require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/UserOfTheMonthEvaluator.php';
+require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
  
 try {
     // Nutzer-ID prüfen
@@ -40,6 +41,7 @@ try {
         new OeffisCountEvaluator(),
         new EPR2025Evaluator(),
         new UserOfTheMonthEvaluator(),
+        new IceShopOneByOneEvaluator(),
         // weitere Evaluatoren können hier ergänzt werden
     ];
  

@@ -10,7 +10,7 @@ import CommentSection from "./CommentSection";
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
-  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments); // initial true, wenn übergeben
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
   useEffect(() => {
     if (showComments) {

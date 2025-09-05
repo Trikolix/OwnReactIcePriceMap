@@ -4,6 +4,7 @@ import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
 import ChallengesAwarded from "./components/ChallengesAwarded";
+import UserMentionMultiSelect from "./components/UserMentionField";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop }) => {
     const [type, setType] = useState("Kugel");
@@ -24,6 +25,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
+    const [mentionedUsers, setMentionedUsers] = useState([]);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const getUserLocation = () => {
@@ -132,6 +134,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             formData.append("kommentar", kommentar);
             formData.append("sorten", JSON.stringify(sorten));
             formData.append("anreise", anreise);
+            formData.append("mentionedUsers", JSON.stringify(mentionedUsers.map(u => u.id)));
             bilder.forEach((bild, index) => {
                 if (!bild.isExisting) {
                     formData.append(`bilder[]`, bild.file);
@@ -474,6 +477,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                     </div>
                                 ))}
                             </BilderContainer>
+                        </Section>
+                        <Section>
+                            <Label>Du warst mit jemanden anderen Eis essen? Erwähne ihn und lade ihn ein sein Checkin zu teilen!</Label>
+                            <UserMentionMultiSelect onChange={setMentionedUsers} />
                         </Section>
                         <ButtonGroup>
                             <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
