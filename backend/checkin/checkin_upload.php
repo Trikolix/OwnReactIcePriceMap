@@ -35,6 +35,7 @@ require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
+require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -122,6 +123,19 @@ try {
         respondWithError('Fehlende oder ungültige Pflichtdaten.');
     }
 
+    // Optional: mentionedUsers JSON aus POST
+    $mentionedUsers = json_decode($_POST['mentionedUsers'] ?? '[]', true);
+    if (!is_array($mentionedUsers)) $mentionedUsers = [];
+
+    // Validierung: max 20, keine Self-Mentions
+    $mentionedUsers = array_unique(array_map('intval', $mentionedUsers));
+    if (($key = array_search((int)$userId, $mentionedUsers)) !== false) {
+        unset($mentionedUsers[$key]); // Selbst-Erwähnung entfernen
+    }
+    if (count($mentionedUsers) > 20) {
+        throw new Exception('Maximal 20 Nutzer können erwähnt werden.');
+    }
+
     // Checkin vor Ort?
     $isOnSite = 0;
     if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
@@ -167,6 +181,9 @@ try {
 
     $__profiling['after_picturehandling'] = microtime(true);
 
+    // Transaktion starten
+    $pdo->beginTransaction();
+
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
@@ -183,6 +200,44 @@ try {
         ");
         foreach ($bildUrls as $bild) {
             $insertImgStmt->execute([$checkinId, $userId, $bild['url'], $bild['beschreibung'], $shopId]);
+        }
+    }
+
+    // Wenn Mentions vorhanden, Einträge in checkin_mentions + Notifications erstellen
+    if (count($mentionedUsers) > 0) {
+        // Optional: checkin_groups anlegen, falls du Gruppierung nutzen willst
+        $pdo->exec("INSERT INTO checkin_groups () VALUES ()");
+        $groupId = $pdo->lastInsertId();
+
+        // Checkin mit group_id updaten
+        $stmt = $pdo->prepare("UPDATE checkins SET group_id = ? WHERE id = ?");
+        $stmt->execute([$groupId, $checkinId]);
+
+        // Einladenden Nutzer holen
+        $stmtUser = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
+        $stmtUser->execute([$userId]);
+        $inviter = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        $inviterName = $inviter['username'] ?? 'Ein Nutzer';
+
+        // Mentions einfügen + Notifications
+        $stmtMention = $pdo->prepare("
+            INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status)
+            VALUES (?, ?, 'pending')
+        ");
+        $stmtNotif = $pdo->prepare("
+            INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
+            VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_id', ?, 'by_user', ?))
+        ");
+        $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
+
+        foreach ($mentionedUsers as $mentionedUserId) {
+            // Optional: prüfen, ob Nutzer existiert
+            $stmtCheckUser = $pdo->prepare("SELECT id FROM nutzer WHERE id = ?");
+            $stmtCheckUser->execute([$mentionedUserId]);
+            if (!$stmtCheckUser->fetch()) continue; // überspringen, falls Nutzer nicht existiert
+
+            $stmtMention->execute([$checkinId, $mentionedUserId]);
+            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $checkinId, $userId]);
         }
     }
 
@@ -220,6 +275,7 @@ try {
         new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),
         new DetailedCheckinCountEvaluator(),
+        new IceShopOneByOneEvaluator(),
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -313,6 +369,8 @@ try {
             }
         }
     }
+
+    $pdo->commit();
     $__profiling['after_sorten'] = microtime(true);
 
     $levelChange = updateUserLevelIfChanged($pdo, $userId);

@@ -20,8 +20,17 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [preisfrage, setPreisfrage] = useState(false);
     const [showAllAttributes, setShowAllAttributes] = useState(false)
     const [awards, setAwards] = useState([]);
-    const [levelUpInfo, setLevelUpInfo] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+    const getUserLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                (err) => reject(err.message)
+            );
+        });
+    };
 
     useEffect(() => {
         const fetchReview = async () => {
@@ -90,6 +99,15 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 }))
             ));
             formData.append("deleted_bild_ids", JSON.stringify(deletedBildIds));
+
+            try {
+                const location = await getUserLocation();
+                formData.append("lat", location.lat);
+                formData.append("lon", location.lon);
+            } catch (e) {
+                console.warn("Kein Standort verfügbar, Checkin wird ohne Vor-Ort-Bonus gespeichert.");
+            }
+
             const response = await fetch(`${apiUrl}/review/submitReview.php`,
                 {
                     method: "POST",
