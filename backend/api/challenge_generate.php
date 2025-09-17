@@ -7,6 +7,7 @@ try {
     $lonUser = $_POST['lon'] ?? null;
     $type = $_POST['type'] ?? null; // 'daily' oder 'weekly'
     $difficulty = $_POST['difficulty'] ?? 'leicht';
+    $challengeId = $_POST['challenge_id'] ?? null; // Falls übergeben → Refresh
 
     if (!$userId || !$latUser || !$lonUser || !$type) {
         echo json_encode(['status' => 'error', "message" => "Fehlende Parameter."]);
@@ -23,18 +24,44 @@ try {
         exit;
     }
 
-    // Prüfen, ob User schon aktive Challenge hat
-    $stmt = $pdo->prepare("
-        SELECT * FROM challenges 
-        WHERE nutzer_id = ? 
-        AND type = ?
-        AND difficulty = ?
-        AND valid_until > NOW()
-    ");
-    $stmt->execute([$userId, $type, $difficulty]);
-    if ($stmt->rowCount() > 0) {
-        echo json_encode(['status' => 'error', "message" => "Du hast bereits eine aktive Challenge dieses Typs."]);
-        exit;
+    // Wenn Refresh → prüfen ob Challenge existiert
+    if ($challengeId) {
+        $stmt = $pdo->prepare("SELECT * FROM challenges WHERE id = ? AND nutzer_id = ?");
+        $stmt->execute([$challengeId, $userId]);
+        $oldChallenge = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$oldChallenge) {
+            echo json_encode(['status' => 'error', 'message' => 'Challenge nicht gefunden.']);
+            exit;
+        }
+
+        if ($oldChallenge['recreated'] == 1) {
+            echo json_encode(['status' => 'error', 'message' => 'Diese Challenge wurde bereits neu generiert.']);
+            exit;
+        }
+
+        if ($oldChallenge['valid_until'] < date('Y-m-d H:i:s')) {
+            echo json_encode(['status' => 'error', 'message' => 'Challenge ist abgelaufen.']);
+            exit;
+        }
+
+        // Alte Challenge auf recreated setzen
+        $stmt = $pdo->prepare("UPDATE challenges SET recreated = 1 WHERE id = ?");
+        $stmt->execute([$challengeId]);
+    } else {
+        // Nur prüfen ob User bereits aktive Challenge hat (aber nur bei "neu")
+        $stmt = $pdo->prepare("
+            SELECT * FROM challenges 
+            WHERE nutzer_id = ? 
+            AND type = ?
+            AND difficulty = ?
+            AND valid_until > NOW()
+        ");
+        $stmt->execute([$userId, $type, $difficulty]);
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['status' => 'error', "message" => "Du hast bereits eine aktive Challenge dieses Typs."]);
+            exit;
+        }
     }
 
     // Radius bestimmen
@@ -45,34 +72,54 @@ try {
         default => [0, 5000],
     };
 
-    // Eisdielen im Radius suchen
+    // Alle Eisdielen im Radius laden (inkl. Distance) und gleichzeitig prüfen, ob sie schon eine offene Challenge haben
     $stmt = $pdo->prepare("
-        SELECT id, name, latitude, longitude,
+        SELECT e.id, e.name, e.latitude, e.longitude,
             (6371000 * ACOS(
-                COS(RADIANS(:lat)) * COS(RADIANS(latitude)) *
-                COS(RADIANS(longitude) - RADIANS(:lon)) +
-                SIN(RADIANS(:lat)) * SIN(RADIANS(latitude))
-            )) AS distance
-        FROM eisdielen
+                COS(RADIANS(:lat)) * COS(RADIANS(e.latitude)) *
+                COS(RADIANS(e.longitude) - RADIANS(:lon)) +
+                SIN(RADIANS(:lat)) * SIN(RADIANS(e.latitude))
+            )) AS distance,
+            CASE WHEN EXISTS (
+                SELECT 1 
+                FROM challenges c
+                WHERE c.nutzer_id = :userId
+                  AND c.eisdiele_id = e.id
+                  AND c.type = :type
+                  AND c.difficulty = :difficulty
+                  AND c.valid_until > NOW()
+            ) THEN 1 ELSE 0 END AS has_active_challenge
+        FROM eisdielen e
         HAVING distance BETWEEN :minRadius AND :maxRadius
-        ORDER BY RAND()
     ");
     $stmt->execute([
         ':lat' => $latUser,
         ':lon' => $lonUser,
         ':minRadius' => $radius[0],
         ':maxRadius' => $radius[1],
+        ':userId' => $userId,
+        ':type' => $type,
+        ':difficulty' => $difficulty,
     ]);
 
-    $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allShops = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (count($eisdielen) < 5) {
+    // Mindestanzahl prüfen
+    if (count($allShops) < 5) {
         echo json_encode(['status' => 'error', "message" => "Nicht genügend Eisdielen im Umkreis für eine Challenge."]);
         exit;
     }
 
+    // Nur Eisdielen ohne offene Challenge filtern
+    $freeShops = array_filter($allShops, fn($s) => $s['has_active_challenge'] == 0);
+
+    if (count($freeShops) < 1) {
+        echo json_encode(['status' => 'error', "message" => "Alle möglichen Eisdielen hast du aktuell schon als offene Challenge."]);
+        exit;
+    }
+
     // Zufällige Eisdiele auswählen
-    $randomShop = $eisdielen[array_rand($eisdielen)];
+    $randomShop = $freeShops[array_rand($freeShops)];
 
     // Valid-Until setzen
     $now = new DateTime();
@@ -89,21 +136,37 @@ try {
         $validUntil = $now->modify('next sunday')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
     }
 
-    // Challenge eintragen
-    $stmt = $pdo->prepare("
-        INSERT INTO challenges (nutzer_id, eisdiele_id, type, difficulty, valid_until)
-        VALUES (?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([$userId, $randomShop['id'], $type, $difficulty, $validUntil]);
-    $challengeId = $pdo->lastInsertId();
-
+    if ($challengeId) {
+        // --- Recreate: Alte Challenge aktualisieren ---
+        $stmt = $pdo->prepare("
+            UPDATE challenges 
+            SET eisdiele_id = ?, valid_until = ?, recreated = 1 
+            WHERE id = ? AND nutzer_id = ?
+        ");
+        $stmt->execute([$randomShop['id'], $validUntil, $challengeId, $userId]);
+    
+        $newChallengeId = $challengeId; // gleiche ID, nur geupdated
+        $isRecreated = true;
+    } else {
+        // --- Neue Challenge anlegen ---
+        $stmt = $pdo->prepare("
+            INSERT INTO challenges (nutzer_id, eisdiele_id, type, difficulty, valid_until, recreated)
+            VALUES (?, ?, ?, ?, ?, 0)
+        ");
+        $stmt->execute([$userId, $randomShop['id'], $type, $difficulty, $validUntil]);
+        $newChallengeId = $pdo->lastInsertId();
+        $isRecreated = false;
+    }
+    
+    // Response
     echo json_encode([
         "status" => "success",
-        "challenge_id" => $challengeId,
+        "challenge_id" => $newChallengeId,
         "type" => $type,
         "difficulty" => $difficulty,
         "valid_until" => $validUntil,
-        "shop" => $randomShop
+        "shop" => $randomShop,
+        "recreated" => $isRecreated
     ]);
 
 } catch (Exception $e) {

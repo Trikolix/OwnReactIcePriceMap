@@ -85,6 +85,58 @@ function Challenges() {
     }
   };
 
+  const handleRecreateChallenge = async (challengeId, difficulty, type) => {
+    setError(null);
+    try {
+      const { lat, lon } = await getUserLocation();
+      const form = new FormData();
+      form.append("nutzer_id", String(userId));
+      form.append("lat", String(lat));
+      form.append("lon", String(lon));
+      form.append("challenge_id", String(challengeId));
+      form.append("difficulty", difficulty);
+      form.append("type", type);
+
+
+      const res = await fetch(`${apiUrl}/api/challenge_generate.php`, {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+
+      if (data.status === "success") {
+        setChallenges((prev) => {
+          // Alte Challenge rausfiltern
+          const withoutOld = prev.filter((c) => c.id !== challengeId);
+
+          if (data.recreated) {
+            // Neue (aktualisierte) Challenge hinzufügen
+            return [
+              ...withoutOld,
+              {
+                id: data.challenge_id,
+                type: data.type,
+                difficulty: data.difficulty,
+                valid_until: data.valid_until,
+                shop_id: data.shop?.id,
+                shop_name: data.shop?.name,
+                shop_address: data.shop?.adresse || data.shop?.address || "",
+                recreated: data.recreated
+              }
+            ];
+          }
+
+          return withoutOld; // Falls keine neue zurückkommt
+        });
+      } else {
+        setError(data.message || "Challenge konnte nicht erneuert werden.");
+      }
+    } catch (e) {
+      setError("Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff.");
+    }
+  };
+
+
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "leicht": return "#4caf50"; // grün
@@ -128,13 +180,33 @@ function Challenges() {
             ) : (
               activeChallenges.map((ch) => (
                 <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
-                  <h3><CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink></h3>
+                  <h3>
+                    <CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink>
+                  </h3>
                   <p>{ch.shop_address}</p>
-                  <DifficultyLabel>{ch.difficulty.toUpperCase()} – {ch.type === "daily" ? "Daily" : "Weekly"}</DifficultyLabel>
-                  <Countdown>Verbleibende Zeit: {formatCountdown(ch.valid_until)}</Countdown>
+                  <DifficultyLabel>
+                    {ch.difficulty.toUpperCase()} – {ch.type === "daily" ? "Daily" : "Weekly"}
+                  </DifficultyLabel>
+                  <Countdown>
+                    Verbleibende Zeit: {formatCountdown(ch.valid_until)}
+                  </Countdown>
+
+                  {/* Recreate Button anzeigen, wenn erlaubt */}
+                  {(!ch.recreated && new Date(ch.valid_until) > new Date()) ? (
+                    <RecreateWrapper>
+                      <span>Challenge unmöglich?</span>
+                      <RecreateButton onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}>
+                        🔄 Challenge neu generieren
+                      </RecreateButton>
+                    </RecreateWrapper>
+                  ): (<RecreateWrapper>
+                      <span>Challenges können nur einmal neu erzeugt werden.</span>
+                    </RecreateWrapper>)}
                 </ChallengeCard>
               ))
             )}
+
+
 
             {completedChallenges.length > 0 && (
               <>
@@ -172,7 +244,7 @@ function Challenges() {
               <GenerateButton onClick={handleGenerateChallenge} disabled={generating}>
                 {generating ? "Erstelle..." : "Neue Challenge generieren"}
               </GenerateButton>
-              
+
             </SelectionWrapper>
             <p>
               Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
@@ -348,4 +420,32 @@ const CardContent = styled.div`
 const Trophy = styled.div`
   font-size: 46px;
   margin-left: 10px;
+`;
+
+const RecreateWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: small;
+  color: gray;
+  gap: 8px; /* Abstand zwischen Text und Button */
+`;
+
+const RecreateButton = styled.button`
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  background: #ffb522;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: #a37416ff;
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+  }
 `;
