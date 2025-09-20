@@ -28,9 +28,6 @@ const NewAwards = ({ awards }) => {
 export default NewAwards;
 
 const AwardsSection = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
 `;
 
 const AwardItem = styled.li`

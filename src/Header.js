@@ -19,7 +19,7 @@ const Header = ({ refreshShops }) => {
   const [newAwards, setNewAwards] = useState([]);
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [showGewinnspiel, setShowGewinnspiel] = useState(false);
+  const [showUserOfMonth, setShowUserOfMonth] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
@@ -179,11 +179,18 @@ const Header = ({ refreshShops }) => {
     }
   };
 
+  const pastUsers = [
+    { id: 22, name: "Eispfote ", image: "https://ice-app.de/uploads/award_icons/68bfc41eb4748_1000101916.png" },
+    { id: 52, name: "alinaa.wrnr", image: "https://ice-app.de/uploads/award_icons/68bfc408d55d6_1000101915.png" },
+    { id: 2, name: "GourmetBiker", image: "https://ice-app.de/uploads/award_icons/68bfc3f576783_1000101914.png" },
+    { id: 3, name: "Leckermäulchen95", image: "https://ice-app.de/uploads/award_icons/68bfc3848cd3b_1000101913.png" },
+  ];
+
   return (
     <>
       <HeaderContainer>
-        <GewinnspielIcon onClick={() => setShowGewinnspiel(true)}>
-          <img src={require('./aktion.png')} alt="Gewinnspiel" />
+        <GewinnspielIcon onClick={() => setShowUserOfMonth(true)}>
+          <img src={require('./user_of_the_month.png')} alt="Gewinnspiel" />
         </GewinnspielIcon>
 
         <LogoContainer>
@@ -207,7 +214,7 @@ const Header = ({ refreshShops }) => {
                 <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
                 {canAccessChallenges(userId) && (<MenuItemLink to="/challenge" className="logged-in">Challenges</MenuItemLink>)}
-                
+
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in">Systemmeldung erstellen</MenuItemLink>)}
                 <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
               </>
@@ -238,7 +245,8 @@ const Header = ({ refreshShops }) => {
         />
       )}
       {showOverlay && (
-        <Overlay>
+        <OverlayBackground>
+          <Overlay>
           <CloseButton onClick={() => {
             setShowOverlay(false);
             setLevelUpInfo(null);
@@ -252,25 +260,54 @@ const Header = ({ refreshShops }) => {
               <p><em>{levelUpInfo.level_name}</em></p>
             </>
           )}
-
+          {levelUpInfo && newAwards.length > 0 && (<hr></hr>)}
           <NewAwards awards={newAwards} />
+          <SubmitButton onClick={() => {
+            setShowOverlay(false);
+            setLevelUpInfo(null);
+            setNewAwards([]);}}>Alles Klar!</SubmitButton>
         </Overlay>
+        </OverlayBackground>
       )}
-      {showGewinnspiel && (
-        <Overlay>
-          <CloseButton onClick={() => setShowGewinnspiel(false)}>&times;</CloseButton>
-          <h2>🎉 Eisbecher-Gewinnspiel</h2>
-          <p>
-            Das letzte Gewinnspiel lief vom <strong>28.07.</strong> bis zum <strong>31.08</strong> und ist nun vorbei.<br></br> Gewonnen hat:
-          </p>
-          <strong><UserLink to={`/user/8`} className="logged-in">🏆 Enkiboy 🏆</UserLink></strong>
-          <p>Herzlichen Glückwunsch zu deinem Gewinn! Du wurdest bereits kontaktiert.</p>
-          <p>
-            Vielen Dank an alle Teilnehmer! Die nächste Aktion kommt bestimmt.
-          </p>
-          <button onClick={() => setShowGewinnspiel(false)}>Alles Klar!</button>
-        </Overlay>
+      {showUserOfMonth && (
+        <OverlayBackground>
+          <Overlay>
+            <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
+            <h2>🏅 Nutzer/in des Monats 🏅</h2>
+
+            <CurrentUserWrapper>
+              <UserCard>
+                <CurrentUserImage
+                  src="https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png"
+                  alt="IceGoe"
+                />
+                <strong>
+                  <UserLink to={`/user/53`} className="logged-in">
+                    IceGoe
+                  </UserLink>
+                </strong>
+              </UserCard>
+            </CurrentUserWrapper>
+            <hr></hr>
+            <h3>🏅 Vorherige Nutzer/innen des Monats 🏅</h3>
+            <PastUsersGrid>
+              {pastUsers.map((user) => (
+                <UserCard key={user.id}>
+                  <UserImage src={user.image} alt={user.name} />
+                  <strong>
+                    <UserLink to={`/user/${user.id}`} className="logged-in">
+                      {user.name}
+                    </UserLink>
+                  </strong>
+                </UserCard>
+              ))}
+            </PastUsersGrid>
+
+            <SubmitButton onClick={() => setShowUserOfMonth(false)}>Alles Klar!</SubmitButton>
+          </Overlay>
+        </OverlayBackground>
       )}
+
       <QrScanModal
         open={modalData !== null}
         onClose={() => setModalData(null)}
@@ -366,12 +403,21 @@ const MenuItemLink = styled(Link)`
   }
 `;
 
-const Overlay = styled.div`
+const OverlayBackground = styled.div`
   position: fixed;
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Overlay = styled.div`
+  position: relative;
   background: white;
   padding: 2rem 2.5rem;
   border-radius: 16px;
@@ -379,11 +425,13 @@ const Overlay = styled.div`
   text-align: center;
   animation: fadeIn 0.4s ease-out;
   max-width: 90%;
-  width: 320px;
+  width: 400px;
+  max-height: 80vh;      /* hier die maximale Höhe */
+  overflow-y: auto;      /* Inhalt scrollbar machen */
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateX(-50%) scale(0.9); }
-    to   { opacity: 1; transform: translateX(-50%) scale(1); }
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
   }
 `;
 
@@ -401,6 +449,7 @@ const CloseButton = styled.button`
     color: #000;
   }
 `;
+
 
 const GewinnspielIcon = styled.div`
   cursor: pointer;
@@ -429,4 +478,51 @@ const UserLink = styled(Link)`
   color: inherit;
   cursor: pointer;
   font-size: 1.2rem;
+`;
+
+const CurrentUserWrapper = styled.div`
+  margin-bottom: 2rem;
+`;
+
+const CurrentUserImage = styled.img`
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  object-fit: cover;
+`;
+
+const PastUsersGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1.5rem;
+`;
+
+const UserCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const UserImage = styled.img`
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin-bottom: 0.5rem;
+  object-fit: cover;
+`;
+
+const SubmitButton = styled.button`
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #ffb522;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #ffcb4c;
+  }
 `;
