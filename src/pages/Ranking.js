@@ -172,23 +172,20 @@ const Ranking = () => {
                                 <th onClick={() => sortTableKugel('avg_geschmack')}>
                                     Geschmack {sortConfigKugel.key === 'avg_geschmack' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('avg_größe')}>
-                                    Größe {sortConfigKugel.key === 'avg_größe' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
-                                </th>
                                 <th onClick={() => sortTableKugel('avg_waffel')}>
                                     Waffel {sortConfigKugel.key === 'avg_waffel' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('preis')}>
                                     Preis {sortConfigKugel.key === 'preis' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
+                                <th onClick={() => sortTableKugel('avg_plfaktor')}>
+                                    Preis-Leistung {sortConfigKugel.key === 'avg_plfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                </th>
                                 <th onClick={() => sortTableKugel('finaler_score')}>
                                     Rating {sortConfigKugel.key === 'finaler_score' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('avg_geschmacksfaktor')}>
                                     Faktor Geschmack {sortConfigKugel.key === 'avg_geschmacksfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
-                                </th>
-                                <th onClick={() => sortTableKugel('avg_plfaktor')}>
-                                    Faktor Preis-Leistung {sortConfigKugel.key === 'avg_plfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('checkin_anzahl')}>
                                     Anzahl Bewertungen {sortConfigKugel.key === 'checkin_anzahl' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
@@ -201,12 +198,14 @@ const Ranking = () => {
                                     <tr onClick={() => toggleDetails(index)}>
                                         <td style={{ textAlign: 'left' }}>{eisdiele.name}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmack' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmack ? Number(eisdiele.avg_geschmack).toFixed(1) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'avg_größe' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_größe ? Number(eisdiele.avg_größe).toFixed(1) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_waffel' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_waffel ? Number(eisdiele.avg_waffel).toFixed(1) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'preis' ? { fontWeight: 'bold' } : {}}>{eisdiele.preis ? Number(eisdiele.preis).toFixed(2) : "–"} €</td>
+                                        <td style={sortConfigKugel.key === 'preis' ? { fontWeight: 'bold' } : {}}>
+                                            {eisdiele.kugel_preis_eur ? Number(eisdiele.kugel_preis_eur).toFixed(2) : "–"} €
+                                            {eisdiele.kugel_waehrung !== "€" && eisdiele.kugel_preis ? " (" + Number(eisdiele.kugel_preis).toFixed(2) + " " + eisdiele.kugel_waehrung + ")" : ""}
+                                        </td>
+                                        <td style={sortConfigKugel.key === 'avg_plfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_preisleistung ? Number(eisdiele.avg_preisleistung).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'finaler_score' ? { fontWeight: 'bold' } : {}}>{eisdiele.finaler_score ? Number(eisdiele.finaler_score).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmacksfaktor ? Number(eisdiele.avg_geschmacksfaktor).toFixed(2) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'avg_plfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_plfaktor ? Number(eisdiele.avg_plfaktor).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>{eisdiele.checkin_anzahl} (von {eisdiele.nutzeranzahl} Nutzer/n)</td>
                                     </tr>
                                     <DetailsRow visible={expandedRow === index} className="details-row">
@@ -242,10 +241,11 @@ const Ranking = () => {
                                                 <strong>Geschmacksfaktor:</strong> Der Geschmack zählt viermal so viel wie die Waffel. Wenn keine Waffel bewertet wurde, zählt nur der Geschmack.
                                             </li>
                                             <li>
-                                                <strong>Preis-Leistungs-Faktor:</strong> Dieser Wert berechnet sich aus der Kugelgröße im Verhältnis zum Preis. <br />
-                                                Eine Kugel mit Größe <code>5.0</code> bei einem Preis von <code>1,50 €</code> ergibt den Wert <code>5.0</code>.<br />
-                                                Der Preis-Leistungs-Faktor kann bei großen Kugeln und Preisen unter 1,50 € Werte von über 5 annehmen und bei Preisen über 1,50 € und sehr kleinen Kugeln Werte von unter 1 annehmen.
-
+                                                <strong>Preis-Leistungs-Faktor:</strong> Seit dem <code>27.08.2025</code> wird dieser Wert direkt vom Nutzer vergeben und liegt zwischen <code>1.0</code> und <code>5.0</code>.
+                                                <br />
+                                                Zuvor wurde der Preis-Leistungs-Faktor automatisch aus der Kugelgröße im Verhältnis zum Preis berechnet.
+                                                Eine Kugel mit Größe <code>5.0</code> bei einem Preis von <code>1,50 €</code> ergab beispielsweise den Wert <code>5.0</code>.
+                                                Dabei konnten bei großen Kugeln und Preisen unter 1,50 € Werte von über 5 entstehen, während bei sehr kleinen Kugeln und Preisen über 1,50 € Werte unter 1 möglich waren.
                                             </li>
                                             <li>
                                                 <strong>Finaler Score:</strong> Geschmack (70 %) + Preis-Leistung (30 %), gewichtet zu einem Gesamtwert zwischen ca. <code>1.0</code> und <code>5.0</code>.

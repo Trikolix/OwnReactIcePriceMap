@@ -6,21 +6,21 @@ require_once __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
 
 
 // Funktion zum Senden / Aktualisieren der Preise
-function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis) {
+function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung) {
     $response = [];
 
     try {
         if ($kugelPreis !== null) {
             $sql = $additionalInfoKugelPreis != null ?
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`)
-                VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW())
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 beschreibung = VALUES(beschreibung), 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();" 
                 : 
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`)
-                VALUES (:userId, :shopId, 'kugel', :kugelPreis, NOW())
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'kugel', :kugelPreis, NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();";
@@ -32,21 +32,22 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
             if ($additionalInfoKugelPreis) {
                 $stmt->bindParam(':beschreibung', $additionalInfoKugelPreis, PDO::PARAM_STR);
             }
+            $stmt->bindParam(':waehrung', $waehrung, PDO::PARAM_INT);
             $stmt->execute();
             $response[] = ['typ' => 'kugel', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
         }
 
         if ($softeisPreis !== null && $softeisPreis !== '') {
             $sql = $additionalInfoSofteisPreis != null ? 
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`)
-                VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW())
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 beschreibung = VALUES(beschreibung), 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();" 
                 : 
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`)
-                VALUES (:userId, :shopId, 'softeis', :softeisPreis, NOW())
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'softeis', :softeisPreis, NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();";
@@ -58,6 +59,7 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
             if ($additionalInfoSofteisPreis) {
                 $stmt->bindParam(':beschreibung', $additionalInfoSofteisPreis, PDO::PARAM_STR);
             }
+            $stmt->bindParam(':waehrung', $waehrung, PDO::PARAM_INT);
             $stmt->execute();
             $response[] = ['typ' => 'softeis', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
         }
@@ -114,5 +116,7 @@ $kugelPreis = $inputData['kugelPreis'] ?? null;
 $additionalInfoKugelPreis = $inputData['additionalInfoKugelPreis'] ?? null;
 $softeisPreis = $inputData['softeisPreis'] ?? null;
 $additionalInfoSofteisPreis = $inputData['additionalInfoSofteisPreis'] ?? null;
-submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis);
+$waehrung = $inputData['waehrung'] ?? 1;
+
+submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung);
 ?>

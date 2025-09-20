@@ -13,13 +13,18 @@ if ($eisdiele_id <= 0) {
 // 1. Basisinformationen der Eisdiele abrufen
 $stmt = $pdo->prepare("
     SELECT e.* ,
-	   l.name AS land,
-	   b.name AS bundesland,
-	   lk.name AS landkreis
+           l.name AS land,
+           b.name AS bundesland,
+           lk.name AS landkreis,
+           w.id AS waehrung_id,
+           w.code AS waehrung_code,
+           w.name AS waehrung_name,
+           w.symbol AS waehrung_symbol
     FROM eisdielen e
-	JOIN laender l ON e.land_id = l.id
-	JOIN bundeslaender b ON e.bundesland_id = b.id
+    JOIN laender l ON e.land_id = l.id
+    JOIN bundeslaender b ON e.bundesland_id = b.id
     JOIN landkreise lk ON e.landkreis_id = lk.id
+    LEFT JOIN waehrungen w ON l.waehrung_id = w.id
     WHERE e.id = ?;
 ");
 $stmt->execute([$eisdiele_id]);
@@ -34,13 +39,17 @@ if (!$eisdiele) {
 $stmt = $pdo->prepare("
     SELECT 
         'kugel' AS typ,
-        preis,
-        MAX(gemeldet_am) as letztes_update,
-        MAX(beschreibung) AS beschreibung,
-        COUNT(*) as bestaetigungen
-    FROM preise 
-    WHERE eisdiele_id = ? AND typ = 'kugel'
-    GROUP BY preis
+        p.preis,
+        MAX(p.gemeldet_am) as letztes_update,
+        MAX(p.beschreibung) AS beschreibung,
+        COUNT(*) as bestaetigungen,
+        w.id AS waehrung_id,
+        w.code AS waehrung_code,
+        w.symbol AS waehrung_symbol
+    FROM preise p
+    LEFT JOIN waehrungen w ON p.waehrung_id = w.id
+    WHERE p.eisdiele_id = ? AND p.typ = 'kugel'
+    GROUP BY p.preis, p.waehrung_id, w.id, w.code, w.symbol
     ORDER BY letztes_update DESC
     LIMIT 1
 ");
@@ -52,19 +61,18 @@ $kugel_preis = $stmt->fetch();
 $stmt = $pdo->prepare("
     SELECT
         'softeis' AS typ,
-        preis,
-        MAX(gemeldet_am) AS letztes_update,
-        MAX(beschreibung) AS beschreibung,
-        COUNT(*) AS bestaetigungen
-    FROM
-        preise
-    WHERE
-        eisdiele_id = ? AND typ = 'softeis'
-    GROUP BY
-        preis
-    ORDER BY
-        letztes_update
-    DESC
+        p.preis,
+        MAX(p.gemeldet_am) AS letztes_update,
+        MAX(p.beschreibung) AS beschreibung,
+        COUNT(*) AS bestaetigungen,
+        w.id AS waehrung_id,
+        w.code AS waehrung_code,
+        w.symbol AS waehrung_symbol
+    FROM preise p
+    LEFT JOIN waehrungen w ON p.waehrung_id = w.id
+    WHERE p.eisdiele_id = ? AND p.typ = 'softeis'
+    GROUP BY p.preis, p.waehrung_id, w.id, w.code, w.symbol
+    ORDER BY letztes_update DESC
     LIMIT 1
 ");
 

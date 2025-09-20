@@ -32,6 +32,10 @@ require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
 require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
+require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
+
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -69,11 +73,32 @@ function respondWithError($message, $httpCode = 400, $exception = null) {
     exit;
 }
 
+function logProfiling($userId, $shopId, $profiling, $evaluatorTimings) {
+    $logEntry = [
+        'timestamp'  => date('Y-m-d H:i:s'),
+        'userId'     => $userId,
+        'shopId'     => $shopId,
+        'profiling'  => $profiling,
+        'evaluators' => $evaluatorTimings
+    ];
+    file_put_contents(
+        __DIR__ . '/../logs/profiling.log',
+        json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
+        FILE_APPEND
+    );
+}
+
 try {
+
+    $__profiling = [];
+    $__profiling['start'] = microtime(true);
+
     // Eingabedaten
     $userId = $_POST['userId'] ?? null;
     $shopId = $_POST['shopId'] ?? null;
     $type = $_POST['type'] ?? null;
+    $latUser = $_POST['lat'] ?? null;
+    $lonUser = $_POST['lon'] ?? null;
 
     $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
@@ -97,6 +122,35 @@ try {
         respondWithError('Fehlende oder ungültige Pflichtdaten.');
     }
 
+    // Checkin vor Ort?
+    $isOnSite = 0;
+    if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
+        // Hole Shop-Koordinaten
+        $stmt = $pdo->prepare("SELECT latitude, longitude FROM eisdielen WHERE id = ?");
+        $stmt->execute([$shopId]);
+        $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($shop)) {
+            $latShop = $shop['latitude'];
+            $lonShop = $shop['longitude'];
+
+            $earthRadius = 6371000; // in Metern
+            $dLat = deg2rad($latShop - $latUser);
+            $dLon = deg2rad($lonShop - $lonUser);
+            $a = sin($dLat/2) * sin($dLat/2) +
+                 cos(deg2rad($latUser)) * cos(deg2rad($latShop)) *
+                 sin($dLon/2) * sin($dLon/2);
+            $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+            $distance = $earthRadius * $c; // Distanz in Metern
+
+            if ($distance <= 300) { // Checkin vor Ort
+                $isOnSite = 1;
+            }
+
+        }
+    }
+    $__profiling['after_onsitecheck'] = microtime(true);
+
+    // Bilder verarbeiten
     $bildUrls = [];
     if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
         try {
@@ -111,13 +165,15 @@ try {
         }
     }
 
+    $__profiling['after_picturehandling'] = microtime(true);
+
 
     // INSERT in `checkins`
     $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise, is_on_site)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise]);
+    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise, $isOnSite]);
     $checkinId = $pdo->lastInsertId();
 
     if (!empty($bildUrls)) {
@@ -139,6 +195,7 @@ try {
     ");
     $checkinMeta->execute([$checkinId]);
     $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
+    $__profiling['after_insert'] = microtime(true);
 
     // Evaluatoren
     $evaluators = [
@@ -162,7 +219,7 @@ try {
         new WeekStreakEvaluator(),
         new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),
-        new DetailedCheckinCountEvaluator()
+        new DetailedCheckinCountEvaluator(),
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -174,13 +231,58 @@ try {
 
     if ($anreise === 'Fahrrad') {
         $evaluators[] = new CyclingCountEvaluator();
+        $evaluators[] = new EPR2025Evaluator();
     }
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
+    elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
 
+    if ($isOnSite) {
+        // Aktive Challenge suchen
+        $stmt = $pdo->prepare("
+            SELECT c.id, c.nutzer_id, c.eisdiele_id, c.type, c.difficulty, c.created_at, c.valid_until, c.completed, e.name AS shop_name, e.adresse AS shop_address
+            FROM challenges c
+            JOIN eisdielen e ON c.eisdiele_id = e.id
+            WHERE nutzer_id = :userId
+              AND c.eisdiele_id = :shopId
+              AND c.completed = 0
+              AND c.valid_until >= NOW()
+            ORDER BY c.created_at ASC
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':userId' => $userId,
+            ':shopId' => $shopId
+        ]);
+        $challenge = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $completedChallenge = null;
+        if ($challenge) {
+            // Challenge auf completed setzen
+            $update = $pdo->prepare("UPDATE challenges SET completed = 1, completed_at = NOW() WHERE id = :id");
+            $update->execute([':id' => $challenge['id']]);
+
+            // für Response vorbereiten
+            $completedChallenge = [
+                'id' => $challenge['id'],
+                'type' => $challenge['type'],
+                'difficulty' => $challenge['difficulty'],
+                'created_at' => $challenge['created_at'],
+                'valid_until' => $challenge['valid_until'],
+                'eisdiele_id' => $challenge['eisdiele_id'],
+                'shop_name' => $challenge['shop_name'],
+                'shop_address' => $challenge['shop_address'],
+                'completed_at' => date('Y-m-d H:i:s')
+            ];
+        }
+        $evaluators[] = new OnSiteEvaluator();
+    }
+
+    $evaluatorTimings = [];
 
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
+        $t0 = microtime(true);
         if ($evaluator instanceof MetadataAwardEvaluator) {
             $evaluator->setCheckinMetadata($meta);
         }
@@ -191,7 +293,11 @@ try {
         } catch (Exception $e) {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
         }
+        $t1 = microtime(true);
+        $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
     }
+
+    $__profiling['after_evaluators'] = microtime(true);
 
     // Sorten speichern
     if (!empty($sorten)) {
@@ -207,8 +313,22 @@ try {
             }
         }
     }
+    $__profiling['after_sorten'] = microtime(true);
 
     $levelChange = updateUserLevelIfChanged($pdo, $userId);
+    $__profiling['after_level'] = microtime(true);
+
+    $profilingDurations = [
+        'onsitecheck' => round(($__profiling['after_onsitecheck'] - $__profiling['start']) * 1000, 2) . " ms",
+        'picturehandling' => round(($__profiling['after_picturehandling'] - $__profiling['after_onsitecheck']) * 1000, 2) . " ms",
+        'insert'      => round(($__profiling['after_insert'] - $__profiling['after_picturehandling']) * 1000, 2) . " ms",
+        'evaluators'  => round(($__profiling['after_evaluators'] - $__profiling['after_insert']) * 1000, 2) . " ms",
+        'sorten'      => round(($__profiling['after_sorten'] - $__profiling['after_evaluators']) * 1000, 2) . " ms",
+        'levelsystem' => round(($__profiling['after_level'] - $__profiling['after_sorten']) * 1000, 2) . " ms",
+        'total'       => round(($__profiling['after_level'] - $__profiling['start']) * 1000, 2) . " ms"
+    ];
+
+    logProfiling($userId, $shopId, $profilingDurations, $evaluatorTimings);
 
     // JSON-Antwort vorbereiten
     echo json_encode([
@@ -217,7 +337,8 @@ try {
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
-        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
+        'completed_challenge' => $completedChallenge ?? null
     ]);
 
 } catch (Exception $e) {

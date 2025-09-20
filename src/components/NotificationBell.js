@@ -1,12 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
+import SystemModal from "./SystemModal";
 
 const NotificationBell = () => {
     const { userId } = useUser();
     const [notifications, setNotifications] = useState([]);
     const [show, setShow] = useState(false);
     const dropdownRef = useRef(null);
+    const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+
+    const openSystemModal = ({ title, message }) => {
+        setSystemModal({ isOpen: true, title, message });
+    };
 
     const loadNotifications = async () => {
         const res = await fetch(
@@ -55,7 +61,7 @@ const NotificationBell = () => {
         }
     };
 
-    const handleNotificationClick = (notification)  => {
+    const handleNotificationClick = async (notification) => {
         if (!notification.ist_gelesen) {
             markAsRead(notification.id);
         }
@@ -65,15 +71,47 @@ const NotificationBell = () => {
                 const url = `/#/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
                 window.location.href = url;
             }
+        } else if (notification.typ === 'kommentar_bewertung') {
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            if (data.bewertung_id && data.eisdiele_id) {
+                const url = `/#/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
+                window.location.href = url;
+            }
         } else if (notification.typ === 'new_user') {
             const url = `/#/user/${notification.referenz_id}`;
             window.location.href = url;
+        } else if (notification.typ === 'systemmeldung') {
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/systemmeldung.php?action=get&id=${notification.referenz_id}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    openSystemModal({
+                        title: data.systemmeldung.titel,
+                        message: data.systemmeldung.nachricht
+                    });
+                } else {
+                    // Fallback auf zusatzdaten
+                    const fallback = JSON.parse(notification.zusatzdaten || '{}');
+                    openSystemModal({
+                        title: notification.text || "Systemmeldung",
+                        message: fallback.message || "Keine Nachricht verfügbar"
+                    });
+                }
+            } catch (err) {
+                // Fallback bei Netzwerkfehler
+                const fallback = JSON.parse(notification.zusatzdaten || '{}');
+                openSystemModal({
+                    title: notification.text || "Systemmeldung",
+                    message: fallback.message || "Keine Nachricht verfügbar"
+                });
+            }
         }
     };
 
     const unreadCount = notifications.filter((n) => !n.ist_gelesen).length;
 
-    return (
+    return (<>
         <BellWrapper>
             <BellButton onClick={() => setShow(!show)}>
                 🔔
@@ -105,6 +143,13 @@ const NotificationBell = () => {
                 </Dropdown>
             )}
         </BellWrapper>
+        <SystemModal
+            isOpen={systemModal.isOpen}
+            onClose={() => setSystemModal({ ...systemModal, isOpen: false })}
+            title={systemModal.title}
+            message={systemModal.message}
+        />
+    </>
     );
 };
 
@@ -114,7 +159,7 @@ export default NotificationBell;
 
 const BellWrapper = styled.div`
   position: relative;
-  margin-left: 15px;
+  margin-right: 10px;
 `;
 
 const BellButton = styled.button`

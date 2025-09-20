@@ -4,7 +4,6 @@ import { UserProvider } from './context/UserContext';
 import IceCreamRadar from './IceCreamRadar';
 import DashBoard from './pages/DashBoard';
 import Statistics from './pages/Statistics';
-import HierarchicalPriceView from './pages/Statistics_new';
 import Ranking from './pages/Ranking';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
@@ -15,6 +14,8 @@ import AGB from './pages/AGB';
 import Datenschutz from './pages/Datenschutz';
 import Community from './pages/Community';
 import RegisterPage from './pages/RegisterPage';
+import Challenges from './pages/Challenges';
+import SystemmeldungForm from './components/SystemmeldungForm';
 
 const App = () => {
   return (
@@ -28,7 +29,6 @@ const App = () => {
           <Route path="/resetToken/:token" element={<IceCreamRadar />} />
           <Route path="/dashboard" element={<DashBoard />} />
           <Route path="/statistics" element={<Statistics />} />
-          <Route path="/statistics_new" element={<HierarchicalPriceView />} />
           <Route path="/ranking" element={<Ranking />} />
           <Route path="/favoriten" element={<FavoritenListe />} />
           <Route path="/impressum" element={<Impressum />} />
@@ -39,6 +39,8 @@ const App = () => {
           <Route path="/community" element={<Community />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/register/:inviteCode" element={<RegisterPage />} />
+          <Route path="/challenge" element={<Challenges />} />
+          <Route path="/systemmeldungenform" element={<SystemmeldungForm />} />
         </Routes>
       </UserProvider>
     </Router>

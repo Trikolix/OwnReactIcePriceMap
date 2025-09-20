@@ -13,6 +13,26 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
     const [levelUpInfo, setLevelUpInfo] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
+    const [waehrung, setWaehrung] = useState(shop.eisdiele.waehrung_id ?? 1);
+    const [waehrungSymbol, setWaehrungSymbol] = useState(shop.eisdiele.waehrung_symbol ?? '€');
+    console.log(shop);
+
+    const toggleWaehrung = () => {
+        if (shop.eisdiele.waehrung_symbol !== '€') {
+            if (waehrungSymbol === shop.eisdiele.waehrung_symbol) {
+                setSofteiPreis(null);
+                setKugelPreis(null);
+                setWaehrungSymbol('€');
+                setWaehrung(1); // ID für Euro
+            } else {
+                setSofteiPreis(null);
+                setKugelPreis(null);
+                setWaehrungSymbol(shop.eisdiele.waehrung_symbol);
+                setWaehrung(shop.eisdiele.waehrung_id);
+            }
+        }
+    };
+
     const submit = async () => {
         try {
             const response = await fetch(`${apiUrl}/submitPrice.php`, {
@@ -26,7 +46,8 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     kugelPreis,
                     additionalInfoKugelPreis,
                     softeisPreis,
-                    additionalInfoSofteisPreis
+                    additionalInfoSofteisPreis,
+                    waehrung
                 })
             });
             console.log(JSON.stringify({
@@ -57,7 +78,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     setLevelUpInfo({
                         level: element.new_level,
                         level_name: element.level_name,
-                      });                    
+                    });
                 }
             });
             if (localAwards && localAwards.length !== 0) {
@@ -93,7 +114,9 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                             value={kugelPreis ?? ''}
                             onChange={(e) => setKugelPreis(e.target.value)}
                         />
-                        €
+                        <span onClick={toggleWaehrung} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                            {waehrungSymbol}
+                        </span>
                     </Label>
 
                     <Label>
@@ -116,7 +139,9 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                             value={softeisPreis ?? ''}
                             onChange={(e) => setSofteiPreis(e.target.value)}
                         />
-                        €
+                        <span onClick={toggleWaehrung} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                            {waehrungSymbol}
+                        </span>
                     </Label>
 
                     <Label>
@@ -133,11 +158,11 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 </>)}
                 <Message>{message}</Message>
                 {levelUpInfo && (
-                  <LevelInfo>
-                    <h2>🎉 Level-Up!</h2>
-                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
-                    <p><em>{levelUpInfo.level_name}</em></p>
-                  </LevelInfo>
+                    <LevelInfo>
+                        <h2>🎉 Level-Up!</h2>
+                        <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                        <p><em>{levelUpInfo.level_name}</em></p>
+                    </LevelInfo>
                 )}
                 <NewAwards awards={awards} />
             </Modal>
@@ -191,9 +216,10 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  width: 100px;
+  width: 40px;
   padding: 0.5rem;
   margin-left: 0.5rem;
+  margin-right: 0.5rem;
   border-radius: 8px;
   border: 1px solid #ccc;
 `;

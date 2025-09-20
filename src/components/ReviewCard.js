@@ -1,11 +1,13 @@
-import React from "react";
+import {React, useState} from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
+import CommentSection from "./CommentSection";
 
-const ReviewCard = ({ review, setShowReviewForm }) => {
+const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   const { userId } = useUser();
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("de-DE");
@@ -13,19 +15,19 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
   return (
     <Card>
       <DateText dateTime={review.erstellt_am}>
-          {new Date(review.erstellt_am).toLocaleDateString("de-DE", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          })}
-        </DateText>
+        {new Date(review.erstellt_am).toLocaleDateString("de-DE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        })}
+      </DateText>
       <Header>
         <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
         <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
       </Header>
-
+        <LeftContent>
       <Table>
         {review.auswahl !== null && (
           <tr>
@@ -46,17 +48,29 @@ const ReviewCard = ({ review, setShowReviewForm }) => {
           ))}
         </AttributeSection>
       )}
-      <ImageGalleryWithLightbox
-              images={review.bilder.map(b => ({
-                url: `https://ice-app.de/${b.url}`,
-                beschreibung: b.beschreibung
-              }))}
-              fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
-            />
-
       {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
         <EditButton onClick={() => setShowReviewForm(true)}>Bearbeiten</EditButton>
       )}
+      </LeftContent>
+      <RightContent>
+      {review.bilder?.length > 0 && (
+        <ImageGalleryWithLightbox
+          images={review.bilder.map(b => ({
+            url: `https://ice-app.de/${b.url}`,
+            beschreibung: b.beschreibung
+          }))}
+          fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
+        />
+      )}
+      
+      </RightContent>
+      <CommentToggle
+          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+        >
+          💬 {review.commentCount || 0} Kommentar(e)
+        </CommentToggle>
+        {areCommentsVisible && <CommentSection bewertungId={review.id} />}
     </Card>
   );
 };
@@ -150,3 +164,29 @@ const DateText = styled.time`
   gap: 0.25rem;
 `;
 
+const CommentToggle = styled.button`
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #339af0;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.25rem 0;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const LeftContent = styled.div`
+  flex: 1 1 300px;
+  min-width: 250px;
+`;
+
+const RightContent = styled.div`
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 8px;
+`;

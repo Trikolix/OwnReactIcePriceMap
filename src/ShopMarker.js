@@ -14,17 +14,17 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
 
   let displayPrice;
   switch (true) {
-    case selectedOption === "Softeis: Preis" && shop.softeis_preis !== null:
-      displayPrice = `${Number(shop.softeis_preis).toFixed(2)}`;
+    case selectedOption === "Softeis: Preis" && shop.softeis_preis_eur !== null:
+      displayPrice = `${Number(shop.softeis_preis_eur).toFixed(2)}`;
       break;
     case selectedOption === "Kugel: Preis" && shop.kugel_preis !== null:
-      displayPrice = `${Number(shop.kugel_preis).toFixed(2)}`;
+      displayPrice = `${Number(shop.kugel_preis_eur).toFixed(2)}`;
       break;
-    case (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") && shop.kugel_preis != null:
-      displayPrice = `${Number(shop.kugel_preis).toFixed(2)}`;
+    case (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") && shop.kugel_preis_eur != null:
+      displayPrice = `${Number(shop.kugel_preis_eur).toFixed(2)}`;
       break;
-    case (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") && shop.softeis_preis != null:
-      displayPrice = `${Number(shop.softeis_preis).toFixed(2)}`;
+    case (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") && shop.softeis_preis_eur != null:
+      displayPrice = `${Number(shop.softeis_preis_eur).toFixed(2)}`;
       break;
     case selectedOption === "Kugel: Rating":
       displayPrice = `${Number(shop.finaler_kugel_score).toFixed(2)}`;

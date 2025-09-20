@@ -35,6 +35,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const focusCheckinId = searchParams.get("focusCheckin");
+  const focusReviewId = searchParams.get("focusReview");
 
   useEffect(() => {
     if (tabParam) {
@@ -143,6 +144,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               routes={routes}
               refreshRoutes={refreshRoutes}
               focusCheckinId={focusCheckinId}
+              focusReviewId={focusReviewId}
             />
           </Content>
         </AnimatedContainer>
@@ -174,8 +176,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               setShowReviewForm={setShowReviewForm}
               routes={routes}
               refreshRoutes={refreshRoutes}
-
               focusCheckinId={focusCheckinId}
+              focusReviewId={focusReviewId}
             />
           </Content>
         </Container>)}
@@ -217,8 +219,9 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
     </>);
 };
-const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes, focusCheckinId }) => {
+const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes, focusCheckinId, focusReviewId }) => {
   const checkinRefs = useRef({});
+  const reviewRefs = useRef({});
 
   useEffect(() => {
     if (
@@ -228,8 +231,17 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
       checkinRefs.current[focusCheckinId]
     ) {
       checkinRefs.current[focusCheckinId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (
+      activeTab === 'reviews' &&
+      focusReviewId &&
+      shopData?.reviews?.length &&
+      reviewRefs.current[focusReviewId]
+    ) {
+      reviewRefs.current[focusReviewId].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [activeTab, shopData?.checkins, focusCheckinId]);
+  }, [activeTab, shopData?.checkins, focusCheckinId, focusReviewId]);
+
+
 
   const calculateTimeDifference = (dateString) => {
     const currentDate = new Date();
@@ -267,7 +279,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
             <tr>
               <th>Kugelpreis:</th>
               <td>
-                <strong>{shopData.preise?.kugel?.preis?.toFixed(2) ? shopData.preise.kugel.preis.toFixed(2) : "-"} € </strong>
+                <strong>{shopData.preise?.kugel?.preis?.toFixed(2) ?? "-"} {shopData.preise?.kugel?.waehrung_symbol ?? "€"} </strong>
                 {shopData.preise?.kugel?.beschreibung ? (<>({shopData.preise.kugel.beschreibung}) </>) : <></>}
                 <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.kugel.letztes_update)} aktualisiert)</span>
               </td>
@@ -276,7 +288,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
             <tr>
               <th>Softeispreis:</th>
               <td>
-                <strong>{shopData.preise?.softeis?.preis?.toFixed(2) ? shopData.preise.softeis.preis.toFixed(2) : "-"} € </strong>
+                <strong>{shopData.preise?.softeis?.preis?.toFixed(2) ?? "-"} {shopData.preise?.softeis?.waehrung_symbol ?? "€"} </strong>
                 {shopData.preise?.softeis?.beschreibung ? (<>({shopData.preise.softeis.beschreibung}) </>) : <></>}
                 <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.softeis.letztes_update)} aktualisiert)</span>
               </td>
@@ -371,7 +383,17 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
       {shopData.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
       {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
       {shopData.reviews && (shopData.reviews.map((review, index) => (
-        <ReviewCard key={index} review={review} setShowReviewForm={setShowReviewForm} />
+        <div
+            key={review.id}
+            ref={(el) => reviewRefs.current[review.id] = el}
+          >
+        <ReviewCard 
+          key={index}
+          review={review}
+          setShowReviewForm={setShowReviewForm}
+          showComments={review.id.toString() === focusReviewId?.toString()}
+        />
+        </div>
       )))}
     </div>);
   }

@@ -5,6 +5,7 @@ import ReviewCard from "./../components/ReviewCard";
 import CheckinCard from './../components/CheckinCard';
 import RouteCard from './../components/RouteCard';
 import ShopCard from './../components/ShopCard';
+import AwardCard from './../components/AwardCard';
 
 function DashBoard() {
   const [activities, setActivities] = useState([]);
@@ -92,6 +93,8 @@ function DashBoard() {
                 return <RouteCard key={`route-${id}`} route={data} onSuccess={reload} />;
               case 'eisdiele':
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
+              case 'award':
+                return <AwardCard key={`award-${id}`} award={data} />;
               default:
                 return null;
             }
@@ -100,7 +103,7 @@ function DashBoard() {
           {/* Controls & Loader am Listenende – DOM bleibt bestehen */}
           <Controls>
             {hasMore && !loadingMore && (
-              <button
+              <LoadButton
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
@@ -108,7 +111,7 @@ function DashBoard() {
                 }}
               >
                 Mehr laden
-              </button>
+              </LoadButton>
 
             )}
             {loadingMore && <p>Lade weitere Aktivitäten…</p>}
@@ -157,10 +160,28 @@ const Section = styled.div`
 
 const Controls = styled.div`
   margin: 1rem 0 4rem;
+  text-align: center;
 `;
 
 const Placeholder = styled.div`
   width: 100%;
   text-align: center;
   padding: 2rem 0;
+`;
+
+const LoadButton = styled.button`
+  align-self: flex-start;
+  background-color: #ffb522;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #db9d20ff;
+  }
 `;

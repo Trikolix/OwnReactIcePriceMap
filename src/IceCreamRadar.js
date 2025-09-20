@@ -131,12 +131,12 @@ const IceCreamRadar = () => {
     return true;
   });
   // Berechne den minimalen und maximalen Preis
-  const prices = (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") ? filteredShops.map(shop => shop.kugel_preis).concat(filteredShops.map(shop => shop.softeis_preis)).filter(price => price !== null) :
-    selectedOption === "Kugel: Preis" ? filteredShops.map(shop => shop.kugel_preis).filter(price => price !== null) :
-      selectedOption === "Softeis: Preis" ? filteredShops.map(shop => shop.softeis_preis).filter(price => price !== null) :
+  const prices = (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") ? filteredShops.map(shop => shop.kugel_preis_eur).concat(filteredShops.map(shop => shop.softeis_preis_eur)).filter(price => price !== null) :
+    selectedOption === "Kugel: Preis" ? filteredShops.map(shop => shop.kugel_preis_eur).filter(price => price !== null) :
+      selectedOption === "Softeis: Preis" ? filteredShops.map(shop => shop.softeis_preis_eur).filter(price => price !== null) :
         selectedOption === "Kugel: Rating" ? filteredShops.map(shop => shop.finaler_kugel_score).filter(kugelscore => kugelscore !== null) :
           selectedOption === "Softeis: Rating" ? filteredShops.map(shop => shop.finaler_softeis_score).filter(softeisscore => softeisscore !== null) :
-            selectedOption === "Eisbecher: Rating" ? filteredShops.map(shop => shop.finaler_softeis_score).filter(becherscore => becherscore !== null) : null;
+            selectedOption === "Eisbecher: Rating" ? filteredShops.map(shop => shop.finaler_eisbecher_score).filter(becherscore => becherscore !== null) : null;
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 

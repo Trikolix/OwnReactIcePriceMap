@@ -3,6 +3,7 @@ import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
+import ChallengesAwarded from "./components/ChallengesAwarded";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop }) => {
     const [type, setType] = useState("Kugel");
@@ -19,10 +20,21 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
+    const [challenges, setChallenges] = useState([]);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+    const getUserLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                (err) => reject(err.message)
+            );
+        });
+    };
 
     const askForPriceUpdate = (preise) => {
         const now = new Date();
@@ -58,8 +70,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 setType(checkin.typ);
                 setGeschmackbewertung(checkin.geschmackbewertung);
                 setWaffelbewertung(checkin.waffelbewertung);
-                setGrößenbewertung(checkin.größenbewertung);
-                setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                if (checkin.preisleistungsbewertung == null && checkin.größenbewertung != null) {
+                    setPreisleistungsbewertung(checkin.größenbewertung);
+                } else {
+                    setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                }
                 setKommentar(checkin.kommentar);
                 setAnreise(checkin.anreise || "");
                 setBilder(checkin.bilder.map(b => ({
@@ -131,6 +146,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             ));
             if (checkinId) formData.append("checkin_id", checkinId);
 
+            try {
+                const location = await getUserLocation();
+                formData.append("lat", location.lat);
+                formData.append("lon", location.lon);
+            } catch (e) {
+                console.warn("Kein Standort verfügbar, Checkin wird ohne Vor-Ort-Bonus gespeichert.");
+            }
+
             const response = await fetch(
                 checkinId
                     ? `${apiUrl}/checkin/update_checkin.php`
@@ -150,17 +173,23 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
-                if (data.level_up || data.new_awards && data.new_awards.length > 0) {
+                console.log("Server-Antwort:", data);
+                console.log((data.completed_challenge !== null));
+                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
                     if (data.level_up) {
-                      setLevelUpInfo({
-                        level: data.new_level,
-                        level_name: data.level_name,
-                      });
+                        setLevelUpInfo({
+                            level: data.new_level,
+                            level_name: data.level_name,
+                        });
                     }
                     if (data.new_awards?.length > 0) {
-                      setAwards(data.new_awards);
+                        setAwards(data.new_awards);
                     }
-                    
+                    if (data.completed_challenge !== null) {
+                        console.log("Abgeschlossene Challenges:", data.completed_challenge);
+                        setChallenges(data.completed_challenge);
+                    }
+
                     if (shop && askForPriceUpdate(shop.preise)) {
                         setPreisfrage(true);
                     }
@@ -367,22 +396,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                     </td>
                                     <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
                                 </tr>
-                                <tr style={{ display: type === "Kugel" ? "table-row" : "none" }}>
-                                    <td><Label>Bewertung Größe:</Label></td>
-                                    <td>
-                                        <Input
-                                            type="number"
-                                            step="0.1"
-                                            min="1.0"
-                                            max="5.0"
-                                            placeholder="1.0 - 5.0"
-                                            value={größenbewertung}
-                                            onChange={(e) => setGrößenbewertung(e.target.value)}
-                                        />
-                                    </td>
-                                    <td><Rating stars={größenbewertung} onRatingSelect={(value) => setGrößenbewertung(value.toFixed(1))} /></td>
-                                </tr>
-                                <tr style={{ display: type !== "Kugel" ? "table-row" : "none" }}>
+                                <tr>
                                     <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
                                     <td>
                                         <Input
@@ -489,13 +503,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </>
                 )}
                 {levelUpInfo && (
-                  <LevelInfo>
-                    <h2>🎉 Level-Up!</h2>
-                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
-                    <p><em>{levelUpInfo.level_name}</em></p>
-                  </LevelInfo>
+                    <LevelInfo>
+                        <h2>🎉 Level-Up!</h2>
+                        <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                        <p><em>{levelUpInfo.level_name}</em></p>
+                    </LevelInfo>
                 )}
-                <NewAwards awards={awards} />                
+                <NewAwards awards={awards} />
+                <ChallengesAwarded challenge={challenges} />
             </Modal>
         </Overlay>) : null
     );

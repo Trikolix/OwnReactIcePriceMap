@@ -2,13 +2,18 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 
-const CommentSection = ({ checkinId }) => {
+const CommentSection = ({ checkinId, bewertungId, type = "checkin" }) => {
     const { userId } = useUser();
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState("");
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+    // Validierung der Props
+    const isValidProps = () => {
+        return (checkinId && !bewertungId) || (!checkinId && bewertungId);
+    };
 
     const formatDateTime = (datetimeStr) => {
         const date = new Date(datetimeStr);
@@ -22,10 +27,20 @@ const CommentSection = ({ checkinId }) => {
     };
 
     const loadComments = async () => {
-        const res = await fetch(`${apiUrl}/kommentare.php?action=list&checkin_id=${checkinId}`);
+        if (!isValidProps()) {
+            console.error("CommentSection: Entweder checkinId oder bewertungId muss gesetzt sein");
+            return;
+        }
+
+        const parameterName = checkinId ? 'checkin_id' : 'bewertung_id';
+        const parameterValue = checkinId || bewertungId;
+        
+        const res = await fetch(`${apiUrl}/kommentare.php?action=list&${parameterName}=${parameterValue}`);
         const data = await res.json();
         if (data.status === "success") {
             setComments(data.kommentare);
+        } else {
+            console.error("Fehler beim Laden der Kommentare:", data.message);
         }
     };
 
@@ -34,26 +49,39 @@ const CommentSection = ({ checkinId }) => {
     }, [checkinId]);
 
     const handleSubmit = async () => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim() || !isValidProps()) return;
+        
+        const requestBody = {
+            action: "create",
+            nutzer_id: userId,
+            kommentar: newComment
+        };
+
+        // Je nach Typ die entsprechende ID hinzufügen
+        if (checkinId) {
+            requestBody.checkin_id = checkinId;
+        } else {
+            requestBody.bewertung_id = bewertungId;
+        }
+
         const res = await fetch(`${apiUrl}/kommentare.php?action=create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                action: "create",
-                checkin_id: checkinId,
-                nutzer_id: userId,
-                kommentar: newComment
-            })
+            body: JSON.stringify(requestBody)
         });
+        
         const data = await res.json();
         if (data.status === "success") {
             setNewComment("");
             loadComments();
+        } else {
+            console.error("Fehler beim Erstellen des Kommentars:", data.message);
         }
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm("Kommentar wirklich löschen?")) return;
+        
         const res = await fetch(`${apiUrl}/kommentare.php?action=delete`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -62,8 +90,13 @@ const CommentSection = ({ checkinId }) => {
                 nutzer_id: userId
             })
         });
+        
         const data = await res.json();
-        if (data.status === "success") loadComments();
+        if (data.status === "success") {
+            loadComments();
+        } else {
+            console.error("Fehler beim Löschen des Kommentars:", data.message);
+        }
     };
 
     const handleUpdate = async () => {
@@ -76,13 +109,25 @@ const CommentSection = ({ checkinId }) => {
                 nutzer_id: userId
             })
         });
+        
         const data = await res.json();
         if (data.status === "success") {
             setEditingId(null);
             setEditingText("");
             loadComments();
+        } else {
+            console.error("Fehler beim Aktualisieren des Kommentars:", data.message);
         }
     };
+
+    // Wenn Props nicht valide sind, nichts rendern
+    if (!isValidProps()) {
+        return (
+            <ErrorMessage>
+                Fehler: Entweder checkinId oder bewertungId muss gesetzt sein, aber nicht beide.
+            </ErrorMessage>
+        );
+    }
 
     return (
         <Section>
@@ -215,4 +260,13 @@ const ButtonLeiste = styled.div`
     margin-right: 0.5rem;
     font-size: 1rem;
   }
+`;
+
+const ErrorMessage = styled.div`
+  color: #d73a49;
+  background-color: #ffeaea;
+  padding: 1rem;
+  border: 1px solid #d73a49;
+  border-radius: 4px;
+  margin: 1rem 0;
 `;
