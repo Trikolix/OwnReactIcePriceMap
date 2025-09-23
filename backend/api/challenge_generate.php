@@ -44,10 +44,6 @@ try {
             echo json_encode(['status' => 'error', 'message' => 'Challenge ist abgelaufen.']);
             exit;
         }
-
-        // Alte Challenge auf recreated setzen
-        $stmt = $pdo->prepare("UPDATE challenges SET recreated = 1 WHERE id = ?");
-        $stmt->execute([$challengeId]);
     } else {
         // Nur prüfen ob User bereits aktive Challenge hat (aber nur bei "neu")
         $stmt = $pdo->prepare("
@@ -72,29 +68,45 @@ try {
         default => [0, 5000],
     };
 
+    // Bounding Box berechnen um Anfrage zu optimieren
+    $lat = floatval($latUser);
+    $lon = floatval($lonUser);
+
+    $earthRadius = 6371000;
+
+    $minLat = $lat - rad2deg($radius[1] / $earthRadius);
+    $maxLat = $lat + rad2deg($radius[1] / $earthRadius);
+    $minLon = $lon - rad2deg($radius[1] / $earthRadius / cos(deg2rad($lat)));
+    $maxLon = $lon + rad2deg($radius[1] / $earthRadius / cos(deg2rad($lat)));
+
     // Alle Eisdielen im Radius laden (inkl. Distance) und gleichzeitig prüfen, ob sie schon eine offene Challenge haben
     $stmt = $pdo->prepare("
-        SELECT e.id, e.name, e.latitude, e.longitude,
+        SELECT 
+            e.id, e.name, e.latitude, e.longitude, e.adresse,
             (6371000 * ACOS(
                 COS(RADIANS(:lat)) * COS(RADIANS(e.latitude)) *
                 COS(RADIANS(e.longitude) - RADIANS(:lon)) +
                 SIN(RADIANS(:lat)) * SIN(RADIANS(e.latitude))
             )) AS distance,
-            CASE WHEN EXISTS (
-                SELECT 1 
-                FROM challenges c
-                WHERE c.nutzer_id = :userId
-                  AND c.eisdiele_id = e.id
-                  AND c.type = :type
-                  AND c.difficulty = :difficulty
-                  AND c.valid_until > NOW()
-            ) THEN 1 ELSE 0 END AS has_active_challenge
+            CASE WHEN c.id IS NULL THEN 0 ELSE 1 END AS has_active_challenge
         FROM eisdielen e
+        LEFT JOIN challenges c 
+            ON c.eisdiele_id = e.id
+            AND c.nutzer_id = :userId
+            AND c.type = :type
+            AND c.difficulty = :difficulty
+            AND c.valid_until > NOW()
+        WHERE e.latitude BETWEEN :minLat AND :maxLat
+          AND e.longitude BETWEEN :minLon AND :maxLon
         HAVING distance BETWEEN :minRadius AND :maxRadius
     ");
     $stmt->execute([
-        ':lat' => $latUser,
-        ':lon' => $lonUser,
+        ':lat' => $lat,
+        ':lon' => $lon,
+        ':minLat' => $minLat,
+        ':maxLat' => $maxLat,
+        ':minLon' => $minLon,
+        ':maxLon' => $maxLon,
         ':minRadius' => $radius[0],
         ':maxRadius' => $radius[1],
         ':userId' => $userId,
