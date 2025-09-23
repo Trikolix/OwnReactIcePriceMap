@@ -3,6 +3,9 @@ import styled from "styled-components";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
+import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 function Challenges() {
   const { userId, isLoggedIn } = useUser();
@@ -18,6 +21,33 @@ function Challenges() {
 
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
+
+  const [mapZoom, setMapZoom] = useState(12);
+
+  useEffect(() => {
+    switch (difficulty) {
+      case "leicht":
+        setMapZoom(11);
+        break;
+      case "mittel":
+        setMapZoom(10);
+        break;
+      case "schwer":
+        setMapZoom(8);
+        break;
+      default:
+        setMapZoom(11);
+    }
+  }, [difficulty]);
+
+  // Hilfs-Komponente, um den Zoom dynamisch zu setzen
+  function SetMapZoom({ zoom }) {
+    const map = useMap();
+    useEffect(() => {
+      map.setZoom(zoom);
+    }, [zoom, map]);
+    return null;
+  }
 
   // Läuft beim Laden der Seite automatisch
   useEffect(() => {
@@ -227,6 +257,59 @@ function Challenges() {
 
             <h3>Neue Challenge generieren</h3>
             {error && <ErrorBox>{error}</ErrorBox>}
+            {location && (<>
+              <LegendContainer>
+                <LegendItem>
+                  <ColorDot className="green" />
+                  <span>Leicht 0-5 km (Grün)</span>
+                </LegendItem>
+                <LegendItem>
+                  <ColorDot className="yellow" />
+                  <span>Mittel 5-15 km (Gelb)</span>
+                </LegendItem>
+                <LegendItem>
+                  <ColorDot className="orange" />
+                  <span>Schwer 15-45 km (Orange)</span>
+                </LegendItem>
+              </LegendContainer>
+              <div style={{ marginBottom: 20 }}>
+                <MapContainer
+                  center={[location.lat, location.lon]}
+                  zoom={mapZoom}
+                  style={{ height: "300px", width: "100%" }}
+                  scrollWheelZoom={false}
+                >
+                  <SetMapZoom zoom={mapZoom} />
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="&copy; OpenStreetMap contributors"
+                  />
+                  {/* Nutzerstandort */}
+                  <Marker position={[location.lat, location.lon]}>
+                    <Popup>Dein Standort</Popup>
+                  </Marker>
+                  {/* 0-5km grün */}
+                  <Circle
+                    center={[location.lat, location.lon]}
+                    radius={5000}
+                    pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }}
+                  />
+                  {/* 5-15km gelb */}
+                  <Circle
+                    center={[location.lat, location.lon]}
+                    radius={15000}
+                    pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }}
+                  />
+                  {/* 15-45km orange */}
+                  <Circle
+                    center={[location.lat, location.lon]}
+                    radius={45000}
+                    pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.1 }}
+                  />
+                </MapContainer>
+              </div>
+            </>
+            )}
 
             <SelectionWrapper>
               <SelectBox value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
@@ -303,7 +386,6 @@ const Container = styled.div`
   padding: 1rem;
   background-color: white;
   min-height: 100vh;
-  width: 100%;
   max-width: 800px;  /* Desktop: breite Mitte */
   margin: 0 auto;    /* zentriert das Ganze */
 
@@ -469,5 +551,38 @@ const RecreateButton = styled.button`
 
   @media (max-width: 600px) {
     width: 100%;
+  }
+`;
+
+const LegendContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const ColorDot = styled.div`
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  opacity: 0.7;
+  
+  &.green {
+    background-color: #22c55e;
+  }
+  
+  &.yellow {
+    background-color: #eab308;
+  }
+  
+  &.orange {
+    background-color: #f97316;
   }
 `;
