@@ -16,6 +16,33 @@ function Challenges() {
   const [challengeType, setChallengeType] = useState("daily");
   const [generating, setGenerating] = useState(false);
 
+  const [location, setLocation] = useState(null);
+  const [loadingLocation, setLoadingLocation] = useState(true);
+
+  // Läuft beim Laden der Seite automatisch
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocation({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+          });
+          setLoadingLocation(false);
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          setLoadingLocation(false);
+        },
+        { enableHighAccuracy: false, timeout: 5000 } // schnellere Antwort
+      );
+    } else {
+      console.warn("Geolocation not supported");
+      setLoadingLocation(false);
+    }
+  }, []);
+
+  // Lädt die Challenges beim Betreten der Seite
   useEffect(() => {
     if (!isLoggedIn) return;
 
@@ -33,25 +60,18 @@ function Challenges() {
       });
   }, [userId, isLoggedIn, apiUrl]);
 
-  const getUserLocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-        (err) => reject(err.message)
-      );
-    });
-  };
-
   const handleGenerateChallenge = async () => {
+    if (!location) {
+      alert("Standort konnte nicht ermittelt werden! Für die Generierung einer Challenge wird der Standort benötigt.");
+      return;
+    }
     setGenerating(true);
     setError(null);
     try {
-      const { lat, lon } = await getUserLocation();
       const form = new FormData();
       form.append("nutzer_id", String(userId));
-      form.append("lat", String(lat));
-      form.append("lon", String(lon));
+      form.append("lat", String(location.lat));
+      form.append("lon", String(location.lon));
       form.append("difficulty", difficulty);
       form.append("type", challengeType); // ✅ daily/weekly mitgeben
 
@@ -88,11 +108,10 @@ function Challenges() {
   const handleRecreateChallenge = async (challengeId, difficulty, type) => {
     setError(null);
     try {
-      const { lat, lon } = await getUserLocation();
       const form = new FormData();
       form.append("nutzer_id", String(userId));
-      form.append("lat", String(lat));
-      form.append("lon", String(lon));
+      form.append("lat", String(location.lat));
+      form.append("lon", String(location.lon));
       form.append("challenge_id", String(challengeId));
       form.append("difficulty", difficulty);
       form.append("type", type);
@@ -196,17 +215,53 @@ function Challenges() {
                     <RecreateWrapper>
                       <span>Challenge unmöglich?</span>
                       <RecreateButton onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}>
-                        🔄 Challenge neu generieren
+                        🔄 Einmalig neu generieren
                       </RecreateButton>
                     </RecreateWrapper>
-                  ): (<RecreateWrapper>
-                      <span>Challenges können nur einmal neu erzeugt werden.</span>
-                    </RecreateWrapper>)}
+                  ) : (<RecreateWrapper>
+                    <span>Challenges können nur einmal neu erzeugt werden.</span>
+                  </RecreateWrapper>)}
                 </ChallengeCard>
               ))
             )}
 
+            <h3>Neue Challenge generieren</h3>
+            {error && <ErrorBox>{error}</ErrorBox>}
 
+            <SelectionWrapper>
+              <SelectBox value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                <option value="leicht">Leicht (0–5 km)</option>
+                <option value="mittel">Mittel (5–15 km)</option>
+                <option value="schwer">Schwer (15–45 km)</option>
+              </SelectBox>
+
+              <SelectBox value={challengeType} onChange={(e) => setChallengeType(e.target.value)}>
+                <option value="daily">Daily Challenge</option>
+                <option value="weekly">Weekly Challenge</option>
+              </SelectBox>
+              {loadingLocation ? (
+                <p>Standort wird geladen...</p>
+              ) : (
+                <GenerateButton onClick={handleGenerateChallenge} disabled={generating}>
+                  {generating ? "Erstelle..." : "Neue Challenge generieren"}
+                </GenerateButton>)
+              }
+            </SelectionWrapper>
+            <p>
+              Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
+              Anhand deines aktuellen Standorts wird eine zufällige Eisdiele in der Nähe ausgewählt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
+              Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br></br>
+              Falls eine Daily-Challenge nach 18 Uhr genereriert wird, gilt diese für den nächsten Tag.<br></br>
+              Falls eine Weekly-Challenge an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br></br>
+              Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfällt diese und du kannst eine neue generieren.
+            </p>
+
+            <Explanation>
+              Challenges sind zufällige Eisdielen, die du in einem bestimmten Umkreis
+              besuchen musst. Für den erfolgreichen Check-In erhältst du Extra-EP und Awards.
+              Je schwieriger die Challenge (weiter entfernte Eisdiele), desto mehr Punkte kannst du sammeln.
+              Wichtig: der Check-In muss <b>vor Ort (maximal 300m Distanz zur Eisdiele)</b> erfolgen!
+            </Explanation>
 
             {completedChallenges.length > 0 && (
               <>
@@ -227,40 +282,7 @@ function Challenges() {
               </>
             )}
 
-            <h3>Neue Challenge generieren</h3>
-            {error && <ErrorBox>{error}</ErrorBox>}
 
-            <SelectionWrapper>
-              <SelectBox value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                <option value="leicht">Leicht (0–5 km)</option>
-                <option value="mittel">Mittel (5–15 km)</option>
-                <option value="schwer">Schwer (15–45 km)</option>
-              </SelectBox>
-
-              <SelectBox value={challengeType} onChange={(e) => setChallengeType(e.target.value)}>
-                <option value="daily">Daily Challenge</option>
-                <option value="weekly">Weekly Challenge</option>
-              </SelectBox>
-              <GenerateButton onClick={handleGenerateChallenge} disabled={generating}>
-                {generating ? "Erstelle..." : "Neue Challenge generieren"}
-              </GenerateButton>
-
-            </SelectionWrapper>
-            <p>
-              Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
-              Anhand deines aktuellen Standorts wird eine zufällige Eisdiele in der Nähe ausgewählt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
-              Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br></br>
-              Falls eine Daily-Challenge nach 18 Uhr genereriert wird, gilt diese für den nächsten Tag.<br></br>
-              Falls eine Weekly-Challenge an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br></br>
-              Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfällt diese und du kannst eine neue generieren.
-            </p>
-
-            <Explanation>
-              Challenges sind zufällige Eisdielen, die du in einem bestimmten Umkreis
-              besuchen musst. Für den erfolgreichen Check-In erhältst du Extra-EP und Awards.
-              Je schwieriger die Challenge (weiter entfernte Eisdiele), desto mehr Punkte kannst du sammeln.
-              Wichtig: der Check-In muss <b>vor Ort (maximal 300m Distanz zur Eisdiele)</b> erfolgen!
-            </Explanation>
 
           </>
         )}
