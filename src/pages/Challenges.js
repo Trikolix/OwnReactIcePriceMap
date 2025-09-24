@@ -284,23 +284,19 @@ function Challenges() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; OpenStreetMap contributors"
                   />
-                  {/* Nutzerstandort */}
                   <Marker position={[location.lat, location.lon]}>
                     <Popup>Dein Standort</Popup>
                   </Marker>
-                  {/* 0-5km grün */}
                   <Circle
                     center={[location.lat, location.lon]}
                     radius={5000}
                     pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }}
                   />
-                  {/* 5-15km gelb */}
                   <Circle
                     center={[location.lat, location.lon]}
                     radius={15000}
                     pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }}
                   />
-                  {/* 15-45km orange */}
                   <Circle
                     center={[location.lat, location.lon]}
                     radius={45000}
