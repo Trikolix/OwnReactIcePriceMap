@@ -45,7 +45,7 @@ class KugeleisCountEvaluator extends BaseAwardEvaluator {
                 JOIN checkin_sorten s ON
                     s.checkin_id = c.id
                 WHERE
-                    c.nutzer_id = 1 AND c.typ = 'Kugel';";
+                    c.nutzer_id = ? AND c.typ = 'Kugel';";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 
