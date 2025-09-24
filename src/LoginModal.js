@@ -33,12 +33,14 @@ const LoginModal = ({ setShowLoginModal }) => {
       const data = await response.json();
       console.log(data);
       if (data.status === 'success') {
-        login(data.userId, username);
+        // Verwende den vom Server zurückgegebenen username statt der Eingabe
+        const actualUsername = data.username;
+        login(data.userId, actualUsername);
         console.log(userId);
         setMessage('Login erfolgreich!');
 
         localStorage.setItem('userId', data.userId);
-        localStorage.setItem('username', username);
+        localStorage.setItem('username', actualUsername);
 
         // Schließen Sie das Modal nach 2 Sekunden
         setTimeout(() => {
@@ -60,6 +62,13 @@ const LoginModal = ({ setShowLoginModal }) => {
       setTermsError(true);
       return;
     }
+
+    // Validierung für Leerzeichen im Benutzernamen
+    if (username.includes(' ')) {
+      setMessage('Benutzername darf keine Leerzeichen enthalten.');
+      return;
+    }
+
     try {
       const response = await fetch(`${apiUrl}/userManagement/register.php`, {
         method: 'POST',
@@ -131,14 +140,14 @@ const LoginModal = ({ setShowLoginModal }) => {
             handleLogin();
           }
         }}>
-          {!isResetMode && (<input
+          {!isResetMode && (<Input
             type="text"
-            placeholder="Benutzername"
+            placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
           />)}
-          {isRegisterMode && (<input
+          {isRegisterMode && (<Input
               type="email"
               placeholder="E-Mail"
               value={email}
@@ -146,7 +155,7 @@ const LoginModal = ({ setShowLoginModal }) => {
               required
             />
           )}
-          {!isResetMode && (<><input
+          {!isResetMode && (<><Input
             type="password"
             placeholder="Passwort"
             value={password}
@@ -174,7 +183,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
           {isResetMode && (
             <>
-              <input
+              <Input
                 type="email"
                 placeholder="E-Mail-Adresse"
                 value={resetEmail}
@@ -273,4 +282,12 @@ const ErrorText = styled.p`
   color: red;
   font-size: 0.9rem;
   margin-top: 0.25rem;
+`;
+
+const Input = styled.input`
+  width: 95%;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ccc;
+  margin-bottom: 0.5rem;
 `;
