@@ -36,6 +36,7 @@ require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
+require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -100,6 +101,11 @@ try {
     $type = $_POST['type'] ?? null;
     $latUser = $_POST['lat'] ?? null;
     $lonUser = $_POST['lon'] ?? null;
+
+    // Optional: Referenzierter Checkin (für mentions)
+    $referencedCheckinId = $_POST['referencedCheckinId'] ?? null;
+    $groupId = $_POST['group_id'] ?? null;
+    $datum = $_POST['datum'] ?? null;
 
     $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
@@ -186,12 +192,34 @@ try {
 
 
     // INSERT in `checkins`
-    $stmt = $pdo->prepare("
-        INSERT INTO checkins (nutzer_id, eisdiele_id, typ, geschmackbewertung, waffelbewertung, größenbewertung, preisleistungsbewertung, kommentar, anreise, is_on_site)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistung, $kommentar, $anreise, $isOnSite]);
+    $sql = "
+        INSERT INTO checkins (
+            nutzer_id, eisdiele_id, typ, geschmackbewertung,
+            waffelbewertung, größenbewertung, preisleistungsbewertung,
+            kommentar, anreise, is_on_site, group_id
+            " . ($datum ? ", datum" : "") . "
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            " . ($datum ? ", ?" : "") . "
+        )
+    ";
+
+    $params = [
+        $userId, $shopId, $type, $geschmack,
+        $waffel, $größe, $preisleistung,
+        $kommentar, $anreise, $isOnSite, $groupId
+    ];
+
+    if ($datum) {
+        $params[] = $datum;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $checkinId = $pdo->lastInsertId();
+    if (!$checkinId) {
+        throw new Exception("Checkin konnte nicht gespeichert werden.");
+    }
 
     if (!empty($bildUrls)) {
         $insertImgStmt = $pdo->prepare("
@@ -226,7 +254,7 @@ try {
         ");
         $stmtNotif = $pdo->prepare("
             INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-            VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_id', ?, 'by_user', ?))
+            VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_id', ?, 'by_user', ?, 'shop_id', ?))
         ");
         $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
 
@@ -237,7 +265,7 @@ try {
             if (!$stmtCheckUser->fetch()) continue; // überspringen, falls Nutzer nicht existiert
 
             $stmtMention->execute([$checkinId, $mentionedUserId]);
-            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $checkinId, $userId]);
+            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $checkinId, $userId, $shopId]);
         }
     }
 
@@ -276,6 +304,7 @@ try {
         new DetailedCheckinEvaluator(),
         new DetailedCheckinCountEvaluator(),
         new IceShopOneByOneEvaluator(),
+        new ChallengeCountEvaluator(),
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
@@ -330,6 +359,7 @@ try {
                 'shop_address' => $challenge['shop_address'],
                 'completed_at' => date('Y-m-d H:i:s')
             ];
+            $evaluators[] = new ChallengeCountEvaluator();
         }
         $evaluators[] = new OnSiteEvaluator();
     }
@@ -400,6 +430,14 @@ try {
     ]);
 
 } catch (Exception $e) {
+    error_log("Exception in checkin_upload: " . $e->getMessage() . " @ " . $e->getFile() . ":" . $e->getLine());
+    try {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+    } catch (Exception $rollbackError) {
+        error_log("Rollback fehlgeschlagen: " . $rollbackError->getMessage());
+    }
     respondWithError('Ein unerwarteter Fehler ist aufgetreten.' . $e->getMessage(), 500, $e);
 }
-?>
+?>		

@@ -6,7 +6,7 @@ import SorteAutocomplete from "./components/SorteAutocomplete";
 import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop }) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -26,7 +26,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
     const [mentionedUsers, setMentionedUsers] = useState([]);
+    const [referencedCheckin, setReferencedCheckin] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+    
 
     const getUserLocation = () => {
         return new Promise((resolve, reject) => {
@@ -37,6 +39,19 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             );
         });
     };
+
+    useEffect(() => {
+        if (referencedCheckinId) {
+            fetch(`${apiUrl}/checkin/get_checkin.php?checkin_id=${referencedCheckinId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.error) {
+                        setReferencedCheckin(data);
+                    }
+                })
+                .catch(err => console.error("Fehler beim Laden des Referenz-Checkins:", err));
+        }
+    }, [referencedCheckinId, apiUrl]);
 
     const askForPriceUpdate = (preise) => {
         const now = new Date();
@@ -148,6 +163,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }))
             ));
             if (checkinId) formData.append("checkin_id", checkinId);
+            if (referencedCheckinId) formData.append("referencedCheckinId", referencedCheckinId);
+            if (referencedCheckin.group_id) formData.append("group_id", referencedCheckin.group);
+            if (referencedCheckin.datum) formData.append("datum", referencedCheckin.datum);
 
             try {
                 const location = await getUserLocation();
@@ -478,10 +496,18 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 ))}
                             </BilderContainer>
                         </Section>
-                        <Section>
-                            <Label>Du warst mit jemanden anderen Eis essen? Erwähne ihn und lade ihn ein sein Checkin zu teilen!</Label>
-                            <UserMentionMultiSelect onChange={setMentionedUsers} />
-                        </Section>
+                        {!referencedCheckin ? 
+                            (<Section>
+                                <Label>Du warst mit jemanden anderen Eis essen? Erwähne ihn und lade ihn ein sein Checkin zu teilen!</Label>
+                                <UserMentionMultiSelect onChange={setMentionedUsers} />
+                            </Section>) : 
+                            (<Section>
+                              <p style={{ fontStyle: "italic", color: "#666" }}>
+                                Dieser Check-in wird mit <strong>{referencedCheckin.nutzer_name}'s</strong> Check-in vom {referencedCheckin.datum} verknüpft.
+                              </p>
+                            </Section>)
+                            }
+                        
                         <ButtonGroup>
                             <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
                             <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>

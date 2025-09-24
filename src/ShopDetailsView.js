@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, use } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
@@ -36,6 +36,11 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const tabParam = searchParams.get("tab");
   const focusCheckinId = searchParams.get("focusCheckin");
   const focusReviewId = searchParams.get("focusReview");
+  const createReferencedCheckin = searchParams.get("createReferencedCheckin");
+
+  useEffect(() => {
+    setShowCheckinForm(true);
+  }, [createReferencedCheckin]);
 
   useEffect(() => {
     if (tabParam) {
@@ -215,6 +220,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         onSuccess={refreshShop}
         shop={shopData}
         setShowPriceForm={setShowPriceForm}
+        referencedCheckinId={createReferencedCheckin}
       />)}
 
     </>);

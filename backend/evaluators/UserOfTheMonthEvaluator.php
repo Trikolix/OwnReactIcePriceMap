@@ -21,7 +21,6 @@ class UserOfTheMonthEvaluator extends BaseAwardEvaluator {
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
             $threshold = (int)$levelData['threshold'];
-            error_log("Check level $level: userId=$userId, threshold=$threshold");
 
             if ($userId == $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                 $achievements[] = [
