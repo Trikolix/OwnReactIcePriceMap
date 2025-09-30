@@ -133,7 +133,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           </Header>
           <Tabs>
             <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-            <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
+            <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-Ins</Tab>
             <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
           </Tabs>
           <Content>
@@ -366,7 +366,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
   } else if (activeTab === 'checkins') {
     return (
       <div>
-        <h2>CheckIns</h2>
+        <h2>Check-Ins</h2>
         {shopData.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
         {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
         {shopData.checkins && (shopData.checkins.map((checkin, index) => (
