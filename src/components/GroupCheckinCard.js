@@ -2,51 +2,94 @@ import CheckinCard from './../components/CheckinCard';
 import styled from "styled-components";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import { Navigation, Pagination } from "swiper/modules";
 
 const GroupCheckinCard = ({ checkins, onSuccess }) => {
-  const [expanded, setExpanded] = useState(false);
+    const first = checkins[0];
+    const allNames = formatNames(checkins);
+    function formatNames(checkins) {
+        if (checkins.length === 1) {
+            return formatName(checkins[0]);
+        }
 
-  const first = checkins[0];
-  const allNames = checkins.map((c) => c.nutzer_name).join(", ");
+        if (checkins.length === 2) {
+            return (
+                <>
+                    {formatName(checkins[0])} und {formatName(checkins[1])}
+                </>
+            );
+        }
 
-  return (
-    <Card>
-      <DateText dateTime={first.datum}>
-        {new Date(first.datum).toLocaleDateString("de-DE", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-      </DateText>
+        return (
+            <>
+                {checkins.slice(0, -1).map((c, i) => (
+                    <span key={c.nutzer_id}>
+                        {formatName(c)}
+                        {i < checkins.length - 2 && ", "}
+                    </span>
+                ))}{" "}
+                und {formatName(checkins[checkins.length - 1])}
+            </>
+        );
+    }
 
-      <ContentWrapper>
-        <LeftContent>
-          <strong>{allNames}</strong> waren gemeinsam bei{" "}
-          <strong>
-            <CleanLink to={`/map/activeShop/${first.eisdiele_id}`}>
-              {first.eisdiele_name}
-            </CleanLink>
-          </strong>{" "}
-          🍦
-        </LeftContent>
-      </ContentWrapper>
+    function formatName(checkin) {
+        return (
+            <strong>
+                <CleanLink to={`/user/${checkin.nutzer_id}`}>
+                    {checkin.nutzer_name}
+                </CleanLink>
+            </strong>
+        );
+    }
 
-      <ExpandButton onClick={() => setExpanded(!expanded)}>
-        {expanded ? "Details ausblenden" : "Details anzeigen"}
-      </ExpandButton>
 
-      {expanded && (
-        <div style={{ marginTop: "1rem", marginLeft: "-2rem", marginRight: "-2rem" }}>
-          {checkins.map((c) => (
-            <CheckinCard key={c.id} checkin={c} onSuccess={onSuccess} showComments={false} />
-          ))}
-        </div>
-      )}
-    </Card>
-  );
+
+    return (
+        <Card>
+            <DateText dateTime={first.datum}>
+                {new Date(first.datum).toLocaleDateString("de-DE", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                })}
+            </DateText>
+
+            <ContentWrapper>
+                <LeftContent>
+                    {allNames} waren gemeinsam bei{" "}
+                    <strong>
+                        <CleanLink to={`/map/activeShop/${first.eisdiele_id}`}>
+                            {first.eisdiele_name}
+                        </CleanLink>
+                    </strong>{" "}
+                </LeftContent>
+            </ContentWrapper>
+
+            <Swiper
+                modules={[Navigation, Pagination]}
+                spaceBetween={20}
+                slidesPerView={1}
+                navigation
+                pagination={{ clickable: true }}
+                autoHeight={true}
+                style={{ marginTop: "1rem", marginLeft: "-2rem", marginRight: "-2rem", marginBottom: "-3.5rem" }}
+            >
+                {checkins.map((c) => (
+                    <SwiperSlide key={c.id}>
+                        <CheckinCard checkin={c} onSuccess={onSuccess} showComments={false} />
+                    </SwiperSlide>
+                ))}
+            </Swiper>
+        </Card>
+    );
 };
+
 
 export default GroupCheckinCard;
 
@@ -54,7 +97,9 @@ const Card = styled.div`
   position: relative;
   background: white;
   border-radius: 16px;
+  border: 1px solid #eee;
   padding: 2rem;
+  padding-bottom: -3rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   transition: box-shadow 0.3s;
@@ -91,21 +136,4 @@ const LeftContent = styled.div`
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
-`;
-
-const ExpandButton = styled.button`
-  align-self: flex-start;
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #db9d20ff;
-  }
 `;

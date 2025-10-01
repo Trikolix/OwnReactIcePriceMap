@@ -28,17 +28,50 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [mentionedUsers, setMentionedUsers] = useState([]);
     const [referencedCheckin, setReferencedCheckin] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
-    
+    const [location, setLocation] = useState(null);
 
-    const getUserLocation = () => {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
-            navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-                (err) => reject(err.message)
-            );
-        });
-    };
+    // Läuft beim Laden der Seite automatisch
+    useEffect(() => {
+        let watchId;
+
+        if (!navigator.geolocation) {
+            console.warn("Geolocation not supported");
+            return;
+        }
+
+        // Erstversuch: getCurrentPosition mit schnellem Timeout
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocation({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                console.warn("Geolocation initial failed:", err);
+            },
+            { enableHighAccuracy: false, timeout: 5000 }
+        );
+
+        // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                setLocation({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                // optional: nur für Debug
+                console.warn("watchPosition error:", err);
+            },
+            { enableHighAccuracy: false, maximumAge: 0 }
+        );
+
+        return () => {
+            if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+        };
+    }, []);
 
     useEffect(() => {
         if (referencedCheckinId) {
@@ -162,17 +195,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     beschreibung: b.beschreibung
                 }))
             ));
-            
+
             if (checkinId) formData.append("checkin_id", checkinId);
             if (referencedCheckinId) formData.append("referencedCheckinId", referencedCheckinId);
             if (referencedCheckin && referencedCheckin.group_id !== null) formData.append("group_id", referencedCheckin.group_id);
             if (referencedCheckin && referencedCheckin.datum) formData.append("datum", referencedCheckin.datum);
-            try {
-                const location = await getUserLocation();
+            if (location) {
                 formData.append("lat", location.lat);
                 formData.append("lon", location.lon);
-            } catch (e) {
-                console.warn("Kein Standort verfügbar, Checkin wird ohne Vor-Ort-Bonus gespeichert.");
+            } else {
+                console.info("Kein Standort, Checkin ohne Bonus.");
             }
 
             const response = await fetch(
@@ -194,8 +226,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
-                console.log("Server-Antwort:", data);
-                console.log((data.completed_challenge !== null));
                 if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
@@ -207,7 +237,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         setAwards(data.new_awards);
                     }
                     if (data.completed_challenge !== null) {
-                        console.log("Abgeschlossene Challenges:", data.completed_challenge);
                         setChallenges(data.completed_challenge);
                     }
 
@@ -496,18 +525,18 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 ))}
                             </BilderContainer>
                         </Section>
-                        {!referencedCheckin ? 
+                        {!referencedCheckin ?
                             (<Section>
                                 <Label>Du warst mit jemanden anderen Eis essen? Erwähne ihn und lade ihn ein sein Checkin zu teilen!</Label>
                                 <UserMentionMultiSelect onChange={setMentionedUsers} />
-                            </Section>) : 
+                            </Section>) :
                             (<Section>
-                              <p style={{ fontStyle: "italic", color: "#666" }}>
-                                Dieser Check-in wird mit <strong>{referencedCheckin.nutzer_name}'s</strong> Check-in vom {referencedCheckin.datum} verknüpft.
-                              </p>
+                                <p style={{ fontStyle: "italic", color: "#666" }}>
+                                    Dieser Check-in wird mit <strong>{referencedCheckin.nutzer_name}'s</strong> Check-in vom {referencedCheckin.datum} verknüpft.
+                                </p>
                             </Section>)
-                            }
-                        
+                        }
+
                         <ButtonGroup>
                             <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
                             <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>

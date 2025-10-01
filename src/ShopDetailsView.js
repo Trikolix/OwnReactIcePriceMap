@@ -156,6 +156,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               refreshRoutes={refreshRoutes}
               focusCheckinId={focusCheckinId}
               focusReviewId={focusReviewId}
+              userId={userId}
+              handleEditClick={handleEditClick}
             />
           </Content>
         </AnimatedContainer>
@@ -293,7 +295,9 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
         <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
         <OpeningHours eisdiele={shopData.eisdiele} />
         <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
-        {(Number(userId) === 1) && (
+        { console.log("USERID", userId)}
+        {
+        (Number(userId) === 1) && (
           <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
         )}
         <h2>Preise</h2>

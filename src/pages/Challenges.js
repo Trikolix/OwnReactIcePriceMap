@@ -49,27 +49,49 @@ function Challenges() {
     return null;
   }
 
-  // Läuft beim Laden der Seite automatisch
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-          });
-          setLoadingLocation(false);
-        },
-        (err) => {
-          console.error("Geolocation error:", err);
-          setLoadingLocation(false);
-        },
-        { enableHighAccuracy: false, timeout: 5000 } // schnellere Antwort
-      );
-    } else {
+    let watchId;
+
+    if (!navigator.geolocation) {
       console.warn("Geolocation not supported");
-      setLoadingLocation(false);
+      setLoading(false);
+      return;
     }
+
+    // Erstversuch: getCurrentPosition mit schnellem Timeout
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        });
+        setLoadingLocation(false);
+      },
+      (err) => {
+        console.warn("Geolocation initial failed:", err);
+        setLoadingLocation(false);
+      },
+      { enableHighAccuracy: false, timeout: 5000 }
+    );
+
+    // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        // optional: nur für Debug
+        console.warn("watchPosition error:", err);
+      },
+      { enableHighAccuracy: false, maximumAge: 0 }
+    );
+
+    return () => {
+      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   // Lädt die Challenges beim Betreten der Seite

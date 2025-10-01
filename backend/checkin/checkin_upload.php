@@ -134,7 +134,7 @@ try {
         $bewertungen = [];
         
         foreach ($sorten as $sorte) {
-            if (isset($sorte['bewertung']) && $sorte['bewertung'] !== null) {
+            if (!empty($sorte['bewertung']) && is_numeric($sorte['bewertung'])) {
                 $bewertungen[] = $sorte['bewertung'];
             }
         }
@@ -248,6 +248,17 @@ try {
         }
     }
 
+    // Metadaten des neuen Checkins laden
+    $checkinMeta = $pdo->prepare("
+        SELECT c.id, c.anreise, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land, e.name AS shop_name
+        FROM checkins c
+        JOIN eisdielen e ON c.eisdiele_id = e.id
+        WHERE c.id = ?
+    ");
+    $checkinMeta->execute([$checkinId]);
+    $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
+    $__profiling['after_insert'] = microtime(true);
+
     // Wenn Mentions vorhanden, Einträge in checkin_mentions + Notifications erstellen
     if (count($mentionedUsers) > 0) {
         // Optional: checkin_groups anlegen, falls du Gruppierung nutzen willst
@@ -271,7 +282,7 @@ try {
         ");
         $stmtNotif = $pdo->prepare("
             INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-            VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_id', ?, 'by_user', ?, 'shop_id', ?))
+            VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_mention_id', ?,'checkin_id', ?, 'by_user', ?, 'shop_id', ?, 'username', ?, 'shop_name', ?))
         ");
         $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
 
@@ -282,20 +293,10 @@ try {
             if (!$stmtCheckUser->fetch()) continue; // überspringen, falls Nutzer nicht existiert
 
             $stmtMention->execute([$checkinId, $mentionedUserId]);
-            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $checkinId, $userId, $shopId]);
+            $mentionId = $pdo->lastInsertId();
+            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $mentionId, $checkinId, $userId, $shopId, $inviterName, $meta['shop_name'] ?? 'einer Eisdiele']);
         }
     }
-
-    // Metadaten des neuen Checkins laden
-    $checkinMeta = $pdo->prepare("
-        SELECT c.id, c.anreise, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land
-        FROM checkins c
-        JOIN eisdielen e ON c.eisdiele_id = e.id
-        WHERE c.id = ?
-    ");
-    $checkinMeta->execute([$checkinId]);
-    $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
-    $__profiling['after_insert'] = microtime(true);
 
     // Evaluatoren
     $evaluators = [

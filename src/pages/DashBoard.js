@@ -30,7 +30,6 @@ function DashBoard() {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      console.log("API Antwort:", json);
 
       const newActivities = json.activities || [];
       const meta = json.meta || {};
@@ -63,29 +62,53 @@ function DashBoard() {
         if (!grouped[gid]) {
           grouped[gid] = [];
         }
-        grouped[gid].push(a.data);
+        grouped[gid].push(a);
       } else {
         singles.push(a); // alles andere normal behalten
       }
     });
 
-    // Ergebnis: Einzelne + Gruppen zusammenführen
     const result = [
       ...singles,
-      ...Object.keys(grouped).map((gid) => ({
-        typ: "group_checkin",
-        id: `group-${gid}`,
-        data: grouped[gid],
-      })),
+      ...Object.keys(grouped).flatMap((gid) => {
+        const items = grouped[gid];
+        if (items.length === 1) {
+          // nur ein Checkin -> wieder als normaler Checkin behandeln
+          return items;
+        } else {
+          // mehrere -> Gruppierung
+          return {
+            typ: "group_checkin",
+            id: `group-${gid}`,
+            data: items.map((i) => i.data),
+          };
+        }
+      }),
     ];
 
-    // Sortierung beibehalten (z.B. nach Datum absteigend)
-    return result.sort((a, b) => {
-      const da = new Date(a.typ === "group_checkin" ? a.data[0].datum : a.data.datum);
-      const db = new Date(b.typ === "group_checkin" ? b.data[0].datum : b.data.datum);
+    function getItemDate(item) {
+      if (item.typ === "group_checkin") {
+        // bei Gruppe: Top-Level-Datum verwenden
+        return item.data[0]?.datum;
+      }
+      if (item.typ === "checkin" || item.typ === "route" || item.typ === "award") {
+        return item.data?.datum;
+      }
+      if (item.typ === "bewertung" || item.typ === "eisdiele") {
+        return item.data?.erstellt_am;
+      }
+      return null;
+    }
+
+    // Sortierung nach Datum absteigend
+    const sorted = result.sort((a, b) => {
+      const da = new Date(getItemDate(a));
+      const db = new Date(getItemDate(b));
       return db - da;
     });
+    return sorted;
   }
+
 
 
 
