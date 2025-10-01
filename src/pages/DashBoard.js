@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from "styled-components";
 import ReviewCard from "./../components/ReviewCard";
 import CheckinCard from './../components/CheckinCard';
+import GroupCheckinCard from './../components/GroupCheckinCard';
 import RouteCard from './../components/RouteCard';
 import ShopCard from './../components/ShopCard';
 import AwardCard from './../components/AwardCard';
@@ -51,6 +52,42 @@ function DashBoard() {
     }
   };
 
+  // Hilfsfunktion: Gruppiert Activities nach group_id
+  function groupActivities(activities) {
+    const grouped = {};
+    const singles = [];
+
+    activities.forEach((a) => {
+      if (a.typ === "checkin" && a.data.group_id) {
+        const gid = a.data.group_id;
+        if (!grouped[gid]) {
+          grouped[gid] = [];
+        }
+        grouped[gid].push(a.data);
+      } else {
+        singles.push(a); // alles andere normal behalten
+      }
+    });
+
+    // Ergebnis: Einzelne + Gruppen zusammenführen
+    const result = [
+      ...singles,
+      ...Object.keys(grouped).map((gid) => ({
+        typ: "group_checkin",
+        id: `group-${gid}`,
+        data: grouped[gid],
+      })),
+    ];
+
+    // Sortierung beibehalten (z.B. nach Datum absteigend)
+    return result.sort((a, b) => {
+      const da = new Date(a.typ === "group_checkin" ? a.data[0].datum : a.data.datum);
+      const db = new Date(b.typ === "group_checkin" ? b.data[0].datum : b.data.datum);
+      return db - da;
+    });
+  }
+
+
 
   // Initial laden
   useEffect(() => {
@@ -81,12 +118,14 @@ function DashBoard() {
         )}
 
         <Section>
-          {activities.map((activity) => {
+          {groupActivities(activities).map((activity) => {
             const { typ, id, data } = activity;
 
             switch (typ) {
               case 'checkin':
                 return <CheckinCard key={`checkin-${id}`} checkin={data} onSuccess={reload} />;
+              case "group_checkin":
+                return <GroupCheckinCard key={id} checkins={data} onSuccess={reload} />;
               case 'bewertung':
                 return <ReviewCard key={`bewertung-${id}`} review={data} />;
               case 'route':
