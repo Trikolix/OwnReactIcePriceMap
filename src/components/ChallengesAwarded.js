@@ -12,7 +12,6 @@ const getDifficultyColor = (difficulty) => {
 };
 
 const ChallengesAwarded = ({ challenge }) => {
-    console.log("ChallengesAwarded Komponente erhalten:", challenge);
     if (!challenge || challenge.length === 0) return null;
 
     return (
