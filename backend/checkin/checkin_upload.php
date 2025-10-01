@@ -129,6 +129,23 @@ try {
         respondWithError('Fehlende oder ungültige Pflichtdaten.');
     }
 
+    // Falls $geschmack null ist, berechne Durchschnitt aus $sorten
+    if ($geschmack === null && is_array($sorten)) {
+        $bewertungen = [];
+        
+        foreach ($sorten as $sorte) {
+            if (isset($sorte['bewertung']) && $sorte['bewertung'] !== null) {
+                $bewertungen[] = $sorte['bewertung'];
+            }
+        }
+        
+        if (count($bewertungen) > 0) {
+            $durchschnitt = array_sum($bewertungen) / count($bewertungen);
+            // Auf 0.1 runden
+            $geschmack = round($durchschnitt, 1);
+        }
+    }
+
     // Optional: mentionedUsers JSON aus POST
     $mentionedUsers = json_decode($_POST['mentionedUsers'] ?? '[]', true);
     if (!is_array($mentionedUsers)) $mentionedUsers = [];

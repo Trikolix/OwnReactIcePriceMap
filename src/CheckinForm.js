@@ -162,11 +162,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     beschreibung: b.beschreibung
                 }))
             ));
+            
             if (checkinId) formData.append("checkin_id", checkinId);
             if (referencedCheckinId) formData.append("referencedCheckinId", referencedCheckinId);
-            if (referencedCheckin.group_id) formData.append("group_id", referencedCheckin.group);
-            if (referencedCheckin.datum) formData.append("datum", referencedCheckin.datum);
-
+            if (referencedCheckin && referencedCheckin.group_id !== null) formData.append("group_id", referencedCheckin.group_id);
+            if (referencedCheckin && referencedCheckin.datum) formData.append("datum", referencedCheckin.datum);
             try {
                 const location = await getUserLocation();
                 formData.append("lat", location.lat);

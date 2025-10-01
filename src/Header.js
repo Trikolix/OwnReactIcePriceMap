@@ -179,11 +179,14 @@ const Header = ({ refreshShops }) => {
     }
   };
 
+  const currentUser = { month: "September", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68dd0401cf5ad_ChatGPT%20Image%201.%20Okt.%202025,%2012_32_52.png" };
+
   const pastUsers = [
-    { id: 22, name: "Eispfote ", image: "https://ice-app.de/uploads/award_icons/68bfc41eb4748_1000101916.png" },
-    { id: 52, name: "alinaa.wrnr", image: "https://ice-app.de/uploads/award_icons/68bfc408d55d6_1000101915.png" },
-    { id: 2, name: "GourmetBiker", image: "https://ice-app.de/uploads/award_icons/68bfc3f576783_1000101914.png" },
-    { id: 3, name: "Leckermäulchen95", image: "https://ice-app.de/uploads/award_icons/68bfc3848cd3b_1000101913.png" },
+    { month: "August", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png" },
+    { month: "Juli", id: 22, name: "Eispfote ", image: "https://ice-app.de/uploads/award_icons/68bfc41eb4748_1000101916.png" },
+    { month: "Juni", id: 52, name: "alinaa.wrnr", image: "https://ice-app.de/uploads/award_icons/68bfc408d55d6_1000101915.png" },
+    { month: "Mai", id: 2, name: "GourmetBiker", image: "https://ice-app.de/uploads/award_icons/68bfc3f576783_1000101914.png" },
+    { month: "April", id: 3, name: "Leckermäulchen95", image: "https://ice-app.de/uploads/award_icons/68bfc3848cd3b_1000101913.png" },
   ];
 
   return (
@@ -247,26 +250,27 @@ const Header = ({ refreshShops }) => {
       {showOverlay && (
         <OverlayBackground>
           <Overlay>
-          <CloseButton onClick={() => {
-            setShowOverlay(false);
-            setLevelUpInfo(null);
-            setNewAwards([]);
-          }}>&times;</CloseButton>
+            <CloseButton onClick={() => {
+              setShowOverlay(false);
+              setLevelUpInfo(null);
+              setNewAwards([]);
+            }}>&times;</CloseButton>
 
-          {levelUpInfo && (
-            <>
-              <h2>🎉 Level-Up!</h2>
-              <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
-              <p><em>{levelUpInfo.level_name}</em></p>
-            </>
-          )}
-          {levelUpInfo && newAwards.length > 0 && (<hr></hr>)}
-          <NewAwards awards={newAwards} />
-          <SubmitButton onClick={() => {
-            setShowOverlay(false);
-            setLevelUpInfo(null);
-            setNewAwards([]);}}>Alles Klar!</SubmitButton>
-        </Overlay>
+            {levelUpInfo && (
+              <>
+                <h2>🎉 Level-Up!</h2>
+                <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                <p><em>{levelUpInfo.level_name}</em></p>
+              </>
+            )}
+            {levelUpInfo && newAwards.length > 0 && (<hr></hr>)}
+            <NewAwards awards={newAwards} />
+            <SubmitButton onClick={() => {
+              setShowOverlay(false);
+              setLevelUpInfo(null);
+              setNewAwards([]);
+            }}>Alles Klar!</SubmitButton>
+          </Overlay>
         </OverlayBackground>
       )}
       {showUserOfMonth && (
@@ -274,15 +278,16 @@ const Header = ({ refreshShops }) => {
           <Overlay>
             <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
             <h2>🏅 Nutzer/in des Monats 🏅</h2>
+            <MonthHeader><u>{currentUser.month}</u></MonthHeader>
 
             <CurrentUserWrapper>
               <UserCard>
                 <CurrentUserImage
-                  src="https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png"
-                  alt="IceGoe"
+                  src={currentUser.image}
+                  alt={currentUser.name}
                 />
                 <strong>
-                  <UserLink to={`/user/53`} className="logged-in">
+                  <UserLink to={"/user/" + currentUser.id} className="logged-in">
                     IceGoe
                   </UserLink>
                 </strong>
@@ -293,6 +298,7 @@ const Header = ({ refreshShops }) => {
             <PastUsersGrid>
               {pastUsers.map((user) => (
                 <UserCard key={user.id}>
+                  <MonthHeader><u>{user.month}</u></MonthHeader>
                   <UserImage src={user.image} alt={user.name} />
                   <strong>
                     <UserLink to={`/user/${user.id}`} className="logged-in">
@@ -526,3 +532,8 @@ const SubmitButton = styled.button`
     background-color: #ffcb4c;
   }
 `;
+
+const MonthHeader = styled.h3`
+  margin-top: 0rem;
+  margin-bottom: 0rem;
+  `;
