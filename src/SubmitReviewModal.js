@@ -21,16 +21,50 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [showAllAttributes, setShowAllAttributes] = useState(false)
     const [awards, setAwards] = useState([]);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
-
-    const getUserLocation = () => {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
+    const [location, setLocation] = useState(null);
+    
+        // Läuft beim Laden der Seite automatisch
+        useEffect(() => {
+            let watchId;
+    
+            if (!navigator.geolocation) {
+                console.warn("Geolocation not supported");
+                return;
+            }
+    
+            // Erstversuch: getCurrentPosition mit schnellem Timeout
             navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-                (err) => reject(err.message)
+                (pos) => {
+                    setLocation({
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                    });
+                },
+                (err) => {
+                    console.warn("Geolocation initial failed:", err);
+                },
+                { enableHighAccuracy: false, timeout: 5000 }
             );
-        });
-    };
+    
+            // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    setLocation({
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                    });
+                },
+                (err) => {
+                    // optional: nur für Debug
+                    console.warn("watchPosition error:", err);
+                },
+                { enableHighAccuracy: false, maximumAge: 0 }
+            );
+    
+            return () => {
+                if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+            };
+        }, []);
 
     useEffect(() => {
         const fetchReview = async () => {
@@ -100,12 +134,11 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
             ));
             formData.append("deleted_bild_ids", JSON.stringify(deletedBildIds));
 
-            try {
-                const location = await getUserLocation();
+            if (location) {
                 formData.append("lat", location.lat);
                 formData.append("lon", location.lon);
-            } catch (e) {
-                console.warn("Kein Standort verfügbar, Checkin wird ohne Vor-Ort-Bonus gespeichert.");
+            } else {
+                console.info("Kein Standort, Bewertung ohne Standort gespeichert.");
             }
 
             const response = await fetch(`${apiUrl}/review/submitReview.php`,
