@@ -299,11 +299,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const handleBildUpload = (e) => {
         const files = Array.from(e.target.files);
-        const neueBilder = files.map(file => ({
-            file,
-            previewUrl: URL.createObjectURL(file),
-            beschreibung: ""
-        }));
+        const neueBilder = files
+            .filter(file => !bilder.some(b => b.file?.name === file.name && b.file?.size === file.size))
+            .map(file => ({
+                file,
+                previewUrl: URL.createObjectURL(file),
+                beschreibung: ""
+            }));
         setBilder(prev => [...prev, ...neueBilder]);
     };
 
@@ -315,7 +317,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const removeBild = (index) => {
         const updated = [...bilder];
-        updated.splice(index, 1);
+        const [removed] = updated.splice(index, 1);
+        if (removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
         setBilder(updated);
     };
 
@@ -503,7 +506,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </Section>
                         <Section>
                             <Label>Bilder hochladen</Label>
-                            <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => {
+                                    handleBildUpload(e);
+                                    e.target.value = ""; // reset Input
+                                }}
+                                capture="environment"
+                            />
                             <BilderContainer>
                                 {bilder.map((bild, index) => (
                                     <div key={index}>

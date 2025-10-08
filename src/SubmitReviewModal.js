@@ -22,49 +22,49 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [awards, setAwards] = useState([]);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
     const [location, setLocation] = useState(null);
-    
-        // Läuft beim Laden der Seite automatisch
-        useEffect(() => {
-            let watchId;
-    
-            if (!navigator.geolocation) {
-                console.warn("Geolocation not supported");
-                return;
-            }
-    
-            // Erstversuch: getCurrentPosition mit schnellem Timeout
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setLocation({
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude,
-                    });
-                },
-                (err) => {
-                    console.warn("Geolocation initial failed:", err);
-                },
-                { enableHighAccuracy: false, timeout: 5000 }
-            );
-    
-            // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
-            watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    setLocation({
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude,
-                    });
-                },
-                (err) => {
-                    // optional: nur für Debug
-                    console.warn("watchPosition error:", err);
-                },
-                { enableHighAccuracy: false, maximumAge: 0 }
-            );
-    
-            return () => {
-                if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
-            };
-        }, []);
+
+    // Läuft beim Laden der Seite automatisch
+    useEffect(() => {
+        let watchId;
+
+        if (!navigator.geolocation) {
+            console.warn("Geolocation not supported");
+            return;
+        }
+
+        // Erstversuch: getCurrentPosition mit schnellem Timeout
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocation({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                console.warn("Geolocation initial failed:", err);
+            },
+            { enableHighAccuracy: false, timeout: 5000 }
+        );
+
+        // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                setLocation({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                // optional: nur für Debug
+                console.warn("watchPosition error:", err);
+            },
+            { enableHighAccuracy: false, maximumAge: 0 }
+        );
+
+        return () => {
+            if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+        };
+    }, []);
 
     useEffect(() => {
         const fetchReview = async () => {
@@ -236,11 +236,13 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
     const handleBildUpload = (e) => {
         const files = Array.from(e.target.files);
-        const neueBilder = files.map(file => ({
-            file,
-            previewUrl: URL.createObjectURL(file),
-            beschreibung: ""
-        }));
+        const neueBilder = files
+            .filter(file => !bilder.some(b => b.file?.name === file.name && b.file?.size === file.size))
+            .map(file => ({
+                file,
+                previewUrl: URL.createObjectURL(file),
+                beschreibung: ""
+            }));
         setBilder(prev => [...prev, ...neueBilder]);
     };
 
@@ -306,7 +308,16 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     </AttributeSection>
                     <Section>
                         <Label>Bilder hochladen</Label>
-                        <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                                handleBildUpload(e);
+                                e.target.value = ""; // reset Input
+                            }}
+                            capture="environment"
+                        />
                         <BilderContainer>
                             {bilder.map((bild, index) => (
                                 <div key={index}>
