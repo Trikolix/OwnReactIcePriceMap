@@ -295,7 +295,6 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
         <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
         <OpeningHours eisdiele={shopData.eisdiele} />
         <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
-        { console.log("USERID", userId)}
         {
         (Number(userId) === 1) && (
           <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>

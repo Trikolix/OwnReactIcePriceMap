@@ -24,7 +24,7 @@ require_once __DIR__ . '/../evaluators/WalkCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/BikeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/GeschmackstreueEvaluator.php';
 require_once __DIR__ . '/../evaluators/AwardCollectorEvaluator.php';
-require_once __DIR__ . '/../evaluators/IceSummerEvaluator.php';
+require_once __DIR__ . '/../evaluators/IceSeasonEvaluator.php';
 require_once __DIR__ . '/../evaluators/DifferentIceShopCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/GeschmacksvielfaltEvaluator.php';
 require_once __DIR__ . '/../evaluators/EarlyStarterEvaluator.php';
@@ -312,7 +312,7 @@ try {
         new CountryCountEvaluator(),
         new Chemnitz2025Evaluator(),
         new BundeslandExperteEvaluator(),
-        new IceSummerEvaluator(),
+        new IceSeasonEvaluator(),
         new DifferentIceShopCountEvaluator(),
         new GeschmacksvielfaltEvaluator(),
         new EarlyStarterEvaluator(),
