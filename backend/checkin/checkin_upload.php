@@ -51,11 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Hilfsfunktion für Bewertung
+// -------------------------
+// Hilfsfunktionen
+// -------------------------
+// Wandelt eine übergebene Bewertung in float um oder gibt null zurück,
+// falls kein valider Wert vorhanden ist. Erwartet wird ein numerischer
+// Wert oder ein leerer String (''). Leerer String -> null erlaubt.
 function sanitizeRating($val) {
     return ($val !== '' && is_numeric($val)) ? floatval($val) : null;
 }
-// Bewertung prüfen (zwischen 1.0 und 5.0)
+
+// Validiert den Wertebereich einer Bewertung. Falls der Wert nicht null ist,
+// muss er zwischen 1.0 und 5.0 liegen. Bei ungültigem Wert wird die zentrale
+// Fehlerausgabe `respondWithError` aufgerufen und der Request beendet.
 function validateRatingRange($val, $fieldName) {
     if ($val === null) return; // null ist erlaubt (optional)
     if ($val < 1.0 || $val > 5.0) {
@@ -64,6 +72,10 @@ function validateRatingRange($val, $fieldName) {
 }
 
 // Zentrale Fehlerausgabe
+// Zentrale Fehlerausgabe
+// Schreibt eine Meldung in das Error-Log und liefert ein JSON-Error-Objekt
+// an den Client. Optional kann eine Exception übergeben werden, deren
+// Nachricht ins Log geschrieben wird.
 function respondWithError($message, $httpCode = 400, $exception = null) {
     http_response_code($httpCode);
     if ($exception) {
@@ -95,7 +107,9 @@ try {
     $__profiling = [];
     $__profiling['start'] = microtime(true);
 
-    // Eingabedaten
+    // -------------------------
+    // Eingabedaten (aus POST)
+    // -------------------------
     $userId = $_POST['userId'] ?? null;
     $shopId = $_POST['shopId'] ?? null;
     $type = $_POST['type'] ?? null;
@@ -107,6 +121,7 @@ try {
     $groupId = $_POST['group_id'] ?? null;
     $datum = $_POST['datum'] ?? null;
 
+    // Bewertungen werden mit der Hilfsfunktion normalisiert
     $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
     $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
     $größe = sanitizeRating($_POST['größenbewertung'] ?? '');
@@ -129,7 +144,10 @@ try {
         respondWithError('Fehlende oder ungültige Pflichtdaten.');
     }
 
-    // Falls $geschmack null ist, berechne Durchschnitt aus $sorten
+    // Wenn keine Gesamt-Geschmacksbewertung übergeben wurde, versuche
+    // einen Durchschnitt aus den einzelnen Sorten-Bewertungen zu berechnen.
+    // Dadurch bleibt die API flexibel: entweder Gesamtbewertung ODER Sorten mit
+    // Einzelbewertungen sind möglich.
     if ($geschmack === null && is_array($sorten)) {
         $bewertungen = [];
         
@@ -146,6 +164,20 @@ try {
         }
     }
 
+    // -------------------------
+    // Bewertungspolitik
+    // - Wenn weder eine Gesamtbewertung noch einzelne Sortenbewertungen
+    //   übergeben wurden, sollen sowohl die Gesamtbewertung als auch die
+    //   Sortenbewertungen als NULL in die DB geschrieben werden.
+    // - Wenn eine Gesamtbewertung übergeben wurde, wird diese als Fallback
+    //   für Sorten ohne eigene Bewertung verwendet.
+    // - Wenn keine Gesamtbewertung übergeben wurde, aber einige Sorten
+    //   bewertet wurden, berechnen wir oben bereits den Durchschnitt aus den
+    //   bewerteten Sorten und schreiben diesen als Gesamtbewertung sowie als
+    //   Fallback für nicht bewertete Sorten.
+    // Hinweis: Es gibt daher keine harte Validierung mehr, dass mindestens
+    // eine Bewertung vorhanden sein muss.
+
     // Optional: mentionedUsers JSON aus POST
     $mentionedUsers = json_decode($_POST['mentionedUsers'] ?? '[]', true);
     if (!is_array($mentionedUsers)) $mentionedUsers = [];
@@ -159,7 +191,10 @@ try {
         throw new Exception('Maximal 20 Nutzer können erwähnt werden.');
     }
 
-    // Checkin vor Ort?
+    // -------------------------
+    // Prüfen, ob der Checkin vor Ort erfolgt ist (distanz <= 300m)
+    // Dies wird verwendet, um z.B. On-Site Challenges zu erkennen.
+    // Berechnung erfolgt mit Haversine-Formel.
     $isOnSite = 0;
     if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
         // Hole Shop-Koordinaten
@@ -187,7 +222,9 @@ try {
     }
     $__profiling['after_onsitecheck'] = microtime(true);
 
-    // Bilder verarbeiten
+    // -------------------------
+    // Bilder verarbeiten (Upload + Resize inside helper). Falls das Helper
+    // eine Exception wirft, geben wir diese direkt an den Client zurück.
     $bildUrls = [];
     if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
         try {
@@ -204,11 +241,18 @@ try {
 
     $__profiling['after_picturehandling'] = microtime(true);
 
-    // Transaktion starten
+    // -------------------------
+    // Datenbank-Transaktion starten
+    // Wir führen mehrere DB-Operationen (insert checkins, bilder, mentions,
+    // sorten, evaluators -> award inserts) durch. Damit diese atomar sind
+    // beginnen wir eine Transaktion. Bei Fehlern wird zurückgerollt.
     $pdo->beginTransaction();
 
 
+    // -------------------------
     // INSERT in `checkins`
+    // Wichtig: Pflichtfelder (nutzer_id, eisdiele_id, typ) wurden oben
+    // validiert. Wir unterstützen optional ein übergebenes `datum`.
     $sql = "
         INSERT INTO checkins (
             nutzer_id, eisdiele_id, typ, geschmackbewertung,
@@ -233,11 +277,14 @@ try {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
+    // lastInsertId sollte die neue checkin.id liefern. Falls hier kein Wert
+    // vorhanden ist, ist etwas beim Insert schiefgelaufen -> Exception.
     $checkinId = $pdo->lastInsertId();
     if (!$checkinId) {
         throw new Exception("Checkin konnte nicht gespeichert werden.");
     }
 
+    // Bilder-Tabelle füllen (falls Bilder hochgeladen wurden)
     if (!empty($bildUrls)) {
         $insertImgStmt = $pdo->prepare("
             INSERT INTO bilder (checkin_id, nutzer_id, url, beschreibung, shop_id)
@@ -259,7 +306,11 @@ try {
     $meta = $checkinMeta->fetch(PDO::FETCH_ASSOC);
     $__profiling['after_insert'] = microtime(true);
 
-    // Wenn Mentions vorhanden, Einträge in checkin_mentions + Notifications erstellen
+    // -------------------------
+    // Mentions (Erwähnungen) verarbeiten
+    // Wenn Nutzer erwähnt wurden, erstellen wir eine Gruppe (optional),
+    // fügen Einträge in `checkin_mentions` und `benachrichtigungen` hinzu.
+    // Vor dem Insert prüfen wir, ob die erwähnten Nutzer tatsächlich existieren.
     if (count($mentionedUsers) > 0) {
         // Optional: checkin_groups anlegen, falls du Gruppierung nutzen willst
         $pdo->exec("INSERT INTO checkin_groups () VALUES ()");
@@ -286,7 +337,7 @@ try {
         ");
         $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
 
-        foreach ($mentionedUsers as $mentionedUserId) {
+            foreach ($mentionedUsers as $mentionedUserId) {
             // Optional: prüfen, ob Nutzer existiert
             $stmtCheckUser = $pdo->prepare("SELECT id FROM nutzer WHERE id = ?");
             $stmtCheckUser->execute([$mentionedUserId]);
@@ -298,7 +349,13 @@ try {
         }
     }
 
-    // Evaluatoren
+    // -------------------------
+    // Evaluatoren ausführen
+    // Jeder Evaluator kann Awards zurückgeben, die wir sammeln. Evaluatoren
+    // sollten selbst keine Transaktion committen/rollbacken, sondern nur
+    // DB-Inserts verwenden (z.B. user_awards). Hier fangen wir Exceptions
+    // einzelner Evaluatoren, damit ein fehlerhafter Evaluator den kompletten
+    // Checkin-Prozess nicht zerstört.
     $evaluators = [
         new CountyCountEvaluator(),
         new CheckinCountEvaluator(),
@@ -392,10 +449,14 @@ try {
         }
 
         try {
+            // Evaluator ausführen. Evaluatoren liefern ein Array mit neuen
+            // Awards zurück oder werfen eine Exception, die wir lediglich
+            // protokollieren, aber nicht die gesamte Transaktion abbrechen.
             $evaluated = $evaluator->evaluate($userId);
             $newAwards = array_merge($newAwards, $evaluated);
         } catch (Exception $e) {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
+            // Fehler eines einzelnen Evaluators führt nicht zu Rollback
         }
         $t1 = microtime(true);
         $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
@@ -403,21 +464,43 @@ try {
 
     $__profiling['after_evaluators'] = microtime(true);
 
-    // Sorten speichern
+    // -------------------------
+    // Sorten (Eissorten) speichern
+    // Wir speichern die Sorten nur, wenn zuvor ein gültiger $checkinId
+    // erstellt wurde. Falls $checkinId ungültig wäre, wäre das Insert eine
+    // Verletzung der Foreign Key Constraint und würde Exceptions verursachen.
     if (!empty($sorten)) {
         $sorteStmt = $pdo->prepare("
             INSERT INTO checkin_sorten (checkin_id, sortenname, bewertung)
             VALUES (?, ?, ?)
         ");
         foreach ($sorten as $sorte) {
-            $name = $sorte['name'] ?? '';
-            if (!empty($name)) {
-                $bewertung = isset($sorte['bewertung']) && $sorte['bewertung'] !== "" ? floatval($sorte['bewertung']) : $geschmack;
-                $sorteStmt->execute([$checkinId, $name, $bewertung]);
+            // Name säubern und leere Einträge überspringen
+            $name = trim($sorte['name'] ?? '');
+            if ($name === '') continue;
+
+            // Nutze sanitizeRating, um "", null oder numerische Strings
+            // konsistent in float|null zu transformieren.
+            $rawBew = $sorte['bewertung'] ?? '';
+            $sBew = sanitizeRating($rawBew);
+
+            // Fallback-Logik:
+            // - Wenn Einzelbewertung vorhanden -> verwende sie
+            // - Sonst, wenn Gesamtbewertung ($geschmack) vorhanden -> verwende sie
+            // - Sonst -> null (kein Rating)
+            if ($sBew === null) {
+                if ($geschmack !== null) {
+                    $sBew = $geschmack;
+                } else {
+                    $sBew = null;
+                }
             }
+
+            $sorteStmt->execute([$checkinId, $name, $sBew]);
         }
     }
 
+    // Alle DB-Operationen erfolgreich -> Commit
     $pdo->commit();
     $__profiling['after_sorten'] = microtime(true);
 
@@ -448,14 +531,19 @@ try {
     ]);
 
 } catch (Exception $e) {
+    // Globales Exception-Handling für diesen Endpoint
+    // Logge den Fehler mit Datei/Zeile, versuche ein Rollback falls aktiv
     error_log("Exception in checkin_upload: " . $e->getMessage() . " @ " . $e->getFile() . ":" . $e->getLine());
     try {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
     } catch (Exception $rollbackError) {
+        // Falls Rollback fehlschlägt, loggen wir es zusätzlich, aber können
+        // nichts weiter tun - wir verhindern damit die "There is no active transaction"-Fehler.
         error_log("Rollback fehlgeschlagen: " . $rollbackError->getMessage());
     }
+    // Fehler dem Client mitteilen (inkl. Exception-Nachricht zur Fehlersuche)
     respondWithError('Ein unerwarteter Fehler ist aufgetreten.' . $e->getMessage(), 500, $e);
 }
 ?>		

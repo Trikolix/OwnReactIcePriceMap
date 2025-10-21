@@ -18,6 +18,8 @@ const SubmitIceShopModal = ({
   const [latitude, setLatitude] = useState(existingIceShop?.latitude || "");
   const [longitude, setLongitude] = useState(existingIceShop?.longitude || "");
   const [openingHours, setOpeningHours] = useState(existingIceShop?.openingHours || "");
+  const [status, setStatus] = useState(existingIceShop?.status || 'open');
+  const [reopeningDate, setReopeningDate] = useState(existingIceShop?.reopening_date || '');
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [awards, setAwards] = useState([]);
@@ -42,6 +44,9 @@ const SubmitIceShopModal = ({
 
       if (existingIceShop) {
         body.shopId = existingIceShop.id;
+        // Status und Reopening-Date nur beim Update mitsenden
+        body.status = status;
+        body.reopening_date = reopeningDate;
       }
 
       const response = await fetch(endpoint, {
@@ -174,6 +179,24 @@ const SubmitIceShopModal = ({
             <Input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </Group>
 
+          {existingIceShop && (
+            <>
+              <Group>
+                <label>Status:</label>
+                <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="open">open</option>
+                  <option value="seasonal_closed">seasonal_closed</option>
+                  <option value="permanent_closed">permanent_closed</option>
+                </Select>
+              </Group>
+
+              <Group>
+                <label>Wiedereröffnungsdatum (optional):</label>
+                <Input type="date" value={reopeningDate} onChange={(e) => setReopeningDate(e.target.value)} />
+              </Group>
+            </>
+          )}
+
           <ButtonGroup>
             <SubmitButton type="submit">{existingIceShop ? "Aktualisieren" : "Einreichen"}</SubmitButton>
           </ButtonGroup>
@@ -255,6 +278,15 @@ const Input = styled.input`
   border-radius: 8px;
   border: 1px solid #ccc;
   margin-top: 0.25rem;
+`;
+
+const Select = styled.select`
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 0.25rem;
+  background: white;
 `;
 
 const CoordinateInput = styled(Input)`

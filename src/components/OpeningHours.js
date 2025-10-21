@@ -79,6 +79,7 @@ const OpeningHours = ({ eisdiele }) => {
 
     return (
         <Container>
+            <strong>Öffnungszeiten:</strong>
             {eisdiele.status === 'seasonal_closed' && (
                 <StatusInfo status="seasonal_closed">
                     🕓 Diese Eisdiele befindet sich aktuell in <strong>Saisonpause</strong>
@@ -92,7 +93,6 @@ const OpeningHours = ({ eisdiele }) => {
                     ❌ Diese Eisdiele hat <strong>dauerhaft geschlossen</strong>.
                 </StatusInfo>
             )}
-            <strong>Öffnungszeiten:</strong>
             <OpeningHoursContainer
                 onClick={isLoggedIn ? handleOpeningHoursClick : undefined}
                 isLoggedIn={isLoggedIn}

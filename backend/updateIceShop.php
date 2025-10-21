@@ -3,6 +3,9 @@ require_once  __DIR__ . '/db_connect.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
+// Akzeptierte Status-Werte
+$validStatuses = ['open','seasonal_closed','permanent_closed'];
+
 if (!isset($data['shopId']) || !isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['userId'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
     exit;
@@ -128,25 +131,44 @@ if ($location) {
     $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'], $landId);
     $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
 
-    $sql = "UPDATE eisdielen 
+    // Optional: status und reopening_date setzen (falls übergeben)
+    $status = isset($data['status']) && in_array($data['status'], $validStatuses) ? $data['status'] : null;
+    $reopening_date = isset($data['reopening_date']) && $data['reopening_date'] !== '' ? $data['reopening_date'] : null;
+
+    // Prepare common params
+    $params = [
+        ':name' => $data['name'],
+        ':adresse' => $data['adresse'],
+        ':latitude' => floatval($data['latitude']),
+        ':longitude' => floatval($data['longitude']),
+        ':website' => $data['website'] ?? null,
+        ':openingHours' => $data['openingHours'] ?? null,
+        ':landkreisId' => $landkreisId,
+        ':bundeslandId' => $bundeslandId,
+        ':landId' => $landId,
+    ];
+
+    // Wenn status oder reopening_date übergeben wurden, erweitere Query und Params
+    if ($status !== null || $reopening_date !== null) {
+        $sql = "UPDATE eisdielen 
+            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
+                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId, status = :status, reopening_date = :reopening_date
+            WHERE id = :id";
+        $params[':status'] = $status;
+        $params[':reopening_date'] = $reopening_date;
+    } else {
+        $sql = "UPDATE eisdielen 
             SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
                 landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId
             WHERE id = :id";
-    $stmt = $pdo->prepare($sql);
+    }
+
+    // id anhängen
+    $params[':id'] = intval($data['shopId']);
 
     try {
-        $stmt->execute([
-            ':name' => $data['name'],
-            ':adresse' => $data['adresse'],
-            ':latitude' => floatval($data['latitude']),
-            ':longitude' => floatval($data['longitude']),
-            ':website' => $data['website'],
-            ':openingHours' => $data['openingHours'],
-            ':landkreisId' => $landkreisId,
-            ':bundeslandId' => $bundeslandId,
-            ':landId' => $landId,
-            ':id' => intval($data['shopId'])
-        ]);
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         echo json_encode(["status" => "success"]);
     } catch (PDOException $e) {
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);

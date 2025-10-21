@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
 import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
+import ImageChooserModal from "./components/ImageChooserModal";
+import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId }) => {
     const [type, setType] = useState("Kugel");
@@ -29,6 +31,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [referencedCheckin, setReferencedCheckin] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
     const [location, setLocation] = useState(null);
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+
+    const MAX_IMAGES = SHARED_MAX_IMAGES;
+    const [showImageChooser, setShowImageChooser] = useState(false);
 
     // Läuft beim Laden der Seite automatisch
     useEffect(() => {
@@ -297,16 +304,40 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         }
     };
 
-    const handleBildUpload = (e) => {
-        const files = Array.from(e.target.files);
-        const neueBilder = files
-            .filter(file => !bilder.some(b => b.file?.name === file.name && b.file?.size === file.size))
-            .map(file => ({
-                file,
-                previewUrl: URL.createObjectURL(file),
-                beschreibung: ""
-            }));
-        setBilder(prev => [...prev, ...neueBilder]);
+    const handleBildUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+
+        // Enforce max images
+        const currentCount = bilder.length;
+        if (currentCount >= MAX_IMAGES) {
+            alert(`Maximal ${MAX_IMAGES} Bilder erlaubt.`);
+            return;
+        }
+
+        const availableSlots = MAX_IMAGES - currentCount;
+        const toProcess = files.slice(0, availableSlots);
+
+        const processed = [];
+        for (const file of toProcess) {
+            // Skip duplicates by name+size
+            if (bilder.some(b => b.file?.name === file.name && b.file?.size === file.size)) continue;
+            try {
+                const compressed = await sharedCompressImageFile(file);
+                const previewUrl = URL.createObjectURL(compressed);
+                processed.push({ file: compressed, previewUrl, beschreibung: '' });
+            } catch (err) {
+                console.warn('Bildkompression fehlgeschlagen, benutze Original', err);
+                const previewUrl = URL.createObjectURL(file);
+                processed.push({ file, previewUrl, beschreibung: '' });
+            }
+        }
+
+        if (processed.length > 0) {
+            setBilder(prev => {
+                const merged = [...prev, ...processed];
+                return merged.slice(0, MAX_IMAGES);
+            });
+        }
     };
 
     const updateBildBeschreibung = (index, value) => {
@@ -320,6 +351,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         const [removed] = updated.splice(index, 1);
         if (removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
         setBilder(updated);
+    };
+
+    const handleAddImagesClick = () => {
+        const mobile = sharedIsMobileDevice();
+        if (!mobile) {
+            if (galleryInputRef.current) galleryInputRef.current.click();
+            return;
+        }
+        // show modal on mobile
+        setShowImageChooser(true);
     };
 
     const openSubmitPriceForm = () => {
@@ -506,16 +547,36 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </Section>
                         <Section>
                             <Label>Bilder hochladen</Label>
-                            <Input
+                            {/* Zwei versteckte File-Inputs: Kamera (capture) und Galerie (kein capture). */}
+                            <input
                                 type="file"
                                 accept="image/*"
                                 multiple
-                                onChange={(e) => {
-                                    handleBildUpload(e);
-                                    e.target.value = ""; // reset Input
-                                }}
                                 capture="environment"
+                                style={{ display: 'none' }}
+                                ref={cameraInputRef}
+                                onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
                             />
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                style={{ display: 'none' }}
+                                ref={galleryInputRef}
+                                onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
+                            />
+                            {/* Ein Button öffnet eine Auswahl (Kamera/Galerie). Auf Mobilgeräten
+                                zeigt sich die entsprechende Option; auf Desktop eine JS-Prompt zur Auswahl. */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <Button type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</Button>
+                            </div>
+                            {showImageChooser && (
+                                <ImageChooserModal
+                                    onClose={() => setShowImageChooser(false)}
+                                    onChooseCamera={() => { if (cameraInputRef.current) cameraInputRef.current.click(); }}
+                                    onChooseGallery={() => { if (galleryInputRef.current) galleryInputRef.current.click(); }}
+                                />
+                            )}
                             <BilderContainer>
                                 {bilder.map((bild, index) => (
                                     <div key={index}>

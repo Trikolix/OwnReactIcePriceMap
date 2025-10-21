@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
+import ImageChooserModal from "./components/ImageChooserModal";
+import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
 
 const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceForm, onSuccess }) => {
     console.log(shop);
@@ -15,6 +17,13 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [neuesAttribut, setNeuesAttribut] = useState("");
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
     const [deletedBildIds, setDeletedBildIds] = useState([]);
+
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+
+    // Konfiguration via shared utils
+    const MAX_IMAGES = SHARED_MAX_IMAGES;
+    const [showImageChooser, setShowImageChooser] = useState(false);
 
     const [submitted, setSubmitted] = useState(false);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -234,16 +243,49 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
         }
     }
 
-    const handleBildUpload = (e) => {
-        const files = Array.from(e.target.files);
-        const neueBilder = files
-            .filter(file => !bilder.some(b => b.file?.name === file.name && b.file?.size === file.size))
-            .map(file => ({
-                file,
-                previewUrl: URL.createObjectURL(file),
-                beschreibung: ""
-            }));
-        setBilder(prev => [...prev, ...neueBilder]);
+    const handleAddImagesClick = () => {
+        const mobile = sharedIsMobileDevice();
+        if (!mobile) {
+            if (galleryInputRef.current) galleryInputRef.current.click();
+            return;
+        }
+        setShowImageChooser(true);
+    };
+
+    const handleBildUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+
+        // Enforce max images
+        const currentCount = bilder.length;
+        if (currentCount >= MAX_IMAGES) {
+            alert(`Maximal ${MAX_IMAGES} Bilder erlaubt.`);
+            return;
+        }
+
+        const availableSlots = MAX_IMAGES - currentCount;
+        const toProcess = files.slice(0, availableSlots);
+
+        const processed = [];
+        for (const file of toProcess) {
+            // Skip duplicates
+            if (bilder.some(b => b.file?.name === file.name && b.file?.size === file.size)) continue;
+            try {
+                const compressed = await sharedCompressImageFile(file);
+                const previewUrl = URL.createObjectURL(compressed);
+                processed.push({ file: compressed, previewUrl, beschreibung: '' });
+            } catch (err) {
+                console.warn('Bildkompression fehlgeschlagen, benutze Original', err);
+                const previewUrl = URL.createObjectURL(file);
+                processed.push({ file, previewUrl, beschreibung: '' });
+            }
+        }
+
+        if (processed.length > 0) {
+            setBilder(prev => {
+                const merged = [...prev, ...processed];
+                return merged.slice(0, MAX_IMAGES);
+            });
+        }
     };
 
     const updateBildBeschreibung = (index, value) => {
@@ -308,16 +350,33 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     </AttributeSection>
                     <Section>
                         <Label>Bilder hochladen</Label>
-                        <Input
+                        <input
                             type="file"
                             accept="image/*"
                             multiple
-                            onChange={(e) => {
-                                handleBildUpload(e);
-                                e.target.value = ""; // reset Input
-                            }}
                             capture="environment"
+                            style={{ display: 'none' }}
+                            ref={cameraInputRef}
+                            onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
                         />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            style={{ display: 'none' }}
+                            ref={galleryInputRef}
+                            onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
+                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <SubmitButton type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</SubmitButton>
+                        </div>
+                        {showImageChooser && (
+                            <ImageChooserModal
+                                onClose={() => setShowImageChooser(false)}
+                                onChooseCamera={() => { if (cameraInputRef.current) cameraInputRef.current.click(); }}
+                                onChooseGallery={() => { if (galleryInputRef.current) galleryInputRef.current.click(); }}
+                            />
+                        )}
                         <BilderContainer>
                             {bilder.map((bild, index) => (
                                 <div key={index}>
