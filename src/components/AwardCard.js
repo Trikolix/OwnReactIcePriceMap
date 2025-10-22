@@ -65,6 +65,7 @@ const Card = styled.div`
   position: relative;
   background: white;
   border-radius: 16px;
+  border: 1px solid #eee;
   padding: 1rem;
   padding-top: 2rem;
   margin-bottom: 1.5rem;

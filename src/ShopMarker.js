@@ -2,14 +2,21 @@ import { Marker } from "react-leaflet";
 import L from "leaflet";
 
 const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxPrice, selectedOption }) => {
-  const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
-    if (price === null || isNaN(price)) {
-      return 'grey';
+  const getColorBasedOnPrice = (price, minPrice, maxPrice, status) => {
+    let r, g, b;
+    if (price === null || isNaN(price) || status === 'permanent_closed') {
+      r = g = b = 128;
+    } else {
+      const ratio = (price - minPrice) / (maxPrice - minPrice);
+      r = Math.floor(200 * ratio);
+      g = Math.floor(200 * (1 - ratio));
+      b = 0;
     }
-    const ratio = (price - minPrice) / (maxPrice - minPrice);
-    const r = Math.floor(200 * ratio);
-    const g = Math.floor(200 * (1 - ratio));
-    return `rgb(${r}, ${g}, 0)`;
+
+    const iconOpacity = status === 'permanent_closed' ? 0.4
+      : status === 'seasonal_closed' ? 0.6
+        : 1.0;
+    return `rgba(${r}, ${g}, ${b}, ${iconOpacity})`;
   };
 
   let displayPrice;
@@ -40,9 +47,9 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
   }
   let backgroundColor;
   if (selectedOption === "Kugel: Rating" || selectedOption === "Softeis: Rating" || selectedOption === "Eisbecher: Rating") {
-    backgroundColor = getColorBasedOnPrice(displayPrice, maxPrice, minPrice);
+    backgroundColor = getColorBasedOnPrice(displayPrice, maxPrice, minPrice, shop.status);
   } else {
-    backgroundColor = getColorBasedOnPrice(displayPrice, minPrice, maxPrice);
+    backgroundColor = getColorBasedOnPrice(displayPrice, minPrice, maxPrice, shop.status);
   }
 
 
@@ -58,7 +65,7 @@ const ShopMarker = ({ shop, fetchShopDetails, fetchAndCenterShop, minPrice, maxP
         html: `<div style="background-color:${backgroundColor}; color: white; text-align: center; border-radius: 50%; width: 40px; height: 40px; line-height: 40px;">${displayPrice}</div>`,
         iconSize: [40, 40],
         iconAnchor: [20, 20],
-        popupAnchor: [0, -19],
+        popupAnchor: [0, -19]
       })}
       eventHandlers={{
         click: () => {

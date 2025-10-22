@@ -265,7 +265,6 @@ const Container = styled.div`
   gap: 2rem;
 
   width: 90%;
-  max-width: 900px;
   margin: 0 auto;
   padding: 0rem 1rem;
 `;

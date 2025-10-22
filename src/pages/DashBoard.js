@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from "styled-components";
 import ReviewCard from "./../components/ReviewCard";
 import CheckinCard from './../components/CheckinCard';
+import GroupCheckinCard from './../components/GroupCheckinCard';
 import RouteCard from './../components/RouteCard';
 import ShopCard from './../components/ShopCard';
 import AwardCard from './../components/AwardCard';
@@ -29,7 +30,6 @@ function DashBoard() {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      console.log("API Antwort:", json);
 
       const newActivities = json.activities || [];
       const meta = json.meta || {};
@@ -50,6 +50,66 @@ function DashBoard() {
       append ? setLoadingMore(false) : setLoadingInitial(false);
     }
   };
+
+  // Hilfsfunktion: Gruppiert Activities nach group_id
+  function groupActivities(activities) {
+    const grouped = {};
+    const singles = [];
+
+    activities.forEach((a) => {
+      if (a.typ === "checkin" && a.data.group_id) {
+        const gid = a.data.group_id;
+        if (!grouped[gid]) {
+          grouped[gid] = [];
+        }
+        grouped[gid].push(a);
+      } else {
+        singles.push(a); // alles andere normal behalten
+      }
+    });
+
+    const result = [
+      ...singles,
+      ...Object.keys(grouped).flatMap((gid) => {
+        const items = grouped[gid];
+        if (items.length === 1) {
+          // nur ein Checkin -> wieder als normaler Checkin behandeln
+          return items;
+        } else {
+          // mehrere -> Gruppierung
+          return {
+            typ: "group_checkin",
+            id: `group-${gid}`,
+            data: items.map((i) => i.data),
+          };
+        }
+      }),
+    ];
+
+    function getItemDate(item) {
+      if (item.typ === "group_checkin") {
+        // bei Gruppe: Top-Level-Datum verwenden
+        return item.data[0]?.datum;
+      }
+      if (item.typ === "checkin" || item.typ === "route" || item.typ === "award") {
+        return item.data?.datum;
+      }
+      if (item.typ === "bewertung" || item.typ === "eisdiele") {
+        return item.data?.erstellt_am;
+      }
+      return null;
+    }
+
+    // Sortierung nach Datum absteigend
+    const sorted = result.sort((a, b) => {
+      const da = new Date(getItemDate(a));
+      const db = new Date(getItemDate(b));
+      return db - da;
+    });
+    return sorted;
+  }
+
+
 
 
   // Initial laden
@@ -81,12 +141,14 @@ function DashBoard() {
         )}
 
         <Section>
-          {activities.map((activity) => {
+          {groupActivities(activities).map((activity) => {
             const { typ, id, data } = activity;
 
             switch (typ) {
               case 'checkin':
                 return <CheckinCard key={`checkin-${id}`} checkin={data} onSuccess={reload} />;
+              case "group_checkin":
+                return <GroupCheckinCard key={id} checkins={data} onSuccess={reload} />;
               case 'bewertung':
                 return <ReviewCard key={`bewertung-${id}`} review={data} />;
               case 'route':

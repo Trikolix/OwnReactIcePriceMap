@@ -1,4 +1,3 @@
-
 DROP VIEW eisbecher_scores;
 CREATE SQL SECURITY INVOKER VIEW eisbecher_scores AS WITH bewertete_checkins AS(
     SELECT

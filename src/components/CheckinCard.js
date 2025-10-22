@@ -6,11 +6,12 @@ import { useUser } from "../context/UserContext";
 import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
+import { Modal } from "./Modal";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
-  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments); // initial true, wenn übergeben
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
   useEffect(() => {
     if (showComments) {
@@ -38,7 +39,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
           {new Date(checkin.datum).toLocaleDateString("de-DE", {
             day: "numeric",
             month: "long",
-            year: "numeric", 
+            year: "numeric",
             hour: "numeric",
             minute: "numeric",
           })}
@@ -92,7 +93,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
             {(checkin.anreise && checkin.anreise !== "" || checkin.is_on_site !== 0) && (
               <ArrivalInfo>
                 {checkin.anreise && checkin.anreise !== "" && (
-                <ArrivalBadge>{anreiseIcons[checkin.anreise] || "📍"} Anreise: <strong>{checkin.anreise}</strong></ArrivalBadge>) }
+                  <ArrivalBadge>{anreiseIcons[checkin.anreise] || "📍"} Anreise: <strong>{checkin.anreise}</strong></ArrivalBadge>)}
                 {checkin.is_on_site !== 0 && (<OnSiteBadge>📍 Vor Ort eingecheckt</OnSiteBadge>)}
               </ArrivalInfo>
             )}
@@ -124,15 +125,17 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
 
 
       {showEditModal && (
-        <CheckinForm
-          checkinId={checkin.id}
-          shopId={checkin.eisdiele_id}
-          shopName={checkin.eisdiele_name}
-          userId={userId}
-          showCheckinForm={showEditModal}
-          setShowCheckinForm={setShowEditModal}
-          onSuccess={onSuccess}
-        />
+        <Modal onClose={() => setShowEditModal(false)}>
+          <CheckinForm
+            checkinId={checkin.id}
+            shopId={checkin.eisdiele_id}
+            shopName={checkin.eisdiele_name}
+            userId={userId}
+            showCheckinForm={showEditModal}
+            setShowCheckinForm={setShowEditModal}
+            onSuccess={onSuccess}
+          />
+        </Modal>
       )}
     </>
   );
@@ -151,6 +154,7 @@ const Card = styled.div`
   position: relative;
   background: white;
   border-radius: 16px;
+  border: 1px solid #eee;
   padding: 2rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);

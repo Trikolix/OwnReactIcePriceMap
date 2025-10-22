@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:20
+-- Erstellungszeit: 18. Okt 2025 um 17:21
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -79,7 +79,13 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (38, 'on_site_checkins', 'Checkins direkt vor Ort', '2025-08-22 08:13:26'),
 (39, 'oeffis_count', 'Anzahl Eisdielen mit Öffis besucht', '2025-08-23 04:03:45'),
 (40, 'epr_2025', 'European Peace Ride 2025', '2025-08-23 04:30:43'),
-(41, 'daily_challanges', 'Tägliche Challenges abgeschlossen', '2025-08-30 00:38:29');
+(41, 'daily_challanges', 'Tägliche Challenges abgeschlossen', '2025-08-30 00:38:29'),
+(42, 'ice_winter', 'Hat X Eis im Winter gegessen ', '2025-09-06 06:13:25'),
+(43, 'user_of_the_month', 'Nutzer/in des Monats', '2025-09-09 05:59:50'),
+(44, 'ein_mal_eins', 'X Eisdielen jeweils X mal besucht', '2025-09-17 06:18:30'),
+(45, 'challenges_completed', 'Abgeschlossene Challenges', '2025-09-19 05:19:56'),
+(46, 'ice_autumn', 'Hat X Eis im Herbst gegessen', '2025-09-25 06:12:26'),
+(47, 'ice_spring', 'Hat X Eis im Frühling gegessen', '2025-09-25 06:12:38');
 
 --
 -- Indizes der exportierten Tabellen
@@ -100,7 +106,7 @@ ALTER TABLE `awards`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

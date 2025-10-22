@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
 import ChallengesAwarded from "./components/ChallengesAwarded";
+import UserMentionMultiSelect from "./components/UserMentionField";
+import ImageChooserModal from "./components/ImageChooserModal";
+import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop }) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -24,17 +27,71 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
+    const [mentionedUsers, setMentionedUsers] = useState([]);
+    const [referencedCheckin, setReferencedCheckin] = useState(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+    const [location, setLocation] = useState(null);
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
 
-    const getUserLocation = () => {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) return reject("Geolocation nicht unterstützt.");
-            navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-                (err) => reject(err.message)
-            );
-        });
-    };
+    const MAX_IMAGES = SHARED_MAX_IMAGES;
+    const [showImageChooser, setShowImageChooser] = useState(false);
+
+    // Läuft beim Laden der Seite automatisch
+    useEffect(() => {
+        let watchId;
+
+        if (!navigator.geolocation) {
+            console.warn("Geolocation not supported");
+            return;
+        }
+
+        // Erstversuch: getCurrentPosition mit schnellem Timeout
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocation({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                console.warn("Geolocation initial failed:", err);
+            },
+            { enableHighAccuracy: false, timeout: 5000 }
+        );
+
+        // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                setLocation({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                // optional: nur für Debug
+                console.warn("watchPosition error:", err);
+            },
+            { enableHighAccuracy: false, maximumAge: 0 }
+        );
+
+        return () => {
+            if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (referencedCheckinId) {
+            fetch(`${apiUrl}/checkin/get_checkin.php?checkin_id=${referencedCheckinId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.error) {
+                        setReferencedCheckin(data);
+                    }
+                })
+                .catch(err => console.error("Fehler beim Laden des Referenz-Checkins:", err));
+        }
+    }, [referencedCheckinId, apiUrl]);
 
     const askForPriceUpdate = (preise) => {
         const now = new Date();
@@ -132,6 +189,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             formData.append("kommentar", kommentar);
             formData.append("sorten", JSON.stringify(sorten));
             formData.append("anreise", anreise);
+            formData.append("mentionedUsers", JSON.stringify(mentionedUsers.map(u => u.id)));
             bilder.forEach((bild, index) => {
                 if (!bild.isExisting) {
                     formData.append(`bilder[]`, bild.file);
@@ -144,14 +202,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     beschreibung: b.beschreibung
                 }))
             ));
-            if (checkinId) formData.append("checkin_id", checkinId);
 
-            try {
-                const location = await getUserLocation();
+            if (checkinId) formData.append("checkin_id", checkinId);
+            if (referencedCheckinId) formData.append("referencedCheckinId", referencedCheckinId);
+            if (referencedCheckin && referencedCheckin.group_id !== null) formData.append("group_id", referencedCheckin.group_id);
+            if (referencedCheckin && referencedCheckin.datum) formData.append("datum", referencedCheckin.datum);
+            if (location) {
                 formData.append("lat", location.lat);
                 formData.append("lon", location.lon);
-            } catch (e) {
-                console.warn("Kein Standort verfügbar, Checkin wird ohne Vor-Ort-Bonus gespeichert.");
+            } else {
+                console.info("Kein Standort, Checkin ohne Bonus.");
             }
 
             const response = await fetch(
@@ -173,8 +233,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
-                console.log("Server-Antwort:", data);
-                console.log((data.completed_challenge !== null));
                 if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
@@ -186,7 +244,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         setAwards(data.new_awards);
                     }
                     if (data.completed_challenge !== null) {
-                        console.log("Abgeschlossene Challenges:", data.completed_challenge);
                         setChallenges(data.completed_challenge);
                     }
 
@@ -247,14 +304,40 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         }
     };
 
-    const handleBildUpload = (e) => {
-        const files = Array.from(e.target.files);
-        const neueBilder = files.map(file => ({
-            file,
-            previewUrl: URL.createObjectURL(file),
-            beschreibung: ""
-        }));
-        setBilder(prev => [...prev, ...neueBilder]);
+    const handleBildUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+
+        // Enforce max images
+        const currentCount = bilder.length;
+        if (currentCount >= MAX_IMAGES) {
+            alert(`Maximal ${MAX_IMAGES} Bilder erlaubt.`);
+            return;
+        }
+
+        const availableSlots = MAX_IMAGES - currentCount;
+        const toProcess = files.slice(0, availableSlots);
+
+        const processed = [];
+        for (const file of toProcess) {
+            // Skip duplicates by name+size
+            if (bilder.some(b => b.file?.name === file.name && b.file?.size === file.size)) continue;
+            try {
+                const compressed = await sharedCompressImageFile(file);
+                const previewUrl = URL.createObjectURL(compressed);
+                processed.push({ file: compressed, previewUrl, beschreibung: '' });
+            } catch (err) {
+                console.warn('Bildkompression fehlgeschlagen, benutze Original', err);
+                const previewUrl = URL.createObjectURL(file);
+                processed.push({ file, previewUrl, beschreibung: '' });
+            }
+        }
+
+        if (processed.length > 0) {
+            setBilder(prev => {
+                const merged = [...prev, ...processed];
+                return merged.slice(0, MAX_IMAGES);
+            });
+        }
     };
 
     const updateBildBeschreibung = (index, value) => {
@@ -265,8 +348,19 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const removeBild = (index) => {
         const updated = [...bilder];
-        updated.splice(index, 1);
+        const [removed] = updated.splice(index, 1);
+        if (removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
         setBilder(updated);
+    };
+
+    const handleAddImagesClick = () => {
+        const mobile = sharedIsMobileDevice();
+        if (!mobile) {
+            if (galleryInputRef.current) galleryInputRef.current.click();
+            return;
+        }
+        // show modal on mobile
+        setShowImageChooser(true);
     };
 
     const openSubmitPriceForm = () => {
@@ -453,7 +547,36 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </Section>
                         <Section>
                             <Label>Bilder hochladen</Label>
-                            <Input type="file" accept="image/*" multiple onChange={handleBildUpload} />
+                            {/* Zwei versteckte File-Inputs: Kamera (capture) und Galerie (kein capture). */}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                ref={cameraInputRef}
+                                onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
+                            />
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                style={{ display: 'none' }}
+                                ref={galleryInputRef}
+                                onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
+                            />
+                            {/* Ein Button öffnet eine Auswahl (Kamera/Galerie). Auf Mobilgeräten
+                                zeigt sich die entsprechende Option; auf Desktop eine JS-Prompt zur Auswahl. */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <Button type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</Button>
+                            </div>
+                            {showImageChooser && (
+                                <ImageChooserModal
+                                    onClose={() => setShowImageChooser(false)}
+                                    onChooseCamera={() => { if (cameraInputRef.current) cameraInputRef.current.click(); }}
+                                    onChooseGallery={() => { if (galleryInputRef.current) galleryInputRef.current.click(); }}
+                                />
+                            )}
                             <BilderContainer>
                                 {bilder.map((bild, index) => (
                                     <div key={index}>
@@ -475,6 +598,18 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 ))}
                             </BilderContainer>
                         </Section>
+                        {!referencedCheckin ?
+                            (<Section>
+                                <Label>Du warst mit jemanden anderen Eis essen? Erwähne ihn und lade ihn ein sein Checkin zu teilen!</Label>
+                                <UserMentionMultiSelect onChange={setMentionedUsers} />
+                            </Section>) :
+                            (<Section>
+                                <p style={{ fontStyle: "italic", color: "#666" }}>
+                                    Dieser Check-in wird mit <strong>{referencedCheckin.nutzer_name}'s</strong> Check-in vom {referencedCheckin.datum} verknüpft.
+                                </p>
+                            </Section>)
+                        }
+
                         <ButtonGroup>
                             <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
                             <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>

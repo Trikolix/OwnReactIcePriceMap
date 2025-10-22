@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useSwipeable } from 'react-swipeable';
+import { Modal } from "./Modal";
+
 
 // Styled Components
 const GalleryWrapper = styled.div`
@@ -157,17 +159,19 @@ const ImageGalleryWithLightbox = ({ images, fallbackTitle }) => {
       </GalleryWrapper>
 
       {lightboxOpen && (
-        <LightboxOverlay onClick={() => setLightboxOpen(false)}>
-          <LightboxContent {...swipeHandlers} onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={() => setLightboxOpen(false)}>×</CloseButton>
-            <PrevButton onClick={showPrev}>‹</PrevButton>
-            <LightboxImage src={images[lightboxIndex].url} alt={images[lightboxIndex].alt || `Bild ${lightboxIndex + 1}`} />
-            <NextButton onClick={showNext}>›</NextButton>
-            <LightboxTitle>
-              {images[lightboxIndex].beschreibung || fallbackTitle}
-            </LightboxTitle>
-          </LightboxContent>
-        </LightboxOverlay>
+        <Modal>
+          <LightboxOverlay onClick={() => setLightboxOpen(false)}>
+            <LightboxContent {...swipeHandlers} onClick={(e) => e.stopPropagation()}>
+              <CloseButton onClick={() => setLightboxOpen(false)}>×</CloseButton>
+              <PrevButton onClick={showPrev}>‹</PrevButton>
+              <LightboxImage src={images[lightboxIndex].url} alt={images[lightboxIndex].alt || `Bild ${lightboxIndex + 1}`} />
+              <NextButton onClick={showNext}>›</NextButton>
+              <LightboxTitle>
+                {images[lightboxIndex].beschreibung || fallbackTitle}
+              </LightboxTitle>
+            </LightboxContent>
+          </LightboxOverlay>
+        </Modal>
       )}
     </>
   );

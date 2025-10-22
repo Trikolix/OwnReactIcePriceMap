@@ -98,6 +98,7 @@ try {
             AND c.valid_until > NOW()
         WHERE e.latitude BETWEEN :minLat AND :maxLat
           AND e.longitude BETWEEN :minLon AND :maxLon
+          AND e.status = 'open'
         HAVING distance BETWEEN :minRadius AND :maxRadius
     ");
     $stmt->execute([

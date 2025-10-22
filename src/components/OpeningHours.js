@@ -80,6 +80,19 @@ const OpeningHours = ({ eisdiele }) => {
     return (
         <Container>
             <strong>Öffnungszeiten:</strong>
+            {eisdiele.status === 'seasonal_closed' && (
+                <StatusInfo status="seasonal_closed">
+                    🕓 Diese Eisdiele befindet sich aktuell in <strong>Saisonpause</strong>
+                    {eisdiele.reopening_date && (
+                        <> – voraussichtliche Wiedereröffnung am {new Date(eisdiele.reopening_date).toLocaleDateString('de-DE')}</>
+                    )}
+                </StatusInfo>
+            )}
+            {eisdiele.status === 'permanent_closed' && (
+                <StatusInfo status="permanent_closed">
+                    ❌ Diese Eisdiele hat <strong>dauerhaft geschlossen</strong>.
+                </StatusInfo>
+            )}
             <OpeningHoursContainer
                 onClick={isLoggedIn ? handleOpeningHoursClick : undefined}
                 isLoggedIn={isLoggedIn}
@@ -115,7 +128,7 @@ export default OpeningHours;
 const Container = styled.div``;
 
 const OpeningHoursContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isLoggedIn',
+    shouldForwardProp: (prop) => prop !== 'isLoggedIn',
 })`
   position: relative;
   cursor: ${({ isLoggedIn }) => (isLoggedIn ? 'pointer' : 'default')};
@@ -184,4 +197,20 @@ const SubmitButton = styled.button`
   border-radius: 4px;
   border: none;
   cursor: pointer;
+`;
+
+const StatusInfo = styled.div`
+  background-color: ${({ status }) =>
+    status === 'permanent_closed'
+      ? 'rgba(120, 120, 120, 0.15)'
+      : 'rgba(255, 181, 34, 0.15)'};
+  color: ${({ status }) =>
+    status === 'permanent_closed' ? '#555' : '#b37c00'};
+  border-left: 4px solid
+    ${({ status }) =>
+      status === 'permanent_closed' ? '#999' : '#ffb522'};
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  font-size: 0.9rem;
 `;

@@ -106,6 +106,12 @@ const NotificationBell = () => {
                     message: fallback.message || "Keine Nachricht verfügbar"
                 });
             }
+        } else if (notification.typ === 'checkin_mention') {
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            if (data.checkin_id && data.shop_id) {
+                const url = `/#/map/activeShop/${data.shop_id}?tab=checkins&createReferencedCheckin=${data.checkin_id}`;
+                window.location.href = url;
+            }
         }
     };
 

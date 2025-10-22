@@ -63,6 +63,24 @@ if (!$checkinId || !$userId || !$shopId || !$type) {
 
 
 try {
+    // Wenn keine Gesamtbewertung übergeben wurde, aber einige Sorten
+    // Bewertungen enthalten, berechne den Durchschnitt aus den bewerteten
+    // Sorten und setze diesen als Gesamtbewertung ($geschmack). Wenn gar
+    // keine Bewertungen vorliegen, bleibt $geschmack null und die Sorten
+    // werden mit NULL gespeichert.
+    if ($geschmack === null && is_array($sorten) && count($sorten) > 0) {
+        $bewertungen = [];
+        foreach ($sorten as $s) {
+            if (isset($s['bewertung']) && $s['bewertung'] !== '' && is_numeric($s['bewertung'])) {
+                $bewertungen[] = $s['bewertung'];
+            }
+        }
+        if (count($bewertungen) > 0) {
+            $durchschnitt = array_sum($bewertungen) / count($bewertungen);
+            $geschmack = round($durchschnitt, 1);
+        }
+    }
+
     // Start der Transaktion
     $pdo->beginTransaction();
 
@@ -128,11 +146,25 @@ try {
             VALUES (?, ?, ?)
         ");
         foreach ($sorten as $sorte) {
-            $name = $sorte['name'] ?? '';
-            $bewertung = isset($sorte['bewertung']) && $sorte['bewertung'] != "" ? floatval($sorte['bewertung']) : $geschmack;
-            if (!empty($name)) {
-                $sorteStmt->execute([$checkinId, $name, $bewertung]);
+            // Name säubern und leere Einträge überspringen
+            $name = trim($sorte['name'] ?? '');
+            if ($name === '') continue;
+
+            // Nutze sanitizeRating, um "", null oder numerische Strings
+            // konsistent in float|null zu transformieren.
+            $rawBew = $sorte['bewertung'] ?? '';
+            $sBew = sanitizeRating($rawBew);
+
+            // Fallback-Logik: Einzelbewertung -> sonst Gesamtbewertung ($geschmack) -> sonst null
+            if ($sBew === null) {
+                if ($geschmack !== null) {
+                    $sBew = $geschmack;
+                } else {
+                    $sBew = null;
+                }
             }
+
+            $sorteStmt->execute([$checkinId, $name, $sBew]);
         }
     }
 
@@ -164,8 +196,12 @@ try {
 
     echo json_encode(['status' => 'success']);
 } catch (Exception $e) {
-    // Rollback der Transaktion im Falle eines Fehlers
-    $pdo->rollBack();
+    // Rollback der Transaktion im Falle eines Fehlers (nur wenn aktiv)
+    try {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+    } catch (Exception $rb) {
+        error_log('Rollback fehlgeschlagen: ' . $rb->getMessage());
+    }
     http_response_code(500);
     echo json_encode([
         'status' => 'error',

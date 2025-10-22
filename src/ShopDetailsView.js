@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, use } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
@@ -16,6 +16,7 @@ import ShareIcon from './components/ShareButton';
 import CheckinFrom from './CheckinForm';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
+import SubmitIceShopModal from "./SubmitIceShopModal";
 
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -27,6 +28,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [shopData, setShopData] = useState(null);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const isMobile = useMediaQuery({ maxWidth: 767 });
@@ -36,6 +38,15 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const tabParam = searchParams.get("tab");
   const focusCheckinId = searchParams.get("focusCheckin");
   const focusReviewId = searchParams.get("focusReview");
+  const createReferencedCheckin = searchParams.get("createReferencedCheckin");
+
+  const handleEditClick = () => {
+    setShowEditModal(true);
+  };
+
+  useEffect(() => {
+    if (createReferencedCheckin) setShowCheckinForm(true);
+  }, [createReferencedCheckin]);
 
   useEffect(() => {
     if (tabParam) {
@@ -128,7 +139,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           </Header>
           <Tabs>
             <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-            <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
+            <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-Ins</Tab>
             <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
           </Tabs>
           <Content>
@@ -145,6 +156,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               refreshRoutes={refreshRoutes}
               focusCheckinId={focusCheckinId}
               focusReviewId={focusReviewId}
+              userId={userId}
+              handleEditClick={handleEditClick}
             />
           </Content>
         </AnimatedContainer>
@@ -178,6 +191,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
               refreshRoutes={refreshRoutes}
               focusCheckinId={focusCheckinId}
               focusReviewId={focusReviewId}
+              userId={userId}
+              handleEditClick={handleEditClick}
             />
           </Content>
         </Container>)}
@@ -215,11 +230,19 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         onSuccess={refreshShop}
         shop={shopData}
         setShowPriceForm={setShowPriceForm}
+        referencedCheckinId={createReferencedCheckin}
+      />)}
+      {showEditModal && (<SubmitIceShopModal
+        showForm={showEditModal}
+        setShowForm={setShowEditModal}
+        userId={userId}
+        refreshShops={refreshShop}
+        existingIceShop={shopData.eisdiele}
       />)}
 
     </>);
 };
-const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes, focusCheckinId, focusReviewId }) => {
+const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes, focusCheckinId, focusReviewId, handleEditClick, userId }) => {
   const checkinRefs = useRef({});
   const reviewRefs = useRef({});
 
@@ -272,6 +295,10 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
         <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
         <OpeningHours eisdiele={shopData.eisdiele} />
         <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
+        {
+        (Number(userId) === 1) && (
+          <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
+        )}
         <h2>Preise</h2>
         {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
         <Table>
@@ -360,7 +387,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
   } else if (activeTab === 'checkins') {
     return (
       <div>
-        <h2>CheckIns</h2>
+        <h2>Check-Ins</h2>
         {shopData.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
         {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
         {shopData.checkins && (shopData.checkins.map((checkin, index) => (
@@ -384,15 +411,15 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
       {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
       {shopData.reviews && (shopData.reviews.map((review, index) => (
         <div
-            key={review.id}
-            ref={(el) => reviewRefs.current[review.id] = el}
-          >
-        <ReviewCard 
-          key={index}
-          review={review}
-          setShowReviewForm={setShowReviewForm}
-          showComments={review.id.toString() === focusReviewId?.toString()}
-        />
+          key={review.id}
+          ref={(el) => reviewRefs.current[review.id] = el}
+        >
+          <ReviewCard
+            key={index}
+            review={review}
+            setShowReviewForm={setShowReviewForm}
+            showComments={review.id.toString() === focusReviewId?.toString()}
+          />
         </div>
       )))}
     </div>);
@@ -542,3 +569,20 @@ const AttributeBadge = styled.span`
 const IceShopHeader = styled.h2`
   margin-top: 2rem;
 `
+
+const EditButton = styled.button`
+  align-self: flex-start;
+  background-color: #339af0;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #228be6;
+  }
+`;

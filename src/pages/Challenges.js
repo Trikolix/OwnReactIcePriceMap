@@ -49,27 +49,49 @@ function Challenges() {
     return null;
   }
 
-  // Läuft beim Laden der Seite automatisch
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-          });
-          setLoadingLocation(false);
-        },
-        (err) => {
-          console.error("Geolocation error:", err);
-          setLoadingLocation(false);
-        },
-        { enableHighAccuracy: false, timeout: 5000 } // schnellere Antwort
-      );
-    } else {
+    let watchId;
+
+    if (!navigator.geolocation) {
       console.warn("Geolocation not supported");
-      setLoadingLocation(false);
+      setLoading(false);
+      return;
     }
+
+    // Erstversuch: getCurrentPosition mit schnellem Timeout
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        });
+        setLoadingLocation(false);
+      },
+      (err) => {
+        console.warn("Geolocation initial failed:", err);
+        setLoadingLocation(false);
+      },
+      { enableHighAccuracy: false, timeout: 5000 }
+    );
+
+    // Hintergrund: watchPosition läuft weiter, falls Nutzer später Freigabe gibt
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        // optional: nur für Debug
+        console.warn("watchPosition error:", err);
+      },
+      { enableHighAccuracy: false, maximumAge: 0 }
+    );
+
+    return () => {
+      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   // Lädt die Challenges beim Betreten der Seite
@@ -284,23 +306,19 @@ function Challenges() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; OpenStreetMap contributors"
                   />
-                  {/* Nutzerstandort */}
                   <Marker position={[location.lat, location.lon]}>
                     <Popup>Dein Standort</Popup>
                   </Marker>
-                  {/* 0-5km grün */}
                   <Circle
                     center={[location.lat, location.lon]}
                     radius={5000}
                     pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }}
                   />
-                  {/* 5-15km gelb */}
                   <Circle
                     center={[location.lat, location.lon]}
                     radius={15000}
                     pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }}
                   />
-                  {/* 15-45km orange */}
                   <Circle
                     center={[location.lat, location.lon]}
                     radius={45000}

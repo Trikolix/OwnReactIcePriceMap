@@ -10,6 +10,10 @@ $beschreibung = $_POST['beschreibung'] ?? null;
 $bestehendeBilder = json_decode($_POST['bestehende_bilder'] ?? '[]', true); // erwartet Pfade wie "uploads/bewertungen/dateiname.jpg"
 $beschreibungen = json_decode($_POST['bild_beschreibungen'] ?? '[]', true);
 
+
+$latUser = $_POST['lat'] ?? null;
+$lonUser = $_POST['lon'] ?? null;
+
 // selectedAttributes als Array, kann mehrfach gesendet werden (selectedAttributes[])
 // Falls nur 1 Wert, kann es String sein, also sicherstellen, dass es Array ist
 $selectedAttributes = $_POST['selectedAttributes'] ?? [];
@@ -60,9 +64,36 @@ try {
         $auswahl = (int)$auswahl;
     }
 
+    // Checkin vor Ort?
+    $isOnSite = 0;
+    if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
+        // Hole Shop-Koordinaten
+        $stmt = $pdo->prepare("SELECT latitude, longitude FROM eisdielen WHERE id = ?");
+        $stmt->execute([$shopId]);
+        $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($shop)) {
+            $latShop = $shop['latitude'];
+            $lonShop = $shop['longitude'];
+
+            $earthRadius = 6371000; // in Metern
+            $dLat = deg2rad($latShop - $latUser);
+            $dLon = deg2rad($lonShop - $lonUser);
+            $a = sin($dLat/2) * sin($dLat/2) +
+                 cos(deg2rad($latUser)) * cos(deg2rad($latShop)) *
+                 sin($dLon/2) * sin($dLon/2);
+            $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+            $distance = $earthRadius * $c; // Distanz in Metern
+
+            if ($distance <= 300) { // Checkin vor Ort
+                $isOnSite = 1;
+            }
+
+        }
+    }
+
     // 2. Bewertung einfügen oder updaten (ON DUPLICATE KEY UPDATE nur wenn eindeutiger Key definiert)
-    $sql = "INSERT INTO bewertungen (eisdiele_id, nutzer_id, auswahl, beschreibung) 
-            VALUES (:shopId, :userId, :auswahl, :beschreibung) 
+    $sql = "INSERT INTO bewertungen (eisdiele_id, nutzer_id, auswahl, beschreibung, is_on_site) 
+            VALUES (:shopId, :userId, :auswahl, :beschreibung, :isOnSite) 
             ON DUPLICATE KEY UPDATE
               auswahl = VALUES(auswahl), 
               beschreibung = VALUES(beschreibung)";
@@ -71,7 +102,8 @@ try {
         ':shopId' => $shopId,
         ':userId' => $userId,
         ':auswahl' => $auswahl,
-        ':beschreibung' => $beschreibung
+        ':beschreibung' => $beschreibung,
+        ':isOnSite' => $isOnSite
     ]);
 
     // 3. Bewertung-ID abfragen (für Verknüpfungen)

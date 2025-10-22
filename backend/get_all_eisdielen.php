@@ -9,6 +9,8 @@ $sql = "SELECT
     e.adresse,
     e.latitude,
     e.longitude,
+    e.status,
+    e.reopening_date,
 
     -- Letzter gemeldeter Preis für Kugel-Eis mit Währung
     (SELECT p1.preis 
