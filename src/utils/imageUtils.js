@@ -1,5 +1,3 @@
-import React from 'react';
-
 // Gemeinsame Konfiguration für Bild-Uploads
 export const MAX_IMAGES = 5;
 export const MAX_DIMENSION = 1600; // px
@@ -51,10 +49,12 @@ export const isMobileDevice = () => {
     return false;
 };
 
-export default {
+const imageUtils = {
     MAX_IMAGES,
     MAX_DIMENSION,
     JPEG_QUALITY,
     compressImageFile,
     isMobileDevice,
 };
+
+export default imageUtils;

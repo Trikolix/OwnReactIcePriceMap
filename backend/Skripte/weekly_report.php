@@ -92,6 +92,18 @@ $stmt = $pdo->prepare("
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $laenderMitCheckins = $stmt->fetchColumn();
 
+// 9b. Verteilung Check-in Vor Ort / Nicht vor Ort (per is_on_site)
+$stmt = $pdo->prepare("
+    SELECT 
+        CASE WHEN is_on_site = 1 THEN 'Vor Ort' ELSE 'Nicht vor Ort' END AS ort_status,
+        COUNT(*) AS anzahl
+    FROM checkins
+    WHERE datum BETWEEN :start AND :ende
+    GROUP BY ort_status
+");
+$stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
+$checkinsNachOrt = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // 10. Gesamtanzahl Nutzer
 $gesamtNutzer = $pdo->query("SELECT COUNT(*) FROM nutzer")->fetchColumn();
 
@@ -140,11 +152,16 @@ foreach ($checkinsNachAnreise as $anreise) {
     $nachricht .= "  - {$anreise['anreise']}: {$anreise['anzahl']}\n";
 }
 
+// Check-in Verteilung mit / ohne Bild hinzufügen
 $nachricht .= "\n📸 Mit oder ohne Bild:\n";
-
-// Check-in Verteilung mit oder ohne Bild hinzufügen
 foreach ($checkinsNachBild as $bild) {
     $nachricht .= "  - {$bild['bild_status']}: {$bild['anzahl']}\n";
+}
+
+// Check-in Verteilung Vor Ort / Nicht vor Ort hinzufügen
+$nachricht .= "\n🏠 Vor Ort / Nicht vor Ort:\n";
+foreach ($checkinsNachOrt as $ort) {
+    $nachricht .= "  - {$ort['ort_status']}: {$ort['anzahl']}\n";
 }
 
 $nachricht .= <<<EOT
@@ -165,14 +182,14 @@ $stmt = $pdo->prepare("
         neue_nutzer, neue_eisdielen, aktive_nutzer,
         checkins, portionen, laender_mit_checkins,
         gesamt_nutzer, gesamt_checkins, gesamt_eisdielen,
-        verteilung_checkins_typ, verteilung_anreise, verteilung_bild
+    verteilung_checkins_typ, verteilung_anreise, verteilung_bild, verteilung_ort
     )
     VALUES (
         :start_datum, :end_datum,
         :neue_nutzer, :neue_eisdielen, :aktive_nutzer,
         :checkins, :portionen, :laender_mit_checkins,
         :gesamt_nutzer, :gesamt_checkins, :gesamt_eisdielen,
-        :verteilung_checkins_typ, :verteilung_anreise, :verteilung_bild
+    :verteilung_checkins_typ, :verteilung_anreise, :verteilung_bild, :verteilung_ort
     )
 ");
 
@@ -190,7 +207,8 @@ $stmt->execute([
     'gesamt_eisdielen' => $gesamtEisdielen,
     'verteilung_checkins_typ' => json_encode($checkinsNachTyp),
     'verteilung_anreise' => json_encode($checkinsNachAnreise),
-    'verteilung_bild' => json_encode($checkinsNachBild)
+    'verteilung_bild' => json_encode($checkinsNachBild),
+    'verteilung_ort' => json_encode($checkinsNachOrt)
 ]);
 
 // --- E-Mail versenden ---

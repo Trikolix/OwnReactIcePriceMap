@@ -25,6 +25,7 @@ $username = trim($data['username']);
 $email = trim($data['email']);
 $password = $data['password'];
 $inviteCode = $data['inviteCode'] ?? null;
+$newsletterOptIn = isset($data['newsletterOptIn']) ? (int)$data['newsletterOptIn'] : 0;
 
 $invitedById = null;
 
@@ -38,6 +39,11 @@ if ($inviteCode) {
 }
 
 // 3. Validierung
+$usernameRegex = '/^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/';
+if (!preg_match($usernameRegex, $username)) {
+    echo json_encode(['status' => 'error', 'message' => 'Benutzername: 3-20 Zeichen, nur Buchstaben, Zahlen, _ und -, muss mit Buchstabe beginnen.']);
+    exit;
+}
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['status' => 'error', 'message' => 'Ungültige E-Mail-Adresse.']);
     exit;
@@ -75,9 +81,12 @@ $stmt->execute([
     'invited_by' => $invitedById,
     'invite_code' => $invite_code
 ]);
+// 7. Notification Settings anlegen
 $userId = $pdo->lastInsertId();
+$stmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news) VALUES (?, 1, 1, 1, ?)");
+$stmt->execute([$userId, $newsletterOptIn]);
 
-// 7. Bestätigungs-E-Mail senden
+// 8. Bestätigungs-E-Mail senden
 $verifyUrl = "https://ice-app.de/#/verify?token=" . urlencode($token);
 $subject = "Bitte bestätige deine Registrierung";
 $message = "Hallo $username,\n\nBitte bestätige deine Registrierung, indem du auf folgenden Link klickst:\n\n$verifyUrl\n\nViele Grüße\ndein Eis-Team";
@@ -85,7 +94,7 @@ $headers = "From: noreply@ice-app.de";
 
 $mailSent = mail($email, $subject, $message, $headers);
 
-// Info Mail an Admini senden
+// Info Mail an Admin senden
 $subject = "Neue Registrierung";
 $message = <<<EOD
 Es hat sich ein neuer Nutzer bei ice-app.de registriert.

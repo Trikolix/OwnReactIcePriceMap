@@ -14,9 +14,11 @@ const LoginModal = ({ setShowLoginModal }) => {
   const { userId, isLoggedIn, login } = useUser();
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const [resetEmail, setResetEmail] = useState('');
   const [resetMessage, setResetMessage] = useState('');
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const handleLogin = async () => {
     try {
@@ -39,15 +41,15 @@ const LoginModal = ({ setShowLoginModal }) => {
         login(data.userId, actualUsername);
         console.log(userId);
         setMessage('Login erfolgreich!');
-
+        setLoginSuccess(true);
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('username', actualUsername);
-
         // Schließen Sie das Modal nach 2 Sekunden
         setTimeout(() => {
           setShowLoginModal(false);
           setMessage('');
           setPassword('');
+          setLoginSuccess(false);
         }, 2000);
       } else {
         setMessage(`Login fehlgeschlagen: ${data.message}`);
@@ -64,9 +66,14 @@ const LoginModal = ({ setShowLoginModal }) => {
       return;
     }
 
-    // Validierung für Leerzeichen im Benutzernamen
-    if (username.includes(' ')) {
-      setMessage('Benutzername darf keine Leerzeichen enthalten.');
+    // Username-Regeln:
+    // - 3-20 Zeichen
+    // - Nur Buchstaben, Zahlen, _ und -
+    // - Muss mit Buchstabe beginnen
+    // - Keine Leerzeichen, Sonderzeichen, Umlaute, Emojis
+    const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
+    if (!usernameRegex.test(username)) {
+      setMessage('Benutzername: 3-20 Zeichen, nur Buchstaben, Zahlen, _ und -, muss mit Buchstabe beginnen.');
       return;
     }
 
@@ -77,7 +84,8 @@ const LoginModal = ({ setShowLoginModal }) => {
         body: JSON.stringify({
           username,
           email,
-          password
+          password,
+          newsletterOptIn: newsletterOptIn ? 1 : 0
         })
       });
 
@@ -131,93 +139,105 @@ const LoginModal = ({ setShowLoginModal }) => {
         <CloseX onClick={closeLoginForm}>x</CloseX>
         <h2>{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</h2>
 
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (isResetMode) {
-            handlePasswordReset();
-          } else if (isRegisterMode) {
-            handleRegister();
-          } else {
-            handleLogin();
-          }
-        }}>
-          {!isResetMode && (<Input
-            type="text"
-            placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />)}
-          {isRegisterMode && (<Input
-              type="email"
-              placeholder="E-Mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+        {!loginSuccess && (
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (isResetMode) {
+              handlePasswordReset();
+            } else if (isRegisterMode) {
+              handleRegister();
+            } else {
+              handleLogin();
+            }
+          }}>
+            {!isResetMode && (<Input
+              type="text"
+              placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
-            />
-          )}
-          {!isResetMode && (<><Input
-            type="password"
-            placeholder="Passwort"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          /><br /></>)}
-          {!isRegisterMode && !isResetMode && (
-                <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsResetMode(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#0077cc',
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                      padding: 0
-                    }}
-                  >
-                    Passwort vergessen?
-                  </button>
-                </p>
-              )}
-
-          {isResetMode && (
-            <>
-              <Input
+            />)}
+            {isRegisterMode && (<Input
                 type="email"
-                placeholder="E-Mail-Adresse"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="E-Mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <p style={{ fontSize: '0.9rem' }}>
-                { resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen."}
-              </p>
-            </>
-          )}
-          {isRegisterMode && (
-            <div style={{ margin: '1rem 0' }}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={() => {
-                    setAcceptedTerms(!acceptedTerms);
-                    setTermsError(false);
-                  }}
-                  style={{ marginRight: '0.5rem' }}
-                />
-                Ich akzeptiere die{' '}
-                <StyledLink to="/agb" target="_blank">AGB</StyledLink>,{' '}
-                <StyledLink to="/datenschutz" target="_blank">Datenschutzerklärung</StyledLink> und{' '}
-                <StyledLink to="/community" target="_blank">Community-Richtlinien</StyledLink>.
-              </label>
-              {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
-            </div>)}
+            )}
+            {!isResetMode && (<><Input
+              type="password"
+              placeholder="Passwort"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            /><br /></>)}
+            {!isRegisterMode && !isResetMode && (
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsResetMode(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#0077cc',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      Passwort vergessen?
+                    </button>
+                  </p>
+                )}
 
-          <SubmitButton type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
-        </form>
+            {isResetMode && (
+              <>
+                <Input
+                  type="email"
+                  placeholder="E-Mail-Adresse"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                />
+                <p style={{ fontSize: '0.9rem' }}>
+                  { resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen."}
+                </p>
+              </>
+            )}
+            {isRegisterMode && (
+              <CheckboxGroup>
+                <CheckboxLabel>
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={() => {
+                      setAcceptedTerms(!acceptedTerms);
+                      setTermsError(false);
+                    }}
+                  />
+                  <span>
+                    Ich akzeptiere die{' '}
+                    <StyledLink to="/agb" target="_blank">AGB</StyledLink>,{' '}
+                    <StyledLink to="/datenschutz" target="_blank">Datenschutzerklärung</StyledLink> und{' '}
+                    <StyledLink to="/community" target="_blank">Community-Richtlinien</StyledLink>.
+                  </span>
+                </CheckboxLabel>
+                {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
+                <CheckboxLabel>
+                  <input
+                    type="checkbox"
+                    checked={newsletterOptIn}
+                    onChange={() => setNewsletterOptIn(!newsletterOptIn)}
+                  />
+                  <span>Ich möchte Systemmeldungen & News (Newsletter, Aktionen, wichtige Infos) per E-Mail erhalten.</span>
+                </CheckboxLabel>
+              </CheckboxGroup>
+            )}
+
+            <SubmitButton type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
+          </form>
+        )}
 
         <p>{message}</p>
         {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
@@ -239,6 +259,26 @@ const LoginModal = ({ setShowLoginModal }) => {
 };
 
 export default LoginModal;
+
+const CheckboxGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1rem 0;
+`;
+
+const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  width: 100%;
+  & > span {
+    text-align: left;
+    flex: 1;
+  }
+`;
 
 const CloseX = styled.button`
   position: absolute;
