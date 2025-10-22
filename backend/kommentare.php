@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/email_notification.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -116,6 +117,8 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
             ");
             $text = "$kommentatorName hat deinen Check-in kommentiert.";
             $stmt->execute([$checkinAutorId, $kommentarId, $text, $zusatzdaten]);
+            // E-Mail über die generische Funktion
+            sendNotificationEmailIfAllowed($pdo, $checkinAutorId, 'comment', $kommentatorName, ['shopName' => '', 'checkinId' => $checkinId]);
         }
 
         // 2. Andere Kommentierende benachrichtigen (außer dem aktuellen Kommentar)
@@ -186,6 +189,8 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
             ");
             $text = "$kommentatorName hat deine Bewertung kommentiert.";
             $stmt->execute([$bewertungAutorId, $kommentarId, $text, $zusatzdaten]);
+            // E-Mail über die generische Funktion
+            sendNotificationEmailIfAllowed($pdo, $bewertungAutorId, 'comment', $kommentatorName, ['shopName' => '', 'bewertungId' => $bewertungId]);
         }
 
         // 2. Andere Kommentierende benachrichtigen (außer dem aktuellen Kommentar)

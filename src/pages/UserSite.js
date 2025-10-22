@@ -1,6 +1,6 @@
 import Header from './../Header';
 import React, { useState, useEffect } from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
@@ -25,6 +25,14 @@ function UserSite() {
   const [awardPage, setAwardPage] = useState(1);
   const [routePage, setRoutePage] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
+  const location = useLocation();
+  // Öffne SettingsModal automatisch, wenn ?openSettings=1 in der URL steht
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('openSettings') === '1') {
+      setShowSettings(true);
+    }
+  }, [location.search]);
   const [activeTab, setActiveTab] = useState('checkins');
 
   const loadMoreCheckins = () => setCheckinPage((prev) => prev + 1);
@@ -115,9 +123,9 @@ function UserSite() {
                   </LinkContainer>
                   {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
                 </Einladungsbox>
-                {/*<SettingsButton onClick={() => setShowSettings(true)}>
+                {<SettingsButton onClick={() => setShowSettings(true)}>
                   ⚙️ Einstellungen
-                </SettingsButton>*/}
+                </SettingsButton>}
                 {showSettings && <UserSettings onClose={() => setShowSettings(false)} />}
               </>
             )}
