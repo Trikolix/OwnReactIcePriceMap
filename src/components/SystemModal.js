@@ -3,24 +3,25 @@ import React from "react";
 import { Dialog } from "@headlessui/react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
+import { Overlay as SharedOverlay, Button as SharedButton } from '../styles/SharedStyles';
 
 function SystemModal({ isOpen, onClose, title, message }) {
   if (typeof document === "undefined") return null;
 
   return createPortal(
     <Dialog open={isOpen} onClose={onClose}>
-      <Overlay aria-hidden="true" />
-      <Wrapper>
-        <Dialog.Panel as={Panel}>
-          <Dialog.Title as={Title}>{title}</Dialog.Title>
-          <Dialog.Description as={Description}>{message}</Dialog.Description>
+        <SharedOverlay aria-hidden="true" />
+        <Wrapper>
+          <Dialog.Panel as={Panel}>
+            <Dialog.Title as={Title}>{title}</Dialog.Title>
+            <Dialog.Description as={Description}>{message}</Dialog.Description>
 
-          <ButtonRow>
-            <CloseButton onClick={onClose}>Verstanden</CloseButton>
-          </ButtonRow>
-        </Dialog.Panel>
-      </Wrapper>
-    </Dialog>,
+            <ButtonRow>
+              <SharedButton onClick={onClose}>Verstanden</SharedButton>
+            </ButtonRow>
+          </Dialog.Panel>
+        </Wrapper>
+      </Dialog>,
     document.body
   );
 }
@@ -29,12 +30,7 @@ export default SystemModal;
 
 // Styled Components
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 9998;
-`;
+// uses SharedOverlay from SharedStyles
 
 const Wrapper = styled.div`
   position: fixed;
@@ -76,19 +72,4 @@ const ButtonRow = styled.div`
   justify-content: center;
 `;
 
-const CloseButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #228be6;
-  }
-`;
+// uses SharedButton

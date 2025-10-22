@@ -1,6 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import NewAwards from "./components/NewAwards";
+import {
+    Overlay as SharedOverlay,
+    Modal as SharedModal,
+    CloseButton as SharedCloseButton,
+    Input as SharedInput,
+    Textarea as SharedTextarea,
+    SubmitButton as SharedSubmitButton,
+    SmallButton as SharedSmallButton,
+    Heading as SharedHeading,
+    Form as SharedForm,
+    Section as SharedSection,
+    Label as SharedLabel,
+    ButtonGroup as SharedButtonGroup,
+    BilderContainer as SharedBilderContainer,
+    BildVorschau as SharedBildVorschau,
+    DeleteButton as SharedDeleteButton,
+    Message as SharedMessage,
+} from './styles/SharedStyles';
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
 
@@ -345,7 +363,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                         </FlexWrap>
                         <AddAttributeRow>
                             <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
-                            <SubmitButton onClick={handleNewAttribute}>Hinzufügen</SubmitButton>
+                            <SharedSmallButton onClick={handleNewAttribute}>Hinzufügen</SharedSmallButton>
                         </AddAttributeRow>
                     </AttributeSection>
                     <Section>
@@ -367,8 +385,8 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                             ref={galleryInputRef}
                             onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
                         />
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <SubmitButton type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</SubmitButton>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <SharedSmallButton type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</SharedSmallButton>
                         </div>
                         {showImageChooser && (
                             <ImageChooserModal
@@ -429,202 +447,57 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
 export default SubmitReviewModal;
 
-// --- Styled Components ---
-
-const ModalOverlay = styled.div`
-    position: fixed;
-    height: 100dvh;
-    width: 100vw;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1001;
-`;
-
-const ModalContent = styled.div`
-    background-color: #fff;
+// Re-export / provide the styled names expected by the component (map to shared ones)
+const ModalOverlay = SharedOverlay;
+const ModalContent = styled(SharedModal)`
+    max-width: 600px;
     padding: 1rem;
-    border-radius: 16px;
-    width: 95vw;
-    max-width: 550px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-    position: relative;
-    box-sizing: border-box;
-    scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
-    
-    @media (max-height: 600px) {
-      max-height: 95vh;
-      padding: 0.5rem;
-      padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
-    }
 `;
-
-const CloseButton = styled.button`
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    outline: none;
-`;
-
+const CloseButton = SharedCloseButton;
+const Heading = SharedHeading;
+const Form = SharedForm;
+const Section = SharedSection;
+const Label = SharedLabel;
 const FormTitle = styled.h2`
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-`;
-
-const GridForm = styled.div`
-    display: grid;
-    grid-template-columns: 30% 30% 30%;
-    gap: 8px 16px;
-    margin-bottom: 1rem;
-    align-items: center;
-`;
-
-const TextAreaGroup = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 1rem;
-`;
-
-const Input = styled.input`
-    border: 1px solid #e5e7eb;
-    padding: 6px;
-    border-radius: 4px;
-    font-size: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-`;
-
-const TextArea = styled.textarea`
-    border: 1px solid #e5e7eb;
-    padding: 6px;
-    border-radius: 4px;
-    font-size: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-`;
-
-const SelectedAttr = styled.span`
-    padding: 4px 12px;
-    background-color: #ffb522;
-    color: white;
-    border-radius: 9999px;
-    cursor: pointer;
-    display: inline-block;
-`;
-
-const AvailableAttr = styled.span`
-    padding: 4px 12px;
-    background-color: #d1d5db;
-    border-radius: 9999px;
-    cursor: pointer;
-    display: inline-block;
-`;
-
-const FlexWrap = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
-`;
-
-const AddAttributeRow = styled.div`
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-`;
-
-const SubmitButton = styled.button`
-    background-color: #ffb522;
-    color: white;
-    padding: 6px 12px;
-    margin: 0px 3px 0px 3px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-`;
-
-const ButtonGroup = styled.div`
-    margin-top: 1rem;
-    text-align: center;
-`;
-
-const BoldText = styled.p`
-    font-weight: 600;
-    margin-top: 1rem;
+    margin-top: 0;
     margin-bottom: 0.5rem;
 `;
-
-const AttributeSection = styled.div`
-    margin-bottom: 1rem;
+const GridForm = styled.div``;
+const TextAreaGroup = styled.div``;
+const TextArea = SharedTextarea;
+const AttributeSection = styled.div``;
+const BoldText = styled.strong``;
+const FlexWrap = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 `;
-
-const Message = styled.p`
-    margin-top: 1rem;
-    text-align: center;
+const SelectedAttr = styled.button`
+    background: #ffb522; /* warm orange */
+    color: white;
+    border: none;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
 `;
-
-const Text = styled.p`
-    font-size: 1.1rem;
-    margin-top: 1rem;
+const AvailableAttr = styled.button`
+    background: #f0f0f0;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
 `;
-
-const Section = styled.div`
-  margin-bottom: 1rem;
+const AddAttributeRow = styled.div`
+    display:flex;
+    gap:0.5rem;
+    margin-top:0.5rem;
 `;
-
-const Label = styled.label`
-  display: block;
-  font-weight: bold;
-  margin-bottom: 0.4rem;
-`;
-
-const BilderContainer = styled.div`
-  display: flex;
-  overflow-x: auto;
-  gap: 1rem;
-  padding: 0.5rem 0;
-
-  /* Optional für schöneres Scrollverhalten */
-  scroll-snap-type: x mandatory;
-
-  & > div {
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-    border: 1px solid #ccc;
-    padding: 0.5rem;
-    border-radius: 8px;
-    background: white;
-    min-width: 180px;
-    max-width: 220px;
-  }
-`;
-
-const BildVorschau = styled.img`
-  max-height: 120px;
-  width: auto;
-  display: block;
-  margin: 0 auto;
-`;
-
-const DeleteButton = styled.button`
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-
-  &:hover {
-    background: #d32f2f;
-  }
-`;
+const BilderContainer = SharedBilderContainer;
+const BildVorschau = SharedBildVorschau;
+const Input = SharedInput;
+const SubmitButton = SharedSubmitButton;
+const ButtonGroup = SharedButtonGroup;
+const Message = SharedMessage;
+const DeleteButton = SharedDeleteButton;
+const Text = styled.p``;

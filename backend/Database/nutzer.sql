@@ -38,7 +38,8 @@ CREATE TABLE `nutzer` (
   `current_level` int DEFAULT '1',
   `invite_code` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `invited_by` int DEFAULT NULL,
-  `last_active_at` timestamp NULL DEFAULT NULL
+  `last_active_at` timestamp NULL DEFAULT NULL,
+  `last_notification_email_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

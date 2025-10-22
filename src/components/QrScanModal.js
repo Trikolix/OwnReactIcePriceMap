@@ -1,23 +1,13 @@
 import React from "react";
 import styled from "styled-components";
+import { Overlay, Modal as SharedModal, Heading, Message, Button as PrimaryButton } from '../styles/SharedStyles';
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 1001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
 
-const ModalBox = styled.div`
-  background: white;
+
+const ModalBox = styled(SharedModal)`
+  max-width: 420px;
   padding: 2rem;
   border-radius: 1rem;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   text-align: center;
 `;
 
@@ -45,20 +35,9 @@ const StatusMessage = styled.p`
   color: ${(props) => (props.$needsLogin ? "#b91c1c" : "#047857")};
 `;
 
-const CloseButton = styled.button`
-  margin-top: 1.5rem;
-  padding: 0.6rem 1.2rem;
+const CloseButton = styled(PrimaryButton)`
   background-color: #7e22ce;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s ease;
-
-  &:hover {
-    background-color: #6b21a8;
-  }
+  &:hover { background-color: #6b21a8; }
 `;
 
 export default function QrScanModal({ open, onClose, data, needsLogin }) {

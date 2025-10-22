@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, use } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
+import { SubmitButton as SharedSubmitButton, SamllerSubmitButton } from './styles/SharedStyles';
 import { useSearchParams } from 'react-router-dom';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
@@ -297,7 +298,7 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
         <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
         {
         (Number(userId) === 1) && (
-          <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
+          <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
         )}
         <h2>Preise</h2>
         {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
@@ -541,14 +542,9 @@ const ButtonContainer = styled.div`
   margin-bottom: 1rem;
 `;
 
-const Button = styled.button`
-  padding: 0.75rem 1.5rem;
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
+// Use the shared SubmitButton styling for primary CTAs in the shop details
+const Button = styled(SharedSubmitButton)`
+  /* keep any shop-specific tweaks here if needed */
 `;
 
 const AttributeSection = styled.div`

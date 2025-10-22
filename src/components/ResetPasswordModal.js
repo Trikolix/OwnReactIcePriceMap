@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { Overlay as SharedOverlay, Modal as SharedModal, Input as SharedInput, Button as SharedButton, CloseButton as SharedCloseButton } from '../styles/SharedStyles';
 import { useNavigate } from 'react-router-dom';
 
 const ResetPasswordModal = ({ resetToken, onClose }) => {
@@ -35,18 +36,18 @@ const ResetPasswordModal = ({ resetToken, onClose }) => {
     }, [resetToken]);
 
     if (validToken === null) {
-        return <Overlay><Modal><p>Token wird geprüft …</p></Modal></Overlay>;
+        return <SharedOverlay><SharedModal><p>Token wird geprüft …</p></SharedModal></SharedOverlay>;
     }
 
     if (!validToken) {
         return (
-            <Overlay>
-                <Modal>
+            <SharedOverlay>
+                <SharedModal>
                     <Title>Passwort zurücksetzen</Title>
                     <ErrorText>{error}</ErrorText>
-                    <Button onClick={() => navigate("/")}>Zurück zur Startseite</Button>
-                </Modal>
-            </Overlay>
+                    <SharedButton onClick={() => navigate("/")}>Zurück zur Startseite</SharedButton>
+                </SharedModal>
+            </SharedOverlay>
         );
     }
 
@@ -89,19 +90,19 @@ const ResetPasswordModal = ({ resetToken, onClose }) => {
     };
 
     return (
-        <Overlay>
-            <Modal>
-                <CloseX onClick={onClose}>x</CloseX>
+        <SharedOverlay>
+            <SharedModal>
+                <SharedCloseButton onClick={onClose}>x</SharedCloseButton>
                 <Title>Neues Passwort setzen</Title>
                 <form onSubmit={handleSubmit}>
-                    <Input
+                    <SharedInput
                         type="password"
                         placeholder="Neues Passwort"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
-                    <Input
+                    <SharedInput
                         type="password"
                         placeholder="Passwort bestätigen"
                         value={confirmPassword}
@@ -109,77 +110,22 @@ const ResetPasswordModal = ({ resetToken, onClose }) => {
                         required
                     />
                     {error && <ErrorText>{error}</ErrorText>}
-                    <Button type="submit">Passwort setzen</Button>
+                    <SharedButton type="submit">Passwort setzen</SharedButton>
                 </form>
-            </Modal>
-        </Overlay>
+            </SharedModal>
+        </SharedOverlay>
     );
 };
 
 export default ResetPasswordModal;
 
-
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1003;
-`;
-
-const Modal = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-`;
-
 const Title = styled.h2`
-  margin-top: 0;
-  margin-bottom: 1rem;
-  text-align: center;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-`;
-
-const Button = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #f26c4f;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #d95c3f;
-  }
+    margin-top: 0;
+    margin-bottom: 1rem;
+    text-align: center;
 `;
 
 const ErrorText = styled.p`
-  color: red;
-  font-size: 0.9rem;
-`;
-
-const CloseX = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
+    color: red;
+    font-size: 0.95rem;
 `;

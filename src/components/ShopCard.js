@@ -5,6 +5,7 @@ import { useUser } from "./../context/UserContext";
 import OpeningHours from "./OpeningHours";
 import ShopWebsite from "./ShopWebsite";
 import SubmitIceShopModal from "../SubmitIceShopModal";
+import { SamllerSubmitButton, Card } from "../styles/SharedStyles";
 
 
 const ShopCard = ({ iceShop, onSuccess }) => {
@@ -39,7 +40,7 @@ const ShopCard = ({ iceShop, onSuccess }) => {
       <OpeningHours eisdiele={iceShop} />
       <ShopWebsite eisdiele={iceShop} />
       {(Number(userId) === 1 || (Number(userId) === Number(iceShop.user_id) && (new Date() - new Date(iceShop.erstellt_am)) < 6 * 60 * 60 * 1000)) && (
-        <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
+        <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
       )}
     </Card>
 
@@ -63,40 +64,8 @@ const CleanLink = styled(Link)`
   color: inherit;
 `;
 
-const Card = styled.div`
-  position: relative;
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s;
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  }
-`;
-
 const Header = styled.div`
   margin-bottom: 1rem;
-`;
-
-const EditButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #228be6;
-  }
 `;
 
 const DateText = styled.time`

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styled from 'styled-components';
+import { Overlay, Modal, CloseButton, Heading, Label, Input, Textarea, ButtonGroup, SubmitButton, Message, LevelInfo } from './styles/SharedStyles';
 import NewAwards from './components/NewAwards.js'
 const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuccess }) => {
 
@@ -105,7 +106,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 {!submitted && (<>
                     <Label>
                         Preis pro Kugel:
-                        <Input
+                        <NarrowInput
                             type="number"
                             min="1.0"
                             max="5.0"
@@ -121,7 +122,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
 
                     <Label>
                         Zusatzbeschreibung für die Kugel:
-                        <TextArea
+                        <Textarea
                             rows={3}
                             value={additionalInfoKugelPreis}
                             onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)}
@@ -130,7 +131,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
 
                     <Label>
                         Preis für Softeis:
-                        <Input
+                        <NarrowInput
                             type="number"
                             min="1.0"
                             max="5.0"
@@ -146,7 +147,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
 
                     <Label>
                         Zusatzbeschreibung für Softeis:
-                        <TextArea
+                        <Textarea
                             rows={3}
                             value={additionalInfoSofteisPreis}
                             onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)}
@@ -170,94 +171,26 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
 };
 
 export default SubmitPriceModal;
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
+// File-specific overrides using shared components
+const NarrowInput = styled(Input)`
+    width: 40px;
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
 `;
 
-const Modal = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
-  position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+const TextArea = styled(Textarea)`
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
 `;
 
-const CloseButton = styled.button`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-`;
-
-const Heading = styled.h2`
-  margin-bottom: 1rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-top: 1rem;
-  font-weight: bold;
-`;
-
-const Input = styled.input`
-  width: 40px;
-  padding: 0.5rem;
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-`;
-
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-`;
-
-const ButtonGroup = styled.div`
+const LocalButtonGroup = styled.div`
     text-align: center;
 `;
 
-const SubmitButton = styled.button`
-  margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #ffcb4c;
-  }
-`;
-
-const Message = styled.p`
-  margin-top: 1rem;
-  font-style: italic;
-`;
-
-const LevelInfo = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
-`;
+// large submit styling is provided globally via SharedStyles SubmitButton

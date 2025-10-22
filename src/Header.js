@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import {
+  OverlayBackground as SharedOverlayBackground,
+  Overlay as SharedOverlay,
+  CloseButton as SharedCloseButton,
+  SubmitButton as SharedSubmitButton,
+  LevelInfo as SharedLevelInfo,
+  Modal as SharedModal,
+} from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
@@ -249,7 +257,7 @@ const Header = ({ refreshShops }) => {
       )}
       {showOverlay && (
         <OverlayBackground>
-          <Overlay>
+          <SharedModal>
             <CloseButton onClick={() => {
               setShowOverlay(false);
               setLevelUpInfo(null);
@@ -265,14 +273,17 @@ const Header = ({ refreshShops }) => {
             )}
             {levelUpInfo && newAwards.length > 0 && (<hr></hr>)}
             <NewAwards awards={newAwards} />
-            <SubmitButton onClick={() => {
-              setShowOverlay(false);
-              setLevelUpInfo(null);
-              setNewAwards([]);
-            }}>Alles Klar!</SubmitButton>
-          </Overlay>
+            <ButtonWrapper>
+              <SubmitButton onClick={() => {
+                setShowOverlay(false);
+                setLevelUpInfo(null);
+                setNewAwards([]);
+              }}>Alles Klar!</SubmitButton>
+            </ButtonWrapper>
+          </SharedModal>
         </OverlayBackground>
       )}
+
       {showUserOfMonth && (
         <OverlayBackground>
           <Overlay>
@@ -409,53 +420,15 @@ const MenuItemLink = styled(Link)`
   }
 `;
 
-const OverlayBackground = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 9998;
+const OverlayBackground = SharedOverlayBackground;
+const Overlay = SharedOverlay;
+const CloseButton = SharedCloseButton;
+
+const ButtonWrapper = styled.div`
+  width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
 `;
-
-const Overlay = styled.div`
-  position: relative;
-  background: white;
-  padding: 2rem 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  text-align: center;
-  animation: fadeIn 0.4s ease-out;
-  max-width: 90%;
-  width: 400px;
-  max-height: 80vh;      /* hier die maximale Höhe */
-  overflow-y: auto;      /* Inhalt scrollbar machen */
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #888;
-
-  &:hover {
-    color: #000;
-  }
-`;
-
 
 const GewinnspielIcon = styled.div`
   cursor: pointer;
@@ -518,20 +491,7 @@ const UserImage = styled.img`
   object-fit: cover;
 `;
 
-const SubmitButton = styled.button`
-  margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #ffcb4c;
-  }
-`;
+const SubmitButton = SharedSubmitButton;
 
 const MonthHeader = styled.h3`
   margin-top: 0rem;

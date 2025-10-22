@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from "styled-components";
+import { Overlay as SharedOverlay, Input as SharedInput, SubmitButton as SharedSubmitButton, CloseButton as SharedCloseButton } from '../styles/SharedStyles';
 import { useUser } from '../context/UserContext';
 
 const OpeningHours = ({ eisdiele }) => {
@@ -110,14 +111,14 @@ const OpeningHours = ({ eisdiele }) => {
                 )}
             </OpeningHoursContainer>
             {isLoggedIn && showOverlay && (
-                <Overlay ref={overlayRef}>
+                <SharedOverlay ref={overlayRef}>
                     <OverlayContent>
-                        <CloseX onClick={() => setShowOverlay(false)}>x</CloseX>
+                        <SharedCloseButton onClick={() => setShowOverlay(false)}>x</SharedCloseButton>
                         <p>Möchtest du Änderungen an den Öffnungszeiten von <strong>{eisdiele.name}</strong> melden?<br /></p>
-                        <Input rows="3" value={newOpeningHours} onChange={(e) => setNewOpeningHours(e.target.value)} />
-                        <SubmitButton onClick={handleReportClick}>Änderungen melden</SubmitButton>
+                        <SharedInput as="textarea" rows="3" value={newOpeningHours} onChange={(e) => setNewOpeningHours(e.target.value)} />
+                        <SharedSubmitButton onClick={handleReportClick}>Änderungen melden</SharedSubmitButton>
                     </OverlayContent>
-                </Overlay>
+                </SharedOverlay>
             )}
         </Container>
     );
@@ -149,54 +150,12 @@ const Tooltip = styled.div`
   z-index: 1001;
 `;
 
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1002;
-`;
-
 const OverlayContent = styled.div`
-  position: relative;
-  background: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-`;
-
-const CloseX = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-`;
-
-const Input = styled.textarea`
-  border: 1px solid #e5e7eb;
-  padding: 6px;
-  border-radius: 4px;
-  font-size: 1rem;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-const SubmitButton = styled.button`
-  background-color: #ffb522;
-  color: white;
-  padding: 6px 12px;
-  margin: 0px 3px 0px 3px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
+    position: relative;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
 const StatusInfo = styled.div`

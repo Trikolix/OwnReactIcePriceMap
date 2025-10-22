@@ -7,6 +7,7 @@ import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
 import { Modal } from "./Modal";
+import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -100,7 +101,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
 
             {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
             {Number(checkin.nutzer_id) === Number(userId) && (
-              <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
+              <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
             )}
           </LeftContent>
           <RightContent>
@@ -150,39 +151,6 @@ const CleanLink = styled(Link)`
   color: inherit;
 `;
 
-const Card = styled.div`
-  position: relative;
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s;
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const ContentWrapper = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-`;
-
-const LeftContent = styled.div`
-  flex: 1 1 300px;
-  min-width: 250px;
-`;
-
-const RightContent = styled.div`
-  display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  padding-bottom: 8px;
-`;
-
 const Table = styled.table`
   border-collapse: collapse;
   margin: 1rem 0;
@@ -226,23 +194,6 @@ const TypText = styled.em`
   color: #777;
 `;
 
-const EditButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #228be6;
-  }
-`;
-
 const ArrivalInfo = styled.div`
   margin: 1rem 0;
   display: flex;
@@ -283,19 +234,4 @@ const DateText = styled.time`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-`;
-
-const CommentToggle = styled.button`
-  margin-top: 0.5rem;
-  background: transparent;
-  border: none;
-  color: #339af0;
-  cursor: pointer;
-  font-weight: bold;
-  padding: 0.25rem 0;
-  text-align: left;
-
-  &:hover {
-    text-decoration: underline;
-  }
 `;

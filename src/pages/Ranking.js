@@ -602,7 +602,7 @@ const TabContainer = styled.div`
 const TabButton = styled.button`
   padding: 0.5rem 1rem;
   margin: 0 0.5rem;
-  background-color: ${(props) => (props.active ? '#0077b6' : '#f0f0f0')};
+  background-color: ${(props) => (props.active ? '#ffb522' : '#f0f0f0')};
   color: ${(props) => (props.active ? 'white' : '#333')};
   border: none;
   border-radius: 5px;
@@ -610,7 +610,7 @@ const TabButton = styled.button`
   font-size: 1rem;
 
   &:hover {
-    background-color: ${(props) => (props.active ? '#005f8a' : '#e0e0e0')};
+    background-color: ${(props) => (props.active ? '#da9c20ff' : '#e0e0e0')};
   }
 `;
 

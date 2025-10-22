@@ -1,5 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
+import {
+    Overlay as SharedOverlay,
+    Modal as SharedModal,
+    CloseButton as SharedCloseButton,
+    Heading as SharedHeading,
+    Form as SharedForm,
+    Section as SharedSection,
+    Label as SharedLabel,
+    Input as SharedInput,
+    Select as SharedSelect,
+    Textarea as SharedTextarea,
+    Button as SharedButton,
+    SubmitButton as SharedSubmitButton,
+    ButtonGroup as SharedButtonGroup,
+    BilderContainer as SharedBilderContainer,
+    BildVorschau as SharedBildVorschau,
+    DeleteButton as SharedDeleteButton,
+    Message as SharedMessage,
+    LevelInfo as SharedLevelInfo,
+} from './styles/SharedStyles';
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
@@ -141,8 +161,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     isExisting: true
                 })));
                 setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
-            } catch (error) {
-                setMessage(`Ein Fehler ist aufgetreten: ${error}`);
+            } catch (err) {
+                console.error("Fehler beim Laden des Checkins:", err);
             }
         };
 
@@ -486,6 +506,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={geschmackbewertung}
                                             onChange={(e) => setGeschmackbewertung(e.target.value)}
+                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
@@ -501,6 +522,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={preisleistungsbewertung}
                                             onChange={(e) => setPreisleistungsbewertung(e.target.value)}
+                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
@@ -516,6 +538,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={waffelbewertung}
                                             onChange={(e) => setWaffelbewertung(e.target.value)}
+                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
@@ -652,229 +675,72 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 };
 
 export default CheckinForm;
+// Re-export some shared styled names for backwards compatibility in this file
+const Overlay = SharedOverlay;
+const Modal = SharedModal;
+const CloseButton = SharedCloseButton;
+const Heading = SharedHeading;
+const Form = SharedForm;
+const Section = SharedSection;
+const Label = SharedLabel;
+const Input = SharedInput;
+const Select = SharedSelect;
+const Textarea = SharedTextarea;
+const Button = SharedButton;
+const ButtonGroup = SharedButtonGroup;
+const BilderContainer = SharedBilderContainer;
+const BildVorschau = SharedBildVorschau;
+const DeleteButton = SharedDeleteButton;
+const Message = SharedMessage;
+const LevelInfo = SharedLevelInfo;
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  width: 100vw;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-`;
+// map shared SubmitButton
+const SubmitButton = SharedSubmitButton;
 
-const Modal = styled.div`
-  background-color: #fff;
-  padding: 1rem;
-  border-radius: 16px;
-  width: 95vw;
-  max-width: 550px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  position: relative;
-   box-sizing: border-box;
-  scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
-  
-  @media (max-height: 600px) {
-    max-height: 95vh;
-    padding: 0.5rem;
-    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
-  }
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-`;
-
-const Heading = styled.h2`
-  margin-bottom: 1rem;
-`;
-
-const Form = styled.form`
-`;
-
-const Section = styled.div`
-  margin-bottom: 1rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  font-weight: bold;
-  margin-bottom: 0.4rem;
-`;
-
-const Input = styled.input`
-  width: 95%;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ccc;
-`;
-
-const Select = styled.select`
-  width: 95%;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ccc;
-`;
-
-const Textarea = styled.textarea`
-  width: 95%;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ccc;
-`;
-
-const Button = styled.button`
-  background: #ffb522;
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: bold;
-  cursor: pointer;
-
-  &:hover {
-    background: #ffcb4c;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-`;
-
-const AddButton = styled.button`
-  background: #ffb522;
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 0.4rem;
-  margin-top: 0.5rem;
-  cursor: pointer;
-
-  &:hover {
-    background: #ffcb4c;
-  }
+// Small local helpers that existed previously and are referenced in JSX
+const Row = styled.div`
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding-bottom: 0.2rem;
 `;
 
 const RemoveButton = styled.button`
-  background: transparent;
-  border: none;
-  color: red;
-  font-size: 1.2rem;
-  cursor: pointer;
-`;
-
-const Row = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  align-items: center;
-`;
-
-const Message = styled.p`
-  margin-top: 1rem;
-  font-style: italic;
-`;
-
-const Table = styled.table`
-  border-spacing: 0;
-  margin-bottom: 1rem;
-
-  td {
-    padding: 0.1rem;
-    vertical-align: middle;
-  }
-  td:nth-child(3) {
-    padding-left: 2rem;
-  }
-`;
-
-const StyledCol1 = styled.col`
-  width: 50%;
-`;
-
-const StyledCol2 = styled.col`
-  width: 20%;
-`;
-
-const StyledCol3 = styled.col`
-  width: 30%;
-  padding-left: 1.5rem;
-`;
-
-const BilderContainer = styled.div`
-  display: flex;
-  overflow-x: auto;
-  gap: 1rem;
-  padding: 0.5rem 0;
-
-  /* Optional für schöneres Scrollverhalten */
-  scroll-snap-type: x mandatory;
-
-  & > div {
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-    border: 1px solid #ccc;
-    padding: 0.5rem;
-    border-radius: 8px;
-    background: white;
-    min-width: 180px;
-    max-width: 220px;
-  }
-`;
-
-const BildVorschau = styled.img`
-  max-height: 120px;
-  width: auto;
-  display: block;
-  margin: 0 auto;
-`;
-
-
-const DeleteButton = styled.button`
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-
-  &:hover {
-    background: #d32f2f;
-  }
-`;
-
-const Text = styled.p`
-    font-size: 1.1rem;
-    margin-top: 1rem;
-`;
-
-const SubmitButton = styled.button`
-    background-color: #ffb522;
-    color: white;
-    padding: 6px 12px;
-    margin: 0px 3px 0px 3px;
-    border-radius: 4px;
+    background: transparent;
     border: none;
+    color: #d9534f;
+    font-size: 1.2rem;
     cursor: pointer;
 `;
 
-const LevelInfo = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+const AddButton = styled.button`
+    background: #ffb522;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
 `;
+
+const Table = styled.table`
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+`;
+
+const StyledCol1 = styled.col`
+    width: 50%;
+`;
+const StyledCol2 = styled.col`
+    width: 20%;
+    align-items: left;
+`;
+const StyledCol3 = styled.col`
+    width: 30%;
+    padding-left: 1.5rem;
+    text-align: right;
+    align-items: right;
+    align-content: right;
+`;
+
+const Text = styled.p``;

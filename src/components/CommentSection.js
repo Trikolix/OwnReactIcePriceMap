@@ -234,12 +234,14 @@ const InputSection = styled.div`
 
   button {
     align-self: flex-end;
-    padding: 0.4rem 0.8rem;
-    background-color: #339af0;
+    padding: 0.6rem 1rem;
+    background-color: #ffb522;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
   }
 `;
 

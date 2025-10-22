@@ -1,6 +1,6 @@
 import Header from './../Header';
 import React, { useState, useEffect } from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
@@ -8,6 +8,7 @@ import ReviewCard from "../components/ReviewCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
+import UserSettings from './UserSettings';
 
 function UserSite() {
   const { userId: userIdFromUrl } = useParams();
@@ -19,68 +20,51 @@ function UserSite() {
   const [error, setError] = useState(null);
   const finalUserId = userIdFromUrl || userIdFromContext;
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
-
-  // Add state to manage pagination for check-ins and reviews
   const [checkinPage, setCheckinPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
   const [awardPage, setAwardPage] = useState(1);
   const [routePage, setRoutePage] = useState(1);
-
-
-  const loadMoreCheckins = () => {
-    setCheckinPage((prevPage) => prevPage + 1);
-  };
-
-  const loadMoreReviews = () => {
-    setReviewPage((prevPage) => prevPage + 1);
-  };
-
-  const loadMoreAwards = () => {
-    setAwardPage((prevPage) => prevPage + 1);
-  };
-
-  const loadMoreRoutes = () => {
-    setRoutePage((prevPage) => prevPage + 1);
-  };
-
-
-  // Add tabs for displaying check-ins and reviews
+  const [showSettings, setShowSettings] = useState(false);
+  const location = useLocation();
+  // Öffne SettingsModal automatisch, wenn ?openSettings=1 in der URL steht
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('openSettings') === '1') {
+      setShowSettings(true);
+    }
+  }, [location.search]);
   const [activeTab, setActiveTab] = useState('checkins');
+
+  const loadMoreCheckins = () => setCheckinPage((prev) => prev + 1);
+  const loadMoreReviews = () => setReviewPage((prev) => prev + 1);
+  const loadMoreAwards = () => setAwardPage((prev) => prev + 1);
+  const loadMoreRoutes = () => setRoutePage((prev) => prev + 1);
 
   const fetchUserData = async (finalUserId) => {
     try {
       const response = await fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${finalUserId}&cur_user_id=${userIdFromContext}`);
-      if (!response.ok) {
-        throw new Error("Fehler beim Abruf der Daten");
-      }
+      if (!response.ok) throw new Error("Fehler beim Abruf der Daten");
       const json = await response.json();
       setData(json);
       setLoading(false);
     } catch (err) {
-      console.error("Fehler beim Laden der Dashboard-Daten:", err);
       setError(err);
-    } finally {
       setLoading(false);
     }
-  }
+  };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!finalUserId) return;
-
     fetchUserData(finalUserId);
   }, [finalUserId]);
 
-  const refreshUser = () => {
-    fetchUserData(finalUserId);
-  };
-
+  const refreshUser = () => fetchUserData(finalUserId);
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2500);
     } catch (err) {
-      console.error('Fehler beim Kopieren:', err);
       alert('Kopieren fehlgeschlagen.');
     }
   };
@@ -95,8 +79,8 @@ function UserSite() {
             <p>Lade Nutzer Daten...</p>
           </HeaderDiv>
         </DashboardWrapper>
-      </div >
-    </div >
+      </div>
+    </div>
   );
   if (error !== null) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -108,40 +92,49 @@ function UserSite() {
             <p>Fehler beim Abruf der Daten</p>
           </HeaderDiv>
         </DashboardWrapper>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 
   // Filter check-ins and reviews based on the current page
-  const displayedCheckins = data.checkins.slice(0, checkinPage * 5);
-  const displayedReviews = data.reviews.slice(0, reviewPage * 5);
-  const displayedAwards = data.user_awards.slice(0, awardPage * 4);
-  const displayedRoutes = data.routen.slice(0, routePage * 5);
-
-  const totalIcePortions = (data.eisarten.Kugel || 0) + (data.eisarten.Softeis || 0) + (data.eisarten.Eisbecher || 0);
+  const displayedCheckins = data ? data.checkins.slice(0, checkinPage * 5) : [];
+  const displayedReviews = data ? data.reviews.slice(0, reviewPage * 5) : [];
+  const displayedAwards = data ? data.user_awards.slice(0, awardPage * 4) : [];
+  const displayedRoutes = data ? data.routen.slice(0, routePage * 5) : [];
+  const totalIcePortions = data ? (data.eisarten.Kugel || 0) + (data.eisarten.Softeis || 0) + (data.eisarten.Eisbecher || 0) : 0;
 
   return (
+
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header />
       <div style={{ width: '100vw', backgroundColor: 'white' }}>
         <DashboardWrapper>
           <HeaderDiv>
             <h1>Nutzerseite von {data.nutzername}</h1>
-            <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+            <FlexRow>
+              <p style={{margin:0}}>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+              {isOwnProfile && (
+                <SettingsButton onClick={() => setShowSettings(true)}>
+                  ⚙️ Einstellungen
+                </SettingsButton>
+              )}
+            </FlexRow>
             {isOwnProfile && (
-              <Einladungsbox>
-                <h3>Lade neue Nutzer ein und verdiene extra EP ✨</h3>
-                <LinkContainer>
-                  Dein Einladungslink:
-                  <Input value={`https://ice-app.de/#/register/${data.invite_code}`} readOnly />
-                  <CopyButton onClick={() => copyToClipboard(`https://ice-app.de/#/register/${data.invite_code}`)}>Kopieren</CopyButton>
-                </LinkContainer>
-                {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
-              </Einladungsbox>
+              <>
+                <Einladungsbox>
+                  <h3>Lade neue Nutzer ein und verdiene extra EP ✨</h3>
+                  <LinkContainer>
+                    Dein Einladungslink:
+                    <Input value={`https://ice-app.de/#/register/${data.invite_code}`} readOnly />
+                    <CopyButton onClick={() => copyToClipboard(`https://ice-app.de/#/register/${data.invite_code}`)}>Kopieren</CopyButton>
+                  </LinkContainer>
+                  {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
+                </Einladungsbox>
+                {showSettings && <UserSettings onClose={() => setShowSettings(false)} />}
+              </>
             )}
             <LevelDisplay levelInfo={data.level_info} />
           </HeaderDiv>
-
           <IceCreamStatsWrapper>
             <IceCreamSection>
               <h3>Eisarten gegessen</h3>
@@ -255,7 +248,7 @@ function UserSite() {
             {activeTab === 'routen' && (
               <div>
                 {displayedRoutes.map((route, index) => (
-                  <RouteCard key={index} route={route} shopId={route.eisdiele_id} shopName={route.eisdiele_name} onSuccess={refreshUser}  />
+                  <RouteCard key={index} route={route} shopId={route.eisdiele_id} shopName={route.eisdiele_name} onSuccess={refreshUser} />
                 ))}
                 {displayedReviews.length < data.reviews.length && (
                   <LoadMoreButton onClick={loadMoreRoutes}>Mehr Routen laden</LoadMoreButton>
@@ -265,11 +258,36 @@ function UserSite() {
           </TabContent>
         </DashboardWrapper>
       </div>
-    </div >
+    </div>
   );
 }
 
 export default UserSite;
+// Flex-Container für Mitglied seit + Einstellungen
+const FlexRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+`;
+
+// Button für Einstellungen
+const SettingsButton = styled.button`
+  margin-top: 1rem;
+  background: #ffb522;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  &:hover {
+    background: #da9c20ff;
+  }
+`;
 
 const DashboardWrapper = styled.div`
   width: 90%;
@@ -424,16 +442,16 @@ const LoadMoreButton = styled.button`
   display: block;
   margin: 1rem auto;
   padding: 0.5rem 1rem;
-  background-color: #0077b6;
+  background-color: #ffb522;
   color: white;
   border: none;
-  border-radius: 20px;
+  border-radius: 10px;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.3s;
 
   &:hover {
-    background-color: #005f8a;
+    background-color: #da9c20ff;
   }
 `;
 
@@ -446,7 +464,7 @@ const TabContainer = styled.div`
 const TabButton = styled.button`
   padding: 0.5rem 1rem;
   margin: 0 0.5rem;
-  background-color: ${(props) => (props.active ? '#0077b6' : '#f0f0f0')};
+  background-color: ${(props) => (props.active ? '#ffb522' : '#f0f0f0')};
   color: ${(props) => (props.active ? 'white' : '#333')};
   border: none;
   border-radius: 5px;
@@ -454,7 +472,7 @@ const TabButton = styled.button`
   font-size: 1rem;
 
   &:hover {
-    background-color: ${(props) => (props.active ? '#005f8a' : '#e0e0e0')};
+    background-color: ${(props) => (props.active ? '#da9c20ff' : '#e0e0e0')};
   }
 `;
 
@@ -472,6 +490,11 @@ const LinkContainer = styled.div`
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
+  @media (max-width: 500px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
 `;
 
 const Input = styled.input`
@@ -484,14 +507,14 @@ const Input = styled.input`
 
 const CopyButton = styled.button`
   padding: 0.5rem 1rem;
-  background-color: #0077b6;
+  background-color: #ffb522;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
   &:hover {
-    background-color: #005f8a;
+    background-color: #da9c20ff;
   }
 `;
 
