@@ -26,23 +26,24 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $notify = ($setting === false || $setting === null) ? 1 : (isset($setting[$settingField]) ? (int)$setting[$settingField] : 1);
     if ($notify !== 1) return;
 
-    // E-Mail zusammenbauen
+    // E-Mail als HTML zusammenbauen
     $mailTo = $userRow['email'];
     $mailSubject = '';
-    $mailBody = "Hallo " . $userRow['username'] . ",\n\n";
+    $mailBody = "<html><body style='font-family:sans-serif;color:#222;'>";
+    $mailBody .= "<p>Hallo <strong>" . htmlspecialchars($userRow['username']) . "</strong>,</p>";
     if ($notificationType === 'checkin_mention') {
         $mailSubject = "Ice-App: Du wurdest bei einem Checkin erwähnt";
-        $mailBody .= "$senderName hat dich in der Ice-App bei einem Checkin erwähnt und angegeben, mit dir Eis gegessen zu haben.\n\n";
-        $mailBody .= "Du kannst jetzt selbst deinen Checkin eintragen und EP sammeln!\n\n";
+        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat dich in der Ice-App bei einem Checkin erwähnt und angegeben, mit dir Eis gegessen zu haben.</p>";
+        $mailBody .= "<p>Du kannst jetzt selbst deinen Checkin eintragen und EP sammeln!</p>";
         if (!empty($extra['shopName'])) {
-            $mailBody .= "Eisdiele: " . $extra['shopName'] . "\n\n";
+            $mailBody .= "<p>Eisdiele: <strong>" . htmlspecialchars($extra['shopName']) . "</strong></p>";
         }
-        $mailBody .= "Details zum Checkin findest du direkt in der Ice-App.\n\n";
+        $mailBody .= "<p>Details zum Checkin findest du direkt in der Ice-App.</p>";
     } elseif ($notificationType === 'comment') {
         $mailSubject = "Ice-App: Neuer Kommentar zu deinem Checkin";
-        $mailBody .= "$senderName hat deinen Checkin kommentiert.\n\n";
+        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deinen Checkin kommentiert.</p>";
         if (!empty($extra['shopName'])) {
-            $mailBody .= "Eisdiele: " . $extra['shopName'] . "\n\n";
+            $mailBody .= "<p>Eisdiele: <strong>" . htmlspecialchars($extra['shopName']) . "</strong></p>";
         }
         // Link generieren
         $link = '';
@@ -52,19 +53,24 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
             $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['bewertungId'];
         }
         if ($link) {
-            $mailBody .= "Direkter Link zum Kommentar: $link\n\n";
+            $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
         }
-        $mailBody .= "Details findest du direkt in der Ice-App.\n\n";
+        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
     } else {
         // Unbekannter Typ
         return;
     }
-    $mailBody .= "Hier geht's zur Ice-App: https://ice-app.de\n\n";
-    $mailBody .= "Viel Spaß beim Eis essen und Punkte sammeln!\n\nDein Ice-App Team\n\n";
-    $mailBody .= "---\n";
-    $mailBody .= "Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter 'Einstellungen' ändern.\n";
-    $mailBody .= "Profil-Link: https://ice-app.de/#/user/" . $userId . "?openSettings=1\n";
-    @mail($mailTo, $mailSubject, $mailBody, "From: noreply@ice-app.de");
+    $mailBody .= "<p>Hier geht's zur <a href='https://ice-app.de' style='color:#0077b6;'>Ice-App</a>.</p>";
+    $mailBody .= "<p>Viel Spaß beim Eis essen und Punkte sammeln!<br>Dein Ice-App Team</p>";
+    $mailBody .= "<hr style='margin:24px 0;'>";
+    $mailBody .= "<small>Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter 'Einstellungen' ändern.<br>";
+    $mailBody .= "Profil-Link: <a href='https://ice-app.de/#/user/" . $userId . "?openSettings=1' style='color:#0077b6;'>https://ice-app.de/#/user/" . $userId . "?openSettings=1</a></small>";
+    $mailBody .= "</body></html>";
+
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: noreply@ice-app.de\r\n";
+    @mail($mailTo, $mailSubject, $mailBody, $headers);
 }
 
 ?>

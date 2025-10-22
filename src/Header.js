@@ -6,6 +6,7 @@ import {
   CloseButton as SharedCloseButton,
   SubmitButton as SharedSubmitButton,
   LevelInfo as SharedLevelInfo,
+  Modal as SharedModal,
 } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
@@ -256,7 +257,7 @@ const Header = ({ refreshShops }) => {
       )}
       {showOverlay && (
         <OverlayBackground>
-          <Overlay>
+          <SharedModal>
             <CloseButton onClick={() => {
               setShowOverlay(false);
               setLevelUpInfo(null);
@@ -272,14 +273,17 @@ const Header = ({ refreshShops }) => {
             )}
             {levelUpInfo && newAwards.length > 0 && (<hr></hr>)}
             <NewAwards awards={newAwards} />
-            <SubmitButton onClick={() => {
-              setShowOverlay(false);
-              setLevelUpInfo(null);
-              setNewAwards([]);
-            }}>Alles Klar!</SubmitButton>
-          </Overlay>
+            <ButtonWrapper>
+              <SubmitButton onClick={() => {
+                setShowOverlay(false);
+                setLevelUpInfo(null);
+                setNewAwards([]);
+              }}>Alles Klar!</SubmitButton>
+            </ButtonWrapper>
+          </SharedModal>
         </OverlayBackground>
       )}
+
       {showUserOfMonth && (
         <OverlayBackground>
           <Overlay>
@@ -420,6 +424,11 @@ const OverlayBackground = SharedOverlayBackground;
 const Overlay = SharedOverlay;
 const CloseButton = SharedCloseButton;
 
+const ButtonWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+`;
 
 const GewinnspielIcon = styled.div`
   cursor: pointer;

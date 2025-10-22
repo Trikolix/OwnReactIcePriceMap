@@ -111,7 +111,14 @@ function UserSite() {
         <DashboardWrapper>
           <HeaderDiv>
             <h1>Nutzerseite von {data.nutzername}</h1>
-            <p>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+            <FlexRow>
+              <p style={{margin:0}}>Mitglied seit: {new Date(data.erstellungsdatum).toLocaleDateString()}</p>
+              {isOwnProfile && (
+                <SettingsButton onClick={() => setShowSettings(true)}>
+                  ⚙️ Einstellungen
+                </SettingsButton>
+              )}
+            </FlexRow>
             {isOwnProfile && (
               <>
                 <Einladungsbox>
@@ -123,9 +130,6 @@ function UserSite() {
                   </LinkContainer>
                   {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
                 </Einladungsbox>
-                {<SettingsButton onClick={() => setShowSettings(true)}>
-                  ⚙️ Einstellungen
-                </SettingsButton>}
                 {showSettings && <UserSettings onClose={() => setShowSettings(false)} />}
               </>
             )}
@@ -259,6 +263,14 @@ function UserSite() {
 }
 
 export default UserSite;
+// Flex-Container für Mitglied seit + Einstellungen
+const FlexRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+`;
 
 // Button für Einstellungen
 const SettingsButton = styled.button`
@@ -478,6 +490,11 @@ const LinkContainer = styled.div`
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
+  @media (max-width: 500px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
 `;
 
 const Input = styled.input`
