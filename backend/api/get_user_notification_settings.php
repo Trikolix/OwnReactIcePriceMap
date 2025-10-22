@@ -9,7 +9,7 @@ if ($user_id <= 0) {
 }
 
 
-$sql = "SELECT notify_checkin_mention, notify_comment FROM user_notification_settings WHERE user_id = :user_id";
+$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news FROM user_notification_settings WHERE user_id = :user_id";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['user_id' => $user_id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -20,7 +20,9 @@ if ($row) {
     // Default-Werte, falls keine Settings existieren
     echo json_encode([
         'notify_checkin_mention' => 1,
-        'notify_comment' => 1
+        'notify_comment' => 1,
+        'notify_comment_participated' => 1,
+        'notify_news' => 0
     ]);
 }
 ?>

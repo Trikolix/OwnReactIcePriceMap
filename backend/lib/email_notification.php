@@ -12,14 +12,46 @@ require_once __DIR__ . '/../db_connect.php';
  * @return void
  */
 function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $senderName, $extra = []) {
-    // Nutzer-Email und Name holen
-    $stmt = $pdo->prepare("SELECT email, username FROM nutzer WHERE id = ?");
+    // Nutzer-Email, Name, letzte Aktivität und letzte Email holen
+    $stmt = $pdo->prepare("SELECT email, username, last_active_at, last_notification_email_at FROM nutzer WHERE id = ?");
     $stmt->execute([$userId]);
     $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$userRow || empty($userRow['email'])) return;
 
+    // Email-Limitierung: Prüfe, ob Email gesendet werden darf
+    $lastActive = $userRow['last_active_at'];
+    $lastEmail = $userRow['last_notification_email_at'];
+    $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+    $sendEmail = false;
+    if ($lastEmail === null) {
+        $sendEmail = true; // Noch nie eine Email gesendet
+    } else {
+        $lastEmailDT = new DateTimeImmutable($lastEmail, new DateTimeZone('UTC'));
+        // 1. War User seit letzter Email wieder aktiv?
+        if ($lastActive !== null) {
+            $lastActiveDT = new DateTimeImmutable($lastActive, new DateTimeZone('UTC'));
+            if ($lastActiveDT > $lastEmailDT) {
+                $sendEmail = true;
+            }
+        }
+        // 2. Oder ist die letzte Email über 24h her?
+        if (!$sendEmail && $now->getTimestamp() - $lastEmailDT->getTimestamp() > 86400) {
+            $sendEmail = true;
+        }
+    }
+    if (!$sendEmail) return;
+
     // Benachrichtigungseinstellung holen
-    $settingField = ($notificationType === 'checkin_mention') ? 'notify_checkin_mention' : 'notify_comment';
+    // Unterstützt auch notify_comment_participated und notify_news
+    if ($notificationType === 'checkin_mention') {
+        $settingField = 'notify_checkin_mention';
+    } elseif ($notificationType === 'comment_participated') {
+        $settingField = 'notify_comment_participated';
+    } elseif ($notificationType === 'news') {
+        $settingField = 'notify_news';
+    } else {
+        $settingField = 'notify_comment';
+    }
     $stmtSetting = $pdo->prepare("SELECT $settingField FROM user_notification_settings WHERE user_id = ?");
     $stmtSetting->execute([$userId]);
     $setting = $stmtSetting->fetch(PDO::FETCH_ASSOC);
@@ -71,6 +103,10 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
     $headers .= "From: noreply@ice-app.de\r\n";
     @mail($mailTo, $mailSubject, $mailBody, $headers);
+
+    // Nach erfolgreichem Versand: Timestamp aktualisieren
+    $stmtUpdate = $pdo->prepare("UPDATE nutzer SET last_notification_email_at = ? WHERE id = ?");
+    $stmtUpdate->execute([$now->format('Y-m-d H:i:s'), $userId]);
 }
 
 ?>

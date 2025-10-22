@@ -139,6 +139,8 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
 
             foreach ($beteiligteIds as $beteiligterId) {
                 $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
+                // Email-Berechtigung wird in sendNotificationEmailIfAllowed geprüft
+                sendNotificationEmailIfAllowed($pdo, $beteiligterId, 'comment_participated', $kommentatorName, ['shopName' => '', 'checkinId' => $checkinId]);
             }
         }
     } catch (Exception $e) {
