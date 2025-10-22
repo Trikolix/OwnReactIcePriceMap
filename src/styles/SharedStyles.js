@@ -24,6 +24,39 @@ export const OverlayBackground = styled.div`
   z-index: 2000;
 `;
 
+export const ContentWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+`;
+
+export const LeftContent = styled.div`
+  flex: 1 1 300px;
+  min-width: 250px;
+`;
+
+export const RightContent = styled.div`
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 8px;
+`;
+
+export const CommentToggle = styled.button`
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #ffb522;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.25rem 0;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 export const Modal = styled.div`
   background-color: #fff;
   padding: 1rem;
@@ -214,6 +247,21 @@ export const LevelInfo = styled.div`
   padding-top: 1rem;
 `;
 
+export const Card = styled.div`
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #eee;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
+`;
+
 export default {
   Overlay,
   OverlayBackground,
@@ -237,4 +285,10 @@ export default {
   LoadMoreButton,
   Message,
   LevelInfo,
+  ContentWrapper,
+  LeftContent,
+  RightContent,
+  SamllerSubmitButton,
+  CommentToggle,
+  Card
 };

@@ -14,7 +14,6 @@ import {
     Button as SharedButton,
     SubmitButton as SharedSubmitButton,
     ButtonGroup as SharedButtonGroup,
-    LoadMoreButton as SharedLoadMoreButton,
     BilderContainer as SharedBilderContainer,
     BildVorschau as SharedBildVorschau,
     DeleteButton as SharedDeleteButton,

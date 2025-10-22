@@ -115,9 +115,9 @@ function UserSite() {
                   </LinkContainer>
                   {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
                 </Einladungsbox>
-                <SettingsButton onClick={() => setShowSettings(true)}>
+                {/*<SettingsButton onClick={() => setShowSettings(true)}>
                   ⚙️ Einstellungen
-                </SettingsButton>
+                </SettingsButton>*/}
                 {showSettings && <UserSettings onClose={() => setShowSettings(false)} />}
               </>
             )}

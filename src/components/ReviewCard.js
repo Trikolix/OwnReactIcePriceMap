@@ -1,10 +1,10 @@
-import {React, useState} from "react";
+import { React, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
-import { SamllerSubmitButton } from "../styles/SharedStyles";
+import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from "../styles/SharedStyles";
 
 const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   const { userId } = useUser();
@@ -28,50 +28,52 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
         <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
         <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
       </Header>
+      <ContentWrapper>
         <LeftContent>
-      <Table>
-        {review.auswahl !== null && (
-          <tr>
-            <th>Auswahl:</th>
-            <td>
-              ~<strong>{review.auswahl}</strong> Sorten
-            </td>
-          </tr>
-        )}
-      </Table>
+          <Table>
+            {review.auswahl !== null && (
+              <tr>
+                <th>Auswahl:</th>
+                <td>
+                  ~<strong>{review.auswahl}</strong> Sorten
+                </td>
+              </tr>
+            )}
+          </Table>
 
-      {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
+          {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
 
-      {review.attributes?.length > 0 && (
-        <AttributeSection>
-          {review.attributes.map((attr, i) => (
-            <AttributeBadge key={i}>{attr}</AttributeBadge>
-          ))}
-        </AttributeSection>
-      )}
-      {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
-        <SamllerSubmitButton onClick={() => setShowReviewForm(true)}>Bearbeiten</SamllerSubmitButton>
-      )}
-      </LeftContent>
-      <RightContent>
-      {review.bilder?.length > 0 && (
-        <ImageGalleryWithLightbox
-          images={review.bilder.map(b => ({
-            url: `https://ice-app.de/${b.url}`,
-            beschreibung: b.beschreibung
-          }))}
-          fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
-        />
-      )}
-      
-      </RightContent>
+          {review.attributes?.length > 0 && (
+            <AttributeSection>
+              {review.attributes.map((attr, i) => (
+                <AttributeBadge key={i}>{attr}</AttributeBadge>
+              ))}
+            </AttributeSection>
+          )}
+          {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
+            <SamllerSubmitButton onClick={() => setShowReviewForm(true)}>Bearbeiten</SamllerSubmitButton>
+          )}
+        </LeftContent>
+        <RightContent>
+          {review.bilder?.length > 0 && (
+            <ImageGalleryWithLightbox
+              images={review.bilder.map(b => ({
+                url: `https://ice-app.de/${b.url}`,
+                beschreibung: b.beschreibung
+              }))}
+              fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
+            />
+          )}
+
+        </RightContent>
+      </ContentWrapper>
       <CommentToggle
-          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-        >
-          💬 {review.commentCount || 0} Kommentar(e)
-        </CommentToggle>
-        {areCommentsVisible && <CommentSection bewertungId={review.id} />}
+        title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+        onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+      >
+        💬 {review.commentCount || 0} Kommentar(e)
+      </CommentToggle>
+      {areCommentsVisible && <CommentSection bewertungId={review.id} />}
     </Card>
   );
 };
@@ -81,21 +83,6 @@ export default ReviewCard;
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
-`;
-
-const Card = styled.div`
-  position: relative;
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s;
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  }
 `;
 
 const Header = styled.div`
@@ -147,31 +134,4 @@ const DateText = styled.time`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-`;
-
-const CommentToggle = styled.button`
-  margin-top: 0.5rem;
-  background: transparent;
-  border: none;
-  color: #ffb522;
-  cursor: pointer;
-  font-weight: bold;
-  padding: 0.25rem 0;
-  text-align: left;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const LeftContent = styled.div`
-  flex: 1 1 300px;
-  min-width: 250px;
-`;
-
-const RightContent = styled.div`
-  display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  padding-bottom: 8px;
 `;

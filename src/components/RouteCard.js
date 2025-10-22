@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
 import SubmitRouteForm from "../SubmitRouteModal";
+import { Card, SamllerSubmitButton } from "../styles/SharedStyles";
 
 const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -80,7 +81,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
             {route.beschreibung && <Description>{route.beschreibung}</Description>}
 
             {Number(route.nutzer_id) === Number(userId) && (
-              <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
+              <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
             )}
           </LeftContent>
         </ContentWrapper>
@@ -108,21 +109,6 @@ const UserLink = styled(Link)`
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-`;
-
-const Card = styled.div`
-  position: relative;
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s;
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  }
 `;
 
 const ContentWrapper = styled.div`
@@ -163,7 +149,7 @@ const RouteType = styled.div`
 const RouteLink = styled.a`
   font-weight: 700;
   font-size: 1.25rem;
-  color: #0077b6;
+  color: #ffb522;
   text-decoration: none;
 
   &:hover {
@@ -193,23 +179,6 @@ const Description = styled.p`
 const TypText = styled.em`
   font-size: 0.85rem;
   color: #777;
-`;
-
-const EditButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #228be6;
-  }
 `;
 
 const DateText = styled.time`
