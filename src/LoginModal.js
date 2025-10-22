@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { SubmitButton, Input } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import { Link } from 'react-router-dom';
 
@@ -249,16 +250,6 @@ const CloseX = styled.button`
   cursor: pointer;
 `;
 
-const SubmitButton = styled.button`
-  padding: 0.75rem 1.5rem;
-  margin-top: 0.5rem;
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-`;
 
 const SmallButton = styled.button`
   padding: 0.5rem 0.5rem;
@@ -284,10 +275,4 @@ const ErrorText = styled.p`
   margin-top: 0.25rem;
 `;
 
-const Input = styled.input`
-  width: 95%;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ccc;
-  margin-bottom: 0.5rem;
-`;
+// SubmitButton and Input are imported from SharedStyles

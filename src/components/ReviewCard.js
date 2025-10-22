@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useUser } from "./../context/UserContext";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
+import { SamllerSubmitButton } from "../styles/SharedStyles";
 
 const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   const { userId } = useUser();
@@ -49,7 +50,7 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
         </AttributeSection>
       )}
       {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
-        <EditButton onClick={() => setShowReviewForm(true)}>Bearbeiten</EditButton>
+        <SamllerSubmitButton onClick={() => setShowReviewForm(true)}>Bearbeiten</SamllerSubmitButton>
       )}
       </LeftContent>
       <RightContent>
@@ -127,29 +128,12 @@ const AttributeSection = styled.div`
 `;
 
 const AttributeBadge = styled.span`
-  background-color: #e0f3ff;
+  background: #e0f3ff;
   color: #0077b6;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 0.6rem;
   border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 500;
-`;
-
-const EditButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #228be6;
-  }
 `;
 
 const DateText = styled.time`
@@ -169,7 +153,7 @@ const CommentToggle = styled.button`
   margin-top: 0.5rem;
   background: transparent;
   border: none;
-  color: #339af0;
+  color: #ffb522;
   cursor: pointer;
   font-weight: bold;
   padding: 0.25rem 0;

@@ -1,33 +1,24 @@
 import React from 'react';
 import styled from 'styled-components';
+import { Overlay as SharedOverlay, Button as SharedButton } from '../styles/SharedStyles';
 
 const ImageChooserModal = ({ onClose, onChooseCamera, onChooseGallery }) => {
-    return (
-        <Overlay>
-            <Dialog>
-                <Title>Bildquelle wählen</Title>
-                <Text>Wähle, ob du ein Foto aufnehmen oder aus der Galerie auswählen möchtest.</Text>
-                <ButtonRow>
-                    <ActionButton onClick={() => { onChooseCamera(); onClose(); }}>Kamera</ActionButton>
-                    <ActionButton onClick={() => { onChooseGallery(); onClose(); }}>Galerie</ActionButton>
-                </ButtonRow>
-                <Cancel onClick={onClose}>Abbrechen</Cancel>
-            </Dialog>
-        </Overlay>
-    );
+  return (
+    <SharedOverlay>
+      <Dialog>
+        <Title>Bildquelle wählen</Title>
+        <Text>Wähle, ob du ein Foto aufnehmen oder aus der Galerie auswählen möchtest.</Text>
+        <ButtonRow>
+          <SharedButton onClick={() => { onChooseCamera(); onClose(); }}>Kamera</SharedButton>
+          <SharedButton onClick={() => { onChooseGallery(); onClose(); }}>Galerie</SharedButton>
+        </ButtonRow>
+        <Cancel onClick={onClose}>Abbrechen</Cancel>
+      </Dialog>
+    </SharedOverlay>
+  );
 };
 
 export default ImageChooserModal;
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.4);
-  z-index: 2000;
-`;
 
 const Dialog = styled.div`
   background: white;

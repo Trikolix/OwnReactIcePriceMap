@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import styled from 'styled-components';
+import { Overlay, Modal, CloseButton, Heading, Label, Input, Textarea, Select, ButtonGroup, SubmitButton, DeleteButton, Message, LevelInfo } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import NewAwards from "./components/NewAwards";
 
@@ -153,7 +154,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     return showForm ? (
         <Overlay>
             <Modal>
-                <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
+            <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
                 <Heading>
                     {existingRoute ? "Route bearbeiten" : `Route für ${shopName} einreichen`}
                 </Heading>
@@ -161,20 +162,20 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 {!submitted && (<>
                     <Group>
                         <Label>
-                            Routenname:
-                            <InputName
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="z. B. 'Rund um Eisdiele X'"
-                                required
-                            />
-                        </Label>
+                                Routenname:
+                                <Input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="z. B. 'Rund um Eisdiele X'"
+                                    required
+                                />
+                            </Label>
                     </Group>
 
                     <Label>
                         URL:
-                        <TextArea
+                        <Textarea
                             rows={2}
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
@@ -276,139 +277,25 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                   </LevelInfo>
                 )}
                 <NewAwards awards={awards} />
-            </Modal>
-        </Overlay>) : null;
+                        </Modal>
+                </Overlay>
+        ) : null;
 };
 
 export default SubmitRouteForm;
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  width: 100vw;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-`;
-
-const Modal = styled.div`
-  background-color: #fff;
-  padding: 1rem;
-  border-radius: 16px;
-  width: 95vw;
-  max-width: 550px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  position: relative;
-  box-sizing: border-box;
-  scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
-  
-  @media (max-height: 600px) {
-    max-height: 95vh;
-    padding: 0.5rem;
-    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
-  }
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-`;
-
-const Heading = styled.h2`
-  margin-bottom: 1rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-top: 1rem;
-  font-weight: bold;
-`;
-
-const TextArea = styled.textarea`
-  width: 95%;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-`;
-
-const Select = styled.select`
-  padding: 0.5rem;
-  margin-left: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
-
-const ButtonGroup = styled.div`
-    text-align: center;
-    margin-bottom: 35px;
-`;
-
-const SubmitButton = styled.button`
-  margin: 10px 10px -15px 10px;
-  padding: 0.75rem 1rem;
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #ffcb4c;
-  }
-`;
-
-const DeleteButton = styled(SubmitButton)`
-  background-color: #d9534f;
-  margin-top: 20px;
-  margin-bottom: -50px;
-  padding: 0.5rem 0.75rem;
-  position: absolute;
-  bottom: 60px;
-  right: 0px;
-  &:hover {
-    background-color:rgb(216, 37, 31);
-  }
-`
-
-const Message = styled.p`
-  margin-top: 1rem;
-  font-style: italic;
-`;
-
-const Checkbox = styled.input`
-  margin-right: 0.5rem;
-`;
-const Input = styled.input`
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-left: 0.25rem;
-  margin-top: 0.25rem;
-`;
+// Keep small file-specific tweaks
 const InputName = styled(Input)`
-  min-width: 94%;
-  `;
+    min-width: 94%;
+`;
 const Group = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.5rem;
 `;
-const LevelInfo = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+const Checkbox = styled.input`
+    margin-right: 0.5rem;
 `;
+// Provide aliases for shared components expected by JSX
+const TextArea = Textarea;
+// LevelInfo is provided by SharedStyles (imported earlier) — no local override needed

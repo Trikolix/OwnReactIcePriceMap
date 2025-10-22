@@ -502,18 +502,16 @@ const SelectBox = styled.select`
 `;
 
 const GenerateButton = styled.button`
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-weight: 600;
+  background-color: #ffb522;
   color: white;
-  background: #339af0;
+  padding: 10px 20px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
-
-  &:hover {
-    background: #236eacff;
-  }
+  font-weight: bold;
+  font-size: 1rem;
+  transition: background-color 0.15s ease;
+  &:hover { background-color: #ffcb4c; }
 
   @media (max-width: 600px) {
     width: 100%;

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from "styled-components";
+import { Overlay as SharedOverlay, CloseButton as SharedCloseButton, Input as SharedInput, SubmitButton as SharedSubmitButton } from '../styles/SharedStyles';
 import { useUser } from '../context/UserContext';
 
 const ShopWebsite = ({ eisdiele, onSuccess }) => {
@@ -91,14 +92,14 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
         )}
       </WebsiteContainer>
       {isLoggedIn && showOverlay && (
-        <Overlay ref={overlayRef}>
+        <SharedOverlay ref={overlayRef}>
           <OverlayContent>
-            <CloseX onClick={() => setShowOverlay(false)}>x</CloseX>
+            <SharedCloseButton onClick={() => setShowOverlay(false)}>x</SharedCloseButton>
             <p>Website für <strong>{eisdiele.name}</strong> eintragen.<br /></p>
-            <Input rows="1" placeholder="URL der Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
-            <SubmitButton onClick={handleReportClick}>Absenden</SubmitButton>
+            <SharedInput as="textarea" rows="1" placeholder="URL der Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            <SharedSubmitButton onClick={handleReportClick}>Absenden</SharedSubmitButton>
           </OverlayContent>
-        </Overlay>
+        </SharedOverlay>
       )}
     </Container>
   );
@@ -116,18 +117,7 @@ const WebsiteContainer = styled.div.withConfig({
     width: fit-content;
   `;
 
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1002;
-`;
+// local Overlay replaced by SharedOverlay
 
 const OverlayContent = styled.div`
   text-align: center;
@@ -138,31 +128,6 @@ const OverlayContent = styled.div`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
-const CloseX = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-`;
+// uses SharedCloseButton
 
-const Input = styled.textarea`
-  border: 1px solid #e5e7eb;
-  padding: 6px;
-  border-radius: 4px;
-  font-size: 1rem;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-const SubmitButton = styled.button`
-  background-color: #ffb522;
-  color: white;
-  padding: 6px 12px;
-  margin-top: 5px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-`;
+// uses SharedInput and SharedSubmitButton

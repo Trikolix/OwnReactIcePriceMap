@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
+import { Overlay, Modal, CloseButton, Heading, Input, Select, Textarea, ButtonGroup, SubmitButton, Button, Message, LevelInfo } from './styles/SharedStyles';
 import LocationPicker from "./components/LocationPicker";
 import NewAwards from "./components/NewAwards";
 
@@ -122,8 +123,8 @@ const SubmitIceShopModal = ({
   return showForm && (
     <Overlay>
       <Modal>
-        <CloseX onClick={() => setShowForm(false)}>×</CloseX>
-        <Title>{existingIceShop ? "Eisdiele bearbeiten" : "Neue Eisdiele eintragen"}</Title>
+        <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
+        <Heading>{existingIceShop ? "Eisdiele bearbeiten" : "Neue Eisdiele eintragen"}</Heading>
         {!submitted && (<form onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -144,7 +145,7 @@ const SubmitIceShopModal = ({
             setLatitude={setLatitude}
             setLongitude={setLongitude}
           />
-          <ButtonGroup><SmallerButton type="button" onClick={handleGeocode}>Position aus Adresse bestimmen</SmallerButton></ButtonGroup>
+          <ButtonGroup><SmallButton type="button" onClick={handleGeocode}>Position aus Adresse bestimmen</SmallButton></ButtonGroup>
 
           <GroupInline>
             <Group>
@@ -202,7 +203,7 @@ const SubmitIceShopModal = ({
           </ButtonGroup>
         </form>)}
 
-        {message && <Message>{message}</Message>}
+  {message && <Message>{message}</Message>}
         {levelUpInfo && (
           <LevelInfo>
             <h2>🎉 Level-Up!</h2>
@@ -218,48 +219,7 @@ const SubmitIceShopModal = ({
 
 export default SubmitIceShopModal;
 
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100dvh;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1002;
-  overflow-y: auto;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-`;
-
-const Modal = styled.div`
-  background-color: #fff;
-  padding: 1rem;
-  padding-bottom: calc(2.5rem + env(safe-area-inset-bottom)); /* für Button & iPhone-Navigation */
-  border-radius: 16px;
-  width: 95vw;
-  max-width: 450px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  position: relative;
-  box-sizing: border-box;
-  scroll-padding-bottom: 100px; /* falls Fokus z. B. auf Input-Elementen ist */
-  
-  @media (max-height: 600px) {
-    max-height: 95vh;
-    padding: 0.5rem;
-    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
-  }
-`;
-
-const Title = styled.h2`
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-`;
-
+// Keep GroupInline and CoordinateInput file-specific
 const Group = styled.div`
   display: flex;
   flex-direction: column;
@@ -272,80 +232,14 @@ const GroupInline = styled.div`
   margin-bottom: 0.5rem;
 `;
 
-const Input = styled.input`
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-top: 0.25rem;
-`;
-
-const Select = styled.select`
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-top: 0.25rem;
-  background: white;
-`;
-
 const CoordinateInput = styled(Input)`
   width: 90%;
 `;
 
-const Textarea = styled.textarea`
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin-top: 0.25rem;
-  resize: vertical;
+// Local size tweaks for buttons
+const SmallButton = styled(Button)`
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
 `;
 
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-`;
-
-const SubmitButton = styled.button`
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-`;
-const SmallerButton = styled.button`
-  background-color: #ffb522;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-`;
-
-const CloseX = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-`;
-
-const Message = styled.p`
-  margin-top: 1rem;
-  font-style: italic;
-  color: #555;
-`;
-
-const LevelInfo = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
-`;

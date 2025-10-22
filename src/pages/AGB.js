@@ -35,8 +35,9 @@ export default function AGB() {
         <li>Du darfst keine Inhalte hochladen, an denen du keine Rechte hast (z. B. fremde Fotos ohne Zustimmung).</li>
       </ul>
 
-      <SubHeading>3. Sperrung und Löschung</SubHeading>
-      <p>Wir behalten uns vor, Inhalte zu löschen und Nutzerkonten zu sperren, wenn gegen die Community-Richtlinien oder Gesetze verstoßen wird.</p>
+
+  <SubHeading>3a. Nutzung von hochgeladenen Bildern</SubHeading>
+  <p>Mit dem Hochladen von Bildern räumst du uns das Recht ein, diese Bilder für den Social Media Auftritt der Ice-App (z.B. Instagram, Facebook, Website) zu verwenden und zu veröffentlichen. Die Nutzung erfolgt ausschließlich im Zusammenhang mit der Ice-App und unter Berücksichtigung deiner Urheberrechte. Solltest du mit einer Veröffentlichung nicht einverstanden sein, kannst du uns jederzeit kontaktieren.</p>
 
       <SubHeading>4. Haftung</SubHeading>
       <p>Wir übernehmen keine Haftung für die Inhalte der Nutzer oder die Verfügbarkeit und Funktion der App.</p>

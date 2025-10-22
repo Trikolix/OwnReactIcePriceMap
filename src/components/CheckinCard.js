@@ -7,6 +7,7 @@ import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
 import { Modal } from "./Modal";
+import { SamllerSubmitButton } from '../styles/SharedStyles';
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -100,7 +101,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
 
             {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
             {Number(checkin.nutzer_id) === Number(userId) && (
-              <EditButton onClick={handleEditClick}>Bearbeiten</EditButton>
+              <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
             )}
           </LeftContent>
           <RightContent>
@@ -226,23 +227,6 @@ const TypText = styled.em`
   color: #777;
 `;
 
-const EditButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #228be6;
-  }
-`;
-
 const ArrivalInfo = styled.div`
   margin: 1rem 0;
   display: flex;
@@ -289,7 +273,7 @@ const CommentToggle = styled.button`
   margin-top: 0.5rem;
   background: transparent;
   border: none;
-  color: #339af0;
+  color: #ffb522;
   cursor: pointer;
   font-weight: bold;
   padding: 0.25rem 0;
