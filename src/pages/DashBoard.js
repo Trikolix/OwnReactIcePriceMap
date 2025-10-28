@@ -7,6 +7,7 @@ import GroupCheckinCard from './../components/GroupCheckinCard';
 import RouteCard from './../components/RouteCard';
 import ShopCard from './../components/ShopCard';
 import AwardCard from './../components/AwardCard';
+import AwardBundleCard from './../components/AwardBundleCard';
 
 function DashBoard() {
   const [activities, setActivities] = useState([]);
@@ -55,6 +56,7 @@ function DashBoard() {
   function groupActivities(activities) {
     const grouped = {};
     const singles = [];
+    const awards = [];
 
     activities.forEach((a) => {
       if (a.typ === "checkin" && a.data.group_id) {
@@ -63,10 +65,63 @@ function DashBoard() {
           grouped[gid] = [];
         }
         grouped[gid].push(a);
+      } else if (a.typ === "award") {
+        awards.push(a);
       } else {
         singles.push(a); // alles andere normal behalten
       }
     });
+
+    // Awards innerhalb von 5min für denselben Nutzer (nach user_name) bündeln
+    const awardBundles = [];
+    const sortedAwards = awards.slice().sort((a, b) => {
+      const da = new Date(a.data?.datum);
+      const db = new Date(b.data?.datum);
+      return da - db;
+    });
+    let bundle = [];
+    for (let i = 0; i < sortedAwards.length; i++) {
+      const curr = sortedAwards[i];
+      const currUserId = curr.data?.nutzer_id;
+      const currUserName = curr.data?.user_name;
+      const currDate = new Date(curr.data?.datum);
+      if (bundle.length === 0) {
+        bundle.push(curr);
+        continue;
+      }
+      const last = bundle[bundle.length - 1];
+      const lastUserId = last.data?.nutzer_id;
+      const lastUserName = last.data?.user_name;
+      const lastDate = new Date(last.data?.datum);
+      const diffMs = Math.abs(currDate - lastDate);
+      if (currUserId === lastUserId && currUserName === lastUserName && diffMs <= 5 * 60 * 1000) {
+        bundle.push(curr);
+      } else {
+        if (bundle.length > 1) {
+          awardBundles.push({
+            typ: "award_bundle",
+            id: `awardbundle-${lastUserId}-${lastDate.getTime()}`,
+            data: bundle.map((a) => a.data),
+          });
+        } else {
+          awardBundles.push(bundle[0]);
+        }
+        bundle = [curr];
+      }
+    }
+    // Letztes Bundle pushen
+    if (bundle.length > 1) {
+      const lastUserId = bundle[bundle.length - 1].data?.nutzer_id;
+      const lastUserName = bundle[bundle.length - 1].data?.user_name;
+      const lastDate = new Date(bundle[bundle.length - 1].data?.datum);
+      awardBundles.push({
+        typ: "award_bundle",
+        id: `awardbundle-${lastUserId}-${lastDate.getTime()}`,
+        data: bundle.map((a) => a.data),
+      });
+    } else if (bundle.length === 1) {
+      awardBundles.push(bundle[0]);
+    }
 
     const result = [
       ...singles,
@@ -84,11 +139,16 @@ function DashBoard() {
           };
         }
       }),
+      ...awardBundles,
     ];
 
     function getItemDate(item) {
       if (item.typ === "group_checkin") {
         // bei Gruppe: Top-Level-Datum verwenden
+        return item.data[0]?.datum;
+      }
+      if (item.typ === "award_bundle") {
+        // Bundle: Datum des ersten Awards
         return item.data[0]?.datum;
       }
       if (item.typ === "checkin" || item.typ === "route" || item.typ === "award") {
@@ -143,7 +203,6 @@ function DashBoard() {
         <Section>
           {groupActivities(activities).map((activity) => {
             const { typ, id, data } = activity;
-
             switch (typ) {
               case 'checkin':
                 return <CheckinCard key={`checkin-${id}`} checkin={data} onSuccess={reload} />;
@@ -157,6 +216,8 @@ function DashBoard() {
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
               case 'award':
                 return <AwardCard key={`award-${id}`} award={data} />;
+              case 'award_bundle':
+                return <AwardBundleCard key={id} awards={data} userName={data[0]?.user_name} date={data[0]?.datum}/>;
               default:
                 return null;
             }

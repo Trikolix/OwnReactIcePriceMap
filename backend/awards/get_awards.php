@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 try {
     // Alle Awards holen
-    $stmt = $pdo->query("SELECT id, code, category FROM awards ORDER BY id ASC");
+    $stmt = $pdo->query("SELECT id, code, category FROM awards ORDER BY id DESC");
     $awards = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Für jeden Award die Levels holen

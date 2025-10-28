@@ -1,6 +1,6 @@
 import CheckinCard from './../components/CheckinCard';
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
@@ -46,10 +46,32 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
         );
     }
 
+    const cardRef = useRef(null);
+    const [cardHeight, setCardHeight] = useState();
+    const [activeIndex, setActiveIndex] = useState(0);
 
+    // Höhe messen
+    const updateHeight = () => {
+        if (cardRef.current) {
+            setCardHeight(cardRef.current.offsetHeight);
+        }
+    };
+
+    useEffect(() => {
+        updateHeight();
+        const el = cardRef.current;
+        if (el) {
+            el.addEventListener('checkinCardResize', updateHeight);
+        }
+        return () => {
+            if (el) {
+                el.removeEventListener('checkinCardResize', updateHeight);
+            }
+        };
+    }, [checkins, activeIndex]);
 
     return (
-        <Card>
+        <Card style={cardHeight ? { minHeight: cardHeight } : {}}>
             <DateText dateTime={first.datum}>
                 {new Date(first.datum).toLocaleDateString("de-DE", {
                     day: "numeric",
@@ -59,7 +81,6 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
                     minute: "numeric",
                 })}
             </DateText>
-
             <ContentWrapper>
                 <LeftContent>
                     {allNames} waren gemeinsam bei{" "}
@@ -70,7 +91,6 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
                     </strong>{" "}
                 </LeftContent>
             </ContentWrapper>
-
             <Swiper
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
@@ -79,10 +99,11 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
                 pagination={{ clickable: true }}
                 autoHeight={true}
                 style={{ marginTop: "1rem", marginLeft: "-2rem", marginRight: "-2rem", marginBottom: "-3.5rem" }}
+                onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
             >
-                {checkins.map((c) => (
+                {checkins.map((c, idx) => (
                     <SwiperSlide key={c.id}>
-                        <CheckinCard checkin={c} onSuccess={onSuccess} showComments={false} />
+                        <CheckinCard ref={idx === activeIndex ? cardRef : null} checkin={c} onSuccess={onSuccess} showComments={false} />
                     </SwiperSlide>
                 ))}
             </Swiper>

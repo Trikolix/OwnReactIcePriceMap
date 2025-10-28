@@ -289,38 +289,37 @@ const Header = ({ refreshShops }) => {
           <Overlay>
             <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
             <h2>🏅 Nutzer/in des Monats 🏅</h2>
-            <MonthHeader><u>{currentUser.month}</u></MonthHeader>
-
             <CurrentUserWrapper>
-              <UserCard>
-                <CurrentUserImage
-                  src={currentUser.image}
-                  alt={currentUser.name}
-                />
-                <strong>
-                  <UserLink to={"/user/" + currentUser.id} className="logged-in">
-                    IceGoe
-                  </UserLink>
-                </strong>
-              </UserCard>
+              <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <UserCard>
+                  <MonthHeader><u>{currentUser.month}</u></MonthHeader>
+                  <CurrentUserImage
+                    src={currentUser.image}
+                    alt={currentUser.name}
+                  />
+                  <strong>
+                    {currentUser.name}
+                  </strong>
+                </UserCard>
+              </UserLink>
             </CurrentUserWrapper>
             <hr></hr>
             <h3>🏅 Vorherige Nutzer/innen des Monats 🏅</h3>
             <PastUsersGrid>
               {pastUsers.map((user) => (
-                <UserCard key={user.id}>
-                  <MonthHeader><u>{user.month}</u></MonthHeader>
-                  <UserImage src={user.image} alt={user.name} />
-                  <strong>
-                    <UserLink to={`/user/${user.id}`} className="logged-in">
+                <UserLink to={`/user/${user.id}`} key={user.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <UserCard>
+                    <MonthHeader><u>{user.month}</u></MonthHeader>
+                    <UserImage src={user.image} alt={user.name} />
+                    <strong>
                       {user.name}
-                    </UserLink>
-                  </strong>
-                </UserCard>
+                    </strong>
+                  </UserCard>
+                </UserLink>
               ))}
             </PastUsersGrid>
 
-            <SubmitButton onClick={() => setShowUserOfMonth(false)}>Alles Klar!</SubmitButton>
+            <SubmitButton style={{ marginTop: '1rem' }} onClick={() => setShowUserOfMonth(false)}>Alles Klar!</SubmitButton>
           </Overlay>
         </OverlayBackground>
       )}
@@ -420,9 +419,50 @@ const MenuItemLink = styled(Link)`
   }
 `;
 
-const OverlayBackground = SharedOverlayBackground;
-const Overlay = SharedOverlay;
-const CloseButton = SharedCloseButton;
+const OverlayBackground = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+const Overlay = styled.div`
+  position: relative;
+  background: white;
+  padding: 2rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  text-align: center;
+  animation: fadeIn 0.4s ease-out;
+  max-width: 90%;
+  width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+`;
+const CloseButton = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+
+  &:hover {
+    color: #000;
+  }
+`;
 
 const ButtonWrapper = styled.div`
   width: 100%;
@@ -481,6 +521,17 @@ const UserCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: box-shadow 0.2s, transform 0.2s;
+  padding: 1rem 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    transform: translateY(-2px) scale(1.03);
+  }
 `;
 
 const UserImage = styled.img`

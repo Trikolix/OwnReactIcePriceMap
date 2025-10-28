@@ -15,6 +15,7 @@ require_once __DIR__ . '/../evaluators/UserOfTheMonthEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceSeasonEvaluator.php';
+require_once __DIR__ . '/../evaluators/GroupCheckinEvaluator.php';
  
 try {
     // Nutzer-ID prüfen
@@ -46,6 +47,7 @@ try {
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
         new IceSeasonEvaluator(),
+        new GroupCheckinEvaluator()
         // weitere Evaluatoren können hier ergänzt werden
     ];
  

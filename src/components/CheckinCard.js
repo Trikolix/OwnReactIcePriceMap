@@ -33,6 +33,18 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
   };
 
 
+  useEffect(() => {
+    if (ref && ref.current) {
+      const event = new Event('checkinCardResize', { bubbles: true });
+      ref.current.dispatchEvent(event);
+      // Swiper autoHeight fix
+      const swiperEl = ref.current.closest('.swiper');
+      if (swiperEl && swiperEl.swiper && typeof swiperEl.swiper.updateAutoHeight === 'function') {
+        swiperEl.swiper.updateAutoHeight();
+      }
+    }
+  }, [areCommentsVisible]);
+
   return (
     <>
       <Card ref={ref}>
