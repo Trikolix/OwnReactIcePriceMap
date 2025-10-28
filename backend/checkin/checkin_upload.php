@@ -73,7 +73,6 @@ function validateRatingRange($val, $fieldName) {
 }
 
 // Zentrale Fehlerausgabe
-// Zentrale Fehlerausgabe
 // Schreibt eine Meldung in das Error-Log und liefert ein JSON-Error-Objekt
 // an den Client. Optional kann eine Exception übergeben werden, deren
 // Nachricht ins Log geschrieben wird.
@@ -344,7 +343,19 @@ try {
             $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $mentionId, $checkinId, $userId, $shopId, $inviterName, $meta['shop_name'] ?? 'einer Eisdiele']);
 
             // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed($pdo, $mentionedUserId, 'checkin_mention', $inviterName, ['shopName' => $meta['shop_name'] ?? 'einer Eisdiele']);
+            sendNotificationEmailIfAllowed(
+                $pdo,
+                $mentionedUserId,
+                'checkin_mention',
+                $inviterName,
+                [
+                    'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
+                    'shopId' => $shopId,
+                    'checkinId' => $checkinId,
+                    'mentionId' => $mentionId,
+                    'byUserId' => $userId
+                ]
+            );
         }
     }
 

@@ -42,7 +42,6 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     if (!$sendEmail) return;
 
     // Benachrichtigungseinstellung holen
-    // Unterstützt auch notify_comment_participated und notify_news
     if ($notificationType === 'checkin_mention') {
         $settingField = 'notify_checkin_mention';
     } elseif ($notificationType === 'comment_participated') {
@@ -74,9 +73,20 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     } elseif ($notificationType === 'comment') {
         $mailSubject = "Ice-App: Neuer Kommentar zu deinem Checkin";
         $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deinen Checkin kommentiert.</p>";
-        if (!empty($extra['shopName'])) {
-            $mailBody .= "<p>Eisdiele: <strong>" . htmlspecialchars($extra['shopName']) . "</strong></p>";
+        // Link generieren
+        $link = '';
+        if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
+            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
+        } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
+            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['bewertungId'];
         }
+        if ($link) {
+            $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
+        }
+        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+    } elseif ($notificationType === 'comment_participated') {
+        $mailSubject = "Ice-App: " . htmlspecialchars($senderName) . " hat einen Check-in kommentiert, den du auch kommentiert hast.";
+        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat einen Check-in kommentiert, den du auch kommentiert hast.</p>";
         // Link generieren
         $link = '';
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {

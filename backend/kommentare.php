@@ -76,10 +76,11 @@ function createKommentar($pdo) {
 
 function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $kommentarId) {
     try {
-        // Checkin-Informationen und Kommentator-Name ermitteln
+        // Checkin-Informationen inkl. Eisdielen-Name und Kommentator-Name ermitteln
         $stmt = $pdo->prepare("
-            SELECT c.nutzer_id AS autor_id, c.eisdiele_id
+            SELECT c.nutzer_id AS autor_id, c.eisdiele_id, e.name AS eisdiele_name
             FROM checkins c
+            JOIN eisdielen e ON c.eisdiele_id = e.id
             WHERE c.id = ?
         ");
         $stmt->execute([$checkinId]);
@@ -100,12 +101,14 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
             return;
         }
 
-        $checkinAutorId = $checkinData['autor_id'];
-        $eisdieleId = $checkinData['eisdiele_id'];
+    $checkinAutorId = $checkinData['autor_id'];
+    $eisdieleId = $checkinData['eisdiele_id'];
+    $eisdieleName = $checkinData['eisdiele_name'] ?? '';
 
         $zusatzdaten = json_encode([
             'checkin_id' => $checkinId,
             'eisdiele_id' => $eisdieleId,
+            'eisdiele_name' => $eisdieleName,
             'kommentar_id' => $kommentarId
         ]);
 
@@ -118,7 +121,19 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
             $text = "$kommentatorName hat deinen Check-in kommentiert.";
             $stmt->execute([$checkinAutorId, $kommentarId, $text, $zusatzdaten]);
             // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed($pdo, $checkinAutorId, 'comment', $kommentatorName, ['shopName' => '', 'checkinId' => $checkinId]);
+            sendNotificationEmailIfAllowed(
+                $pdo,
+                $checkinAutorId,
+                'comment',
+                $kommentatorName,
+                [
+                    'shopName' => $eisdieleName,
+                    'shopId' => $eisdieleId,
+                    'checkinId' => $checkinId,
+                    'kommentarId' => $kommentarId,
+                    'byUserId' => $nutzerId
+                ]
+            );
         }
 
         // 2. Andere Kommentierende benachrichtigen (außer dem aktuellen Kommentar)
@@ -140,7 +155,19 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
             foreach ($beteiligteIds as $beteiligterId) {
                 $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
                 // Email-Berechtigung wird in sendNotificationEmailIfAllowed geprüft
-                sendNotificationEmailIfAllowed($pdo, $beteiligterId, 'comment_participated', $kommentatorName, ['shopName' => '', 'checkinId' => $checkinId]);
+                sendNotificationEmailIfAllowed(
+                    $pdo,
+                    $beteiligterId,
+                    'comment_participated',
+                    $kommentatorName,
+                    [
+                        'shopName' => $eisdieleName,
+                        'shopId' => $eisdieleId,
+                        'checkinId' => $checkinId,
+                        'kommentarId' => $kommentarId,
+                        'byUserId' => $nutzerId
+                    ]
+                );
             }
         }
     } catch (Exception $e) {
@@ -192,7 +219,19 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
             $text = "$kommentatorName hat deine Bewertung kommentiert.";
             $stmt->execute([$bewertungAutorId, $kommentarId, $text, $zusatzdaten]);
             // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed($pdo, $bewertungAutorId, 'comment', $kommentatorName, ['shopName' => '', 'bewertungId' => $bewertungId]);
+            sendNotificationEmailIfAllowed(
+                $pdo,
+                $bewertungAutorId,
+                'comment',
+                $kommentatorName,
+                [
+                    'shopName' => '',
+                    'shopId' => $eisdieleId,
+                    'bewertungId' => $bewertungId,
+                    'kommentarId' => $kommentarId,
+                    'byUserId' => $nutzerId
+                ]
+            );
         }
 
         // 2. Andere Kommentierende benachrichtigen (außer dem aktuellen Kommentar)
