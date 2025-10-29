@@ -68,7 +68,7 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
       {eisdiele.website && (
         <>
           <strong>Website:</strong>{" "}
-          <a
+          <StyledWebsiteLink
             href={
               eisdiele.website.startsWith("http://") || eisdiele.website.startsWith("https://")
                 ? eisdiele.website
@@ -77,8 +77,15 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            {eisdiele.website}
-          </a>
+            {(() => {
+              let url = eisdiele.website.trim();
+              url = url.replace(/^https?:\/\//, "");
+              url = url.replace(/^www\./, "");
+              // Nur Domain anzeigen
+              const domain = url.split("/")[0].split("?")[0].split("#")[0];
+              return domain;
+            })()}
+          </StyledWebsiteLink>
           <br />
         </>
       )}
@@ -117,8 +124,6 @@ const WebsiteContainer = styled.div.withConfig({
     width: fit-content;
   `;
 
-// local Overlay replaced by SharedOverlay
-
 const OverlayContent = styled.div`
   text-align: center;
   position: relative;
@@ -128,6 +133,14 @@ const OverlayContent = styled.div`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
-// uses SharedCloseButton
-
-// uses SharedInput and SharedSubmitButton
+const StyledWebsiteLink = styled.a`
+  color: #0077b6;
+  font-weight: bold;
+  text-decoration: none;
+  padding-bottom: 2px;
+  transition: color 0.2s;
+  &:hover {
+    color: #ffb522;
+    border-bottom-color: #0077b6;
+  }
+`;

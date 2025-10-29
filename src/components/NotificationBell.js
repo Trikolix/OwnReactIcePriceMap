@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
+import MentionInviteModal from "./MentionInviteModal";
 
 const NotificationBell = () => {
     const { userId } = useUser();
@@ -9,6 +10,7 @@ const NotificationBell = () => {
     const [show, setShow] = useState(false);
     const dropdownRef = useRef(null);
     const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+    const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
 
     const openSystemModal = ({ title, message }) => {
         setSystemModal({ isOpen: true, title, message });
@@ -62,6 +64,7 @@ const NotificationBell = () => {
     };
 
     const handleNotificationClick = async (notification) => {
+        setShow(false);
         if (!notification.ist_gelesen) {
             markAsRead(notification.id);
         }
@@ -107,11 +110,19 @@ const NotificationBell = () => {
                 });
             }
         } else if (notification.typ === 'checkin_mention') {
+            // Modal öffnen mit Infos und Optionen
             const data = JSON.parse(notification.zusatzdaten || '{}');
-            if (data.checkin_id && data.shop_id) {
-                const url = `/#/map/activeShop/${data.shop_id}?tab=checkins&createReferencedCheckin=${data.checkin_id}`;
-                window.location.href = url;
-            }
+            setMentionModal({
+                isOpen: true,
+                data: {
+                    checkinId: data.checkin_id,
+                    shopId: data.shop_id,
+                    inviterName: data.username || "Unbekannt",
+                    shopName: data.shop_name || data.shop || "Eisdiele",
+                    date: notification.erstellt_am,
+                    userId: userId
+                }
+            });
         }
     };
 
@@ -154,6 +165,11 @@ const NotificationBell = () => {
             onClose={() => setSystemModal({ ...systemModal, isOpen: false })}
             title={systemModal.title}
             message={systemModal.message}
+        />
+        <MentionInviteModal
+            open={mentionModal.isOpen}
+            onClose={() => setMentionModal({ isOpen: false, data: null })}
+            {...(mentionModal.data || {})}
         />
     </>
     );

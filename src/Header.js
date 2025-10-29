@@ -187,9 +187,10 @@ const Header = ({ refreshShops }) => {
     }
   };
 
-  const currentUser = { month: "September", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68dd0401cf5ad_ChatGPT%20Image%201.%20Okt.%202025,%2012_32_52.png" };
+  const currentUser = { month: "Oktober", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/6905cebee5470_User_of_the_month_october25.png" };
 
   const pastUsers = [
+    { month: "September", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68dd0401cf5ad_ChatGPT%20Image%201.%20Okt.%202025,%2012_32_52.png" },
     { month: "August", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png" },
     { month: "Juli", id: 22, name: "Eispfote ", image: "https://ice-app.de/uploads/award_icons/68bfc41eb4748_1000101916.png" },
     { month: "Juni", id: 52, name: "alinaa.wrnr", image: "https://ice-app.de/uploads/award_icons/68bfc408d55d6_1000101915.png" },
@@ -215,25 +216,25 @@ const Header = ({ refreshShops }) => {
         </BurgerMenu>
         {menuOpen && (
           <Menu ref={menuRef}>
-            <MenuItemLink to="/">Eisdielen-Karte</MenuItemLink>
-            <MenuItemLink to="/ranking">Top Eisdielen</MenuItemLink>
-            <MenuItemLink to="/dashboard">Aktivitäten</MenuItemLink>
-            <MenuItemLink to="/statistics">Statistiken</MenuItemLink>
+            <MenuItemLink to="/" onClick={() => setMenuOpen(false)}>Eisdielen-Karte</MenuItemLink>
+            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
+            <MenuItemLink to="/dashboard" onClick={() => setMenuOpen(false)}>Aktivitäten</MenuItemLink>
+            <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
             {isLoggedIn ? (
               <>
-                <MenuItemLink to={`/user/${userId}`} className="logged-in">Profil ({username})</MenuItemLink>
-                <MenuItem onClick={() => setShowSubmitNewIceShop(true)} className="logged-in">Eisdiele hinzufügen</MenuItem>
-                <MenuItemLink to="/favoriten" className="logged-in">Favoriten</MenuItemLink>
-                {canAccessChallenges(userId) && (<MenuItemLink to="/challenge" className="logged-in">Challenges</MenuItemLink>)}
+                <MenuItemLink to={`/user/${userId}`} className="logged-in" onClick={() => setMenuOpen(false)}>Profil ({username})</MenuItemLink>
+                <MenuItem onClick={() => { setShowSubmitNewIceShop(true); setMenuOpen(false); }} className="logged-in">Eisdiele hinzufügen</MenuItem>
+                <MenuItemLink to="/favoriten" className="logged-in" onClick={() => setMenuOpen(false)}>Favoriten</MenuItemLink>
+                {canAccessChallenges(userId) && (<MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>)}
 
-                {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in">Systemmeldung erstellen</MenuItemLink>)}
-                <MenuItem onClick={logout} className="logged-in">Ausloggen</MenuItem>
+                {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
+                <MenuItem onClick={() => { logout(); setMenuOpen(false); }} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (
-              <MenuItem onClick={() => setShowLoginModal(true)}>Einloggen</MenuItem>
+              <MenuItem onClick={() => { setShowLoginModal(true); setMenuOpen(false); }}>Einloggen</MenuItem>
             )}
-            <MenuItemLink to="/impressum">Über diese Website</MenuItemLink>
-            <MenuItemLink to="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank">Instagram</MenuItemLink>
+            <MenuItemLink to="/impressum" onClick={() => setMenuOpen(false)}>Über diese Website</MenuItemLink>
+            <MenuItemLink to="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" onClick={() => setMenuOpen(false)}>Instagram</MenuItemLink>
           </Menu>
         )}
       </HeaderContainer>

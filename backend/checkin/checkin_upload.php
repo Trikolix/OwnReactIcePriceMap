@@ -514,6 +514,27 @@ try {
     $pdo->commit();
     $__profiling['after_sorten'] = microtime(true);
 
+    // Falls referenzierter Checkin (z.B. für Mention), Status in checkin_mentions auf 'accepted' setzen
+    if ($referencedCheckinId) {
+        // checkin_id = referencedCheckinId, mentioned_user_id = $userId
+        $apiUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/backend/api/checkin_mentions.php?action=accept';
+        $payload = json_encode([
+            'action' => 'accept',
+            'checkin_id' => $referencedCheckinId,
+            'mentioned_user_id' => $userId,
+            'responded_checkin_id' => $checkinId
+        ]);
+        // Curl-Request an die API
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        // Optional: Fehlerbehandlung/logging
+    }
+
     $levelChange = updateUserLevelIfChanged($pdo, $userId);
     $__profiling['after_level'] = microtime(true);
 

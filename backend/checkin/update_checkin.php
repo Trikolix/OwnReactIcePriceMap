@@ -168,6 +168,79 @@ try {
         }
     }
 
+    // Mentions (Erwähnungen) verarbeiten
+    $mentionedUsers = json_decode($_POST['mentionedUsers'] ?? '[]', true);
+    if (!is_array($mentionedUsers)) $mentionedUsers = [];
+    $mentionedUsers = array_unique(array_map('intval', $mentionedUsers));
+    if (($key = array_search((int)$userId, $mentionedUsers)) !== false) {
+        unset($mentionedUsers[$key]); // Selbst-Erwähnung entfernen
+    }
+    if (count($mentionedUsers) > 20) {
+        throw new Exception('Maximal 20 Nutzer können erwähnt werden.');
+    }
+
+    if (count($mentionedUsers) > 0) {
+        // Einladenden Nutzer holen
+        $stmtUser = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
+        $stmtUser->execute([$userId]);
+        $inviter = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        $inviterName = $inviter['username'] ?? 'Ein Nutzer';
+
+        // Metadaten des Checkins laden
+        $metaStmt = $pdo->prepare("SELECT c.id, c.eisdiele_id, e.name AS shop_name FROM checkins c JOIN eisdielen e ON c.eisdiele_id = e.id WHERE c.id = ?");
+        $metaStmt->execute([$checkinId]);
+        $meta = $metaStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Mentions einfügen + Notifications
+        $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
+        $stmtNotif = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_mention_id', ?,'checkin_id', ?, 'by_user', ?, 'shop_id', ?, 'username', ?, 'shop_name', ?))");
+        $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
+
+        foreach ($mentionedUsers as $mentionedUserId) {
+            // Nutzer existiert?
+            $stmtCheckUser = $pdo->prepare("SELECT id FROM nutzer WHERE id = ?");
+            $stmtCheckUser->execute([$mentionedUserId]);
+            $userRow = $stmtCheckUser->fetch(PDO::FETCH_ASSOC);
+            if (!$userRow) continue;
+
+            // Prüfen, ob bereits eine Mention existiert
+            $stmtMentionExists = $pdo->prepare("SELECT COUNT(*) FROM checkin_mentions WHERE checkin_id = ? AND mentioned_user_id = ?");
+            $stmtMentionExists->execute([$checkinId, $mentionedUserId]);
+            $alreadyMentioned = $stmtMentionExists->fetchColumn();
+            if ($alreadyMentioned > 0) continue;
+
+            $stmtMention->execute([$checkinId, $mentionedUserId]);
+            $mentionId = $pdo->lastInsertId();
+            $stmtNotif->execute([
+                $mentionedUserId,
+                $checkinId,
+                $notifText,
+                $mentionId,
+                $checkinId,
+                $userId,
+                $shopId,
+                $inviterName,
+                $meta['shop_name'] ?? 'einer Eisdiele'
+            ]);
+
+            // E-Mail über die generische Funktion
+            require_once __DIR__ . '/../lib/email_notification.php';
+            sendNotificationEmailIfAllowed(
+                $pdo,
+                $mentionedUserId,
+                'checkin_mention',
+                $inviterName,
+                [
+                    'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
+                    'shopId' => $shopId,
+                    'checkinId' => $checkinId,
+                    'mentionId' => $mentionId,
+                    'byUserId' => $userId
+                ]
+            );
+        }
+    }
+
     // Commit der Transaktion
     $pdo->commit();
 
