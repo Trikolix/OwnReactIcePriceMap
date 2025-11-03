@@ -3,20 +3,34 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
+const normalizeDateString = (value) => {
+  if (typeof value !== "string") return value;
+  return value.includes("T") ? value : value.replace(" ", "T");
+};
+
+const parseAwardDate = (value) => {
+  if (!value) return null;
+  const parsed = new Date(normalizeDateString(value));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
     const { userId } = useUser();
+    const awardDate = parseAwardDate(award?.datum);
 
 
     return (
         <Card ref={ref}>
-            <DateText dateTime={new Date(award.datum).toISOString()}>
-                {new Date(award.datum).toLocaleDateString("de-DE", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                })}
+            <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
+                {awardDate
+                    ? awardDate.toLocaleDateString("de-DE", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "numeric",
+                    })
+                    : award?.datum}
             </DateText>
 
             <ContentWrapper>
