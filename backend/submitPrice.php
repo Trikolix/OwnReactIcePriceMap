@@ -12,15 +12,15 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
     try {
         if ($kugelPreis !== null) {
             $sql = $additionalInfoKugelPreis != null ?
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW(), :waehrung)
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW(), NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 beschreibung = VALUES(beschreibung), 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();" 
                 : 
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'kugel', :kugelPreis, NOW(), :waehrung)
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'kugel', :kugelPreis, NOW(), NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();";
@@ -39,15 +39,15 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
         if ($softeisPreis !== null && $softeisPreis !== '') {
             $sql = $additionalInfoSofteisPreis != null ? 
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW(), :waehrung)
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW(), NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 beschreibung = VALUES(beschreibung), 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();" 
                 : 
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'softeis', :softeisPreis, NOW(), :waehrung)
+                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
+                VALUES (:userId, :shopId, 'softeis', :softeisPreis, NOW(), NOW(), :waehrung)
                 ON DUPLICATE KEY UPDATE 
                 preis = VALUES(preis),
                 gemeldet_am = NOW();";
