@@ -9,12 +9,30 @@ import AwardCard from "./AwardCard";
 import { Link } from "react-router-dom";
 
 
+const normalizeDateString = (value) => {
+  if (typeof value !== "string") return value;
+  return value.includes("T") ? value : value.replace(" ", "T");
+};
+
+const parseAwardDate = (value) => {
+  if (!value) return null;
+  const parsed = new Date(normalizeDateString(value));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const AwardBundleCard = ({ awards, userName, date }) => {
   const [cardHeight, setCardHeight] = useState();
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef(null);
   // Sortiere awards nach ep absteigend
   const sortedAwards = awards && awards.length > 0 ? awards.slice().sort((a, b) => (b.ep ?? 0) - (a.ep ?? 0)) : [];
+  const effectiveUserId = (() => {
+    if (!awards || awards.length === 0) return null;
+    const last = awards[awards.length - 1];
+    const first = awards[0];
+    return last?.user_id ?? last?.nutzer_id ?? first?.user_id ?? first?.nutzer_id ?? null;
+  })();
+  const parsedDate = parseAwardDate(date);
 
   // Dynamische Höhe messen
   const updateHeight = () => {
@@ -41,19 +59,21 @@ const AwardBundleCard = ({ awards, userName, date }) => {
 
   return (
     <Card style={cardHeight ? { minHeight: cardHeight } : {}}>
-      <DateText dateTime={date}>
-        {new Date(date).toLocaleDateString("de-DE", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
+      <DateText dateTime={parsedDate ? parsedDate.toISOString() : undefined}>
+        {parsedDate
+          ? parsedDate.toLocaleDateString("de-DE", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            })
+          : date}
       </DateText>
       <ContentWrapper>
         <LeftContent>
           <strong>
-            <CleanLink to={awards[0]?.nutzer_id ? `/user/${awards[0].nutzer_id}` : "#"}>
+            <CleanLink to={effectiveUserId ? `/user/${effectiveUserId}` : "#"}>
               {userName}
             </CleanLink>
           </strong> hat <strong>{awards.length}</strong> Awards erhalten

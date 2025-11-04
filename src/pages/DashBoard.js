@@ -1,5 +1,5 @@
 import Header from './../Header';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from "styled-components";
 import ReviewCard from "./../components/ReviewCard";
 import CheckinCard from './../components/CheckinCard';
@@ -52,6 +52,21 @@ function DashBoard() {
     }
   };
 
+  const parseActivityDate = (rawValue) => {
+    if (!rawValue) return null;
+    if (rawValue instanceof Date) return rawValue;
+    const value = typeof rawValue === "string"
+      ? (rawValue.includes("T") ? rawValue : rawValue.replace(" ", "T"))
+      : rawValue;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const extractActivityDate = (data) => {
+    if (!data) return null;
+    return parseActivityDate(data.datum || data.erstellt_am || data.created_at || null);
+  };
+
   // Hilfsfunktion: Gruppiert Activities nach group_id
   function groupActivities(activities) {
     const grouped = {};
@@ -75,32 +90,43 @@ function DashBoard() {
     // Awards innerhalb von 5min für denselben Nutzer (nach user_name) bündeln
     const awardBundles = [];
     const sortedAwards = awards.slice().sort((a, b) => {
-      const da = new Date(a.data?.datum);
-      const db = new Date(b.data?.datum);
+      const da = extractActivityDate(a.data);
+      const db = extractActivityDate(b.data);
+
+      if (!da && !db) return 0;
+      if (!da) return -1;
+      if (!db) return 1;
       return da - db;
     });
     let bundle = [];
     for (let i = 0; i < sortedAwards.length; i++) {
       const curr = sortedAwards[i];
-      const currUserId = curr.data?.nutzer_id;
+      const currUserId = curr.data?.user_id ?? curr.data?.nutzer_id;
       const currUserName = curr.data?.user_name;
-      const currDate = new Date(curr.data?.datum);
+      const currDate = extractActivityDate(curr.data);
       if (bundle.length === 0) {
         bundle.push(curr);
         continue;
       }
       const last = bundle[bundle.length - 1];
-      const lastUserId = last.data?.nutzer_id;
+      const lastUserId = last.data?.user_id ?? last.data?.nutzer_id;
       const lastUserName = last.data?.user_name;
-      const lastDate = new Date(last.data?.datum);
-      const diffMs = Math.abs(currDate - lastDate);
-      if (currUserId === lastUserId && currUserName === lastUserName && diffMs <= 5 * 60 * 1000) {
+      const lastDate = extractActivityDate(last.data);
+      const diffMs = (currDate && lastDate) ? Math.abs(currDate - lastDate) : Number.POSITIVE_INFINITY;
+      if (
+        currUserId === lastUserId &&
+        currUserName === lastUserName &&
+        diffMs <= 5 * 60 * 1000
+      ) {
         bundle.push(curr);
       } else {
         if (bundle.length > 1) {
+          const bundleDate = extractActivityDate(bundle[bundle.length - 1].data);
+          const bundleUserId = lastUserId ?? "unknown";
+          const bundleDateKey = bundleDate ? bundleDate.getTime() : "unknown";
           awardBundles.push({
             typ: "award_bundle",
-            id: `awardbundle-${lastUserId}-${lastDate.getTime()}`,
+            id: `awardbundle-${bundleUserId}-${bundleDateKey}`,
             data: bundle.map((a) => a.data),
           });
         } else {
@@ -111,12 +137,13 @@ function DashBoard() {
     }
     // Letztes Bundle pushen
     if (bundle.length > 1) {
-      const lastUserId = bundle[bundle.length - 1].data?.nutzer_id;
-      const lastUserName = bundle[bundle.length - 1].data?.user_name;
-      const lastDate = new Date(bundle[bundle.length - 1].data?.datum);
+      const lastData = bundle[bundle.length - 1].data;
+      const bundleDate = extractActivityDate(lastData);
+      const bundleUserId = lastData?.user_id ?? lastData?.nutzer_id ?? "unknown";
+      const bundleDateKey = bundleDate ? bundleDate.getTime() : "unknown";
       awardBundles.push({
         typ: "award_bundle",
-        id: `awardbundle-${lastUserId}-${lastDate.getTime()}`,
+        id: `awardbundle-${bundleUserId}-${bundleDateKey}`,
         data: bundle.map((a) => a.data),
       });
     } else if (bundle.length === 1) {
@@ -143,27 +170,36 @@ function DashBoard() {
     ];
 
     function getItemDate(item) {
+      if (!item) return null;
+
       if (item.typ === "group_checkin") {
-        // bei Gruppe: Top-Level-Datum verwenden
-        return item.data[0]?.datum;
+        // Bei Gruppen den neuesten Checkin in der Gruppe verwenden
+        const latestCheckin = item.data?.reduce((latest, current) => {
+          const currentDate = extractActivityDate(current);
+          if (!currentDate) return latest;
+          if (!latest) return current;
+          const latestDate = extractActivityDate(latest);
+          return (!latestDate || currentDate > latestDate) ? current : latest;
+        }, null);
+        return extractActivityDate(latestCheckin);
       }
+
       if (item.typ === "award_bundle") {
-        // Bundle: Datum des ersten Awards
-        return item.data[0]?.datum;
+        const lastAward = Array.isArray(item.data) ? item.data[item.data.length - 1] : null;
+        return extractActivityDate(lastAward);
       }
-      if (item.typ === "checkin" || item.typ === "route" || item.typ === "award") {
-        return item.data?.datum;
-      }
-      if (item.typ === "bewertung" || item.typ === "eisdiele") {
-        return item.data?.erstellt_am;
-      }
-      return null;
+
+      return extractActivityDate(item.data);
     }
 
     // Sortierung nach Datum absteigend
     const sorted = result.sort((a, b) => {
-      const da = new Date(getItemDate(a));
-      const db = new Date(getItemDate(b));
+      const da = getItemDate(a);
+      const db = getItemDate(b);
+
+      if (!db && !da) return 0;
+      if (!db) return -1;
+      if (!da) return 1;
       return db - da;
     });
     return sorted;
@@ -216,8 +252,18 @@ function DashBoard() {
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
               case 'award':
                 return <AwardCard key={`award-${id}`} award={data} />;
-              case 'award_bundle':
-                return <AwardBundleCard key={id} awards={data} userName={data[0]?.user_name} date={data[0]?.datum}/>;
+              case 'award_bundle': {
+                const firstAward = Array.isArray(data) ? data[0] : null;
+                const latestAward = Array.isArray(data) ? data[data.length - 1] : null;
+                return (
+                  <AwardBundleCard
+                    key={id}
+                    awards={data}
+                    userName={latestAward?.user_name || firstAward?.user_name}
+                    date={latestAward?.datum || firstAward?.datum}
+                  />
+                );
+              }
               default:
                 return null;
             }
