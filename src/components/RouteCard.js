@@ -4,6 +4,7 @@ import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
 import SubmitRouteForm from "../SubmitRouteModal";
 import { Card, SamllerSubmitButton } from "../styles/SharedStyles";
+import CommentSection from "./CommentSection";
 
 const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -85,6 +86,8 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
             )}
           </LeftContent>
         </ContentWrapper>
+        {/* Kommentarbereich analog zu CheckinCard */}
+        <CommentSection routeId={route.id} type="route" />
       </Card>
 
       {showEditModal && (

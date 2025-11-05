@@ -80,6 +80,13 @@ const NotificationBell = () => {
                 const url = `/#/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
                 window.location.href = url;
             }
+        } else if (notification.typ === 'kommentar_route') {
+            console.log(notification);
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            if (data.route_id) {
+                const url = `/#/user/${userId}?tab=routes&focusRoute=${data.route_id}`;
+                window.location.href = url;
+            }
         } else if (notification.typ === 'new_user') {
             const url = `/#/user/${notification.referenz_id}`;
             window.location.href = url;

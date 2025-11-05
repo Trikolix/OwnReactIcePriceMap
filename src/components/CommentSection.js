@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 
-const CommentSection = ({ checkinId, bewertungId, type = "checkin" }) => {
+// type: "checkin" | "bewertung" | "route"
+const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) => {
     const { userId } = useUser();
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
@@ -12,7 +13,9 @@ const CommentSection = ({ checkinId, bewertungId, type = "checkin" }) => {
 
     // Validierung der Props
     const isValidProps = () => {
-        return (checkinId && !bewertungId) || (!checkinId && bewertungId);
+        // Nur eine ID darf gesetzt sein
+        const ids = [checkinId, bewertungId, routeId].filter(Boolean);
+        return ids.length === 1;
     };
 
     const formatDateTime = (datetimeStr) => {
@@ -32,9 +35,17 @@ const CommentSection = ({ checkinId, bewertungId, type = "checkin" }) => {
             return;
         }
 
-        const parameterName = checkinId ? 'checkin_id' : 'bewertung_id';
-        const parameterValue = checkinId || bewertungId;
-        
+        let parameterName, parameterValue;
+        if (checkinId) {
+            parameterName = 'checkin_id';
+            parameterValue = checkinId;
+        } else if (bewertungId) {
+            parameterName = 'bewertung_id';
+            parameterValue = bewertungId;
+        } else if (routeId) {
+            parameterName = 'route_id';
+            parameterValue = routeId;
+        }
         const res = await fetch(`${apiUrl}/kommentare.php?action=list&${parameterName}=${parameterValue}`);
         const data = await res.json();
         if (data.status === "success") {
@@ -60,8 +71,10 @@ const CommentSection = ({ checkinId, bewertungId, type = "checkin" }) => {
         // Je nach Typ die entsprechende ID hinzufügen
         if (checkinId) {
             requestBody.checkin_id = checkinId;
-        } else {
+        } else if (bewertungId) {
             requestBody.bewertung_id = bewertungId;
+        } else if (routeId) {
+            requestBody.route_id = routeId;
         }
 
         const res = await fetch(`${apiUrl}/kommentare.php?action=create`, {

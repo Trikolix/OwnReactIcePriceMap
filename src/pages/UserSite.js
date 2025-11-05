@@ -32,6 +32,10 @@ function UserSite() {
     if (params.get('openSettings') === '1') {
       setShowSettings(true);
     }
+    // Tab 'Routen' öffnen, wenn ?tab=routen gesetzt ist
+    if (params.get('tab') === 'routes') {
+      setActiveTab('routen');
+    }
   }, [location.search]);
   const [activeTab, setActiveTab] = useState('checkins');
 
@@ -68,43 +72,69 @@ function UserSite() {
       alert('Kopieren fehlgeschlagen.');
     }
   };
-
-  if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-      <Header />
-      <div style={{ width: '100vw', backgroundColor: 'white', height: '100vh' }}>
-        <DashboardWrapper>
-          <HeaderDiv>
-            <h1>Nutzerseite</h1>
-            <p>Lade Nutzer Daten...</p>
-          </HeaderDiv>
-        </DashboardWrapper>
-      </div>
-    </div>
-  );
-  if (error !== null) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
-      <Header />
-      <div style={{ width: '100vw', backgroundColor: 'white' }}>
-        <DashboardWrapper>
-          <HeaderDiv>
-            <h1>Nutzerseite</h1>
-            <p>Fehler beim Abruf der Daten</p>
-          </HeaderDiv>
-        </DashboardWrapper>
-      </div>
-    </div>
-  );
-
   // Filter check-ins and reviews based on the current page
   const displayedCheckins = data ? data.checkins.slice(0, checkinPage * 5) : [];
   const displayedReviews = data ? data.reviews.slice(0, reviewPage * 5) : [];
   const displayedAwards = data ? data.user_awards.slice(0, awardPage * 4) : [];
   const displayedRoutes = data ? data.routen.slice(0, routePage * 5) : [];
   const totalIcePortions = data ? (data.eisarten.Kugel || 0) + (data.eisarten.Softeis || 0) + (data.eisarten.Eisbecher || 0) : 0;
+  
+  // Ref for scrolling to route
+  const routeRefs = React.useRef({});
+
+  // Scroll to route if focusRoute param is set and tab is 'routen'
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (activeTab === 'routen' && params.get('focusRoute')) {
+      const routeId = params.get('focusRoute');
+      setTimeout(() => {
+        if (routeRefs.current[routeId]) {
+          routeRefs.current[routeId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Remove focusRoute and tab from URL
+          const newParams = new URLSearchParams(location.search);
+          newParams.delete('focusRoute');
+          newParams.delete('tab');
+          const newUrl = `${location.pathname}${newParams.toString() ? '?' + newParams.toString() : ''}`;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }, 300);
+    }
+  }, [activeTab, displayedRoutes, location.search]);
+
+  // Early returns for loading/error
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+        <Header />
+        <div style={{ width: '100vw', backgroundColor: 'white', height: '100vh' }}>
+          <DashboardWrapper>
+            <HeaderDiv>
+              <h1>Nutzerseite</h1>
+              <p>Lade Nutzer Daten...</p>
+            </HeaderDiv>
+          </DashboardWrapper>
+        </div>
+      </div>
+    );
+  }
+  if (error !== null) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+        <Header />
+        <div style={{ width: '100vw', backgroundColor: 'white' }}>
+          <DashboardWrapper>
+            <HeaderDiv>
+              <h1>Nutzerseite</h1>
+              <p>Fehler beim Abruf der Daten</p>
+            </HeaderDiv>
+          </DashboardWrapper>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
-
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
       <Header />
       <div style={{ width: '100vw', backgroundColor: 'white' }}>
@@ -248,9 +278,16 @@ function UserSite() {
             {activeTab === 'routen' && (
               <div>
                 {displayedRoutes.map((route, index) => (
-                  <RouteCard key={index} route={route} shopId={route.eisdiele_id} shopName={route.eisdiele_name} onSuccess={refreshUser} />
+                  <div
+                    key={route.id || index}
+                    ref={el => {
+                      if (route.id) routeRefs.current[route.id] = el;
+                    }}
+                  >
+                    <RouteCard route={route} shopId={route.eisdiele_id} shopName={route.eisdiele_name} onSuccess={refreshUser} />
+                  </div>
                 ))}
-                {displayedReviews.length < data.reviews.length && (
+                {displayedRoutes.length < data.routen.length && (
                   <LoadMoreButton onClick={loadMoreRoutes}>Mehr Routen laden</LoadMoreButton>
                 )}
               </div>

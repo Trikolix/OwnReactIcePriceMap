@@ -34,14 +34,16 @@ function createKommentar($pdo) {
     $input = json_decode(file_get_contents('php://input'), true);
     $checkinId = isset($input['checkin_id']) ? (int)$input['checkin_id'] : null;
     $bewertungId = isset($input['bewertung_id']) ? (int)$input['bewertung_id'] : null;
+    $routeId = isset($input['route_id']) ? (int)$input['route_id'] : null;
     $nutzerId = (int)$input['nutzer_id'];
     $kommentar = trim($input['kommentar']);
 
     // Validierung: genau eine ID muss gesetzt sein
-    if ((!$checkinId && !$bewertungId) || ($checkinId && $bewertungId)) {
+    $ids = array_filter([$checkinId, $bewertungId, $routeId], fn($v) => $v !== null);
+    if (count($ids) !== 1) {
         echo json_encode([
             "status" => "error",
-            "message" => "Entweder checkin_id oder bewertung_id muss gesetzt sein."
+            "message" => "Genau eine von checkin_id, bewertung_id oder route_id muss gesetzt sein."
         ]);
         return;
     }
@@ -56,16 +58,18 @@ function createKommentar($pdo) {
 
     // Kommentar einfügen
     $stmt = $pdo->prepare("
-        INSERT INTO kommentare (checkin_id, bewertung_id, nutzer_id, kommentar)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO kommentare (checkin_id, bewertung_id, route_id, nutzer_id, kommentar)
+        VALUES (?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$checkinId, $bewertungId, $nutzerId, $kommentar]);
+    $stmt->execute([$checkinId, $bewertungId, $routeId, $nutzerId, $kommentar]);
     $kommentarId = $pdo->lastInsertId();
 
     if ($checkinId) {
         handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $kommentarId);
-    } else {
+    } elseif ($bewertungId) {
         handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerId, $kommentarId);
+    } elseif ($routeId) {
+        handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $kommentarId);
     }
 
     echo json_encode([
@@ -101,9 +105,9 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
             return;
         }
 
-    $checkinAutorId = $checkinData['autor_id'];
-    $eisdieleId = $checkinData['eisdiele_id'];
-    $eisdieleName = $checkinData['eisdiele_name'] ?? '';
+        $checkinAutorId = $checkinData['autor_id'];
+        $eisdieleId = $checkinData['eisdiele_id'];
+        $eisdieleName = $checkinData['eisdiele_name'] ?? '';
 
         $zusatzdaten = json_encode([
             'checkin_id' => $checkinId,
@@ -259,15 +263,85 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
     }
 }
 
+// Route-Kommentar-Benachrichtigungen
+function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $kommentarId) {
+    try {
+        $stmt = $pdo->prepare("SELECT r.nutzer_id AS autor_id, r.name AS route_name FROM routen r WHERE r.id = ?");
+        $stmt->execute([$routeId]);
+        $routeData = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$routeData) return;
+
+        $stmt = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
+        $stmt->execute([$nutzerId]);
+        $kommentatorName = $stmt->fetchColumn();
+        if (!$kommentatorName) return;
+
+        $routeAutorId = $routeData['autor_id'];
+        $routeName = $routeData['route_name'] ?? '';
+        $zusatzdaten = json_encode([
+            'route_id' => $routeId,
+            'route_name' => $routeName,
+            'kommentar_id' => $kommentarId
+        ]);
+
+        // 1. Benachrichtigung an Route-Autor
+        if ($routeAutorId && $routeAutorId != $nutzerId) {
+            $stmt = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'kommentar_route', ?, ?, ?)");
+            $text = "$kommentatorName hat deine Route '$routeName' kommentiert.";
+            $stmt->execute([$routeAutorId, $kommentarId, $text, $zusatzdaten]);
+            sendNotificationEmailIfAllowed(
+                $pdo,
+                $routeAutorId,
+                'comment',
+                $kommentatorName,
+                [
+                    'routeName' => $routeName,
+                    'routeId' => $routeId,
+                    'kommentarId' => $kommentarId,
+                    'byUserId' => $nutzerId
+                ]
+            );
+        }
+
+        // 2. Andere Kommentierende benachrichtigen
+        $stmt = $pdo->prepare("SELECT DISTINCT nutzer_id FROM kommentare WHERE route_id = ? AND nutzer_id NOT IN (?, ?) AND id != ?");
+        $stmt->execute([$routeId, $nutzerId, $routeAutorId ?: 0, $kommentarId]);
+        $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if ($beteiligteIds) {
+            $text = "$kommentatorName hat eine Route kommentiert, die du auch kommentiert hast.";
+            $stmt = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'kommentar_route', ?, ?, ?)");
+            foreach ($beteiligteIds as $beteiligterId) {
+                $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
+                sendNotificationEmailIfAllowed(
+                    $pdo,
+                    $beteiligterId,
+                    'comment_participated',
+                    $kommentatorName,
+                    [
+                        'routeName' => $routeName,
+                        'routeId' => $routeId,
+                        'kommentarId' => $kommentarId,
+                        'byUserId' => $nutzerId
+                    ]
+                );
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error in handleRouteKommentarBenachrichtigungen: " . $e->getMessage());
+    }
+}
+
 function listKommentare($pdo) {
     $checkinId = isset($_GET['checkin_id']) ? (int)$_GET['checkin_id'] : null;
     $bewertungId = isset($_GET['bewertung_id']) ? (int)$_GET['bewertung_id'] : null;
+    $routeId = isset($_GET['route_id']) ? (int)$_GET['route_id'] : null;
 
     // Validierung: genau eine ID muss gesetzt sein
-    if ((!$checkinId && !$bewertungId) || ($checkinId && $bewertungId)) {
+    $ids = array_filter([$checkinId, $bewertungId, $routeId], fn($v) => $v !== null);
+    if (count($ids) !== 1) {
         echo json_encode([
             "status" => "error",
-            "message" => "Entweder checkin_id oder bewertung_id muss als Parameter übergeben werden."
+            "message" => "Genau eine von checkin_id, bewertung_id oder route_id muss als Parameter übergeben werden."
         ]);
         return;
     }
@@ -275,9 +349,12 @@ function listKommentare($pdo) {
     if ($checkinId) {
         $whereClause = "k.checkin_id = ?";
         $parameter = $checkinId;
-    } else {
+    } elseif ($bewertungId) {
         $whereClause = "k.bewertung_id = ?";
         $parameter = $bewertungId;
+    } else {
+        $whereClause = "k.route_id = ?";
+        $parameter = $routeId;
     }
 
     $stmt = $pdo->prepare("
