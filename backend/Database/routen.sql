@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:24
+-- Erstellungszeit: 05. Nov 2025 um 08:19
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -57,7 +57,6 @@ INSERT INTO `routen` (`id`, `eisdiele_id`, `nutzer_id`, `url`, `embed_code`, `na
 (7, 40, 1, 'https://www.komoot.com/de-de/tour/1041597491/', '<iframe src=\"https://www.komoot.com/de-de/tour/1041597491/embed?share_token=a8ppmCGzfMQKoTKYBGgvZa8GEfvWPU8IFJpptxJ2RskCTpEouu\" width=\"100%\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', NULL, 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
 (8, 45, 1, 'https://www.komoot.com/de-de/tour/2117023918/', '<iframe src=\"https://www.komoot.com/de-de/tour/2117023918/embed?share_token=abMM6jTSdmMQSlAGrMdTO81vdDSLJrIK7KJXTzqIUURADyuZKz\" width=\"100%\" height=\"400\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', 'Schöne Runde durchs Gebirge, erst auf den Keilberg, dann den Fichtelberg und anschließend über die tschechische Seite nach Johanngerogenstadt, wo es leckere Eisstärkung gibt, weiter rauf auf den Auersberg. Ab dann wird mehr gerollt. In Eibenstock bietet sich nochmal ein Eisstopp an.', 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
 (9, 46, 1, 'https://www.komoot.com/de-de/tour/2117187697/', '<iframe src=\"https://www.komoot.com/de-de/tour/2117187697/embed?share_token=aV2Hu3UCsgD69l3EKo2M5GZWarrQeZxDItCxpA9N2l1M52Kd4N\" width=\"100%\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', NULL, 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
-(11, 65, 1, 'https://www.komoot.com/de-de/tour/2141338801/', '<iframe src=\"https://www.komoot.com/de-de/tour/2141338801/embed?share_token=aRyl0tA138CJahivyKq3eKLmC7XUwprq5XDGRrkTFEjVYUcEE1&profile=1\" width=\"100%\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', NULL, 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
 (12, 74, 1, 'https://www.komoot.com/de-de/tour/2143692597/', '<iframe src=\"https://www.komoot.com/de-de/tour/2143692597/embed?share_token=anzEZqQDeHTcRq1YJOXRuRMoVfkIrs1Chfik2ID3iNgsVjSQTj&profile=1\" width=\"100%\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', NULL, 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
 (13, 89, 1, 'https://www.komoot.com/de-de/tour/1259315746/', '<iframe src=\"https://www.komoot.com/de-de/tour/1259315746/embed?share_token=aAcrsdK0p1Ho74xaV4g7PsGmD375xR3P76dPBRUJKFFftZc1hi&profile=1\" width=\"100%\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', NULL, 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
 (14, 98, 1, 'https://www.komoot.com/de-de/tour/2156485682/', '<iframe src=\"https://www.komoot.com/de-de/tour/2156485682/embed?share_token=aXul3Yn3HECtwMmDcRcbEHHOe6wXSdzb6D4XK1r4QNn7shP3GH&profile=1\" width=\"100%\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '', NULL, 'Rennrad', NULL, NULL, NULL, 1, '2025-05-06 18:51:58'),
@@ -76,7 +75,9 @@ INSERT INTO `routen` (`id`, `eisdiele_id`, `nutzer_id`, `url`, `embed_code`, `na
 (73, 93, 1, 'https://www.komoot.com/de-de/tour/2512610805/', '<iframe src=\"https://www.komoot.com/de-de/tour/2512610805/embed?share_token=aDT7DrgAUNeZI1Tkga8w4fPqWPad58xs0Lod627WFdiMigeQQZ\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', 'Freiberg -> Nossen -> Döbeln', '', 'Rennrad', '132.00', 1530, 'Schwer', 0, '2025-07-28 12:13:27'),
 (74, 314, 1, 'https://www.komoot.de/tour/2443810417/', '<iframe src=\"https://www.komoot.com/de-de/tour/2443810417/embed?share_token=a6TwsdM3xAAgtFQ9leCnXFMn4fYsLwgZ57sXR3wiIp7YMo4KAv\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', 'Cycle the Unsern 200 - mit Eisstopps ', 'Für alle Starter des 200km Brevets gibt\'s hier die Route erweitert mit einigen Eis-Stopps die direkt auf der Strecke liegen oder nur einen minimalen Umweg bedeuten.\n\nDie ersten Eisdielen passiert man wenn sie noch geschlossen sind, los geht es mit \n- Kilometer 94: Bäckerei Bräunig in Ehrenfriedersdorf \n- Kilometer 134: n\'Eis zapfen in Frankenberg\n- Kilometer 158: Eiscafé Venezia in Mittweida (alternativ gibt es noch 2-3 andere Eis Möglichkeiten in Mittweida)\n- Kilometer 176: Eiscafé Krause Wechselburg\n- Im Ziel: Ice-Eis Pinguin oder Karl mags Süß ', 'Rennrad', '204.00', 2540, 'Schwer', 1, '2025-08-02 00:08:33'),
 (75, 179, 1, 'https://www.komoot.com/de-de/tour/2468788191/', '<iframe src=\"https://www.komoot.com/de-de/tour/2468788191/embed?share_token=aWHQ9Nx09zfvEePJlP5kzFYZYHGynqjmRwNLSMtHCpg7j4yh6R\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', 'Konditorei Seifert & Eisfabrik Gößnitz', 'Aus ursprünglich 3 geplanten Eis Stopps wurde es doch nur ein Stopp bei dem es Kuchen gab und ein Softeis-Stopp bei der Eisfabrik Gößnitz', 'Rennrad', '120.00', 900, 'Mittel', 1, '2025-08-06 05:32:17'),
-(76, 411, 1, 'https://www.komoot.com/de-de/tour/2486305418/', '<iframe src=\"https://www.komoot.com/de-de/tour/2486305418/embed?share_token=asJCdQfPFKl43yHKra3xGzk1AssaoCAaEiYrArkImtdhblCgLI\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', 'Elisenhof, Eismarie und Vereinstreffen', '', 'Rennrad', '124.00', 1020, 'Mittel', 0, '2025-08-12 05:38:19');
+(76, 411, 1, 'https://www.komoot.com/de-de/tour/2486305418/', '<iframe src=\"https://www.komoot.com/de-de/tour/2486305418/embed?share_token=asJCdQfPFKl43yHKra3xGzk1AssaoCAaEiYrArkImtdhblCgLI\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', 'Elisenhof, Eismarie und Vereinstreffen', '', 'Rennrad', '124.00', 1020, 'Mittel', 0, '2025-08-12 05:38:19'),
+(77, 127, 1, 'https://www.komoot.com/de-de/tour/2544907671/', '<iframe src=\"https://www.komoot.com/de-de/tour/2544907671/embed?share_token=aGwaiaWX7vz8Sdgsw2uhs4UqSx8fs9NKcdp1ngxIjqdNGKnAdy\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', 'Montags geöffnete Eisdielen Erzgebirge', 'Eine ziemlich schwere Tour durchs Erzgebirge. Mit vielen Höhenmetern und einigen Einkehrmöglichkeiten, das Besondere: die Eisdielen haben Montags geöffnet (was bei vielen Eisdielen ja oft der Ruhetag ist)', 'Rennrad', '129.00', 2050, 'Schwer', 1, '2025-09-02 08:33:10'),
+(78, 21, 53, 'https://www.komoot.de/tour/2663531081/', '<iframe src=\"https://www.komoot.com/de-de/tour/2663531081/embed?share_token=a9GKZKzctq5zs9niXyZNU1Z9RsuJeqDHnPz14ui18GjRznzpGK\" width=\"640\" height=\"440\" frameborder=\"0\" scrolling=\"no\"></iframe>', '3 Eisdielen Tour', 'Schöne MTB Tour mit paar kleinen Trails', 'MTB', '28.00', 300, 'Mittel', 1, '2025-11-01 21:44:35');
 
 --
 -- Indizes der exportierten Tabellen
@@ -98,7 +99,7 @@ ALTER TABLE `routen`
 -- AUTO_INCREMENT für Tabelle `routen`
 --
 ALTER TABLE `routen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
 
 --
 -- Constraints der exportierten Tabellen

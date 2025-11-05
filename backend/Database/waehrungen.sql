@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:24
+-- Erstellungszeit: 05. Nov 2025 um 08:20
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -65,7 +65,10 @@ INSERT INTO `waehrungen` (`id`, `code`, `name`, `symbol`) VALUES
 (24, 'BYN', 'Weißrussischer Rubel', 'Br'),
 (25, 'USD', 'US Dollar', '$'),
 (26, 'HRK', 'Kuna', 'kn'),
-(27, 'ILS', 'Schekel', 'NIS');
+(27, 'ILS', 'Schekel', 'NIS'),
+(28, 'TRY', 'Türkische Lira', '₺'),
+(29, 'MAD', 'Marokkanischer Dirham', 'Dh'),
+(30, 'EGP', 'Ägyptisches Pfund', 'E£');
 
 --
 -- Indizes der exportierten Tabellen
@@ -86,7 +89,7 @@ ALTER TABLE `waehrungen`
 -- AUTO_INCREMENT für Tabelle `waehrungen`
 --
 ALTER TABLE `waehrungen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

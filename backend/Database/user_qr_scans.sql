@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:24
+-- Erstellungszeit: 05. Nov 2025 um 08:20
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -46,7 +46,12 @@ INSERT INTO `user_qr_scans` (`id`, `user_id`, `qr_code_id`, `scanned_at`) VALUES
 (5, 111, 1, '2025-08-05 14:45:49'),
 (6, 1, 2, '2025-08-07 10:49:22'),
 (7, 1, 3, '2025-08-07 10:53:47'),
-(8, 1, 5, '2025-09-02 07:24:36');
+(11, 1, 5, '2025-09-02 12:47:59'),
+(12, 131, 5, '2025-09-07 04:12:20'),
+(13, 102, 5, '2025-09-07 04:16:14'),
+(14, 132, 5, '2025-09-07 04:21:53'),
+(15, 53, 5, '2025-09-07 09:58:49'),
+(16, 133, 5, '2025-09-07 10:51:13');
 
 --
 -- Indizes der exportierten Tabellen
@@ -69,7 +74,7 @@ ALTER TABLE `user_qr_scans`
 -- AUTO_INCREMENT für Tabelle `user_qr_scans`
 --
 ALTER TABLE `user_qr_scans`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- Constraints der exportierten Tabellen

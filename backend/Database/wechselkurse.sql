@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:25
+-- Erstellungszeit: 05. Nov 2025 um 08:20
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -91,7 +91,13 @@ INSERT INTO `wechselkurse` (`id`, `von_waehrung_id`, `zu_waehrung_id`, `kurs`, `
 (73, 1, 27, '3.921749', '2025-08-26 11:00:12'),
 (74, 27, 1, '0.254988', '2025-08-26 11:00:12'),
 (97, 1, 25, '1.164553', '2025-08-26 11:00:12'),
-(98, 25, 1, '0.858699', '2025-08-26 11:00:12');
+(98, 25, 1, '0.858699', '2025-08-26 11:00:12'),
+(99, 28, 1, '0.020300', '2025-10-17 06:22:49'),
+(100, 1, 28, '49.230000', '2025-10-17 06:22:49'),
+(101, 30, 1, '0.018000', '2025-10-17 09:12:22'),
+(102, 1, 30, '55.710000', '2025-10-17 09:12:22'),
+(103, 29, 1, '0.093000', '2025-10-17 09:13:05'),
+(104, 1, 29, '10.740000', '2025-10-17 09:13:05');
 
 --
 -- Indizes der exportierten Tabellen
@@ -114,7 +120,7 @@ ALTER TABLE `wechselkurse`
 -- AUTO_INCREMENT für Tabelle `wechselkurse`
 --
 ALTER TABLE `wechselkurse`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
 
 --
 -- Constraints der exportierten Tabellen

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:23
+-- Erstellungszeit: 05. Nov 2025 um 08:19
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -50,7 +50,7 @@ INSERT INTO `qr_codes` (`id`, `name`, `code`, `description`, `created_at`, `vali
 (2, '', 'bc62c41da6cb1882c583d7a205b13a81', NULL, '2025-08-07 10:48:07', NULL, NULL, NULL, '', 0, 14),
 (3, '', 'dc07a0d0eb520be1c4db0c23f279f1ab', NULL, '2025-08-07 10:51:36', NULL, NULL, NULL, '', 0, 106),
 (4, '', '1877c33007c9f938e513882884f5db46', NULL, '2025-08-07 10:51:39', NULL, NULL, NULL, '', 0, 314),
-(5, 'EPR2025', '41e69b3e8f6232f17e5ce35f7c08e77a', 'Du hast den limitierten EPR2025 Award gescannt. Besuche bis zum 21. September eine Eisdiele per Rad und checke einen Besuch ein um den Award zu bekommen.', '2025-08-28 07:17:58', NULL, '2025-09-21 21:59:59', NULL, 'uploads/award_icons/68b001c6bf26f_EPR_2025_cloud.png', 0, NULL);
+(5, 'EPR2025', '41e69b3e8f6232f17e5ce35f7c08e77a', 'Du hast den limitierten EPR2025 Award gescannt. Besuche bis zum 21. September eine Eisdiele checke einen Besuch ein um den Award zu bekommen.', '2025-08-28 07:17:58', NULL, '2025-09-21 21:59:59', NULL, 'uploads/award_icons/68b001c6bf26f_EPR_2025_cloud.png', 0, NULL);
 
 --
 -- Indizes der exportierten Tabellen

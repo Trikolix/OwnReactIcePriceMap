@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 28. Okt 2025 um 06:53
+-- Erstellungszeit: 05. Nov 2025 um 08:17
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -650,7 +650,23 @@ INSERT INTO `checkins` (`id`, `nutzer_id`, `eisdiele_id`, `datum`, `typ`, `gesch
 (688, 75, 547, '2025-10-25 18:19:20', 'Kugel', '4.7', '3.8', NULL, '4.4', '', NULL, '', 0, 12),
 (689, 53, 552, '2025-10-26 20:47:36', 'Kugel', '5.0', NULL, NULL, '4.5', 'Eis aus Ziegenmilch. Mal was ganz anderes. Mir hat es ziemlich lecker geschmeckt.', NULL, 'Zu Fuß', 0, NULL),
 (690, 31, 553, '2025-10-27 14:06:48', 'Kugel', '4.8', '3.7', NULL, '4.1', '', NULL, 'Zu Fuß', 1, 11),
-(691, 52, 553, '2025-10-27 14:09:27', 'Kugel', '4.5', '3.8', NULL, '3.8', '', NULL, 'Zu Fuß', 1, 11);
+(691, 52, 553, '2025-10-27 14:09:27', 'Kugel', '4.5', '3.8', NULL, '3.8', '', NULL, 'Zu Fuß', 1, 11),
+(692, 52, 554, '2025-10-28 11:56:49', 'Kugel', NULL, NULL, NULL, NULL, '', NULL, '', 1, NULL),
+(693, 96, 423, '2025-10-29 16:40:12', 'Kugel', '5.0', '3.0', NULL, '4.5', 'Sehr cremig ', NULL, 'Zu Fuß', 1, NULL),
+(694, 31, 556, '2025-10-30 14:56:32', 'Kugel', '3.8', '3.6', NULL, '3.5', '', NULL, 'Zu Fuß', 1, NULL),
+(695, 52, 556, '2025-10-30 15:03:06', 'Kugel', '4.5', '5.0', NULL, '3.5', '', NULL, 'Zu Fuß', 1, NULL),
+(696, 53, 165, '2025-10-30 22:43:45', 'Kugel', '4.2', NULL, NULL, '4.1', 'Vanilleeis so wie es sein soll, einfach und trotzdem voll lecker. ', NULL, 'Zu Fuß', 0, NULL),
+(697, 1, 170, '2025-10-31 15:20:48', 'Kugel', '4.1', '4.2', NULL, '2.0', 'Nach dem Spaziergang im Zeisigwald, noch ein Eis abgegriffen.\r\nDie Sorte gegrillte Pflaume mit Zimt war leider aus. Schade, die hätte ich gerne probiert. 😔\r\n\r\nFior di Latte war aber auch ganz gut, aber nicht außergewöhnlich.\r\n\r\n2,50€ für eine Kugel ist schon ein sehr gehobener Preis für Deutschland/ Chemnitz und die Größe der Kugel rechtfertigt das nicht.', NULL, 'Zu Fuß', 1, NULL),
+(698, 31, 560, '2025-11-01 11:24:49', 'Kugel', '4.3', '4.1', NULL, '4.4', '', NULL, 'Zu Fuß', 1, NULL),
+(699, 1, 561, '2025-11-01 13:12:05', 'Kugel', '4.8', NULL, NULL, '4.5', 'Leider war das Eis viel zu kalt und damit super hart.\r\nNach dem es durch langes Hände wärmen langsam essbar war, war es geschmacklich sehr gut und hat natürlich Geschmack. Weder künstlich noch zu intensiv.\r\n\r\nBei einem Gespräch mit der Bäuerin erfuhr ich, dass sie wirklich das Eis aus eigener Bio Milch und eigenes produzierten Zutaten herstellen und die Temperatur durch das Lebensmittelamt vorgegeben sei.', NULL, 'Fahrrad', 1, NULL),
+(700, 31, 562, '2025-11-01 15:19:01', 'Kugel', '4.0', NULL, NULL, '4.3', '', NULL, 'Zu Fuß', 1, NULL),
+(701, 53, 21, '2025-11-01 22:40:52', 'Kugel', '4.7', '4.4', NULL, '5.0', 'Eierlikoreis voll lecker mit richtigen Schokoladestücken drin. Ein Genuss', NULL, 'Fahrrad', 0, NULL);
+INSERT INTO `checkins` (`id`, `nutzer_id`, `eisdiele_id`, `datum`, `typ`, `geschmackbewertung`, `waffelbewertung`, `größenbewertung`, `preisleistungsbewertung`, `kommentar`, `bild_url`, `anreise`, `is_on_site`, `group_id`) VALUES
+(702, 53, 92, '2025-11-01 22:48:23', 'Softeis', '4.7', '4.3', NULL, '3.9', 'Absolut lecker Softeis mit tollem Vanillegemschack ein Nougat innen drin. Ein Traum. Einiger Kritikpunkt ist der Preis für die \"kleine\" Portion. Größe aber sehr gut', NULL, 'Fahrrad', 0, NULL),
+(703, 53, 165, '2025-11-01 22:50:31', 'Kugel', '4.5', NULL, NULL, '4.0', '', NULL, 'Fahrrad', 0, NULL),
+(704, 1, 564, '2025-11-03 11:47:28', 'Kugel', '4.5', '3.8', NULL, '4.6', 'Nach dem Besuch bei Decathlon schnell noch spontan ein Eis und ich muss sagen, das war überraschend gut.\r\nSchöne Schokostückchen in einem leckeren Vanilleeis. ', NULL, 'Fahrrad', 1, NULL),
+(705, 1, 565, '2025-11-03 15:25:43', 'Kugel', '4.6', NULL, NULL, '3.7', 'Wahnsinnig cremiges Eis mit intensiv, salzigen Geschmack 👍🏼😋\r\nWahrscheinlich eins der sahnigsten / cremigsten Eis die ich überhaupt je gegessen habe 😍\r\nWarum ich keine 5 Sterne für Geschmack gebe? Andere Salted Caramel Eis hatten noch Karamell Stückchen und sowas noch in diesem Eis und es wäre perfekt 😉 \r\n\r\nWaffeln waren leider aus, weshalb ich das Eis im Becher nehmen müsste.\r\nTrotzdem sehr lecker.\r\n\r\nPortion für 2€ okay.', NULL, 'Fahrrad', 1, NULL),
+(706, 53, 35, '2025-11-04 18:21:27', 'Kugel', '3.6', NULL, NULL, '3.0', '', NULL, 'Zu Fuß', 1, NULL);
 
 --
 -- Indizes der exportierten Tabellen
@@ -673,7 +689,7 @@ ALTER TABLE `checkins`
 -- AUTO_INCREMENT für Tabelle `checkins`
 --
 ALTER TABLE `checkins`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=692;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=707;
 
 --
 -- Constraints der exportierten Tabellen

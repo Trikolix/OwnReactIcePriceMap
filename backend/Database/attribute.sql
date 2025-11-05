@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:19
+-- Erstellungszeit: 05. Nov 2025 um 08:15
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -41,6 +41,7 @@ INSERT INTO `attribute` (`id`, `name`) VALUES
 (24, 'Bäcker'),
 (17, 'Bio'),
 (16, 'BubbleTea'),
+(30, 'Bubblewaffel'),
 (10, 'Bubblewaffles'),
 (8, 'Eis zum Mitnehmen '),
 (21, 'Eisautomat'),
@@ -51,15 +52,18 @@ INSERT INTO `attribute` (`id`, `name`) VALUES
 (7, 'guter Kaffee '),
 (15, 'Hundeeis'),
 (20, 'Imbiss'),
+(27, 'Innenstadt '),
 (14, 'Italienisch '),
 (25, 'Kartenzahlung möglich '),
 (23, 'Kuchen'),
 (26, 'nettes Personal '),
+(28, 'Pralinen'),
 (6, 'schöner Außenbereich'),
 (18, 'Selbstbedienung '),
 (13, 'Slush'),
 (9, 'Softeis'),
 (11, 'sonstige Verpflegung'),
+(29, 'Strandlage '),
 (2, 'tolle Lage'),
 (1, 'vegane Optionen'),
 (5, 'wechselndes Angebot');
@@ -83,7 +87,7 @@ ALTER TABLE `attribute`
 -- AUTO_INCREMENT für Tabelle `attribute`
 --
 ALTER TABLE `attribute`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

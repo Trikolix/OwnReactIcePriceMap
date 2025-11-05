@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:22
+-- Erstellungszeit: 05. Nov 2025 um 08:18
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -90,7 +90,10 @@ INSERT INTO `laender` (`id`, `name`, `country_code`, `waehrung_id`) VALUES
 (49, 'Weißrussland', 'by', 24),
 (50, 'Zypern', 'cy', 1),
 (51, 'Israel', 'il', 27),
-(52, 'Vereinigte Staaten von Amerika', 'us', 25);
+(52, 'Vereinigte Staaten von Amerika', 'us', 25),
+(53, 'Türkei', 'tr', 28),
+(54, 'Marokko', 'MAR', 29),
+(55, 'Ägypten', 'EGY', 30);
 
 --
 -- Indizes der exportierten Tabellen
@@ -112,7 +115,7 @@ ALTER TABLE `laender`
 -- AUTO_INCREMENT für Tabelle `laender`
 --
 ALTER TABLE `laender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- Constraints der exportierten Tabellen

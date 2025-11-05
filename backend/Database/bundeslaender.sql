@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 02. Sep 2025 um 10:21
+-- Erstellungszeit: 05. Nov 2025 um 08:16
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -96,7 +96,22 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
 (57, 'Katalonien', 'ES-B', 44),
 (58, 'Region Kreta', 'GR-M', 17),
 (59, 'Prag', 'CZ-10', 2),
-(60, 'Woiwodschaft Westpommern', 'PL-32', 35);
+(60, 'Woiwodschaft Westpommern', 'PL-32', 35),
+(61, 'Balearische Inseln', 'ES-PM', 44),
+(62, 'England', 'GB-WNM', 48),
+(63, 'Kärnten', 'AT-2', 34),
+(64, 'Oberösterreich', 'AT-4', 34),
+(65, 'Wales', 'GB-CAY', 48),
+(66, 'Pilsner Region', 'CZ-322', 2),
+(67, 'Latium', 'IT-RM', 3),
+(68, 'Ligurien', 'IT-SP', 3),
+(69, 'Korsika', 'FR-2A', 4),
+(70, 'Faro', 'PT-08', 36),
+(90, 'Limburg', 'BE-VLG', 10),
+(91, 'Marmararegion', 'TR-34', 53),
+(92, 'Sardinien', 'IT-CA', 3),
+(93, 'Provence-Alpes-Côte d\'Azur', 'FR-13', 4),
+(94, 'Valencianische Gemeinschaft', 'ES-V', 44);
 
 --
 -- Indizes der exportierten Tabellen
@@ -107,7 +122,6 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
 --
 ALTER TABLE `bundeslaender`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`name`),
   ADD KEY `fk_country_id` (`land_id`);
 
 --
@@ -118,7 +132,7 @@ ALTER TABLE `bundeslaender`
 -- AUTO_INCREMENT für Tabelle `bundeslaender`
 --
 ALTER TABLE `bundeslaender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- Constraints der exportierten Tabellen
