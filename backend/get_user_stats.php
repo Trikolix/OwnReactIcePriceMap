@@ -3,6 +3,7 @@ require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/lib/review.php';
+require_once  __DIR__ . '/lib/user_profile.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 $curUserId = intval($_GET['cur_user_id']);
@@ -28,23 +29,24 @@ $sql4 = "SELECT c.typ, COUNT(s.id) AS anzahl_eis
          WHERE c.nutzer_id = ?
          GROUP BY c.typ";
 
-// Anzahl besuchter Eisdielen pro Landkreis
-$sql5 = "SELECT l.name AS landkreis, COUNT(DISTINCT c.eisdiele_id) AS anzahl
+// Anzahl besuchter Eisdielen & Checkins pro Landkreis
+$sql5 = "SELECT l.name AS landkreis,
+                COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
+                COUNT(*) AS checkins
          FROM checkins c
          JOIN eisdielen e ON c.eisdiele_id = e.id
-         JOIN landkreise l ON e.landkreis_id = l.id
+         LEFT JOIN landkreise l ON e.landkreis_id = l.id
          WHERE c.nutzer_id = ?
-         GROUP BY l.id, l.name
-         ORDER BY anzahl DESC";
+         GROUP BY e.landkreis_id, l.name
+         ORDER BY checkins DESC";
 
-// Top 5 Geschmacksrichtung
+// Meistgegessene Geschmacksrichtungen
 $sql6 = "SELECT s.sortenname, AVG(s.bewertung) AS bewertung, COUNT(*) AS anzahl
          FROM checkin_sorten s
          JOIN checkins c ON s.checkin_id = c.id
          WHERE c.nutzer_id = ?
          GROUP BY s.sortenname
-         ORDER BY anzahl DESC, bewertung DESC
-         LIMIT 5";
+         ORDER BY anzahl DESC, bewertung DESC";
 
 // User Awards
 $sql7 = "SELECT 
@@ -60,6 +62,51 @@ $sql7 = "SELECT
            ON ua.award_id = al.award_id AND ua.level = al.level
          WHERE ua.user_id = ?
          ORDER BY ua.awarded_at DESC";
+
+// Meistbesuchte Eisdielen
+$sql8 = "SELECT e.name, COUNT(*) AS besuche
+         FROM checkins c
+         JOIN eisdielen e ON e.id = c.eisdiele_id
+         WHERE c.nutzer_id = ?
+         GROUP BY e.id, e.name
+         ORDER BY besuche DESC";
+
+// Bestbewertete Sorten
+$sql9 = "SELECT s.sortenname, AVG(s.bewertung) AS durchschnitt, COUNT(*) AS anzahl
+         FROM checkin_sorten s
+         JOIN checkins c ON s.checkin_id = c.id
+         WHERE c.nutzer_id = ?
+         GROUP BY s.sortenname
+         ORDER BY durchschnitt DESC, anzahl DESC";
+
+// Verteilung der Anreisearten
+$sql10 = "SELECT anreise, COUNT(*) AS anzahl
+          FROM checkins
+          WHERE nutzer_id = ? AND anreise IS NOT NULL AND anreise <> ''
+          GROUP BY anreise
+          ORDER BY anzahl DESC";
+
+// Aktivität pro Land
+$sql11 = "SELECT la.name AS land,
+                 COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
+                 COUNT(*) AS checkins
+          FROM checkins c
+          JOIN eisdielen e ON c.eisdiele_id = e.id
+          LEFT JOIN laender la ON e.land_id = la.id
+          WHERE c.nutzer_id = ?
+          GROUP BY e.land_id, la.name
+          ORDER BY checkins DESC";
+
+// Aktivität pro Bundesland
+$sql12 = "SELECT bl.name AS bundesland,
+                 COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
+                 COUNT(*) AS checkins
+          FROM checkins c
+          JOIN eisdielen e ON c.eisdiele_id = e.id
+          LEFT JOIN bundeslaender bl ON e.bundesland_id = bl.id
+          WHERE c.nutzer_id = ?
+          GROUP BY e.bundesland_id, bl.name
+          ORDER BY checkins DESC";
 
 $checkins = getCheckinsByNutzerId($pdo, $nutzerId);
 $levelInfo = getLevelInformationForUser($pdo, $nutzerId);
@@ -98,11 +145,32 @@ try {
             case 1: $stats['eisdielen_besucht'] = $stmt->fetchColumn(); break;
             case 2: $stats['anzahl_checkins'] = $stmt->fetchColumn(); break;
             case 3: $stats['eisarten'] = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); break;
-            case 4: $stats['eisdielen_pro_landkreis'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
-            case 5: $stats['top_5_geschmacksrichtung'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
+            case 4: $stats['aktivitaet_landkreis'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
+            case 5: $stats['meistgegessene_eissorten'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
             case 6: $stats['user_awards'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
         }
     }
+    $stats['avatar_url'] = getUserAvatarPath($pdo, $nutzerId);
+
+    $stmt = $pdo->prepare($sql8);
+    $stmt->execute([$nutzerId]);
+    $stats['meistbesuchte_eisdielen'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt = $pdo->prepare($sql9);
+    $stmt->execute([$nutzerId]);
+    $stats['best_bewertete_eissorten'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt = $pdo->prepare($sql10);
+    $stmt->execute([$nutzerId]);
+    $stats['anreise_verteilung'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt = $pdo->prepare($sql11);
+    $stmt->execute([$nutzerId]);
+    $stats['aktivitaet_land'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt = $pdo->prepare($sql12);
+    $stmt->execute([$nutzerId]);
+    $stats['aktivitaet_bundesland'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $stats["checkins"] = $checkins; // Checkins hinzufügen
     $stats["reviews"] = $reviews; // Reviews hinzufügen
     $stats["routen"] = $routen; // Routen hinzufügen
