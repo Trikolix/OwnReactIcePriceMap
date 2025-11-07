@@ -6,6 +6,7 @@ import OpeningHours from "./OpeningHours";
 import ShopWebsite from "./ShopWebsite";
 import SubmitIceShopModal from "../SubmitIceShopModal";
 import { SamllerSubmitButton, Card } from "../styles/SharedStyles";
+import UserAvatar from "./UserAvatar";
 
 
 const ShopCard = ({ iceShop, onSuccess }) => {
@@ -33,8 +34,15 @@ const ShopCard = ({ iceShop, onSuccess }) => {
           })}
       </DateText>
       <Header>
-        <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}
-        <strong><CleanLink to={`/map/activeShop/${iceShop.id}`}>{iceShop.name}</CleanLink></strong> erstellt.{" "}
+        <UserAvatar
+          userId={iceShop.user_id}
+          name={iceShop.nutzer_name}
+          avatarUrl={iceShop.avatar_url}
+        />
+        <HeaderText>
+          <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}
+          <strong><CleanLink to={`/map/activeShop/${iceShop.id}`}>{iceShop.name}</CleanLink></strong> erstellt.{" "}
+        </HeaderText>
       </Header>
       <strong>Adresse:</strong> {iceShop.adresse || "keine Adresse eingetagen"}<br />
       <OpeningHours eisdiele={iceShop} />
@@ -65,7 +73,14 @@ const CleanLink = styled(Link)`
 `;
 
 const Header = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+`;
+
+const HeaderText = styled.div`
+  line-height: 1.4;
 `;
 
 const DateText = styled.time`

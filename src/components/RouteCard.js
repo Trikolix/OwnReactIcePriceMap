@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import SubmitRouteForm from "../SubmitRouteModal";
 import { Card, SamllerSubmitButton } from "../styles/SharedStyles";
 import CommentSection from "./CommentSection";
+import UserAvatar from "./UserAvatar";
 
 const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -70,9 +71,17 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
           <LeftContent>
             <TitleWrapper>
               <RouteType>{routeDisplayMap[route.typ]}: <strong>{route.name}</strong></RouteType>
-              <AuthorDate>
-                von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name}</UserLink>{" "}
-              </AuthorDate>
+              <AuthorRow>
+                <UserAvatar
+                  userId={route.nutzer_id}
+                  name={route.username || route.nutzer_name}
+                  avatarUrl={route.avatar_url}
+                  size={44}
+                />
+                <AuthorDate>
+                  von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name}</UserLink>{" "}
+                </AuthorDate>
+              </AuthorRow>
             </TitleWrapper>
 
             {renderRouteEmbed()}
@@ -164,6 +173,12 @@ const AuthorDate = styled.div`
   font-size: 0.85rem;
   color: #777;
   margin-bottom: 0.7rem;
+`;
+
+const AuthorRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 `;
 
 const InfoText = styled.p`

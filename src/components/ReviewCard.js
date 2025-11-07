@@ -5,6 +5,7 @@ import { useUser } from "./../context/UserContext";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from "../styles/SharedStyles";
+import UserAvatar from "./UserAvatar";
 
 const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   const { userId } = useUser();
@@ -25,8 +26,15 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
         })}
       </DateText>
       <Header>
-        <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
-        <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
+        <UserAvatar
+          userId={review.nutzer_id}
+          name={review.nutzer_name}
+          avatarUrl={review.avatar_url}
+        />
+        <HeaderText>
+          <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
+          <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
+        </HeaderText>
       </Header>
       <ContentWrapper>
         <LeftContent>
@@ -86,7 +94,14 @@ const CleanLink = styled(Link)`
 `;
 
 const Header = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+`;
+
+const HeaderText = styled.div`
+  line-height: 1.4;
 `;
 
 const Table = styled.table`

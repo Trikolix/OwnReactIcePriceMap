@@ -115,9 +115,10 @@ $levelInfo = getLevelInformationForUser($pdo, $nutzerId);
 $reviews = getReviewsByNutzerId($pdo, $nutzerId);
 
 // User Routen
-$stmtRouten = $pdo->prepare("SELECT r.*, n.username
+$stmtRouten = $pdo->prepare("SELECT r.*, n.username, up.avatar_path AS avatar_url
         FROM routen r
         JOIN nutzer n ON r.nutzer_id = n.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE r.nutzer_id = :nutzer_id AND (r.ist_oeffentlich = TRUE OR r.nutzer_id = :cur_user_id)
         ORDER BY r.erstellt_am DESC");
 $stmtRouten->execute(['nutzer_id' => $nutzerId, 'cur_user_id' => $curUserId]);

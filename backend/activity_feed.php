@@ -42,9 +42,10 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
 
     // 🔵 ROUTEN
     $stmtRouten = $pdo->prepare("
-        SELECT r.*, n.username AS nutzer_name
+        SELECT r.*, n.username AS nutzer_name, up.avatar_path AS avatar_url
         FROM routen r
         JOIN nutzer n ON r.nutzer_id = n.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE r.ist_oeffentlich = TRUE
           AND r.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
           AND r.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
@@ -65,9 +66,10 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
 
     // 🔷 Eisdielen
     $stmtEisdielen = $pdo->prepare("
-        SELECT e.*, n.username AS nutzer_name
+        SELECT e.*, n.username AS nutzer_name, up.avatar_path AS avatar_url
         FROM eisdielen e
         JOIN nutzer n ON e.user_id = n.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE e.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
           AND e.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
         ORDER BY e.erstellt_am DESC
@@ -96,13 +98,15 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                al.ep,
                al.title_de,
                al.description_de,
-               al.icon_path
+               al.icon_path,
+               up.avatar_path AS avatar_url
         FROM user_awards ua
         JOIN award_levels al 
           ON ua.award_id = al.award_id 
          AND ua.level = al.level
         JOIN nutzer n
           ON ua.user_id = n.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE (al.ep >= 50
           OR al.award_id = 19)
           AND ua.awarded_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)

@@ -8,6 +8,7 @@ import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
 import { Modal } from "./Modal";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
+import UserAvatar from "./UserAvatar";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -59,8 +60,18 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
         </DateText>
         <ContentWrapper>
           <LeftContent>
-            <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat
-            bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText><br /><br />
+            <UserHeader>
+              <UserAvatar
+                userId={checkin.nutzer_id}
+                name={checkin.nutzer_name}
+                avatarUrl={checkin.avatar_url}
+                size={48}
+              />
+              <HeaderText>
+                <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat
+                bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText>
+              </HeaderText>
+            </UserHeader>
 
             {checkin.eissorten && checkin.eissorten.length > 0 && (
               <AttributeSection>
@@ -161,6 +172,17 @@ export default CheckinCard;
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const UserHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+`;
+
+const HeaderText = styled.div`
+  line-height: 1.4;
 `;
 
 const Table = styled.table`
