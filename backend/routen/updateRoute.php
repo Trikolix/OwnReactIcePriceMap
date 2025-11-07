@@ -69,6 +69,8 @@ try {
     $hoehenmeter = nullIfEmpty($data['hoehenmeter'] ?? null);
     $schwierigkeit = $data['schwierigkeit'] ?? null;
     $is_admin = ($nutzer_id === "1");
+    $incomingEisdieleIds = $data['eisdiele_ids'] ?? null;
+    $newEisdieleIds = null;
     if ($is_admin) {
         if (!isset($data['embed_code']) || $data['embed_code'] === '') {
             $embed_code = generateKomootEmbedCode($url);
@@ -135,20 +137,63 @@ try {
         $params['embed_code'] = $embed_code;
     }
 
+    if ($incomingEisdieleIds !== null) {
+        if (!is_array($incomingEisdieleIds)) {
+            echo json_encode(['status' => 'error', 'message' => 'Ungültiges Format für Eisdielen.']);
+            exit;
+        }
+        $newEisdieleIds = [];
+        foreach ($incomingEisdieleIds as $rawId) {
+            $intId = (int)$rawId;
+            if ($intId > 0 && !in_array($intId, $newEisdieleIds, true)) {
+                $newEisdieleIds[] = $intId;
+            }
+        }
+        if (empty($newEisdieleIds)) {
+            echo json_encode(['status' => 'error', 'message' => 'Bitte mindestens eine Eisdiele auswählen.']);
+            exit;
+        }
+        $fields[] = "eisdiele_id = :primary_eisdiele";
+        $params['primary_eisdiele'] = $newEisdieleIds[0];
+    }
+
     if (count($fields) === 0) {
         echo json_encode(['status' => 'error', 'message' => 'Keine Felder zum Aktualisieren übergeben']);
         exit;
     }
 
     $sql = "UPDATE routen SET " . implode(", ", $fields) . " WHERE id = :id AND nutzer_id = :nutzer_id";
+
+    $pdo->beginTransaction();
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
+
+    if ($newEisdieleIds !== null) {
+        $del = $pdo->prepare("DELETE FROM route_eisdielen WHERE route_id = :route_id");
+        $del->execute(['route_id' => $route_id]);
+
+        $ins = $pdo->prepare("
+            INSERT INTO route_eisdielen (route_id, eisdiele_id)
+            VALUES (:route_id, :eisdiele_id)
+        ");
+        foreach ($newEisdieleIds as $shopId) {
+            $ins->execute([
+                'route_id' => $route_id,
+                'eisdiele_id' => $shopId
+            ]);
+        }
+    }
+
+    $pdo->commit();
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Route erfolgreich aktualisiert'
     ]);
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
     echo json_encode([
         'status' => 'error',

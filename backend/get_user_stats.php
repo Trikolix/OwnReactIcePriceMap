@@ -3,6 +3,7 @@ require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/lib/review.php';
+require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/user_profile.php';
 
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
@@ -124,6 +125,16 @@ $stmtRouten = $pdo->prepare("SELECT r.*, n.username, up.avatar_path AS avatar_ur
 $stmtRouten->execute(['nutzer_id' => $nutzerId, 'cur_user_id' => $curUserId]);
 
 $routen = $stmtRouten->fetchAll(PDO::FETCH_ASSOC);
+$routeShopMap = getRouteIceShops($pdo, array_column($routen, 'id'));
+foreach ($routen as &$routeEntry) {
+    $rid = (int)$routeEntry['id'];
+    $routeEntry['eisdielen'] = $routeShopMap[$rid] ?? [];
+    if (!empty($routeEntry['eisdielen'])) {
+        $routeEntry['eisdiele_id'] = $routeEntry['eisdielen'][0]['id'];
+        $routeEntry['eisdiele_name'] = $routeEntry['eisdielen'][0]['name'];
+    }
+}
+unset($routeEntry);
 
 // Referenz wieder auflösen
 unset($review);

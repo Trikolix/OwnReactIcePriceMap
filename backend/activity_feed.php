@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
+require_once  __DIR__ . '/lib/route_helpers.php';
 
 function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $activities = [];
@@ -56,7 +57,14 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
         'offset'         => $offsetDays
     ]);
     $routen = $stmtRouten->fetchAll(PDO::FETCH_ASSOC);
+    $routeShopMap = getRouteIceShops($pdo, array_column($routen, 'id'));
     foreach ($routen as $route) {
+        $routeId = (int)$route['id'];
+        $route['eisdielen'] = $routeShopMap[$routeId] ?? [];
+        if (!empty($route['eisdielen'])) {
+            $route['eisdiele_id'] = $route['eisdielen'][0]['id'];
+            $route['eisdiele_name'] = $route['eisdielen'][0]['name'];
+        }
         $activities[] = [
             'typ'  => 'route',
             'id'   => $route['id'],

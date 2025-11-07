@@ -596,7 +596,12 @@ function UserSite() {
                         if (route.id) routeRefs.current[route.id] = el;
                       }}
                     >
-                      <RouteCard route={route} shopId={route.eisdiele_id} shopName={route.eisdiele_name} onSuccess={refreshUser} />
+                    <RouteCard
+                      route={route}
+                      shopId={route.eisdielen?.[0]?.id || route.eisdiele_id}
+                      shopName={route.eisdielen?.[0]?.name || route.eisdiele_name}
+                      onSuccess={refreshUser}
+                    />
                     </div>
                   ))}
                   {displayedRoutes.length < routes.length && (

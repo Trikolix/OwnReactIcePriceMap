@@ -43,6 +43,15 @@ CREATE TABLE `routen` (
   `erstellt_am` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `route_eisdielen` (
+  `route_id` int NOT NULL,
+  `eisdiele_id` int NOT NULL,
+  PRIMARY KEY (`route_id`,`eisdiele_id`),
+  KEY `route_eisdielen_eisdiele_idx` (`eisdiele_id`),
+  CONSTRAINT `route_eisdielen_route_fk` FOREIGN KEY (`route_id`) REFERENCES `routen` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `route_eisdielen_eisdiele_fk` FOREIGN KEY (`eisdiele_id`) REFERENCES `eisdielen` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Daten für Tabelle `routen`
 --
@@ -90,6 +99,12 @@ ALTER TABLE `routen`
   ADD PRIMARY KEY (`id`),
   ADD KEY `eisdiele_id` (`eisdiele_id`),
   ADD KEY `nutzer_id` (`nutzer_id`);
+
+--
+-- Daten für Tabelle `route_eisdielen`
+--
+INSERT INTO `route_eisdielen` (route_id, eisdiele_id)
+SELECT id, eisdiele_id FROM `routen`;
 
 --
 -- AUTO_INCREMENT für exportierte Tabellen

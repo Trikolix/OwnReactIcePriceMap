@@ -6084,6 +6084,12 @@ INSERT IGNORE INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`
 (807, 123, 'kugel', '1.90', NULL, 53, '2025-10-17 18:55:24', 1),
 (808, 34, 'kugel', '2.00', 'Premiumsorten - 2.30 €', 143, '2025-10-18 13:39:35', 1);
 
+--
+-- Daten für Tabelle `route_eisdielen`
+--
+INSERT IGNORE INTO `route_eisdielen` (route_id, eisdiele_id)
+SELECT id, eisdiele_id FROM `routen`;
+
 -- --------------------------------------------------------
 
 --
@@ -6309,6 +6315,15 @@ CREATE TABLE IF NOT EXISTS `routen` (
   `schwierigkeit` enum('Leicht','Mittel','Schwer') COLLATE utf8mb4_general_ci DEFAULT NULL,
   `ist_oeffentlich` tinyint(1) DEFAULT '0',
   `erstellt_am` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `route_eisdielen` (
+  `route_id` int NOT NULL,
+  `eisdiele_id` int NOT NULL,
+  PRIMARY KEY (`route_id`,`eisdiele_id`),
+  KEY `route_eisdielen_eisdiele_idx` (`eisdiele_id`),
+  CONSTRAINT `route_eisdielen_route_fk` FOREIGN KEY (`route_id`) REFERENCES `routen` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `route_eisdielen_eisdiele_fk` FOREIGN KEY (`eisdiele_id`) REFERENCES `eisdielen` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

@@ -10,6 +10,11 @@ import UserAvatar from "./UserAvatar";
 const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
+  const routeShops = route.eisdielen && route.eisdielen.length
+    ? route.eisdielen
+    : (route.eisdiele_name ? [{ id: route.eisdiele_id, name: route.eisdiele_name }] : []);
+  const contextShopId = shopId || routeShops[0]?.id || null;
+  const contextShopName = shopName || routeShops[0]?.name || null;
 
   const handleEditClick = () => {
     setShowEditModal(true);
@@ -82,6 +87,15 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
                   von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name}</UserLink>{" "}
                 </AuthorDate>
               </AuthorRow>
+              {routeShops.length > 0 && (
+                <ShopList>
+                  {routeShops.map((shop) => (
+                    <ShopPill key={`${route.id}-${shop.id}`} to={`/map/activeShop/${shop.id}`}>
+                      {shop.name}
+                    </ShopPill>
+                  ))}
+                </ShopList>
+              )}
             </TitleWrapper>
 
             {renderRouteEmbed()}
@@ -101,8 +115,8 @@ const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
 
       {showEditModal && (
         <SubmitRouteForm
-          shopId={shopId}
-          shopName={shopName}
+          shopId={contextShopId}
+          shopName={contextShopName}
           showForm={showEditModal}
           setShowForm={setShowEditModal}
           existingRoute={route}
@@ -156,6 +170,26 @@ const RouteType = styled.div`
   font-size: 0.95rem;
   color: #555;
   margin-bottom: 0.15rem;
+`;
+
+const ShopList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+`;
+
+const ShopPill = styled(Link)`
+  text-decoration: none;
+  background: #f5f5f5;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: #333;
+  border: 1px solid #eee;
+  &:hover {
+    background: #fffbf2;
+  }
 `;
 
 const RouteLink = styled.a`
