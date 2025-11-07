@@ -1,7 +1,12 @@
 <?php
 require_once __DIR__ . '/db_connect.php';
 
-$nutzerId = isset($_GET['nutzer_id']) ? intval($_GET['nutzer_id']) : null;
+$nutzerId = null;
+if (isset($_GET['nutzer_id'])) {
+    $nutzerId = intval($_GET['nutzer_id']);
+} elseif (isset($_GET['user_id'])) {
+    $nutzerId = intval($_GET['user_id']);
+}
 
 $sql = "
 WITH bewertete_checkins AS (
@@ -16,7 +21,7 @@ WITH bewertete_checkins AS (
         typ = 'Eisbecher'
         AND geschmackbewertung IS NOT NULL
         AND preisleistungsbewertung IS NOT NULL" .
-        ($nutzerId ? " AND nutzer_id = :nutzerId" : "") . "
+        ($nutzerId !== null ? " AND nutzer_id = :nutzerId" : "") . "
     ),
 nutzer_scores AS (
     SELECT
@@ -45,6 +50,8 @@ SELECT
     e.name,
     e.adresse,
     e.openingHours,
+    e.latitude,
+    e.longitude,
     SUM(g.checkin_count) AS checkin_anzahl,
     COUNT(DISTINCT g.nutzer_id) AS anzahl_nutzer,
     ROUND(SUM(g.gewichteter_score) / NULLIF(SUM(g.gewicht), 0), 2) AS finaler_eisbecher_score,
@@ -52,13 +59,13 @@ SELECT
     ROUND(SUM(g.gewichteter_preisleistung) / NULLIF(SUM(g.gewicht), 0), 2) AS avg_preisleistung
 FROM gewichtete_scores g
 JOIN eisdielen e ON e.id = g.eisdiele_id
-GROUP BY g.eisdiele_id, e.name, e.adresse, e.openingHours
+GROUP BY g.eisdiele_id, e.name, e.adresse, e.openingHours, e.latitude, e.longitude
 ORDER BY finaler_eisbecher_score DESC;
 ";
 
 // SQL vorbereiten und ausführen
 $stmt = $pdo->prepare($sql);
-if ($nutzerId) {
+if ($nutzerId !== null) {
     $stmt->bindValue(':nutzerId', $nutzerId, PDO::PARAM_INT);
 }
 $stmt->execute();

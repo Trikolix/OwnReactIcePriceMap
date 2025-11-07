@@ -1,7 +1,12 @@
 <?php
 require_once __DIR__ . '/db_connect.php';
 
-$nutzerId = isset($_GET['nutzer_id']) ? intval($_GET['nutzer_id']) : null;
+$nutzerId = null;
+if (isset($_GET['nutzer_id'])) {
+    $nutzerId = intval($_GET['nutzer_id']);
+} elseif (isset($_GET['user_id'])) {
+    $nutzerId = intval($_GET['user_id']);
+}
 
 $sql = "WITH bewertete_checkins AS (
     SELECT
@@ -27,7 +32,7 @@ $sql = "WITH bewertete_checkins AS (
         typ = 'Softeis'
         AND geschmackbewertung IS NOT NULL
         AND preisleistungsbewertung IS NOT NULL" .
-        ($nutzerId ? " AND nutzer_id = :nutzerId" : "") . "
+        ($nutzerId !== null ? " AND nutzer_id = :nutzerId" : "") . "
 ),
 nutzer_scores AS (
     SELECT
@@ -60,6 +65,8 @@ SELECT
     e.name,
     e.adresse,
     e.openingHours,
+    e.latitude,
+    e.longitude,
     SUM(g.checkin_count) AS checkin_anzahl,
     COUNT(DISTINCT g.nutzer_id) AS anzahl_nutzer,
     ROUND(SUM(g.gewichteter_geschmacksfaktor) / NULLIF(SUM(CASE WHEN g.gewichteter_geschmacksfaktor > 0 THEN g.gewicht ELSE 0 END), 0), 2) AS finaler_geschmacksfaktor,
@@ -73,13 +80,15 @@ GROUP BY
     g.eisdiele_id,
     e.name,
     e.adresse,
-    e.openingHours
+    e.openingHours,
+    e.latitude,
+    e.longitude
 ORDER BY finaler_softeis_score DESC;
 ";
 
 // SQL vorbereiten und ausführen
 $stmt = $pdo->prepare($sql);
-if ($nutzerId) {
+if ($nutzerId !== null) {
     $stmt->bindValue(':nutzerId', $nutzerId, PDO::PARAM_INT);
 }
 $stmt->execute();

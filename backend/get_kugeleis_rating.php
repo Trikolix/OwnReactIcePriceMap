@@ -1,7 +1,12 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 
-$nutzerId = isset($_GET['nutzer_id']) ? intval($_GET['nutzer_id']) : null;
+$nutzerId = null;
+if (isset($_GET['nutzer_id'])) {
+    $nutzerId = intval($_GET['nutzer_id']);
+} elseif (isset($_GET['user_id'])) {
+    $nutzerId = intval($_GET['user_id']);
+}
 
 $sql = "WITH bewertete_checkins AS (
     SELECT
@@ -38,7 +43,7 @@ $sql = "WITH bewertete_checkins AS (
         c.typ = 'Kugel'
         AND c.geschmackbewertung IS NOT NULL
         AND (c.größenbewertung IS NOT NULL OR c.preisleistungsbewertung IS NOT NULL)" .
-        ($nutzerId ? " AND nutzer_id = :nutzerId" : "") . "
+        ($nutzerId !== null ? " AND nutzer_id = :nutzerId" : "") . "
 ),
 nutzer_scores AS (
     SELECT
@@ -83,6 +88,8 @@ SELECT
     e.name,
     e.adresse,
     e.openingHours,
+    e.latitude,
+    e.longitude,
     f.finaler_score,
     f.avg_geschmacksfaktor,
     f.avg_geschmack,
@@ -121,13 +128,13 @@ SELECT
 FROM final_scores f
 JOIN eisdielen e ON e.id = f.eisdiele_id
 LEFT JOIN checkins c ON c.eisdiele_id = f.eisdiele_id AND c.typ = 'Kugel'
-GROUP BY f.eisdiele_id, e.name, e.adresse, e.openingHours, f.finaler_score,
+GROUP BY f.eisdiele_id, e.name, e.adresse, e.openingHours, e.latitude, e.longitude, f.finaler_score,
          f.avg_geschmack, f.avg_waffel, f.avg_preisleistung, f.nutzeranzahl
 ORDER BY finaler_score DESC, kugel_preis_eur ASC, checkin_anzahl DESC;";
 
 // SQL vorbereiten und ausführen
 $stmt = $pdo->prepare($sql);
-if ($nutzerId) {
+if ($nutzerId !== null) {
     $stmt->bindValue(':nutzerId', $nutzerId, PDO::PARAM_INT);
 }
 $stmt->execute();
