@@ -5,6 +5,7 @@ import IceCreamRadar from './IceCreamRadar';
 import DashBoard from './pages/DashBoard';
 import Statistics from './pages/Statistics';
 import Ranking from './pages/Ranking';
+import RoutesPage from './pages/Routes';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
 import Impressum from './pages/Impressum';
@@ -30,6 +31,7 @@ const App = () => {
           <Route path="/dashboard" element={<DashBoard />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/ranking" element={<Ranking />} />
+          <Route path="/routes" element={<RoutesPage />} />
           <Route path="/favoriten" element={<FavoritenListe />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/user/:userId?" element={<UserSite />} />
