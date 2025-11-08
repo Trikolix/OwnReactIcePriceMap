@@ -2,6 +2,7 @@ import Header from './../Header';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useSearchParams } from 'react-router-dom';
+import UserAvatar from './../components/UserAvatar';
 
 
 
@@ -235,7 +236,17 @@ function Statistics() {
                 <tbody>
                   {data.usersByLevel.map((entry) => (
                     <tr key={entry.nutzer_id}>
-                      <Td><UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink></Td>
+                      <Td>
+                        <UserInfo>
+                          <UserAvatar
+                            size={34}
+                            userId={entry.nutzer_id}
+                            name={entry.username}
+                            avatarUrl={entry.avatar_url}
+                          />
+                          <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
+                        </UserInfo>
+                      </Td>
                       <Td><strong>{entry.ep_gesamt}</strong></Td>
                       <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
                       <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
@@ -337,6 +348,14 @@ const TabContent = styled.div`
   overflow: auto; /* Scrollen nur hier */
 `;
 
+
+
+
+const UserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
 
 const UserLink = styled(Link)`
   text-decoration: none;

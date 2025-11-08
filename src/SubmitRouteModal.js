@@ -25,6 +25,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const [shopSearch, setShopSearch] = useState("");
     const [shopsLoading, setShopsLoading] = useState(false);
     const initialShopsApplied = useRef(false);
+    const shopSearchRef = useRef(null);
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     const normalizeShop = (shop) => ({
@@ -78,16 +79,23 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
 
     useEffect(() => {
         if (!showForm || initialShopsApplied.current) return;
+
+        let initialSelection = [];
         if (existingRoute?.eisdielen?.length) {
-            setSelectedShops(existingRoute.eisdielen.map(normalizeShop));
+            initialSelection = existingRoute.eisdielen.map(normalizeShop);
+        } else if (existingRoute?.eisdiele_id) {
+            initialSelection = [{
+                id: Number(existingRoute.eisdiele_id),
+                name: existingRoute.eisdiele_name || resolveShopName(existingRoute.eisdiele_id),
+            }];
         } else if (shopId) {
-            setSelectedShops([{
+            initialSelection = [{
                 id: Number(shopId),
                 name: shopName || resolveShopName(shopId),
-            }]);
-        } else {
-            setSelectedShops([]);
+            }];
         }
+
+        setSelectedShops(initialSelection);
         initialShopsApplied.current = true;
     }, [showForm, existingRoute, shopId, shopName]);
 
@@ -114,6 +122,9 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
             return [...prev, normalizeShop(shop)];
         });
         setShopSearch("");
+        queueMicrotask(() => {
+            shopSearchRef.current?.focus();
+        });
     };
 
     const handleRemoveShop = (id) => {
@@ -182,18 +193,18 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 setSelectedShops(selectedIds.map((id) => ({
                     id,
                     name: findExistingChipName(id)
-                })));
+                })), "handleSubmitSuccess");
                 setSubmitted(true);
                 if (onSuccess) onSuccess();
                 if (result.level_up || result.new_awards && result.new_awards.length > 0) {
                     if (result.level_up) {
-                      setLevelUpInfo({
-                        level: result.new_level,
-                        level_name: result.level_name,
-                      });
+                        setLevelUpInfo({
+                            level: result.new_level,
+                            level_name: result.level_name,
+                        });
                     }
                     if (result.new_awards?.length > 0) {
-                      setAwards(result.new_awards);
+                        setAwards(result.new_awards);
                     }
                 } else {
                     setTimeout(() => {
@@ -250,7 +261,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     return showForm ? (
         <Overlay>
             <Modal>
-            <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
+                <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
                 <Heading>
                     {existingRoute ? "Route bearbeiten" : "Route einreichen"}
                 </Heading>
@@ -258,15 +269,15 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                 {!submitted && (<>
                     <Group>
                         <Label>
-                                Routenname:
-                                <Input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="z. B. 'Rund um Eisdiele X'"
-                                    required
-                                />
-                            </Label>
+                            Routenname:
+                            <Input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="z. B. 'Rund um Eisdiele X'"
+                                required
+                            />
+                        </Label>
                     </Group>
 
                     <Label>
@@ -275,7 +286,22 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                             {selectedShops.map((shop) => (
                                 <ShopChip key={shop.id}>
                                     <span>{shop.name}</span>
-                                    <RemoveChipButton type="button" onClick={() => handleRemoveShop(shop.id)} aria-label={`${shop.name} entfernen`}>×</RemoveChipButton>
+                                    <RemoveChipButton
+                                        type="button"
+                                        onMouseDown={(event) => {
+                                            event.preventDefault();
+                                            handleRemoveShop(shop.id);
+                                        }}
+                                        onKeyDown={(event) => {
+                                            if (event.key === "Enter" || event.key === " ") {
+                                                event.preventDefault();
+                                                handleRemoveShop(shop.id);
+                                            }
+                                        }}
+                                        aria-label={`${shop.name} entfernen`}
+                                    >
+                                        ×
+                                    </RemoveChipButton>
                                 </ShopChip>
                             ))}
                             {selectedShops.length === 0 && (
@@ -286,6 +312,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                             <Input
                                 type="text"
                                 value={shopSearch}
+                                ref={shopSearchRef}
                                 onChange={(e) => setShopSearch(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter" && filteredShops.length > 0) {
@@ -408,16 +435,16 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                     </ButtonGroup></>)}
                 <Message>{message}</Message>
                 {levelUpInfo && (
-                  <LevelInfo>
-                    <h2>🎉 Level-Up!</h2>
-                    <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
-                    <p><em>{levelUpInfo.level_name}</em></p>
-                  </LevelInfo>
+                    <LevelInfo>
+                        <h2>🎉 Level-Up!</h2>
+                        <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
+                        <p><em>{levelUpInfo.level_name}</em></p>
+                    </LevelInfo>
                 )}
                 <NewAwards awards={awards} />
-                        </Modal>
-                </Overlay>
-        ) : null;
+            </Modal>
+        </Overlay>
+    ) : null;
 };
 
 export default SubmitRouteForm;

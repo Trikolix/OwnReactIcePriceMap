@@ -65,7 +65,7 @@ $sql7 = "SELECT
          ORDER BY ua.awarded_at DESC";
 
 // Meistbesuchte Eisdielen
-$sql8 = "SELECT e.name, COUNT(*) AS besuche
+$sql8 = "SELECT e.id AS eisdiele_id, e.name, COUNT(*) AS besuche
          FROM checkins c
          JOIN eisdielen e ON e.id = c.eisdiele_id
          WHERE c.nutzer_id = ?

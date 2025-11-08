@@ -1,6 +1,6 @@
 import Header from './../Header';
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
@@ -33,7 +33,12 @@ function UserSite() {
   const [activityLevel, setActivityLevel] = useState('land');
   const PREVIEW_COUNT = 5;
   const location = useLocation();
+  const navigate = useNavigate();
   const [listModal, setListModal] = useState(null); // { title, type, items, isBestRated }
+  const [expandedFlavorKey, setExpandedFlavorKey] = useState(null);
+  const [flavorDetails, setFlavorDetails] = useState({});
+  const [flavorLoading, setFlavorLoading] = useState({});
+  const [flavorErrors, setFlavorErrors] = useState({});
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -141,6 +146,12 @@ function UserSite() {
     return Number.isFinite(num) ? num.toFixed(1) : '–';
   };
 
+  const formatDate = (value) => {
+    if (!value) return '–';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '–' : date.toLocaleDateString();
+  };
+
   const travelDistribution = React.useMemo(() => {
     if (!data?.anreise_verteilung) return [];
     return data.anreise_verteilung.map((entry, index) => ({
@@ -155,29 +166,166 @@ function UserSite() {
 
   const closeModal = () => setListModal(null);
 
+  const getShopId = (shop) =>
+    shop?.eisdiele_id ?? shop?.eisdieleId ?? shop?.id ?? shop?.shop_id ?? null;
+
+  const handleShopNavigate = (shopId) => {
+    if (!shopId) return;
+    closeModal();
+    navigate(`/map/activeShop/${shopId}`);
+  };
+
+  const handleRankingItemKeyDown = (event, shopId) => {
+    if (!shopId) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleShopNavigate(shopId);
+    }
+  };
+
+  const buildFlavorKey = (sortenname, category = 'flavor') =>
+    `${category}__${sortenname}`;
+
+  const toggleFlavorDetails = async (sortenname, category = 'flavor') => {
+    if (!finalUserId || !sortenname) return;
+    const key = buildFlavorKey(sortenname, category);
+
+    if (expandedFlavorKey === key) {
+      setExpandedFlavorKey(null);
+      return;
+    }
+
+    if (flavorDetails[key]) {
+      setExpandedFlavorKey(key);
+      return;
+    }
+
+    try {
+      setFlavorErrors((prev) => ({ ...prev, [key]: null }));
+      setFlavorLoading((prev) => ({ ...prev, [key]: true }));
+      setExpandedFlavorKey(key);
+      const response = await fetch(
+        `${apiUrl}/get_user_flavour_details.php?nutzer_id=${finalUserId}&sortenname=${encodeURIComponent(
+          sortenname
+        )}`
+      );
+      if (!response.ok) {
+        throw new Error('Fehler beim Laden der Sorten-Details.');
+      }
+      const json = await response.json();
+      if (json && !Array.isArray(json) && json.error) {
+        throw new Error(json.error);
+      }
+      const payload = Array.isArray(json) ? json : [];
+      setFlavorDetails((prev) => ({ ...prev, [key]: payload }));
+    } catch (err) {
+      setFlavorErrors((prev) => ({
+        ...prev,
+        [key]: err.message || 'Unbekannter Fehler.',
+      }));
+    } finally {
+      setFlavorLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleFlavorKeyDown = (event, sortenname, category = 'flavor') => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleFlavorDetails(sortenname, category);
+    }
+  };
+
   const renderShopList = (list) => (
     <RankingList>
-      {list.map((shop, index) => (
-        <RankingItem key={`${shop.name}-${index}`}>
-          <span>{index + 1}. {shop.name}</span>
-          <RankingMeta>{shop.besuche} Besuche</RankingMeta>
-        </RankingItem>
-      ))}
+      {list.map((shop, index) => {
+        const shopId = getShopId(shop);
+        return (
+          <RankingItem
+            key={`${shop.name}-${index}`}
+            $clickable={Boolean(shopId)}
+            $hasDetail={false}
+            role={shopId ? 'button' : undefined}
+            tabIndex={shopId ? 0 : undefined}
+            onClick={() => shopId && handleShopNavigate(shopId)}
+            onKeyDown={(event) => shopId && handleRankingItemKeyDown(event, shopId)}
+          >
+            <RankingItemHeader>
+              <span>{index + 1}. {shop.name}</span>
+              <RankingMeta>{shop.besuche} Besuche</RankingMeta>
+            </RankingItemHeader>
+          </RankingItem>
+        );
+      })}
     </RankingList>
   );
 
-  const renderFlavorList = (list, isBestRated) => (
+  const renderFlavorList = (list, { isBestRated = false, category = 'flavor' } = {}) => (
     <RankingList>
-      {list.map((sorte, index) => (
-        <RankingItem key={`${sorte.sortenname}-${index}`}>
-          <span>{index + 1}. {sorte.sortenname}</span>
-          {isBestRated ? (
-            <RankingMeta>{formatRating(sorte.durchschnitt)}★ · {sorte.anzahl} Bewertungen</RankingMeta>
-          ) : (
-            <RankingMeta>{sorte.anzahl}x · {formatRating(sorte.bewertung)}★</RankingMeta>
-          )}
-        </RankingItem>
-      ))}
+      {list.map((sorte, index) => {
+        const key = buildFlavorKey(sorte.sortenname, category);
+        const isExpanded = expandedFlavorKey === key;
+        const details = flavorDetails[key] || [];
+        const isLoading = flavorLoading[key];
+        const errorMessage = flavorErrors[key];
+
+        return (
+          <RankingItem
+            key={`${sorte.sortenname}-${index}`}
+            $clickable
+            $hasDetail
+            role="button"
+            tabIndex={0}
+            onClick={() => toggleFlavorDetails(sorte.sortenname, category)}
+            onKeyDown={(event) => handleFlavorKeyDown(event, sorte.sortenname, category)}
+          >
+            <RankingItemHeader>
+              <span>{index + 1}. {sorte.sortenname}</span>
+              {isBestRated ? (
+                <RankingMeta>{formatRating(sorte.durchschnitt)}★ · {sorte.anzahl} Bewertungen</RankingMeta>
+              ) : (
+                <RankingMeta>{sorte.anzahl}x · {formatRating(sorte.bewertung)}★</RankingMeta>
+              )}
+            </RankingItemHeader>
+            {isExpanded && (
+              <FlavorDetail>
+                {isLoading && <FlavorDetailNote>Lade Details...</FlavorDetailNote>}
+                {!isLoading && errorMessage && (
+                  <FlavorDetailNote>{errorMessage}</FlavorDetailNote>
+                )}
+                {!isLoading && !errorMessage && (
+                  <>
+                    {details.length ? (
+                      <FlavorDetailList>
+                        {details.map((entry) => (
+                          <FlavorDetailEntry
+                            key={`${entry.eisdiele_id}-${entry.ice_type || 'unknown'}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleShopNavigate(entry.eisdiele_id)}
+                            onKeyDown={(event) => handleRankingItemKeyDown(event, entry.eisdiele_id)}
+                          >
+                            <FlavorDetailHeader>
+                              <span>{entry.eisdiele_name}</span>
+                              <FlavorDetailMeta>
+                                {entry.anzahl_checkins}x · {formatRating(entry.durchschnittsbewertung)}★
+                              </FlavorDetailMeta>
+                            </FlavorDetailHeader>
+                            <FlavorDetailSub>
+                              Typ: {entry.ice_type || 'unbekannt'} · Letzter Besuch {formatDate(entry.letzter_besuch)}
+                            </FlavorDetailSub>
+                          </FlavorDetailEntry>
+                        ))}
+                      </FlavorDetailList>
+                    ) : (
+                      <FlavorDetailNote>Keine Details verfügbar.</FlavorDetailNote>
+                    )}
+                  </>
+                )}
+              </FlavorDetail>
+            )}
+          </RankingItem>
+        );
+      })}
     </RankingList>
   );
 
@@ -208,7 +356,10 @@ function UserSite() {
       case 'shops':
         return renderShopList(listModal.items || []);
       case 'flavor':
-        return renderFlavorList(listModal.items || [], !!listModal.isBestRated);
+        return renderFlavorList(listModal.items || [], {
+          isBestRated: !!listModal.isBestRated,
+          category: listModal.category || 'flavor',
+        });
       case 'activity':
         return (
           <>
@@ -291,7 +442,6 @@ function UserSite() {
       <Header />
       <WhiteBackground>
         <DashboardWrapper>
-          <ProfileSection>
             <ProfileHeader>
               <AvatarCircle>
                 {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
@@ -355,7 +505,6 @@ function UserSite() {
                 <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
               )}
             </AwardsCard>
-          </ProfileSection>
 
           <StatsArea>
             <SectionHeader>
@@ -394,14 +543,7 @@ function UserSite() {
               <ContentCard>
                 <CardTitle>Meistbesuchte Eisdielen</CardTitle>
                 {sortedMostVisited.length ? (
-                  <RankingList>
-                    {previewList(sortedMostVisited).map((shop, index) => (
-                      <RankingItem key={`${shop.name}-${index}`}>
-                        <span>{index + 1}. {shop.name}</span>
-                        <RankingMeta>{shop.besuche} Besuche</RankingMeta>
-                      </RankingItem>
-                    ))}
-                  </RankingList>
+                  renderShopList(previewList(sortedMostVisited))
                 ) : (
                   <EmptyState>Noch keine Besuche erfasst.</EmptyState>
                 )}
@@ -416,19 +558,12 @@ function UserSite() {
               <ContentCard>
                 <CardTitle>Meistgegessene Eissorten</CardTitle>
                 {sortedMostEaten.length ? (
-                  <RankingList>
-                    {previewList(sortedMostEaten).map((sorte, index) => (
-                      <RankingItem key={`${sorte.sortenname}-${index}`}>
-                        <span>{index + 1}. {sorte.sortenname}</span>
-                        <RankingMeta>{sorte.anzahl}x · {formatRating(sorte.bewertung)}★</RankingMeta>
-                      </RankingItem>
-                    ))}
-                  </RankingList>
+                  renderFlavorList(previewList(sortedMostEaten), { category: 'mostEaten', isBestRated: false })
                 ) : (
                   <EmptyState>Noch keine Sorten bewertet.</EmptyState>
                 )}
                 {sortedMostEaten.length > PREVIEW_COUNT && (
-                  <ListToggle onClick={() => openListModal({ title: 'Meistgegessene Eissorten', type: 'flavor', items: sortedMostEaten, isBestRated: false })}>
+                  <ListToggle onClick={() => openListModal({ title: 'Meistgegessene Eissorten', type: 'flavor', items: sortedMostEaten, isBestRated: false, category: 'mostEaten' })}>
                     Alle anzeigen
                   </ListToggle>
                 )}
@@ -436,19 +571,12 @@ function UserSite() {
               <ContentCard>
                 <CardTitle>Best bewertete Eissorten</CardTitle>
                 {sortedBestRated.length ? (
-                  <RankingList>
-                    {previewList(sortedBestRated).map((sorte, index) => (
-                      <RankingItem key={`${sorte.sortenname}-${index}`}>
-                        <span>{index + 1}. {sorte.sortenname}</span>
-                        <RankingMeta>{formatRating(sorte.durchschnitt)}★ · {sorte.anzahl} Bewertungen</RankingMeta>
-                      </RankingItem>
-                    ))}
-                  </RankingList>
+                  renderFlavorList(previewList(sortedBestRated), { category: 'bestRated', isBestRated: true })
                 ) : (
                   <EmptyState>Keine Bewertungen vorhanden.</EmptyState>
                 )}
                 {sortedBestRated.length > PREVIEW_COUNT && (
-                  <ListToggle onClick={() => openListModal({ title: 'Best bewertete Eissorten', type: 'flavor', items: sortedBestRated, isBestRated: true })}>
+                  <ListToggle onClick={() => openListModal({ title: 'Best bewertete Eissorten', type: 'flavor', items: sortedBestRated, isBestRated: true, category: 'bestRated' })}>
                     Alle anzeigen
                   </ListToggle>
                 )}
@@ -536,7 +664,6 @@ function UserSite() {
             </ContentGrid>
           </StatsArea>
 
-          <FeedSection>
             <SectionHeader>
               <h2>Aktivitätsfeed</h2>
               <span>Check-ins, Reviews & Routen</span>
@@ -610,7 +737,6 @@ function UserSite() {
                 </div>
               )}
             </TabContent>
-          </FeedSection>
         </DashboardWrapper>
       </WhiteBackground>
       {listModal && (
@@ -657,14 +783,6 @@ const LoadingCard = styled.div`
   padding: 2rem;
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-`;
-
-const ProfileSection = styled.section`
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-  margin-bottom: 2.5rem;
 `;
 
 const ProfileHeader = styled.div`
@@ -853,15 +971,94 @@ const RankingList = styled.ul`
 
 const RankingItem = styled.li`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: ${(props) => (props.$hasDetail ? 0.5 : 0)}rem;
   border-bottom: 1px solid #f0f0f0;
   padding: 0.65rem 0;
   font-weight: 500;
+  cursor: ${(props) => (props.$clickable ? 'pointer' : 'default')};
+  transition: background 0.2s ease, color 0.2s ease;
 
   &:last-child {
     border-bottom: none;
   }
+
+  &:hover {
+    background: ${(props) => (props.$clickable ? 'rgba(255, 181, 34, 0.08)' : 'transparent')};
+  }
+
+  &:focus-visible {
+    outline: ${(props) => (props.$clickable ? '2px solid #ffb522' : 'none')};
+    outline-offset: 2px;
+  }
+`;
+
+const RankingItemHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+`;
+
+const FlavorDetail = styled.div`
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #eee;
+`;
+
+const FlavorDetailList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const FlavorDetailEntry = styled.li`
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ffb522;
+    outline-offset: 2px;
+  }
+`;
+
+const FlavorDetailHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const FlavorDetailMeta = styled.span`
+  font-size: 0.85rem;
+  color: #777;
+`;
+
+const FlavorDetailSub = styled.div`
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.25rem;
+`;
+
+const FlavorDetailNote = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  color: #777;
 `;
 
 const RankingMeta = styled.span`
@@ -973,13 +1170,6 @@ const ActivityTable = styled.table`
   tbody tr:nth-child(even) {
     background: #fafafa;
   }
-`;
-
-const FeedSection = styled.section`
-  background: #fff;
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
 `;
 
 const FeedTabContainer = styled.div`
