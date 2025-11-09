@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 09. Nov 2025 um 14:15
+-- Erstellungszeit: 09. Nov 2025 um 15:37
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -43,54 +43,6 @@ CREATE TABLE `photo_challenge_matches` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Daten für Tabelle `photo_challenge_matches`
---
-
-INSERT INTO `photo_challenge_matches` (`id`, `challenge_id`, `phase`, `round`, `group_id`, `position`, `image_a_id`, `image_b_id`, `winner_image_id`, `status`, `created_at`, `locked_at`) VALUES
-(43, 1, 'group', 1, 8, 1, 756, 652, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(44, 1, 'group', 1, 8, 2, 756, 752, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(45, 1, 'group', 1, 8, 3, 756, 673, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(46, 1, 'group', 1, 8, 4, 652, 752, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(47, 1, 'group', 1, 8, 5, 652, 673, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(48, 1, 'group', 1, 8, 6, 752, 673, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(49, 1, 'group', 1, 9, 7, 468, 633, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(50, 1, 'group', 1, 9, 8, 468, 764, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(51, 1, 'group', 1, 9, 9, 468, 691, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(52, 1, 'group', 1, 9, 10, 633, 764, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(53, 1, 'group', 1, 9, 11, 633, 691, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(54, 1, 'group', 1, 9, 12, 764, 691, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(55, 1, 'group', 1, 10, 13, 620, 725, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(56, 1, 'group', 1, 10, 14, 620, 736, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(57, 1, 'group', 1, 10, 15, 620, 595, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(58, 1, 'group', 1, 10, 16, 725, 736, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(59, 1, 'group', 1, 10, 17, 725, 595, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(60, 1, 'group', 1, 10, 18, 736, 595, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(61, 1, 'group', 1, 11, 19, 732, 632, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(62, 1, 'group', 1, 11, 20, 732, 717, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(63, 1, 'group', 1, 11, 21, 732, 462, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(64, 1, 'group', 1, 11, 22, 632, 717, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(65, 1, 'group', 1, 11, 23, 632, 462, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(66, 1, 'group', 1, 11, 24, 717, 462, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(67, 1, 'group', 1, 12, 25, 757, 657, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(68, 1, 'group', 1, 12, 26, 757, 753, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(69, 1, 'group', 1, 12, 27, 757, 693, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(70, 1, 'group', 1, 12, 28, 657, 753, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(71, 1, 'group', 1, 12, 29, 657, 693, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(72, 1, 'group', 1, 12, 30, 753, 693, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(73, 1, 'group', 1, 13, 31, 762, 569, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(74, 1, 'group', 1, 13, 32, 762, 759, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(75, 1, 'group', 1, 13, 33, 762, 749, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(76, 1, 'group', 1, 13, 34, 569, 759, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(77, 1, 'group', 1, 13, 35, 569, 749, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(78, 1, 'group', 1, 13, 36, 759, 749, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(79, 1, 'group', 1, 14, 37, 597, 651, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(80, 1, 'group', 1, 14, 38, 597, 630, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(81, 1, 'group', 1, 14, 39, 597, 608, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(82, 1, 'group', 1, 14, 40, 651, 630, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(83, 1, 'group', 1, 14, 41, 651, 608, NULL, 'open', '2025-11-09 10:29:39', NULL),
-(84, 1, 'group', 1, 14, 42, 630, 608, NULL, 'open', '2025-11-09 10:29:39', NULL);
-
---
 -- Indizes der exportierten Tabellen
 --
 
@@ -112,7 +64,7 @@ ALTER TABLE `photo_challenge_matches`
 -- AUTO_INCREMENT für Tabelle `photo_challenge_matches`
 --
 ALTER TABLE `photo_challenge_matches`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints der exportierten Tabellen

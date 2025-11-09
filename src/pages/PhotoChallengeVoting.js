@@ -386,15 +386,9 @@ function PhotoChallengeVoting() {
       <Content>
         <HeroSection>
           <div>
-            <h1>Eis-Fotochallenge</h1>
+            <h1>{overview?.challenge ? (overview.challenge.title) : "Foto-Challenge"}</h1>
             <p>Stimme für deine Lieblingsbilder und hilf mit zu entscheiden, wer weiterkommt.</p>
           </div>
-          {overview?.challenge && (
-            <ChallengeMeta>
-              <span>Challenge: {overview.challenge.title}</span>
-              <span>Status: {overview.challenge.status}</span>
-            </ChallengeMeta>
-          )}
         </HeroSection>
 
         {!isLoggedIn && (
@@ -565,14 +559,6 @@ const HeroSection = styled.header`
     margin: 0.2rem 0 0;
     color: #6a6381;
   }
-`;
-
-const ChallengeMeta = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-weight: 600;
-  color: #895c00;
 `;
 
 const WarningBox = styled.div`

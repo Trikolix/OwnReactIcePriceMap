@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 09. Nov 2025 um 14:15
+-- Erstellungszeit: 09. Nov 2025 um 15:36
 -- Server-Version: 8.0.39-30
 -- PHP-Version: 7.2.34
 
@@ -40,13 +40,6 @@ CREATE TABLE `photo_challenges` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Daten für Tabelle `photo_challenges`
---
-
-INSERT INTO `photo_challenges` (`id`, `title`, `description`, `status`, `group_size`, `start_at`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'Weihnachts-Foto-Challenge', '', 'group_running', 4, '2025-12-01 10:00:00', 1, '2025-11-09 09:44:58', '2025-11-09 10:27:41');
-
---
 -- Indizes der exportierten Tabellen
 --
 
@@ -64,7 +57,7 @@ ALTER TABLE `photo_challenges`
 -- AUTO_INCREMENT für Tabelle `photo_challenges`
 --
 ALTER TABLE `photo_challenges`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

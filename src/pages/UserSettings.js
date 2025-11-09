@@ -12,6 +12,8 @@ const buildAssetUrl = (path) => {
   return `${ASSET_BASE}/${path.replace(/^\/+/, "")}`;
 };
 
+const normalizePath = (value) => (value || "").replace(/^\/+/, "");
+
 function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const { userId } = useUser();
   const [settings, setSettings] = useState({
@@ -28,6 +30,16 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [avatarPreview, setAvatarPreview] = useState(buildAssetUrl(currentAvatar));
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [objectUrl, setObjectUrl] = useState(null);
+  const [presetAvatars, setPresetAvatars] = useState([]);
+  const [selectedPresetId, setSelectedPresetId] = useState(null);
+  const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const selectedPreset = selectedPresetId
+    ? presetAvatars.find((preset) => preset.id === selectedPresetId) || null
+    : null;
+  const normalizedCurrentAvatar = normalizePath(currentAvatar);
+  const normalizedSelectedPresetPath = normalizePath(selectedPreset?.path);
+  const hasPresetChange = !!selectedPreset && normalizedSelectedPresetPath !== normalizedCurrentAvatar;
+  const canResetAvatar = !!avatarFile || removeAvatar || hasPresetChange;
 
   useEffect(() => {
     async function fetchSettings() {
@@ -45,6 +57,25 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   }, [userId]);
 
   useEffect(() => {
+    let ignore = false;
+    async function fetchPresets() {
+      try {
+        const res = await fetch(`${API_BASE}/api/get_preset_avatars.php`);
+        const json = await res.json();
+        if (!ignore && Array.isArray(json.avatars)) {
+          setPresetAvatars(json.avatars);
+        }
+      } catch (e) {
+        console.error("Fehler beim Laden der Comic-Avatare", e);
+      }
+    }
+    fetchPresets();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!avatarFile && !removeAvatar) {
       setAvatarPreview(buildAssetUrl(currentAvatar));
     }
@@ -57,6 +88,24 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       }
     };
   }, [objectUrl]);
+
+  useEffect(() => {
+    if (!presetAvatars.length) return;
+    const normalizedCurrent = normalizePath(currentAvatar);
+    if (!normalizedCurrent) {
+      setSelectedPresetId((prev) => (prev ? null : prev));
+      setShowPresetPicker(false);
+      return;
+    }
+    const match = presetAvatars.find((preset) => normalizePath(preset.path) === normalizedCurrent);
+    if (match) {
+      setSelectedPresetId((prev) => (prev === match.id ? prev : match.id));
+      setShowPresetPicker(true);
+    } else {
+      setSelectedPresetId((prev) => (prev ? null : prev));
+      setShowPresetPicker(false);
+    }
+  }, [currentAvatar, presetAvatars]);
 
   const handleChange = (e) => {
     const { name, checked } = e.target;
@@ -90,6 +139,8 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setAvatarPreview(previewUrl);
     setAvatarFile(file);
     setRemoveAvatar(false);
+    setSelectedPresetId(null);
+    setShowPresetPicker(false);
     setError(null);
     event.target.value = "";
   };
@@ -102,17 +153,52 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setAvatarFile(null);
     setAvatarPreview(null);
     setRemoveAvatar(true);
+    setSelectedPresetId(null);
+    setShowPresetPicker(false);
+    setError(null);
+  };
+
+  const handlePresetSelect = (preset) => {
+    if (!preset) return;
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      setObjectUrl(null);
+    }
+    setAvatarFile(null);
+    setRemoveAvatar(false);
+    setSelectedPresetId(preset.id);
+    setAvatarPreview(buildAssetUrl(preset.path));
+    setError(null);
+    setShowPresetPicker(true);
+  };
+
+  const handleResetAvatarSelection = () => {
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      setObjectUrl(null);
+    }
+    setAvatarFile(null);
+    setRemoveAvatar(false);
+    setSelectedPresetId(null);
+    setAvatarPreview(buildAssetUrl(currentAvatar));
+    setShowPresetPicker(false);
     setError(null);
   };
 
   const persistAvatarChange = async () => {
-    if (!avatarFile && !removeAvatar) return null;
+    const selectedPresetPath = selectedPreset ? selectedPreset.path : null;
+    const normalizedSelectedPreset = normalizePath(selectedPresetPath);
+    const hasPresetChangeForSave = !!selectedPreset && normalizedSelectedPreset !== normalizedCurrentAvatar;
+
+    if (!avatarFile && !removeAvatar && !hasPresetChangeForSave) return null;
     const formData = new FormData();
     formData.append("user_id", userId);
     if (removeAvatar) {
       formData.append("remove_avatar", "1");
     } else if (avatarFile) {
       formData.append("avatar", avatarFile);
+    } else if (hasPresetChangeForSave && selectedPresetPath) {
+      formData.append("preset_avatar", selectedPresetPath);
     }
 
     const res = await fetch(`${API_BASE}/userManagement/update_avatar.php`, {
@@ -177,17 +263,56 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           </AvatarPreviewCircle>
           <AvatarActions>
             <p>Profilbild</p>
-            <FileLabel>
-              <span>Bild auswählen</span>
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarSelect} />
-            </FileLabel>
-            <SmallNote>PNG, JPG oder WebP · max. 5 MB</SmallNote>
+            <FileButtonsRow>
+              <FileLabel>
+                <span>Bild hochladen</span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarSelect} />
+              </FileLabel>
+              <SmallNote>PNG, JPG oder WebP · max. 5 MB</SmallNote>
+              <PresetToggle
+                type="button"
+                onClick={() => setShowPresetPicker((prev) => !prev)}
+                disabled={!presetAvatars.length}
+              >
+                Comic Avatar auswählen
+              </PresetToggle>
+            </FileButtonsRow>
+            
             <InlineButtons>
               <MiniButton type="button" onClick={handleAvatarRemoval} disabled={!avatarPreview && !avatarFile}>
                 Avatar entfernen
               </MiniButton>
+              <ResetButton type="button" onClick={handleResetAvatarSelection} disabled={!canResetAvatar}>
+                Zurücksetzen
+              </ResetButton>
               {avatarFile && <SelectedFile>{avatarFile.name}</SelectedFile>}
             </InlineButtons>
+            {presetAvatars.length > 0 && showPresetPicker && (
+              <PresetSection>
+                <PresetHeader>
+                  <h4>Comic-Avatare</h4>
+                  <PresetInfo>Wähle eine Illustration statt eines eigenen Fotos.</PresetInfo>
+                </PresetHeader>
+                <PresetGrid>
+                  {presetAvatars.map((preset) => {
+                    const presetUrl = buildAssetUrl(preset.path);
+                    const isActive = !avatarFile && !removeAvatar && selectedPresetId === preset.id;
+                    return (
+                      <PresetButton
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handlePresetSelect(preset)}
+                        aria-pressed={isActive}
+                        $selected={isActive}
+                      >
+                        <img src={presetUrl} alt={preset.label} />
+                        <span>{preset.label}</span>
+                      </PresetButton>
+                    );
+                  })}
+                </PresetGrid>
+              </PresetSection>
+            )}
           </AvatarActions>
         </AvatarSection>
         <Divider />
@@ -258,7 +383,16 @@ const ModalBox = styled.div`
   border-radius: 16px;
   min-width: 320px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+
+  @media (max-width: 600px) {
+    width: 90vw;
+    min-width: unset;
+    padding: 1.5rem;
+  }
 `;
 
 const Label = styled.label`
@@ -338,15 +472,55 @@ const AvatarActions = styled.div`
 const FileLabel = styled.label`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: 999px;
   background: #f3f3f3;
   cursor: pointer;
   font-weight: 600;
+  white-space: nowrap;
+  min-width: 160px;
 
   input {
     display: none;
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+  }
+`;
+
+const FileButtonsRow = styled.div`
+  display: flex;
+  align-items: center;
+  align-content: flex-start;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  @media (max-width: 600px) {
+    align-items: stretch;
+  }
+`;
+
+const PresetToggle = styled.button`
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:enabled {
+    background: #d0f0d3;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 `;
 
@@ -377,6 +551,20 @@ const MiniButton = styled.button`
   }
 `;
 
+const ResetButton = styled.button`
+  background: transparent;
+  border: none;
+  color: #1976d2;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+
 const SelectedFile = styled.span`
   font-size: 0.85rem;
   color: #555;
@@ -386,4 +574,64 @@ const Divider = styled.hr`
   border: none;
   border-top: 1px solid #eee;
   margin: 1.5rem 0;
+`;
+
+const PresetSection = styled.div`
+  margin-top: 1.5rem;
+`;
+
+const PresetHeader = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h4 {
+    margin: 0;
+  }
+`;
+
+const PresetInfo = styled.p`
+  margin: 0;
+  font-size: 0.8rem;
+  color: #777;
+`;
+
+const PresetGrid = styled.div`
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 0.75rem;
+`;
+
+const PresetButton = styled.button`
+  border: 2px solid ${({ $selected }) => ($selected ? '#4caf50' : 'transparent')};
+  border-radius: 16px;
+  padding: 0.5rem;
+  background: ${({ $selected }) => ($selected ? 'rgba(76,175,80,0.12)' : '#f9f9f9')};
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: border 0.2s ease, background 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  img {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: white;
+    object-fit: cover;
+  }
+
+  span {
+    font-size: 0.75rem;
+    color: #555;
+    text-align: center;
+  }
 `;

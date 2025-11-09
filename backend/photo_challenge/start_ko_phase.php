@@ -119,6 +119,13 @@ try {
     ");
     $stmtCloseMatches->execute(['challenge_id' => $challengeId]);
 
+    $stmtCloseGroups = $pdo->prepare("
+        UPDATE photo_challenge_groups
+        SET end_at = CURRENT_TIMESTAMP
+        WHERE challenge_id = :challenge_id AND (end_at IS NULL OR end_at > CURRENT_TIMESTAMP)
+    ");
+    $stmtCloseGroups->execute(['challenge_id' => $challengeId]);
+
     deleteChallengeStructure($pdo, $challengeId, true);
 
     $insertMatch = $pdo->prepare("
