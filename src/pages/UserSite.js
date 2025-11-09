@@ -13,6 +13,10 @@ import UserSettings from './UserSettings';
 const ASSET_BASE = (process.env.REACT_APP_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 const TRAVEL_COLORS = ["#ffb522", "#ff8a00", "#ff595e", "#8ac926", "#33658a", "#6a4c93", "#1982c4", "#6f2dbd"];
 const buildAssetUrl = (path) => (path ? `${ASSET_BASE}/${path.replace(/^\/+/, "")}` : null);
+const toNumberOrDefault = (value, defaultValue = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+};
 
 function UserSite() {
   const { userId: userIdFromUrl } = useParams();
@@ -92,6 +96,20 @@ function UserSite() {
   const displayedReviews = reviews.slice(0, reviewPage * 5);
   const displayedAwards = awards.slice(0, awardPage * 6);
   const displayedRoutes = routes.slice(0, routePage * 5);
+  const fallbackImageCount = React.useMemo(() => {
+    const checkinImages = checkins.reduce((sum, checkin) => sum + (checkin?.bilder?.length || 0), 0);
+    const reviewImages = reviews.reduce((sum, review) => sum + (review?.bilder?.length || 0), 0);
+    return checkinImages + reviewImages;
+  }, [checkins, reviews]);
+  const fallbackCommentCount = React.useMemo(() => {
+    const checkinComments = checkins.reduce((sum, checkin) => sum + (Number(checkin?.commentCount) || 0), 0);
+    const reviewComments = reviews.reduce((sum, review) => sum + (Number(review?.commentCount) || 0), 0);
+    return checkinComments + reviewComments;
+  }, [checkins, reviews]);
+  const reviewCount = data?.review_count != null ? toNumberOrDefault(data.review_count, 0) : reviews.length;
+  const imageCount = data?.image_count != null ? toNumberOrDefault(data.image_count, 0) : fallbackImageCount;
+  const routeCount = data?.route_count != null ? toNumberOrDefault(data.route_count, 0) : routes.length;
+  const commentCount = data?.comment_count != null ? toNumberOrDefault(data.comment_count, 0) : fallbackCommentCount;
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
   const portionBreakdown = [
     { key: 'Kugel', label: 'Kugeleis', value: Number(data?.eisarten?.Kugel || 0) },
@@ -452,6 +470,10 @@ function UserSite() {
                   <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
                   <Chip>{data.eisdielen_besucht} verschiedene Eisdielen</Chip>
                   <Chip>{data.anzahl_checkins} Check-ins</Chip>
+                  <Chip>{reviewCount} Reviews</Chip>
+                  <Chip>{imageCount} hochgeladene Bilder</Chip>
+                  <Chip>{routeCount} Routen</Chip>
+                  <Chip>{commentCount} Kommentare</Chip>
                 </MetaRow>
               </ProfileInfo>
               {isOwnProfile && (

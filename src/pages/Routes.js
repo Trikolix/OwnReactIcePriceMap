@@ -16,7 +16,7 @@ const SORT_OPTIONS = [
   { value: 'shops_desc', label: 'Meiste Eisdielen' },
   { value: 'shops_asc', label: 'Wenigste Eisdielen' },
 ];
-const PAGE_BG = '#f4f6fb';
+const PAGE_BG = 'ffffff';
 const CARD_BG = '#ffffff';
 const PANEL_BG = '#fffdfa';
 const BORDER = '#ebe9f5';
@@ -33,6 +33,7 @@ const RoutesPage = () => {
   const [error, setError] = useState(null);
   const [refreshToken, setRefreshToken] = useState(0);
   const [sortOption, setSortOption] = useState('newest');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     types: [],
@@ -141,14 +142,16 @@ const RoutesPage = () => {
     });
   };
 
-  const hasActiveFilters = useMemo(() => {
-    return Object.values(filters).some((value) => {
+  const activeFilterCount = useMemo(() => {
+    return Object.values(filters).reduce((sum, value) => {
       if (Array.isArray(value)) {
-        return value.length > 0;
+        return sum + value.length;
       }
-      return value !== '';
-    });
+      return value !== '' ? sum + 1 : sum;
+    }, 0);
   }, [filters]);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const handleRouteUpdated = useCallback(() => {
     setRefreshToken((token) => token + 1);
@@ -215,116 +218,145 @@ const RoutesPage = () => {
           <p>Stöbere durch alle öffentlichen Routen und deine privaten Strecken. Verfeinere die Liste mit den Filtern und finde genau die Tour, die du heute fahren möchtest.</p>
         </TitleSection>
 
-        <FiltersPanel>
-          <FilterColumn>
-            <FilterLabel htmlFor="routes-search">Suche</FilterLabel>
-            <FilterInput
-              id="routes-search"
-              type="text"
-              placeholder="Name oder Beschreibung"
-              value={filters.search}
-              onChange={handleInputChange('search')}
-            />
-          </FilterColumn>
+        <FiltersToggleBar>
+          <ToggleFiltersButton
+            type="button"
+            onClick={() => setFiltersExpanded((prev) => !prev)}
+            aria-expanded={filtersExpanded}
+          >
+            <span>Suche & Filter</span>
+            <ChevronIcon $expanded={filtersExpanded} aria-hidden="true" />
+          </ToggleFiltersButton>
+          <ToggleBarMeta>
+            {hasActiveFilters && (
+              <ActiveFiltersBadge>
+                {activeFilterCount} aktiv
+              </ActiveFiltersBadge>
+            )}
+            {!filtersExpanded && (
+              <CollapsedResetButton
+                type="button"
+                onClick={resetFilters}
+                disabled={!hasActiveFilters}
+              >
+                Zurücksetzen
+              </CollapsedResetButton>
+            )}
+          </ToggleBarMeta>
+        </FiltersToggleBar>
 
-          <FilterColumn>
-            <FilterLabel>Routentyp</FilterLabel>
-            <FilterChips>
-              {ROUTE_TYPES.map((type) => (
-                <FilterChip
-                  key={type}
-                  type="button"
-                  $active={filters.types.includes(type)}
-                  onClick={() => toggleFilterValue('types', type)}
-                >
-                  {type}
-                </FilterChip>
-              ))}
-            </FilterChips>
-          </FilterColumn>
+        {filtersExpanded && (
+          <FiltersPanel>
+            <FilterColumn>
+              <FilterLabel htmlFor="routes-search">Suche</FilterLabel>
+              <FilterInput
+                id="routes-search"
+                type="text"
+                placeholder="Name oder Beschreibung"
+                value={filters.search}
+                onChange={handleInputChange('search')}
+              />
+            </FilterColumn>
 
-          <FilterColumn>
-            <FilterLabel>Schwierigkeit</FilterLabel>
-            <FilterChips>
-              {DIFFICULTIES.map((level) => (
-                <FilterChip
-                  key={level}
-                  type="button"
-                  $active={filters.difficulties.includes(level)}
-                  onClick={() => toggleFilterValue('difficulties', level)}
-                >
-                  {level}
-                </FilterChip>
-              ))}
-            </FilterChips>
-          </FilterColumn>
+            <FilterColumn>
+              <FilterLabel>Routentyp</FilterLabel>
+              <FilterChips>
+                {ROUTE_TYPES.map((type) => (
+                  <FilterChip
+                    key={type}
+                    type="button"
+                    $active={filters.types.includes(type)}
+                    onClick={() => toggleFilterValue('types', type)}
+                  >
+                    {type}
+                  </FilterChip>
+                ))}
+              </FilterChips>
+            </FilterColumn>
 
-          <FilterColumn>
-            <FilterLabel>Länge (km)</FilterLabel>
-            <RangeInputs>
-              <FilterInput
-                type="number"
-                min="0"
-                placeholder="Min"
-                value={filters.minLength}
-                onChange={handleInputChange('minLength')}
-              />
-              <FilterInput
-                type="number"
-                min="0"
-                placeholder="Max"
-                value={filters.maxLength}
-                onChange={handleInputChange('maxLength')}
-              />
-            </RangeInputs>
-          </FilterColumn>
+            <FilterColumn>
+              <FilterLabel>Schwierigkeit</FilterLabel>
+              <FilterChips>
+                {DIFFICULTIES.map((level) => (
+                  <FilterChip
+                    key={level}
+                    type="button"
+                    $active={filters.difficulties.includes(level)}
+                    onClick={() => toggleFilterValue('difficulties', level)}
+                  >
+                    {level}
+                  </FilterChip>
+                ))}
+              </FilterChips>
+            </FilterColumn>
 
-          <FilterColumn>
-            <FilterLabel>Höhenmeter</FilterLabel>
-            <RangeInputs>
-              <FilterInput
-                type="number"
-                min="0"
-                placeholder="Min"
-                value={filters.minElevation}
-                onChange={handleInputChange('minElevation')}
-              />
-              <FilterInput
-                type="number"
-                min="0"
-                placeholder="Max"
-                value={filters.maxElevation}
-                onChange={handleInputChange('maxElevation')}
-              />
-            </RangeInputs>
-          </FilterColumn>
+            <FilterColumn>
+              <FilterLabel>Länge (km)</FilterLabel>
+              <RangeInputs>
+                <FilterInput
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  value={filters.minLength}
+                  onChange={handleInputChange('minLength')}
+                />
+                <FilterInput
+                  type="number"
+                  min="0"
+                  placeholder="Max"
+                  value={filters.maxLength}
+                  onChange={handleInputChange('maxLength')}
+                />
+              </RangeInputs>
+            </FilterColumn>
 
-          <FilterColumn>
-            <FilterLabel>Anzahl Eisdielen</FilterLabel>
-            <RangeInputs>
-              <FilterInput
-                type="number"
-                min="0"
-                placeholder="Min"
-                value={filters.minShops}
-                onChange={handleInputChange('minShops')}
-              />
-              <FilterInput
-                type="number"
-                min="0"
-                placeholder="Max"
-                value={filters.maxShops}
-                onChange={handleInputChange('maxShops')}
-              />
-            </RangeInputs>
-          </FilterColumn>
+            <FilterColumn>
+              <FilterLabel>Höhenmeter</FilterLabel>
+              <RangeInputs>
+                <FilterInput
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  value={filters.minElevation}
+                  onChange={handleInputChange('minElevation')}
+                />
+                <FilterInput
+                  type="number"
+                  min="0"
+                  placeholder="Max"
+                  value={filters.maxElevation}
+                  onChange={handleInputChange('maxElevation')}
+                />
+              </RangeInputs>
+            </FilterColumn>
 
-          <ActionsColumn>
-            <ResetButton type="button" onClick={resetFilters} disabled={!hasActiveFilters}>
-              Filter zurücksetzen
-            </ResetButton>
-          </ActionsColumn>
-        </FiltersPanel>
+            <FilterColumn>
+              <FilterLabel>Anzahl Eisdielen</FilterLabel>
+              <RangeInputs>
+                <FilterInput
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  value={filters.minShops}
+                  onChange={handleInputChange('minShops')}
+                />
+                <FilterInput
+                  type="number"
+                  min="0"
+                  placeholder="Max"
+                  value={filters.maxShops}
+                  onChange={handleInputChange('maxShops')}
+                />
+              </RangeInputs>
+            </FilterColumn>
+
+            <ActionsColumn>
+              <ResetButton type="button" onClick={resetFilters} disabled={!hasActiveFilters}>
+                Filter zurücksetzen
+              </ResetButton>
+            </ActionsColumn>
+          </FiltersPanel>
+        )}
 
         <ResultsBar>
           <ResultsInfo>
@@ -380,7 +412,7 @@ const PageWrapper = styled.div`
 const Content = styled.main`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 48px 16px 48px;
+  padding: 1rem;
 `;
 
 const TitleSection = styled.section`
@@ -396,6 +428,72 @@ const TitleSection = styled.section`
     margin: 0;
     color: ${TEXT_MUTED};
   }
+`;
+
+const FiltersToggleBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+`;
+
+const ToggleFiltersButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid ${BORDER};
+  background: ${CARD_BG};
+  font-weight: 600;
+  color: #2c2c54;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus-visible {
+    outline: none;
+    border-color: ${ACCENT};
+    box-shadow: 0 0 0 3px rgba(255, 181, 34, 0.25);
+  }
+`;
+
+const ChevronIcon = styled.span`
+  border-style: solid;
+  border-width: 0 2px 2px 0;
+  border-color: currentColor;
+  display: inline-block;
+  padding: 4px;
+  transform: ${({ $expanded }) => ($expanded ? 'rotate(-135deg)' : 'rotate(45deg)')};
+  transition: transform 0.2s ease;
+`;
+
+const ToggleBarMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
+const ActiveFiltersBadge = styled.span`
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: ${ACCENT_SOFT};
+  color: ${ACCENT_DARK};
+  font-size: 0.85rem;
+  font-weight: 600;
+`;
+
+const CollapsedResetButton = styled.button`
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background: ${({ disabled }) => (disabled ? '#f4e9d4' : ACCENT)};
+  color: ${({ disabled }) => (disabled ? '#a38f6b' : '#fff')};
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s ease;
 `;
 
 const FiltersPanel = styled.section`

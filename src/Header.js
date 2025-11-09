@@ -229,6 +229,7 @@ const Header = ({ refreshShops }) => {
                 {canAccessChallenges(userId) && (<MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>)}
 
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
+                {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
                 <MenuItem onClick={() => { logout(); setMenuOpen(false); }} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (

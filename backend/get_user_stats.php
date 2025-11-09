@@ -187,6 +187,16 @@ try {
     $stats["reviews"] = $reviews; // Reviews hinzufügen
     $stats["routen"] = $routen; // Routen hinzufügen
     $stats["level_info"] = $levelInfo; // Level Info hinzufügen
+    $stats["review_count"] = count($reviews);
+    $stats["route_count"] = count($routen);
+    
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM bilder WHERE nutzer_id = ?");
+    $stmt->execute([$nutzerId]);
+    $stats["image_count"] = (int)$stmt->fetchColumn();
+    
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE nutzer_id = ?");
+    $stmt->execute([$nutzerId]);
+    $stats["comment_count"] = (int)$stmt->fetchColumn();
 
     echo json_encode($stats);
 
