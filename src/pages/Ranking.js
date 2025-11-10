@@ -28,12 +28,83 @@ const Ranking = () => {
     const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'finaler_softeis_score', direction: 'descending' });
     const [sortConfigEisbecher, setSortConfigEisbehcer] = useState({ key: 'finaler_eisbecher_score', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
+    const [activeTab, setActiveTab] = useState('kugel');
     const [searchTerm, setSearchTerm] = useState('');
     const [distanceFilter, setDistanceFilter] = useState('any');
     const [ratingScope, setRatingScope] = useState('global');
     const [locationStatus, setLocationStatus] = useState(userPosition ? 'available' : 'idle');
     const [locationError, setLocationError] = useState(null);
+    const [attributeOptions, setAttributeOptions] = useState([]);
+    const [selectedAttributes, setSelectedAttributes] = useState([]);
+    const [eisdieleAttributes, setEisdieleAttributes] = useState({});
+    const [showAttributeFilters, setShowAttributeFilters] = useState(false);
+    const [attributeCountsByTab, setAttributeCountsByTab] = useState({
+        kugel: {},
+        softeis: {},
+        eisbecher: {}
+    });
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+    const syncAttributeFilters = React.useCallback((datasetsByTab) => {
+        const attributeMap = {};
+        const attributeOptionsMap = new Map();
+        const countsByTab = {
+            kugel: {},
+            softeis: {},
+            eisbecher: {}
+        };
+
+        Object.entries(datasetsByTab).forEach(([tabKey, items = []]) => {
+            const tabCounts = {};
+
+            items.forEach((item) => {
+                const eisdieleId = Number(item.eisdiele_id);
+                const attributes = Array.isArray(item.attributes) ? item.attributes : [];
+
+                if (!attributes.length || Number.isNaN(eisdieleId)) {
+                    return;
+                }
+
+                if (!attributeMap[eisdieleId]) {
+                    attributeMap[eisdieleId] = new Set();
+                }
+
+                attributes.forEach((attribute) => {
+                    const attributeId = Number(attribute.id);
+                    if (Number.isNaN(attributeId)) {
+                        return;
+                    }
+                    const attributeCount = Number(attribute.anzahl) || 0;
+                    attributeMap[eisdieleId].add(attributeId);
+                    const existingEntry = attributeOptionsMap.get(attributeId);
+                    attributeOptionsMap.set(attributeId, {
+                        id: attributeId,
+                        name: attribute.name,
+                        count: (existingEntry?.count || 0) + attributeCount
+                    });
+                    tabCounts[attributeId] = (tabCounts[attributeId] || 0) + attributeCount;
+                });
+            });
+
+            countsByTab[tabKey] = tabCounts;
+        });
+
+        const attributeOptionsSorted = Array.from(attributeOptionsMap.values()).sort((a, b) =>
+            a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })
+        );
+        const validAttributeIds = new Set(attributeOptionsSorted.map((option) => option.id));
+
+        setEisdieleAttributes(attributeMap);
+        setAttributeOptions(attributeOptionsSorted);
+        setAttributeCountsByTab(countsByTab);
+        setSelectedAttributes((prev) => {
+            if (prev.length === 0) {
+                return prev;
+            }
+            const filtered = prev.filter((id) => validAttributeIds.has(id));
+            return filtered.length === prev.length ? prev : filtered;
+        });
+    }, []);
 
     useEffect(() => {
         if (userPosition) {
@@ -111,13 +182,18 @@ const Ranking = () => {
                 setEisdielenKugel(dataKugel);
                 setEisdielenSofteis(dataSofteis);
                 setEisdielenEisbecher(dataEisbecher);
+                syncAttributeFilters({
+                    kugel: dataKugel,
+                    softeis: dataSofteis,
+                    eisbecher: dataEisbecher
+                });
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
         };
 
         fetchData();
-    }, [apiUrl, ratingScope, userId]);
+    }, [apiUrl, ratingScope, userId, syncAttributeFilters]);
 
     const sortTableKugel = (key) => {
         let direction = 'descending';
@@ -161,6 +237,58 @@ const Ranking = () => {
         setRatingScope(value);
     };
 
+    const handleAttributeToggle = (attributeId) => {
+        setSelectedAttributes((prev) => {
+            if (prev.includes(attributeId)) {
+                return prev.filter((id) => id !== attributeId);
+            }
+            return [...prev, attributeId];
+        });
+    };
+
+    const clearAttributeFilter = () => {
+        setSelectedAttributes([]);
+    };
+
+    const activeAttributeCounts = React.useMemo(() => {
+        return attributeCountsByTab[activeTab] || {};
+    }, [attributeCountsByTab, activeTab]);
+
+    const displayedAttributeOptions = React.useMemo(() => {
+        return attributeOptions
+            .filter((option) => {
+                const count = activeAttributeCounts[option.id] || 0;
+                return count > 0 || selectedAttributes.includes(option.id);
+            })
+            .sort((a, b) => {
+                const countA = activeAttributeCounts[a.id] || 0;
+                const countB = activeAttributeCounts[b.id] || 0;
+                if (countA !== countB) {
+                    return countB - countA;
+                }
+                return a.name.localeCompare(b.name, 'de', { sensitivity: 'base' });
+            });
+    }, [attributeOptions, activeAttributeCounts, selectedAttributes]);
+
+    const renderAttributeSummary = (attributes) => {
+        if (!Array.isArray(attributes) || attributes.length === 0) {
+            return null;
+        }
+        return (
+            <AttributeSummary>
+                <strong>Beliebte Attribute aus Reviews:</strong>
+                <AttributeBadges>
+                    {attributes.map((attribute) => (
+                        <AttributeBadge key={`${attribute.id}-${attribute.name}`}>
+                            <span>{attribute.name}</span>
+                            <em>{attribute.anzahl || 0}×</em>
+                        </AttributeBadge>
+                    ))}
+                </AttributeBadges>
+            </AttributeSummary>
+        );
+    };
+
     const applyFiltersAndSort = (items, sortConfig) => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const maxDistance = distanceFilter !== 'any' ? parseFloat(distanceFilter) : null;
@@ -179,7 +307,12 @@ const Ranking = () => {
             const itemName = (item.name || '').toLowerCase();
             const matchesSearch = normalizedSearch === '' || itemName.includes(normalizedSearch);
             const matchesDistance = maxDistance === null || (item.distanceKm !== null && item.distanceKm <= maxDistance);
-            return matchesSearch && matchesDistance;
+            const eisdieleId = Number(item.eisdiele_id);
+            const itemAttributes = eisdieleAttributes[eisdieleId];
+            const matchesAttributes =
+                selectedAttributes.length === 0 ||
+                (itemAttributes && selectedAttributes.every((attrId) => itemAttributes.has(attrId)));
+            return matchesSearch && matchesDistance && matchesAttributes;
         });
 
         if (sortConfig.key === null) {
@@ -217,22 +350,19 @@ const Ranking = () => {
 
     const sortedEisdielenKugel = React.useMemo(() => {
         return applyFiltersAndSort(eisdielenKugel, sortConfigKugel);
-    }, [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition]);
+    }, [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes]);
 
     const sortedEisdielenSofteis = React.useMemo(() => {
         return applyFiltersAndSort(eisdielenSofteis, sortConfigSofteis);
-    }, [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition]);
+    }, [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes]);
 
     const sortedEisdielenEisbecher = React.useMemo(() => {
         return applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher);
-    }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition]);
+    }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes]);
 
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
     };
-
-    // Add tabs for displaying Kugeleis-Rating and Softeis-Rating
-    const [activeTab, setActiveTab] = useState('kugel');
 
     return (
         <>
@@ -299,6 +429,41 @@ const Ranking = () => {
                             </FilterSelect>
                         </FilterGroup>
                     </FiltersRow>
+                    {attributeOptions.length > 0 && (
+                        <AttributeFilterSection>
+                            <AttributeToggleButton
+                                type="button"
+                                onClick={() => setShowAttributeFilters((prev) => !prev)}
+                            >
+                                {showAttributeFilters ? 'Attribute-Filter verbergen' : 'Attribute-Filter anzeigen'}
+                            </AttributeToggleButton>
+                            {showAttributeFilters && (
+                                <AttributeFilterWrapper>
+                                    <FilterLabel as="div">Attribute</FilterLabel>
+                                    <AttributeFilterContainer>
+                                        {displayedAttributeOptions.map((attribute) => {
+                                            const count = activeAttributeCounts[attribute.id] || 0;
+                                            return (
+                                            <AttributePill
+                                                key={attribute.id}
+                                                type="button"
+                                                $active={selectedAttributes.includes(attribute.id)}
+                                                onClick={() => handleAttributeToggle(attribute.id)}
+                                            >
+                                                {attribute.name} ({count})
+                                            </AttributePill>
+                                        );
+                                        })}
+                                    </AttributeFilterContainer>
+                                    {selectedAttributes.length > 0 && (
+                                        <ClearFilterButton type="button" onClick={clearAttributeFilter}>
+                                            Filter zurücksetzen
+                                        </ClearFilterButton>
+                                    )}
+                                </AttributeFilterWrapper>
+                            )}
+                        </AttributeFilterSection>
+                    )}
                     {!userPosition && (
                         <LocationHint>
                             <span>Teile deinen Standort, um Entfernungen anzeigen und filtern zu können.</span>
@@ -375,6 +540,7 @@ const Ranking = () => {
                                                         {time}<br />
                                                     </React.Fragment>
                                                 ))}
+                                                {renderAttributeSummary(eisdiele.attributes)}
                                             </DetailsContainer>
                                         </td>
                                     </DetailsRow>
@@ -506,6 +672,7 @@ const Ranking = () => {
                                                             {time}<br />
                                                         </React.Fragment>
                                                     ))}
+                                                    {renderAttributeSummary(eisdiele.attributes)}
                                                 </DetailsContainer>
                                             </td>
                                         </DetailsRow>
@@ -623,6 +790,7 @@ const Ranking = () => {
                                                             {time}<br />
                                                         </React.Fragment>
                                                     ))}
+                                                    {renderAttributeSummary(eisdiele.attributes)}
                                                 </DetailsContainer>
                                             </td>
                                         </DetailsRow>
@@ -749,8 +917,8 @@ const DetailsRow = styled.tr`
 
 const DetailsContainer = styled.div`
   text-align: left;
-  background-color: #e9f5ff;
-  border: 1px solid #b3d9ff;
+  background-color: #fffae9ff;
+  border: 1px solid #fff1b3ff;
   border-radius: 4px;
   padding: 1rem;
   h3 {
@@ -815,6 +983,103 @@ const FilterSelect = styled.select`
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 0.95rem;
+`;
+
+const AttributeFilterSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+`;
+
+const AttributeToggleButton = styled.button`
+  padding: 0.4rem 1.2rem;
+  border: 1px solid #ffb522;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #a36100;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #fff4d9;
+  }
+`;
+
+const AttributeFilterWrapper = styled.div`
+  width: 100%;
+  padding: 0 1rem;
+`;
+
+const AttributeFilterContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+`;
+
+const AttributePill = styled.button`
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid ${(props) => (props.$active ? '#ffb522' : '#ccc')};
+  background-color: ${(props) => (props.$active ? '#fff4d9' : '#fff')};
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+
+  &:hover {
+    border-color: #ffb522;
+  }
+`;
+
+const ClearFilterButton = styled.button`
+  margin-top: 0.5rem;
+  border: none;
+  background: none;
+  color: #0066cc;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  text-decoration: underline;
+
+  &:hover {
+    color: #004999;
+  }
+`;
+
+const AttributeSummary = styled.div`
+  margin-top: 0.75rem;
+  strong {
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+`;
+
+const AttributeBadges = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+`;
+
+const AttributeBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background-color: #ffd480;
+  border: 1px solid #ffb522;
+  font-size: 0.85rem;
+  color: #7a0900;;
+
+  em {
+    font-style: normal;
+    color: #710000;
+    font-weight: 600;
+  }
 `;
 
 const FilterHint = styled.p`

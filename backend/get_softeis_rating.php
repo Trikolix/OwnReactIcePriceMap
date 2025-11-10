@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/attribute.php';
 
 $nutzerId = null;
 if (isset($_GET['nutzer_id'])) {
@@ -93,6 +94,13 @@ if ($nutzerId !== null) {
 }
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$attributeMap = getReviewAttributesForEisdielen($pdo, array_column($eisdielen, 'eisdiele_id'));
+foreach ($eisdielen as &$eisdiele) {
+    $shopId = (int)$eisdiele['eisdiele_id'];
+    $eisdiele['attributes'] = $attributeMap[$shopId] ?? [];
+}
+unset($eisdiele);
 
 // JSON-Ausgabe
 echo json_encode($eisdielen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

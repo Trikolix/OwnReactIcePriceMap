@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
+require_once  __DIR__ . '/lib/attribute.php';
 
 // Eisdiele-ID aus Anfrage holen
 $eisdiele_id = isset($_GET['eisdiele_id']) ? intval($_GET['eisdiele_id']) : 0;
@@ -107,17 +108,8 @@ $stmt->execute();
 $score = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // 5. Attribute mit Häufigkeit abrufen
-$stmt = $pdo->prepare("
-    SELECT a.name, COUNT(*) as anzahl
-    FROM bewertung_attribute ba
-    JOIN attribute a ON ba.attribut_id = a.id
-    JOIN bewertungen b ON ba.bewertung_id = b.id
-    WHERE b.eisdiele_id = ?
-    GROUP BY a.id, a.name
-    ORDER BY anzahl DESC
-");
-$stmt->execute([$eisdiele_id]);
-$attribute = $stmt->fetchAll();
+$attributeMap = getReviewAttributesForEisdielen($pdo, [$eisdiele_id]);
+$attribute = $attributeMap[$eisdiele_id] ?? [];
 
 // 6. Alle Reviews holen
 $reviews = getReviewsByEisdieleId($pdo, $eisdiele_id);
