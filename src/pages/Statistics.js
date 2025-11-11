@@ -173,7 +173,7 @@ function Statistics() {
   }, [normalizedSearch, priceHierarchy]);
 
   const formatCurrencyValue = (value, symbol = '€') => {
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined || value === '0.00') {
       return '';
     }
     const num = Number(value);
@@ -277,8 +277,8 @@ function Statistics() {
                 <thead>
                   <tr>
                     <Th>Region</Th>
-                    <Th>Anzahl Preismeldungen</Th>
                     <Th>Ø Kugelpreis (€)</Th>
+                    <Th>Anzahl Preismeldungen</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -310,8 +310,8 @@ function Statistics() {
                                 <span>{land.name}</span>
                               </NameWrapper>
                             </PriceNameCell>
-                            <Td>{land.anzahl_eisdielen}</Td>
                             <Td>{formatPriceDisplay(land)}</Td>
+                            <Td>{land.anzahl_eisdielen}</Td>
                           </PriceTableRow>
 
                           {landExpanded && bundeslaender.map((bundesland) => {
@@ -342,8 +342,8 @@ function Statistics() {
                                       <span>{bundesland.name}</span>
                                     </NameWrapper>
                                   </PriceNameCell>
-                                  <Td>{bundesland.anzahl_eisdielen}</Td>
                                   <Td>{formatPriceDisplay(bundesland)}</Td>
+                                  <Td>{bundesland.anzahl_eisdielen}</Td>
                                 </PriceTableRow>
 
                                 {bundeslandExpanded && landkreise.map((landkreis) => (
@@ -356,8 +356,8 @@ function Statistics() {
                                         <span>{landkreis.name}</span>
                                       </NameWrapper>
                                     </PriceNameCell>
-                                    <Td>{landkreis.anzahl_eisdielen}</Td>
                                     <Td>{formatPriceDisplay(landkreis)}</Td>
+                                    <Td>{landkreis.anzahl_eisdielen}</Td>
                                   </PriceTableRow>
                                 ))}
                               </React.Fragment>
@@ -496,6 +496,9 @@ const Title = styled.h2`
 
 const Table = styled.table`
   width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
   border-collapse: collapse;
 `;
 
@@ -598,7 +601,7 @@ const CleanLink = styled(Link)`
 
 const SearchContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   margin-bottom: 0.75rem;
 `;
 
