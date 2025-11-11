@@ -868,7 +868,6 @@ const SettingsButton = styled.button`
   font-size: 1rem;
   cursor: pointer;
   font-weight: bold;
-  box-shadow: 0 10px 20px rgba(255, 181, 34, 0.35);
   &:hover {
     background: #da9c20;
   }
@@ -1196,9 +1195,10 @@ const ActivityTable = styled.table`
 
 const FeedTabContainer = styled.div`
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  justify-content: center;
 `;
 
 const FeedTabButton = styled.button`

@@ -65,6 +65,7 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
             $route['eisdiele_id'] = $route['eisdielen'][0]['id'];
             $route['eisdiele_name'] = $route['eisdielen'][0]['name'];
         }
+        $route['commentCount'] = getCommentCountForRoute($pdo, $routeId);
         $activities[] = [
             'typ'  => 'route',
             'id'   => $route['id'],

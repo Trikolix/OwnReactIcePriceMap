@@ -33,6 +33,7 @@ foreach ($routen as &$route) {
         $route['eisdiele_id'] = $route['eisdielen'][0]['id'];
         $route['eisdiele_name'] = $route['eisdielen'][0]['name'];
     }
+    $route['commentCount'] = getCommentCountForRoute($pdo, $rid);
 }
 
 echo json_encode($routen);

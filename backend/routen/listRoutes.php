@@ -136,6 +136,7 @@ try {
     foreach ($routes as &$route) {
         $rid = (int)$route['id'];
         $route['eisdielen'] = $shopMap[$rid] ?? [];
+        $route['commentCount'] = getCommentCountForRoute($pdo, $rid);
     }
 
     echo json_encode([

@@ -68,6 +68,7 @@ try {
             $preiseProLandkreis[$lk][] = [
                 'local' => (float)$eintrag['kugel_preis'],
                 'eur' => $eintrag['kugel_preis_eur'] !== null ? (float)$eintrag['kugel_preis_eur'] : null,
+                'waehrung_code' => null, // wird später gesetzt
             ];
         }
     }
@@ -104,19 +105,34 @@ try {
             continue;
         }
 
-        $sumLocal = 0;
-        $sumEur = 0;
+        // Filter für lokale Währung
+        $waehrungCode = $row['waehrung_code'];
+        $preiseLocal = [];
+        $preiseEur = [];
         foreach ($preise as $preis) {
-            if (isset($preis['local'])) {
-                $sumLocal += $preis['local'];
+            // Wenn die lokale Währung nicht EUR ist, nur Preise in Landeswährung zählen
+            if ($waehrungCode !== 'EUR') {
+                // Preis in EUR ignorieren, wenn original nicht in Landeswährung
+                if ($preis['local'] !== $preis['eur']) {
+                    $preiseLocal[] = $preis['local'];
+                }
+            } else {
+                // Für EUR-Länder alle Preise nehmen
+                $preiseLocal[] = $preis['local'];
             }
-            if (isset($preis['eur'])) {
-                $sumEur += $preis['eur'];
+            // Für EUR-Durchschnitt immer nehmen
+            if ($preis['eur'] !== null) {
+                $preiseEur[] = $preis['eur'];
             }
         }
 
-        $durchschnittLocal = $anzahlEisdielen > 0 ? round($sumLocal / $anzahlEisdielen, 2) : null;
-        $durchschnittEur = $anzahlEisdielen > 0 ? round($sumEur / $anzahlEisdielen, 2) : null;
+        $anzahlLocal = count($preiseLocal);
+        $anzahlEur = count($preiseEur);
+        $sumLocal = array_sum($preiseLocal);
+        $sumEur = array_sum($preiseEur);
+
+        $durchschnittLocal = $anzahlLocal > 0 ? round($sumLocal / $anzahlLocal, 2) : null;
+        $durchschnittEur = $anzahlEur > 0 ? round($sumEur / $anzahlEur, 2) : null;
 
         // Land initialisieren
         if (!isset($struktur[$landId])) {

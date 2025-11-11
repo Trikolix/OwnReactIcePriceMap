@@ -152,12 +152,12 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
           <EmbedWrapper dangerouslySetInnerHTML={{ __html: route.embed_code }} />
         )}
         <CommentToggle
-                title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-                onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-              >
-                💬 {route.commentCount || 0} Kommentar(e)
-              </CommentToggle>
-              {areCommentsVisible && <CommentSection routeId={route.id} type="route" />}
+          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+        >
+          💬 {route.commentCount || 0} Kommentar(e)
+        </CommentToggle>
+        {areCommentsVisible && <CommentSection routeId={route.id} type="route" />}
       </StyledCard>
 
       {showEditModal && (
