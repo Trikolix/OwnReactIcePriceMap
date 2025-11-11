@@ -45,7 +45,7 @@ const formatCreatedAt = (value) => {
   return `${datePart} • ${timePart}`;
 };
 
-const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = true }) => {
+const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEmbed, setShowEmbed] = useState(false);
   const { userId } = useUser();
@@ -67,6 +67,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = true }) 
   const isPrivate = String(route.ist_oeffentlich) !== "1";
   const hasEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
   const eisdielenCount = routeShops.length;
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
   const toggleEmbed = () => setShowEmbed((prev) => !prev);
 
@@ -150,8 +151,13 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = true }) 
         {showEmbed && hasEmbed && (
           <EmbedWrapper dangerouslySetInnerHTML={{ __html: route.embed_code }} />
         )}
-
-        {showComments && <CommentSection routeId={route.id} type="route" />}
+        <CommentToggle
+                title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+                onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+              >
+                💬 {route.commentCount || 0} Kommentar(e)
+              </CommentToggle>
+              {areCommentsVisible && <CommentSection routeId={route.id} type="route" />}
       </StyledCard>
 
       {showEditModal && (
@@ -352,4 +358,19 @@ const DateText = styled.time`
   display: flex;
   align-items: center;
   gap: 0.25rem;
+`;
+
+export const CommentToggle = styled.button`
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #ffb522;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.25rem 0;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
