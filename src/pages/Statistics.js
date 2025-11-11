@@ -1,8 +1,51 @@
 import Header from './../Header';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { Link, useSearchParams } from 'react-router-dom';
 import UserAvatar from './../components/UserAvatar';
+
+const getNumericPrice = (node) => {
+  if (!node) {
+    return null;
+  }
+  const value = node.kugel_preis_eur ?? node.durchschnittlicher_kugelpreis_eur ?? node.kugel_preis ?? node.durchschnittlicher_kugelpreis;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+};
+
+const compareNodesByPrice = (a, b) => {
+  const aVal = getNumericPrice(a);
+  const bVal = getNumericPrice(b);
+
+  if (aVal === null && bVal === null) {
+    return 0;
+  }
+  if (aVal === null) {
+    return 1;
+  }
+  if (bVal === null) {
+    return -1;
+  }
+  return aVal - bVal;
+};
+
+const sortLandkreise = (landkreise = []) => [...landkreise].sort(compareNodesByPrice);
+
+const sortBundeslaender = (bundeslaender = []) =>
+  [...bundeslaender]
+    .map((bundesland) => ({
+      ...bundesland,
+      landkreise: sortLandkreise(bundesland.landkreise || []),
+    }))
+    .sort(compareNodesByPrice);
+
+const sortLaender = (laender = []) =>
+  [...laender]
+    .map((land) => ({
+      ...land,
+      bundeslaender: sortBundeslaender(land.bundeslaender || []),
+    }))
+    .sort(compareNodesByPrice);
 
 
 
@@ -15,6 +58,9 @@ function Statistics() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [priceHierarchy, setPriceHierarchy] = useState([]);
+  const [priceSearch, setPriceSearch] = useState('');
+  const [expandedNodes, setExpandedNodes] = useState({});
 
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
@@ -32,23 +78,38 @@ function Statistics() {
   };
 
   const fetchDashboard = async () => {
-    fetch(`${apiUrl}/statistics.php`)
-      .then((res) => res.json())
-      .then((json) => {
-        console.log(json);
-        setData(json);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Fehler beim Laden der Dashboard-Daten:", err);
-        setError(err);
-        setLoading(false);
-      });
+    setLoading(true);
+    try {
+      const [statsRes, hierarchyRes] = await Promise.all([
+        fetch(`${apiUrl}/statistics.php`),
+        fetch(`${apiUrl}/api/get_preise_hierarchisch.php`),
+      ]);
+
+      if (!statsRes.ok) {
+        throw new Error(`Statistics request failed with status ${statsRes.status}`);
+      }
+
+      if (!hierarchyRes.ok) {
+        throw new Error(`Price hierarchy request failed with status ${hierarchyRes.status}`);
+      }
+
+      const statsJson = await statsRes.json();
+      const hierarchyJson = await hierarchyRes.json();
+
+      setData(statsJson);
+      const parsedHierarchy = Array.isArray(hierarchyJson) ? hierarchyJson : [];
+      setPriceHierarchy(sortLaender(parsedHierarchy));
+      setLoading(false);
+    } catch (err) {
+      console.error("Fehler beim Laden der Dashboard-Daten:", err);
+      setError(err);
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [apiUrl]);
 
   const loadFlavourDetails = async (sortenname, iceType) => {
     const key = `${sortenname}__${iceType}`;
@@ -68,6 +129,95 @@ function Statistics() {
     }
   };
 
+  const normalizedSearch = priceSearch.trim().toLowerCase();
+  const searchActive = normalizedSearch.length > 0;
+
+  const filteredPriceHierarchy = useMemo(() => {
+    if (!normalizedSearch) {
+      return priceHierarchy;
+    }
+
+    const matches = (value = '') => value.toLowerCase().includes(normalizedSearch);
+
+    return priceHierarchy
+      .map((land) => {
+        const landMatches = matches(land.name);
+        const filteredBundeslaender = (land.bundeslaender || [])
+          .map((bundesland) => {
+            const bundeslandMatches = matches(bundesland.name);
+            const filteredLandkreise = (bundesland.landkreise || []).filter((landkreis) =>
+              matches(landkreis.name)
+            );
+
+            if (bundeslandMatches || filteredLandkreise.length > 0) {
+              return {
+                ...bundesland,
+                landkreise: bundeslandMatches ? bundesland.landkreise : filteredLandkreise,
+              };
+            }
+
+            return null;
+          })
+          .filter(Boolean);
+
+        if (landMatches || filteredBundeslaender.length > 0) {
+          return {
+            ...land,
+            bundeslaender: landMatches ? land.bundeslaender : filteredBundeslaender,
+          };
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+  }, [normalizedSearch, priceHierarchy]);
+
+  const formatCurrencyValue = (value, symbol = '€') => {
+    if (value === null || value === undefined || value === '0.00') {
+      return '';
+    }
+    const num = Number(value);
+    if (Number.isNaN(num)) {
+      return '';
+    }
+    const suffix = symbol ? ` ${symbol}` : '';
+    return `${num.toFixed(2)}${suffix}`;
+  };
+
+  const formatPriceDisplay = (node) => {
+    if (!node) {
+      return '-';
+    }
+    const euroValue = node.kugel_preis_eur ?? node.durchschnittlicher_kugelpreis_eur;
+    const euroText = formatCurrencyValue(euroValue, '€');
+    if (!euroText) {
+      return '-';
+    }
+
+    const localValue = node.kugel_preis ?? node.durchschnittlicher_kugelpreis;
+    const localCurrencyCode = node.currency?.code ? node.currency.code.toUpperCase() : null;
+    const localSymbol = node.kugel_waehrung || node.currency?.symbol || localCurrencyCode || '';
+    const isEuroCurrency = (localCurrencyCode && localCurrencyCode === 'EUR') || (!localCurrencyCode && (!localSymbol || localSymbol === '€'));
+
+    if (isEuroCurrency || localValue === null || localValue === undefined) {
+      return euroText;
+    }
+
+    const localText = formatCurrencyValue(localValue, localSymbol || localCurrencyCode || '');
+    return localText ? `${euroText} (${localText})` : euroText;
+  };
+
+  const getLandKey = (id) => `land-${id}`;
+  const getBundeslandKey = (landId, bundeslandId) => `bundesland-${landId}-${bundeslandId}`;
+
+  const isExpanded = (key) => (searchActive ? true : !!expandedNodes[key]);
+
+  const toggleNode = (key) => {
+    setExpandedNodes((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
 
   if (loading) return (
@@ -105,61 +255,118 @@ function Statistics() {
               beliebteste Eissorten
             </TabButton>
             <TabButton
-              active={activeTab === 'landkreisPreis'}
-              onClick={() => changeTab('landkreisPreis')}
+              active={activeTab === 'priceHierarchy'}
+              onClick={() => changeTab('priceHierarchy')}
             >
-              Ø Kugelpreis pro Landkreis
-            </TabButton>
-            <TabButton
-              active={activeTab === 'bundeslandPreis'}
-              onClick={() => changeTab('bundeslandPreis')}
-            >
-              Ø Kugelpreis pro Bundesland
+              Preisübersicht
             </TabButton>
           </TabContainer>
 
           <TabContent>
-            {activeTab === 'landkreisPreis' && (<div>
-              <Title>Durchschnittlicher Kugelpreis pro Landkreis</Title>
+            {activeTab === 'priceHierarchy' && (<div>
+              <Title>Durchschnittlicher Kugelpreis je Region</Title>
+              <SearchContainer>
+                <SearchInput
+                  type="search"
+                  placeholder="Land, Bundesland oder Landkreis suchen..."
+                  value={priceSearch}
+                  onChange={(e) => setPriceSearch(e.target.value)}
+                />
+              </SearchContainer>
               <Table>
                 <thead>
                   <tr>
-                    <Th>Landkreis (Bundesland)</Th>
-                    <Th>Anzahl Preismeldungen</Th>
+                    <Th>Region</Th>
                     <Th>Ø Kugelpreis (€)</Th>
+                    <Th>Anzahl Preismeldungen</Th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.pricePerLandkreis.map((entry) => (
-                    <tr key={entry.landkreis_id}>
-                      <Td>{entry.landkreis_name} (<em>{entry.bundesland_name}</em>)</Td>
-                      <Td>{entry.anzahl_eisdielen}</Td>
-                      <Td>{entry.durchschnittlicher_kugelpreis} €</Td>
+                  {filteredPriceHierarchy.length === 0 ? (
+                    <tr>
+                      <Td colSpan="3" style={{ textAlign: 'center' }}>Keine Daten gefunden</Td>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-            )}
+                  ) : (
+                    filteredPriceHierarchy.map((land) => {
+                      const landKey = getLandKey(land.id);
+                      const landExpanded = isExpanded(landKey);
+                      const bundeslaender = land.bundeslaender || [];
+                      const landHasChildren = bundeslaender.length > 0;
 
-            {activeTab === 'bundeslandPreis' && (<div>
-              <Title>Durchschnittlicher Kugelpreis pro Bundesland</Title>
-              <Table>
-                <thead>
-                  <tr>
-                    <Th>Bundesland</Th>
-                    <Th>Anzahl Preismeldungen</Th>
-                    <Th>Ø Kugelpreis (€)</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.pricePerBundesland.map((entry) => (
-                    <tr key={entry.bundesland_id}>
-                      <Td>{entry.bundesland_name}</Td>
-                      <Td>{entry.anzahl_eisdielen}</Td>
-                      <Td>{entry.durchschnittlicher_kugelpreis} €</Td>
-                    </tr>
-                  ))}
+                      return (
+                        <React.Fragment key={landKey}>
+                          <PriceTableRow
+                            level="land"
+                            clickable={landHasChildren}
+                            onClick={landHasChildren ? () => toggleNode(landKey) : undefined}
+                          >
+                            <PriceNameCell>
+                              <NameWrapper>
+                                <Indent level={0} />
+                                {landHasChildren ? (
+                                  <ExpandIndicator>{landExpanded ? 'v' : '>'}</ExpandIndicator>
+                                ) : <LeafSpacer />}
+                                <LevelBadge>Land</LevelBadge>
+                                <span>{land.name}</span>
+                              </NameWrapper>
+                            </PriceNameCell>
+                            <Td>{formatPriceDisplay(land)}</Td>
+                            <Td>{land.anzahl_eisdielen}</Td>
+                          </PriceTableRow>
+
+                          {landExpanded && bundeslaender.map((bundesland) => {
+                            const bundeslandKey = getBundeslandKey(land.id, bundesland.id);
+                            const bundeslandExpanded = isExpanded(bundeslandKey);
+                            const landkreise = bundesland.landkreise || [];
+                            const bundeslandHasChildren = landkreise.length > 0;
+
+                            return (
+                              <React.Fragment key={bundeslandKey}>
+                                <PriceTableRow
+                                  level="bundesland"
+                                  clickable={bundeslandHasChildren}
+                                  onClick={(e) => {
+                                    if (bundeslandHasChildren) {
+                                      e.stopPropagation();
+                                      toggleNode(bundeslandKey);
+                                    }
+                                  }}
+                                >
+                                  <PriceNameCell>
+                                    <NameWrapper>
+                                      <Indent level={1} />
+                                      {bundeslandHasChildren ? (
+                                        <ExpandIndicator>{bundeslandExpanded ? 'v' : '>'}</ExpandIndicator>
+                                      ) : <LeafSpacer />}
+                                      <LevelBadge>Bundesland</LevelBadge>
+                                      <span>{bundesland.name}</span>
+                                    </NameWrapper>
+                                  </PriceNameCell>
+                                  <Td>{formatPriceDisplay(bundesland)}</Td>
+                                  <Td>{bundesland.anzahl_eisdielen}</Td>
+                                </PriceTableRow>
+
+                                {bundeslandExpanded && landkreise.map((landkreis) => (
+                                  <PriceTableRow key={`landkreis-${landkreis.id}`} level="landkreis">
+                                    <PriceNameCell>
+                                      <NameWrapper>
+                                        <Indent level={2} />
+                                        <LeafSpacer />
+                                        <LevelBadge>Landkreis</LevelBadge>
+                                        <span>{landkreis.name}</span>
+                                      </NameWrapper>
+                                    </PriceNameCell>
+                                    <Td>{formatPriceDisplay(landkreis)}</Td>
+                                    <Td>{landkreis.anzahl_eisdielen}</Td>
+                                  </PriceTableRow>
+                                ))}
+                              </React.Fragment>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })
+                  )}
                 </tbody>
               </Table>
             </div>
@@ -289,6 +496,9 @@ const Title = styled.h2`
 
 const Table = styled.table`
   width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
   border-collapse: collapse;
 `;
 
@@ -387,4 +597,77 @@ const EmptyText = styled.div`
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  max-width: 360px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+
+  &:focus {
+    border-color: #ffb522;
+    box-shadow: 0 0 0 2px rgba(255, 181, 34, 0.2);
+  }
+`;
+
+const PriceTableRow = styled.tr`
+  cursor: ${(props) => (props.clickable ? 'pointer' : 'default')};
+  background-color: ${(props) =>
+    props.level === 'land'
+      ? '#fff8ec'
+      : props.level === 'bundesland'
+        ? '#fffdf6'
+        : 'transparent'};
+  transition: background-color 0.2s ease;
+`;
+
+const PriceNameCell = styled(Td)`
+  padding-left: 0.25rem;
+`;
+
+const NameWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+`;
+
+const Indent = styled.span`
+  display: inline-block;
+  width: ${(props) => (props.level || 0) * 1.5}rem;
+  flex-shrink: 0;
+`;
+
+const LevelBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background-color: #ffe0a3;
+  color: #8a5700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+`;
+
+const ExpandIndicator = styled.span`
+  display: inline-block;
+  width: 1rem;
+  text-align: center;
+  font-weight: bold;
+`;
+
+const LeafSpacer = styled.span`
+  display: inline-block;
+  width: 1rem;
 `;
