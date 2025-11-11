@@ -1195,9 +1195,10 @@ const ActivityTable = styled.table`
 
 const FeedTabContainer = styled.div`
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  justify-content: center;
 `;
 
 const FeedTabButton = styled.button`

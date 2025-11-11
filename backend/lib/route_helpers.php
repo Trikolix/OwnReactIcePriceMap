@@ -35,3 +35,9 @@ function getRouteIceShops(PDO $pdo, array $routeIds): array {
     return $map;
 }
 
+function getCommentCountForRoute(PDO $pdo, int $routeId): int {
+    $stmtKommentare = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE route_id = :id");
+    $stmtKommentare->execute(['id' => $routeId]);
+    return (int) $stmtKommentare->fetchColumn();
+}
+

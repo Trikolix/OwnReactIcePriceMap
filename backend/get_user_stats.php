@@ -133,6 +133,7 @@ foreach ($routen as &$routeEntry) {
         $routeEntry['eisdiele_id'] = $routeEntry['eisdielen'][0]['id'];
         $routeEntry['eisdiele_name'] = $routeEntry['eisdielen'][0]['name'];
     }
+    $routeEntry['commentCount'] = getCommentCountForRoute($pdo, $rid);
 }
 unset($routeEntry);
 
