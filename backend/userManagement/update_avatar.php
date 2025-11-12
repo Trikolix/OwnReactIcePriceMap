@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/user_profile.php';
 require_once __DIR__ . '/../lib/preset_avatars.php';
+require_once __DIR__ . '/../lib/image_upload.php';
 
 function deleteUploadedAvatarIfOwned(?string $path): void {
     if (!$path) {
@@ -74,6 +75,7 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     exit;
 }
 
+
 $allowedMime = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 $mime = mime_content_type($file['tmp_name']);
 if (!isset($allowedMime[$mime])) {
@@ -82,13 +84,15 @@ if (!isset($allowedMime[$mime])) {
     exit;
 }
 
-$extension = $allowedMime[$mime];
-$filename = sprintf('user_%d_%s.%s', $userId, uniqid('', true), $extension);
+$filename = sprintf('user_%d_%s.jpg', $userId, uniqid('', true));
 $targetPath = $uploadDir . $filename;
 
-if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+try {
+    // Komprimieren und auf max. 400px begrenzen
+    resizeImage($file['tmp_name'], $targetPath, 1200, 80);
+} catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Speichern der Datei fehlgeschlagen']);
+    echo json_encode(['error' => 'Bildverarbeitung fehlgeschlagen: ' . $e->getMessage()]);
     exit;
 }
 

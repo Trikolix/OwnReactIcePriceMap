@@ -19,6 +19,7 @@ const toNumberOrDefault = (value, defaultValue = 0) => {
 };
 
 function UserSite() {
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { userId: userIdFromUrl } = useParams();
   const { userId: userIdFromContext } = useUser();
   const [activeTab, setActiveTab] = useState('checkins');
@@ -461,7 +462,7 @@ function UserSite() {
       <WhiteBackground>
         <DashboardWrapper>
             <ProfileHeader>
-              <AvatarCircle>
+              <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
                 {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
               </AvatarCircle>
               <ProfileInfo>
@@ -774,6 +775,15 @@ function UserSite() {
           </ModalCard>
         </ModalOverlay>
       )}
+      {showAvatarModal && avatarUrl && (
+        <ModalOverlay onClick={() => setShowAvatarModal(false)}>
+          <AvatarModalContent onClick={e => e.stopPropagation()}>
+            <CloseAvatarModalButton onClick={() => setShowAvatarModal(false)}>×</CloseAvatarModalButton>
+            <LargeAvatarImg src={avatarUrl} alt={`Avatar von ${data.nutzername}`} />
+          </AvatarModalContent>
+        </ModalOverlay>
+      )}
+
     </FullPage>
   );
 }
@@ -1330,4 +1340,44 @@ const EPBadge = styled.div`
   padding: 4px 8px;
   border-radius: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+`;
+
+const AvatarModalContent = styled.div`
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 420px;
+  width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+`;
+
+const LargeAvatarImg = styled.img`
+  max-width: 340px;
+  max-height: 70vh;
+  border-radius: 50%;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+`;
+
+const CloseAvatarModalButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #eee;
+  color: #333;
+  border: none;
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 2;
+  &:hover {
+    background: #ddd;
+  }
 `;

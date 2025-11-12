@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "../utils/cropImage";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { SubmitButton } from "../styles/SharedStyles";
@@ -28,6 +30,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [success, setSuccess] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(buildAssetUrl(currentAvatar));
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [objectUrl, setObjectUrl] = useState(null);
   const [presetAvatars, setPresetAvatars] = useState([]);
@@ -134,15 +141,50 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       URL.revokeObjectURL(objectUrl);
     }
 
-    const previewUrl = URL.createObjectURL(file);
-    setObjectUrl(previewUrl);
-    setAvatarPreview(previewUrl);
-    setAvatarFile(file);
-    setRemoveAvatar(false);
-    setSelectedPresetId(null);
-    setShowPresetPicker(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
     setError(null);
     event.target.value = "";
+  };
+
+  const onCropComplete = (croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    try {
+      const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      const previewUrl = URL.createObjectURL(croppedBlob);
+      setObjectUrl(previewUrl);
+      setAvatarPreview(previewUrl);
+      setAvatarFile(new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" }));
+      setRemoveAvatar(false);
+      setSelectedPresetId(null);
+      setShowPresetPicker(false);
+      setShowCropModal(false);
+      setCropImageSrc(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      setError(null);
+    } catch (e) {
+      setError("Fehler beim Zuschneiden des Bildes.");
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setCropImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
   };
 
   const handleAvatarRemoval = () => {
@@ -277,7 +319,6 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
                 Comic Avatar auswählen
               </PresetToggle>
             </FileButtonsRow>
-            
             <InlineButtons>
               <MiniButton type="button" onClick={handleAvatarRemoval} disabled={!avatarPreview && !avatarFile}>
                 Avatar entfernen
@@ -315,8 +356,33 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
             )}
           </AvatarActions>
         </AvatarSection>
+        {showCropModal && (
+          <CropModalOverlay>
+            <CropModalBox>
+              <h3>Bild zuschneiden</h3>
+              <div className="cropper-area">
+                <Cropper
+                  image={cropImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              <CropModalActions>
+                <SubmitButton type="button" onClick={handleCropSave}>Zuschneiden & übernehmen</SubmitButton>
+                <CancelButton type="button" onClick={handleCropCancel}>Abbrechen</CancelButton>
+              </CropModalActions>
+            </CropModalBox>
+          </CropModalOverlay>
+        )}
         <Divider />
         <h3>Benachrichtigungseinstellungen</h3>
+        {/* ...existing code... */}
         <Label>
           <input
             type="checkbox"
@@ -363,9 +429,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       </ModalBox>
     </ModalOverlay>
   );
-}
 
+}
 export default UserSettings;
+
+
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -633,5 +701,54 @@ const PresetButton = styled.button`
     font-size: 0.75rem;
     color: #555;
     text-align: center;
+  }
+`;
+
+// Crop modal styles
+const CropModalOverlay = styled(ModalOverlay)`
+  z-index: 2000;
+  background: rgba(0,0,0,0.6);
+`;
+
+const CropModalBox = styled(ModalBox)`
+  max-width: 420px;
+  min-width: 300px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 520px;
+
+  h3 {
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .reactEasyCrop_CropArea {
+    border-radius: 50%;
+  }
+
+  .cropper-area {
+    flex: 1 1 auto;
+    min-height: 360px;
+    max-height: 380px;
+    margin-bottom: 1.5rem;
+    position: relative;
+    width: 100%;
+  }
+`;
+
+const CropModalActions = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+
+  button {
+    font-size: 1rem;
+    padding: 0.5rem 1.2rem;
+    min-width: 0;
+    border-radius: 8px;
   }
 `;

@@ -98,7 +98,20 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
         }
         $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
-    } else {
+    } elseif ($notificationType === 'comment_participated_route') {
+        $mailSubject = "Ice-App: " . htmlspecialchars($senderName) . " hat einen Kommentar zu einer Route geschrieben, die du auch kommentiert hast.";
+        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat einen Kommentar zu einer Route geschrieben, die du auch kommentiert hast.</p>";
+        // Link generieren
+        $link = '';
+        if (!empty($extra['routeId']) && !empty($extra['route_autor_id'])) {
+            $link = "https://ice-app.de/#/user/" . $extra['route_autor_id'] . "?tab=routes&focusRoute=" . $extra['routeId'];
+        }
+        if ($link) {
+            $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
+        }
+        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+
+     } else {
         // Unbekannter Typ
         return;
     }

@@ -230,7 +230,7 @@ const Header = ({ refreshShops }) => {
 
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
                 {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
-                {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Eisdielen-Vorschläge</MenuItemLink>)}
+                {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Änderungsvorschläge</MenuItemLink>)}
                 <MenuItem onClick={() => { logout(); setMenuOpen(false); }} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (

@@ -1,3 +1,4 @@
+import Header from './../Header';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -122,21 +123,29 @@ const ShopChangeRequestsAdmin = () => {
 
   if (!isLoggedIn) {
     return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Header />
       <PageWrapper>
         <CenteredCard>Bitte melde dich an, um diese Seite zu sehen.</CenteredCard>
       </PageWrapper>
+      </div>
     );
   }
 
   if (!isAdmin) {
     return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Header />
       <PageWrapper>
         <CenteredCard>Du hast keinen Zugriff auf diese Seite.</CenteredCard>
       </PageWrapper>
+      </div>
     );
   }
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Header />
     <PageWrapper>
       <HeaderRow>
         <h1>Eisdielen-Änderungsvorschläge</h1>
@@ -190,20 +199,33 @@ const ShopChangeRequestsAdmin = () => {
 
               {request.changes && Object.keys(request.changes).length > 0 ? (
                 <ChangeList>
-                  {Object.entries(request.changes).map(([field, value]) => (
-                    <ChangeRow key={field}>
-                      <ChangeLabel>{fieldLabels[field] || field}</ChangeLabel>
-                      <ChangeValues>
-                        <span>
-                          <Muted>Aktuell:</Muted>{" "}
-                          {renderChangeValue(getCurrentFieldValue(request, field))}
-                        </span>
-                        <span>
-                          <Muted>Vorschlag:</Muted> {renderChangeValue(value)}
-                        </span>
-                      </ChangeValues>
-                    </ChangeRow>
-                  ))}
+                  {Object.entries(request.changes).map(([field, value]) => {
+                    const currentValue = getCurrentFieldValue(request, field);
+                    const isChange = String(currentValue) !== String(value);
+                    const isRemoval = isChange && (value === null || value === '' || value === undefined);
+                    return (
+                      <ChangeRow key={field}>
+                        <ChangeLabel>{fieldLabels[field] || field}</ChangeLabel>
+                        <ChangeValues>
+                          <span>
+                            <Muted>Aktuell:</Muted>{" "}
+                            {renderChangeValue(currentValue)}
+                          </span>
+                          <span>
+                            <Muted>Vorschlag:</Muted>{" "}
+                            {isChange ? (
+                              <ChangeHighlight $removal={isRemoval}>
+                                <strong>{renderChangeValue(value)}</strong>
+                              </ChangeHighlight>
+                            ) : (
+                              renderChangeValue(value)
+                            )}
+                          </span>
+                        </ChangeValues>
+                      </ChangeRow>
+                    );
+                  })}
+
                 </ChangeList>
               ) : (
                 <Muted style={{ display: "block", margin: "0.75rem 0" }}>
@@ -243,6 +265,7 @@ const ShopChangeRequestsAdmin = () => {
         </RequestGrid>
       )}
     </PageWrapper>
+    </div>
   );
 };
 
@@ -359,7 +382,7 @@ const Muted = styled.span`
 `;
 
 const NoteTextarea = styled.textarea`
-  width: 100%;
+  width: 95%;
   min-height: 70px;
   border-radius: 10px;
   border: 1px solid #ddd;
@@ -426,4 +449,9 @@ const ErrorBanner = styled.div`
   border-radius: 10px;
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
+`;
+
+const ChangeHighlight = styled.span`
+  color: ${({ $removal }) => ($removal ? '#c0392b' : '#1e8449')};
+  font-weight: bold;
 `;
