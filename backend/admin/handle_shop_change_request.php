@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/opening_hours.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -66,7 +67,6 @@ try {
             'name' => 'name',
             'adresse' => 'adresse',
             'website' => 'website',
-            'openingHours' => 'openingHours',
             'status' => 'status',
             'reopening_date' => 'reopening_date'
         ];
@@ -89,10 +89,36 @@ try {
             $params[$placeholder] = ($value === '' ? null : $value);
         }
 
+        $structuredRows = null;
+        $hoursNote = $changes['openingHoursNote'] ?? null;
+        if (isset($changes['openingHoursStructured']) && is_array($changes['openingHoursStructured'])) {
+            $normalized = normalize_structured_opening_hours($changes['openingHoursStructured']);
+            $structuredRows = $normalized['rows'];
+            $hoursNote = $normalized['note'] ?? $hoursNote;
+            $changes['openingHours'] = build_opening_hours_display($structuredRows, $hoursNote);
+        } elseif (array_key_exists('openingHours', $changes)) {
+            $parsed = parse_legacy_opening_hours($changes['openingHours']);
+            $structuredRows = $parsed['rows'];
+            if ($hoursNote === null && $parsed['note']) {
+                $hoursNote = $parsed['note'];
+            }
+        }
+
+        if (array_key_exists('openingHours', $changes)) {
+            $setParts[] = "openingHours = :openingHours";
+            $params[':openingHours'] = $changes['openingHours'];
+            $setParts[] = "opening_hours_note = :openingHoursNote";
+            $params[':openingHoursNote'] = $hoursNote;
+        }
+
         if (!empty($setParts)) {
             $sql = "UPDATE eisdielen SET " . implode(', ', $setParts) . " WHERE id = :id";
             $updateStmt = $pdo->prepare($sql);
             $updateStmt->execute($params);
+        }
+
+        if ($structuredRows !== null) {
+            replace_opening_hours($pdo, (int)$request['eisdiele_id'], $structuredRows);
         }
     }
 
@@ -144,6 +170,8 @@ function sendChangeRequestStatusEmail($email, $username, $shopName, $shopId, $st
         'adresse' => 'Adresse',
         'website' => 'Website',
         'openingHours' => 'Öffnungszeiten',
+        'openingHoursStructured' => 'Öffnungszeiten (Strukturiert)',
+        'openingHoursNote' => 'Öffnungszeiten-Hinweis',
         'status' => 'Status',
         'reopening_date' => 'Wiedereröffnungsdatum'
     ];
@@ -165,6 +193,8 @@ function sendChangeRequestStatusEmail($email, $username, $shopName, $shopId, $st
             $asString = $value;
             if (is_bool($value)) {
                 $asString = $value ? 'Ja' : 'Nein';
+            } elseif (is_array($value) || is_object($value)) {
+                $asString = json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             } elseif ($value === null || $value === '') {
                 $asString = '—';
             }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -30,6 +30,34 @@ const IceCreamRadar = () => {
   const [initialCenter, setInitialCenter] = useState(userPosition || [50.833707, 12.919187]);
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
+  const [openFilterMode, setOpenFilterMode] = useState('all');
+  const [openFilterDateTime, setOpenFilterDateTime] = useState('');
+  const buildDefaultDateTimeValue = () => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + 60);
+    date.setSeconds(0, 0);
+    return date.toISOString().slice(0, 16);
+  };
+const handleOpenFilterModeChange = (value) => {
+    setOpenFilterMode(value);
+    if (value === 'custom' && !openFilterDateTime) {
+      setOpenFilterDateTime(buildDefaultDateTimeValue());
+    }
+  };
+  const openFilterQueryString = useMemo(() => {
+    if (openFilterMode === 'now') {
+      return 'open_now=1';
+    }
+    if (openFilterMode === 'custom' && openFilterDateTime) {
+      return `open_at=${encodeURIComponent(openFilterDateTime)}`;
+    }
+    return '';
+  }, [openFilterMode, openFilterDateTime]);
+  const openFilterOptions = useMemo(() => [
+    { value: 'all', label: 'Jederzeit geöffnet' },
+    { value: 'now', label: 'Jetzt geöffnet' },
+    { value: 'custom', label: 'Geöffnet am …' },
+  ], []);
 
   const { shopId, token } = useParams();
   const navigate = useNavigate();
@@ -42,7 +70,8 @@ const IceCreamRadar = () => {
 
   const fetchAndCenterShop = async (id) => {
     try {
-      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}`);
+      const detailQuery = openFilterQueryString ? `&${openFilterQueryString}` : "";
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${detailQuery}`);
       const data = await response.json();
       console.log('fetchAndCenterShop', data)
       setActiveShop(data);
@@ -60,7 +89,8 @@ const IceCreamRadar = () => {
 
   const fetchIceCreamShops = async () => {
     try {
-      const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}`;
+      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : "";
+      const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
       const response = await fetch(query);
       const data = await response.json();
       setIceCreamShops(data);
@@ -73,7 +103,8 @@ const IceCreamRadar = () => {
     console.log("refreshShops");
 
     try {
-      const query = `${apiUrl}/get_all_eisdielen.php?&userId=${userId}`;
+      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : "";
+      const query = `${apiUrl}/get_all_eisdielen.php?&userId=${userId}${querySuffix}`;
       const response = await fetch(query);
       const data = await response.json();
       console.log(data);
@@ -85,7 +116,8 @@ const IceCreamRadar = () => {
 
   const fetchShopDetails = async (shop) => {
     try {
-      navigate(`/map/activeShop/${shop.eisdielen_id}`);
+      const querySuffix = openFilterQueryString ? `?${openFilterQueryString}` : "";
+      navigate(`/map/activeShop/${shop.eisdielen_id}${querySuffix}`);
       setShowDetailsView(false); // Reset the state to ensure re-rendering
       setTimeout(() => setShowDetailsView(true), 0); // Reopen the view after resetting
     } catch (error) {
@@ -151,7 +183,7 @@ const IceCreamRadar = () => {
     if (userId !== undefined) {
       fetchIceCreamShops();
     }
-  }, [userId]);
+  }, [userId, openFilterQueryString]);
 
   const baseOptions = [
     "Alle",
@@ -175,7 +207,6 @@ const IceCreamRadar = () => {
         <DropdownSelect
           options={options}
           onChange={(selectedOption) => {
-            console.log("Ausgewählt:", selectedOption);
             setSelectedOption(selectedOption);
           }}
         />
@@ -183,6 +214,22 @@ const IceCreamRadar = () => {
         <YellowButton onClick={() => setClustering(!clustering)}>
           {clustering ? 'Clustering: An' : 'Clustering: Aus'}
         </YellowButton>
+        <FilterControls>
+          <DropdownSelect
+            options={openFilterOptions}
+            value={openFilterMode}
+            onChange={handleOpenFilterModeChange}
+          />
+          {openFilterMode === 'custom' && (
+            <>
+              <DateTimeInput
+                type="datetime-local"
+                value={openFilterDateTime}
+                onChange={(e) => setOpenFilterDateTime(e.target.value)}
+              />
+            </>
+          )}
+        </FilterControls>
       </LogoContainer>
 
       <MapContainer
@@ -302,4 +349,30 @@ const YellowButton = styled.button`
   @media (max-width: 768px) {
     font-size: 0.9rem;
   }
+`;
+
+const FilterControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  padding: 0rem 0.6rem;
+  border-radius: 14px;
+`;
+
+const FilterLabel = styled.span`
+  font-size: 0.85rem;
+  font-weight: 700;
+`;
+
+const DateTimeInput = styled.input`
+  padding: 0.45rem 0.7rem;
+  border-radius: 12px;
+  border: 2px solid #ffb522;
+  background: #fff8e1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #503000;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 `;

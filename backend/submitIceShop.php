@@ -2,10 +2,11 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
+require_once __DIR__ . '/lib/opening_hours.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['openingHours']) || !isset($data['userId'])) {
+if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['userId'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
     exit;
 }
@@ -122,7 +123,19 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId) {
     return $pdo->lastInsertId();
 }
 
-$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :userId, :landkreisId, :bundeslandId, :landId)";
+$structuredPayload = $data['openingHoursStructured'] ?? null;
+if (!is_array($structuredPayload) && array_key_exists('openingHours', $data)) {
+    $legacyText = trim((string)$data['openingHours']);
+    $structuredPayload = [
+        'timezone' => OPENING_HOURS_DEFAULT_TIMEZONE,
+        'note' => $legacyText !== '' ? $legacyText : null,
+        'days' => []
+    ];
+}
+$normalizedHours = normalize_structured_opening_hours($structuredPayload);
+$openingHoursText = build_opening_hours_display($normalizedHours['rows'], $normalizedHours['note']);
+
+$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, opening_hours_note, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :openingHoursNote, :userId, :landkreisId, :bundeslandId, :landId)";
 $stmt = $pdo->prepare($sql);
 
 $lat = $data['latitude'];
@@ -141,18 +154,23 @@ if ($location) {
         $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
     }
     try {
+        $pdo->beginTransaction();
         $stmt->execute([
             ':name' => $data['name'],
             ':adresse' => $data['adresse'],
             ':latitude' => floatval($data['latitude']),
             ':longitude' => floatval($data['longitude']),
             ':website' => $data['website'] ?? null,
-            ':openingHours' => $data['openingHours'] ?? null,
+            ':openingHours' => $openingHoursText,
+            ':openingHoursNote' => $normalizedHours['note'] ?? null,
             ':userId' => intval($data['userId']),
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId,
             ':landId' => $landId
         ]);
+        $newShopId = (int)$pdo->lastInsertId();
+        replace_opening_hours($pdo, $newShopId, $normalizedHours['rows']);
+        $pdo->commit();
         // Evaluate Awards
         $evaluators = [
             new IceShopSubmitCountEvaluator()
@@ -173,6 +191,9 @@ if ($location) {
             'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
         ]);
     } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }
 } else {

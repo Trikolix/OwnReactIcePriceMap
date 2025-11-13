@@ -35,6 +35,7 @@ CREATE TABLE `eisdielen` (
   `latitude` float(9,6) DEFAULT NULL,
   `longitude` float(9,6) DEFAULT NULL,
   `openingHours` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `opening_hours_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `erstellt_am` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `user_id` int NOT NULL,
   `landkreis_id` int DEFAULT NULL,
@@ -42,6 +43,23 @@ CREATE TABLE `eisdielen` (
   `land_id` int DEFAULT NULL,
   `status` enum('open','seasonal_closed','permanent_closed') COLLATE utf8mb4_unicode_ci DEFAULT 'open',
   `reopening_date` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Öffnungszeiten pro Tag / Zeitfenster
+CREATE TABLE `eisdiele_opening_hours` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `eisdiele_id` int NOT NULL,
+  `weekday` tinyint unsigned NOT NULL COMMENT '1=Montag ... 7=Sonntag',
+  `opens_at` time NOT NULL,
+  `closes_at` time NOT NULL,
+  `overnight` tinyint(1) NOT NULL DEFAULT '0',
+  `sort_order` tinyint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_opening_hours_shop_day` (`eisdiele_id`,`weekday`),
+  CONSTRAINT `fk_opening_hours_shop`
+    FOREIGN KEY (`eisdiele_id`) REFERENCES `eisdielen` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --

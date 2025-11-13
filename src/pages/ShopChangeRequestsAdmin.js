@@ -2,6 +2,7 @@ import Header from './../Header';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
+import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 
 const statusOptions = [
   { value: "pending", label: "Offen" },
@@ -15,6 +16,8 @@ const fieldLabels = {
   adresse: "Adresse",
   website: "Website",
   openingHours: "Öffnungszeiten",
+  openingHoursNote: "Öffnungszeiten-Hinweis",
+  openingHoursStructured: "Öffnungszeiten (Vorschlag)",
   status: "Status",
   reopening_date: "Wiedereröffnungsdatum",
 };
@@ -99,6 +102,21 @@ const ShopChangeRequestsAdmin = () => {
   const renderChangeValue = (value) => {
     if (value === null || value === undefined || value === "") return "—";
     if (typeof value === "boolean") return value ? "Ja" : "Nein";
+    if (Array.isArray(value)) return value.join(", ");
+    if (typeof value === "object") {
+      const structured = hydrateOpeningHours(value);
+      const lines = formatOpeningHoursLines(structured);
+      if (lines.length === 0) {
+        return <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(value, null, 2)}</pre>;
+      }
+      return (
+        <LinesList>
+          {lines.map((line, idx) => (
+            <div key={idx}>{line}</div>
+          ))}
+        </LinesList>
+      );
+    }
     return value;
   };
 
@@ -112,6 +130,10 @@ const ShopChangeRequestsAdmin = () => {
         return request.shop_website;
       case "openingHours":
         return request.shop_opening_hours;
+      case "openingHoursNote":
+        return request.shop_opening_hours_note;
+      case "openingHoursStructured":
+        return request.shop_opening_hours_structured;
       case "status":
         return request.shop_status;
       case "reopening_date":
@@ -379,6 +401,13 @@ const ChangeValues = styled.div`
 
 const Muted = styled.span`
   color: #7a7a7a;
+`;
+
+const LinesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  white-space: pre-wrap;
 `;
 
 const NoteTextarea = styled.textarea`

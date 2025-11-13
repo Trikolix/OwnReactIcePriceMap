@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 const DropdownWrapper = styled.div`
   position: relative;
@@ -59,17 +59,36 @@ const Arrow = styled.span`
   font-size: 0.9rem;
 `;
 
-export default function DropdownSelect({ options, onChange }) {
+export default function DropdownSelect({ options, onChange, value }) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(options[0]);
   const dropDownRef = useRef(null);
+  const normalizedOptions = useMemo(
+    () => options.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt)),
+    [options]
+  );
+  const [internalValue, setInternalValue] = useState(normalizedOptions[0]?.value);
+  useEffect(() => {
+    if (value === undefined && normalizedOptions.length > 0) {
+      if (internalValue === undefined || !normalizedOptions.some((opt) => opt.value === internalValue)) {
+        setInternalValue(normalizedOptions[0].value);
+      }
+    }
+  }, [normalizedOptions, value, internalValue]);
+  const selectedValue = value !== undefined ? value : internalValue;
+  const selectedOption =
+    normalizedOptions.find((opt) => opt.value === selectedValue) ?? normalizedOptions[0] ?? { value: '', label: '' };
 
   const toggleDropdown = () => setOpen(!open);
 
   const handleSelect = (option) => {
-    setSelected(option);
+    if (!option) {
+      return;
+    }
+    if (value === undefined) {
+      setInternalValue(option.value);
+    }
     setOpen(false);
-    onChange(option);
+    onChange?.(option.value);
   };
 
   useEffect(() => {
@@ -93,14 +112,14 @@ export default function DropdownSelect({ options, onChange }) {
   return (
     <DropdownWrapper ref={dropDownRef}>
       <DropdownButton onClick={toggleDropdown}>
-        {selected}
+        {selectedOption?.label ?? ''}
         <Arrow>{open ? '▲' : '▼'}</Arrow>
       </DropdownButton>
       {open && (
         <DropdownList>
-          {options.map((opt) => (
-            <DropdownItem key={opt} onClick={() => handleSelect(opt)}>
-              {opt}
+          {normalizedOptions.map((opt) => (
+            <DropdownItem key={opt.value} onClick={() => handleSelect(opt)}>
+              {opt.label}
             </DropdownItem>
           ))}
         </DropdownList>

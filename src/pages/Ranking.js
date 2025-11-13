@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Header from "../Header";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -38,12 +39,35 @@ const Ranking = () => {
     const [selectedAttributes, setSelectedAttributes] = useState([]);
     const [eisdieleAttributes, setEisdieleAttributes] = useState({});
     const [showAttributeFilters, setShowAttributeFilters] = useState(false);
+    const [openFilterMode, setOpenFilterMode] = useState('all');
+    const [openFilterDateTime, setOpenFilterDateTime] = useState('');
     const [attributeCountsByTab, setAttributeCountsByTab] = useState({
         kugel: {},
         softeis: {},
         eisbecher: {}
     });
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+    const buildDefaultDateTimeValue = React.useCallback(() => {
+        const date = new Date();
+        date.setMinutes(date.getMinutes() + 60);
+        date.setSeconds(0, 0);
+        return date.toISOString().slice(0, 16);
+    }, []);
+    const openFilterQueryString = React.useMemo(() => {
+        if (openFilterMode === 'now') {
+            return 'open_now=1';
+        }
+        if (openFilterMode === 'custom' && openFilterDateTime) {
+            return `open_at=${encodeURIComponent(openFilterDateTime)}`;
+        }
+        return '';
+    }, [openFilterMode, openFilterDateTime]);
+    const handleOpenFilterModeChange = React.useCallback((value) => {
+        setOpenFilterMode(value);
+        if (value === 'custom' && !openFilterDateTime) {
+            setOpenFilterDateTime(buildDefaultDateTimeValue());
+        }
+    }, [openFilterDateTime, buildDefaultDateTimeValue]);
 
     const syncAttributeFilters = React.useCallback((datasetsByTab) => {
         const attributeMap = {};
@@ -162,7 +186,14 @@ const Ranking = () => {
                     return;
                 }
 
-                const query = ratingUserId !== null ? `?user_id=${ratingUserId}` : '';
+                const queryParts = [];
+                if (ratingUserId !== null) {
+                    queryParts.push(`user_id=${ratingUserId}`);
+                }
+                if (openFilterQueryString) {
+                    queryParts.push(openFilterQueryString);
+                }
+                const query = queryParts.length ? `?${queryParts.join('&')}` : '';
                 const endpoints = [
                     'get_kugeleis_rating.php',
                     'get_softeis_rating.php',
@@ -193,7 +224,7 @@ const Ranking = () => {
         };
 
         fetchData();
-    }, [apiUrl, ratingScope, userId, syncAttributeFilters]);
+    }, [apiUrl, ratingScope, userId, syncAttributeFilters, openFilterQueryString]);
 
     const sortTableKugel = (key) => {
         let direction = 'descending';
@@ -289,6 +320,48 @@ const Ranking = () => {
         );
     };
 
+    const formatOpenBadgeText = (entity) => {
+        if (entity.open_reference) {
+            const date = new Date(entity.open_reference);
+            if (!Number.isNaN(date.getTime())) {
+                const dateLabel = date.toLocaleDateString('de-DE', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+                const timeLabel = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                return `Geöffnet am ${dateLabel} ${timeLabel}`;
+            }
+        }
+        if (typeof entity.is_open_now === 'boolean') {
+            return entity.is_open_now ? 'Jetzt geöffnet' : 'Geschlossen';
+        }
+        return null;
+    };
+
+    const renderOpenStateBadge = (entity) => {
+        const text = formatOpenBadgeText(entity);
+        if (!text) {
+            return null;
+        }
+        const isReference = Boolean(entity.open_reference);
+        const isOpen = isReference ? true : Boolean(entity.is_open_now);
+        return <OpenBadge $open={isOpen}>{text}</OpenBadge>;
+    };
+
+    const getOpeningHoursLines = React.useCallback((shop) => {
+        if (!shop) return [];
+        const structured = hydrateOpeningHours(
+            shop.openingHoursStructured,
+            shop.opening_hours_note || ""
+        );
+        let lines = formatOpeningHoursLines(structured);
+        if (!lines.length && shop.openingHours) {
+            lines = shop.openingHours.split(';').map((part) => part.trim());
+        }
+        return lines;
+    }, []);
+
     const applyFiltersAndSort = (items, sortConfig) => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const maxDistance = distanceFilter !== 'any' ? parseFloat(distanceFilter) : null;
@@ -312,7 +385,15 @@ const Ranking = () => {
             const matchesAttributes =
                 selectedAttributes.length === 0 ||
                 (itemAttributes && selectedAttributes.every((attrId) => itemAttributes.has(attrId)));
-            return matchesSearch && matchesDistance && matchesAttributes;
+            let matchesOpenState = true;
+            if (openFilterMode === 'now') {
+                matchesOpenState = Boolean(item.is_open_now);
+            } else if (openFilterMode === 'custom' && openFilterDateTime) {
+                matchesOpenState = item.is_open_reference === null
+                    ? true
+                    : Boolean(item.is_open_reference);
+            }
+            return matchesSearch && matchesDistance && matchesAttributes && matchesOpenState;
         });
 
         if (sortConfig.key === null) {
@@ -350,15 +431,15 @@ const Ranking = () => {
 
     const sortedEisdielenKugel = React.useMemo(() => {
         return applyFiltersAndSort(eisdielenKugel, sortConfigKugel);
-    }, [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes]);
+    }, [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
 
     const sortedEisdielenSofteis = React.useMemo(() => {
         return applyFiltersAndSort(eisdielenSofteis, sortConfigSofteis);
-    }, [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes]);
+    }, [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
 
     const sortedEisdielenEisbecher = React.useMemo(() => {
         return applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher);
-    }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes]);
+    }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
 
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
@@ -427,6 +508,24 @@ const Ranking = () => {
                                 <option value="gourmetCyclist">TheGourmetCyclist-Rating</option>
                                 <option value="personal" disabled={!userId}>Personal-Rating</option>
                             </FilterSelect>
+                        </FilterGroup>
+                        <FilterGroup>
+                            <FilterLabel>Öffnungszeiten</FilterLabel>
+                            <FilterSelect
+                                value={openFilterMode}
+                                onChange={(event) => handleOpenFilterModeChange(event.target.value)}
+                            >
+                                <option value="all">Alle Zeiten</option>
+                                <option value="now">Jetzt geöffnet</option>
+                                <option value="custom">Geöffnet am …</option>
+                            </FilterSelect>
+                            {openFilterMode === 'custom' && (
+                                <FilterInput
+                                    type="datetime-local"
+                                    value={openFilterDateTime}
+                                    onChange={(event) => setOpenFilterDateTime(event.target.value)}
+                                />
+                            )}
                         </FilterGroup>
                     </FiltersRow>
                     {attributeOptions.length > 0 && (
@@ -535,7 +634,10 @@ const Ranking = () => {
 
                                                 <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.name}</CleanLink></h3>
                                                 <strong>Adresse: </strong>{eisdiele.adresse}<br />
-                                                <strong>Öffnungszeiten: </strong><br />{eisdiele.openingHours?.split(';').map((time, i) => (
+                                                <strong>Öffnungszeiten: </strong>
+                                                {renderOpenStateBadge(eisdiele)}
+                                                <br />
+                                                {getOpeningHoursLines(eisdiele).map((time, i) => (
                                                     <React.Fragment key={i}>
                                                         {time}<br />
                                                     </React.Fragment>
@@ -667,7 +769,10 @@ const Ranking = () => {
                                                 <DetailsContainer>
                                                     <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.name}</CleanLink></h3>
                                                     <strong>Adresse: </strong>{eisdiele.adresse}<br />
-                                                    <strong>Öffnungszeiten: </strong><br />{eisdiele.openingHours?.split(';').map((time, i) => (
+                                                    <strong>Öffnungszeiten: </strong>
+                                                    {renderOpenStateBadge(eisdiele)}
+                                                    <br />
+                                                    {getOpeningHoursLines(eisdiele).map((time, i) => (
                                                         <React.Fragment key={i}>
                                                             {time}<br />
                                                         </React.Fragment>
@@ -785,7 +890,10 @@ const Ranking = () => {
                                                 <DetailsContainer>
                                                     <h3><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.name}</CleanLink></h3>
                                                     <strong>Adresse: </strong>{eisdiele.adresse}<br />
-                                                    <strong>Öffnungszeiten: </strong><br />{eisdiele.openingHours?.split(';').map((time, i) => (
+                                                    <strong>Öffnungszeiten: </strong>
+                                                    {renderOpenStateBadge(eisdiele)}
+                                                    <br />
+                                                    {getOpeningHoursLines(eisdiele).map((time, i) => (
                                                         <React.Fragment key={i}>
                                                             {time}<br />
                                                         </React.Fragment>
@@ -1080,6 +1188,19 @@ const AttributeBadge = styled.span`
     color: #710000;
     font-weight: 600;
   }
+`;
+
+const OpenBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: ${({ $open }) => ($open ? '#0f5132' : '#6c757d')};
+  background: ${({ $open }) => ($open ? 'rgba(63, 177, 117, 0.2)' : 'rgba(108, 117, 125, 0.2)')};
 `;
 
 const FilterHint = styled.p`

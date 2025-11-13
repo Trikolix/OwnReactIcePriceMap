@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Overlay, Modal, CloseButton, Heading, Input, Select, Textarea, ButtonGroup, SubmitButton, Button, Message, LevelInfo } from './styles/SharedStyles';
+import { Overlay, Modal, CloseButton, Heading, Input, Select, ButtonGroup, SubmitButton, Button, Message, LevelInfo } from './styles/SharedStyles';
 import LocationPicker from "./components/LocationPicker";
 import NewAwards from "./components/NewAwards";
+import OpeningHoursEditor from "./components/OpeningHoursEditor";
+import { createEmptyOpeningHours, hydrateOpeningHours } from "./utils/openingHours";
 
 const SubmitIceShopModal = ({
   showForm,
@@ -18,7 +20,9 @@ const SubmitIceShopModal = ({
   const [website, setWebsite] = useState(existingIceShop?.website || "");
   const [latitude, setLatitude] = useState(existingIceShop?.latitude || "");
   const [longitude, setLongitude] = useState(existingIceShop?.longitude || "");
-  const [openingHours, setOpeningHours] = useState(existingIceShop?.openingHours || "");
+  const [openingHoursData, setOpeningHoursData] = useState(() =>
+    hydrateOpeningHours(existingIceShop?.openingHoursStructured, existingIceShop?.opening_hours_note || "")
+  );
   const [status, setStatus] = useState(existingIceShop?.status || 'open');
   const [reopeningDate, setReopeningDate] = useState(existingIceShop?.reopening_date || '');
   const [message, setMessage] = useState("");
@@ -46,6 +50,15 @@ const SubmitIceShopModal = ({
     ? (autoApproveChanges ? "Aktualisieren" : "Vorschlag senden")
     : "Einreichen";
 
+  useEffect(() => {
+    setOpeningHoursData(
+      hydrateOpeningHours(
+        existingIceShop?.openingHoursStructured,
+        existingIceShop?.opening_hours_note || ""
+      )
+    );
+  }, [existingIceShop]);
+
   const submit = async () => {
     try {
       setAwards([]);
@@ -60,7 +73,7 @@ const SubmitIceShopModal = ({
         website,
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
-        openingHours,
+        openingHoursStructured: openingHoursData,
         userId
       };
 
@@ -95,7 +108,7 @@ const SubmitIceShopModal = ({
         setWebsite("");
         setLatitude("");
         setLongitude("");
-        setOpeningHours("{}");
+        setOpeningHoursData(createEmptyOpeningHours());
 
         if (!isPending) {
           if (data.level_up || data.new_awards && data.new_awards.length > 0) {
@@ -266,7 +279,7 @@ const SubmitIceShopModal = ({
 
           <Group>
             <label>Öffnungszeiten (optional):</label>
-            <Textarea value={openingHours} placeholder="z.B. Mo-Fr: 12-18 Uhr" onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+            <OpeningHoursEditor value={openingHoursData} onChange={setOpeningHoursData} />
           </Group>
 
           <Group>

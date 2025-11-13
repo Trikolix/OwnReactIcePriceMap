@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/opening_hours.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -31,8 +32,20 @@ $isRecent = (time() - $createdAt) <= 6 * 3600; // 6 Stunden
 $autoApprove = $isAdmin || ($isOwner && $isRecent);
 $canEditCoordinates = $isAdmin;
 
+$structuredPayload = $data['openingHoursStructured'] ?? null;
+if (!is_array($structuredPayload) && array_key_exists('openingHours', $data)) {
+    $legacyText = trim((string)$data['openingHours']);
+    $structuredPayload = [
+        'timezone' => OPENING_HOURS_DEFAULT_TIMEZONE,
+        'note' => $legacyText !== '' ? $legacyText : null,
+        'days' => []
+    ];
+}
+$normalizedHours = normalize_structured_opening_hours($structuredPayload);
+$openingHoursText = build_opening_hours_display($normalizedHours['rows'], $normalizedHours['note']);
+
 if (!$autoApprove) {
-    $changeSet = buildChangeSet($data, $validStatuses);
+    $changeSet = buildChangeSet($data, $validStatuses, $normalizedHours, $openingHoursText);
 
     if (empty($changeSet)) {
         echo json_encode(["status" => "error", "message" => "Keine Änderungen zum Vorschlagen gefunden."]);
@@ -176,9 +189,9 @@ function storeChangeRequest(PDO $pdo, int $shopId, int $userId, array $changes) 
     ]);
 }
 
-function buildChangeSet(array $data, array $validStatuses): array {
+function buildChangeSet(array $data, array $validStatuses, array $normalizedHours, string $openingHoursText): array {
     $changeSet = [];
-    $simpleFields = ['name', 'adresse', 'website', 'openingHours'];
+    $simpleFields = ['name', 'adresse', 'website'];
 
     foreach ($simpleFields as $field) {
         if (array_key_exists($field, $data)) {
@@ -192,6 +205,16 @@ function buildChangeSet(array $data, array $validStatuses): array {
 
     if (array_key_exists('reopening_date', $data)) {
         $changeSet['reopening_date'] = $data['reopening_date'] !== '' ? $data['reopening_date'] : null;
+    }
+
+    if (!empty($normalizedHours['rows']) || array_key_exists('openingHoursStructured', $data)) {
+        $changeSet['openingHours'] = $openingHoursText;
+        $changeSet['openingHoursNote'] = $normalizedHours['note'] ?? null;
+        $changeSet['openingHoursStructured'] = build_structured_opening_hours(
+            $normalizedHours['rows'],
+            $normalizedHours['note'],
+            $normalizedHours['timezone'] ?? OPENING_HOURS_DEFAULT_TIMEZONE
+        );
     }
 
     return $changeSet;
@@ -215,7 +238,8 @@ if ($location) {
         ':latitude' => $latitude,
         ':longitude' => $longitude,
         ':website' => $data['website'] ?? null,
-        ':openingHours' => $data['openingHours'] ?? null,
+        ':openingHours' => $openingHoursText,
+        ':openingHoursNote' => $normalizedHours['note'] ?? null,
         ':landkreisId' => $landkreisId,
         ':bundeslandId' => $bundeslandId,
         ':landId' => $landId,
@@ -224,14 +248,16 @@ if ($location) {
     // Wenn status oder reopening_date übergeben wurden, erweitere Query und Params
     if ($status !== null || $reopening_date !== null) {
         $sql = "UPDATE eisdielen 
-            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
+            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
+                opening_hours_note = :openingHoursNote,
                 landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId, status = :status, reopening_date = :reopening_date
             WHERE id = :id";
         $params[':status'] = $status;
         $params[':reopening_date'] = $reopening_date;
     } else {
         $sql = "UPDATE eisdielen 
-            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
+            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
+                opening_hours_note = :openingHoursNote,
                 landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId
             WHERE id = :id";
     }
@@ -240,10 +266,16 @@ if ($location) {
     $params[':id'] = intval($data['shopId']);
 
     try {
+        $pdo->beginTransaction();
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
+        replace_opening_hours($pdo, $eisdieleId, $normalizedHours['rows']);
+        $pdo->commit();
         echo json_encode(["status" => "success"]);
     } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }
 } else {

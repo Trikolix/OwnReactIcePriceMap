@@ -40,6 +40,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const focusCheckinId = searchParams.get("focusCheckin");
   const focusReviewId = searchParams.get("focusReview");
   const createReferencedCheckin = searchParams.get("createReferencedCheckin");
+  const openAtParam = searchParams.get("open_at");
 
   const handleEditClick = () => {
     setShowEditModal(true);
@@ -76,13 +77,14 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
   const fetchShopData = useCallback(async (id) => {
     try {
-      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}`);
+      const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : "";
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${referenceQuery}`);
       const data = await response.json();
       setShopData(data);
     } catch (err) {
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
-  }, []);
+  }, [apiUrl, openAtParam]);
 
   const refreshShop = () => {
     fetchShopData(shopData.eisdiele.id);
