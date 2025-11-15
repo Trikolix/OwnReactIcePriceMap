@@ -6,6 +6,14 @@ import { useUser } from "../context/UserContext";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 
 const EARTH_RADIUS_KM = 6371;
+const FILTERS_COMPACT_BREAKPOINT_PX = 768;
+
+const isCompactFilterViewport = () => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    return window.innerWidth < FILTERS_COMPACT_BREAKPOINT_PX;
+};
 
 const toRadians = (value) => (value * Math.PI) / 180;
 
@@ -46,6 +54,8 @@ const Ranking = () => {
         softeis: {},
         eisbecher: {}
     });
+    const [isCompactFilters, setIsCompactFilters] = useState(() => isCompactFilterViewport());
+    const [areFiltersExpanded, setAreFiltersExpanded] = useState(() => !isCompactFilterViewport());
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
     const buildDefaultDateTimeValue = React.useCallback(() => {
         const date = new Date();
@@ -68,6 +78,19 @@ const Ranking = () => {
             setOpenFilterDateTime(buildDefaultDateTimeValue());
         }
     }, [openFilterDateTime, buildDefaultDateTimeValue]);
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const handleResize = () => {
+            setIsCompactFilters(isCompactFilterViewport());
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    useEffect(() => {
+        setAreFiltersExpanded(!isCompactFilters);
+    }, [isCompactFilters]);
 
     const syncAttributeFilters = React.useCallback((datasetsByTab) => {
         const attributeMap = {};
@@ -444,6 +467,118 @@ const Ranking = () => {
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
     };
+    const filtersContent = (
+        <>
+            <FiltersRow>
+                <FilterGroup>
+                    <FilterLabel htmlFor="ranking-search">Suche</FilterLabel>
+                    <FilterInput
+                        id="ranking-search"
+                        type="text"
+                        value={searchTerm}
+                        placeholder="Eisdiele suchen..."
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                    />
+                </FilterGroup>
+                <FilterGroup>
+                    <FilterLabel htmlFor="ranking-distance">Entfernung</FilterLabel>
+                    <FilterSelect
+                        id="ranking-distance"
+                        value={distanceFilter}
+                        onChange={handleDistanceChange}
+                    >
+                        <option value="any">Alle Entfernungen</option>
+                        <option value="2">bis 2 km</option>
+                        <option value="5">bis 5 km</option>
+                        <option value="10">bis 10 km</option>
+                        <option value="25">bis 25 km</option>
+                        <option value="50">bis 50 km</option>
+                    </FilterSelect>
+                </FilterGroup>
+                <FilterGroup>
+                    <FilterLabel htmlFor="ranking-rating">Rating-Quelle</FilterLabel>
+                    <FilterSelect
+                        id="ranking-rating"
+                        value={ratingScope}
+                        onChange={handleRatingScopeChange}
+                    >
+                        <option value="global">Global</option>
+                        <option value="gourmetCyclist">TheGourmetCyclist-Rating</option>
+                        <option value="personal" disabled={!userId}>Personal-Rating</option>
+                    </FilterSelect>
+                </FilterGroup>
+                <FilterGroup>
+                    <FilterLabel>Öffnungszeiten</FilterLabel>
+                    <FilterSelect
+                        value={openFilterMode}
+                        onChange={(event) => handleOpenFilterModeChange(event.target.value)}
+                    >
+                        <option value="all">Alle Zeiten</option>
+                        <option value="now">Jetzt geöffnet</option>
+                        <option value="custom">Geöffnet am …</option>
+                    </FilterSelect>
+                    {openFilterMode === 'custom' && (
+                        <FilterInput
+                            type="datetime-local"
+                            value={openFilterDateTime}
+                            onChange={(event) => setOpenFilterDateTime(event.target.value)}
+                        />
+                    )}
+                </FilterGroup>
+            </FiltersRow>
+            {attributeOptions.length > 0 && (
+                <AttributeFilterSection>
+                    <AttributeToggleButton
+                        type="button"
+                        onClick={() => setShowAttributeFilters((prev) => !prev)}
+                    >
+                        {showAttributeFilters ? 'Attribute-Filter verbergen' : 'Attribute-Filter anzeigen'}
+                    </AttributeToggleButton>
+                    {showAttributeFilters && (
+                        <AttributeFilterWrapper>
+                            <FilterLabel as="div">Attribute</FilterLabel>
+                            <AttributeFilterContainer>
+                                {displayedAttributeOptions.map((attribute) => {
+                                    const count = activeAttributeCounts[attribute.id] || 0;
+                                    return (
+                                        <AttributePill
+                                            key={attribute.id}
+                                            type="button"
+                                            $active={selectedAttributes.includes(attribute.id)}
+                                            onClick={() => handleAttributeToggle(attribute.id)}
+                                        >
+                                            {attribute.name} ({count})
+                                        </AttributePill>
+                                    );
+                                })}
+                            </AttributeFilterContainer>
+                            {selectedAttributes.length > 0 && (
+                                <ClearFilterButton type="button" onClick={clearAttributeFilter}>
+                                    Filter zurücksetzen
+                                </ClearFilterButton>
+                            )}
+                        </AttributeFilterWrapper>
+                    )}
+                </AttributeFilterSection>
+            )}
+            {!userPosition && (
+                <LocationHint>
+                    <span>Teile deinen Standort, um Entfernungen anzeigen und filtern zu können.</span>
+                    <LocationButton
+                        type="button"
+                        onClick={requestUserLocation}
+                        disabled={locationStatus === 'requesting'}
+                    >
+                        {locationStatus === 'requesting' ? 'Standort wird ermittelt...' : 'Standort freigeben'}
+                    </LocationButton>
+                    {locationError && <LocationError>{locationError}</LocationError>}
+                </LocationHint>
+            )}
+            {userPosition && (
+                <FilterHint>Entfernungen beziehen sich auf deinen aktuellen Standort.</FilterHint>
+            )}
+        </>
+    );
 
     return (
         <>
@@ -471,115 +606,21 @@ const Ranking = () => {
                             Eisbecher
                         </TabButton>
                     </TabContainer>
-                    <FiltersRow>
-                        <FilterGroup>
-                            <FilterLabel htmlFor="ranking-search">Suche</FilterLabel>
-                            <FilterInput
-                                id="ranking-search"
-                                type="text"
-                                value={searchTerm}
-                                placeholder="Eisdiele suchen..."
-                                onChange={(event) => setSearchTerm(event.target.value)}
-                            />
-                        </FilterGroup>
-                        <FilterGroup>
-                            <FilterLabel htmlFor="ranking-distance">Entfernung</FilterLabel>
-                            <FilterSelect
-                                id="ranking-distance"
-                                value={distanceFilter}
-                                onChange={handleDistanceChange}
-                            >
-                                <option value="any">Alle Entfernungen</option>
-                                <option value="2">bis 2 km</option>
-                                <option value="5">bis 5 km</option>
-                                <option value="10">bis 10 km</option>
-                                <option value="25">bis 25 km</option>
-                                <option value="50">bis 50 km</option>
-                            </FilterSelect>
-                        </FilterGroup>
-                        <FilterGroup>
-                            <FilterLabel htmlFor="ranking-rating">Rating-Quelle</FilterLabel>
-                            <FilterSelect
-                                id="ranking-rating"
-                                value={ratingScope}
-                                onChange={handleRatingScopeChange}
-                            >
-                                <option value="global">Global</option>
-                                <option value="gourmetCyclist">TheGourmetCyclist-Rating</option>
-                                <option value="personal" disabled={!userId}>Personal-Rating</option>
-                            </FilterSelect>
-                        </FilterGroup>
-                        <FilterGroup>
-                            <FilterLabel>Öffnungszeiten</FilterLabel>
-                            <FilterSelect
-                                value={openFilterMode}
-                                onChange={(event) => handleOpenFilterModeChange(event.target.value)}
-                            >
-                                <option value="all">Alle Zeiten</option>
-                                <option value="now">Jetzt geöffnet</option>
-                                <option value="custom">Geöffnet am …</option>
-                            </FilterSelect>
-                            {openFilterMode === 'custom' && (
-                                <FilterInput
-                                    type="datetime-local"
-                                    value={openFilterDateTime}
-                                    onChange={(event) => setOpenFilterDateTime(event.target.value)}
-                                />
-                            )}
-                        </FilterGroup>
-                    </FiltersRow>
-                    {attributeOptions.length > 0 && (
-                        <AttributeFilterSection>
-                            <AttributeToggleButton
+                    {isCompactFilters && (
+                        <FiltersToggleBar>
+                            <FiltersToggleButton
                                 type="button"
-                                onClick={() => setShowAttributeFilters((prev) => !prev)}
+                                onClick={() => setAreFiltersExpanded((prev) => !prev)}
                             >
-                                {showAttributeFilters ? 'Attribute-Filter verbergen' : 'Attribute-Filter anzeigen'}
-                            </AttributeToggleButton>
-                            {showAttributeFilters && (
-                                <AttributeFilterWrapper>
-                                    <FilterLabel as="div">Attribute</FilterLabel>
-                                    <AttributeFilterContainer>
-                                        {displayedAttributeOptions.map((attribute) => {
-                                            const count = activeAttributeCounts[attribute.id] || 0;
-                                            return (
-                                            <AttributePill
-                                                key={attribute.id}
-                                                type="button"
-                                                $active={selectedAttributes.includes(attribute.id)}
-                                                onClick={() => handleAttributeToggle(attribute.id)}
-                                            >
-                                                {attribute.name} ({count})
-                                            </AttributePill>
-                                        );
-                                        })}
-                                    </AttributeFilterContainer>
-                                    {selectedAttributes.length > 0 && (
-                                        <ClearFilterButton type="button" onClick={clearAttributeFilter}>
-                                            Filter zurücksetzen
-                                        </ClearFilterButton>
-                                    )}
-                                </AttributeFilterWrapper>
-                            )}
-                        </AttributeFilterSection>
+                                {areFiltersExpanded ? 'Filter verbergen' : 'Filter anzeigen'}
+                            </FiltersToggleButton>
+                        </FiltersToggleBar>
                     )}
-                    {!userPosition && (
-                        <LocationHint>
-                            <span>Teile deinen Standort, um Entfernungen anzeigen und filtern zu können.</span>
-                            <LocationButton
-                                type="button"
-                                onClick={requestUserLocation}
-                                disabled={locationStatus === 'requesting'}
-                            >
-                                {locationStatus === 'requesting' ? 'Standort wird ermittelt...' : 'Standort freigeben'}
-                            </LocationButton>
-                            {locationError && <LocationError>{locationError}</LocationError>}
-                        </LocationHint>
-                    )}
-                    {userPosition && (
-                        <FilterHint>Entfernungen beziehen sich auf deinen aktuellen Standort.</FilterHint>
-                    )}
-                    {activeTab === 'kugel' && (<><Table>
+                    {(!isCompactFilters || areFiltersExpanded) && filtersContent}
+                    {activeTab === 'kugel' && (
+                        <>
+                            <TableScrollArea>
+                                <Table>
                         <thead>
                             <tr>
                                 <th>Eisdiele</th>
@@ -649,8 +690,9 @@ const Ranking = () => {
                                 </React.Fragment>
                             ))}
                         </tbody>
-                    </Table>
-                        <Explanation>
+                                </Table>
+                            </TableScrollArea>
+                            <Explanation>
                             <h1>Erklärung zum Ranking</h1>
                             <LeftAlign>
                                 <ScoreExplanation>
@@ -708,9 +750,13 @@ const Ranking = () => {
                                     </p>
                                 </ScoreExplanation>
                             </LeftAlign>
-                        </Explanation></>)}
-                    {activeTab === 'softeis' && (<>
-                        <Table>
+                            </Explanation>
+                        </>
+                    )}
+                    {activeTab === 'softeis' && (
+                        <>
+                            <TableScrollArea>
+                                <Table>
                             <thead>
                                 <tr>
                                     <th>Eisdiele</th>
@@ -784,8 +830,9 @@ const Ranking = () => {
                                     </React.Fragment>
                                 ))}
                             </tbody>
-                        </Table>
-                        <Explanation>
+                                </Table>
+                            </TableScrollArea>
+                            <Explanation>
                             <h1>Erklärung zum Ranking</h1>
                             <LeftAlign>
                                 <ScoreExplanation>
@@ -840,10 +887,13 @@ const Ranking = () => {
                                     </p>
                                 </ScoreExplanation>
                             </LeftAlign>
-                        </Explanation></>
+                            </Explanation>
+                        </>
                     )}
-                    {activeTab === 'eisbecher' && (<>
-                        <Table>
+                    {activeTab === 'eisbecher' && (
+                        <>
+                            <TableScrollArea>
+                                <Table>
                             <thead>
                                 <tr>
                                     <th>Eisdiele</th>
@@ -905,8 +955,9 @@ const Ranking = () => {
                                     </React.Fragment>
                                 ))}
                             </tbody>
-                        </Table>
-                        <Explanation>
+                                </Table>
+                            </TableScrollArea>
+                            <Explanation>
                             <h1>Erklärung zum Ranking</h1>
                             <LeftAlign>
                                 <ScoreExplanation>
@@ -953,7 +1004,8 @@ const Ranking = () => {
                                     </p>
                                 </ScoreExplanation>
                             </LeftAlign>
-                        </Explanation></>
+                            </Explanation>
+                        </>
                     )}
 
                 </TableContainer>
@@ -981,8 +1033,8 @@ const Container = styled.div`
 
 const TableContainer = styled.div`
   justify-content: center;
-  overflow-x: auto;
   text-align: center;
+  width: 100%;
 `;
 
 const LeftAlign = styled.p`
@@ -1003,6 +1055,11 @@ const Table = styled.table`
   tr {
     cursor: pointer;
   }
+`;
+
+const TableScrollArea = styled.div`
+  width: 100%;
+  overflow-x: auto;
 `;
 const Explanation = styled.div`
   margin-top: 2rem;
@@ -1064,6 +1121,26 @@ const FiltersRow = styled.div`
   gap: 1rem;
   justify-content: center;
   margin: 1rem 0;
+`;
+
+const FiltersToggleBar = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+`;
+
+const FiltersToggleButton = styled.button`
+  padding: 0.4rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid #ffb522;
+  background-color: #fff4d9;
+  color: #a36100;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #ffe2a9;
+  }
 `;
 
 const FilterGroup = styled.div`

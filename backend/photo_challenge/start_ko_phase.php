@@ -31,83 +31,144 @@ try {
         throw new RuntimeException('Es liegen noch keine Gruppenergebnisse vor.');
     }
 
-    $firstSeeds = [];
-    $secondSeeds = [];
-    $thirdCandidates = [];
+    $groupSize = max(1, (int)$challenge['group_size']);
+    $groupAdvancers = (int)($challenge['group_advancers'] ?? 2);
+    if ($groupAdvancers < 1) {
+        $groupAdvancers = 1;
+    }
+    if ($groupAdvancers > $groupSize) {
+        $groupAdvancers = $groupSize;
+    }
+    $luckySlots = max(0, (int)($challenge['lucky_loser_slots'] ?? 0));
+    $requestedBracketSize = isset($challenge['ko_bracket_size']) ? (int)$challenge['ko_bracket_size'] : 0;
+    if ($requestedBracketSize < 0) {
+        $requestedBracketSize = 0;
+    }
+
+    $directAdvancers = [];
+    $luckyCandidates = [];
 
     foreach ($groups as $group) {
-        if (count($group['entries']) < 2) {
-            throw new RuntimeException('Jede Gruppe benötigt mindestens zwei Einträge.');
+        if (count($group['entries']) < $groupAdvancers) {
+            throw new RuntimeException(sprintf('Gruppe %s hat nicht genug Bilder für %d weiterkommende Plätze.', $group['group_name'], $groupAdvancers));
         }
-        $first = $group['entries'][0];
-        $second = $group['entries'][1];
-        $firstSeeds[] = [
-            'image_id' => $first['image_id'],
-            'label' => $group['group_name'] . ' – Platz 1',
-        ];
-        $secondSeeds[] = [
-            'image_id' => $second['image_id'],
-            'label' => $group['group_name'] . ' – Platz 2',
-        ];
-        if (isset($group['entries'][2])) {
-            $thirdCandidates[] = [
-                'image_id' => $group['entries'][2]['image_id'],
-                'wins' => $group['entries'][2]['wins'],
-                'votes_for' => $group['entries'][2]['votes_for'],
-                'label' => $group['group_name'] . ' – Platz 3',
+        for ($rank = 0; $rank < $groupAdvancers; $rank++) {
+            $entry = $group['entries'][$rank];
+            $directAdvancers[] = [
+                'image_id' => (int)$entry['image_id'],
+                'label' => $group['group_name'] . ' – Platz ' . ($rank + 1),
+                'wins' => (int)($entry['wins'] ?? 0),
+                'votes_for' => (int)($entry['votes_for'] ?? 0),
+                'group_rank' => $rank + 1,
+                'is_lucky' => false,
+            ];
+        }
+        for ($rank = $groupAdvancers; $rank < count($group['entries']); $rank++) {
+            $entry = $group['entries'][$rank];
+            $luckyCandidates[] = [
+                'image_id' => (int)$entry['image_id'],
+                'label' => $group['group_name'] . ' – Platz ' . ($rank + 1),
+                'wins' => (int)($entry['wins'] ?? 0),
+                'votes_for' => (int)($entry['votes_for'] ?? 0),
+                'group_rank' => $rank + 1,
+                'is_lucky' => true,
             ];
         }
     }
 
-    if (count($thirdCandidates) < 2) {
-        throw new RuntimeException('Es werden mindestens zwei Drittplatzierte benötigt.');
+    $directCount = count($directAdvancers);
+    if ($directCount < 2) {
+        throw new RuntimeException('Es werden mindestens zwei Teilnehmer für die KO-Runde benötigt.');
     }
 
-    usort($thirdCandidates, function ($a, $b) {
+    usort($luckyCandidates, function ($a, $b) {
         if ($a['wins'] !== $b['wins']) {
             return $b['wins'] <=> $a['wins'];
         }
         if ($a['votes_for'] !== $b['votes_for']) {
             return $b['votes_for'] <=> $a['votes_for'];
         }
+        if ($a['group_rank'] !== $b['group_rank']) {
+            return $a['group_rank'] <=> $b['group_rank'];
+        }
         return $a['image_id'] <=> $b['image_id'];
     });
-    $luckyLosers = array_slice($thirdCandidates, 0, 2);
 
-    $secondSeedsRotated = rotateArray($secondSeeds, 1);
-    $otherSeeds = array_merge($secondSeedsRotated, $luckyLosers);
+    $maxLuckyAvailable = min($luckySlots, count($luckyCandidates));
+    $maxPossibleParticipants = $directCount + $maxLuckyAvailable;
 
-    if (count($otherSeeds) < count($firstSeeds)) {
-        throw new RuntimeException('Nicht genügend Gegner für die Gruppensieger.');
+    if ($requestedBracketSize > 0) {
+        if ($requestedBracketSize % 2 !== 0) {
+            throw new RuntimeException('Die Teilnehmerzahl für die KO-Runde muss gerade sein.');
+        }
+        if ($requestedBracketSize < $directCount) {
+            throw new RuntimeException('Die KO-Teilnehmerzahl darf nicht kleiner als die Zahl der gesetzten Plätze sein.');
+        }
+        if ($requestedBracketSize > $maxPossibleParticipants) {
+            throw new RuntimeException('Für das gewünschte KO-Feld fehlen Lucky-Loser-Slots oder qualifizierte Bilder.');
+        }
+        $targetParticipants = $requestedBracketSize;
+    } else {
+        $targetParticipants = $directCount;
+        if ($targetParticipants % 2 !== 0) {
+            if ($maxPossibleParticipants <= $targetParticipants) {
+                throw new RuntimeException('Ungerade Anzahl an Teilnehmern – erhöhe die Lucky-Loser-Anzahl oder passe die Gruppenregeln an.');
+            }
+            $targetParticipants++;
+        }
+        $nextPower = nextPowerOfTwo($targetParticipants);
+        if ($nextPower <= $maxPossibleParticipants) {
+            $targetParticipants = $nextPower;
+        } elseif ($targetParticipants > $maxPossibleParticipants) {
+            throw new RuntimeException('Nicht genügend Lucky-Loser-Slots, um das KO-Feld zu vervollständigen. Bitte erhöhe die Slots oder lege eine feste KO-Größe fest.');
+        }
+    }
+
+    $luckyNeeded = $targetParticipants - $directCount;
+    if ($luckyNeeded > $maxLuckyAvailable) {
+        throw new RuntimeException('Es stehen nicht genügend Lucky-Loser zur Verfügung.');
+    }
+
+    $selectedLucky = array_map(function ($participant) {
+        $participant['label'] .= ' (Lucky Loser)';
+        return $participant;
+    }, array_slice($luckyCandidates, 0, $luckyNeeded));
+
+    $participants = array_merge($directAdvancers, $selectedLucky);
+    usort($participants, function ($a, $b) {
+        if ($a['group_rank'] !== $b['group_rank']) {
+            return $a['group_rank'] <=> $b['group_rank'];
+        }
+        if ($a['wins'] !== $b['wins']) {
+            return $b['wins'] <=> $a['wins'];
+        }
+        if ($a['votes_for'] !== $b['votes_for']) {
+            return $b['votes_for'] <=> $a['votes_for'];
+        }
+        if (($a['is_lucky'] ?? false) !== ($b['is_lucky'] ?? false)) {
+            return ($a['is_lucky'] ?? false) <=> ($b['is_lucky'] ?? false);
+        }
+        return $a['image_id'] <=> $b['image_id'];
+    });
+
+    if (count($participants) % 2 !== 0) {
+        throw new RuntimeException('Die Teilnehmerzahl für die KO-Runde muss gerade sein.');
     }
 
     $pairings = [];
     $position = 1;
-    for ($i = 0; $i < count($firstSeeds); $i++) {
+    $left = 0;
+    $right = count($participants) - 1;
+    while ($left < $right) {
         $pairings[] = [
-            'image_a_id' => $firstSeeds[$i]['image_id'],
-            'image_b_id' => $otherSeeds[$i]['image_id'],
-            'label_a' => $firstSeeds[$i]['label'],
-            'label_b' => $otherSeeds[$i]['label'],
+            'image_a_id' => $participants[$left]['image_id'],
+            'image_b_id' => $participants[$right]['image_id'],
+            'label_a' => $participants[$left]['label'],
+            'label_b' => $participants[$right]['label'],
             'position' => $position++,
         ];
-    }
-
-    $remaining = array_slice($otherSeeds, count($firstSeeds));
-    if (count($remaining) === 2) {
-        $pairings[] = [
-            'image_a_id' => $remaining[0]['image_id'],
-            'image_b_id' => $remaining[1]['image_id'],
-            'label_a' => $remaining[0]['label'],
-            'label_b' => $remaining[1]['label'],
-            'position' => $position++,
-        ];
-    } elseif (count($remaining) !== 0) {
-        throw new RuntimeException('Ungültige Teilnehmerzahl für das KO-Raster.');
-    }
-
-    if (count($pairings) % 2 !== 0) {
-        throw new RuntimeException('Die KO-Runde benötigt eine gerade Anzahl an Matches.');
+        $left++;
+        $right--;
     }
 
     $pdo->beginTransaction();

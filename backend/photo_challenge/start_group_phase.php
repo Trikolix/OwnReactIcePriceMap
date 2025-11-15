@@ -25,8 +25,8 @@ try {
     if (!$challenge) {
         throw new RuntimeException('Challenge existiert nicht.');
     }
-    if ($challenge['status'] !== 'draft') {
-        throw new RuntimeException('Die Gruppenphase kann nur bei Challenges im Status "draft" gestartet werden.');
+    if (!in_array($challenge['status'], ['draft', 'submission_open'], true)) {
+        throw new RuntimeException('Die Gruppenphase kann nur bei Challenges im Status "draft" oder während der Einreichphase gestartet werden.');
     }
 
     $groupSize = max(2, (int)$challenge['group_size']);
@@ -65,24 +65,30 @@ try {
 
     $positionCounter = 1;
     $groupNames = range('A', 'Z');
-    $baseStart = $challenge['start_at'] ? new DateTimeImmutable($challenge['start_at']) : new DateTimeImmutable('now');
-    $baseStart = $baseStart->setTime(0, 0, 0);
-    $groupDurationDays = 14;
-    $groupOffsetDays = 7;
+    $groupSchedule = sanitizeGroupSchedule($challenge['group_schedule'] ?? null, $challenge['start_at'] ?? null);
+    $groupTimings = buildGroupTimings($groupSchedule, $groupCount, $challenge['start_at'] ?? null);
 
     for ($groupIndex = 0; $groupIndex < $groupCount; $groupIndex++) {
         $chunk = array_slice($imageIds, $groupIndex * $groupSize, $groupSize);
         $groupName = 'Gruppe ' . ($groupNames[$groupIndex] ?? '#' . ($groupIndex + 1));
-        $offsetWeeks = intdiv($groupIndex, 2);
-        $startAt = $baseStart->modify('+' . ($offsetWeeks * $groupOffsetDays) . ' days');
-        $endAt = $startAt->modify('+' . $groupDurationDays . ' days');
+        $timing = $groupTimings[$groupIndex] ?? null;
+        if ($timing) {
+            $startAt = $timing['start_at'];
+            $endAt = $timing['end_at'];
+        } else {
+            $fallbackStart = $challenge['start_at'] ? new DateTimeImmutable($challenge['start_at']) : new DateTimeImmutable('now');
+            $fallbackStart = $fallbackStart->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $fallbackEnd = (new DateTimeImmutable($fallbackStart))->modify('+14 days')->format('Y-m-d H:i:s');
+            $startAt = $fallbackStart;
+            $endAt = $fallbackEnd;
+        }
 
         $insertGroup->execute([
             'challenge_id' => $challengeId,
             'name' => $groupName,
             'position' => $groupIndex + 1,
-            'start_at' => $startAt->format('Y-m-d H:i:s'),
-            'end_at' => $endAt->format('Y-m-d H:i:s'),
+            'start_at' => $startAt,
+            'end_at' => $endAt,
         ]);
         $groupId = (int)$pdo->lastInsertId();
 

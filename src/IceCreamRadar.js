@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
@@ -16,6 +16,100 @@ import ShopDetailsView from './ShopDetailsView';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
+import SubmitIceShopModal from './SubmitIceShopModal';
+
+const toNumberOrNull = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const DISPLAY_OPTIONS = [
+  {
+    value: 'price',
+    label: 'Preis',
+    invertScale: false,
+    getValue: (shop) => {
+      const kugel = toNumberOrNull(shop.kugel_preis_eur ?? shop.kugel_preis);
+      if (kugel !== null) {
+        return kugel;
+      }
+      const soft = toNumberOrNull(shop.softeis_preis_eur ?? shop.softeis_preis);
+      return soft;
+    },
+    formatValue: (value) => `${value.toFixed(2)} €`,
+  },
+  {
+    value: 'kugelPrice',
+    label: 'Kugelpreis',
+    invertScale: false,
+    getValue: (shop) => toNumberOrNull(shop.kugel_preis_eur ?? shop.kugel_preis),
+    formatValue: (value) => `${value.toFixed(2)} €`,
+  },
+  {
+    value: 'softeisPrice',
+    label: 'Softeispreis',
+    invertScale: false,
+    getValue: (shop) => toNumberOrNull(shop.softeis_preis_eur ?? shop.softeis_preis),
+    formatValue: (value) => `${value.toFixed(2)} €`,
+  },
+  {
+    value: 'kugelRating',
+    label: 'Kugel: Rating',
+    invertScale: true,
+    getValue: (shop) => toNumberOrNull(shop.finaler_kugel_score),
+    formatValue: (value) => value.toFixed(2),
+  },
+  {
+    value: 'softeisRating',
+    label: 'Softeis: Rating',
+    invertScale: true,
+    getValue: (shop) => toNumberOrNull(shop.finaler_softeis_score),
+    formatValue: (value) => value.toFixed(2),
+  },
+  {
+    value: 'eisbecherRating',
+    label: 'Eisbecher: Rating',
+    invertScale: true,
+    getValue: (shop) => toNumberOrNull(shop.finaler_eisbecher_score),
+    formatValue: (value) => value.toFixed(2),
+  },
+];
+
+const createDefaultFilters = () => ({
+  favorites: false,
+  visited: false,
+  notVisited: false,
+  types: {
+    kugel: false,
+    softeis: false,
+    eisbecher: false,
+  },
+});
+
+const hasTypeData = (shop, type) => {
+  switch (type) {
+    case 'kugel':
+      return (
+        toNumberOrNull(shop.kugel_preis_eur ?? shop.kugel_preis) !== null ||
+        toNumberOrNull(shop.finaler_kugel_score) !== null
+      );
+    case 'softeis':
+      return (
+        toNumberOrNull(shop.softeis_preis_eur ?? shop.softeis_preis) !== null ||
+        toNumberOrNull(shop.finaler_softeis_score) !== null
+      );
+    case 'eisbecher':
+      return (
+        toNumberOrNull(shop.eisbecher_preis_eur ?? shop.eisbecher_preis) !== null ||
+        toNumberOrNull(shop.finaler_eisbecher_score) !== null
+      );
+    default:
+      return false;
+  }
+};
 
 const LocateControl = ({ userPosition }) => {
   const map = useMap();
@@ -109,12 +203,100 @@ const SearchToggleControl = ({ isSearchVisible, onToggle }) => {
   return null;
 };
 
+const ClusteringToggleControl = ({ clustering, onToggle }) => {
+  const map = useMap();
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    const clusteringControl = L.control({ position: 'topright' });
+    clusteringControl.onAdd = () => {
+      const container = L.DomUtil.create('div', 'leaflet-bar');
+      const button = L.DomUtil.create('a', 'leaflet-control-clustering-toggle', container);
+      button.href = '#';
+      buttonRef.current = button;
+      button.innerHTML = clustering ? '⛶' : '◯';
+
+      const handleClick = (event) => {
+        L.DomEvent.stopPropagation(event);
+        L.DomEvent.preventDefault(event);
+        onToggle();
+      };
+
+      L.DomEvent.on(button, 'click', handleClick);
+      L.DomEvent.disableClickPropagation(container);
+
+      return container;
+    };
+
+    clusteringControl.addTo(map);
+
+    return () => {
+      buttonRef.current = null;
+      clusteringControl.remove();
+    };
+  }, [map, onToggle]);
+
+  useEffect(() => {
+    if (!buttonRef.current) return;
+    buttonRef.current.innerHTML = clustering ? '⛶' : '◯';
+    buttonRef.current.title = clustering ? 'Clustering deaktivieren' : 'Clustering aktivieren';
+    if (clustering) {
+      L.DomUtil.addClass(buttonRef.current, 'leaflet-active');
+    } else {
+      L.DomUtil.removeClass(buttonRef.current, 'leaflet-active');
+    }
+  }, [clustering]);
+
+  return null;
+};
+
+const MapContextMenuListener = ({ onOpen, onDismiss, onUserInteraction }) => {
+  const map = useMapEvents({
+    contextmenu(event) {
+      event.originalEvent?.preventDefault?.();
+      onOpen(event);
+    },
+    click() {
+      onDismiss();
+    },
+    movestart() {
+      onUserInteraction();
+      onDismiss();
+    },
+    zoomstart() {
+      onUserInteraction();
+      onDismiss();
+    },
+  });
+
+  useEffect(() => {
+    if (!map) {
+      return undefined;
+    }
+    const container = map.getContainer();
+    const suppressBrowserContextMenu = (domEvent) => {
+      domEvent.preventDefault();
+    };
+    const captureOptions = { capture: true };
+    container.addEventListener('contextmenu', suppressBrowserContextMenu, captureOptions);
+
+    return () => {
+      container.removeEventListener('contextmenu', suppressBrowserContextMenu, captureOptions);
+    };
+  }, [map]);
+
+  return null;
+};
+
 const IceCreamRadar = () => {
   const location = useLocation();
   const [iceCreamShops, setIceCreamShops] = useState([]);
   const [activeShop, setActiveShop] = useState(null);
   const [clustering, setClustering] = useState(true);
-  const [selectedOption, setSelectedOption] = useState("Alle");
+  const [displayMode, setDisplayMode] = useState('price');
+  const [filters, setFilters] = useState(() => createDefaultFilters());
   const mapRef = useRef(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
@@ -131,16 +313,33 @@ const IceCreamRadar = () => {
   const [searchError, setSearchError] = useState('');
   const [searchLocation, setSearchLocation] = useState(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [contextMenuState, setContextMenuState] = useState({
+    isVisible: false,
+    x: 0,
+    y: 0,
+    latlng: null,
+  });
+  const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
+  const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
+  const handleMapInteraction = useCallback(() => {
+    setHasInteractedWithMap(true);
+  }, [setHasInteractedWithMap]);
   const buildDefaultDateTimeValue = () => {
     const date = new Date();
     date.setMinutes(date.getMinutes() + 60);
     date.setSeconds(0, 0);
     return date.toISOString().slice(0, 16);
   };
-const handleOpenFilterModeChange = (value) => {
+
+  const handleOpenFilterModeChange = (value) => {
     setOpenFilterMode(value);
     if (value === 'custom' && !openFilterDateTime) {
       setOpenFilterDateTime(buildDefaultDateTimeValue());
+      return;
+    }
+    if (value !== 'custom') {
+      setOpenFilterDateTime('');
     }
   };
   const openFilterQueryString = useMemo(() => {
@@ -152,12 +351,6 @@ const handleOpenFilterModeChange = (value) => {
     }
     return '';
   }, [openFilterMode, openFilterDateTime]);
-  const openFilterOptions = useMemo(() => [
-    { value: 'all', label: 'Jederzeit geöffnet' },
-    { value: 'now', label: 'Jetzt geöffnet' },
-    { value: 'custom', label: 'Geöffnet am …' },
-  ], []);
-
   const { shopId, token } = useParams();
   const navigate = useNavigate();
 
@@ -307,6 +500,167 @@ const handleOpenFilterModeChange = (value) => {
     setIsSearchVisible((prev) => !prev);
   }, []);
 
+  const closeContextMenu = useCallback(() => {
+    setContextMenuState((prev) => (prev.isVisible ? { ...prev, isVisible: false } : prev));
+  }, []);
+
+  const handleMapContextMenuOpen = useCallback((event) => {
+    const { containerPoint, latlng } = event;
+    setContextMenuState({
+      isVisible: true,
+      x: containerPoint.x,
+      y: containerPoint.y,
+      latlng,
+    });
+  }, []);
+
+  const handleSubmitModalVisibility = useCallback((visible) => {
+    if (!visible) {
+      setIsSubmitIceShopModalOpen(false);
+      setSubmitModalCoordinates(null);
+      return;
+    }
+    setIsSubmitIceShopModalOpen(true);
+  }, []);
+
+  const handleOpenSubmitModalAt = useCallback(
+    (latlng) => {
+      if (!latlng) {
+        return;
+      }
+      closeContextMenu();
+      if (!isLoggedIn) {
+        setShowLoginModal(true);
+        return;
+      }
+      setSubmitModalCoordinates({ lat: latlng.lat, lng: latlng.lng });
+      setIsSubmitIceShopModalOpen(true);
+    },
+    [closeContextMenu, isLoggedIn, setShowLoginModal]
+  );
+  const handleFilterToggle = (filterKey) => {
+    setFilters((prev) => {
+      const nextValue = !prev[filterKey];
+      const updated = { ...prev, [filterKey]: nextValue };
+      if (filterKey === 'visited' && nextValue) {
+        updated.notVisited = false;
+      } else if (filterKey === 'notVisited' && nextValue) {
+        updated.visited = false;
+      }
+      return updated;
+    });
+  };
+
+  const handleTypeFilterToggle = (typeKey) => {
+    setFilters((prev) => ({
+      ...prev,
+      types: {
+        ...prev.types,
+        [typeKey]: !prev.types?.[typeKey],
+      },
+    }));
+  };
+
+  const handleResetFilters = () => {
+    setFilters(createDefaultFilters());
+    handleOpenFilterModeChange('all');
+  };
+
+  const displayDropdownOptions = useMemo(
+    () => DISPLAY_OPTIONS.map(({ value, label }) => ({ value, label })),
+    []
+  );
+
+  const activeDisplayConfig = useMemo(
+    () => DISPLAY_OPTIONS.find((option) => option.value === displayMode) ?? DISPLAY_OPTIONS[0],
+    [displayMode]
+  );
+
+  useEffect(() => {
+    if (!userId) {
+      setFilters((prev) => ({
+        ...prev,
+        favorites: false,
+        visited: false,
+        notVisited: false,
+      }));
+    }
+  }, [userId]);
+
+  const favoritesFilterActive = filters.favorites && !!userId;
+  const visitedFilterActive = filters.visited && !!userId;
+  const notVisitedFilterActive = filters.notVisited && !!userId;
+  const typeFilters = filters.types ?? { kugel: false, softeis: false, eisbecher: false };
+  const hasTypeFilter = Object.values(typeFilters).some(Boolean);
+
+  const shopsWithDisplayValue = useMemo(() => {
+    if (!activeDisplayConfig?.getValue) {
+      return [];
+    }
+    return iceCreamShops.reduce((acc, shop) => {
+      if (favoritesFilterActive && shop.is_favorit !== 1) {
+        return acc;
+      }
+      if (visitedFilterActive && Number(shop.has_visited) !== 1) {
+        return acc;
+      }
+      if (notVisitedFilterActive && Number(shop.has_visited) !== 0) {
+        return acc;
+      }
+      if (hasTypeFilter) {
+        const matchesType = Object.entries(typeFilters).some(
+          ([typeKey, isActive]) => isActive && hasTypeData(shop, typeKey)
+        );
+        if (!matchesType) {
+          return acc;
+        }
+      }
+      const value = activeDisplayConfig.getValue(shop);
+      acc.push({ shop, value });
+      return acc;
+    }, []);
+  }, [
+    iceCreamShops,
+    activeDisplayConfig,
+    favoritesFilterActive,
+    visitedFilterActive,
+    notVisitedFilterActive,
+    hasTypeFilter,
+    typeFilters,
+  ]);
+
+  const { minValue, maxValue } = useMemo(() => {
+    const numericValues = shopsWithDisplayValue
+      .map(({ value }) => value)
+      .filter((value) => value !== null && value !== undefined && !Number.isNaN(value));
+    if (!numericValues.length) {
+      return { minValue: null, maxValue: null };
+    }
+    return {
+      minValue: Math.min(...numericValues),
+      maxValue: Math.max(...numericValues),
+    };
+  }, [shopsWithDisplayValue]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (favoritesFilterActive) count += 1;
+    if (visitedFilterActive) count += 1;
+    if (notVisitedFilterActive) count += 1;
+    const typeCount = Object.values(typeFilters).filter(Boolean).length;
+    count += typeCount;
+    if (openFilterMode === 'now') count += 1;
+    if (openFilterMode === 'custom' && openFilterDateTime) count += 1;
+    return count;
+  }, [
+    favoritesFilterActive,
+    visitedFilterActive,
+    notVisitedFilterActive,
+    typeFilters,
+    openFilterMode,
+    openFilterDateTime,
+  ]);
+
   // Geoposition des Nutzers laden
   useEffect(() => {
     if (!userPosition && navigator.geolocation) {
@@ -332,78 +686,35 @@ const handleOpenFilterModeChange = (value) => {
   }, [userPosition, shopId, hasInteractedWithMap]);
 
 
-  // Funktion zum Filtern der Eisdielen
-  const filteredShops = iceCreamShops.filter(shop => {
-    if (selectedOption === "Kugel: Preis") return shop.kugel_preis !== null;
-    if (selectedOption === "Softeis: Preis") return shop.softeis_preis !== null;
-    if (selectedOption === "Kugel: Rating") return shop.finaler_kugel_score !== null;
-    if (selectedOption === "Softeis: Rating") return shop.finaler_softeis_score !== null;
-    if (selectedOption === "Eisbecher: Rating") return shop.finaler_eisbecher_score !== null;
-    if (selectedOption === "Favoriten") return shop.is_favorit === 1;
-    if (selectedOption === "Besucht") return Number(shop.has_visited) === 1;
-    if (selectedOption === "Nicht besucht") return Number(shop.has_visited) === 0;
-    return true;
-  });
-  // Berechne den minimalen und maximalen Preis
-  const prices = (selectedOption === "Alle" || selectedOption === "Favoriten" || selectedOption === "Besucht" || selectedOption === "Nicht besucht") ? filteredShops.map(shop => shop.kugel_preis_eur).concat(filteredShops.map(shop => shop.softeis_preis_eur)).filter(price => price !== null) :
-    selectedOption === "Kugel: Preis" ? filteredShops.map(shop => shop.kugel_preis_eur).filter(price => price !== null) :
-      selectedOption === "Softeis: Preis" ? filteredShops.map(shop => shop.softeis_preis_eur).filter(price => price !== null) :
-        selectedOption === "Kugel: Rating" ? filteredShops.map(shop => shop.finaler_kugel_score).filter(kugelscore => kugelscore !== null) :
-          selectedOption === "Softeis: Rating" ? filteredShops.map(shop => shop.finaler_softeis_score).filter(softeisscore => softeisscore !== null) :
-            selectedOption === "Eisbecher: Rating" ? filteredShops.map(shop => shop.finaler_eisbecher_score).filter(becherscore => becherscore !== null) : null;
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-
   useEffect(() => {
     if (userId !== undefined) {
       fetchIceCreamShops();
     }
   }, [userId, openFilterQueryString]);
 
-  const baseOptions = [
-    "Alle",
-    "Kugel: Preis",
-    "Softeis: Preis",
-    "Kugel: Rating",
-    "Softeis: Rating",
-    "Eisbecher: Rating"
-  ];
-  // Nur wenn userId gesetzt ist, Favoriten hinzufügen
-  const userOptions = userId ? ["Favoriten", "Besucht", "Nicht besucht"] : [];
-
-  const options = [...baseOptions, ...userOptions];
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        minHeight: '100vh',
+        backgroundColor: '#ffb522',
+      }}
+    >
       <Header
         refreshShops={refreshShops}
       />
       <LogoContainer>
         <DropdownSelect
-          options={options}
-          onChange={(selectedOption) => {
-            setSelectedOption(selectedOption);
-          }}
+          options={displayDropdownOptions}
+          value={displayMode}
+          onChange={(value) => setDisplayMode(value)}
         />
-        <YellowButton onClick={() => setClustering(!clustering)}>
-          {clustering ? 'Clustering: An' : 'Clustering: Aus'}
-        </YellowButton>
-        <FilterControls>
-          <DropdownSelect
-            options={openFilterOptions}
-            value={openFilterMode}
-            onChange={handleOpenFilterModeChange}
-          />
-          {openFilterMode === 'custom' && (
-            <>
-              <DateTimeInput
-                type="datetime-local"
-                value={openFilterDateTime}
-                onChange={(e) => setOpenFilterDateTime(e.target.value)}
-              />
-            </>
-          )}
-        </FilterControls>
+        <FilterButton type="button" onClick={() => setIsFilterModalOpen(true)}>
+          Filter
+          {activeFilterCount > 0 && <FilterBadge>{activeFilterCount}</FilterBadge>}
+        </FilterButton>
       </LogoContainer>
 
       <MapSection>
@@ -448,7 +759,22 @@ const handleOpenFilterModeChange = (value) => {
                 {searchError && <SearchErrorText>{searchError}</SearchErrorText>}
               </SearchResults>
             )}
-          </SearchOverlay>
+            </SearchOverlay>
+        )}
+        {contextMenuState.isVisible && (
+          <MapContextMenu style={{ top: contextMenuState.y, left: contextMenuState.x }}>
+            <MapContextMenuButton
+              type="button"
+              onClick={() => handleOpenSubmitModalAt(contextMenuState.latlng)}
+            >
+              🍦 Eisdiele eintragen
+            </MapContextMenuButton>
+            {!isLoggedIn && (
+              <MapContextMenuHint>
+                Melde dich an, um neue Eisdielen einzutragen.
+              </MapContextMenuHint>
+            )}
+          </MapContextMenu>
         )}
         <MapContainer
           center={initialCenter}
@@ -457,12 +783,16 @@ const handleOpenFilterModeChange = (value) => {
           ref={mapRef}
           zoomControl={false}
           whenCreated={(mapInstance) => {
-            mapInstance.on('dragstart zoomstart', () => {
-              setHasInteractedWithMap(true);
-            });
+            mapRef.current = mapInstance;
           }}
         >
+          <MapContextMenuListener
+            onOpen={handleMapContextMenuOpen}
+            onDismiss={closeContextMenu}
+            onUserInteraction={handleMapInteraction}
+          />
           <SearchToggleControl isSearchVisible={isSearchVisible} onToggle={toggleSearchVisibility} />
+          <ClusteringToggleControl clustering={clustering} onToggle={() => setClustering((prev) => !prev)} />
           <ZoomControl position="topright" />
           <LocateControl userPosition={userPosition} />
           <TileLayer
@@ -472,14 +802,16 @@ const handleOpenFilterModeChange = (value) => {
           {activeShop && <MapCenterOnShop shop={activeShop} />}
           {clustering ? ( // show the clustered
             <MarkerClusterGroup maxClusterRadius={25}>
-              {filteredShops.map((shop) => {
+              {shopsWithDisplayValue.map(({ shop, value }) => {
                 return (
                   <ShopMarker
                     key={shop.eisdielen_id}
                     shop={shop}
-                    selectedOption={selectedOption}
-                    minPrice={minPrice}
-                    maxPrice={maxPrice}
+                    displayValue={value}
+                    formatValue={activeDisplayConfig.formatValue}
+                    minValue={minValue}
+                    maxValue={maxValue}
+                    invertScale={activeDisplayConfig.invertScale}
                     fetchShopDetails={fetchShopDetails}
                     fetchAndCenterShop={fetchAndCenterShop}
                   />
@@ -487,14 +819,16 @@ const handleOpenFilterModeChange = (value) => {
               })}
             </MarkerClusterGroup>
           ) : ( // show them unclustered
-            filteredShops.map((shop) => {
+            shopsWithDisplayValue.map(({ shop, value }) => {
               return (
                 <ShopMarker
                   key={shop.eisdielen_id}
                   shop={shop}
-                  selectedOption={selectedOption}
-                  minPrice={minPrice}
-                  maxPrice={maxPrice}
+                  displayValue={value}
+                  formatValue={activeDisplayConfig.formatValue}
+                  minValue={minValue}
+                  maxValue={maxValue}
+                  invertScale={activeDisplayConfig.invertScale}
                   fetchShopDetails={fetchShopDetails}
                   fetchAndCenterShop={fetchAndCenterShop}
                 />
@@ -537,6 +871,121 @@ const handleOpenFilterModeChange = (value) => {
           )}
         </MapContainer>
       </MapSection>
+      {isFilterModalOpen && (
+        <FilterModalOverlay onClick={() => setIsFilterModalOpen(false)}>
+          <FilterModalContent onClick={(event) => event.stopPropagation()}>
+            <FilterModalHeader>
+              <FilterModalTitle>Filter</FilterModalTitle>
+              <CloseModalButton type="button" onClick={() => setIsFilterModalOpen(false)}>
+                ×
+              </CloseModalButton>
+            </FilterModalHeader>
+            <FilterSection>
+              <FilterSectionTitle>Favoriten & Besuche</FilterSectionTitle>
+              <FilterToggle disabled={!userId}>
+                <input
+                  type="checkbox"
+                  checked={favoritesFilterActive}
+                  disabled={!userId}
+                  onChange={() => handleFilterToggle('favorites')}
+                />
+                <span>Favoriten</span>
+              </FilterToggle>
+              <FilterToggle disabled={!userId}>
+                <input
+                  type="checkbox"
+                  checked={visitedFilterActive}
+                  disabled={!userId}
+                  onChange={() => handleFilterToggle('visited')}
+                />
+                <span>Besucht</span>
+              </FilterToggle>
+              <FilterToggle disabled={!userId}>
+                <input
+                  type="checkbox"
+                  checked={notVisitedFilterActive}
+                  disabled={!userId}
+                  onChange={() => handleFilterToggle('notVisited')}
+                />
+                <span>Nicht besucht</span>
+              </FilterToggle>
+              {!userId && <FilterHint>Melde dich an, um diese Filter zu nutzen.</FilterHint>}
+            </FilterSection>
+            <FilterSection>
+              <FilterSectionTitle>Sorten</FilterSectionTitle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!typeFilters.kugel}
+                  onChange={() => handleTypeFilterToggle('kugel')}
+                />
+                <span>Kugel</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!typeFilters.softeis}
+                  onChange={() => handleTypeFilterToggle('softeis')}
+                />
+                <span>Softeis</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!typeFilters.eisbecher}
+                  onChange={() => handleTypeFilterToggle('eisbecher')}
+                />
+                <span>Eisbecher</span>
+              </FilterToggle>
+            </FilterSection>
+            <FilterSection>
+              <FilterSectionTitle>Öffnungszeiten</FilterSectionTitle>
+              <FilterToggle>
+                <input
+                  type="radio"
+                  name="open-filter"
+                  checked={openFilterMode === 'all'}
+                  onChange={() => handleOpenFilterModeChange('all')}
+                />
+                <span>Keine Einschränkung</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="radio"
+                  name="open-filter"
+                  checked={openFilterMode === 'now'}
+                  onChange={() => handleOpenFilterModeChange('now')}
+                />
+                <span>Jetzt geöffnet</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="radio"
+                  name="open-filter"
+                  checked={openFilterMode === 'custom'}
+                  onChange={() => handleOpenFilterModeChange('custom')}
+                />
+                <span>Geöffnet am …</span>
+              </FilterToggle>
+              {openFilterMode === 'custom' && (
+                <DateTimeInput
+                  type="datetime-local"
+                  value={openFilterDateTime}
+                  onChange={(e) => setOpenFilterDateTime(e.target.value)}
+                />
+              )}
+            </FilterSection>
+            <FilterActions>
+              <SecondaryButton type="button" onClick={handleResetFilters}>
+                Zurücksetzen
+              </SecondaryButton>
+              <YellowButton type="button" onClick={() => setIsFilterModalOpen(false)}>
+                Fertig
+              </YellowButton>
+            </FilterActions>
+          </FilterModalContent>
+        </FilterModalOverlay>
+      )}
       {token && (
         <ResetPasswordModal resetToken={token} isOpen={true} onClose={() => (window.location.href = "/#/login")} />
       )}
@@ -548,6 +997,18 @@ const handleOpenFilterModeChange = (value) => {
           setShowLoginModal={setShowLoginModal}
         />
       }
+      {isSubmitIceShopModalOpen && (
+        <SubmitIceShopModal
+          showForm={isSubmitIceShopModalOpen}
+          setShowForm={handleSubmitModalVisibility}
+          userId={userId}
+          refreshShops={refreshShops}
+          userLatitude={submitModalCoordinates?.lat ?? userPosition?.[0] ?? 50.83}
+          userLongitude={submitModalCoordinates?.lng ?? userPosition?.[1] ?? 12.92}
+          initialLatitude={submitModalCoordinates?.lat ?? null}
+          initialLongitude={submitModalCoordinates?.lng ?? null}
+        />
+      )}
       {showDetailsView && activeShop && (
         <ShopDetailsView
           shopId={activeShop.eisdiele.id}
@@ -598,12 +1059,19 @@ const YellowButton = styled.button`
   }
 `;
 
-const FilterControls = styled.div`
+const FilterButton = styled(YellowButton)`
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  padding: 0rem 0.6rem;
-  border-radius: 14px;
+  gap: 0.4rem;
+`;
+
+const FilterBadge = styled.span`
+  background: #fff;
+  color: #000;
+  border-radius: 999px;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
 `;
 
 const DateTimeInput = styled.input`
@@ -622,6 +1090,40 @@ const MapSection = styled.div`
   flex: 1;
   width: 100%;
   display: flex;
+`;
+
+const MapContextMenu = styled.div`
+  position: absolute;
+  z-index: 1100;
+  min-width: 190px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  pointer-events: auto;
+`;
+
+const MapContextMenuButton = styled.button`
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const MapContextMenuHint = styled.p`
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+  font-size: 0.8rem;
+  color: #6b6b6b;
 `;
 
 const SearchOverlay = styled.div`
@@ -716,4 +1218,87 @@ const SearchStatusText = styled.p`
   padding: 0.45rem 0.75rem;
   color: #555;
   font-size: 0.85rem;
+`;
+
+const FilterModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1200;
+`;
+
+const FilterModalContent = styled.div`
+  background: #fffbe6;
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: min(480px, 90%);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+`;
+
+const FilterModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+`;
+
+const FilterModalTitle = styled.h3`
+  margin: 0;
+  font-size: 1.4rem;
+  color: #503000;
+`;
+
+const CloseModalButton = styled.button`
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+`;
+
+const FilterSection = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const FilterSectionTitle = styled.h4`
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #503000;
+`;
+
+const FilterToggle = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  opacity: ${(props) => (props.disabled ? 0.5 : 1)};
+
+  input {
+    transform: scale(1.2);
+  }
+`;
+
+const FilterHint = styled.p`
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #7a5a00;
+`;
+
+const FilterActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+`;
+
+const SecondaryButton = styled.button`
+  background: transparent;
+  border: 2px solid #ffb522;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #503000;
 `;

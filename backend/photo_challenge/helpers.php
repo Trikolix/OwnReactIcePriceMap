@@ -15,11 +15,23 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             status VARCHAR(20) NOT NULL DEFAULT 'draft',
             group_size INT NOT NULL DEFAULT 4,
             start_at DATETIME NULL,
+            submission_deadline DATETIME NULL,
+            submission_limit_per_user INT NULL,
+            group_schedule TEXT NULL,
+            group_advancers INT NOT NULL DEFAULT 2,
+            lucky_loser_slots INT NOT NULL DEFAULT 2,
+            ko_bracket_size INT NULL,
             created_by INT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+    addColumnIfMissing($pdo, 'photo_challenges', 'submission_deadline', 'DATETIME NULL AFTER start_at');
+    addColumnIfMissing($pdo, 'photo_challenges', 'submission_limit_per_user', 'INT NULL AFTER submission_deadline');
+    addColumnIfMissing($pdo, 'photo_challenges', 'group_schedule', 'TEXT NULL AFTER submission_limit_per_user');
+    addColumnIfMissing($pdo, 'photo_challenges', 'group_advancers', 'INT NOT NULL DEFAULT 2 AFTER group_schedule');
+    addColumnIfMissing($pdo, 'photo_challenges', 'lucky_loser_slots', 'INT NOT NULL DEFAULT 2 AFTER group_advancers');
+    addColumnIfMissing($pdo, 'photo_challenges', 'ko_bracket_size', 'INT NULL AFTER lucky_loser_slots');
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS photo_challenge_images (
@@ -101,6 +113,23 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
 
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS photo_challenge_submissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            challenge_id INT NOT NULL,
+            image_id INT NOT NULL,
+            nutzer_id INT NOT NULL,
+            status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+            reviewer_id INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            reviewed_at TIMESTAMP NULL,
+            UNIQUE KEY uniq_submission (challenge_id, image_id, nutzer_id),
+            CONSTRAINT fk_submission_challenge FOREIGN KEY (challenge_id) REFERENCES photo_challenges(id) ON DELETE CASCADE,
+            CONSTRAINT fk_submission_image FOREIGN KEY (image_id) REFERENCES bilder(id) ON DELETE CASCADE,
+            CONSTRAINT fk_submission_user FOREIGN KEY (nutzer_id) REFERENCES nutzer(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ");
+
     $initialized = true;
 }
 
@@ -141,6 +170,142 @@ function normalizeDateTime(?string $value): ?string
         return null;
     }
     return date('Y-m-d H:i:s', $timestamp);
+}
+
+function isPowerOfTwo(int $value): bool
+{
+    if ($value <= 0) {
+        return false;
+    }
+    return ($value & ($value - 1)) === 0;
+}
+
+function nextPowerOfTwo(int $value): int
+{
+    if ($value <= 0) {
+        return 1;
+    }
+    $power = 1;
+    while ($power < $value) {
+        $power <<= 1;
+    }
+    return $power;
+}
+
+function sanitizeGroupSchedule($rawSchedule, ?string $defaultStartAt = null): array
+{
+    if ($rawSchedule === null || $rawSchedule === '') {
+        return [];
+    }
+    if (is_string($rawSchedule)) {
+        $decoded = json_decode($rawSchedule, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+        $rawSchedule = $decoded;
+    }
+    if (!is_array($rawSchedule)) {
+        return [];
+    }
+
+    $normalized = [];
+    $fallbackStart = $defaultStartAt ? normalizeDateTime($defaultStartAt) : null;
+    foreach ($rawSchedule as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $startAt = normalizeDateTime($entry['start_at'] ?? $entry['startAt'] ?? null);
+        if (!$startAt && $fallbackStart) {
+            $startAt = $fallbackStart;
+        }
+        if (!$startAt) {
+            continue;
+        }
+        $durationDays = isset($entry['duration_days'])
+            ? (int)$entry['duration_days']
+            : (int)($entry['durationDays'] ?? 0);
+        if ($durationDays <= 0) {
+            $durationDays = 14;
+        }
+        $groupsInSlot = isset($entry['groups'])
+            ? (int)$entry['groups']
+            : (int)($entry['group_count'] ?? $entry['groupCount'] ?? 1);
+        if ($groupsInSlot <= 0) {
+            $groupsInSlot = 1;
+        }
+        $normalized[] = [
+            'start_at' => $startAt,
+            'duration_days' => $durationDays,
+            'groups' => $groupsInSlot,
+        ];
+    }
+
+    return $normalized;
+}
+
+function buildGroupTimings(array $schedule, int $groupCount, ?string $defaultStartAt = null): array
+{
+    $timings = [];
+    if ($groupCount <= 0) {
+        return $timings;
+    }
+
+    if (empty($schedule)) {
+        $baseStart = $defaultStartAt ? new DateTimeImmutable($defaultStartAt) : new DateTimeImmutable('now');
+        $baseStart = $baseStart->setTime(0, 0, 0);
+        $groupDurationDays = 14;
+        $groupOffsetDays = 7;
+        for ($groupIndex = 0; $groupIndex < $groupCount; $groupIndex++) {
+            $offsetWeeks = intdiv($groupIndex, 2);
+            $startAt = $baseStart->modify('+' . ($offsetWeeks * $groupOffsetDays) . ' days');
+            $endAt = $startAt->modify('+' . $groupDurationDays . ' days');
+            $timings[] = [
+                'start_at' => $startAt->format('Y-m-d H:i:s'),
+                'end_at' => $endAt->format('Y-m-d H:i:s'),
+            ];
+        }
+        return $timings;
+    }
+
+    $lastStart = null;
+    $lastDuration = 14;
+    foreach ($schedule as $slot) {
+        try {
+            $slotStart = new DateTimeImmutable($slot['start_at']);
+        } catch (Exception $e) {
+            continue;
+        }
+        $slotDuration = max(1, (int)($slot['duration_days'] ?? 14));
+        $groupsInSlot = max(1, (int)($slot['groups'] ?? 1));
+        $slotEnd = $slotStart->modify('+' . $slotDuration . ' days');
+        for ($i = 0; $i < $groupsInSlot; $i++) {
+            $timings[] = [
+                'start_at' => $slotStart->format('Y-m-d H:i:s'),
+                'end_at' => $slotEnd->format('Y-m-d H:i:s'),
+            ];
+            if (count($timings) >= $groupCount) {
+                return $timings;
+            }
+        }
+        $lastStart = $slotStart;
+        $lastDuration = $slotDuration;
+    }
+
+    $nextStart = $lastStart
+        ? $lastStart->modify('+' . $lastDuration . ' days')
+        : ($defaultStartAt ? new DateTimeImmutable($defaultStartAt) : new DateTimeImmutable('now'));
+    $nextStart = $nextStart->setTime(0, 0, 0);
+
+    while (count($timings) < $groupCount) {
+        $endAt = $nextStart->modify('+' . $lastDuration . ' days');
+        $timings[] = [
+            'start_at' => $nextStart->format('Y-m-d H:i:s'),
+            'end_at' => $endAt->format('Y-m-d H:i:s'),
+        ];
+        $nextStart = $endAt;
+    }
+
+    return $timings;
 }
 
 function fetchChallenges(PDO $pdo): array
@@ -414,16 +579,4 @@ function fetchGroupStandings(PDO $pdo, int $challengeId): array
     }
 
     return $resultGroups;
-}
-
-function rotateArray(array $items, int $offset): array
-{
-    if (empty($items)) {
-        return $items;
-    }
-    $offset = $offset % count($items);
-    if ($offset === 0) {
-        return $items;
-    }
-    return array_merge(array_slice($items, $offset), array_slice($items, 0, $offset));
 }

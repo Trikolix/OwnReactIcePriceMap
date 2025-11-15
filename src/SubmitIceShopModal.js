@@ -13,7 +13,9 @@ const SubmitIceShopModal = ({
   refreshShops,
   userLatitude = null,
   userLongitude = null,
-  existingIceShop = null
+  existingIceShop = null,
+  initialLatitude = null,
+  initialLongitude = null
 }) => {
   const [name, setName] = useState(existingIceShop?.name || "");
   const [adresse, setAdresse] = useState(existingIceShop?.adresse || "");
@@ -58,6 +60,24 @@ const SubmitIceShopModal = ({
       )
     );
   }, [existingIceShop]);
+
+  useEffect(() => {
+    if (!showForm || existingIceShop) {
+      return;
+    }
+    if (initialLatitude === null || initialLongitude === null) {
+      return;
+    }
+    const formatCoordinate = (value) => {
+      const number = typeof value === 'number' ? value : Number(value);
+      if (Number.isNaN(number)) {
+        return '';
+      }
+      return number.toFixed(6);
+    };
+    setLatitude(formatCoordinate(initialLatitude));
+    setLongitude(formatCoordinate(initialLongitude));
+  }, [showForm, existingIceShop, initialLatitude, initialLongitude]);
 
   const submit = async () => {
     try {

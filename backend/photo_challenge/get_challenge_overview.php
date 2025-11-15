@@ -24,6 +24,9 @@ try {
         throw new RuntimeException('Challenge existiert nicht.');
     }
 
+    $challenge['submission_deadline'] = $challenge['submission_deadline'] ? date(DATE_ATOM, strtotime($challenge['submission_deadline'])) : null;
+    $challenge['submission_limit_per_user'] = $challenge['submission_limit_per_user'] !== null ? (int)$challenge['submission_limit_per_user'] : null;
+
     $stmt = $pdo->prepare("
         SELECT g.id AS group_id,
                g.name AS group_name,
@@ -111,6 +114,7 @@ try {
 
     $koMatches = [];
     $userVotesPerGroup = [];
+    $userSubmissions = [];
     foreach ($matches as $match) {
         $summary = summarizeMatchVotes($match, $voteSummary);
         $hasVoted = isset($viewerVotes[(int)$match['id']]);
@@ -134,6 +138,7 @@ try {
             'votes_a' => $summary['votes_a'],
             'votes_b' => $summary['votes_b'],
             'status' => $match['status'],
+            'locked_at' => $match['locked_at'],
             'winner' => $summary['winner'],
             'user_choice' => $viewerVotes[(int)$match['id']] ?? null,
             'has_voted' => $hasVoted,
@@ -194,14 +199,77 @@ try {
     }
     unset($group);
 
+    if ($viewerId) {
+        $stmt = $pdo->prepare("
+            SELECT s.*, b.url, b.beschreibung
+            FROM photo_challenge_submissions s
+            JOIN bilder b ON b.id = s.image_id
+            WHERE s.challenge_id = :challenge_id AND s.nutzer_id = :viewer_id
+            ORDER BY s.created_at DESC
+        ");
+        $stmt->execute([
+            'challenge_id' => $challengeId,
+            'viewer_id' => $viewerId,
+        ]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $userSubmissions[] = [
+                'id' => (int)$row['id'],
+                'image_id' => (int)$row['image_id'],
+                'status' => $row['status'],
+                'url' => $row['url'],
+                'beschreibung' => $row['beschreibung'],
+                'created_at' => $row['created_at'],
+            ];
+        }
+    }
+
     usort($koMatches, fn($a, $b) => $a['round'] <=> $b['round'] ?: $a['position'] <=> $b['position']);
     usort($groups, fn($a, $b) => $a['position'] <=> $b['position']);
+
+    $winnerPayload = null;
+    if ($challenge['status'] === 'finished') {
+        $finalMatch = null;
+        foreach ($koMatches as $match) {
+            if ($match['status'] !== 'closed' || empty($match['winner'])) {
+                continue;
+            }
+            if (!$finalMatch || $match['round'] > $finalMatch['round'] || ($match['round'] === $finalMatch['round'] && $match['position'] > $finalMatch['position'])) {
+                $finalMatch = $match;
+            }
+        }
+        if ($finalMatch && !empty($finalMatch['winner'])) {
+            $stmt = $pdo->prepare("
+                SELECT b.id,
+                       b.url,
+                       b.beschreibung,
+                       b.nutzer_id,
+                       n.username
+                FROM bilder b
+                LEFT JOIN nutzer n ON n.id = b.nutzer_id
+                WHERE b.id = :image_id
+            ");
+            $stmt->execute(['image_id' => $finalMatch['winner']]);
+            if ($winnerImage = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $winnerPayload = [
+                    'image_id' => (int)$winnerImage['id'],
+                    'url' => $winnerImage['url'],
+                    'beschreibung' => $winnerImage['beschreibung'],
+                    'nutzer_id' => (int)$winnerImage['nutzer_id'],
+                    'username' => $winnerImage['username'],
+                    'round' => $finalMatch['round'],
+                    'decided_at' => $finalMatch['locked_at'] ?? null,
+                ];
+            }
+        }
+    }
 
     $response = [
         'status' => 'success',
         'challenge' => $challenge,
         'groups' => $groups,
         'ko_matches' => $koMatches,
+        'winner' => $winnerPayload,
+        'user_submissions' => $userSubmissions,
     ];
     if (isset($_GET['debug'])) {
         $response['debug'] = [

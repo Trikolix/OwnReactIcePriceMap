@@ -12,12 +12,41 @@ const buildAssetUrl = (path) => {
   return `${ASSET_BASE}/${path.replace(/^\/+/, '')}`;
 };
 
-const DEFAULT_FORM = {
+const createScheduleSlot = () => ({
+  id: `slot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  startAt: '',
+  durationDays: '14',
+  groups: '2',
+});
+
+const createDefaultForm = () => ({
   title: '',
   description: '',
   status: 'draft',
+  plannedGroupCount: 4,
   groupSize: 4,
+  groupAdvancers: 2,
+  luckyLoserSlots: 2,
+  koBracketSize: '',
   startAt: '',
+  submissionDeadline: '',
+  submissionLimitPerUser: 3,
+  groupSchedule: [createScheduleSlot()],
+});
+
+const NUMBER_FIELDS = new Set(['plannedGroupCount', 'groupSize', 'groupAdvancers', 'luckyLoserSlots', 'submissionLimitPerUser']);
+const OPTIONAL_NUMBER_FIELDS = new Set(['koBracketSize']);
+
+const formatDateTimeLocal = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const pad = (num) => String(num).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
 };
 
 function PhotoChallengeAdmin() {
@@ -30,23 +59,29 @@ function PhotoChallengeAdmin() {
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
   const [challengeImages, setChallengeImages] = useState([]);
   const [challengeImagesLoading, setChallengeImagesLoading] = useState(false);
-  const [formState, setFormState] = useState(DEFAULT_FORM);
+  const [formState, setFormState] = useState(() => createDefaultForm());
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [groupActionLoading, setGroupActionLoading] = useState(false);
   const [koActionLoading, setKoActionLoading] = useState(false);
+  const [koAdvanceLoading, setKoAdvanceLoading] = useState(false);
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState('');
   const [imageResults, setImageResults] = useState([]);
   const [imageSearchPage, setImageSearchPage] = useState(1);
   const [imageSearchHasMore, setImageSearchHasMore] = useState(false);
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
+  const [groupTimeDrafts, setGroupTimeDrafts] = useState({});
+  const [groupTimeSaving, setGroupTimeSaving] = useState({});
 
   const STATUS_LABELS = {
     draft: 'Entwurf',
     active: 'Aktiv',
     finished: 'Abgeschlossen',
+    submission_open: 'Einreichphase',
     group_running: 'Gruppenphase',
     ko_running: 'KO-Phase',
   };
@@ -55,6 +90,49 @@ function PhotoChallengeAdmin() {
     () => challenges.find((challenge) => challenge.id === selectedChallengeId) || null,
     [challenges, selectedChallengeId]
   );
+  const challengeConfig = overview?.challenge || selectedChallenge || null;
+
+  const derivedPlan = useMemo(() => {
+    const plannedGroups = Math.max(0, Number(formState.plannedGroupCount) || 0);
+    const groupSize = Math.max(0, Number(formState.groupSize) || 0);
+    const advancersPerGroup = Math.min(Math.max(0, Number(formState.groupAdvancers) || 0), groupSize);
+    const luckyConfigured = Math.max(0, Number(formState.luckyLoserSlots) || 0);
+    const totalImages = plannedGroups * groupSize;
+    const directAdvancers = plannedGroups * advancersPerGroup;
+    const maxLuckyPossible = plannedGroups * Math.max(groupSize - advancersPerGroup, 0);
+    const luckyUsed = Math.min(luckyConfigured, maxLuckyPossible);
+    const koParticipants = directAdvancers + luckyUsed;
+    const nextPower =
+      koParticipants > 0 ? 2 ** Math.ceil(Math.log2(koParticipants)) : 0;
+    return {
+      plannedGroups,
+      groupSize,
+      totalImages,
+      directAdvancers,
+      luckyConfigured,
+      luckyUsed,
+      koParticipants,
+      nextPower,
+      limitedLucky: luckyConfigured > luckyUsed,
+      needsExpansion: nextPower > koParticipants,
+    };
+  }, [formState.plannedGroupCount, formState.groupSize, formState.groupAdvancers, formState.luckyLoserSlots]);
+
+  const getGroupTimeDraft = useCallback(
+    (groupId) => {
+      const group = overview?.groups?.find((entry) => entry.id === groupId);
+      return {
+        startAt: formatDateTimeLocal(group?.start_at),
+        endAt: formatDateTimeLocal(group?.end_at),
+      };
+    },
+    [overview?.groups]
+  );
+
+  useEffect(() => {
+    setGroupTimeDrafts({});
+    setGroupTimeSaving({});
+  }, [overview?.challenge?.id, overview?.groups?.length]);
 
   const showFeedback = (message, variant = 'info') => {
     setFeedback({ message, variant });
@@ -131,6 +209,33 @@ function PhotoChallengeAdmin() {
     }
   }, [apiUrl, userId]);
 
+  const loadSubmissions = useCallback(
+    async (challengeId) => {
+      if (!apiUrl || !isAdmin || !challengeId) return;
+      setSubmissionsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          nutzer_id: userId,
+          challenge_id: challengeId,
+        });
+        const res = await fetch(`${apiUrl}/photo_challenge/list_submissions.php?${params.toString()}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          setSubmissions(data.data || []);
+        } else {
+          setSubmissions([]);
+          showFeedback(data.message || 'Einreichungen konnten nicht geladen werden.', 'error');
+        }
+      } catch (err) {
+        setSubmissions([]);
+        showFeedback('Einreichungen konnten nicht geladen werden.', 'error');
+      } finally {
+        setSubmissionsLoading(false);
+      }
+    },
+    [apiUrl, isAdmin, userId]
+  );
+
   useEffect(() => {
     if (isAdmin) {
       loadChallenges();
@@ -141,11 +246,13 @@ function PhotoChallengeAdmin() {
     if (isAdmin && selectedChallengeId) {
       loadChallengeImages(selectedChallengeId);
       loadChallengeOverview(selectedChallengeId);
+      loadSubmissions(selectedChallengeId);
     } else {
       setChallengeImages([]);
       setOverview(null);
+      setSubmissions([]);
     }
-  }, [isAdmin, selectedChallengeId, loadChallengeImages, loadChallengeOverview]);
+  }, [isAdmin, selectedChallengeId, loadChallengeImages, loadChallengeOverview, loadSubmissions]);
 
   const handleCreateChallenge = async (event) => {
     event.preventDefault();
@@ -158,8 +265,37 @@ function PhotoChallengeAdmin() {
       formData.append('description', formState.description);
       formData.append('status', formState.status);
       formData.append('group_size', formState.groupSize);
+      formData.append('group_advancers', formState.groupAdvancers);
+      formData.append('lucky_loser_slots', formState.luckyLoserSlots);
+      if (formState.koBracketSize) {
+        formData.append('ko_bracket_size', formState.koBracketSize);
+      }
       if (formState.startAt) {
         formData.append('start_at', formState.startAt);
+      }
+      if (formState.submissionDeadline) {
+        formData.append('submission_deadline', formState.submissionDeadline);
+      }
+      if (formState.submissionLimitPerUser !== '' && formState.submissionLimitPerUser !== null) {
+        formData.append('submission_limit_per_user', formState.submissionLimitPerUser);
+      }
+      const schedulePayload = formState.groupSchedule
+        .map((slot) => {
+          const duration = Number(slot.durationDays);
+          const groups = Number(slot.groups);
+          const startAt = slot.startAt || formState.startAt || '';
+          if (!startAt || Number.isNaN(duration) || duration <= 0 || Number.isNaN(groups) || groups <= 0) {
+            return null;
+          }
+          return {
+            start_at: startAt,
+            duration_days: duration,
+            groups,
+          };
+        })
+        .filter(Boolean);
+      if (schedulePayload.length) {
+        formData.append('group_schedule', JSON.stringify(schedulePayload));
       }
 
       const res = await fetch(`${apiUrl}/photo_challenge/create_challenge.php`, {
@@ -169,7 +305,7 @@ function PhotoChallengeAdmin() {
       const data = await res.json();
       if (data.status === 'success') {
         setChallenges((prev) => [data.challenge, ...prev]);
-        setFormState(DEFAULT_FORM);
+        setFormState(createDefaultForm());
         setSelectedChallengeId(data.challenge.id);
         showFeedback('Challenge angelegt.', 'success');
       } else {
@@ -315,9 +451,139 @@ function PhotoChallengeAdmin() {
     }
   };
 
+  const handleAdvanceKoRound = async () => {
+    if (!selectedChallengeId || !apiUrl) return;
+    setKoAdvanceLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('challenge_id', selectedChallengeId);
+      const res = await fetch(`${apiUrl}/photo_challenge/advance_ko_round.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        showFeedback(data.message || 'KO-Runde aktualisiert.', 'success');
+        loadChallengeOverview(selectedChallengeId);
+        loadChallenges();
+      } else {
+        throw new Error(data.message || 'KO-Runde konnte nicht aktualisiert werden.');
+      }
+    } catch (err) {
+      showFeedback(err.message || 'KO-Runde konnte nicht aktualisiert werden.', 'error');
+    } finally {
+      setKoAdvanceLoading(false);
+    }
+  };
+
   const handleFormChange = (field) => (event) => {
-    const value = field === 'groupSize' ? Number(event.target.value) : event.target.value;
+    let { value } = event.target;
+    if (NUMBER_FIELDS.has(field)) {
+      value = Number(value);
+    } else if (OPTIONAL_NUMBER_FIELDS.has(field)) {
+      value = value === '' ? '' : Number(value);
+    }
     setFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleScheduleChange = (slotId, field) => (event) => {
+    const { value } = event.target;
+    setFormState((prev) => ({
+      ...prev,
+      groupSchedule: prev.groupSchedule.map((slot) =>
+        slot.id === slotId ? { ...slot, [field]: value } : slot
+      ),
+    }));
+  };
+
+  const handleAddScheduleSlot = () => {
+    setFormState((prev) => ({
+      ...prev,
+      groupSchedule: [...prev.groupSchedule, createScheduleSlot()],
+    }));
+  };
+
+  const handleRemoveScheduleSlot = (slotId) => {
+    setFormState((prev) => ({
+      ...prev,
+      groupSchedule: prev.groupSchedule.filter((slot) => slot.id !== slotId),
+    }));
+  };
+
+  const handleGroupTimeChange = (groupId, field, value) => {
+    setGroupTimeDrafts((prev) => {
+      const base = prev[groupId] ?? getGroupTimeDraft(groupId);
+      return {
+        ...prev,
+        [groupId]: {
+          ...base,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const handleGroupTimeReset = (groupId) => {
+    setGroupTimeDrafts((prev) => {
+      const next = { ...prev };
+      delete next[groupId];
+      return next;
+    });
+  };
+
+  const handleGroupTimeSave = async (groupId) => {
+    if (!apiUrl || !selectedChallengeId) return;
+    const draft = groupTimeDrafts[groupId] ?? getGroupTimeDraft(groupId);
+    setGroupTimeSaving((prev) => ({ ...prev, [groupId]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('challenge_id', selectedChallengeId);
+      formData.append('group_id', groupId);
+      formData.append('start_at', draft.startAt || '');
+      formData.append('end_at', draft.endAt || '');
+      const res = await fetch(`${apiUrl}/photo_challenge/update_group_times.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        showFeedback('Gruppenzeiten aktualisiert.', 'success');
+        handleGroupTimeReset(groupId);
+        loadChallengeOverview(selectedChallengeId);
+      } else {
+        throw new Error(data.message || 'Zeiten konnten nicht gespeichert werden.');
+      }
+    } catch (err) {
+      showFeedback(err.message || 'Zeiten konnten nicht gespeichert werden.', 'error');
+    } finally {
+      setGroupTimeSaving((prev) => ({ ...prev, [groupId]: false }));
+    }
+  };
+
+  const handleSubmissionAction = async (submissionId, action) => {
+    if (!apiUrl || !selectedChallengeId) return;
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('submission_id', submissionId);
+      formData.append('action', action);
+      const res = await fetch(`${apiUrl}/photo_challenge/review_submission.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        showFeedback(data.message, 'success');
+        loadSubmissions(selectedChallengeId);
+        loadChallengeImages(selectedChallengeId);
+      } else {
+        throw new Error(data.message || 'Aktion fehlgeschlagen.');
+      }
+    } catch (err) {
+      showFeedback(err.message || 'Aktion fehlgeschlagen.', 'error');
+    }
   };
 
   const renderChallengeCard = (challenge) => (
@@ -331,6 +597,8 @@ function PhotoChallengeAdmin() {
         <span>Status: {challenge.status}</span>
         <span>Größe: {challenge.group_size}</span>
         <span>Bilder: {challenge.image_count ?? 0}</span>
+        <span>Weiter: {challenge.group_advancers ?? 2}</span>
+        <span>Lucky: {challenge.lucky_loser_slots ?? 0}</span>
       </ChallengeMeta>
       <small>Erstellt am {new Date(challenge.created_at).toLocaleString()}</small>
       <ChallengeCardAction
@@ -419,6 +687,7 @@ function PhotoChallengeAdmin() {
                       onChange={handleFormChange('status')}
                     >
                       <option value="draft">Draft</option>
+                      <option value="submission_open">Einreichphase</option>
                       <option value="active">Aktiv</option>
                       <option value="finished">Abgeschlossen</option>
                     </select>
@@ -436,6 +705,99 @@ function PhotoChallengeAdmin() {
                   </Field>
                 </FieldGroup>
                 <Field>
+                  <label htmlFor="challenge-planned-groups">Geplante Gruppenanzahl</label>
+                  <input
+                    id="challenge-planned-groups"
+                    type="number"
+                    min="1"
+                    value={formState.plannedGroupCount}
+                    onChange={handleFormChange('plannedGroupCount')}
+                  />
+                </Field>
+                <FieldGroup>
+                  <Field>
+                    <label htmlFor="challenge-advancers">Weiterkommende pro Gruppe</label>
+                    <input
+                      id="challenge-advancers"
+                      type="number"
+                      min="1"
+                      max={formState.groupSize}
+                      value={formState.groupAdvancers}
+                      onChange={handleFormChange('groupAdvancers')}
+                    />
+                  </Field>
+                  <Field>
+                    <label htmlFor="challenge-lucky">Lucky-Loser Slots</label>
+                    <input
+                      id="challenge-lucky"
+                      type="number"
+                      min="0"
+                      value={formState.luckyLoserSlots}
+                      onChange={handleFormChange('luckyLoserSlots')}
+                    />
+                  </Field>
+                </FieldGroup>
+                <PlanSummary>
+                  <div>
+                    <strong>Plan:</strong> {derivedPlan.plannedGroups} Gruppen à {derivedPlan.groupSize} Bilder ={' '}
+                    {derivedPlan.totalImages} Bilder gesamt.
+                  </div>
+                  <div>Direkt weiter: {derivedPlan.directAdvancers} · Lucky-Loser nutzbar: {derivedPlan.luckyUsed}</div>
+                  <div>
+                    KO-Teilnehmer: {derivedPlan.koParticipants || '—'}{' '}
+                    {derivedPlan.koParticipants
+                      ? `(nächste 2er-Potenz: ${derivedPlan.nextPower || '—'})`
+                      : null}
+                  </div>
+                  {derivedPlan.limitedLucky && (
+                    <PlanSummaryNote>
+                      Hinweis: Es stehen nur {derivedPlan.luckyUsed} Lucky-Loser zur Verfügung – überschüssige Slots werden
+                      ignoriert.
+                    </PlanSummaryNote>
+                  )}
+                  {derivedPlan.needsExpansion && (
+                    <PlanSummaryWarning>
+                      Für ein KO-Feld mit {derivedPlan.nextPower} Teilnehmern fehlen noch {derivedPlan.nextPower - derivedPlan.koParticipants}{' '}
+                      Plätze. Erhöhe Lucky-Loser oder die Gruppenanzahl.
+                    </PlanSummaryWarning>
+                  )}
+                </PlanSummary>
+                <Field>
+                  <label htmlFor="challenge-ko-size">Teilnehmer KO-Phase (optional)</label>
+                  <input
+                    id="challenge-ko-size"
+                    type="number"
+                    min="2"
+                    step="2"
+                    placeholder="z. B. 16"
+                    value={formState.koBracketSize}
+                    onChange={handleFormChange('koBracketSize')}
+                  />
+                  <FormHint>Leer lassen für automatische Berechnung (nächste 2er-Potenz, sofern möglich).</FormHint>
+                </Field>
+                <FieldGroup>
+                  <Field>
+                    <label htmlFor="challenge-submission-limit">Einsendungen pro Nutzer</label>
+                    <input
+                      id="challenge-submission-limit"
+                      type="number"
+                      min="0"
+                      value={formState.submissionLimitPerUser}
+                      onChange={handleFormChange('submissionLimitPerUser')}
+                    />
+                    <FormHint>0 bedeutet unbegrenzt.</FormHint>
+                  </Field>
+                  <Field>
+                    <label htmlFor="challenge-submission-deadline">Einreichdeadline</label>
+                    <input
+                      id="challenge-submission-deadline"
+                      type="datetime-local"
+                      value={formState.submissionDeadline}
+                      onChange={handleFormChange('submissionDeadline')}
+                    />
+                  </Field>
+                </FieldGroup>
+                <Field>
                   <label htmlFor="challenge-start">Start (optional)</label>
                   <input
                     id="challenge-start"
@@ -444,6 +806,64 @@ function PhotoChallengeAdmin() {
                     onChange={handleFormChange('startAt')}
                   />
                 </Field>
+                <SectionTitle>Gruppen-Zeitplan</SectionTitle>
+                <FormHint>
+                  Definiere Start und Dauer pro Slot. Alle Gruppen eines Slots starten gleichzeitig, weitere Slots sorgen für
+                  gestaffelte Starts.
+                </FormHint>
+                {formState.groupSchedule.length === 0 && (
+                  <PlaceholderText>
+                    Keine Slots angelegt – Standardwerte (2 Gruppen pro Woche, 14 Tage Dauer) werden genutzt.
+                  </PlaceholderText>
+                )}
+                {formState.groupSchedule.length > 0 && (
+                  <ScheduleList>
+                    {formState.groupSchedule.map((slot, index) => (
+                      <ScheduleSlot key={slot.id}>
+                        <ScheduleSlotHeader>
+                          <span>Slot {index + 1}</span>
+                          <RemoveSlotButton type="button" onClick={() => handleRemoveScheduleSlot(slot.id)}>
+                            Slot entfernen
+                          </RemoveSlotButton>
+                        </ScheduleSlotHeader>
+                        <FieldGroup>
+                          <Field>
+                            <label htmlFor={`schedule-start-${slot.id}`}>Startzeit</label>
+                            <input
+                              id={`schedule-start-${slot.id}`}
+                              type="datetime-local"
+                              value={slot.startAt}
+                              onChange={handleScheduleChange(slot.id, 'startAt')}
+                            />
+                          </Field>
+                          <Field>
+                            <label htmlFor={`schedule-duration-${slot.id}`}>Dauer (Tage)</label>
+                            <input
+                              id={`schedule-duration-${slot.id}`}
+                              type="number"
+                              min="1"
+                              value={slot.durationDays}
+                              onChange={handleScheduleChange(slot.id, 'durationDays')}
+                            />
+                          </Field>
+                          <Field>
+                            <label htmlFor={`schedule-groups-${slot.id}`}>Gruppen pro Slot</label>
+                            <input
+                              id={`schedule-groups-${slot.id}`}
+                              type="number"
+                              min="1"
+                              value={slot.groups}
+                              onChange={handleScheduleChange(slot.id, 'groups')}
+                            />
+                          </Field>
+                        </FieldGroup>
+                      </ScheduleSlot>
+                    ))}
+                  </ScheduleList>
+                )}
+                <SecondaryButton type="button" onClick={handleAddScheduleSlot}>
+                  Slot hinzufügen
+                </SecondaryButton>
                 <PrimaryButton type="submit" disabled={formSubmitting}>
                   {formSubmitting ? 'Speichere...' : 'Challenge erstellen'}
                 </PrimaryButton>
@@ -477,6 +897,13 @@ function PhotoChallengeAdmin() {
                   <>
                     <ChallengeStats>
                       <span>ID: #{overview.challenge.id}</span>
+                      {challengeConfig?.group_advancers ? (
+                        <span>Weiter/Gruppe: {challengeConfig.group_advancers}</span>
+                      ) : null}
+                      <span>Lucky Slots: {challengeConfig?.lucky_loser_slots ?? 0}</span>
+                      {challengeConfig?.ko_bracket_size ? (
+                        <span>KO-Feld: {challengeConfig.ko_bracket_size}</span>
+                      ) : null}
                       <span>Bilder in Gruppen: {overview.groups?.reduce((sum, group) => sum + group.entries.length, 0) || 0}</span>
                       <span>KO-Duelle: {overview.ko_matches?.length || 0}</span>
                     </ChallengeStats>
@@ -495,8 +922,81 @@ function PhotoChallengeAdmin() {
                       >
                         {koActionLoading ? 'Starte…' : 'KO-Runde erzeugen'}
                       </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={handleAdvanceKoRound}
+                        disabled={koAdvanceLoading || !overview?.ko_matches?.length}
+                      >
+                        {koAdvanceLoading ? 'Schließe…' : 'Aktuelle KO-Runde abschließen'}
+                      </SecondaryButton>
                     </ActionButtonRow>
                   </>
+                )}
+              </PanelCard>
+            )}
+            {selectedChallenge && (
+              <PanelCard>
+                <PanelHeader>
+                  <h3>Einreichungen</h3>
+                  <button type="button" onClick={() => loadSubmissions(selectedChallengeId)} disabled={submissionsLoading}>
+                    Aktualisieren
+                  </button>
+                </PanelHeader>
+                <SubmissionMeta>
+                  <span>Status: {challengeConfig?.status === 'submission_open' ? 'Einreichungsphase aktiv' : 'Phase beendet'}</span>
+                  <span>
+                    Limit pro Nutzer:{' '}
+                    {challengeConfig?.submission_limit_per_user ? challengeConfig.submission_limit_per_user : 'unbegrenzt'}
+                  </span>
+                  <span>
+                    Deadline:{' '}
+                    {challengeConfig?.submission_deadline
+                      ? new Date(challengeConfig.submission_deadline).toLocaleString('de-DE')
+                      : 'keine'}
+                  </span>
+                </SubmissionMeta>
+                {submissionsLoading && <PlaceholderText>Lade Einreichungen…</PlaceholderText>}
+                {!submissionsLoading && !submissions.length && (
+                  <PlaceholderText>Noch keine Einreichungen vorhanden.</PlaceholderText>
+                )}
+                {!submissionsLoading && submissions.length > 0 && (
+                  <SubmissionList>
+                    {submissions.map((submission) => (
+                      <SubmissionCard key={submission.id}>
+                        <SubmissionImage src={buildAssetUrl(submission.url)} alt={submission.beschreibung || `Bild ${submission.image_id}`} />
+                        <SubmissionInfo>
+                          <strong>Bild #{submission.image_id}</strong>
+                          <span>von {submission.username || `User ${submission.nutzer_id}`}</span>
+                          <small>{new Date(submission.created_at).toLocaleString()}</small>
+                        </SubmissionInfo>
+                        <SubmissionStatusChip
+                          $variant={
+                            submission.status === 'accepted'
+                              ? 'voted'
+                              : submission.status === 'pending'
+                              ? 'open'
+                              : 'closed'
+                          }
+                        >
+                          {submission.status === 'accepted'
+                            ? 'Übernommen'
+                            : submission.status === 'rejected'
+                            ? 'Abgelehnt'
+                            : 'Wartet auf Entscheidung'}
+                        </SubmissionStatusChip>
+                        {submission.status === 'pending' && (
+                          <SubmissionActions>
+                            <SecondaryButton type="button" onClick={() => handleSubmissionAction(submission.id, 'approve')}>
+                              Übernehmen
+                            </SecondaryButton>
+                            <InlineResetButton type="button" onClick={() => handleSubmissionAction(submission.id, 'reject')}>
+                              Ablehnen
+                            </InlineResetButton>
+                          </SubmissionActions>
+                        )}
+                      </SubmissionCard>
+                    ))}
+                  </SubmissionList>
                 )}
               </PanelCard>
             )}
@@ -565,47 +1065,88 @@ function PhotoChallengeAdmin() {
                   <span>{overview.groups.length} Gruppen</span>
                 </PanelHeader>
                 <GroupsGrid>
-                  {overview.groups.map((group) => (
-                    <GroupCard key={group.id}>
-                      <GroupHeader>
-                        <h4>{group.name}</h4>
-                        <span>{group.entries.length} Bilder</span>
-                      </GroupHeader>
-                      <GroupEntries>
-                        {group.entries.map((entry) => (
-                          <li key={entry.image_id}>
-                            <span>#{entry.seed}</span>
-                            <img src={buildAssetUrl(entry.url)} alt={entry.beschreibung || 'Eisfoto'} />
-                            <div>
-                              <strong>{entry.username || `Bild ${entry.image_id}`}</strong>
-                              {entry.beschreibung && <small>{entry.beschreibung}</small>}
-                            </div>
-                          </li>
-                        ))}
-                      </GroupEntries>
-                      {group.matches?.length > 0 && (
-                        <>
-                          <SectionTitle>Duelle</SectionTitle>
-                          <MatchesList>
-                            {group.matches.map((match) => (
-                              <MatchRow key={match.id}>
-                                <MatchParticipants>
-                                  <span>
-                                    Bild #{match.image_a_id} · {match.votes_a} Stimme(n)
-                                  </span>
-                                  <span>vs.</span>
-                                  <span>
-                                    Bild #{match.image_b_id} · {match.votes_b} Stimme(n)
-                                  </span>
-                                </MatchParticipants>
-                                <MatchStatus>{match.status === 'open' ? 'Offen' : 'Beendet'}</MatchStatus>
-                              </MatchRow>
-                            ))}
-                          </MatchesList>
-                        </>
-                      )}
-                    </GroupCard>
-                  ))}
+                  {overview.groups.map((group) => {
+                    const draft = groupTimeDrafts[group.id] ?? getGroupTimeDraft(group.id);
+                    const saving = Boolean(groupTimeSaving[group.id]);
+                    const hasLocalChanges = Boolean(groupTimeDrafts[group.id]);
+                    return (
+                      <GroupCard key={group.id}>
+                        <GroupHeader>
+                          <h4>{group.name}</h4>
+                          <span>{group.entries.length} Bilder</span>
+                        </GroupHeader>
+                        <GroupEntries>
+                          {group.entries.map((entry) => (
+                            <li key={entry.image_id}>
+                              <span>#{entry.seed}</span>
+                              <img src={buildAssetUrl(entry.url)} alt={entry.beschreibung || 'Eisfoto'} />
+                              <div>
+                                <strong>{entry.username || `Bild ${entry.image_id}`}</strong>
+                                {entry.beschreibung && <small>{entry.beschreibung}</small>}
+                              </div>
+                            </li>
+                          ))}
+                        </GroupEntries>
+                        {group.matches?.length > 0 && (
+                          <>
+                            <SectionTitle>Duelle</SectionTitle>
+                            <MatchesList>
+                              {group.matches.map((match) => (
+                                <MatchRow key={match.id}>
+                                  <MatchParticipants>
+                                    <span>
+                                      Bild #{match.image_a_id} · {match.votes_a} Stimme(n)
+                                    </span>
+                                    <span>vs.</span>
+                                    <span>
+                                      Bild #{match.image_b_id} · {match.votes_b} Stimme(n)
+                                    </span>
+                                  </MatchParticipants>
+                                  <MatchStatus>{match.status === 'open' ? 'Offen' : 'Beendet'}</MatchStatus>
+                                </MatchRow>
+                              ))}
+                            </MatchesList>
+                          </>
+                        )}
+                        <GroupTimeControls>
+                          <TimeField>
+                            <label>Startzeit</label>
+                            <input
+                              type="datetime-local"
+                              value={draft.startAt}
+                              onChange={(event) => handleGroupTimeChange(group.id, 'startAt', event.target.value)}
+                              disabled={saving}
+                            />
+                          </TimeField>
+                          <TimeField>
+                            <label>Endzeit</label>
+                            <input
+                              type="datetime-local"
+                              value={draft.endAt}
+                              onChange={(event) => handleGroupTimeChange(group.id, 'endAt', event.target.value)}
+                              disabled={saving}
+                            />
+                          </TimeField>
+                          <GroupTimeActions>
+                            <SecondaryButton
+                              type="button"
+                              onClick={() => handleGroupTimeSave(group.id)}
+                              disabled={saving}
+                            >
+                              {saving ? 'Speichere…' : 'Zeiten speichern'}
+                            </SecondaryButton>
+                            <InlineResetButton
+                              type="button"
+                              onClick={() => handleGroupTimeReset(group.id)}
+                              disabled={saving || !hasLocalChanges}
+                            >
+                              Zurücksetzen
+                            </InlineResetButton>
+                          </GroupTimeActions>
+                        </GroupTimeControls>
+                      </GroupCard>
+                    );
+                  })}
                 </GroupsGrid>
               </PanelCard>
             ) : null}
@@ -852,6 +1393,66 @@ const SectionTitle = styled.h4`
   margin: 1rem 0 0.5rem;
 `;
 
+const PlanSummary = styled.div`
+  border: 1px solid #ffe0b3;
+  background: #fffaf0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.95rem;
+  color: #4a3b1a;
+`;
+
+const PlanSummaryNote = styled.small`
+  color: #7a6b4b;
+`;
+
+const PlanSummaryWarning = styled.small`
+  color: #b61919;
+  font-weight: 600;
+`;
+
+const FormHint = styled.p`
+  margin: -0.3rem 0 0.5rem;
+  color: #777;
+  font-size: 0.9rem;
+`;
+
+const ScheduleList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const ScheduleSlot = styled.div`
+  border: 1px solid #eceff4;
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const ScheduleSlotHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #4a4a68;
+`;
+
+const RemoveSlotButton = styled.button`
+  border: none;
+  background: transparent;
+  color: #c0392b;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
+`;
+
 const ImageGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1006,4 +1607,141 @@ const MatchStatus = styled.span`
   font-size: 0.8rem;
   font-weight: 600;
   color: #666;
+`;
+
+const GroupTimeControls = styled.div`
+  margin-top: 0.5rem;
+  border-top: 1px solid #f1f1f6;
+  padding-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+`;
+
+const TimeField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  label {
+    font-weight: 600;
+    color: #4a4a68;
+  }
+
+  input {
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    padding: 0.5rem 0.75rem;
+  }
+`;
+
+const GroupTimeActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+const InlineResetButton = styled.button`
+  border: none;
+  background: transparent;
+  color: #b53b12;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const SubmissionMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #55536b;
+`;
+
+const SubmissionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const SubmissionCard = styled.div`
+  border: 1px solid #ececf3;
+  border-radius: 16px;
+  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  background: #fff;
+  @media (max-width: 700px) {
+    grid-template-columns: 60px 1fr;
+    grid-auto-rows: auto;
+  }
+`;
+
+const SubmissionImage = styled.img`
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #f1f1f6;
+  @media (max-width: 700px) {
+    width: 60px;
+    height: 60px;
+  }
+`;
+
+const SubmissionInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  strong {
+    font-size: 1rem;
+  }
+
+  span {
+    color: #6a6882;
+  }
+
+  small {
+    color: #9a97b3;
+  }
+`;
+
+const SubmissionActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  justify-self: end;
+  @media (max-width: 700px) {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+`;
+
+const SubmissionStatusChip = styled.span`
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: ${({ $variant }) =>
+    $variant === 'closed'
+      ? '#f2f2f7'
+      : $variant === 'open'
+      ? '#fff4e6'
+      : '#e6f6ea'};
+  color: ${({ $variant }) =>
+    $variant === 'closed'
+      ? '#666278'
+      : $variant === 'open'
+      ? '#a85b00'
+      : '#2e7d32'};
 `;

@@ -4,11 +4,32 @@ import { useParams } from 'react-router-dom';
 import Header from '../Header';
 import { useUser } from '../context/UserContext';
 
-const KO_ROUND_LABELS = {
-  1: 'Achtelfinale',
-  2: 'Viertelfinale',
-  3: 'Halbfinale',
-  4: 'Finale',
+const describeRoundByParticipants = (count) => {
+  if (!count || count <= 0) return null;
+  if (count <= 2) return 'Finale';
+  if (count === 4) return 'Halbfinale';
+  if (count === 8) return 'Viertelfinale';
+  if (count === 16) return 'Achtelfinale';
+  if (count === 32) return 'Sechzehntelfinale';
+  if (count === 64) return 'Zweiunddreißigstelfinale';
+  return `${count}-er Runde`;
+};
+
+const useKoRoundLabel = (overview) => {
+  const firstRoundParticipants = useMemo(() => {
+    const firstRoundMatches = (overview?.ko_matches || []).filter((match) => (Number(match.round) || 0) === 1);
+    return firstRoundMatches.length * 2;
+  }, [overview?.ko_matches]);
+
+  return useCallback(
+    (roundNumber) => {
+      if (!firstRoundParticipants) return `KO-Runde ${roundNumber}`;
+      const divisor = Math.max(0, roundNumber - 1);
+      const participants = Math.max(1, Math.floor(firstRoundParticipants / 2 ** divisor));
+      return describeRoundByParticipants(participants) || `KO-Runde ${roundNumber}`;
+    },
+    [firstRoundParticipants]
+  );
 };
 
 const ASSET_BASE = (process.env.REACT_APP_ASSET_BASE_URL || 'https://ice-app.de/').replace(/\/+$/, '');
@@ -31,7 +52,6 @@ function PhotoChallengeVoting() {
   const { challengeId } = useParams();
   const { userId, isLoggedIn } = useUser();
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
-
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,6 +59,13 @@ function PhotoChallengeVoting() {
   const [actionMessage, setActionMessage] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [groupModal, setGroupModal] = useState(null); // { groupId, mode, matchOrder, matchIndex, orientation }
+  const [koModal, setKoModal] = useState(null); // { round, matchIds, matchIndex, orientation }
+  const [imagePreview, setImagePreview] = useState(null); // { url, label }
+  const [userImages, setUserImages] = useState([]);
+  const [userImagesLoading, setUserImagesLoading] = useState(false);
+  const [userImagesHasMore, setUserImagesHasMore] = useState(false);
+  const [userImagesPage, setUserImagesPage] = useState(1);
+  const getKoRoundLabel = useKoRoundLabel(overview);
   const requestIdRef = React.useRef(0);
 
   const fetchOverview = useCallback(async () => {
@@ -94,12 +121,50 @@ function PhotoChallengeVoting() {
     }
   }, [apiUrl, challengeId, userId]);
 
+  const loadUserImages = useCallback(
+    async (page = 1, append = false) => {
+      if (!apiUrl || !userId) return;
+      setUserImagesLoading(true);
+      try {
+        const params = new URLSearchParams({
+          nutzer_id: userId,
+          page: String(page),
+        });
+        const res = await fetch(`${apiUrl}/photo_challenge/list_user_images.php?${params.toString()}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          setUserImages((prev) => (append ? [...prev, ...(data.data || [])] : data.data || []));
+          setUserImagesHasMore(Boolean(data.data && data.data.length === (data.meta?.limit || 30)));
+          setUserImagesPage(page);
+        } else {
+          throw new Error(data.message || 'Bilder konnten nicht geladen werden.');
+        }
+      } catch (err) {
+        if (!append) {
+          setUserImages([]);
+        }
+        setUserImagesHasMore(false);
+      } finally {
+        setUserImagesLoading(false);
+      }
+    },
+    [apiUrl, userId]
+  );
+
   useEffect(() => {
     fetchOverview();
   }, [fetchOverview, refreshKey]);
 
   useEffect(() => {
     if (!overview) return;
+    if (overview.challenge?.status === 'submission_open') {
+      setActivePhase('submission');
+      return;
+    }
+    if (overview.challenge?.status === 'finished' && overview.winner) {
+      setActivePhase((prev) => (prev === 'winner' ? prev : 'winner'));
+      return;
+    }
     if (overview.challenge?.status === 'group_running') {
       setActivePhase('group');
     } else if (overview.challenge?.status === 'ko_running') {
@@ -110,18 +175,34 @@ function PhotoChallengeVoting() {
     }
   }, [overview]);
 
+  useEffect(() => {
+    if (overview?.challenge?.status === 'submission_open' && isLoggedIn) {
+      loadUserImages();
+    } else {
+      setUserImages([]);
+    }
+  }, [overview?.challenge?.status, isLoggedIn, loadUserImages]);
+
   const phases = useMemo(() => {
-    const base = [{ key: 'group', label: 'Gruppenphase' }];
-    const koRounds = new Set((overview?.ko_matches || []).map((match) => Number(match.round)));
-    [1, 2, 3, 4].forEach((round) => {
+    const base = [];
+    base.push({ key: 'group', label: 'Gruppenphase' });
+    const koRounds = Array.from(
+      new Set((overview?.ko_matches || []).map((match) => Number(match.round) || 0))
+    )
+      .filter((round) => round > 0)
+      .sort((a, b) => a - b);
+    koRounds.forEach((round) => {
       base.push({
         key: `ko_round_${round}`,
-        label: KO_ROUND_LABELS[round] || `Runde ${round}`,
-        disabled: !koRounds.has(round),
+        label: getKoRoundLabel(round),
+        disabled: false,
       });
     });
+    if (overview?.winner) {
+      base.push({ key: 'winner', label: 'Gewinner' });
+    }
     return base;
-  }, [overview?.ko_matches]);
+  }, [overview?.ko_matches, getKoRoundLabel]);
 
   const handleVote = async (matchId, imageId, options = {}) => {
     if (!isLoggedIn || !userId) {
@@ -187,6 +268,13 @@ function PhotoChallengeVoting() {
     return activeModalGroup.matches.find((match) => match.id === matchId) || null;
   }, [groupModal, activeModalGroup]);
 
+  const activeKoModalMatch = useMemo(() => {
+    if (!koModal) return null;
+    const matchId = koModal.matchIds?.[koModal.matchIndex];
+    if (!matchId) return null;
+    return (overview?.ko_matches || []).find((match) => match.id === matchId) || null;
+  }, [koModal, overview?.ko_matches]);
+
   const openGroupModal = (group) => {
     if (group.status === 'upcoming') {
       setGroupModal({ groupId: group.id, mode: 'upcoming' });
@@ -216,6 +304,25 @@ function PhotoChallengeVoting() {
 
   const closeGroupModal = () => setGroupModal(null);
 
+  const openKoModal = (round, matchId) => {
+    const matchesInRound = (koMatchesByRound.get(round) || []).slice().sort((a, b) => a.position - b.position);
+    if (!matchesInRound.length) return;
+    const matchIds = matchesInRound.map((match) => match.id);
+    const orientation = {};
+    matchesInRound.forEach((match) => {
+      orientation[match.id] = Math.random() < 0.5 ? 'swap' : 'keep';
+    });
+    const startIndex = Math.max(0, matchIds.indexOf(matchId));
+    setKoModal({
+      round,
+      matchIds,
+      matchIndex: startIndex,
+      orientation,
+    });
+  };
+
+  const closeKoModal = () => setKoModal(null);
+
   const goToMatch = useCallback((direction, { closeOnEnd = false } = {}) => {
     setGroupModal((prev) => {
       if (!prev) return prev;
@@ -244,6 +351,32 @@ function PhotoChallengeVoting() {
   const goPrevModalMatch = useCallback(() => goToMatch(-1), [goToMatch]);
   const goNextModalMatch = useCallback(() => goToMatch(1, { closeOnEnd: false }), [goToMatch]);
 
+  const goKoMatch = useCallback((direction, { closeOnEnd = false } = {}) => {
+    setKoModal((prev) => {
+      if (!prev) return prev;
+      const total = prev.matchIds?.length || 0;
+      if (total === 0) return null;
+      const nextIndex = prev.matchIndex + direction;
+      if (nextIndex < 0) {
+        return { ...prev, matchIndex: 0 };
+      }
+      if (nextIndex >= total) {
+        if (closeOnEnd) {
+          return null;
+        }
+        return { ...prev, matchIndex: total - 1 };
+      }
+      return { ...prev, matchIndex: nextIndex };
+    });
+  }, []);
+
+  const goPrevKoModalMatch = useCallback(() => goKoMatch(-1), [goKoMatch]);
+  const goNextKoModalMatch = useCallback(() => goKoMatch(1, { closeOnEnd: false }), [goKoMatch]);
+  const advanceKoModalMatch = useCallback(
+    (closeOnEnd = true) => goKoMatch(1, { closeOnEnd }),
+    [goKoMatch]
+  );
+
   useEffect(() => {
     if (!groupModal || groupModal.mode !== 'active') return;
     if (!activeModalGroup) {
@@ -260,11 +393,150 @@ function PhotoChallengeVoting() {
     }
   }, [groupModal, activeModalGroup, activeModalMatch, advanceModalMatch, goNextModalMatch]);
 
+  useEffect(() => {
+    if (!koModal) return;
+    if (!activeKoModalMatch) {
+      setKoModal(null);
+    }
+  }, [koModal, activeKoModalMatch]);
+
   const handleModalVote = (match, imageId) => {
     handleVote(match.id, imageId, {
       onSuccess: () => advanceModalMatch(true),
       onDuplicate: () => advanceModalMatch(true),
     });
+  };
+
+  const handleKoModalVote = (match, imageId) => {
+    handleVote(match.id, imageId, {
+      onSuccess: () => advanceKoModalMatch(true),
+      onDuplicate: () => advanceKoModalMatch(true),
+    });
+  };
+
+  const handleSubmitPhoto = async (imageId) => {
+    if (!apiUrl || !challengeId || !userId) {
+      setActionMessage('Bitte logge dich ein, um einzureichen.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('challenge_id', challengeId);
+      formData.append('image_id', imageId);
+      const res = await fetch(`${apiUrl}/photo_challenge/submit_image.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setActionMessage('Einreichung gespeichert – danke!');
+        setRefreshKey((val) => val + 1);
+      } else {
+        throw new Error(data.message || 'Einreichung fehlgeschlagen.');
+      }
+    } catch (err) {
+      setActionMessage(err.message || 'Einreichung fehlgeschlagen.');
+    }
+  };
+
+  const submissionLimit = overview?.challenge?.submission_limit_per_user
+    ? Number(overview.challenge.submission_limit_per_user)
+    : null;
+  const userSubmissions = overview?.user_submissions || [];
+  const submissionsRemaining =
+    submissionLimit !== null && submissionLimit !== undefined
+      ? Math.max(0, submissionLimit - userSubmissions.length)
+      : null;
+  const submittedImageIds = new Set(userSubmissions.map((item) => item.image_id));
+
+  const renderSubmissionPanel = () => {
+    if (overview?.challenge?.status !== 'submission_open') return null;
+    return (
+      <SubmissionPanel>
+        <h2>Einreichephase</h2>
+        {overview.challenge.submission_deadline && (
+          <p>
+            Einreichungen möglich bis{' '}
+            <strong>{new Date(overview.challenge.submission_deadline).toLocaleString('de-DE')}</strong>.
+          </p>
+        )}
+        {submissionLimit ? (
+          <p>
+            Du kannst insgesamt {submissionLimit} Bild(er) einreichen. Verfügbar:{' '}
+            <strong>{submissionsRemaining}</strong>
+          </p>
+        ) : (
+          <p>Du kannst beliebig viele deiner Bilder einreichen.</p>
+        )}
+        {!isLoggedIn && <WarningBox>Bitte logge dich ein, um Bilder einzureichen.</WarningBox>}
+        {isLoggedIn && (
+          <>
+            <SubmissionImagesWrapper>
+              <h3>Deine Bilder</h3>
+              {userImagesLoading && <PlaceholderText>Lade Bilder…</PlaceholderText>}
+              {!userImagesLoading && !userImages.length && <PlaceholderText>Du hast noch keine Bilder hochgeladen.</PlaceholderText>}
+              <SubmissionGrid>
+                {userImages.map((image) => {
+                  const alreadySubmitted = submittedImageIds.has(image.id);
+                  const disabled =
+                    Boolean(submissionLimit !== null && submissionsRemaining === 0) || alreadySubmitted;
+                  return (
+                    <SubmissionImageCard key={image.id} $disabled={disabled}>
+                      <SubmissionImageThumb src={buildAssetUrl(image.url)} alt={image.beschreibung || `Bild ${image.id}`} />
+                      {image.beschreibung && <small>{image.beschreibung}</small>}
+                      <SubmitButton
+                        type="button"
+                        onClick={() => handleSubmitPhoto(image.id)}
+                        disabled={disabled}
+                      >
+                        {alreadySubmitted ? 'Bereits eingereicht' : 'Einreichen'}
+                      </SubmitButton>
+                    </SubmissionImageCard>
+                  );
+                })}
+              </SubmissionGrid>
+              {userImagesHasMore && (
+                <SubmitButton
+                  type="button"
+                  onClick={() => loadUserImages(userImagesPage + 1, true)}
+                  disabled={userImagesLoading}
+                >
+                  Mehr laden
+                </SubmitButton>
+              )}
+            </SubmissionImagesWrapper>
+            <SubmissionImagesWrapper>
+              <h3>Deine Einreichungen</h3>
+              {!userSubmissions.length && <PlaceholderText>Noch keine Einreichungen.</PlaceholderText>}
+              {!!userSubmissions.length && (
+                <SubmissionList>
+                  {userSubmissions.map((submission) => (
+                    <SubmissionCard key={`user-sub-${submission.id}`}>
+                      <SubmissionImage
+                        src={buildAssetUrl(submission.url)}
+                        alt={submission.beschreibung || `Bild ${submission.image_id}`}
+                      />
+                      <SubmissionInfo>
+                        <strong>Bild #{submission.image_id}</strong>
+                        <small>{new Date(submission.created_at).toLocaleString()}</small>
+                      </SubmissionInfo>
+                      <SubmissionStatusChip $variant={submission.status}>
+                        {submission.status === 'accepted'
+                          ? 'Übernommen'
+                          : submission.status === 'rejected'
+                          ? 'Abgelehnt'
+                          : 'Wartet auf Prüfung'}
+                      </SubmissionStatusChip>
+                    </SubmissionCard>
+                  ))}
+                </SubmissionList>
+              )}
+            </SubmissionImagesWrapper>
+          </>
+        )}
+      </SubmissionPanel>
+    );
   };
 
   const modalSides = useMemo(() => {
@@ -285,9 +557,28 @@ function PhotoChallengeVoting() {
     return orientation ? [baseSides[1], baseSides[0]] : baseSides;
   }, [activeModalMatch, groupModal]);
 
+  const koModalSides = useMemo(() => {
+    if (!activeKoModalMatch || !koModal) return [];
+    const baseSides = [
+      {
+        id: activeKoModalMatch.image_a_id,
+        url: activeKoModalMatch.image_a_url,
+        votes: activeKoModalMatch.votes_a,
+      },
+      {
+        id: activeKoModalMatch.image_b_id,
+        url: activeKoModalMatch.image_b_url,
+        votes: activeKoModalMatch.votes_b,
+      },
+    ];
+    const orientation = koModal.orientation?.[activeKoModalMatch.id] === 'swap';
+    return orientation ? [baseSides[1], baseSides[0]] : baseSides;
+  }, [activeKoModalMatch, koModal]);
+
   const renderGroupCard = (group) => {
     const totalMatches = group.matches.length;
     const completedMatches = group.user_votes ?? group.matches.filter((match) => match.has_voted).length;
+    const statusVariant = group.status === 'finished' ? 'closed' : group.status === 'upcoming' ? 'upcoming' : 'open';
     return (
       <GroupCard key={group.id}>
         <GroupHeader type="button" onClick={() => openGroupModal(group)}>
@@ -299,7 +590,7 @@ function PhotoChallengeVoting() {
             {completedMatches}/{totalMatches} Votes
           </ProgressTag>
         </GroupHeader>
-        <StatusLine>{group.status_label}</StatusLine>
+        <StatusChip $variant={statusVariant}>{group.status_label}</StatusChip>
       </GroupCard>
     );
   };
@@ -309,62 +600,48 @@ function PhotoChallengeVoting() {
       return <EmptyState>Die KO-Runde hat noch nicht begonnen.</EmptyState>;
     }
     const activeRound = Number(activePhase.replace('ko_round_', ''));
-    const matchesInRound = shuffleArray(koMatchesByRound.get(activeRound) || []);
+    const matchesInRound = koMatchesByRound.get(activeRound) || [];
     if (!matchesInRound.length) {
       return <EmptyState>Für diese Phase liegen keine Duelle vor.</EmptyState>;
     }
     return (
       <KoGrid>
-        {matchesInRound.map((match) => {
-          const swap = Math.random() < 0.5;
-          const sides = swap
-            ? [
-                {
-                  id: match.image_b_id,
-                  url: match.image_b_url,
-                  votes: match.votes_b,
-                },
-                {
-                  id: match.image_a_id,
-                  url: match.image_a_url,
-                  votes: match.votes_a,
-                },
-              ]
-            : [
-                {
-                  id: match.image_a_id,
-                  url: match.image_a_url,
-                  votes: match.votes_a,
-                },
-                {
-                  id: match.image_b_id,
-                  url: match.image_b_url,
-                  votes: match.votes_b,
-                },
-              ];
-          return (
-            <KoCard key={match.id}>
-              <small>{KO_ROUND_LABELS[match.round] || `Runde ${match.round}`}</small>
-              <KoPair>
-                {sides.map((side) => (
-                  <VoteOption
-                    key={side.id}
-                    type="button"
-                    onClick={() => handleVote(match.id, side.id)}
-                    disabled={match.status !== 'open'}
-                    $selected={match.user_choice === side.id}
-                  >
-                    <VoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
-                    <VoteMeta>
-                      <strong>#{side.id}</strong>
-                      <span>{side.votes} Stimme(n)</span>
-                    </VoteMeta>
-                  </VoteOption>
-                ))}
-              </KoPair>
-            </KoCard>
-          );
-        })}
+        {matchesInRound.map((match) => (
+            <KoCardButton key={match.id} type="button" onClick={() => openKoModal(match.round, match.id)}>
+            <small>{getKoRoundLabel(match.round)}</small>
+            <KoPairPreview>
+              <KoThumb>
+                <VoteImage src={buildAssetUrl(match.image_a_url)} alt={`Bild ${match.image_a_id}`} />
+                <VoteMeta>
+                  <strong>#{match.image_a_id}</strong>
+                  {match.status !== 'open' ? <span>{match.votes_a} Stimme(n)</span> : <span>Noch geheim</span>}
+                </VoteMeta>
+              </KoThumb>
+              <KoThumb>
+                <VoteImage src={buildAssetUrl(match.image_b_url)} alt={`Bild ${match.image_b_id}`} />
+                <VoteMeta>
+                  <strong>#{match.image_b_id}</strong>
+                  {match.status !== 'open' ? <span>{match.votes_b} Stimme(n)</span> : <span>Noch geheim</span>}
+                </VoteMeta>
+              </KoThumb>
+            </KoPairPreview>
+            <StatusChip
+              $variant={
+                match.status !== 'open'
+                  ? 'closed'
+                  : match.user_choice
+                  ? 'voted'
+                  : 'open'
+              }
+            >
+              {match.status === 'open'
+                ? match.user_choice
+                  ? 'Du hast hier bereits abgestimmt'
+                  : 'Voting läuft – tippe zum Abstimmen'
+                : 'Voting beendet – Ergebnisse ansehen'}
+            </StatusChip>
+          </KoCardButton>
+        ))}
       </KoGrid>
     );
   };
@@ -404,27 +681,52 @@ function PhotoChallengeVoting() {
           </ActionMessage>
         )}
 
-        <PhaseSlider>
-          {phases.map((phase) => (
-            <PhasePill
-              key={phase.key}
-              type="button"
-              $active={activePhase === phase.key}
-              disabled={phase.disabled}
-              onClick={() => !phase.disabled && setActivePhase(phase.key)}
-            >
-              {phase.label}
-            </PhasePill>
-          ))}
-        </PhaseSlider>
+        {renderSubmissionPanel()}
+
+        {overview?.challenge?.status !== 'submission_open' && (
+          <PhaseSlider>
+            {phases.map((phase) => (
+              <PhasePill
+                key={phase.key}
+                type="button"
+                $active={activePhase === phase.key}
+                disabled={phase.disabled}
+                onClick={() => !phase.disabled && setActivePhase(phase.key)}
+              >
+                {phase.label}
+              </PhasePill>
+            ))}
+          </PhaseSlider>
+        )}
 
         {loading && <PlaceholderText>Lade Challenge …</PlaceholderText>}
 
-        {!loading && activePhase === 'group' && (
+        {!loading && activePhase === 'winner' && overview?.winner && (
+          <WinnerSection>
+            <WinnerCard>
+              <WinnerBadge>Champion</WinnerBadge>
+              <WinnerImageWrapper>
+                <WinnerImage src={buildAssetUrl(overview.winner.url)} alt={overview.winner.beschreibung || `Bild ${overview.winner.image_id}`} />
+              </WinnerImageWrapper>
+              <WinnerMeta>
+                <h2>Bild #{overview.winner.image_id}</h2>
+                <p>von {overview.winner.username || 'Unbekannt'}</p>
+                {overview.winner.beschreibung && <small>{overview.winner.beschreibung}</small>}
+                <WinnerSubline>Entschieden in Runde {overview.winner.round}</WinnerSubline>
+              </WinnerMeta>
+            </WinnerCard>
+          </WinnerSection>
+        )}
+
+        {!loading && overview?.challenge?.status !== 'submission_open' && activePhase === 'group' && (
           <GroupsGrid>{groupsSorted.length ? groupsSorted.map(renderGroupCard) : <EmptyState>Noch keine Gruppen.</EmptyState>}</GroupsGrid>
         )}
 
-        {!loading && activePhase !== 'group' && renderKoMatches()}
+        {!loading &&
+          overview?.challenge?.status !== 'submission_open' &&
+          activePhase !== 'group' &&
+          activePhase !== 'winner' &&
+          renderKoMatches()}
 
         {groupModal && activeModalGroup && (
           <ModalOverlay>
@@ -432,7 +734,15 @@ function PhotoChallengeVoting() {
               <ModalHeader>
                 <div>
                   <h3>{activeModalGroup.name}</h3>
-                  <small>
+                  <StatusChip
+                    $variant={
+                      groupModal.mode === 'active'
+                        ? 'open'
+                        : groupModal.mode === 'upcoming'
+                        ? 'upcoming'
+                        : 'closed'
+                    }
+                  >
                     {groupModal.mode === 'active' && activeModalGroup.matches.length
                       ? `Duell ${groupModal.matchIndex + 1} / ${activeModalGroup.matches.length}`
                       : groupModal.mode === 'upcoming'
@@ -442,7 +752,7 @@ function PhotoChallengeVoting() {
                             : 'bald'
                         }`
                       : 'Voting beendet'}
-                  </small>
+                  </StatusChip>
                 </div>
                 <CloseModalButton type="button" onClick={closeGroupModal}>
                   ×
@@ -506,7 +816,17 @@ function PhotoChallengeVoting() {
                       activeModalGroup.results.map((result) => (
                         <ResultItem key={result.image_id}>
                           <ResultInfo>
-                            <ResultImage src={buildAssetUrl(result.url)} alt={`Bild ${result.image_id}`} />
+                            <ResultImageButton
+                              type="button"
+                              onClick={() =>
+                                setImagePreview({
+                                  url: result.url,
+                                  label: `Bild #${result.image_id}`,
+                                })
+                              }
+                            >
+                              <ResultImage src={buildAssetUrl(result.url)} alt={`Bild ${result.image_id}`} />
+                            </ResultImageButton>
                             <div>
                               <strong>Bild #{result.image_id}</strong><br />
                               <small>{result.username || 'Unbekannt'}</small>
@@ -523,6 +843,96 @@ function PhotoChallengeVoting() {
               </ModalBody>
             </ModalCard>
           </ModalOverlay>
+        )}
+        {koModal && activeKoModalMatch && (
+          <ModalOverlay>
+            <ModalCard>
+              <ModalHeader>
+                <div>
+                  <h3>{getKoRoundLabel(activeKoModalMatch.round)}</h3>
+                  <small>
+                    Duell {koModal.matchIndex + 1} / {koModal.matchIds.length}
+                  </small>
+                </div>
+                <CloseModalButton type="button" onClick={closeKoModal}>
+                  ×
+                </CloseModalButton>
+              </ModalHeader>
+              <ModalNavRow>
+                <NavButton type="button" onClick={goPrevKoModalMatch} disabled={!koModal || koModal.matchIndex === 0}>
+                  Zurück
+                </NavButton>
+                <NavButton
+                  type="button"
+                  onClick={() => goNextKoModalMatch()}
+                  disabled={!koModal || koModal.matchIndex >= koModal.matchIds.length - 1}
+                >
+                  Weiter
+                </NavButton>
+              </ModalNavRow>
+              <ModalBody>
+                <ModalVoteWrapper>
+                  {koModalSides.map((side) => (
+                    <ModalVoteOption
+                      key={side.id}
+                      type="button"
+                      onClick={() => handleKoModalVote(activeKoModalMatch, side.id)}
+                      disabled={activeKoModalMatch.status !== 'open'}
+                      $selected={activeKoModalMatch.user_choice === side.id}
+                    >
+                      <ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                      <VoteMeta>
+                        <strong>Bild #{side.id}</strong>
+                        {activeKoModalMatch.user_choice === side.id ? (
+                          <span>Deine aktuelle Stimme</span>
+                        ) : (
+                          <span>Tippe zum Abstimmen</span>
+                        )}
+                      </VoteMeta>
+                    </ModalVoteOption>
+                  ))}
+                </ModalVoteWrapper>
+                {activeKoModalMatch.status !== 'open' && (
+                  <ResultsList>
+                    {koModalSides.map((side) => (
+                      <ResultItem key={side.id}>
+                        <ResultInfo>
+                          <ResultImageButton
+                            type="button"
+                            onClick={() =>
+                              setImagePreview({
+                                url: side.url,
+                                label: `Bild #${side.id}`,
+                              })
+                            }
+                          >
+                            <ResultImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                          </ResultImageButton>
+                          <div>
+                            <strong>Bild #{side.id}</strong>
+                          </div>
+                        </ResultInfo>
+                        <ResultWins>{side.votes} Stimme(n)</ResultWins>
+                      </ResultItem>
+                    ))}
+                  </ResultsList>
+                )}
+              </ModalBody>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+        {imagePreview && (
+          <LightboxOverlay onClick={() => setImagePreview(null)}>
+            <LightboxCard onClick={(event) => event.stopPropagation()}>
+              <LightboxCloseRow>
+                <CloseModalButton type="button" onClick={() => setImagePreview(null)}>
+                  ×
+                </CloseModalButton>
+              </LightboxCloseRow>
+              <LightboxImage src={buildAssetUrl(imagePreview.url)} alt={imagePreview.label || 'Bild in voller Größe'} />
+              {imagePreview.label && <LightboxCaption>{imagePreview.label}</LightboxCaption>}
+            </LightboxCard>
+          </LightboxOverlay>
         )}
       </Content>
     </FullPage>
@@ -595,6 +1005,7 @@ const PhaseSlider = styled.div`
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+  justify-content: center;
 `;
 
 const PhasePill = styled.button`
@@ -652,10 +1063,29 @@ const ProgressTag = styled.span`
   font-size: 0.9rem;
 `;
 
-const StatusLine = styled.p`
-  margin: -0.5rem 0 0;
-  font-size: 0.9rem;
-  color: #8a7f9b;
+const StatusChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: ${({ $variant }) =>
+    $variant === 'closed'
+      ? '#f2f2f7'
+      : $variant === 'upcoming'
+      ? '#fff4e6'
+      : $variant === 'voted'
+      ? '#e6f6ea'
+      : '#e5fff4'};
+  color: ${({ $variant }) =>
+    $variant === 'closed'
+      ? '#666278'
+      : $variant === 'upcoming'
+      ? '#a85b00'
+      : $variant === 'voted'
+      ? '#2e7d32'
+      : '#046747'};
 `;
 
 const VoteOption = styled.button`
@@ -700,25 +1130,219 @@ const KoGrid = styled.div`
   gap: 1rem;
 `;
 
-const KoCard = styled.div`
+const KoCardButton = styled.button`
   background: #fff;
   border-radius: 16px;
-  border: 1px solid #ececf3;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   box-shadow: 0 15px 40px rgba(15, 18, 63, 0.08);
+  border: 1px solid #ececf3;
+  cursor: pointer;
+  text-align: left;
 
   small {
     color: #7a7a90;
   }
 `;
 
-const KoPair = styled.div`
+const KoPairPreview = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+`;
+
+const KoThumb = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+const WinnerSection = styled.section`
+  margin-bottom: 2rem;
+`;
+
+const WinnerCard = styled.div`
+  background: linear-gradient(135deg, #ffc757, #ff5ca4);
+  border-radius: 32px;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
+`;
+
+const WinnerBadge = styled.span`
+  padding: 0.4rem 1.2rem;
+  border-radius: 999px;
+  background: #ffd98dff;
+  font-weight: 700;
+  color: #000000ff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+`;
+
+const WinnerImageWrapper = styled.div`
+  width: min(90vw, 520px);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+`;
+
+const WinnerImage = styled.img`
+  width: 100%;
+  height: auto;
+  display: block;
+`;
+
+const WinnerMeta = styled.div`
+  text-align: center;
+  color: #4a3c2f;
+
+  h2 {
+    margin: 0;
+    font-size: 2rem;
+  }
+
+  p {
+    margin: 0.2rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  small {
+    color: #816c62;
+  }
+`;
+
+const WinnerSubline = styled.span`
+  display: block;
+  margin-top: 0.75rem;
+  color: #a24d00;
+  font-weight: 600;
+`;
+
+const SubmissionPanel = styled.section`
+  background: #fff;
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const SubmissionImagesWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const SubmissionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+`;
+
+const SubmissionImageCard = styled.div`
+  border: 1px solid ${({ $disabled }) => ($disabled ? '#f0f0f0' : '#ececf3')};
+  border-radius: 16px;
+  padding: 0.75rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
+`;
+
+const SubmissionImageThumb = styled.img`
+  width: 100%;
+  border-radius: 12px;
+  height: 140px;
+  object-fit: cover;
+  background: #f7f7fa;
+`;
+
+const SubmissionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const SubmissionCard = styled.div`
+  border: 1px solid #ececf3;
+  border-radius: 16px;
+  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  background: #fff;
+  @media (max-width: 640px) {
+    grid-template-columns: 60px 1fr;
+  }
+`;
+
+const SubmissionImage = styled.img`
+  width: 70px;
+  height: 70px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #f1f1f6;
+  @media (max-width: 640px) {
+    width: 60px;
+    height: 60px;
+  }
+`;
+
+const SubmissionInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  strong {
+    font-size: 1rem;
+  }
+
+  small {
+    color: #7d7b92;
+  }
+`;
+
+const SubmissionStatusChip = styled.span`
+  justify-self: end;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: ${({ $variant }) =>
+    $variant === 'accepted'
+      ? '#e6f6ea'
+      : $variant === 'pending'
+      ? '#fff4e6'
+      : '#f2f2f7'};
+  color: ${({ $variant }) =>
+    $variant === 'accepted'
+      ? '#2e7d32'
+      : $variant === 'pending'
+      ? '#a85b00'
+      : '#666278'};
+`;
+
+const SubmitButton = styled.button`
+  border-radius: 12px;
+  border: 1px solid #bbb;
+  background: #fff;
+  padding: 0.45rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -780,6 +1404,42 @@ const ModalCard = styled.div`
   overflow: hidden;
 `;
 
+const LightboxOverlay = styled(ModalOverlay)`
+  padding: 2rem;
+`;
+
+const LightboxCard = styled.div`
+  position: relative;
+  background: #fff;
+  border-radius: 20px;
+  padding: 1rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: min(90vw, 720px);
+  max-height: calc(100vh - 3rem);
+`;
+
+const LightboxCloseRow = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+`;
+
+const LightboxImage = styled.img`
+  max-width: 100%;
+  max-height: calc(100vh - 220px);
+  border-radius: 16px;
+  object-fit: contain;
+  background: #f8f8fb;
+`;
+
+const LightboxCaption = styled.span`
+  font-weight: 600;
+  color: #5a5673;
+`;
+
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -802,7 +1462,7 @@ const ModalBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow: hidden;
+  overflow: auto;
 `;
 
 const ModalVoteWrapper = styled.div`
@@ -922,6 +1582,13 @@ const ResultInfo = styled.div`
   display: flex;
   gap: 0.75rem;
   align-items: center;
+`;
+
+const ResultImageButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
 `;
 
 const ResultImage = styled.img`
