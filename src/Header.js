@@ -213,10 +213,10 @@ const Header = ({ refreshShops }) => {
         {menuOpen && (
           <Menu ref={menuRef}>
             <MenuItemLink to="/" onClick={() => setMenuOpen(false)}>Eisdielen-Karte</MenuItemLink>
-            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
-            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>
             <MenuItemLink to="/dashboard" onClick={() => setMenuOpen(false)}>Aktivitäten</MenuItemLink>
+            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
             <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
+            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>        
             {isLoggedIn ? (
               <>
                 <MenuItemLink to={`/user/${userId}`} className="logged-in" onClick={() => setMenuOpen(false)}>Profil ({username})</MenuItemLink>

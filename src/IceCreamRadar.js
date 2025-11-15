@@ -604,7 +604,15 @@ const IceCreamRadar = () => {
   }, [userId, openFilterQueryString]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        minHeight: '100vh',
+        backgroundColor: '#ffb522',
+      }}
+    >
       <Header
         refreshShops={refreshShops}
       />
