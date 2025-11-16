@@ -11,7 +11,7 @@ const LoginModal = ({ setShowLoginModal }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
-  const { userId, isLoggedIn, login } = useUser();
+  const { isLoggedIn, login } = useUser();
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState(false);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
@@ -34,17 +34,11 @@ const LoginModal = ({ setShowLoginModal }) => {
       });
 
       const data = await response.json();
-      console.log(data);
       if (data.status === 'success') {
-        // Verwende den vom Server zurückgegebenen username statt der Eingabe
         const actualUsername = data.username;
-        login(data.userId, actualUsername);
-        console.log(userId);
+        login(data.userId, actualUsername, data.token, data.expires_at);
         setMessage('Login erfolgreich!');
         setLoginSuccess(true);
-        localStorage.setItem('userId', data.userId);
-        localStorage.setItem('username', actualUsername);
-        // Schließen Sie das Modal nach 2 Sekunden
         setTimeout(() => {
           setShowLoginModal(false);
           setMessage('');
