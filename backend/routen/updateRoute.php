@@ -1,5 +1,9 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 // Funktion zur URL-Validierung und Kürzung
 function validateAndCleanUrl(string $url): ?string {
@@ -57,7 +61,6 @@ try {
 
     // Pflichtfelder
     $route_id = $data['id'] ?? null;
-    $nutzer_id = $data['nutzer_id'] ?? null;
 
     // Optional / geänderte Werte
     $url = $data['url'] ?? null;
@@ -68,7 +71,7 @@ try {
     $laenge_km   = nullIfEmpty($data['laenge_km'] ?? null);
     $hoehenmeter = nullIfEmpty($data['hoehenmeter'] ?? null);
     $schwierigkeit = $data['schwierigkeit'] ?? null;
-    $is_admin = ($nutzer_id === "1");
+    $is_admin = ($currentUserId === 1);
     $incomingEisdieleIds = $data['eisdiele_ids'] ?? null;
     $newEisdieleIds = null;
     if ($is_admin) {
@@ -81,7 +84,7 @@ try {
         $embed_code = generateKomootEmbedCode($url);
     }
 
-    if (!$route_id || !$nutzer_id) {
+    if (!$route_id || !$currentUserId) {
         echo json_encode(['status' => 'error', 'message' => 'Fehlende erforderliche Daten']);
         exit;
     }
@@ -98,7 +101,7 @@ try {
 
     // SQL-Dynamik: nur vorhandene Felder aktualisieren
     $fields = [];
-    $params = ['id' => $route_id, 'nutzer_id' => $nutzer_id];
+    $params = ['id' => $route_id, 'nutzer_id' => $currentUserId];
 
     if ($cleanUrl !== null) {
         $fields[] = "url = :url";

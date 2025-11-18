@@ -1,6 +1,10 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/opening_hours.php';
+require_once __DIR__ . '/lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -13,7 +17,6 @@ if (!isset($data['shopId']) || !isset($data['name']) || !isset($data['adresse'])
 }
 
 $eisdieleId = intval($data['shopId']);
-$userId = intval($data['userId']);
 
 // Hole ursprünglichen Eintrag
 $stmt = $pdo->prepare("SELECT user_id, erstellt_am, latitude, longitude FROM eisdielen WHERE id = ?");
@@ -25,8 +28,8 @@ if (!$eisdiele) {
     exit;
 }
 
-$isAdmin = $userId === 1;
-$isOwner = $userId === intval($eisdiele['user_id']);
+$isAdmin = $currentUserId === 1;
+$isOwner = $currentUserId === intval($eisdiele['user_id']);
 $createdAt = strtotime($eisdiele['erstellt_am']);
 $isRecent = (time() - $createdAt) <= 6 * 3600; // 6 Stunden
 $autoApprove = $isAdmin || ($isOwner && $isRecent);
@@ -53,7 +56,7 @@ if (!$autoApprove) {
     }
 
     try {
-        storeChangeRequest($pdo, $eisdieleId, $userId, $changeSet);
+        storeChangeRequest($pdo, $eisdieleId, $currentUserId, $changeSet);
         echo json_encode([
             "status" => "pending",
             "message" => "Vielen Dank! Dein Änderungsvorschlag wurde gespeichert und wartet auf Prüfung."
@@ -171,7 +174,7 @@ function ensureChangeRequestTable(PDO $pdo) {
     ");
 }
 
-function storeChangeRequest(PDO $pdo, int $shopId, int $userId, array $changes) {
+function storeChangeRequest(PDO $pdo, int $shopId, int $currentUserId, array $changes) {
     ensureChangeRequestTable($pdo);
     $payload = json_encode(['changes' => $changes], JSON_UNESCAPED_UNICODE);
     if ($payload === false) {
@@ -184,7 +187,7 @@ function storeChangeRequest(PDO $pdo, int $shopId, int $userId, array $changes) 
     ");
     $stmt->execute([
         ':eisdiele_id' => $shopId,
-        ':requested_by' => $userId,
+        ':requested_by' => $currentUserId,
         ':payload' => $payload
     ]);
 }

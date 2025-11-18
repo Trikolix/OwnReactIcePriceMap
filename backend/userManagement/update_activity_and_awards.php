@@ -17,20 +17,22 @@ require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceSeasonEvaluator.php';
 require_once __DIR__ . '/../evaluators/GroupCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
+require_once __DIR__ . '/../lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
  
 try {
     // Nutzer-ID prüfen
-    if (!isset($_GET['nutzer_id']) || !is_numeric($_GET['nutzer_id'])) {
+    if ($currentUserId <= 0) {
         http_response_code(400);
         echo json_encode(['error' => 'Keine gültige Nutzer-ID übergeben']);
         exit;
     }
  
-    $userId = (int) $_GET['nutzer_id'];
- 
     // Letzte Aktivität aktualisieren
     $stmt = $pdo->prepare("UPDATE nutzer SET last_active_at = NOW() WHERE id = ?");
-    $stmt->execute([$userId]);
+    $stmt->execute([$currentUserId]);
  
     // Award-Evaluatoren durchlaufen
     $evaluators = [
@@ -56,7 +58,7 @@ try {
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
         try {
-            $evaluated = $evaluator->evaluate($userId);
+            $evaluated = $evaluator->evaluate($currentUserId);
             $newAwards = array_merge($newAwards, $evaluated);
         } catch (Exception $e) {
             error_log("Fehler beim Evaluator " . get_class($evaluator) . ": " . $e->getMessage());
@@ -64,7 +66,7 @@ try {
     }
  
     // Level-Änderung prüfen
-    $levelChange = updateUserLevelIfChanged($pdo, $userId);
+    $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
  
     // JSON-Antwort vorbereiten
     echo json_encode([

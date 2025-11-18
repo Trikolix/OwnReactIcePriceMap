@@ -3,6 +3,10 @@ require_once  __DIR__ . '/../db_connect.php';
 require_once  __DIR__ . '/../lib/levelsystem.php';
 require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
+require_once __DIR__ . '/../lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 // Validiert eine URL auf erlaubte Routenanbieter und extrahiert die Basis-URL
 function validateAndCleanUrl(string $url): ?string {
@@ -63,12 +67,11 @@ try {
     // Pflichtfelder
     $primaryEisdieleId = $data['eisdiele_id'] ?? null;
     $eisdieleIdsInput = $data['eisdiele_ids'] ?? null;
-    $nutzer_id = $data['nutzer_id'] ?? null;
     $url = $data['url'] ?? null;
     $typ = $data['typ'] ?? null;
 
     // Optional: Nur Admins dürfen Embed-Code mitgeben
-    $is_admin = ($nutzer_id === "1");
+    $is_admin = ($currentUserId === 1);
     if ($is_admin) {
         if (!isset($data['embed_code']) || $data['embed_code'] === '') {
             $embed_code = generateKomootEmbedCode($url);
@@ -114,7 +117,7 @@ try {
 
     $primaryEisdieleId = $normalizedIds[0];
 
-    if (!$primaryEisdieleId || !$nutzer_id || !$url || !$typ) {
+    if (!$primaryEisdieleId || !$currentUserId || !$url || !$typ) {
         echo json_encode([
             'status' => 'error', 
             'message' => 'Fehlende erforderliche Daten'
@@ -139,7 +142,7 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         'eisdiele_id' => $primaryEisdieleId,
-        'nutzer_id' => $nutzer_id,
+        'nutzer_id' => $currentUserId,
         'url' => $cleanUrl,
         'embed_code' => $embed_code,
         'beschreibung' => $beschreibung,
@@ -175,14 +178,14 @@ try {
     $newAwards = [];
     foreach ($evaluators as $evaluator) {
         try {
-            $evaluated = $evaluator->evaluate($nutzer_id);
+            $evaluated = $evaluator->evaluate($currentUserId);
             $newAwards = array_merge($newAwards, $evaluated);
         } catch (Exception $e) {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
         }
     }
 
-    $levelChange = updateUserLevelIfChanged($pdo, $nutzer_id);
+    $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
     
     echo json_encode([
         'status' => 'success',
