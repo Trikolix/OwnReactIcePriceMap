@@ -31,6 +31,7 @@ const SubmitIceShopModal = ({
   const [submitted, setSubmitted] = useState(false);
   const [awards, setAwards] = useState([]);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const [closingDate, setClosingDate] = useState(existingIceShop?.closing_date || "");
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const isEditMode = Boolean(existingIceShop);
   const isAdmin = Number(userId) === 1;
@@ -94,14 +95,16 @@ const SubmitIceShopModal = ({
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         openingHoursStructured: openingHoursData,
-        userId
+        userId,
+        closing_date: closingDate || null
       };
 
       if (existingIceShop) {
         body.shopId = existingIceShop.id;
-        // Status und Reopening-Date nur beim Update mitsenden
+        // Status, Reopening-Date und Closing-Date nur beim Update mitsenden
         body.status = status;
         body.reopening_date = reopeningDate;
+        body.closing_date = closingDate || null;
       }
 
       const response = await fetch(endpoint, {
@@ -317,10 +320,13 @@ const SubmitIceShopModal = ({
                   <option value="permanent_closed">permanent_closed</option>
                 </Select>
               </Group>
-
               <Group>
                 <label>Wiedereröffnungsdatum (optional):</label>
                 <Input type="date" value={reopeningDate} onChange={(e) => setReopeningDate(e.target.value)} />
+              </Group>
+              <Group>
+                <label>Saison-Ende (optional):</label>
+                <Input type="date" value={closingDate} onChange={(e) => setClosingDate(e.target.value)} />
               </Group>
             </>
           )}

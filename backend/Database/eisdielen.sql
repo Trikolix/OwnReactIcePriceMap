@@ -42,7 +42,8 @@ CREATE TABLE `eisdielen` (
   `bundesland_id` int DEFAULT NULL,
   `land_id` int DEFAULT NULL,
   `status` enum('open','seasonal_closed','permanent_closed') COLLATE utf8mb4_unicode_ci DEFAULT 'open',
-  `reopening_date` date DEFAULT NULL
+  `reopening_date` date DEFAULT NULL,
+  `closing_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Öffnungszeiten pro Tag / Zeitfenster

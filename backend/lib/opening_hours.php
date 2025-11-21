@@ -391,7 +391,7 @@ function get_open_shop_ids(\PDO $pdo, ?\DateTimeInterface $moment = null, array 
     $time = $local->format('H:i:s');
 
     $stmt = $pdo->prepare("
-        SELECT DISTINCT eoh.eisdiele_id, e.status
+        SELECT DISTINCT eoh.eisdiele_id, e.status, e.reopening_date, e.closing_date
         FROM eisdiele_opening_hours eoh
         JOIN eisdielen e ON eoh.eisdiele_id = e.id
         WHERE (
@@ -412,9 +412,39 @@ function get_open_shop_ids(\PDO $pdo, ?\DateTimeInterface $moment = null, array 
     foreach ($rows as $row) {
         $shopId = (int)$row['eisdiele_id'];
         $status = $statusMap[$shopId] ?? $row['status'] ?? 'open';
-        if ($status === 'seasonal_closed' || $status === 'permanent_closed') {
+        $reopeningDate = $row['reopening_date'] ?? null;
+        $closingDate = $row['closing_date'] ?? null;
+        $momentCheck = $moment
+            ? \DateTimeImmutable::createFromInterface($moment)
+            : new \DateTimeImmutable('now', new \DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+
+        // Wenn permanent geschlossen, immer überspringen
+        if ($status === 'permanent_closed') {
             continue;
         }
+
+        // Wenn closing_date und reopening_date gesetzt sind, prüfe ob Zeitpunkt dazwischen liegt
+        if ($closingDate && $reopeningDate) {
+            $close = \DateTimeImmutable::createFromFormat('Y-m-d', $closingDate, new \DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+            $reopen = \DateTimeImmutable::createFromFormat('Y-m-d', $reopeningDate, new \DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+            if ($close && $reopen && $momentCheck >= $close && $momentCheck < $reopen) {
+                continue; // Shop ist zwischen closing_date und reopening_date geschlossen
+            }
+        }
+
+        // Wenn status seasonal_closed, aber reopening_date ist erreicht, Shop als offen behandeln
+        if ($status === 'seasonal_closed') {
+            if ($reopeningDate) {
+                $reopen = \DateTimeImmutable::createFromFormat('Y-m-d', $reopeningDate, new \DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+                if (!$reopen || $reopen > $momentCheck) {
+                    continue;
+                }
+                // reopening_date ist erreicht, Shop gilt als offen
+            } else {
+                continue;
+            }
+        }
+
         $openIds[] = $shopId;
     }
     return array_values(array_unique($openIds));
@@ -427,7 +457,29 @@ function get_open_shop_ids(\PDO $pdo, ?\DateTimeInterface $moment = null, array 
  */
 function is_shop_open(array $rows, ?\DateTimeInterface $moment = null, ?string $status = null): bool
 {
-    if ($status === 'seasonal_closed' || $status === 'permanent_closed') {
+    if ($status === 'seasonal_closed') {
+        // Prüfe, ob reopening_date vor dem abzufragenden Zeitpunkt liegt
+        // Annahme: reopening_date ist im $rows[0]['reopening_date'] oder als zusätzlicher Parameter verfügbar
+        $reopeningDate = null;
+        if (isset($rows[0]['reopening_date'])) {
+            $reopeningDate = $rows[0]['reopening_date'];
+        }
+        // Alternativ: $reopeningDate als Parameter übergeben
+        if ($reopeningDate) {
+            $momentCheck = $moment
+                ? \DateTimeImmutable::createFromInterface($moment)
+                : new \DateTimeImmutable('now', new \DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+            $reopen = \DateTimeImmutable::createFromFormat('Y-m-d', $reopeningDate, new \DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+            if ($reopen && $reopen <= $momentCheck) {
+                // Shop ist wieder offen
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    if ($status === 'permanent_closed') {
         return false;
     }
     $moment = $moment
