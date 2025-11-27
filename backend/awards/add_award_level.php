@@ -1,5 +1,6 @@
 <?php
 require_once '../db_connect.php';
+require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 header('Content-Type: application/json');
 
 // Zielverzeichnis für Uploads
@@ -31,10 +32,16 @@ if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] === UPLOAD_ERR_
 }
 
 try {
+    // Produktiv
     $stmt = $pdo->prepare("INSERT INTO award_levels 
         (award_id, level, threshold, icon_path, title_de, description_de) 
         VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([$award_id, $level, $threshold, $icon_path, $title_de, $description_de]);
+    // Entwicklung
+    $stmt_dev = $pdo_dev->prepare("INSERT INTO award_levels 
+        (award_id, level, threshold, icon_path, title_de, description_de) 
+        VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt_dev->execute([$award_id, $level, $threshold, $icon_path, $title_de, $description_de]);
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     http_response_code(500);

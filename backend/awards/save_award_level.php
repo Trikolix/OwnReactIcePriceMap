@@ -1,5 +1,6 @@
 <?php
 require_once '../db_connect.php';
+require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 header('Content-Type: application/json');
 
 $award_id = intval($_POST['award_id']);
@@ -34,11 +35,19 @@ try {
 
     // Wenn vorhanden: UPDATE, sonst INSERT
     if ($existing) {
+        // Produktiv
         $stmt = $pdo->prepare("UPDATE award_levels SET threshold = ?, ep = ?, title_de = ?, description_de = ?, icon_path = ? WHERE award_id = ? AND level = ?");
         $stmt->execute([$threshold, $ep, $title_de, $description_de, $newIconPath, $award_id, $level]);
+        // Entwicklung
+        $stmt_dev = $pdo_dev->prepare("UPDATE award_levels SET threshold = ?, ep = ?, title_de = ?, description_de = ?, icon_path = ? WHERE award_id = ? AND level = ?");
+        $stmt_dev->execute([$threshold, $ep, $title_de, $description_de, $newIconPath, $award_id, $level]);
     } else {
+        // Produktiv
         $stmt = $pdo->prepare("INSERT INTO award_levels (award_id, level, threshold, ep, icon_path, title_de, description_de) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$award_id, $level, $threshold, $ep, $newIconPath, $title_de, $description_de]);
+        // Entwicklung
+        $stmt_dev = $pdo_dev->prepare("INSERT INTO award_levels (award_id, level, threshold, ep, icon_path, title_de, description_de) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt_dev->execute([$award_id, $level, $threshold, $ep, $newIconPath, $title_de, $description_de]);
     }
 
     // Erfolgsmeldung

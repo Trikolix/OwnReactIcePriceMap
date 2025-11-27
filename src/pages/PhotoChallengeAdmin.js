@@ -1069,6 +1069,15 @@ function PhotoChallengeAdmin() {
                     const draft = groupTimeDrafts[group.id] ?? getGroupTimeDraft(group.id);
                     const saving = Boolean(groupTimeSaving[group.id]);
                     const hasLocalChanges = Boolean(groupTimeDrafts[group.id]);
+                    // Stimmen berechnen und sortieren
+                    const sortedEntries = [...group.entries].sort((a, b) => {
+                      const votesA = (a.votes ?? 0);
+                      const votesB = (b.votes ?? 0);
+                      return votesB - votesA;
+                    });
+                    // IDs der weiterkommenden und Lucky Loser
+                    const advancers = group.advancers || [];
+                    const luckyLosers = group.lucky_losers || [];
                     return (
                       <GroupCard key={group.id}>
                         <GroupHeader>
@@ -1076,16 +1085,26 @@ function PhotoChallengeAdmin() {
                           <span>{group.entries.length} Bilder</span>
                         </GroupHeader>
                         <GroupEntries>
-                          {group.entries.map((entry) => (
-                            <li key={entry.image_id}>
-                              <span>#{entry.seed}</span>
-                              <img src={buildAssetUrl(entry.url)} alt={entry.beschreibung || 'Eisfoto'} />
-                              <div>
-                                <strong>{entry.username || `Bild ${entry.image_id}`}</strong>
-                                {entry.beschreibung && <small>{entry.beschreibung}</small>}
-                              </div>
-                            </li>
-                          ))}
+                          {sortedEntries.map((entry) => {
+                            // Markierungen
+                            let entryClass = '';
+                            if (advancers.includes(entry.image_id)) {
+                              entryClass = 'advancer';
+                            } else if (luckyLosers.includes(entry.image_id)) {
+                              entryClass = 'lucky-loser';
+                            }
+                            return (
+                              <li key={entry.image_id} className={entryClass}>
+                                <span>#{entry.seed}</span>
+                                <img src={buildAssetUrl(entry.url)} alt={entry.beschreibung || 'Eisfoto'} />
+                                <div>
+                                  <strong>{entry.username || `Bild ${entry.image_id}`}</strong>
+                                  {entry.beschreibung && <small>{entry.beschreibung}</small>}
+                                  <small>Stimmen: {entry.votes ?? 0}</small>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </GroupEntries>
                         {group.matches?.length > 0 && (
                           <>
@@ -1157,22 +1176,60 @@ function PhotoChallengeAdmin() {
                   <h3>KO-Runde</h3>
                   <span>{overview.ko_matches.length} offene Matches</span>
                 </PanelHeader>
-                <MatchesList>
-                  {overview.ko_matches.map((match) => (
-                    <MatchRow key={match.id}>
-                      <MatchParticipants>
-                        <span>
-                          #{match.image_a_id} · {match.votes_a} Stimme(n)
-                        </span>
-                        <span>vs.</span>
-                        <span>
-                          #{match.image_b_id} · {match.votes_b} Stimme(n)
-                        </span>
-                      </MatchParticipants>
-                      <MatchStatus>{match.status === 'open' ? `Runde ${match.round}` : 'Beendet'}</MatchStatus>
-                    </MatchRow>
-                  ))}
-                </MatchesList>
+                {/* KO-Duelle nach Turnierphase gruppieren */}
+                {(() => {
+                  // Phasen-Mapping
+                  // Dynamische Phasen-Erkennung nach Runden-Größe
+                  const PHASE_LABELS = {
+                    'round_of_16': 'Achtelfinale',
+                    'quarter_final': 'Viertelfinale',
+                    'semi_final': 'Halbfinale',
+                    'final': 'Finale',
+                    'ko': 'KO-Runde',
+                  };
+                  // Gruppiere nach Runde
+                  const groupedByRound = {};
+                  overview.ko_matches.forEach((match) => {
+                    const round = match.round || 1;
+                    if (!groupedByRound[round]) groupedByRound[round] = [];
+                    groupedByRound[round].push(match);
+                  });
+                  // Sortiere Runden
+                  const sortedRounds = Object.keys(groupedByRound).sort((a, b) => Number(a) - Number(b));
+                  // Mapping von Match-Anzahl zu Phase
+                  const roundPhaseMap = {
+                    16: 'Sechtzehntelfinale',
+                    8: 'Achtelfinale',
+                    4: 'Viertelfinale',
+                    2: 'Halbfinale',
+                    1: 'Finale',
+                  };
+                  return sortedRounds.map((round) => {
+                    const matches = groupedByRound[round];
+                    const phaseLabel = roundPhaseMap[matches.length] || `Runde ${round}`;
+                    return (
+                      <div key={round} style={{ marginBottom: '1.5rem' }}>
+                        <SectionTitle>{phaseLabel}</SectionTitle>
+                        <MatchesList>
+                          {matches.map((match) => (
+                            <MatchRow key={match.id}>
+                              <MatchParticipants>
+                                <span>
+                                  #{match.image_a_id} · {match.votes_a} Stimme(n)
+                                </span>
+                                <span>vs.</span>
+                                <span>
+                                  #{match.image_b_id} · {match.votes_b} Stimme(n)
+                                </span>
+                              </MatchParticipants>
+                              <MatchStatus>{match.status === 'open' ? `Runde ${match.round}` : 'Beendet'}</MatchStatus>
+                            </MatchRow>
+                          ))}
+                        </MatchesList>
+                      </div>
+                    );
+                  });
+                })()}
               </PanelCard>
             ) : null}
           </>
@@ -1562,6 +1619,18 @@ const GroupEntries = styled.ul`
     grid-template-columns: auto 48px 1fr;
     gap: 0.5rem;
     align-items: center;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+
+  li.advancer {
+    background: #e6ffe6;
+    border: 1px solid #4caf50;
+  }
+
+  li.lucky-loser {
+    background: #fffbe6;
+    border: 1px solid #ffd700;
   }
 
   img {

@@ -33,7 +33,7 @@ const Header = ({ refreshShops }) => {
   const navigate = useNavigate();
 
   const allowedPhotoChallenges = (userId) => {
-    const allowedUsers = [1, 23]; // Liste der erlaubten Nutzer-IDs
+    const allowedUsers = [1, 2, 13, 23]; // Liste der erlaubten Nutzer-IDs
     return allowedUsers.includes(Number(userId));
   };
 
