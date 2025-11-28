@@ -25,6 +25,10 @@ try {
     if (!$challenge) {
         throw new RuntimeException('Challenge existiert nicht.');
     }
+    // Prevent KO restart if KO phase is already running or finished
+    if (in_array($challenge['status'], ['ko_running', 'finished', 'ko_finished', 'closed'])) {
+        throw new RuntimeException('Die KO-Runde läuft bereits oder ist abgeschlossen. Ein erneutes Starten ist nicht möglich.');
+    }
 
     $groups = fetchGroupStandings($pdo, $challengeId);
     if (!$groups) {
@@ -56,6 +60,7 @@ try {
             $entry = $group['entries'][$rank];
             $directAdvancers[] = [
                 'image_id' => (int)$entry['image_id'],
+                'title' => isset($entry['title']) ? $entry['title'] : null,
                 'label' => $group['group_name'] . ' – Platz ' . ($rank + 1),
                 'wins' => (int)($entry['wins'] ?? 0),
                 'votes_for' => (int)($entry['votes_for'] ?? 0),
@@ -67,6 +72,7 @@ try {
             $entry = $group['entries'][$rank];
             $luckyCandidates[] = [
                 'image_id' => (int)$entry['image_id'],
+                'title' => isset($entry['title']) ? $entry['title'] : null,
                 'label' => $group['group_name'] . ' – Platz ' . ($rank + 1),
                 'wins' => (int)($entry['wins'] ?? 0),
                 'votes_for' => (int)($entry['votes_for'] ?? 0),

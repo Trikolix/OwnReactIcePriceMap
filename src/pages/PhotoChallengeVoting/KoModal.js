@@ -12,6 +12,7 @@ const KoModal = ({
   handleKoModalVote,
   getKoRoundLabel,
   setImagePreview,
+  isLoggedIn,
 }) => {
   if (!koModal || !activeKoModalMatch) {
     return null;
@@ -50,13 +51,16 @@ const KoModal = ({
                 key={side.id}
                 type="button"
                 onClick={() => handleKoModalVote(activeKoModalMatch, side.id)}
-                disabled={activeKoModalMatch.status !== 'open'}
+                disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn}
                 $selected={activeKoModalMatch.user_choice === side.id}
               >
-                <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
                 <S.VoteMeta>
-                  <strong>Bild #{side.id}</strong>
-                  {activeKoModalMatch.user_choice === side.id ? (
+                  {console.log(side)}
+                  <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
+                  {!isLoggedIn ? (
+                    <span style={{ color: 'red', fontWeight: 'bold' }}>Zum Abstimmen bitte anmelden oder registrieren</span>
+                  ) : activeKoModalMatch.user_choice === side.id ? (
                     <span>Deine aktuelle Stimme</span>
                   ) : (
                     <span>Tippe zum Abstimmen</span>
@@ -75,14 +79,14 @@ const KoModal = ({
                       onClick={() =>
                         setImagePreview({
                           url: side.url,
-                          label: `Bild #${side.id}`,
+                          label: side.title || `Bild #${side.id}`,
                         })
                       }
                     >
-                      <S.ResultImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                      <S.ResultImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
                     </S.ResultImageButton>
                     <div>
-                      <strong>Bild #{side.id}</strong>
+                      <strong>{side.title || `Bild #${side.id}`}</strong>
                     </div>
                   </S.ResultInfo>
                   <S.ResultWins>{side.votes} Stimme(n)</S.ResultWins>

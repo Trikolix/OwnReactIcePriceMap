@@ -1,5 +1,31 @@
 import styled from 'styled-components';
 
+// Badge for Advancer
+export const AdvancerBadge = styled.span`
+  display: inline-block;
+  background: #2ecc40;
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: bold;
+  border-radius: 12px;
+  padding: 2px 10px;
+  margin-left: 8px;
+  margin-top: 4px;
+`;
+
+// Badge for Lucky Loser
+export const LuckyLoserBadge = styled.span`
+  display: inline-block;
+  background: #f39c12;
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: bold;
+  border-radius: 12px;
+  padding: 2px 10px;
+  margin-left: 8px;
+  margin-top: 4px;
+`;
+
 export const FullPage = styled.div`
   min-height: 100vh;
   background: #fefaf3;
@@ -154,8 +180,18 @@ export const VoteOption = styled.button`
   background: #fff;
   padding: 0.5rem;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: center;
+  &.advancer {
+    border: 2px solid #2ecc40;
+    border-radius: 8px;
+    background: rgba(46, 204, 64, 0.08);
+  }
+  &.lucky-loser {
+    border: 2px solid #f39c12;
+    border-radius: 8px;
+    background: rgba(243, 156, 18, 0.08);
+  }
   cursor: pointer;
   opacity: ${({ disabled }) => (disabled ? 0.75 : 1)};
 `;
@@ -556,7 +592,7 @@ export const ModalVoteOption = styled(VoteOption)`
   ${({ $selected }) =>
     $selected
       ? `
-    border-color: #65ff42ff;
+    border-color: #2ecc40;
   `
       : ''}
 `;
@@ -637,6 +673,16 @@ export const ResultItem = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  &.advancer {
+    border: 2px solid #2ecc40;
+    border-radius: 8px;
+    background: rgba(46, 204, 64, 0.08);
+  }
+  &.lucky-loser {
+    border: 2px solid #f39c12;
+    border-radius: 8px;
+    background: rgba(243, 156, 18, 0.08);
+  }
 `;
 
 export const ResultInfo = styled.div`

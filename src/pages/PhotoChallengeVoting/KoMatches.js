@@ -22,7 +22,8 @@ const KoMatches = ({ koMatches, openKoModal, getKoRoundLabel, activePhase, koMat
               <S.KoThumb>
                 <S.VoteImage src={buildAssetUrl(match.image_a_url)} alt={`Bild ${match.image_a_id}`} />
                 <S.VoteMeta>
-                  <strong>#{match.image_a_id}</strong>
+                  {console.log(match)}
+                  <strong>{match.image_a_title ? `"${match.image_a_title}"` : `#${match.image_a_id}`}</strong>
                   {match.status !== 'open' ? <span>{match.votes_a} Stimme(n)</span> : <span>Noch geheim</span>}
                 </S.VoteMeta>
               </S.KoThumb>

@@ -16,7 +16,12 @@ const SubmissionPanel = ({
   userImagesPage,
   userSubmissions,
 }) => {
+  const [titles, setTitles] = React.useState({});
   if (overview?.challenge?.status !== 'submission_open') return null;
+
+  const handleTitleChange = (imageId, value) => {
+    setTitles((prev) => ({ ...prev, [imageId]: value }));
+  };
 
   return (
     <S.SubmissionPanel>
@@ -51,9 +56,17 @@ const SubmissionPanel = ({
                   <S.SubmissionImageCard key={image.id} $disabled={disabled}>
                     <S.SubmissionImageThumb src={buildAssetUrl(image.url)} alt={image.beschreibung || `Bild ${image.id}`} />
                     {image.beschreibung && <small>{image.beschreibung}</small>}
+                    <input
+                      type="text"
+                      placeholder="Bild-Titel (optional)"
+                      value={titles[image.id] || ''}
+                      onChange={(e) => handleTitleChange(image.id, e.target.value)}
+                      disabled={disabled}
+                      style={{ margin: '8px 0', width: '100%' }}
+                    />
                     <S.SubmitButton
                       type="button"
-                      onClick={() => handleSubmitPhoto(image.id)}
+                      onClick={() => handleSubmitPhoto(image.id, titles[image.id] || '')}
                       disabled={disabled}
                     >
                       {alreadySubmitted ? 'Bereits eingereicht' : 'Einreichen'}
@@ -81,10 +94,10 @@ const SubmissionPanel = ({
                   <S.SubmissionCard key={`user-sub-${submission.id}`}>
                     <S.SubmissionImage
                       src={buildAssetUrl(submission.url)}
-                      alt={submission.beschreibung || `Bild ${submission.image_id}`}
+                      alt={submission.title || submission.beschreibung || `Bild ${submission.image_id}`}
                     />
                     <S.SubmissionInfo>
-                      <strong>Bild #{submission.image_id}</strong>
+                      <strong>{submission.title || `Bild #${submission.image_id}`}</strong>
                       <small>{new Date(submission.created_at).toLocaleString()}</small>
                     </S.SubmissionInfo>
                     <S.SubmissionStatusChip $variant={submission.status}>

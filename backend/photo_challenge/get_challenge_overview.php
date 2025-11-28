@@ -38,11 +38,13 @@ try {
                b.url,
                b.beschreibung,
                b.nutzer_id,
-               n.username
+               n.username,
+               pci.title AS title
         FROM photo_challenge_group_entries ge
         JOIN photo_challenge_groups g ON g.id = ge.group_id
         JOIN bilder b ON b.id = ge.image_id
         LEFT JOIN nutzer n ON n.id = b.nutzer_id
+        LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ge.challenge_id AND pci.image_id = ge.image_id
         WHERE ge.challenge_id = :challenge_id
         ORDER BY g.position ASC, ge.seed ASC
     ");
@@ -65,6 +67,7 @@ try {
         }
         $groups[$groupId]['entries'][] = [
             'image_id' => (int)$entry['image_id'],
+            'title' => isset($entry['title']) ? $entry['title'] : null,
             'seed' => (int)$entry['seed'],
             'url' => $entry['url'],
             'beschreibung' => $entry['beschreibung'],
@@ -125,16 +128,25 @@ try {
             }
             $userVotesPerGroup[$gid]++;
         }
-            $payload = [
-                'id' => (int)$match['id'],
-                'phase' => $match['phase'],
-                'round' => (int)$match['round'],
-                'group_id' => $match['group_id'] ? (int)$match['group_id'] : null,
+        // Fetch titles for KO matches
+        $stmtTitleA = $pdo->prepare("SELECT COALESCE(pci.title, s.title, b.beschreibung) AS title FROM bilder b LEFT JOIN photo_challenge_images pci ON pci.challenge_id = :challenge_id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = :challenge_id AND s.image_id = b.id WHERE b.id = :image_id LIMIT 1");
+        $stmtTitleA->execute(['challenge_id' => $challengeId, 'image_id' => $match['image_a_id']]);
+        $titleA = $stmtTitleA->fetchColumn();
+        $stmtTitleB = $pdo->prepare("SELECT COALESCE(pci.title, s.title, b.beschreibung) AS title FROM bilder b LEFT JOIN photo_challenge_images pci ON pci.challenge_id = :challenge_id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = :challenge_id AND s.image_id = b.id WHERE b.id = :image_id LIMIT 1");
+        $stmtTitleB->execute(['challenge_id' => $challengeId, 'image_id' => $match['image_b_id']]);
+        $titleB = $stmtTitleB->fetchColumn();
+        $payload = [
+            'id' => (int)$match['id'],
+            'phase' => $match['phase'],
+            'round' => (int)$match['round'],
+            'group_id' => $match['group_id'] ? (int)$match['group_id'] : null,
             'position' => (int)$match['position'],
             'image_a_id' => (int)$match['image_a_id'],
             'image_b_id' => (int)$match['image_b_id'],
             'image_a_url' => $match['image_a_url'],
             'image_b_url' => $match['image_b_url'],
+            'image_a_title' => $titleA,
+            'image_b_title' => $titleB,
             'votes_a' => $summary['votes_a'],
             'votes_b' => $summary['votes_b'],
             'status' => $match['status'],
@@ -191,22 +203,60 @@ try {
         unset($entry);
         if ($status === 'finished') {
             $results = [];
+            // Calculate advancers and true lucky losers for this group
+            $groupAdvancers = $challenge['group_advancers'] ?? 2;
+            $entriesSorted = $group['entries'];
+            usort($entriesSorted, function($a, $b) {
+                return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+            });
+            $advancers = array_slice(array_column($entriesSorted, 'image_id'), 0, $groupAdvancers);
+
+            // --- TRUE LUCKY LOSERS LOGIC ---
+            // Gather all lucky loser candidates from all groups
+            $allLuckyCandidates = [];
+            foreach ($groups as $g) {
+                $gEntriesSorted = $g['entries'];
+                usort($gEntriesSorted, function($a, $b) {
+                    return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+                });
+                $gAdvancers = array_slice(array_column($gEntriesSorted, 'image_id'), 0, $groupAdvancers);
+                foreach ($gEntriesSorted as $idx => $entry) {
+                    if (!in_array($entry['image_id'], $gAdvancers)) {
+                        $allLuckyCandidates[] = [
+                            'image_id' => $entry['image_id'],
+                            'votes' => $entry['votes'] ?? 0,
+                            'group_id' => $g['id'],
+                        ];
+                    }
+                }
+            }
+            // Sort all lucky loser candidates globally
+            usort($allLuckyCandidates, function($a, $b) {
+                return $b['votes'] <=> $a['votes'];
+            });
+            $luckySlots = $challenge['lucky_loser_slots'] ?? 0;
+            $trueLuckyLosers = array_slice(array_column($allLuckyCandidates, 'image_id'), 0, $luckySlots);
+            $group['advancers'] = $advancers;
+            $group['lucky_losers'] = array_values(array_filter($trueLuckyLosers, function($id) use ($group) {
+                foreach ($group['entries'] as $entry) {
+                    if ($entry['image_id'] === $id) return true;
+                }
+                return false;
+            }));
             foreach ($group['entries'] as $entry) {
                 $results[$entry['image_id']] = [
                     'image_id' => $entry['image_id'],
+                    'title' => isset($entry['title']) ? $entry['title'] : null,
                     'url' => $entry['url'],
                     'beschreibung' => $entry['beschreibung'],
                     'username' => $entry['username'],
-                    'wins' => 0,
+                    'votes' => $entry['votes'] ?? 0,
+                    'is_advancer' => in_array($entry['image_id'], $advancers),
+                    'is_lucky_loser' => in_array($entry['image_id'], $group['lucky_losers']),
                 ];
             }
-            foreach ($group['matches'] as $match) {
-                $winnerId = $match['winner'] ?? null;
-                if ($winnerId && isset($results[$winnerId])) {
-                    $results[$winnerId]['wins']++;
-                }
-            }
-            usort($results, fn($a, $b) => $b['wins'] <=> $a['wins']);
+            // Sortiere nach Stimmen absteigend
+            usort($results, fn($a, $b) => $b['votes'] <=> $a['votes']);
             $group['results'] = array_values($results);
         } else {
             $group['results'] = [];
@@ -231,6 +281,7 @@ try {
             $userSubmissions[] = [
                 'id' => (int)$row['id'],
                 'image_id' => (int)$row['image_id'],
+                'title' => isset($row['title']) ? $row['title'] : null,
                 'status' => $row['status'],
                 'url' => $row['url'],
                 'beschreibung' => $row['beschreibung'],
@@ -266,8 +317,13 @@ try {
             ");
             $stmt->execute(['image_id' => $finalMatch['winner']]);
             if ($winnerImage = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                // Winner title fetch
+                $stmtWinnerTitle = $pdo->prepare("SELECT COALESCE(pci.title, s.title, b.beschreibung) AS title FROM bilder b LEFT JOIN photo_challenge_images pci ON pci.challenge_id = :challenge_id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = :challenge_id AND s.image_id = b.id WHERE b.id = :image_id LIMIT 1");
+                $stmtWinnerTitle->execute(['challenge_id' => $challengeId, 'image_id' => $winnerImage['id']]);
+                $winnerTitle = $stmtWinnerTitle->fetchColumn();
                 $winnerPayload = [
                     'image_id' => (int)$winnerImage['id'],
+                    'title' => $winnerTitle,
                     'url' => $winnerImage['url'],
                     'beschreibung' => $winnerImage['beschreibung'],
                     'nutzer_id' => (int)$winnerImage['nutzer_id'],

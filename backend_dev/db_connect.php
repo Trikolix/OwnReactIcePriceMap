@@ -52,10 +52,11 @@ $password = "kGvDju7EChweXwE";
 
 // Verbindung zur Datenbank
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
+        $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
+        $pdo_dev = $pdo;
 } catch (PDOException $e) {
     echo json_encode(["error" => "Datenbankverbindung fehlgeschlagen"]);
     exit();

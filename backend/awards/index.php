@@ -1,7 +1,5 @@
 <?php
 session_start();
-require_once '../db_connect.php';
-require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 
 // Login-Logik verarbeiten
 $correctPassword = "deinSicheresPasswort123";

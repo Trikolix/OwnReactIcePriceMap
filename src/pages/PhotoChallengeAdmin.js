@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import Header from '../Header';
@@ -76,6 +77,7 @@ function PhotoChallengeAdmin() {
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
   const [groupTimeDrafts, setGroupTimeDrafts] = useState({});
   const [groupTimeSaving, setGroupTimeSaving] = useState({});
+  const [showChallengeImages, setShowChallengeImages] = useState(false);
 
   const STATUS_LABELS = {
     draft: 'Entwurf',
@@ -622,11 +624,19 @@ function PhotoChallengeAdmin() {
         {image.eisdiele_name && <span>{image.eisdiele_name}</span>}
       </ImageInfo>
       {inChallenge ? (
-        <ImageActionButton type="button" onClick={() => handleRemoveImage(image.image_id)}>
+        <ImageActionButton
+          type="button"
+          onClick={() => handleRemoveImage(image.image_id)}
+          disabled={!['draft', 'submission_open'].includes(challengeConfig?.status)}
+        >
           Entfernen
         </ImageActionButton>
       ) : (
-        <ImageActionButton type="button" onClick={() => handleAddImage(image.id)}>
+        <ImageActionButton
+          type="button"
+          onClick={() => handleAddImage(image.id)}
+          disabled={!['draft', 'submission_open'].includes(challengeConfig?.status)}
+        >
           Hinzufügen
         </ImageActionButton>
       )}
@@ -911,14 +921,14 @@ function PhotoChallengeAdmin() {
                       <SecondaryButton
                         type="button"
                         onClick={handleStartGroupPhase}
-                        disabled={groupActionLoading}
+                        disabled={groupActionLoading || !['draft', 'submission_open'].includes(challengeConfig?.status)}
                       >
-                        {groupActionLoading ? 'Starte…' : 'Gruppenphase neu aufsetzen'}
+                        {groupActionLoading ? 'Starte…' : 'Gruppenphase aufsetzen'}
                       </SecondaryButton>
                       <SecondaryButton
                         type="button"
                         onClick={handleStartKoPhase}
-                        disabled={koActionLoading}
+                        disabled={koActionLoading || ['ko_running', 'finished', 'ko_finished', 'closed'].includes(challengeConfig?.status)}
                       >
                         {koActionLoading ? 'Starte…' : 'KO-Runde erzeugen'}
                       </SecondaryButton>
@@ -965,7 +975,7 @@ function PhotoChallengeAdmin() {
                       <SubmissionCard key={submission.id}>
                         <SubmissionImage src={buildAssetUrl(submission.url)} alt={submission.beschreibung || `Bild ${submission.image_id}`} />
                         <SubmissionInfo>
-                          <strong>Bild #{submission.image_id}</strong>
+                          <strong>{submission.title || `Bild #${submission.image_id}`}</strong>
                           <span>von {submission.username || `User ${submission.nutzer_id}`}</span>
                           <small>{new Date(submission.created_at).toLocaleString()}</small>
                         </SubmissionInfo>
@@ -1046,14 +1056,33 @@ function PhotoChallengeAdmin() {
                     </SecondaryButton>
                   )}
 
-                  <SectionTitle>Ausgewählte Bilder</SectionTitle>
-                  {challengeImagesLoading && <PlaceholderText>Lade zugewiesene Bilder…</PlaceholderText>}
-                  {!challengeImagesLoading && challengeImages.length === 0 && (
-                    <PlaceholderText>Noch keine Bilder hinzugefügt.</PlaceholderText>
+                  {['draft', 'submission_open'].includes(challengeConfig?.status) ? (
+                    <>
+                      <SectionTitle>Ausgewählte Bilder</SectionTitle>
+                      {challengeImagesLoading && <PlaceholderText>Lade zugewiesene Bilder…</PlaceholderText>}
+                      {!challengeImagesLoading && challengeImages.length === 0 && (
+                        <PlaceholderText>Noch keine Bilder hinzugefügt.</PlaceholderText>
+                      )}
+                      <ImageGrid>
+                        {challengeImages.map((image) => renderImageCard(image, true))}
+                      </ImageGrid>
+                    </>
+                  ) : (
+                    <>
+                      <SectionTitle>Bilder in Challenge</SectionTitle>
+                      <ToggleImagesButton
+                        type="button"
+                        onClick={() => setShowChallengeImages((prev) => !prev)}
+                      >
+                        {showChallengeImages ? 'Bilder ausblenden' : 'Bilder anzeigen'}
+                      </ToggleImagesButton>
+                      {showChallengeImages && (
+                        <ImageGrid>
+                          {challengeImages.map((image) => renderImageCard(image, true))}
+                        </ImageGrid>
+                      )}
+                    </>
                   )}
-                  <ImageGrid>
-                    {challengeImages.map((image) => renderImageCard(image, true))}
-                  </ImageGrid>
                 </>
               )}
             </PanelCard>
@@ -1241,6 +1270,16 @@ function PhotoChallengeAdmin() {
 
 export default PhotoChallengeAdmin;
 
+const ToggleImagesButton = styled.button`
+  background: #f5f5f5;
+  border: 1px solid #bbb;
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1rem;
+`;
+
 const PageWrapper = styled.div`
   min-height: 100vh;
   background: #fef7ef;
@@ -1295,6 +1334,7 @@ const PanelCard = styled.div`
   background: #fff;
   border-radius: 20px;
   padding: 1.5rem;
+  margin-bottom: 1.5rem;
   box-shadow: 0 20px 35px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;

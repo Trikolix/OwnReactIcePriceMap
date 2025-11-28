@@ -37,16 +37,14 @@ function PhotoChallengeVoting() {
   const requestIdRef = React.useRef(0);
 
   const fetchOverview = useCallback(async () => {
-    if (!apiUrl || !challengeId || !userId) return;
+    if (!apiUrl || !challengeId) return;
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ challenge_id: challengeId });
       if (userId) {
-        console.log(userId);
         params.set('nutzer_id', userId);
-        console.log(params.toString());
       }
       const res = await fetch(`${apiUrl}/photo_challenge/get_challenge_overview.php?${params.toString()}`);
       const data = await res.json();
@@ -382,7 +380,7 @@ function PhotoChallengeVoting() {
     });
   };
 
-  const handleSubmitPhoto = async (imageId) => {
+  const handleSubmitPhoto = async (imageId, title = '') => {
     if (!apiUrl || !challengeId || !userId) {
       setActionMessage('Bitte logge dich ein, um einzureichen.');
       return;
@@ -392,6 +390,9 @@ function PhotoChallengeVoting() {
       formData.append('nutzer_id', userId);
       formData.append('challenge_id', challengeId);
       formData.append('image_id', imageId);
+      if (title) {
+        formData.append('title', title);
+      }
       const res = await fetch(`${apiUrl}/photo_challenge/submit_image.php`, {
         method: 'POST',
         body: formData,
@@ -441,11 +442,13 @@ function PhotoChallengeVoting() {
     const baseSides = [
       {
         id: activeKoModalMatch.image_a_id,
+        title: activeKoModalMatch.image_a_title,
         url: activeKoModalMatch.image_a_url,
         votes: activeKoModalMatch.votes_a,
       },
       {
         id: activeKoModalMatch.image_b_id,
+        title: activeKoModalMatch.image_b_title,
         url: activeKoModalMatch.image_b_url,
         votes: activeKoModalMatch.votes_b,
       },
@@ -553,6 +556,7 @@ function PhotoChallengeVoting() {
           modalSides={modalSides}
           handleModalVote={handleModalVote}
           setImagePreview={setImagePreview}
+          isLoggedIn={isLoggedIn}
         />
 
         <KoModal
@@ -565,6 +569,7 @@ function PhotoChallengeVoting() {
           handleKoModalVote={handleKoModalVote}
           getKoRoundLabel={getKoRoundLabel}
           setImagePreview={setImagePreview}
+          isLoggedIn={isLoggedIn}
         />
 
         <ImageLightbox imagePreview={imagePreview} setImagePreview={setImagePreview} />

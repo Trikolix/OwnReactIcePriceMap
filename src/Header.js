@@ -221,6 +221,7 @@ const Header = ({ refreshShops }) => {
             <MenuItemLink to="/dashboard" onClick={() => setMenuOpen(false)}>Aktivitäten</MenuItemLink>
             <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
             <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
+            {allowedPhotoChallenges(userId) && (<MenuItemLink to="/photo-challenge" onClick={() => setMenuOpen(false)}>Foto-Challenges</MenuItemLink>)}
             <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>        
             {isLoggedIn ? (
               <>
@@ -228,7 +229,7 @@ const Header = ({ refreshShops }) => {
                 <MenuItem onClick={() => { setShowSubmitNewIceShop(true); setMenuOpen(false); }} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in" onClick={() => setMenuOpen(false)}>Favoriten</MenuItemLink>
                 <MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>
-                {allowedPhotoChallenges(userId) && (<MenuItemLink to="/photo-challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges</MenuItemLink>)}
+                
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
                 {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
                 {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Änderungsvorschläge</MenuItemLink>)}

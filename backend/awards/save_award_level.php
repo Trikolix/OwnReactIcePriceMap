@@ -1,6 +1,7 @@
 <?php
-require_once '../db_connect.php';
 require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
+require_once '../db_connect.php';
+
 header('Content-Type: application/json');
 
 $award_id = intval($_POST['award_id']);

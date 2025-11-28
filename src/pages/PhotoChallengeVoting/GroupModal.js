@@ -12,6 +12,7 @@ const GroupModal = ({
   modalSides,
   handleModalVote,
   setImagePreview,
+  isLoggedIn,
 }) => {
   if (!groupModal || !activeModalGroup) {
     return null;
@@ -71,13 +72,16 @@ const GroupModal = ({
                   key={side.id}
                   type="button"
                   onClick={() => handleModalVote(activeModalMatch, side.id)}
-                  disabled={activeModalMatch.status !== 'open'}
+                  disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
                   $selected={activeModalMatch.user_choice === side.id}
                 >
                   <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
                   <S.VoteMeta>
-                    <strong>Bild #{side.id}</strong>
-                    {activeModalMatch.user_choice === side.id ? (
+                    {console.log(side)}
+                    <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
+                    {!isLoggedIn ? (
+                      <span style={{ color: 'red', fontWeight: 'bold' }}>Zum Abstimmen bitte anmelden oder registrieren</span>
+                    ) : activeModalMatch.user_choice === side.id ? (
                       <span>Deine aktuelle Stimme</span>
                     ) : (
                       <span>Stimme ändern</span>
@@ -93,7 +97,7 @@ const GroupModal = ({
                 <S.PreviewCard key={entry.image_id}>
                   <S.PreviewImage src={buildAssetUrl(entry.url)} alt={entry.beschreibung || `Bild ${entry.image_id}`} />
                   <S.PreviewMeta>
-                    <strong>Bild #{entry.image_id}</strong>
+                    <strong>{entry.title || `Bild #${entry.image_id}`}</strong>
                   </S.PreviewMeta>
                 </S.PreviewCard>
               ))}
@@ -103,25 +107,41 @@ const GroupModal = ({
             <S.ResultsList>
               {activeModalGroup.results && activeModalGroup.results.length ? (
                 activeModalGroup.results.map((result) => (
-                  <S.ResultItem key={result.image_id}>
+                  <S.ResultItem
+                    key={result.image_id}
+                    className={
+                      result.is_advancer
+                        ? 'advancer'
+                        : result.is_lucky_loser
+                        ? 'lucky-loser'
+                        : ''
+                    }
+                  >
                     <S.ResultInfo>
                       <S.ResultImageButton
                         type="button"
                         onClick={() =>
                           setImagePreview({
                             url: result.url,
-                            label: `Bild #${result.image_id}`,
+                            label: result.title || `Bild #${result.image_id}`,
                           })
                         }
                       >
-                        <S.ResultImage src={buildAssetUrl(result.url)} alt={`Bild ${result.image_id}`} />
+                        <S.ResultImage src={buildAssetUrl(result.url)} alt={result.title || `Bild ${result.image_id}`} />
                       </S.ResultImageButton>
                       <div>
-                        <strong>Bild #{result.image_id}</strong><br />
+                        {console.log(result)}
+                        <strong>{result.title ? `"${result.title}"` : `Bild #${result.image_id}`}</strong><br />
                         <small>{result.username || 'Unbekannt'}</small>
+                        {result.is_advancer && (
+                          <S.AdvancerBadge title="Direkt weitergekommen">Direkt Weiter</S.AdvancerBadge>
+                        )}
+                        {result.is_lucky_loser && (
+                          <S.LuckyLoserBadge title="Lucky Loser: Nachgerückt">Lucky Loser</S.LuckyLoserBadge>
+                        )}
                       </div>
                     </S.ResultInfo>
-                    <S.ResultWins>{result.wins} Siege</S.ResultWins>
+                    <S.ResultWins>{result.votes} Stimmen</S.ResultWins>
                   </S.ResultItem>
                 ))
               ) : (

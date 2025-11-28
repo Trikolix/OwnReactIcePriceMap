@@ -11,10 +11,10 @@ const Winner = ({ winner }) => {
       <S.WinnerCard>
         <S.WinnerBadge>Champion</S.WinnerBadge>
         <S.WinnerImageWrapper>
-          <S.WinnerImage src={buildAssetUrl(winner.url)} alt={winner.beschreibung || `Bild ${winner.image_id}`} />
+          <S.WinnerImage src={buildAssetUrl(winner.url)} alt={winner.title || winner.beschreibung || `Bild ${winner.image_id}`} />
         </S.WinnerImageWrapper>
         <S.WinnerMeta>
-          <h2>Bild #{winner.image_id}</h2>
+          <h2>{winner.title || `Bild #${winner.image_id}`}</h2>
           <p>von {winner.username || 'Unbekannt'}</p>
           {winner.beschreibung && <small>{winner.beschreibung}</small>}
           <S.WinnerSubline>Entschieden in Runde {winner.round}</S.WinnerSubline>
