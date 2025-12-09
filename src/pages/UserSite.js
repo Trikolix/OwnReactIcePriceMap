@@ -5,10 +5,11 @@ import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
 import ReviewCard from "../components/ReviewCard";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
+import { Sparkles } from 'lucide-react';
 
 const ASSET_BASE = (process.env.REACT_APP_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 const TRAVEL_COLORS = ["#ffb522", "#ff8a00", "#ff595e", "#8ac926", "#33658a", "#6a4c93", "#1982c4", "#6f2dbd"];
@@ -485,7 +486,7 @@ function UserSite() {
             </ProfileHeader>
             {isOwnProfile && (
               <InviteCard>
-                <h3>Lade neue Nutzer ein und verdiene extra EP ✨</h3>
+                <h3>Lade neue Nutzer ein und verdiene extra EP <Sparkles size={21} style={{ verticalAlign: 'sub' }} /></h3>
                 <LinkContainer>
                   Dein Einladungslink:
                   <Input value={`https://ice-app.de/#/register/${data.invite_code}`} readOnly />
@@ -513,7 +514,7 @@ function UserSite() {
                 <AwardsGrid>
                   {displayedAwards.map((award, index) => (
                     <AwardCard key={index}>
-                      <EPBadge>{award.ep} EP ✨</EPBadge>
+                      <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
                       <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
                       <AwardTitle>{award.title_de}</AwardTitle>
                       <AwardDescription>{award.description_de}</AwardDescription>

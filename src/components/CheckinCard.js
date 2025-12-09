@@ -1,4 +1,5 @@
 import React, { useState, forwardRef, useEffect } from "react";
+import { Bike, Car, Footprints, HelpCircle, MapPin, MessageCircle } from "lucide-react";
 import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
@@ -22,11 +23,11 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
   }, [showComments]);
 
   const anreiseIcons = {
-    Fahrrad: "🚲",
-    Motorrad: "🏍️",
-    "Zu Fuß": "🚶",
-    Auto: "🚗",
-    Sonstiges: "❓"
+    Fahrrad: <Bike size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />,
+    Motorrad: <Bike size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />,
+    "Zu Fuß": <Footprints size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />,
+    Auto: <Car size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />,
+    Sonstiges: <HelpCircle size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />
   };
 
   const handleEditClick = () => {
@@ -117,8 +118,8 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
             {(checkin.anreise && checkin.anreise !== "" || checkin.is_on_site !== 0) && (
               <ArrivalInfo>
                 {checkin.anreise && checkin.anreise !== "" && (
-                  <ArrivalBadge>{anreiseIcons[checkin.anreise] || "📍"} Anreise: <strong>{checkin.anreise}</strong></ArrivalBadge>)}
-                {checkin.is_on_site !== 0 && (<OnSiteBadge>📍 Vor Ort eingecheckt</OnSiteBadge>)}
+                  <ArrivalBadge>{anreiseIcons[checkin.anreise] || <HelpCircle size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />} Anreise: <strong>{checkin.anreise}</strong></ArrivalBadge>)}
+                {checkin.is_on_site !== 0 && (<OnSiteBadge><MapPin size={18} style={{ marginRight: 4, verticalAlign: 'sub' }} />Vor Ort eingecheckt</OnSiteBadge>)}
               </ArrivalInfo>
             )}
 
@@ -141,7 +142,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
           title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
           onClick={() => setAreCommentsVisible(!areCommentsVisible)}
         >
-          💬 {checkin.commentCount || 0} Kommentar(e)
+          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
         </CommentToggle>
         {areCommentsVisible && <CommentSection checkinId={checkin.id} />}
       </Card>

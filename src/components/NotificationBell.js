@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
@@ -137,7 +138,7 @@ const NotificationBell = () => {
     return (<>
         <BellWrapper>
             <BellButton onClick={() => setShow(!show)}>
-                🔔
+                <Bell size={35} color="#fff" style={{ verticalAlign: 'middle' }} />
                 {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
             </BellButton>
             {show && (
@@ -196,18 +197,23 @@ const BellButton = styled.button`
   font-size: 24px;
   cursor: pointer;
   position: relative;
+  display: flex;
+  align-items: center;
 `;
 
 const Badge = styled.span`
   position: absolute;
   top: -6px;
-  right: -10px;
+  left: -6px;
   background: red;
   color: white;
   font-size: 12px;
   font-weight: bold;
   border-radius: 50%;
   padding: 2px 6px;
+  border-color: white;
+  border-style: solid;
+  border-width: 2px;
 `;
 
 const Dropdown = styled.div`

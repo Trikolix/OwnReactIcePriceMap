@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
+import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
 
 // type: "checkin" | "bewertung" | "route"
 const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) => {
@@ -184,8 +185,8 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
                                 <button onClick={() => {
                                     setEditingId(kom.id);
                                     setEditingText(kom.kommentar);
-                                }}>✏️</button>
-                                <button onClick={() => handleDelete(kom.id)}>🗑️</button>
+                                }}><Pencil size={14} /></button>
+                                <button onClick={() => handleDelete(kom.id)}><Trash2 size={14} /></button>
                             </ActionButtons>
                         )}
                     </li>

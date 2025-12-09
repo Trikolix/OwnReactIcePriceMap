@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { Sparkles } from "lucide-react";
 
 const NewAwards = ({ awards }) => {
   if (!awards || awards.length === 0) return null;
@@ -15,7 +16,7 @@ const NewAwards = ({ awards }) => {
                 src={`https://ice-app.de/${award.icon}`}
                 alt="Award Icon"
               />
-              <EPBadge>{award.ep} EP ✨</EPBadge>
+              <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
             </IconWrapper>
             <AwardText>{award.message}</AwardText>
           </AwardItem>

@@ -1,5 +1,6 @@
 import React, { forwardRef } from "react";
 import styled from "styled-components";
+import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
@@ -40,7 +41,7 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
                         src={`https://ice-app.de/${award.icon_path}`}
                         alt="Award Icon"
                     />
-                    <EPBadge>{award.ep} EP ✨</EPBadge>
+                    <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
                 </IconWrapper>
 
                 {/* --- Text rechts --- */}

@@ -6,6 +6,10 @@ import SubmitRouteForm from "../SubmitRouteModal";
 import { Card } from "../styles/SharedStyles";
 import CommentSection from "./CommentSection";
 import UserAvatar from "./UserAvatar";
+import {
+  Bike, MountainSnow, Footprints, SignalHigh, SignalMedium, SignalLow, BookLock, HelpCircle,
+  ExternalLink, MessageCircle
+} from "lucide-react";
 
 const BORDER = "#ebe9f5";
 const ACCENT = "#ffb522";
@@ -80,9 +84,68 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
           <div>
             <RouteName>{route.name || "Unbenannte Route"}</RouteName>
             <MetaRow>
-              {route.typ && <MetaBadge>{route.typ}</MetaBadge>}
-              {route.schwierigkeit && <MetaBadge>{route.schwierigkeit}</MetaBadge>}
-              {isPrivate && <MetaBadge $variant="outline">Privat</MetaBadge>}
+              {route.typ && (() => {
+                let Icon = null;
+                switch ((route.typ || '').toLowerCase()) {
+                  case 'rennrad':
+                    Icon = Bike;
+                    break;
+                  case 'mtb':
+                    Icon = MountainSnow;
+                    break;
+                  case 'gravel':
+                    Icon = Bike;
+                    break;
+                  case 'wanderung':
+                    Icon = Footprints;
+                    break;
+                  default:
+                    Icon = HelpCircle;
+                }
+                return (
+                  <MetaBadge style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    {Icon && <Icon size={16} style={{ marginRight: 6 }} />}
+                    {route.typ}
+                  </MetaBadge>
+                );
+              })()}
+              {route.schwierigkeit && (() => {
+                let Icon = null, color = ACCENT_DARK, bg = ACCENT_SOFT, border = ACCENT_DARK;
+                switch ((route.schwierigkeit || '').toLowerCase()) {
+                  case 'leicht':
+                    Icon = SignalLow;
+                    color = '#219150';
+                    bg = '#eafbe9';
+                    border = '#219150';
+                    break;
+                  case 'mittel':
+                    Icon = SignalMedium;
+                    color = '#cfa600ff'; // dark yellow for contrast
+                    bg = '#fffbe6';
+                    border = '#cfa600ff';
+                    break;
+                  case 'schwer':
+                    Icon = SignalHigh;
+                    color = '#b91c1c';
+                    bg = '#fff0f0';
+                    border = '#b91c1c';
+                    break;
+                  default:
+                    Icon = null;
+                }
+                return (
+                  <MetaBadge style={{ color, background: bg, border: `1.5px solid ${border}`, display: 'inline-flex', alignItems: 'center' }}>
+                    {Icon && <Icon size={16} style={{ marginRight: 6, color: border }} />}
+                    {route.schwierigkeit}
+                  </MetaBadge>
+                );
+              })()}
+              {isPrivate && (
+                <MetaBadge $variant="outline">
+                  <BookLock size={16} style={{ marginRight: 5, verticalAlign: 'text-bottom' }} />
+                  Privat
+                </MetaBadge>
+              )}
             </MetaRow>
           </div>
           <AuthorInfo>
@@ -131,13 +194,14 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
         <ActionsRow>
           {hasEmbed && (
             <ActionButton type="button" onClick={toggleEmbed} aria-pressed={showEmbed}>
-              {showEmbed ? "Eingebettete Route ausblenden" : "Eingebettete Route anzeigen"}
+              {showEmbed ? "Route ausblenden" : "Route anzeigen"}
             </ActionButton>
           )}
 
           {route.url && (
             <ActionLink href={route.url} target="_blank" rel="noopener noreferrer">
-              Route öffnen
+              Zu Route
+              <ExternalLink size={20} style={{ marginLeft: 5, verticalAlign: 'text-bottom' }} />
             </ActionLink>
           )}
 
@@ -155,7 +219,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
           title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
           onClick={() => setAreCommentsVisible(!areCommentsVisible)}
         >
-          💬 {route.commentCount || 0} Kommentar(e)
+          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {route.commentCount || 0} Kommentar(e)
         </CommentToggle>
         {areCommentsVisible && <CommentSection routeId={route.id} type="route" />}
       </StyledCard>
@@ -213,7 +277,7 @@ const MetaBadge = styled.span`
   font-weight: 600;
   background: ${({ $variant }) => ($variant === "outline" ? "transparent" : ACCENT_SOFT)};
   color: ${({ $variant }) => ($variant === "outline" ? ACCENT_DARK : ACCENT_DARK)};
-  border: 1px solid ${({ $variant }) => ($variant === "outline" ? ACCENT_DARK : "transparent")};
+  border: 1px solid  ${ACCENT_DARK};
 `;
 
 const AuthorInfo = styled.div`
@@ -331,7 +395,15 @@ const ActionButton = styled.button`
 `;
 
 const ActionLink = styled.a`
-  ${actionButtonStyles};
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    text-decoration: none;
+    color: ${ACCENT};
+    font-weight: 600;
+    &:hover {
+      color: ${ACCENT_DARK}
+    }
 `;
 
 const EmbedWrapper = styled.div`
