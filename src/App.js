@@ -11,6 +11,8 @@ import PhotoChallengeVoting from './pages/PhotoChallengeVoting';
 import PhotoChallengeList from './pages/PhotoChallengeList';
 import ShopChangeRequestsAdmin from './pages/ShopChangeRequestsAdmin';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import RadEvent from './pages/Event/RadEvent';
+import EventRegistration from './pages/Event/EventRegistration';
 import FavoritenListe from './pages/FavoritenListe';
 import Impressum from './pages/Impressum';
 import UserSite from './pages/UserSite';
@@ -51,6 +53,8 @@ const App = () => {
           <Route path="/photo-challenge-admin" element={<PhotoChallengeAdmin />} />
           <Route path="/shop-change-requests" element={<ShopChangeRequestsAdmin />} />
           <Route path="/photo-challenge/:challengeId" element={<PhotoChallengeVoting />} />
+          <Route path="/rad-event" element={<RadEvent />} />
+          <Route path="/event-registration" element={<EventRegistration />} />
         </Routes>
       </UserProvider>
     </Router>

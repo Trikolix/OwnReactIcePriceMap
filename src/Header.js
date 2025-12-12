@@ -188,9 +188,10 @@ const Header = ({ refreshShops }) => {
     }
   };
 
-  const currentUser = { month: "Oktober", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/6905cebee5470_User_of_the_month_october25.png" };
+  const currentUser = { month: "November", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/693b295df3b93_Nutzer_des_Monats_Nov25.png" };
 
   const pastUsers = [
+    { month: "Oktober", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/6905cebee5470_User_of_the_month_october25.png" },
     { month: "September", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68dd0401cf5ad_ChatGPT%20Image%201.%20Okt.%202025,%2012_32_52.png" },
     { month: "August", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png" },
     { month: "Juli", id: 22, name: "Eispfote ", image: "https://ice-app.de/uploads/award_icons/68bfc41eb4748_1000101916.png" },
