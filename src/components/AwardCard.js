@@ -55,10 +55,9 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
                                 </CleanLink>
                             </strong>{" "}
                             hat den Award <strong>{award.title_de}</strong> erhalten.
-                            <p>{award.description_de}</p>
                         </>
                     )}
-
+                    <p>{award.description_de}</p>
                 </TextContent>
             </ContentWrapper>
         </Card>

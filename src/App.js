@@ -5,6 +5,11 @@ import IceCreamRadar from './IceCreamRadar';
 import DashBoard from './pages/DashBoard';
 import Statistics from './pages/Statistics';
 import Ranking from './pages/Ranking';
+import RoutesPage from './pages/Routes';
+import PhotoChallengeAdmin from './pages/PhotoChallengeAdmin';
+import PhotoChallengeVoting from './pages/PhotoChallengeVoting';
+import PhotoChallengeList from './pages/PhotoChallengeList';
+import ShopChangeRequestsAdmin from './pages/ShopChangeRequestsAdmin';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import FavoritenListe from './pages/FavoritenListe';
 import Impressum from './pages/Impressum';
@@ -30,6 +35,7 @@ const App = () => {
           <Route path="/dashboard" element={<DashBoard />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/ranking" element={<Ranking />} />
+          <Route path="/routes" element={<RoutesPage />} />
           <Route path="/favoriten" element={<FavoritenListe />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/user/:userId?" element={<UserSite />} />
@@ -41,6 +47,10 @@ const App = () => {
           <Route path="/register/:inviteCode" element={<RegisterPage />} />
           <Route path="/challenge" element={<Challenges />} />
           <Route path="/systemmeldungenform" element={<SystemmeldungForm />} />
+          <Route path="/photo-challenge" element={<PhotoChallengeList />} />
+          <Route path="/photo-challenge-admin" element={<PhotoChallengeAdmin />} />
+          <Route path="/shop-change-requests" element={<ShopChangeRequestsAdmin />} />
+          <Route path="/photo-challenge/:challengeId" element={<PhotoChallengeVoting />} />
         </Routes>
       </UserProvider>
     </Router>

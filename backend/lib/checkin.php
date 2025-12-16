@@ -5,10 +5,12 @@ function getCheckinById(PDO $pdo, int $id): ?array {
         SELECT c.*,
                n.id AS nutzer_id,
                n.username AS nutzer_name,
-               e.name AS eisdiele_name
+               e.name AS eisdiele_name,
+               up.avatar_path AS avatar_url
         FROM checkins c
         JOIN nutzer n ON n.id = c.nutzer_id
         JOIN eisdielen e ON e.id = c.eisdiele_id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE c.id = :id
     ");
     $stmt->execute(['id' => $id]);
@@ -54,10 +56,12 @@ function getCheckinsByEisdieleId(PDO $pdo, int $eisdieleId): array {
                n.id AS nutzer_id,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
-               e.adresse
+               e.adresse,
+               up.avatar_path AS avatar_url
         FROM checkins c
         JOIN nutzer n ON c.nutzer_id = n.id
         JOIN eisdielen e ON c.eisdiele_id = e.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE c.eisdiele_id = ?
         ORDER BY c.datum DESC
     ");
@@ -84,10 +88,12 @@ function getCheckins(PDO $pdo, string $sort = 'datum', string $order = 'DESC', ?
                n.id AS nutzer_id,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
-               e.adresse
+               e.adresse,
+               up.avatar_path AS avatar_url
         FROM checkins c
         JOIN nutzer n ON c.nutzer_id = n.id
         JOIN eisdielen e ON c.eisdiele_id = e.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         ORDER BY c.$sort $order
     ";
     if ($limit !== null) {
@@ -119,10 +125,12 @@ function getCheckinsByNutzerId(PDO $pdo, int $nutzerId): array {
                    n.id AS nutzer_id,
                    n.username AS nutzer_name,
                    e.name AS eisdiele_name,
-                   e.adresse
+                   e.adresse,
+                   up.avatar_path AS avatar_url
             FROM checkins c
             JOIN nutzer n ON c.nutzer_id = n.id
             JOIN eisdielen e ON c.eisdiele_id = e.id
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
             WHERE c.nutzer_id = :nutzerId
             ORDER BY c.datum DESC";
     $stmt = $pdo->prepare($sql);

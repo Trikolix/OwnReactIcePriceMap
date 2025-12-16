@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, use } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
-import { SubmitButton as SharedSubmitButton, SamllerSubmitButton } from './styles/SharedStyles';
+import { SubmitButton as SharedSubmitButton } from './styles/SharedStyles';
 import { useSearchParams } from 'react-router-dom';
 import Rating from "./components/Rating";
 import { useUser } from './context/UserContext';
@@ -40,6 +40,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const focusCheckinId = searchParams.get("focusCheckin");
   const focusReviewId = searchParams.get("focusReview");
   const createReferencedCheckin = searchParams.get("createReferencedCheckin");
+  const openAtParam = searchParams.get("open_at");
 
   const handleEditClick = () => {
     setShowEditModal(true);
@@ -76,13 +77,14 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
   const fetchShopData = useCallback(async (id) => {
     try {
-      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}`);
+      const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : "";
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${referenceQuery}`);
       const data = await response.json();
       setShopData(data);
     } catch (err) {
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
-  }, []);
+  }, [apiUrl, openAtParam]);
 
   const refreshShop = () => {
     fetchShopData(shopData.eisdiele.id);
@@ -296,9 +298,10 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
         <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
         <OpeningHours eisdiele={shopData.eisdiele} />
         <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
-        {
-        (Number(userId) === 1) && (
-          <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
+        {isLoggedIn && (
+          <SuggestionButton type="button" onClick={handleEditClick}>
+            Änderung vorschlagen
+          </SuggestionButton>
         )}
         <h2>Preise</h2>
         {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
@@ -545,6 +548,22 @@ const ButtonContainer = styled.div`
 // Use the shared SubmitButton styling for primary CTAs in the shop details
 const Button = styled(SharedSubmitButton)`
   /* keep any shop-specific tweaks here if needed */
+`;
+
+const SuggestionButton = styled.button`
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  color: #4f4f4f;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-weight: 500;
+
+  &:hover {
+    color: #1f1f1f;
+  }
 `;
 
 const AttributeSection = styled.div`

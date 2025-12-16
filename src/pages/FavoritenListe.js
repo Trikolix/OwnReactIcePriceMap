@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
+import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 
 function FavoritenListe() {
   const [favoriten, setFavoriten] = useState([]);
@@ -43,7 +44,23 @@ function FavoritenListe() {
                 <ListItem key={eisdiele.id}>
                   <ShopName><CleanLink to={`/map/activeShop/${eisdiele.id}`}>{eisdiele.name}</CleanLink></ShopName>
                   <Paragraph><strong>Adresse:</strong> {eisdiele.adresse}</Paragraph>
-                  <Paragraph><strong>Öffnungszeiten:</strong><br /> {eisdiele.openingHours.split(";").map((part, index) => (<div key={index}>{part.trim()}</div>))}</Paragraph>
+                  <Paragraph>
+                    <strong>Öffnungszeiten:</strong>{" "}
+                    {typeof eisdiele.is_open_now === 'boolean' && (
+                      <OpenBadge $open={eisdiele.is_open_now}>
+                        {eisdiele.is_open_now ? 'Jetzt geöffnet' : 'Geschlossen'}
+                      </OpenBadge>
+                    )}
+                    <br />
+                    {(() => {
+                      const structured = hydrateOpeningHours(eisdiele.openingHoursStructured, eisdiele.opening_hours_note || "");
+                      let lines = formatOpeningHoursLines(structured);
+                      if (!lines.length && eisdiele.openingHours) {
+                        lines = eisdiele.openingHours.split(";").map((part) => part.trim());
+                      }
+                      return lines.length ? lines.map((part, index) => <div key={index}>{part}</div>) : <div>Keine Angaben</div>;
+                    })()}
+                  </Paragraph>
                   <Paragraph>Am {new Date(eisdiele.favorit_seit).toLocaleString()} zu den Favoriten hinzugefügt.</Paragraph>
                 </ListItem>
               ))}
@@ -104,4 +121,17 @@ const ShopName = styled.h3`
 
 const Paragraph = styled.p`
   margin: 0.5rem 0 0;
+`;
+
+const OpenBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: ${({ $open }) => ($open ? '#0f5132' : '#6c757d')};
+  background: ${({ $open }) => ($open ? 'rgba(63, 177, 117, 0.2)' : 'rgba(108, 117, 125, 0.2)')};
 `;

@@ -32,9 +32,10 @@ const Header = ({ refreshShops }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const canAccessChallenges = (userId) => {
-    return [1, 2, 13, 118].includes(Number(userId));
-  }
+  const allowedPhotoChallenges = (userId) => {
+    const allowedUsers = [1, 23]; // Liste der erlaubten Nutzer-IDs
+    return allowedUsers.includes(Number(userId));
+  };
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -217,17 +218,20 @@ const Header = ({ refreshShops }) => {
         {menuOpen && (
           <Menu ref={menuRef}>
             <MenuItemLink to="/" onClick={() => setMenuOpen(false)}>Eisdielen-Karte</MenuItemLink>
-            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
             <MenuItemLink to="/dashboard" onClick={() => setMenuOpen(false)}>Aktivitäten</MenuItemLink>
+            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
             <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
+            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>        
             {isLoggedIn ? (
               <>
                 <MenuItemLink to={`/user/${userId}`} className="logged-in" onClick={() => setMenuOpen(false)}>Profil ({username})</MenuItemLink>
                 <MenuItem onClick={() => { setShowSubmitNewIceShop(true); setMenuOpen(false); }} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in" onClick={() => setMenuOpen(false)}>Favoriten</MenuItemLink>
-                {canAccessChallenges(userId) && (<MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>)}
-
+                <MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>
+                {allowedPhotoChallenges(userId) && (<MenuItemLink to="/photo-challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges</MenuItemLink>)}
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
+                {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
+                {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Änderungsvorschläge</MenuItemLink>)}
                 <MenuItem onClick={() => { logout(); setMenuOpen(false); }} className="logged-in">Ausloggen</MenuItem>
               </>
             ) : (

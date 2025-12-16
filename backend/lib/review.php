@@ -4,10 +4,12 @@ function getReviewById(PDO $pdo, int $reviewId): ?array {
     $stmt = $pdo->prepare("
         SELECT b.*, 
                n.username AS nutzer_name,
-               e.name AS eisdiele_name
+               e.name AS eisdiele_name,
+               up.avatar_path AS avatar_url
         FROM bewertungen b
         JOIN nutzer n ON n.id = b.nutzer_id
         JOIN eisdielen e ON e.id = b.eisdiele_id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE b.id = :id
     ");
     $stmt->execute(['id' => $reviewId]);
@@ -52,10 +54,12 @@ function getReviewsByEisdieleId(PDO $pdo, int $shopId): array {
                n.id AS nutzer_id,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
-               e.adresse
+               e.adresse,
+               up.avatar_path AS avatar_url
         FROM bewertungen b
         JOIN nutzer n ON b.nutzer_id = n.id
         JOIN eisdielen e ON b.eisdiele_id = e.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE b.eisdiele_id = :shopId
         ORDER BY b.id DESC
     ");
@@ -77,10 +81,12 @@ function getReviewsByNutzerId(PDO $pdo, int $userId): array {
                n.id AS nutzer_id,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
-               e.adresse
+               e.adresse,
+               up.avatar_path AS avatar_url
         FROM bewertungen b
         JOIN nutzer n ON b.nutzer_id = n.id
         JOIN eisdielen e ON b.eisdiele_id = e.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE b.nutzer_id = :userId
         ORDER BY b.id DESC
     ");
@@ -102,10 +108,12 @@ function getLatestReviews(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                n.id AS nutzer_id,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
-               e.adresse
+               e.adresse,
+               up.avatar_path AS avatar_url
         FROM bewertungen b
         JOIN nutzer n ON b.nutzer_id = n.id
         JOIN eisdielen e ON b.eisdiele_id = e.id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE b.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset + :days DAY)
           AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
         ORDER BY b.erstellt_am DESC

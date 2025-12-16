@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/opening_hours.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -15,7 +16,7 @@ $eisdieleId = intval($data['shopId']);
 $userId = intval($data['userId']);
 
 // Hole ursprünglichen Eintrag
-$stmt = $pdo->prepare("SELECT user_id, erstellt_am FROM eisdielen WHERE id = ?");
+$stmt = $pdo->prepare("SELECT user_id, erstellt_am, latitude, longitude FROM eisdielen WHERE id = ?");
 $stmt->execute([$eisdieleId]);
 $eisdiele = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -24,16 +25,47 @@ if (!$eisdiele) {
     exit;
 }
 
-// Berechtigungsprüfung
 $isAdmin = $userId === 1;
 $isOwner = $userId === intval($eisdiele['user_id']);
 $createdAt = strtotime($eisdiele['erstellt_am']);
 $isRecent = (time() - $createdAt) <= 6 * 3600; // 6 Stunden
+$autoApprove = $isAdmin || ($isOwner && $isRecent);
+$canEditCoordinates = $isAdmin;
 
-if (!$isAdmin && !($isOwner && $isRecent)) {
-    echo json_encode(["status" => "error", "message" => "Keine Berechtigung zum Bearbeiten"]);
+$structuredPayload = $data['openingHoursStructured'] ?? null;
+if (!is_array($structuredPayload) && array_key_exists('openingHours', $data)) {
+    $legacyText = trim((string)$data['openingHours']);
+    $structuredPayload = [
+        'timezone' => OPENING_HOURS_DEFAULT_TIMEZONE,
+        'note' => $legacyText !== '' ? $legacyText : null,
+        'days' => []
+    ];
+}
+$normalizedHours = normalize_structured_opening_hours($structuredPayload);
+$openingHoursText = build_opening_hours_display($normalizedHours['rows'], $normalizedHours['note']);
+
+if (!$autoApprove) {
+    $changeSet = buildChangeSet($data, $validStatuses, $normalizedHours, $openingHoursText);
+
+    if (empty($changeSet)) {
+        echo json_encode(["status" => "error", "message" => "Keine Änderungen zum Vorschlagen gefunden."]);
+        exit;
+    }
+
+    try {
+        storeChangeRequest($pdo, $eisdieleId, $userId, $changeSet);
+        echo json_encode([
+            "status" => "pending",
+            "message" => "Vielen Dank! Dein Änderungsvorschlag wurde gespeichert und wartet auf Prüfung."
+        ]);
+    } catch (Throwable $e) {
+        echo json_encode(["status" => "error", "message" => "Änderungsvorschlag konnte nicht gespeichert werden."]);
+    }
     exit;
 }
+
+$latitude = $canEditCoordinates ? floatval($data['latitude']) : floatval($eisdiele['latitude']);
+$longitude = $canEditCoordinates ? floatval($data['longitude']) : floatval($eisdiele['longitude']);
 
 function getLocationDetailsFromCoords($lat, $lon) {
     $url = "https://nominatim.openstreetmap.org/reverse?lat={$lat}&lon={$lon}&format=json&addressdetails=1&accept-language=de";
@@ -122,9 +154,73 @@ function getOrCreateLandkreisId($pdo, $landkreisName, $bundeslandId) {
     return $pdo->lastInsertId();
 }
 
-$lat = $data['latitude'];
-$lon = $data['longitude'];
-$location = getLocationDetailsFromCoords($lat, $lon);
+function ensureChangeRequestTable(PDO $pdo) {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS eisdiele_change_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            eisdiele_id INT NOT NULL,
+            requested_by INT NOT NULL,
+            payload LONGTEXT NOT NULL,
+            status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            decided_at TIMESTAMP NULL,
+            decided_by INT NULL,
+            INDEX idx_eisdiele_change_requests_eisdiele (eisdiele_id),
+            INDEX idx_eisdiele_change_requests_user (requested_by)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+}
+
+function storeChangeRequest(PDO $pdo, int $shopId, int $userId, array $changes) {
+    ensureChangeRequestTable($pdo);
+    $payload = json_encode(['changes' => $changes], JSON_UNESCAPED_UNICODE);
+    if ($payload === false) {
+        throw new RuntimeException('Konnte Änderungsvorschlag nicht serialisieren.');
+    }
+
+    $stmt = $pdo->prepare("
+        INSERT INTO eisdiele_change_requests (eisdiele_id, requested_by, payload)
+        VALUES (:eisdiele_id, :requested_by, :payload)
+    ");
+    $stmt->execute([
+        ':eisdiele_id' => $shopId,
+        ':requested_by' => $userId,
+        ':payload' => $payload
+    ]);
+}
+
+function buildChangeSet(array $data, array $validStatuses, array $normalizedHours, string $openingHoursText): array {
+    $changeSet = [];
+    $simpleFields = ['name', 'adresse', 'website'];
+
+    foreach ($simpleFields as $field) {
+        if (array_key_exists($field, $data)) {
+            $changeSet[$field] = $data[$field];
+        }
+    }
+
+    if (array_key_exists('status', $data) && in_array($data['status'], $validStatuses, true)) {
+        $changeSet['status'] = $data['status'];
+    }
+
+    if (array_key_exists('reopening_date', $data)) {
+        $changeSet['reopening_date'] = $data['reopening_date'] !== '' ? $data['reopening_date'] : null;
+    }
+
+    if (!empty($normalizedHours['rows']) || array_key_exists('openingHoursStructured', $data)) {
+        $changeSet['openingHours'] = $openingHoursText;
+        $changeSet['openingHoursNote'] = $normalizedHours['note'] ?? null;
+        $changeSet['openingHoursStructured'] = build_structured_opening_hours(
+            $normalizedHours['rows'],
+            $normalizedHours['note'],
+            $normalizedHours['timezone'] ?? OPENING_HOURS_DEFAULT_TIMEZONE
+        );
+    }
+
+    return $changeSet;
+}
+
+$location = getLocationDetailsFromCoords($latitude, $longitude);
 
 if ($location) {
     $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
@@ -139,10 +235,11 @@ if ($location) {
     $params = [
         ':name' => $data['name'],
         ':adresse' => $data['adresse'],
-        ':latitude' => floatval($data['latitude']),
-        ':longitude' => floatval($data['longitude']),
+        ':latitude' => $latitude,
+        ':longitude' => $longitude,
         ':website' => $data['website'] ?? null,
-        ':openingHours' => $data['openingHours'] ?? null,
+        ':openingHours' => $openingHoursText,
+        ':openingHoursNote' => $normalizedHours['note'] ?? null,
         ':landkreisId' => $landkreisId,
         ':bundeslandId' => $bundeslandId,
         ':landId' => $landId,
@@ -151,14 +248,16 @@ if ($location) {
     // Wenn status oder reopening_date übergeben wurden, erweitere Query und Params
     if ($status !== null || $reopening_date !== null) {
         $sql = "UPDATE eisdielen 
-            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
+            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
+                opening_hours_note = :openingHoursNote,
                 landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId, status = :status, reopening_date = :reopening_date
             WHERE id = :id";
         $params[':status'] = $status;
         $params[':reopening_date'] = $reopening_date;
     } else {
         $sql = "UPDATE eisdielen 
-            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours, 
+            SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
+                opening_hours_note = :openingHoursNote,
                 landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId
             WHERE id = :id";
     }
@@ -167,10 +266,16 @@ if ($location) {
     $params[':id'] = intval($data['shopId']);
 
     try {
+        $pdo->beginTransaction();
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
+        replace_opening_hours($pdo, $eisdieleId, $normalizedHours['rows']);
+        $pdo->commit();
         echo json_encode(["status" => "success"]);
     } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }
 } else {

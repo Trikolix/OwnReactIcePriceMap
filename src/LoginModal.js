@@ -139,120 +139,127 @@ const LoginModal = ({ setShowLoginModal }) => {
         <CloseX onClick={closeLoginForm}>x</CloseX>
         <h2>{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</h2>
 
-        {!loginSuccess && (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (isResetMode) {
-              handlePasswordReset();
-            } else if (isRegisterMode) {
-              handleRegister();
-            } else {
-              handleLogin();
-            }
-          }}>
-            {!isResetMode && (<Input
-              type="text"
-              placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />)}
-            {isRegisterMode && (<Input
-                type="email"
-                placeholder="E-Mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+        {loginSuccess ? (
+          <>
+            <p>{message}</p>
+            {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
+          </>
+        ) : (
+          <>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (isResetMode) {
+                handlePasswordReset();
+              } else if (isRegisterMode) {
+                handleRegister();
+              } else {
+                handleLogin();
+              }
+            }}>
+              {!isResetMode && (<Input
+                type="text"
+                placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-              />
-            )}
-            {!isResetMode && (<><Input
-              type="password"
-              placeholder="Passwort"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            /><br /></>)}
-            {!isRegisterMode && !isResetMode && (
-                  <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => setIsResetMode(true)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#0077cc',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        padding: 0
-                      }}
-                    >
-                      Passwort vergessen?
-                    </button>
-                  </p>
-                )}
-
-            {isResetMode && (
-              <>
-                <Input
+              />)}
+              {isRegisterMode && (<Input
                   type="email"
-                  placeholder="E-Mail-Adresse"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="E-Mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                <p style={{ fontSize: '0.9rem' }}>
-                  { resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen."}
-                </p>
-              </>
-            )}
-            {isRegisterMode && (
-              <CheckboxGroup>
-                <CheckboxLabel>
-                  <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={() => {
-                      setAcceptedTerms(!acceptedTerms);
-                      setTermsError(false);
-                    }}
+              )}
+              {!isResetMode && (<><Input
+                type="password"
+                placeholder="Passwort"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              /><br /></>)}
+              {!isRegisterMode && !isResetMode && (
+                    <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsResetMode(true)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#0077cc',
+                          textDecoration: 'underline',
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
+                      >
+                        Passwort vergessen?
+                      </button>
+                    </p>
+                  )}
+
+              {isResetMode && (
+                <>
+                  <Input
+                    type="email"
+                    placeholder="E-Mail-Adresse"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
                   />
-                  <span>
-                    Ich akzeptiere die{' '}
-                    <StyledLink to="/agb" target="_blank">AGB</StyledLink>,{' '}
-                    <StyledLink to="/datenschutz" target="_blank">Datenschutzerklärung</StyledLink> und{' '}
-                    <StyledLink to="/community" target="_blank">Community-Richtlinien</StyledLink>.
-                  </span>
-                </CheckboxLabel>
-                {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
-                <CheckboxLabel>
-                  <input
-                    type="checkbox"
-                    checked={newsletterOptIn}
-                    onChange={() => setNewsletterOptIn(!newsletterOptIn)}
-                  />
-                  <span>Ich möchte Systemmeldungen & News (Newsletter, Aktionen, wichtige Infos) per E-Mail erhalten.</span>
-                </CheckboxLabel>
-              </CheckboxGroup>
+                  <p style={{ fontSize: '0.9rem' }}>
+                    { resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen."}
+                  </p>
+                </>
+              )}
+              {isRegisterMode && (
+                <CheckboxGroup>
+                  <CheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={acceptedTerms}
+                      onChange={() => {
+                        setAcceptedTerms(!acceptedTerms);
+                        setTermsError(false);
+                      }}
+                    />
+                    <span>
+                      Ich akzeptiere die{' '}
+                      <StyledLink to="/agb" target="_blank">AGB</StyledLink>,{' '}
+                      <StyledLink to="/datenschutz" target="_blank">Datenschutzerklärung</StyledLink> und{' '}
+                      <StyledLink to="/community" target="_blank">Community-Richtlinien</StyledLink>.
+                    </span>
+                  </CheckboxLabel>
+                  {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
+                  <CheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={newsletterOptIn}
+                      onChange={() => setNewsletterOptIn(!newsletterOptIn)}
+                    />
+                    <span>Ich möchte Systemmeldungen & News (Newsletter, Aktionen, wichtige Infos) per E-Mail erhalten.</span>
+                  </CheckboxLabel>
+                </CheckboxGroup>
+              )}
+
+              <SubmitButton type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
+            </form>
+
+            <p>{message}</p>
+            {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
+
+            {isResetMode ? (
+              <p>
+                <SmallButton onClick={() => setIsResetMode(false)}>Zurück zum Login</SmallButton>
+              </p>
+            ) : !isRegisterMode ? (
+              <p>Noch keinen Account? <SmallButton onClick={() => setIsRegisterMode(true)}>Registrieren</SmallButton></p>
+            ) : (
+              <p>Bereits registriert? <SmallButton onClick={() => setIsRegisterMode(false)}>Zurück zum Login</SmallButton></p>
             )}
 
-            <SubmitButton type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
-          </form>
+            <SmallButton onClick={closeLoginForm}>Schließen</SmallButton>
+          </>
         )}
-
-        <p>{message}</p>
-        {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
-
-        {isResetMode ? (
-          <p>
-            <SmallButton onClick={() => setIsResetMode(false)}>Zurück zum Login</SmallButton>
-          </p>
-        ) : !isRegisterMode ? (
-          <p>Noch keinen Account? <SmallButton onClick={() => setIsRegisterMode(true)}>Registrieren</SmallButton></p>
-        ) : (
-          <p>Bereits registriert? <SmallButton onClick={() => setIsRegisterMode(false)}>Zurück zum Login</SmallButton></p>
-        )}
-
-        <SmallButton onClick={closeLoginForm}>Schließen</SmallButton>
       </div>
     </div>
   );

@@ -112,7 +112,8 @@ $mostActiveUsers = $stmtMostActiveUsers->fetchAll(PDO::FETCH_ASSOC);
 
 $stmtUsersByLevel = $pdo->prepare("SELECT 
     n.id AS nutzer_id,
-    n.username,    
+    n.username,
+    up.avatar_path AS avatar_url,
     -- Anzahl Checkins
     COALESCE(ci_ohne_bild.count, 0) + COALESCE(ci_mit_bild.count, 0) AS anzahl_checkins,
     -- EP durch Check-ins ohne Bild
@@ -150,6 +151,9 @@ $stmtUsersByLevel = $pdo->prepare("SELECT
     ) AS ep_gesamt
 
 FROM nutzer n
+
+-- Profilbild
+LEFT JOIN user_profile_images up ON up.user_id = n.id
 
 -- Check-ins ohne Bild
 LEFT JOIN (

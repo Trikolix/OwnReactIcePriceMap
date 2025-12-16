@@ -1,99 +1,169 @@
-import React, { useState } from "react";
-import styled from "styled-components";
+import React, { useMemo, useState } from "react";
+import styled, { css } from "styled-components";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
 import SubmitRouteForm from "../SubmitRouteModal";
-import { Card, SamllerSubmitButton } from "../styles/SharedStyles";
+import { Card } from "../styles/SharedStyles";
 import CommentSection from "./CommentSection";
+import UserAvatar from "./UserAvatar";
 
-const RouteCard = ({ route, shopId, shopName, onSuccess }) => {
+const BORDER = "#ebe9f5";
+const ACCENT = "#ffb522";
+const ACCENT_DARK = "#d99100";
+const ACCENT_SOFT = "#fff3da";
+const TEXT_MUTED = "#4a4a68";
+
+const toNumberOrNull = (value) => {
+  const num = Number(value);
+  return Number.isNaN(num) ? null : num;
+};
+
+const formatDistance = (value) => {
+  const num = toNumberOrNull(value);
+  return num === null ? "—" : `${num.toFixed(1)} km`;
+};
+
+const formatElevation = (value) => {
+  const num = toNumberOrNull(value);
+  return num === null ? "—" : `${num.toLocaleString("de-DE")} hm`;
+};
+
+const formatCreatedAt = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Unbekannt";
+  }
+  const datePart = date.toLocaleDateString("de-DE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const timePart = date.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${datePart} • ${timePart}`;
+};
+
+const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
   const { userId } = useUser();
 
-  const handleEditClick = () => {
-    setShowEditModal(true);
-    console.log("handleEditClick", showEditModal);
-  };
-
-  const routeDisplayMap = {
-    Wanderung: "Wanderung",
-    Rennrad: "Rennrad Route",
-    MTB: "MTB Route",
-    Gravel: "Gravel Route",
-    Sonstiges: "Sonstiges",
-  };
-
-  const renderRouteInfo = () => {
-    return (
-      <>
-        {route.laenge_km && (
-          <InfoText>Länge: {route.laenge_km} km</InfoText>
-        )}
-        {route.hoehenmeter && (
-          <InfoText>Höhenmeter: {route.hoehenmeter} m</InfoText>
-        )}
-        {route.schwierigkeit && (
-          <InfoText>Schwierigkeit: {route.schwierigkeit}</InfoText>
-        )}
-      </>
-    );
-  };
-
-  const renderRouteEmbed = () => {
-    if (route.embed_code && route.embed_code.trim() !== "") {
-      return (
-        <IframeContainer dangerouslySetInnerHTML={{ __html: route.embed_code }} />
-      );
-    } else if (route.url) {
-      return (
-        <RouteLink href={route.url} target="_blank" rel="noopener noreferrer">
-          {route.name || "Route anzeigen"}
-        </RouteLink>
-      );
+  const routeShops = useMemo(() => {
+    if (route.eisdielen && route.eisdielen.length) {
+      return route.eisdielen;
     }
-    return null;
-  };
+    if (route.eisdiele_name) {
+      return [{ id: route.eisdiele_id, name: route.eisdiele_name }];
+    }
+    return [];
+  }, [route.eisdielen, route.eisdiele_id, route.eisdiele_name]);
+
+  const contextShopId = shopId || routeShops[0]?.id || null;
+  const contextShopName = shopName || routeShops[0]?.name || null;
+
+  const isOwner = Number(route.nutzer_id) === Number(userId);
+  const isPrivate = String(route.ist_oeffentlich) !== "1";
+  const hasEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
+  const eisdielenCount = routeShops.length;
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
+
+  const toggleEmbed = () => setShowEmbed((prev) => !prev);
 
   return (
     <>
-      <Card>
-        <DateText dateTime={route.erstellt_am}>
-          {new Date(route.erstellt_am).toLocaleDateString("de-DE", {
-            day: "numeric",
-            month: "long",
-            year: "numeric", 
-            hour: "numeric",
-            minute: "numeric",
-          })}
-        </DateText>
-        <ContentWrapper>
-          <LeftContent>
-            <TitleWrapper>
-              <RouteType>{routeDisplayMap[route.typ]}: <strong>{route.name}</strong></RouteType>
-              <AuthorDate>
-                von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name}</UserLink>{" "}
-              </AuthorDate>
-            </TitleWrapper>
+      <StyledCard>
+        <DateText dateTime={route.erstellt_am}>{formatCreatedAt(route.erstellt_am)}</DateText>
 
-            {renderRouteEmbed()}
+        <HeaderRow>
+          <div>
+            <RouteName>{route.name || "Unbenannte Route"}</RouteName>
+            <MetaRow>
+              {route.typ && <MetaBadge>{route.typ}</MetaBadge>}
+              {route.schwierigkeit && <MetaBadge>{route.schwierigkeit}</MetaBadge>}
+              {isPrivate && <MetaBadge $variant="outline">Privat</MetaBadge>}
+            </MetaRow>
+          </div>
+          <AuthorInfo>
+            <UserAvatar
+              userId={route.nutzer_id}
+              name={route.username || route.nutzer_name}
+              avatarUrl={route.avatar_url}
+              size={48}
+            />
+            <AuthorText>
+              von{" "}
+              <UserLink to={`/user/${route.nutzer_id}`}>
+                {route.username || route.nutzer_name || "Unbekannt"}
+              </UserLink>
+            </AuthorText>
+          </AuthorInfo>
+        </HeaderRow>
 
-            {renderRouteInfo()}
+        {route.beschreibung && <Description>{route.beschreibung}</Description>}
 
-            {route.beschreibung && <Description>{route.beschreibung}</Description>}
+        <StatsRow>
+          <Stat>
+            <StatLabel>Länge</StatLabel>
+            <StatValue>{formatDistance(route.laenge_km)}</StatValue>
+          </Stat>
+          <Stat>
+            <StatLabel>Höhenmeter</StatLabel>
+            <StatValue>{formatElevation(route.hoehenmeter)}</StatValue>
+          </Stat>
+          <Stat>
+            <StatLabel>Eisdielen</StatLabel>
+            <StatValue>{eisdielenCount}</StatValue>
+          </Stat>
+        </StatsRow>
 
-            {Number(route.nutzer_id) === Number(userId) && (
-              <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
-            )}
-          </LeftContent>
-        </ContentWrapper>
-        {/* Kommentarbereich analog zu CheckinCard */}
-        <CommentSection routeId={route.id} type="route" />
-      </Card>
+        {routeShops.length > 0 && (
+          <ShopList>
+            Eisdielen: {routeShops.map((shop) => (
+              <ShopPill key={`${route.id}-${shop.id}`} to={`/map/activeShop/${shop.id}`}>
+                {shop.name}
+              </ShopPill>
+            ))}
+          </ShopList>
+        )}
+
+        <ActionsRow>
+          {hasEmbed && (
+            <ActionButton type="button" onClick={toggleEmbed} aria-pressed={showEmbed}>
+              {showEmbed ? "Eingebettete Route ausblenden" : "Eingebettete Route anzeigen"}
+            </ActionButton>
+          )}
+
+          {route.url && (
+            <ActionLink href={route.url} target="_blank" rel="noopener noreferrer">
+              Route öffnen
+            </ActionLink>
+          )}
+
+          {isOwner && (
+            <ActionButton type="button" onClick={() => setShowEditModal(true)}>
+              Bearbeiten
+            </ActionButton>
+          )}
+        </ActionsRow>
+
+        {showEmbed && hasEmbed && (
+          <EmbedWrapper dangerouslySetInnerHTML={{ __html: route.embed_code }} />
+        )}
+        <CommentToggle
+          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+        >
+          💬 {route.commentCount || 0} Kommentar(e)
+        </CommentToggle>
+        {areCommentsVisible && <CommentSection routeId={route.id} type="route" />}
+      </StyledCard>
 
       {showEditModal && (
         <SubmitRouteForm
-          shopId={shopId}
-          shopName={shopName}
+          shopId={contextShopId}
+          shopName={contextShopName}
           showForm={showEditModal}
           setShowForm={setShowEditModal}
           existingRoute={route}
@@ -108,80 +178,173 @@ export default RouteCard;
 
 // ---------- Styled Components ----------
 
-const UserLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
+const StyledCard = styled(Card)`
+  border: 1px solid ${BORDER};
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(15, 18, 63, 0.08);
+  padding: 2rem 2rem 1.5rem;
 `;
 
-const ContentWrapper = styled.div`
+const HeaderRow = styled.div`
   display: flex;
-  gap: 1.5rem;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
 `;
 
-const LeftContent = styled.div`
-  flex: 1 1 300px;
-  min-width: 250px;
+const RouteName = styled.h3`
+  margin: 0;
+  font-size: 1.4rem;
+  color: #2c2c54;
 `;
 
-const IframeContainer = styled.div`
-  width:  100%;
-  height: 300px;
-  border: none;
-  overflow: hidden;
-
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 8px;
-  }
+const MetaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 `;
 
-const TitleWrapper = styled.div`
-  margin-bottom: 0.25rem;
+const MetaBadge = styled.span`
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: ${({ $variant }) => ($variant === "outline" ? "transparent" : ACCENT_SOFT)};
+  color: ${({ $variant }) => ($variant === "outline" ? ACCENT_DARK : ACCENT_DARK)};
+  border: 1px solid ${({ $variant }) => ($variant === "outline" ? ACCENT_DARK : "transparent")};
 `;
 
-const RouteType = styled.div`
-  font-weight: 700;
+const AuthorInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: ${TEXT_MUTED};
+  font-weight: 600;
+`;
+
+const AuthorText = styled.span`
   font-size: 0.95rem;
-  color: #555;
-  margin-bottom: 0.15rem;
+  color: ${TEXT_MUTED};
 `;
 
-const RouteLink = styled.a`
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: #ffb522;
+const UserLink = styled(Link)`
+  color: ${ACCENT_DARK};
   text-decoration: none;
+  font-weight: 600;
 
   &:hover {
     text-decoration: underline;
   }
 `;
 
-const AuthorDate = styled.div`
-  font-size: 0.85rem;
-  color: #777;
-  margin-bottom: 0.7rem;
-`;
-
-const InfoText = styled.p`
-  margin: 0.1rem 0;
-  font-size: 0.9rem;
-  color: #444;
-`;
-
 const Description = styled.p`
+  margin-bottom: 1rem 0;
+  color: ${TEXT_MUTED};
   white-space: pre-wrap;
-  font-size: 1rem;
-  margin-bottom: 0.8rem;
-  color: #222;
 `;
 
-const TypText = styled.em`
+const StatsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+`;
+
+const Stat = styled.div`
+  background: ${ACCENT_SOFT};
+  border-radius: 14px;
+  padding: 12px;
+`;
+
+const StatLabel = styled.div`
+  font-size: 0.8rem;
+  color: #6f6f8d;
+`;
+
+const StatValue = styled.div`
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #2a2a3f;
+`;
+
+const ShopList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+  align-items: baseline;
+  font-weight: 600;
+`;
+
+const ShopPill = styled(Link)`
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 181, 34, 0.5);
+  color: ${ACCENT_DARK};
+  background: rgba(255, 181, 34, 0.15);
   font-size: 0.85rem;
-  color: #777;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.25);
+  }
+`;
+
+const ActionsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  > * {
+    flex-shrink: 0;
+  }
+`;
+
+const actionButtonStyles = css`
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  background: ${ACCENT};
+  color: #fff;
+  border: 1px solid ${ACCENT_DARK};
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+  text-align: center;
+  line-height: 1;
+
+  &:hover {
+    background: ${ACCENT_DARK};
+    transform: translateY(-1px);
+  }
+`;
+
+const ActionButton = styled.button`
+  ${actionButtonStyles};
+`;
+
+const ActionLink = styled.a`
+  ${actionButtonStyles};
+`;
+
+const EmbedWrapper = styled.div`
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid ${BORDER};
+
+  iframe {
+    width: 100%;
+    min-height: 320px;
+    border: none;
+  }
 `;
 
 const DateText = styled.time`
@@ -195,4 +358,19 @@ const DateText = styled.time`
   display: flex;
   align-items: center;
   gap: 0.25rem;
+`;
+
+export const CommentToggle = styled.button`
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #ffb522;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.25rem 0;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;

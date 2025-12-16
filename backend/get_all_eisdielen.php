@@ -1,7 +1,36 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/lib/opening_hours.php';
 
 $userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
+$openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
+$filterOpenNow = !$openMoment && isset($_GET['open_now']) && intval($_GET['open_now']) === 1;
+$openClause = '';
+$openParams = [];
+$openReferenceIso = null;
+
+if ($openMoment instanceof \DateTimeImmutable) {
+    $openReferenceIso = $openMoment->format(\DateTimeInterface::ATOM);
+    $openIds = get_open_shop_ids($pdo, $openMoment);
+} elseif ($filterOpenNow) {
+    $openIds = get_open_shop_ids($pdo);
+} else {
+    $openIds = null;
+}
+
+if (is_array($openIds)) {
+    if (empty($openIds)) {
+        echo json_encode([]);
+        exit;
+    }
+    $placeholders = [];
+    foreach ($openIds as $idx => $shopId) {
+        $placeholder = ':openShop' . $idx;
+        $placeholders[] = $placeholder;
+        $openParams[$placeholder] = $shopId;
+    }
+    $openClause = ' AND e.id IN (' . implode(',', $placeholders) . ')';
+}
 
 $sql = "SELECT  
     e.id AS eisdielen_id,
@@ -11,6 +40,7 @@ $sql = "SELECT
     e.longitude,
     e.status,
     e.reopening_date,
+    e.opening_hours_note,
 
     -- Letzter gemeldeter Preis für Kugel-Eis mit Währung
     (SELECT p1.preis 
@@ -110,14 +140,34 @@ LEFT JOIN kugel_scores ks ON ks.eisdiele_id = e.id
 LEFT JOIN softeis_scores ss ON ss.eisdiele_id = e.id
 LEFT JOIN eisbecher_scores es ON es.eisdiele_id = e.id
 
+WHERE 1=1{$openClause}
 ORDER BY finaler_kugel_score DESC, 
          finaler_softeis_score DESC, 
          finaler_eisbecher_score DESC;";
 $stmt = $pdo->prepare($sql);
 // Parameter binden
 $stmt->bindParam(':userId', $userId);
+foreach ($openParams as $placeholder => $shopId) {
+    $stmt->bindValue($placeholder, $shopId, PDO::PARAM_INT);
+}
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$openingHoursMap = fetch_opening_hours_map($pdo, array_column($eisdielen, 'eisdielen_id'));
+foreach ($eisdielen as &$eisdiele) {
+    $shopId = (int)$eisdiele['eisdielen_id'];
+    $rows = $openingHoursMap[$shopId] ?? [];
+    $eisdiele['openingHoursStructured'] = build_structured_opening_hours($rows, $eisdiele['opening_hours_note'] ?? null);
+    $eisdiele['is_open_now'] = is_shop_open($rows, null, $eisdiele['status'] ?? null);
+    if ($openMoment instanceof \DateTimeImmutable) {
+        $eisdiele['is_open_reference'] = is_shop_open($rows, $openMoment, $eisdiele['status'] ?? null);
+        $eisdiele['open_reference'] = $openReferenceIso;
+    } else {
+        $eisdiele['is_open_reference'] = null;
+        $eisdiele['open_reference'] = null;
+    }
+}
+unset($eisdiele);
 
 // JSON-Ausgabe
 echo json_encode($eisdielen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE )

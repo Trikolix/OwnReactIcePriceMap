@@ -23,12 +23,13 @@ const RecenterMap = ({ lat, lng }) => {
   return null;
 };
 
-const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude }) => {
+const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude, readOnly = false }) => {
   const position = [latitude, longitude];
 
   const MapClickHandler = () => {
     useMapEvents({
       click(e) {
+        if (readOnly) return;
         const { lat, lng } = e.latlng;
         setLatitude(lat.toFixed(6));
         setLongitude(lng.toFixed(6));
@@ -46,8 +47,8 @@ const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude }) => {
       <MapClickHandler />
       <Marker
         position={position}
-        draggable={true}
-        eventHandlers={{
+        draggable={!readOnly}
+        eventHandlers={readOnly ? undefined : {
           dragend: (e) => {
             const { lat, lng } = e.target.getLatLng();
             setLatitude(lat.toFixed(6));

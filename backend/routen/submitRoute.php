@@ -61,7 +61,8 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     
     // Pflichtfelder
-    $eisdiele_id = $data['eisdiele_id'] ?? null;
+    $primaryEisdieleId = $data['eisdiele_id'] ?? null;
+    $eisdieleIdsInput = $data['eisdiele_ids'] ?? null;
     $nutzer_id = $data['nutzer_id'] ?? null;
     $url = $data['url'] ?? null;
     $typ = $data['typ'] ?? null;
@@ -86,7 +87,34 @@ try {
     $hoehenmeter = nullIfEmpty($data['hoehenmeter'] ?? null);
     $schwierigkeit = $data['schwierigkeit'] ?? null;
     
-    if (!$eisdiele_id || !$nutzer_id || !$url || !$typ) {
+    $normalizedIds = [];
+    if (is_array($eisdieleIdsInput)) {
+        foreach ($eisdieleIdsInput as $rawId) {
+            $intId = (int)$rawId;
+            if ($intId > 0 && !in_array($intId, $normalizedIds, true)) {
+                $normalizedIds[] = $intId;
+            }
+        }
+    }
+
+    if ($primaryEisdieleId) {
+        $primaryEisdieleId = (int)$primaryEisdieleId;
+        if ($primaryEisdieleId > 0 && !in_array($primaryEisdieleId, $normalizedIds, true)) {
+            array_unshift($normalizedIds, $primaryEisdieleId);
+        }
+    }
+
+    if (empty($normalizedIds)) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Bitte verknüpfe mindestens eine Eisdiele mit der Route.'
+        ]);
+        exit;
+    }
+
+    $primaryEisdieleId = $normalizedIds[0];
+
+    if (!$primaryEisdieleId || !$nutzer_id || !$url || !$typ) {
         echo json_encode([
             'status' => 'error', 
             'message' => 'Fehlende erforderliche Daten'
@@ -106,9 +134,11 @@ try {
         VALUES 
         (:eisdiele_id, :nutzer_id, :url, :embed_code, :beschreibung, :typ, :ist_oeffentlich, :name, :laenge_km, :hoehenmeter, :schwierigkeit)";
 
+    $pdo->beginTransaction();
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        'eisdiele_id' => $eisdiele_id,
+        'eisdiele_id' => $primaryEisdieleId,
         'nutzer_id' => $nutzer_id,
         'url' => $cleanUrl,
         'embed_code' => $embed_code,
@@ -120,6 +150,21 @@ try {
         'hoehenmeter' => $hoehenmeter,
         'schwierigkeit' => $schwierigkeit
     ]);
+
+    $routeId = (int)$pdo->lastInsertId();
+
+    $relStmt = $pdo->prepare("
+        INSERT INTO route_eisdielen (route_id, eisdiele_id)
+        VALUES (:route_id, :eisdiele_id)
+    ");
+    foreach ($normalizedIds as $shopId) {
+        $relStmt->execute([
+            'route_id' => $routeId,
+            'eisdiele_id' => $shopId
+        ]);
+    }
+
+    $pdo->commit();
 
     // Evaluatoren
     $evaluators = [
@@ -148,6 +193,9 @@ try {
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
     ]);
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
     echo json_encode([
         'status' => 'error',

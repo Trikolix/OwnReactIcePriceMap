@@ -281,7 +281,8 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
         $zusatzdaten = json_encode([
             'route_id' => $routeId,
             'route_name' => $routeName,
-            'kommentar_id' => $kommentarId
+            'kommentar_id' => $kommentarId,
+            'route_autor_id' => $routeAutorId
         ]);
 
         // 1. Benachrichtigung an Route-Autor
@@ -298,7 +299,8 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
                     'routeName' => $routeName,
                     'routeId' => $routeId,
                     'kommentarId' => $kommentarId,
-                    'byUserId' => $nutzerId
+                    'byUserId' => $nutzerId,
+                    'route_autor_id' => $routeAutorId
                 ]
             );
         }
@@ -315,13 +317,14 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
                 sendNotificationEmailIfAllowed(
                     $pdo,
                     $beteiligterId,
-                    'comment_participated',
+                    'comment_participated_route',
                     $kommentatorName,
                     [
                         'routeName' => $routeName,
                         'routeId' => $routeId,
                         'kommentarId' => $kommentarId,
-                        'byUserId' => $nutzerId
+                        'byUserId' => $nutzerId,
+                        'route_autor_id' => $routeAutorId
                     ]
                 );
             }

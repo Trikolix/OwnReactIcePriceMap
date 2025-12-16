@@ -81,10 +81,9 @@ const NotificationBell = () => {
                 window.location.href = url;
             }
         } else if (notification.typ === 'kommentar_route') {
-            console.log(notification);
             const data = JSON.parse(notification.zusatzdaten || '{}');
-            if (data.route_id) {
-                const url = `/#/user/${userId}?tab=routes&focusRoute=${data.route_id}`;
+            if (data.route_id && data.route_autor_id) {
+                const url = `/#/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}`;
                 window.location.href = url;
             }
         } else if (notification.typ === 'new_user') {

@@ -2,9 +2,13 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
+require_once  __DIR__ . '/lib/attribute.php';
+require_once  __DIR__ . '/lib/opening_hours.php';
 
 // Eisdiele-ID aus Anfrage holen
 $eisdiele_id = isset($_GET['eisdiele_id']) ? intval($_GET['eisdiele_id']) : 0;
+$openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
+$openReferenceIso = $openMoment instanceof \DateTimeImmutable ? $openMoment->format(\DateTimeInterface::ATOM) : null;
 if ($eisdiele_id <= 0) {
     echo json_encode(["error" => "Ungültige Eisdiele-ID"]);
     exit();
@@ -16,7 +20,7 @@ $stmt = $pdo->prepare("
            l.name AS land,
            b.name AS bundesland,
            lk.name AS landkreis,
-           w.id AS waehrung_id,
+            w.id AS waehrung_id,
            w.code AS waehrung_code,
            w.name AS waehrung_name,
            w.symbol AS waehrung_symbol
@@ -34,6 +38,22 @@ if (!$eisdiele) {
     echo json_encode(["error" => "Eisdiele nicht gefunden"]);
     exit();
 }
+
+$openingRows = fetch_opening_hours_rows($pdo, (int)$eisdiele['id']);
+$openingNote = $eisdiele['opening_hours_note'] ?? null;
+if (empty($openingRows) && !empty($eisdiele['openingHours'])) {
+    $parsed = parse_legacy_opening_hours($eisdiele['openingHours']);
+    $openingRows = $parsed['rows'];
+    if ($openingNote === null && $parsed['note']) {
+        $openingNote = $parsed['note'];
+    }
+}
+$openingStructured = build_structured_opening_hours($openingRows, $openingNote);
+$eisdiele['openingHoursStructured'] = $openingStructured;
+$eisdiele['opening_hours_note'] = $openingNote;
+$eisdiele['is_open_now'] = is_shop_open($openingRows, null, $eisdiele['status'] ?? null);
+$eisdiele['open_reference'] = $openReferenceIso;
+$eisdiele['is_open_reference'] = $openMoment instanceof \DateTimeImmutable ? is_shop_open($openingRows, $openMoment, $eisdiele['status'] ?? null) : null;
 
 // 2. aktuellsten Kugelpreis abrufen
 $stmt = $pdo->prepare("
@@ -107,17 +127,8 @@ $stmt->execute();
 $score = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // 5. Attribute mit Häufigkeit abrufen
-$stmt = $pdo->prepare("
-    SELECT a.name, COUNT(*) as anzahl
-    FROM bewertung_attribute ba
-    JOIN attribute a ON ba.attribut_id = a.id
-    JOIN bewertungen b ON ba.bewertung_id = b.id
-    WHERE b.eisdiele_id = ?
-    GROUP BY a.id, a.name
-    ORDER BY anzahl DESC
-");
-$stmt->execute([$eisdiele_id]);
-$attribute = $stmt->fetchAll();
+$attributeMap = getReviewAttributesForEisdielen($pdo, [$eisdiele_id]);
+$attribute = $attributeMap[$eisdiele_id] ?? [];
 
 // 6. Alle Reviews holen
 $reviews = getReviewsByEisdieleId($pdo, $eisdiele_id);

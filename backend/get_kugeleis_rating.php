@@ -1,11 +1,39 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once  __DIR__ . '/lib/attribute.php';
+require_once  __DIR__ . '/lib/opening_hours.php';
 
 $nutzerId = null;
 if (isset($_GET['nutzer_id'])) {
     $nutzerId = intval($_GET['nutzer_id']);
 } elseif (isset($_GET['user_id'])) {
     $nutzerId = intval($_GET['user_id']);
+}
+$openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
+$filterOpenNow = !$openMoment && isset($_GET['open_now']) && intval($_GET['open_now']) === 1;
+$openFilterClause = '';
+$openFilterParams = [];
+$openReferenceIso = null;
+if ($openMoment instanceof \DateTimeImmutable) {
+    $openReferenceIso = $openMoment->format(\DateTimeInterface::ATOM);
+    $openIds = get_open_shop_ids($pdo, $openMoment);
+} elseif ($filterOpenNow) {
+    $openIds = get_open_shop_ids($pdo);
+} else {
+    $openIds = null;
+}
+if (is_array($openIds)) {
+    if (empty($openIds)) {
+        echo json_encode([]);
+        exit;
+    }
+    $placeholders = [];
+    foreach ($openIds as $idx => $shopId) {
+        $placeholder = ':openShop' . $idx;
+        $placeholders[] = $placeholder;
+        $openFilterParams[$placeholder] = $shopId;
+    }
+    $openFilterClause = ' AND f.eisdiele_id IN (' . implode(',', $placeholders) . ')';
 }
 
 $sql = "WITH bewertete_checkins AS (
@@ -88,6 +116,8 @@ SELECT
     e.name,
     e.adresse,
     e.openingHours,
+    e.opening_hours_note,
+    e.status,
     e.latitude,
     e.longitude,
     f.finaler_score,
@@ -128,8 +158,9 @@ SELECT
 FROM final_scores f
 JOIN eisdielen e ON e.id = f.eisdiele_id
 LEFT JOIN checkins c ON c.eisdiele_id = f.eisdiele_id AND c.typ = 'Kugel'
+WHERE 1=1{$openFilterClause}
 GROUP BY f.eisdiele_id, e.name, e.adresse, e.openingHours, e.latitude, e.longitude, f.finaler_score,
-         f.avg_geschmack, f.avg_waffel, f.avg_preisleistung, f.nutzeranzahl
+         f.avg_geschmack, f.avg_waffel, f.avg_preisleistung, f.nutzeranzahl, e.opening_hours_note, e.status
 ORDER BY finaler_score DESC, kugel_preis_eur ASC, checkin_anzahl DESC;";
 
 // SQL vorbereiten und ausführen
@@ -137,8 +168,37 @@ $stmt = $pdo->prepare($sql);
 if ($nutzerId !== null) {
     $stmt->bindValue(':nutzerId', $nutzerId, PDO::PARAM_INT);
 }
+foreach ($openFilterParams as $placeholder => $shopId) {
+    $stmt->bindValue($placeholder, $shopId, PDO::PARAM_INT);
+}
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$attributeMap = getReviewAttributesForEisdielen($pdo, array_column($eisdielen, 'eisdiele_id'));
+$openingHoursMap = fetch_opening_hours_map($pdo, array_column($eisdielen, 'eisdiele_id'));
+foreach ($eisdielen as &$eisdiele) {
+    $shopId = (int)$eisdiele['eisdiele_id'];
+    $eisdiele['attributes'] = $attributeMap[$shopId] ?? [];
+    $hoursRows = $openingHoursMap[$shopId] ?? [];
+    $hoursNote = $eisdiele['opening_hours_note'] ?? null;
+    if (empty($hoursRows) && !empty($eisdiele['openingHours'])) {
+        $parsed = parse_legacy_opening_hours($eisdiele['openingHours']);
+        $hoursRows = $parsed['rows'];
+        if ($hoursNote === null && $parsed['note']) {
+            $hoursNote = $parsed['note'];
+        }
+    }
+    $eisdiele['openingHoursStructured'] = build_structured_opening_hours($hoursRows, $hoursNote);
+    $eisdiele['is_open_now'] = is_shop_open($hoursRows, null, $eisdiele['status'] ?? null);
+    if ($openMoment instanceof \DateTimeImmutable) {
+        $eisdiele['is_open_reference'] = is_shop_open($hoursRows, $openMoment, $eisdiele['status'] ?? null);
+        $eisdiele['open_reference'] = $openReferenceIso;
+    } else {
+        $eisdiele['is_open_reference'] = null;
+        $eisdiele['open_reference'] = null;
+    }
+}
+unset($eisdiele);
 
 // JSON-Ausgabe
 echo json_encode($eisdielen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
