@@ -1,6 +1,10 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/opening_hours.php';
+require_once __DIR__ . '/lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -13,7 +17,6 @@ if (!isset($data['shopId']) || !isset($data['name']) || !isset($data['adresse'])
 }
 
 $eisdieleId = intval($data['shopId']);
-$userId = intval($data['userId']);
 
 // Hole ursprünglichen Eintrag
 $stmt = $pdo->prepare("SELECT user_id, erstellt_am, latitude, longitude FROM eisdielen WHERE id = ?");
@@ -25,8 +28,8 @@ if (!$eisdiele) {
     exit;
 }
 
-$isAdmin = $userId === 1;
-$isOwner = $userId === intval($eisdiele['user_id']);
+$isAdmin = $currentUserId === 1;
+$isOwner = $currentUserId === intval($eisdiele['user_id']);
 $createdAt = strtotime($eisdiele['erstellt_am']);
 $isRecent = (time() - $createdAt) <= 6 * 3600; // 6 Stunden
 $autoApprove = $isAdmin || ($isOwner && $isRecent);
@@ -53,7 +56,7 @@ if (!$autoApprove) {
     }
 
     try {
-        storeChangeRequest($pdo, $eisdieleId, $userId, $changeSet);
+        storeChangeRequest($pdo, $eisdieleId, $currentUserId, $changeSet);
         echo json_encode([
             "status" => "pending",
             "message" => "Vielen Dank! Dein Änderungsvorschlag wurde gespeichert und wartet auf Prüfung."
@@ -171,7 +174,7 @@ function ensureChangeRequestTable(PDO $pdo) {
     ");
 }
 
-function storeChangeRequest(PDO $pdo, int $shopId, int $userId, array $changes) {
+function storeChangeRequest(PDO $pdo, int $shopId, int $currentUserId, array $changes) {
     ensureChangeRequestTable($pdo);
     $payload = json_encode(['changes' => $changes], JSON_UNESCAPED_UNICODE);
     if ($payload === false) {
@@ -184,7 +187,7 @@ function storeChangeRequest(PDO $pdo, int $shopId, int $userId, array $changes) 
     ");
     $stmt->execute([
         ':eisdiele_id' => $shopId,
-        ':requested_by' => $userId,
+        ':requested_by' => $currentUserId,
         ':payload' => $payload
     ]);
 }
@@ -227,9 +230,10 @@ if ($location) {
     $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'], $landId);
     $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
 
-    // Optional: status und reopening_date setzen (falls übergeben)
+    // Optional: status, reopening_date und closing_date setzen (falls übergeben)
     $status = isset($data['status']) && in_array($data['status'], $validStatuses) ? $data['status'] : null;
     $reopening_date = isset($data['reopening_date']) && $data['reopening_date'] !== '' ? $data['reopening_date'] : null;
+    $closing_date = isset($data['closing_date']) && $data['closing_date'] !== '' ? $data['closing_date'] : null;
 
     // Prepare common params
     $params = [
@@ -245,15 +249,16 @@ if ($location) {
         ':landId' => $landId,
     ];
 
-    // Wenn status oder reopening_date übergeben wurden, erweitere Query und Params
-    if ($status !== null || $reopening_date !== null) {
+    // Wenn status, reopening_date oder closing_date übergeben wurden, erweitere Query und Params
+    if ($status !== null || $reopening_date !== null || $closing_date !== null) {
         $sql = "UPDATE eisdielen 
             SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
                 opening_hours_note = :openingHoursNote,
-                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId, status = :status, reopening_date = :reopening_date
+                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId, status = :status, reopening_date = :reopening_date, closing_date = :closing_date
             WHERE id = :id";
         $params[':status'] = $status;
         $params[':reopening_date'] = $reopening_date;
+        $params[':closing_date'] = $closing_date;
     } else {
         $sql = "UPDATE eisdielen 
             SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,

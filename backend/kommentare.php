@@ -1,6 +1,10 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/email_notification.php';
+require_once __DIR__ . '/lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -10,16 +14,16 @@ if ($method === "OPTIONS") {
 }
 switch ("$method:$action") {
     case 'POST:create':
-        createKommentar($pdo);
+        createKommentar($pdo, $currentUserId);
         break;
     case 'GET:list':
         listKommentare($pdo);
         break;
     case 'POST:update':
-        updateKommentar($pdo);
+        updateKommentar($pdo, $currentUserId);
         break;
     case 'POST:delete':
-        deleteKommentar($pdo);
+        deleteKommentar($pdo, $currentUserId);
         break;
     default:
         http_response_code(400);
@@ -30,12 +34,11 @@ switch ("$method:$action") {
         break;
 }
 
-function createKommentar($pdo) {
+function createKommentar($pdo, $currentUserId) {
     $input = json_decode(file_get_contents('php://input'), true);
     $checkinId = isset($input['checkin_id']) ? (int)$input['checkin_id'] : null;
     $bewertungId = isset($input['bewertung_id']) ? (int)$input['bewertung_id'] : null;
     $routeId = isset($input['route_id']) ? (int)$input['route_id'] : null;
-    $nutzerId = (int)$input['nutzer_id'];
     $kommentar = trim($input['kommentar']);
 
     // Validierung: genau eine ID muss gesetzt sein
@@ -61,15 +64,15 @@ function createKommentar($pdo) {
         INSERT INTO kommentare (checkin_id, bewertung_id, route_id, nutzer_id, kommentar)
         VALUES (?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$checkinId, $bewertungId, $routeId, $nutzerId, $kommentar]);
+    $stmt->execute([$checkinId, $bewertungId, $routeId, $currentUserId, $kommentar]);
     $kommentarId = $pdo->lastInsertId();
 
     if ($checkinId) {
-        handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $kommentarId);
+        handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUserId, $kommentarId);
     } elseif ($bewertungId) {
-        handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerId, $kommentarId);
+        handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $currentUserId, $kommentarId);
     } elseif ($routeId) {
-        handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $kommentarId);
+        handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, $kommentarId);
     }
 
     echo json_encode([
@@ -78,7 +81,7 @@ function createKommentar($pdo) {
     ]);
 }
 
-function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $kommentarId) {
+function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUserId, $kommentarId) {
     try {
         // Checkin-Informationen inkl. Eisdielen-Name und Kommentator-Name ermitteln
         $stmt = $pdo->prepare("
@@ -97,11 +100,11 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
 
         // Kommentator-Name separat holen
         $stmt = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
-        $stmt->execute([$nutzerId]);
+        $stmt->execute([$currentUserId]);
         $kommentatorName = $stmt->fetchColumn();
 
         if (!$kommentatorName) {
-            error_log("User not found: $nutzerId");
+            error_log("User not found: $currentUserId");
             return;
         }
 
@@ -117,7 +120,7 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
         ]);
 
         // 1. Benachrichtigung an Check-in-Autor
-        if ($checkinAutorId && $checkinAutorId != $nutzerId) {
+        if ($checkinAutorId && $checkinAutorId != $currentUserId) {
             $stmt = $pdo->prepare("
                 INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
                 VALUES (?, 'kommentar', ?, ?, ?)
@@ -135,8 +138,8 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
                     'shopId' => $eisdieleId,
                     'checkinId' => $checkinId,
                     'kommentarId' => $kommentarId,
-                    'byUserId' => $nutzerId
-                ]
+                    'byUserId' => $currentUserId
+               ]
             );
         }
 
@@ -146,7 +149,7 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
             FROM kommentare
             WHERE checkin_id = ? AND nutzer_id NOT IN (?, ?) AND id != ?
         ");
-        $stmt->execute([$checkinId, $nutzerId, $checkinAutorId ?: 0, $kommentarId]);
+        $stmt->execute([$checkinId, $currentUserId, $checkinAutorId ?: 0, $kommentarId]);
         $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         if ($beteiligteIds) {
@@ -169,8 +172,8 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
                         'shopId' => $eisdieleId,
                         'checkinId' => $checkinId,
                         'kommentarId' => $kommentarId,
-                        'byUserId' => $nutzerId
-                    ]
+                        'byUserId' => $currentUserId
+                   ]
                 );
             }
         }
@@ -179,7 +182,7 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $nutzerId, $
     }
 }
 
-function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerId, $kommentarId) {
+function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $currentUserId, $kommentarId) {
     try {
         // Bewertungs-Informationen ermitteln
         $stmt = $pdo->prepare("
@@ -197,11 +200,11 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
 
         // Kommentator-Name separat holen
         $stmt = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
-        $stmt->execute([$nutzerId]);
+        $stmt->execute([$currentUserId]);
         $kommentatorName = $stmt->fetchColumn();
 
         if (!$kommentatorName) {
-            error_log("User not found: $nutzerId");
+            error_log("User not found: $currentUserId");
             return;
         }
 
@@ -215,7 +218,7 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
         ]);
 
         // 1. Benachrichtigung an Bewertungsautor
-        if ($bewertungAutorId && $bewertungAutorId != $nutzerId) {
+        if ($bewertungAutorId && $bewertungAutorId != $currentUserId) {
             $stmt = $pdo->prepare("
                 INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
                 VALUES (?, 'kommentar_bewertung', ?, ?, ?)
@@ -233,7 +236,7 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
                     'shopId' => $eisdieleId,
                     'bewertungId' => $bewertungId,
                     'kommentarId' => $kommentarId,
-                    'byUserId' => $nutzerId
+                    'byUserId' => $currentUserId
                 ]
             );
         }
@@ -244,7 +247,7 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
             FROM kommentare
             WHERE bewertung_id = ? AND nutzer_id NOT IN (?, ?) AND id != ?
         ");
-        $stmt->execute([$bewertungId, $nutzerId, $bewertungAutorId ?: 0, $kommentarId]);
+        $stmt->execute([$bewertungId, $currentUserId, $bewertungAutorId ?: 0, $kommentarId]);
         $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         if ($beteiligteIds) {
@@ -264,7 +267,7 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $nutzerI
 }
 
 // Route-Kommentar-Benachrichtigungen
-function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $kommentarId) {
+function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, $kommentarId) {
     try {
         $stmt = $pdo->prepare("SELECT r.nutzer_id AS autor_id, r.name AS route_name FROM routen r WHERE r.id = ?");
         $stmt->execute([$routeId]);
@@ -272,7 +275,7 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
         if (!$routeData) return;
 
         $stmt = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
-        $stmt->execute([$nutzerId]);
+        $stmt->execute([$currentUserId]);
         $kommentatorName = $stmt->fetchColumn();
         if (!$kommentatorName) return;
 
@@ -286,7 +289,7 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
         ]);
 
         // 1. Benachrichtigung an Route-Autor
-        if ($routeAutorId && $routeAutorId != $nutzerId) {
+        if ($routeAutorId && $routeAutorId != $currentUserId) {
             $stmt = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'kommentar_route', ?, ?, ?)");
             $text = "$kommentatorName hat deine Route '$routeName' kommentiert.";
             $stmt->execute([$routeAutorId, $kommentarId, $text, $zusatzdaten]);
@@ -299,7 +302,7 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
                     'routeName' => $routeName,
                     'routeId' => $routeId,
                     'kommentarId' => $kommentarId,
-                    'byUserId' => $nutzerId,
+                    'byUserId' => $currentUserId,
                     'route_autor_id' => $routeAutorId
                 ]
             );
@@ -307,7 +310,7 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
 
         // 2. Andere Kommentierende benachrichtigen
         $stmt = $pdo->prepare("SELECT DISTINCT nutzer_id FROM kommentare WHERE route_id = ? AND nutzer_id NOT IN (?, ?) AND id != ?");
-        $stmt->execute([$routeId, $nutzerId, $routeAutorId ?: 0, $kommentarId]);
+        $stmt->execute([$routeId, $currentUserId, $routeAutorId ?: 0, $kommentarId]);
         $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         if ($beteiligteIds) {
             $text = "$kommentatorName hat eine Route kommentiert, die du auch kommentiert hast.";
@@ -323,7 +326,7 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $nutzerId, $komm
                         'routeName' => $routeName,
                         'routeId' => $routeId,
                         'kommentarId' => $kommentarId,
-                        'byUserId' => $nutzerId,
+                        'byUserId' => $currentUserId,
                         'route_autor_id' => $routeAutorId
                     ]
                 );
@@ -377,10 +380,9 @@ function listKommentare($pdo) {
     ]);
 }
 
-function updateKommentar($pdo) {
+function updateKommentar($pdo, $currentUserId) {
     $input = json_decode(file_get_contents('php://input'), true);
     $kommentarId = (int)$input['id'];
-    $nutzerId = (int)$input['nutzer_id'];
     $kommentar = trim($input['kommentar']);
 
     if (!$kommentar) {
@@ -396,7 +398,7 @@ function updateKommentar($pdo) {
     $stmt->execute([$kommentarId]);
     $autorId = $stmt->fetchColumn();
 
-    if ($autorId != $nutzerId) {
+    if ($autorId != $currentUserId) {
         http_response_code(403);
         echo json_encode([
             "status" => "error",
@@ -411,17 +413,16 @@ function updateKommentar($pdo) {
     echo json_encode(["status" => "success"]);
 }
 
-function deleteKommentar($pdo) {
+function deleteKommentar($pdo, $currentUserId) {
     $input = json_decode(file_get_contents('php://input'), true);
     $kommentarId = (int)$input['id'];
-    $nutzerId = (int)$input['nutzer_id'];
 
     // Sicherheit: nur eigene Kommentare löschen
     $stmt = $pdo->prepare("SELECT nutzer_id FROM kommentare WHERE id = ?");
     $stmt->execute([$kommentarId]);
     $autorId = $stmt->fetchColumn();
 
-    if ($autorId != $nutzerId) {
+    if ($autorId != $currentUserId) {
         http_response_code(403);
         echo json_encode([
             "status" =>"error",

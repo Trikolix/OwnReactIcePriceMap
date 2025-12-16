@@ -18,6 +18,16 @@ import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
 
+const MIN_CONTEXT_MENU_ZOOM = 13;
+const DEFAULT_CONTEXT_MENU_STATE = {
+  isVisible: false,
+  x: 0,
+  y: 0,
+  latlng: null,
+  mode: 'menu',
+  message: '',
+};
+
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -314,12 +324,7 @@ const IceCreamRadar = () => {
   const [searchLocation, setSearchLocation] = useState(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [contextMenuState, setContextMenuState] = useState({
-    isVisible: false,
-    x: 0,
-    y: 0,
-    latlng: null,
-  });
+  const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
   const handleMapInteraction = useCallback(() => {
@@ -501,16 +506,39 @@ const IceCreamRadar = () => {
   }, []);
 
   const closeContextMenu = useCallback(() => {
-    setContextMenuState((prev) => (prev.isVisible ? { ...prev, isVisible: false } : prev));
+    setContextMenuState((prev) => (prev.isVisible ? { ...DEFAULT_CONTEXT_MENU_STATE } : prev));
   }, []);
 
   const handleMapContextMenuOpen = useCallback((event) => {
-    const { containerPoint, latlng } = event;
+    const { containerPoint, latlng, originalEvent } = event;
+    const isTouchEvent = Boolean(
+      originalEvent?.pointerType === 'touch' ||
+      originalEvent?.touches?.length ||
+      originalEvent?.changedTouches?.length
+    );
+    const mapInstance = mapRef.current;
+    const currentZoom = mapInstance?.getZoom?.() ?? 0;
+    const meetsZoomRequirement = currentZoom >= MIN_CONTEXT_MENU_ZOOM;
+
+    const touchOffsetX = isTouchEvent ? 12 : 0;
+    const touchOffsetY = isTouchEvent ? -80 : 0;
+    const mapSize = mapInstance?.getSize?.();
+    const clamp = (value, min, max) => {
+      const upperBound = typeof max === 'number' ? max : value;
+      return Math.max(min, Math.min(value, upperBound));
+    };
+    const paddedMaxX = mapSize ? mapSize.x - 12 : undefined;
+    const paddedMaxY = mapSize ? mapSize.y - 12 : undefined;
+
     setContextMenuState({
       isVisible: true,
-      x: containerPoint.x,
-      y: containerPoint.y,
-      latlng,
+      x: clamp(containerPoint.x + touchOffsetX, 12, paddedMaxX),
+      y: clamp(containerPoint.y + touchOffsetY, 12, paddedMaxY),
+      latlng: meetsZoomRequirement ? latlng : null,
+      mode: meetsZoomRequirement ? 'menu' : 'hint',
+      message: meetsZoomRequirement
+        ? ''
+        : `Bitte näher heranzoomen (mindestens Zoomstufe ${MIN_CONTEXT_MENU_ZOOM}), um eine Eisdiele einzutragen.`,
     });
   }, []);
 
@@ -763,15 +791,23 @@ const IceCreamRadar = () => {
         )}
         {contextMenuState.isVisible && (
           <MapContextMenu style={{ top: contextMenuState.y, left: contextMenuState.x }}>
-            <MapContextMenuButton
-              type="button"
-              onClick={() => handleOpenSubmitModalAt(contextMenuState.latlng)}
-            >
-              🍦 Eisdiele eintragen
-            </MapContextMenuButton>
-            {!isLoggedIn && (
+            {contextMenuState.mode === 'menu' ? (
+              <>
+                <MapContextMenuButton
+                  type="button"
+                  onClick={() => handleOpenSubmitModalAt(contextMenuState.latlng)}
+                >
+                  🍦 Eisdiele eintragen
+                </MapContextMenuButton>
+                {!isLoggedIn && (
+                  <MapContextMenuHint>
+                    Melde dich an, um neue Eisdielen einzutragen.
+                  </MapContextMenuHint>
+                )}
+              </>
+            ) : (
               <MapContextMenuHint>
-                Melde dich an, um neue Eisdielen einzutragen.
+                {contextMenuState.message || 'Bitte näher heranzoomen, um eine Eisdiele einzutragen.'}
               </MapContextMenuHint>
             )}
           </MapContextMenu>

@@ -1,11 +1,14 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 // Eingabedaten einlesen
 $data = json_decode(file_get_contents("php://input"), true);
 $eisdiele_id = $data['eisdiele_id'];
 $preis = $data['preis'];
-$nutzer_id = $data['nutzer_id'];
 $typ = $data['typ'];
 $beschreibung = $data['beschreibung'];
 
@@ -16,7 +19,7 @@ try {
     $stmt->execute([
         ':eisdiele_id' => $eisdiele_id,
         ':preis' => $preis,
-        ':nutzer_id' => $nutzer_id,
+        ':nutzer_id' => $currentUserId,
         ':beschreibung' => $beschreibung,
         ':typ' => $typ
     ]);

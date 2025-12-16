@@ -3,7 +3,10 @@ require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/levelsystem.php';
 require_once __DIR__ . '/evaluators/PriceSubmitCountEvaluator.php';
 require_once __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
+require_once __DIR__ . '/lib/auth.php';
 
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 // Funktion zum Senden / Aktualisieren der Preise
 function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung) {
@@ -98,12 +101,11 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
 $inputData = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($inputData) || !is_array($inputData) || !isset($inputData["shopId"]) || !isset($inputData["userId"]) || (!isset($inputData["kugelPreis"]) && !isset($inputData["softeisPreis"]))) {
+if (!isset($inputData) || !is_array($inputData) || !isset($inputData["shopId"]) || (!array_key_exists("kugelPreis", $inputData) && !array_key_exists("softeisPreis", $inputData))) {
     echo json_encode([
         "status" => "error",
-        "message" => "Fehlende Parameter: shopId, userId, kugelPreis oder softeisPreis müssen gesetzt sein.",
+        "message" => "Fehlende Parameter: shopId und mindestens einer der Preise müssen gesetzt sein.",
         "shopId" => $inputData["shopId"] ?? null,
-        "userId" => $inputData["userId"] ?? null,
         "kugelPreis" => $inputData["kugelPreis"] ?? null,
         "softeisPreis" => $inputData["softeisPreis"] ?? null
     ]);
@@ -111,12 +113,11 @@ if (!isset($inputData) || !is_array($inputData) || !isset($inputData["shopId"]) 
 }
 
 $shopId = $inputData['shopId'];
-$userId = $inputData['userId'];
-$kugelPreis = $inputData['kugelPreis'] ?? null;
+$kugelPreis = array_key_exists('kugelPreis', $inputData) ? $inputData['kugelPreis'] : null;
 $additionalInfoKugelPreis = $inputData['additionalInfoKugelPreis'] ?? null;
-$softeisPreis = $inputData['softeisPreis'] ?? null;
+$softeisPreis = array_key_exists('softeisPreis', $inputData) ? $inputData['softeisPreis'] : null;
 $additionalInfoSofteisPreis = $inputData['additionalInfoSofteisPreis'] ?? null;
 $waehrung = $inputData['waehrung'] ?? 1;
 
-submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung);
+submitPrice($pdo, $shopId, $currentUserId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung);
 ?>

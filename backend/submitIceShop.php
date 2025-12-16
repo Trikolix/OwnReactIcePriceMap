@@ -3,10 +3,14 @@ require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 require_once __DIR__ . '/lib/opening_hours.php';
+require_once __DIR__ . '/lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude']) || !isset($data['userId'])) {
+if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
     exit;
 }
@@ -163,7 +167,7 @@ if ($location) {
             ':website' => $data['website'] ?? null,
             ':openingHours' => $openingHoursText,
             ':openingHoursNote' => $normalizedHours['note'] ?? null,
-            ':userId' => intval($data['userId']),
+            ':userId' => $currentUserId,
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId,
             ':landId' => $landId
@@ -178,10 +182,10 @@ if ($location) {
         
         $newAwards = [];
         foreach ($evaluators as $evaluator) {
-            $newAwards = array_merge($newAwards, $evaluator->evaluate($data['userId']));
+            $newAwards = array_merge($newAwards, $evaluator->evaluate($currentUserId));
         }
 
-        $levelChange = updateUserLevelIfChanged($pdo, $data['userId']);
+        $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
 
         echo json_encode([
             "status" => "success",

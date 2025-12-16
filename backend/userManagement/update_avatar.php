@@ -3,6 +3,10 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/user_profile.php';
 require_once __DIR__ . '/../lib/preset_avatars.php';
 require_once __DIR__ . '/../lib/image_upload.php';
+require_once __DIR__ . '/../lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 function deleteUploadedAvatarIfOwned(?string $path): void {
     if (!$path) {
@@ -27,8 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
-if ($userId <= 0) {
+if ($currentUserId <= 0) {
     http_response_code(400);
     echo json_encode(['error' => 'Ungültige Nutzer-ID']);
     exit;
@@ -39,11 +42,11 @@ if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0775, true);
 }
 
-$currentPath = getUserAvatarPath($pdo, $userId);
+$currentPath = getUserAvatarPath($pdo, $currentUserId);
 
 if (!empty($_POST['remove_avatar'])) {
     deleteUploadedAvatarIfOwned($currentPath);
-    setUserAvatarPath($pdo, $userId, null);
+    setUserAvatarPath($pdo, $currentUserId, null);
     echo json_encode(['success' => true, 'avatar_path' => null]);
     exit;
 }
@@ -57,7 +60,7 @@ if (!empty($_POST['preset_avatar'])) {
     }
 
     deleteUploadedAvatarIfOwned($currentPath);
-    setUserAvatarPath($pdo, $userId, $selectedPreset);
+    setUserAvatarPath($pdo, $currentUserId, $selectedPreset);
     echo json_encode(['success' => true, 'avatar_path' => $selectedPreset]);
     exit;
 }
@@ -84,7 +87,7 @@ if (!isset($allowedMime[$mime])) {
     exit;
 }
 
-$filename = sprintf('user_%d_%s.jpg', $userId, uniqid('', true));
+$filename = sprintf('user_%d_%s.jpg', $currentUserId, uniqid('', true));
 $targetPath = $uploadDir . $filename;
 
 try {
@@ -99,6 +102,6 @@ try {
 deleteUploadedAvatarIfOwned($currentPath);
 
 $relativePath = 'uploads/user_avatars/' . $filename;
-setUserAvatarPath($pdo, $userId, $relativePath);
+setUserAvatarPath($pdo, $currentUserId, $relativePath);
 
 echo json_encode(['success' => true, 'avatar_path' => $relativePath]);

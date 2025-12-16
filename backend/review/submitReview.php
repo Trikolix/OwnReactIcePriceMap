@@ -1,9 +1,12 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/image_upload.php';
+require_once __DIR__ . '/../lib/auth.php';
+
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
 
 // 1. Hole POST-Daten direkt aus $_POST (da multipart/form-data)
-$userId = $_POST['userId'] ?? null;
 $shopId = $_POST['shopId'] ?? null;
 $auswahl = $_POST['auswahl'] ?? null;
 $beschreibung = $_POST['beschreibung'] ?? null;
@@ -51,7 +54,7 @@ if (!empty($_POST['bestehende_bilder'])) {
     }
 }
 
-if (!$userId || !$shopId) {
+if (!$currentUserId || !$shopId) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter userId oder shopId"]);
     exit;
 }
@@ -100,7 +103,7 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':shopId' => $shopId,
-        ':userId' => $userId,
+        ':userId' => $currentUserId,
         ':auswahl' => $auswahl,
         ':beschreibung' => $beschreibung,
         ':isOnSite' => $isOnSite
@@ -108,7 +111,7 @@ try {
 
     // 3. Bewertung-ID abfragen (für Verknüpfungen)
     $stmt = $pdo->prepare("SELECT id FROM bewertungen WHERE nutzer_id = :userId AND eisdiele_id = :shopId");
-    $stmt->execute([':userId' => $userId, ':shopId' => $shopId]);
+    $stmt->execute([':userId' => $currentUserId, ':shopId' => $shopId]);
     $bewertungId = $stmt->fetchColumn();
 
     if (!$bewertungId) {
@@ -136,7 +139,7 @@ try {
     if (!empty($bildUrls)) {
         $stmt = $pdo->prepare("INSERT INTO bilder (bewertung_id, nutzer_id, url, beschreibung, shop_id) VALUES (?, ?, ?, ?, ?)");
         foreach ($bildUrls as $bild) {
-            $stmt->execute([$bewertungId, $userId, $bild['url'], $bild['beschreibung'], $shopId]);
+            $stmt->execute([$bewertungId, $currentUserId, $bild['url'], $bild['beschreibung'], $shopId]);
         }
     }
 

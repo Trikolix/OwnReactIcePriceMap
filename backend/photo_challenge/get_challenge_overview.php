@@ -173,6 +173,22 @@ try {
         } else {
             $group['status_label'] = 'Aktiv';
         }
+        // Stimmen pro Bild berechnen und als votes-Feld ergänzen
+        $votesMap = [];
+        foreach ($group['matches'] as $match) {
+            if (isset($match['image_a_id'])) {
+                $imgA = $match['image_a_id'];
+                $votesMap[$imgA] = ($votesMap[$imgA] ?? 0) + intval($match['votes_a'] ?? 0);
+            }
+            if (isset($match['image_b_id'])) {
+                $imgB = $match['image_b_id'];
+                $votesMap[$imgB] = ($votesMap[$imgB] ?? 0) + intval($match['votes_b'] ?? 0);
+            }
+        }
+        foreach ($group['entries'] as &$entry) {
+            $entry['votes'] = isset($votesMap[$entry['image_id']]) ? $votesMap[$entry['image_id']] : 0;
+        }
+        unset($entry);
         if ($status === 'finished') {
             $results = [];
             foreach ($group['entries'] as $entry) {
