@@ -5,6 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
 import JerseyInfoDialog from "./JerseyInfoDialog";
+import { useUser } from "../../context/UserContext";
 
 const ENTRY_FEE = 15;
 const JERSEY_PRICE = 69;
@@ -158,6 +159,9 @@ const CheckboxLabel = styled.label`
 `;
 
 export default function EventRegistration() {
+  const { userId, username, isLoggedIn, logout, authToken } = useUser();
+  const API_BASE = process.env.REACT_APP_API_BASE_URL;
+
   const [participants, setParticipants] = useState([{ name: "", email: "" }]);
   const [teamName, setTeamName] = useState("");
   const [jerseyOrder, setJerseyOrder] = useState(false);
@@ -167,6 +171,34 @@ export default function EventRegistration() {
   const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [newsletter, setNewsletter] = useState(false);
   const [totalCost, setTotalCost] = useState(0);
+
+  // Status für Feedback
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isLoggedIn && username) {
+      setParticipants(prev => {
+        const newParticipants = [...prev];
+        // Wir nehmen an, dass der erste Teilnehmer der eingeloggte User ist
+        newParticipants[0] = {
+          name: "",
+          email: "Eingeloggt (Profil-Email wird genutzt)", // Backend findet Email via userId
+          isAutoFilled: true
+        };
+        return newParticipants;
+      });
+    } else {
+      // Wenn nicht eingeloggt oder ausgeloggt: Ersten Teilnehmer leeren
+      setParticipants(prev => {
+        const newParticipants = [...prev];
+        if (newParticipants[0]?.isAutoFilled) {
+          newParticipants[0] = { name: "", email: "", isAutoFilled: false };
+        }
+        return newParticipants;
+      });
+    }
+  }, [isLoggedIn, username]);
 
   useEffect(() => {
     let jerseyTotal = jerseyOrders.reduce(
@@ -189,22 +221,53 @@ export default function EventRegistration() {
       prev.map((o, i) => (i === idx ? { ...o, [field]: value } : o))
     );
   };
-  const addJerseyOrder = () => setJerseyOrders([...jerseyOrders, { size: "M", quantity: 1 }]);
+  const addJerseyOrder = () => setJerseyOrders([...jerseyOrders, { size: "5", quantity: 1 }]);
   const removeJerseyOrder = (idx) => setJerseyOrders(jerseyOrders.filter((_, i) => i !== idx));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("(Demo) Anmeldung abgeschickt!\n" + JSON.stringify({
+    setIsSubmitting(true);
+    setError(null);
+
+    // Payload für das PHP Backend zusammenbauen
+    const payload = {
+      isLoggedIn,
+      registeredByUserId: userId,
       participants,
       teamName,
-      jerseyOrder,
-      jerseyOrders,
+      jerseyOrders: jerseyOrder ? jerseyOrders : [],
       donation,
-      voucherCode,
-      acceptWaiver,
-      newsletter,
-      totalCost
-    }, null, 2));
+      totalCost,
+      newsletter
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/event/submit_registration.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Falls dein Backend JWT nutzt, Token mitschicken:
+          ...(authToken && { "Authorization": `Bearer ${authToken}` })
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        // Hier erfolgt die Weiterleitung zur Zahlung (z.B. PayPal)
+        // oder eine Erfolgsmeldung
+        console.log("Erfolg:", result.payment_session_id);
+        alert("Anmeldung gespeichert! Du wirst nun zur Zahlung weitergeleitet.");
+        // window.location.href = `payment_gateway.php?session_id=${result.payment_session_id}`;
+      } else {
+        throw new Error(result.message || "Fehler beim Speichern");
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalJerseyQuantity = jerseyOrders.reduce((sum, o) => sum + (o.quantity || 0), 0);
@@ -215,15 +278,49 @@ export default function EventRegistration() {
       <form onSubmit={handleSubmit}>
         <MainGrid>
           <div>
+            {error && (
+              <div style={{ color: "red", background: "#fee2e2", padding: "1rem", borderRadius: "8px", marginBottom: "1rem" }}>
+                ⚠️ {error}
+              </div>
+            )}
+
             <Card>
               <CardTitle><Users /> Teilnehmer & Team</CardTitle>
+
+              {isLoggedIn ? (
+                <div style={{
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  padding: "1rem",
+                  borderRadius: "8px",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <span>
+                    Angemeldet als <strong>{username}</strong>. Du meldest dich selbst als Teilnehmer 1 an.
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={logout}
+                    style={{ background: "#ef4444", fontSize: "0.8rem", padding: "0.4rem 0.8rem" }}
+                  >
+                    Abmelden / Anderer Account
+                  </Button>
+                </div>
+              ) : (
+                <div style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "#64748b" }}>
+                  Bereits einen Account? <a href="/login" style={{ color: "#ffb522" }}>Jetzt einloggen</a>, um deine Daten zu übernehmen.
+                </div>
+              )}
               {participants.map((p, idx) => (
                 <FieldGroup key={idx} style={{ position: "relative", border: "1px solid #ffd77a", borderRadius: 8, padding: 16, marginBottom: 16 }}>
                   <div style={{ fontWeight: 600, marginBottom: 8 }}>Teilnehmer {idx + 1}</div>
                   <Label>Vollständiger Name</Label>
                   <Input value={p.name} onChange={e => handleParticipantChange(idx, "name", e.target.value)} placeholder="Max Mustermann" required />
                   <Label>E-Mail Adresse</Label>
-                  <Input value={p.email} onChange={e => handleParticipantChange(idx, "email", e.target.value)} placeholder="max@example.com" type="email" required />
+                  <Input value={p.email} onChange={e => handleParticipantChange(idx, "email", e.target.value)} placeholder="max@example.com" type="email" required disabled={p.isAutoFilled} />
                   {idx > 0 && (
                     <RemoveBtn type="button" style={{ position: "absolute", top: 8, right: 8 }} onClick={() => removeParticipant(idx)}>
                       <Trash2 size={16} />
@@ -277,7 +374,7 @@ export default function EventRegistration() {
               <div style={{ fontSize: 13, color: '#b48a2c', marginBottom: 8 }}>100% deiner Spende geht an den Verein für krebskranke Kinder e.V.</div>
               <Separator />
               <Label><Ticket style={{ color: '#ffb522' }} /> Gutschein- / Rabattcode</Label>
-              <Input value={voucherCode} onChange={e => setVoucherCode(e.target.value)} placeholder="SOMMER2025" />
+              <Input value={voucherCode} onChange={e => setVoucherCode(e.target.value)} />
             </Card>
 
             <Card>
@@ -324,8 +421,12 @@ export default function EventRegistration() {
                 <span>Gesamtsumme</span>
                 <span>€{totalCost}</span>
               </Flex>
-              <Button type="submit" style={{ width: "100%", marginTop: 16 }} disabled={!acceptWaiver}>
-                <Bike style={{ marginRight: 8 }} /> Kostenpflichtig anmelden
+              <Button
+                type="submit"
+                style={{ width: "100%", marginTop: 16 }}
+                disabled={!acceptWaiver || isSubmitting}
+              >
+                {isSubmitting ? "Wird verarbeitet..." : <><Bike style={{ marginRight: 8 }} /> Kostenpflichtig anmelden</>}
               </Button>
             </Card>
           </Summary>

@@ -12,6 +12,8 @@ function Challenges() {
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
   const [challenges, setChallenges] = useState([]);
+  const [showNewChallengeModal, setShowNewChallengeModal] = useState(false);
+  const [newChallenge, setNewChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -102,7 +104,7 @@ function Challenges() {
     fetch(`${apiUrl}/api/challenge_list.php?nutzer_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
-        setChallenges(data || []);
+        setChallenges(sortChallenges(data || []));
         setLoading(false);
       })
       .catch((err) => {
@@ -111,6 +113,19 @@ function Challenges() {
         setLoading(false);
       });
   }, [userId, isLoggedIn, apiUrl]);
+
+  // Hilfsfunktion für Sortierung
+  const sortChallenges = (challengeList) => {
+    const difficultyOrder = { leicht: 0, mittel: 1, schwer: 2 };
+    return [...challengeList].sort((a, b) => {
+      // Daily vor Weekly
+      if (a.type !== b.type) {
+        return a.type === "daily" ? -1 : 1;
+      }
+      // Schwierigkeit leicht < mittel < schwer
+      return (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99);
+    });
+  };
 
   const handleGenerateChallenge = async () => {
     if (!location) {
@@ -134,19 +149,18 @@ function Challenges() {
       const data = await res.json();
 
       if (data.status === "success") {
-        // Erwartete Felder: challenge_id, type, difficulty, valid_until, shop{...}
-        setChallenges((prev) => [
-          ...prev,
-          {
-            id: data.challenge_id,
-            type: data.type,
-            difficulty: data.difficulty,
-            valid_until: data.valid_until,
-            shop_id: data.shop?.id,
-            shop_name: data.shop?.name,
-            shop_address: data.shop?.adresse || data.shop?.address || ""
-          },
-        ]);
+        const challengeObj = {
+          id: data.challenge_id,
+          type: data.type,
+          difficulty: data.difficulty,
+          valid_until: data.valid_until,
+          shop_id: data.shop?.id,
+          shop_name: data.shop?.name,
+          shop_address: data.shop?.adresse || data.shop?.address || ""
+        };
+        setChallenges((prev) => sortChallenges([...prev, challengeObj]));
+        setNewChallenge(challengeObj);
+        setShowNewChallengeModal(true);
       } else {
         setError(data.message || data.error || "Challenge konnte nicht erstellt werden.");
       }
@@ -182,7 +196,7 @@ function Challenges() {
 
           if (data.recreated) {
             // Neue (aktualisierte) Challenge hinzufügen
-            return [
+            return sortChallenges([
               ...withoutOld,
               {
                 id: data.challenge_id,
@@ -194,7 +208,7 @@ function Challenges() {
                 shop_address: data.shop?.adresse || data.shop?.address || "",
                 recreated: data.recreated
               }
-            ];
+            ]);
           }
 
           return withoutOld; // Falls keine neue zurückkommt
@@ -239,6 +253,28 @@ function Challenges() {
       <Container>
         <Title>Challenges</Title>
 
+        {/* Modal für neue Challenge */}
+        {showNewChallengeModal && newChallenge && (
+          <ModalOverlay>
+            <ModalBox>
+              <h2>Neue Challenge generiert!</h2>
+              <ChallengeCard color={getDifficultyColor(newChallenge.difficulty)} style={{ marginBottom: 0 }}>
+                <h3>
+                  <CleanLink to={`/map/activeShop/${newChallenge.shop_id}`}>{newChallenge.shop_name}</CleanLink>
+                </h3>
+                <p>{newChallenge.shop_address}</p>
+                <DifficultyLabel>
+                  {newChallenge.difficulty.toUpperCase()} – {newChallenge.type === "daily" ? "Daily" : "Weekly"}
+                </DifficultyLabel>
+                <Countdown>
+                  Verbleibende Zeit: {formatCountdown(newChallenge.valid_until)}
+                </Countdown>
+              </ChallengeCard>
+              <ModalButton onClick={() => setShowNewChallengeModal(false)}>OK</ModalButton>
+            </ModalBox>
+          </ModalOverlay>
+        )}
+
         {!isLoggedIn ? (
           <p>Bitte melde dich an, um deine Challenges zu sehen, oder neue zu erhalten.</p>
         ) : (
@@ -251,28 +287,29 @@ function Challenges() {
             ) : (
               activeChallenges.map((ch) => (
                 <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
-                  <h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <DifficultyLabel style={{ color: getDifficultyColor(ch.difficulty) }}>
+                      {ch.type === "daily" ? "🕒 Täglich" : "📅 Wöchentlich"} • {ch.difficulty}
+                    </DifficultyLabel>
+                  </div>
+
+                  <h3 style={{ margin: '10px 0 5px 0' }}>
                     <CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink>
                   </h3>
-                  <p>{ch.shop_address}</p>
-                  <DifficultyLabel>
-                    {ch.difficulty.toUpperCase()} – {ch.type === "daily" ? "Daily" : "Weekly"}
-                  </DifficultyLabel>
-                  <Countdown>
-                    Verbleibende Zeit: {formatCountdown(ch.valid_until)}
-                  </Countdown>
+                  <p style={{ color: '#666', fontSize: '0.9rem' }}>{ch.shop_address}</p>
 
-                  {/* Recreate Button anzeigen, wenn erlaubt */}
-                  {(!ch.recreated && new Date(ch.valid_until) > new Date()) ? (
-                    <RecreateWrapper>
-                      <span>Challenge unmöglich?</span>
-                      <RecreateButton onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}>
-                        🔄 Einmalig neu generieren
+                  <hr style={{ border: 'none', borderBottom: '1px solid #eee', margin: '15px 0' }} />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Countdown>⏳ {formatCountdown(ch.valid_until)}</Countdown>
+                    {!ch.recreated && new Date(ch.valid_until) > new Date() ? (
+                      <RecreateButton onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)} title="Challenge unmöglich? Einmalig neu generieren!">
+                        🔄 Neu generieren
                       </RecreateButton>
-                    </RecreateWrapper>
-                  ) : (<RecreateWrapper>
-                    <span>Challenges können nur einmal neu erzeugt werden.</span>
-                  </RecreateWrapper>)}
+                    ) : (
+                      <UsedBadge>Bereits neu generiert</UsedBadge>
+                    )}
+                  </div>
                 </ChallengeCard>
               ))
             )}
@@ -366,20 +403,19 @@ function Challenges() {
 
             {completedChallenges.length > 0 && (
               <>
-                <h3>Abgeschlossene Challenges</h3>
-                {completedChallenges.map((ch) => (
-                  <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
-                    <CardContent>
-                      <div>
-                        <h3><CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink></h3>
-                        <p>{ch.shop_address}</p>
-                        <DifficultyLabel>{ch.difficulty.toUpperCase()} – {ch.type === "daily" ? "Daily" : "Weekly"}</DifficultyLabel>
-                        <Countdown>Abgeschlossen am: {ch.completed_at ? new Date(ch.completed_at).toLocaleString() : "–"}</Countdown>
-                      </div>
-                      <Trophy>🏆</Trophy>
-                    </CardContent>
-                  </ChallengeCard>
-                ))}
+                <Title>🍦 Deine Erfolge 🍦</Title>
+                <TrophyGrid>
+                  {completedChallenges.map((ch) => (
+                    <TrophyCard key={ch.id}>
+                      <TrophyIcon>🏆</TrophyIcon>
+                      <TrophyName>{ch.shop_name}</TrophyName>
+                      <TrophyDate>{new Date(ch.completed_at).toLocaleDateString()}</TrophyDate>
+                      <TrophyType color={getDifficultyColor(ch.difficulty)}>
+                        {ch.difficulty}
+                      </TrophyType>
+                    </TrophyCard>
+                  ))}
+                </TrophyGrid>
               </>
             )}
 
@@ -393,6 +429,50 @@ function Challenges() {
 }
 
 export default Challenges;
+
+// Modal Styles
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+`;
+
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 24px 24px 24px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  min-width: 320px;
+  max-width: 90vw;
+  text-align: center;
+`;
+
+const ModalButton = styled.button`
+  margin-top: 18px;
+  padding: 10px 28px;
+  background: #ffb522;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #ffcb4c; }
+`;
+
+const UsedBadge = styled.span`
+  font-size: 0.7rem;
+  color: #ccc;
+  font-style: italic;
+`;
 
 const CleanLink = styled(Link)`
   text-decoration: none;
@@ -444,15 +524,22 @@ const NoChallenges = styled.div`
 `;
 
 const ChallengeCard = styled.div`
-  background: #fff;
-  border-left: 8px solid ${(props) => props.color || "#ccc"};
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #eee;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
 
-  @media (max-width: 600px) {
-    padding: 12px;
+  /* Der farbige Akzent als dezenter Glow oben */
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: ${props => props.color};
   }
 `;
 
@@ -525,30 +612,46 @@ const ErrorBox = styled.div`
   margin-bottom: 10px;
 `;
 
-const CardContent = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
+// Trophäen-Gitter für abgeschlossene Challenges
+const TrophyGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding-bottom: 15px;
 `;
 
-const Trophy = styled.div`
-  font-size: 46px;
-  margin-left: 10px;
+const TrophyCard = styled.div`
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #eee;
 `;
 
-const RecreateWrapper = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  font-size: small;
-  color: gray;
-  gap: 8px; /* Abstand zwischen Text und Button */
+const TrophyIcon = styled.div`
+  font-size: 2rem;
+  margin-bottom: 5px;
+`;
+
+const TrophyName = styled.div`
+  font-size: 0.85rem;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const TrophyDate = styled.div`
+  font-size: 0.7rem;
+  color: #999;
+`;
+
+const TrophyType = styled.div`
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: ${props => props.color};
+  margin-top: 4px;
 `;
 
 const RecreateButton = styled.button`

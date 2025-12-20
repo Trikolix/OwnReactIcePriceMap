@@ -18,6 +18,7 @@ require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceSeasonEvaluator.php';
 require_once __DIR__ . '/../evaluators/GroupCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
+require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
 
 $authData = requireAuth($pdo);
@@ -54,6 +55,7 @@ try {
         new IceSeasonEvaluator(),
         new GroupCheckinEvaluator(),
         new MultipleVehicleEvaluator(),
+        new SeasonalPresentEvaluator(),
         // weitere Evaluatoren können hier ergänzt werden
     ];
  
