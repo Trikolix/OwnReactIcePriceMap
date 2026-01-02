@@ -39,31 +39,31 @@ class WeekStreakEvaluator extends BaseAwardEvaluator {
     function getLongestWeekStreak($nutzerId) {
         global $pdo;
         $sql = "WITH wochen AS (
-                  SELECT
-                    nutzer_id,
-                    YEARWEEK(datum, 3) AS jahrwoche
-                  FROM checkins
-                  WHERE nutzer_id = :nutzer_id
-                  GROUP BY YEARWEEK(datum, 3)
-                ),
-                gruppen AS (
-                  SELECT
-                    jahrwoche,
-                    ROW_NUMBER() OVER (ORDER BY jahrwoche) AS rn
-                  FROM wochen
-                ),
-                sequenzgruppen AS (
-                  SELECT
-                    jahrwoche,
-                    jahrwoche - rn AS gruppe_id
-                  FROM gruppen
-                )
-                SELECT MAX(anzahl_wochen) AS max_fortlaufende_wochen
-                FROM (
-                  SELECT COUNT(*) AS anzahl_wochen
-                  FROM sequenzgruppen
-                  GROUP BY gruppe_id
-                ) AS untergruppen;";
+              SELECT
+                YEARWEEK(datum, 3) AS jahrwoche,
+                MIN(datum) AS erste_datum
+              FROM checkins
+              WHERE nutzer_id = :nutzer_id
+              GROUP BY YEARWEEK(datum, 3)
+            ),
+            wochen_sortiert AS (
+              SELECT
+                jahrwoche,
+                ROW_NUMBER() OVER (ORDER BY erste_datum) AS rn
+              FROM wochen
+            ),
+            sequenzgruppen AS (
+              SELECT
+                jahrwoche,
+                CAST(YEARWEEK(jahrwoche, 3) AS SIGNED) - rn AS gruppe_id
+              FROM wochen_sortiert
+            )
+            SELECT MAX(anzahl_wochen) AS max_fortlaufende_wochen
+            FROM (
+              SELECT COUNT(*) AS anzahl_wochen
+              FROM sequenzgruppen
+              GROUP BY gruppe_id
+            ) AS untergruppen;";
     
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['nutzer_id' => $nutzerId]);
