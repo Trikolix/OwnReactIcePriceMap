@@ -204,18 +204,27 @@ const Header = ({ refreshShops }) => {
     }
   };
 
-  const currentUser = { month: "Dezember", id: 40, name: "Anton ", image: "https://ice-app.de/uploads/award_icons/6955c1689d3c9_1000122828.png" };
+  const [currentUser, setCurrentUser] = useState(null);
+  const [pastUsers, setPastUsers] = useState([]);
 
-  const pastUsers = [
-    { month: "November", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/693b295df3b93_Nutzer_des_Monats_Nov25.png" },
-    { month: "Oktober", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/6905cebee5470_User_of_the_month_october25.png" },
-    { month: "September", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68dd0401cf5ad_ChatGPT%20Image%201.%20Okt.%202025,%2012_32_52.png" },
-    { month: "August", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png" },
-    { month: "Juli", id: 22, name: "Eispfote ", image: "https://ice-app.de/uploads/award_icons/68bfc41eb4748_1000101916.png" },
-    { month: "Juni", id: 52, name: "alinaa.wrnr", image: "https://ice-app.de/uploads/award_icons/68bfc408d55d6_1000101915.png" },
-    { month: "Mai", id: 2, name: "GourmetBiker", image: "https://ice-app.de/uploads/award_icons/68bfc3f576783_1000101914.png" },
-    { month: "April", id: 3, name: "Leckermäulchen95", image: "https://ice-app.de/uploads/award_icons/68bfc3848cd3b_1000101913.png" },
-  ];
+  useEffect(() => {
+    const fetchUserOfMonth = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/get_user_of_the_month.php`);
+        const data = await response.json();
+        if (data.error) {
+          console.error("Error fetching user of the month:", data.error);
+        } else {
+          setCurrentUser(data.currentUser);
+          setPastUsers(data.pastUsers || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user of the month:', error);
+      }
+    };
+
+    fetchUserOfMonth();
+  }, [apiUrl]);
 
 
   const getLogoSrc = () => {
@@ -253,14 +262,14 @@ const Header = ({ refreshShops }) => {
             <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
             <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
             {allowedPhotoChallenges(userId) && (<MenuItemLink to="/photo-challenge" onClick={() => setMenuOpen(false)}>Foto-Challenges</MenuItemLink>)}
-            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>        
+            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>
             {isLoggedIn ? (
               <>
                 <MenuItemLink to={`/user/${userId}`} className="logged-in" onClick={() => setMenuOpen(false)}>Profil ({username})</MenuItemLink>
                 <MenuItem onClick={() => { setShowSubmitNewIceShop(true); setMenuOpen(false); }} className="logged-in">Eisdiele hinzufügen</MenuItem>
                 <MenuItemLink to="/favoriten" className="logged-in" onClick={() => setMenuOpen(false)}>Favoriten</MenuItemLink>
                 <MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>
-                
+
                 {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
                 {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
                 {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Änderungsvorschläge</MenuItemLink>)}
@@ -321,13 +330,13 @@ const Header = ({ refreshShops }) => {
         </OverlayBackground>
       )}
 
-      {showUserOfMonth && (
+      {showUserOfMonth && currentUser && (
         <OverlayBackground>
           <Overlay>
             <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
             <h2>🏅 Nutzer/in des Monats 🏅</h2>
             <CurrentUserWrapper>
-              <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
                 <UserCard>
                   <MonthHeader><u>{currentUser.month}</u></MonthHeader>
                   <CurrentUserImage
@@ -344,7 +353,7 @@ const Header = ({ refreshShops }) => {
             <h3>🏅 Vorherige Nutzer/innen des Monats 🏅</h3>
             <PastUsersGrid>
               {pastUsers.map((user) => (
-                <UserLink to={`/user/${user.id}`} key={user.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <UserLink to={`/user/${user.id}`} key={`${user.month}-${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
                   <UserCard>
                     <MonthHeader><u>{user.month}</u></MonthHeader>
                     <UserImage src={user.image} alt={user.name} />

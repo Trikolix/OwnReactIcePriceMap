@@ -119,7 +119,7 @@ $betreff = "Ice-App Wochenreport: " . $wochenstart->format('d.m.Y') . " – " . 
 $datumStart = $wochenstart->format('d.m.Y');
 $datumEnde = $wochenende->format('d.m.Y');
 
-$nachricht = <<<EOT
+$text_nachricht = <<<EOT
 Hallo 👋
 
 Hier ist dein wöchentlicher Ice-App Report für den Zeitraum
@@ -137,34 +137,33 @@ $datumStart – $datumEnde:
 
 📊 Check-in Verteilung:
 🍧 Nach Typ:
-
 EOT;
 
 // Check-in Verteilung nach Typ hinzufügen
 foreach ($checkinsNachTyp as $typ) {
-    $nachricht .= "  - {$typ['typ']}: {$typ['anzahl']}\n";
+    $text_nachricht .= "\n  - {$typ['typ']}: {$typ['anzahl']}";
 }
 
-$nachricht .= "\n🚗 Nach Anreise:\n";
+$text_nachricht .= "\n\n🚗 Nach Anreise:";
 
 // Check-in Verteilung nach Anreise hinzufügen
 foreach ($checkinsNachAnreise as $anreise) {
-    $nachricht .= "  - {$anreise['anreise']}: {$anreise['anzahl']}\n";
+    $text_nachricht .= "\n  - {$anreise['anreise']}: {$anreise['anzahl']}";
 }
 
 // Check-in Verteilung mit / ohne Bild hinzufügen
-$nachricht .= "\n📸 Mit oder ohne Bild:\n";
+$text_nachricht .= "\n\n📸 Mit oder ohne Bild:";
 foreach ($checkinsNachBild as $bild) {
-    $nachricht .= "  - {$bild['bild_status']}: {$bild['anzahl']}\n";
+    $text_nachricht .= "\n  - {$bild['bild_status']}: {$bild['anzahl']}";
 }
 
 // Check-in Verteilung Vor Ort / Nicht vor Ort hinzufügen
-$nachricht .= "\n🏠 Vor Ort / Nicht vor Ort:\n";
+$text_nachricht .= "\n\n🏠 Vor Ort / Nicht vor Ort:";
 foreach ($checkinsNachOrt as $ort) {
-    $nachricht .= "  - {$ort['ort_status']}: {$ort['anzahl']}\n";
+    $text_nachricht .= "\n  - {$ort['ort_status']}: {$ort['anzahl']}";
 }
 
-$nachricht .= <<<EOT
+$text_nachricht .= <<<EOT
 
 📈 Gesamtzahlen:
 👤 Gesamtanzahl Nutzer: $gesamtNutzer
@@ -174,6 +173,11 @@ $nachricht .= <<<EOT
 Frostige Grüße ❄️
 Deine Ice-App
 EOT;
+
+// HTML-Version der Nachricht erstellen
+$nachricht = "<html><body style='font-family:sans-serif;color:#222;'>";
+$nachricht .= nl2br(htmlspecialchars($text_nachricht));
+$nachricht .= "</body></html>";
 
 // Insert in die Statistik-Tabelle
 $stmt = $pdo->prepare("
@@ -212,6 +216,43 @@ $stmt->execute([
 ]);
 
 // --- E-Mail versenden ---
-mail($empfaenger1, $betreff, $nachricht, $absender);
-mail($empfaenger2, $betreff, $nachricht, $absender);
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+// Load PHPMailer classes
+require __DIR__ . '/../lib/PHPMailer/src/Exception.php';
+require __DIR__ . '/../lib/PHPMailer/src/PHPMailer.php';
+require __DIR__ . '/../lib/PHPMailer/src/SMTP.php';
+
+$mail = new PHPMailer(true);
+
+try {
+    //Server settings
+    $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      // Enable verbose debug output
+    $mail->isSMTP();                                            // Send using SMTP
+    $mail->Host       = 'smtp.example.com';                     // **DEIN SMTP HOST HIER**
+    $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
+    $mail->Username   = 'user@example.com';                     // **DEIN SMTP BENUTZERNAME HIER**
+    $mail->Password   = 'secret';                               // **DEIN SMTP PASSWORT HIER**
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            // Enable implicit TLS encryption
+    $mail->Port       = 465;                                    // TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
+    $mail->CharSet = 'UTF-8';
+
+    //Recipients
+    $mail->setFrom('from@example.com', 'Ice-App Reporter');
+    $mail->addAddress($empfaenger1);
+    $mail->addAddress($empfaenger2);
+
+    // Content
+    $mail->isHTML(true);                                  // Set email format to HTML
+    $mail->Subject = $betreff;
+    $mail->Body    = $nachricht;
+    $mail->AltBody = $text_nachricht;
+
+    $mail->send();
+    echo 'Nachricht wurde erfolgreich versendet';
+} catch (Exception $e) {
+    echo "Nachricht konnte nicht versendet werden. Mailer Error: {$mail->ErrorInfo}";
+}
 ?>
