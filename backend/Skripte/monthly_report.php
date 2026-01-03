@@ -6,10 +6,10 @@ $empfaenger2 = 'Bocki00@web.de';
 
 // --- Zeitraum berechnen (letzte Woche Montag bis Sonntag) ---
 $heute = new DateTimeImmutable();
-$wochenstart = $heute->modify('last monday')->setTime(0, 0);
-$wochenende = $wochenstart->modify('+6 days')->setTime(23, 59, 59);
-$startStr = $wochenstart->format('Y-m-d H:i:s');
-$endeStr  = $wochenende->format('Y-m-d H:i:s');
+$monatsstart = $heute->modify('first day of last month')->setTime(0, 0);
+$monatsende = $heute->modify('last day of last month')->setTime(23, 59, 59);
+$startStr = $monatsstart->format('Y-m-d H:i:s');
+$endeStr  = $monatsende->format('Y-m-d H:i:s');
 
 // --- Statistikabfragen ---
 
@@ -29,24 +29,29 @@ $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $neueAwards = $stmt->fetchColumn();
 
 // 3. Verteilung der Check-ins nach Typ
-$stmt = $pdo->prepare("\n    SELECT typ, COUNT(*) as anzahl\n    FROM checkins\n    WHERE datum BETWEEN :start AND :ende\n    GROUP BY typ\n");
+$stmt = $pdo->prepare(
+    "SELECT typ, COUNT(*) as anzahl\n    FROM checkins\n    WHERE datum BETWEEN :start AND :ende\n    GROUP BY typ"
+);
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkinsNachTyp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 4. Verteilung der Check-ins nach Anreise
-$stmt = $pdo->prepare("\n    SELECT anreise, COUNT(*) as anzahl\n    FROM checkins\n    WHERE datum BETWEEN :start AND :ende\n    GROUP BY anreise\n");
+$stmt = $pdo->prepare(
+    "SELECT anreise, COUNT(*) as anzahl\n    FROM checkins\n    WHERE datum BETWEEN :start AND :ende\n    GROUP BY anreise"
+);
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkinsNachAnreise = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 5. Verteilung der Check-ins mit oder ohne Bild
-$stmt = $pdo->prepare("\n    SELECT 
+$stmt = $pdo->prepare(
+    "SELECT 
         CASE WHEN b.id IS NOT NULL THEN 'Mit Bild' ELSE 'Ohne Bild' END AS bild_status,
         COUNT(DISTINCT c.id) AS anzahl
     FROM checkins c
     LEFT JOIN bilder b ON c.id = b.checkin_id
     WHERE c.datum BETWEEN :start AND :ende
-    GROUP BY bild_status
-");
+    GROUP BY bild_status"
+);
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkinsNachBild = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -56,11 +61,9 @@ $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $aktiveNutzer = $stmt->fetchColumn();
 
 // 7. Eisportionen
-$stmt = $pdo->prepare("\n    SELECT COUNT(*) FROM checkin_sorten
-    WHERE checkin_id IN (
-        SELECT id FROM checkins WHERE datum BETWEEN :start AND :ende
-    )
-");
+$stmt = $pdo->prepare(
+    "SELECT COUNT(*) FROM checkin_sorten\n    WHERE checkin_id IN (\n        SELECT id FROM checkins WHERE datum BETWEEN :start AND :ende\n    )"
+);
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $portionen = $stmt->fetchColumn();
 
@@ -70,11 +73,9 @@ $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $neueEisdielen = $stmt->fetchColumn();
 
 // 9. Unterschiedliche Länder mit Check-ins
-$stmt = $pdo->prepare("\n    SELECT COUNT(DISTINCT e.land_id)
-    FROM checkins c
-    JOIN eisdielen e ON c.eisdiele_id = e.id
-    WHERE c.datum BETWEEN :start AND :ende
-");
+$stmt = $pdo->prepare(
+    "SELECT COUNT(DISTINCT e.land_id)\n    FROM checkins c\n    JOIN eisdielen e ON c.eisdiele_id = e.id\n    WHERE c.datum BETWEEN :start AND :ende"
+);
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $laenderMitCheckins = $stmt->fetchColumn();
 
@@ -88,18 +89,18 @@ $gesamtCheckins = $pdo->query("SELECT COUNT(*) FROM checkins")->fetchColumn();
 $gesamtEisdielen = $pdo->query("SELECT COUNT(*) FROM eisdielen")->fetchColumn();
 
 // --- Mailtext erstellen ---
-$betreff_raw = "Ice-App Wochenreport: " . $wochenstart->format('d.m.Y') . " – " . $wochenende->format('d.m.Y');
+$betreff_raw = "Ice-App Monatsreport: " . $monatsstart->format('d.m.Y') . " – " . $monatsende->format('d.m.Y');
 
-$datumStart = $wochenstart->format('d.m.Y');
-$datumEnde = $wochenende->format('d.m.Y');
+$datumStart = $monatsstart->format('d.m.Y');
+$datumEnde = $monatsende->format('d.m.Y');
 
 $nachricht = <<<EOT
 Hallo 👋
 
-Hier ist dein wöchentlicher Ice-App Report für den Zeitraum
+Hier ist dein monatlicher Ice-App Report für den Zeitraum
 $datumStart – $datumEnde:
 
-📊 Wochenstatistik:
+📊 Monatsstatistik:
 🧑‍💻 Neue Nutzer: $neueNutzer
 📍 Neue Eisdielen: $neueEisdielen
 
@@ -144,39 +145,7 @@ Frostige Grüße ❄️
 Deine Ice-App
 EOT;
 
-// Insert in die Statistik-Tabelle
-$stmt = $pdo->prepare("\n    INSERT INTO wochenstatistiken (
-        start_datum, end_datum,
-        neue_nutzer, neue_eisdielen, aktive_nutzer,
-        checkins, portionen, laender_mit_checkins,
-        gesamt_nutzer, gesamt_checkins, gesamt_eisdielen,
-        verteilung_checkins_typ, verteilung_anreise, verteilung_bild
-    )
-    VALUES (
-        :start_datum, :end_datum,
-        :neue_nutzer, :neue_eisdielen, :aktive_nutzer,
-        :checkins, :portionen, :laender_mit_checkins,
-        :gesamt_nutzer, :gesamt_checkins, :gesamt_eisdielen,
-        :verteilung_checkins_typ, :verteilung_anreise, :verteilung_bild
-    )
-");
 
-$stmt->execute([
-    'start_datum' => $wochenstart->format('Y-m-d'),
-    'end_datum' => $wochenende->format('Y-m-d'),
-    'neue_nutzer' => $neueNutzer,
-    'neue_eisdielen' => $neueEisdielen,
-    'aktive_nutzer' => $aktiveNutzer,
-    'checkins' => $checkins,
-    'portionen' => $portionen,
-    'laender_mit_checkins' => $laenderMitCheckins,
-    'gesamt_nutzer' => $gesamtNutzer,
-    'gesamt_checkins' => $gesamtCheckins,
-    'gesamt_eisdielen' => $gesamtEisdielen,
-    'verteilung_checkins_typ' => json_encode($checkinsNachTyp),
-    'verteilung_anreise' => json_encode($checkinsNachAnreise),
-    'verteilung_bild' => json_encode($checkinsNachBild)
-]);
 
 // --- E-Mail versenden ---
 $nachricht_html = "<html><body style='font-family:sans-serif;color:#222;'>" . nl2br(htmlspecialchars($nachricht)) . "</body></html>";
@@ -190,4 +159,6 @@ $betreff_encoded = '=?UTF-8?B?' . base64_encode($betreff_raw) . '?=';
 
 mail($empfaenger1, $betreff_encoded, $nachricht_html, $headers);
 mail($empfaenger2, $betreff_encoded, $nachricht_html, $headers);
+
+echo "Finale Version des Skripts wurde ausgeführt. Bitte prüfen Sie, ob die E-Mail jetzt ankommt.";
 ?>
