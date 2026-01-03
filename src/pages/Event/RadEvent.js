@@ -4,8 +4,7 @@ import { Calendar, Clock, MapPin, ListChecks, ShieldCheck, Euro, IceCream, Heart
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 
-// Dummy Images
-const dummyImages = {
+const Images = {
     "eisdiele-1": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
     "eisdiele-2": "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
     "eisdiele-3": "https://ice-app.de/uploads/checkins/checkin_693ae020891c99.77757200.jpg",
@@ -182,7 +181,7 @@ function IceCreamParlors() {
                         <Card key={parlor.name}>
                             <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden" }}>
                                 <img
-                                    src={dummyImages[parlor.id]}
+                                    src={Images[parlor.id]}
                                     alt={parlor.name}
                                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                                 />
@@ -209,7 +208,7 @@ function CharityInfo() {
                 <CharityGrid>
                     <div className="charity-image">
                         <img
-                            src={dummyImages["charity"]}
+                            src={Images["charity"]}
                             alt="Charity"
                             style={{ width: "100%", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
                         />
@@ -217,14 +216,16 @@ function CharityInfo() {
                     <div className="charity-text">
                         <SectionTitle>Radeln für den guten Zweck</SectionTitle>
                         <SectionDesc>
-                            Ein Teil der Einnahmen und alle zusätzlichen Spenden gehen direkt an den <strong>Verein für krebskranke Kinder e.V.</strong>
+                            Ein Teil der Einnahmen und alle zusätzlichen Spenden gehen direkt an den <strong>Elternverein krebskranker Kinder e.V. Chemnitz</strong>
                         </SectionDesc>
-                        <p style={{ color: "#64748b", marginBottom: "1.5em" }}>
+                        <p style={{ color: "#64748b", marginBottom: "1.5em", textAlign: "center" }}>
                             Mit Ihrer Teilnahme unterstützen Sie nicht nur ein tolles Event, sondern helfen auch Familien in schwierigen Zeiten. Der Verein bietet psychosoziale Betreuung, finanzielle Unterstützung und organisiert Freizeitaktivitäten, um den Kindern und ihren Familien Momente der Freude zu schenken.
+                            <br /><br />
+                            <Button href="/#/event-registration" style={{ border: "1px solid #ffb522", background: "#fff", color: "#ffb522" }}>
+                                <Heart size={18} style={{ marginRight: 8 }} /> Spenden & Teilnehmen
+                            </Button>
                         </p>
-                        <Button href="/#/event-registration" style={{ border: "1px solid #ffb522", background: "#fff", color: "#ffb522" }}>
-                            <Heart size={18} style={{ marginRight: 8 }} /> Spenden & Teilnehmen
-                        </Button>
+
                     </div>
                 </CharityGrid>
             </Container>

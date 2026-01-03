@@ -343,19 +343,27 @@ export default function EventRegistration() {
               {jerseyOrder && (
                 <div style={{ marginLeft: 24 }}>
                   {jerseyOrders.map((order, idx) => (
-                    <Flex key={idx} style={{ marginBottom: 8 }}>
-                      <JerseySelect
-                        value={order.size}
-                        onChange={e => handleJerseyOrderChange(idx, "size", e.target.value)}
-                      >
-                        {TSHIRT_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
-                      </JerseySelect>
-                      <JerseyInput
-                        type="number"
-                        min="1"
-                        value={order.quantity}
-                        onChange={e => handleJerseyOrderChange(idx, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
-                      />
+                    <Flex key={idx} style={{ marginBottom: 8, alignItems: 'flex-end' }}>
+                      <div>
+                        <Label htmlFor={`jersey-size-${idx}`} style={{marginBottom: '0.1rem', fontSize: '0.8rem'}}>Größe</Label>
+                        <JerseySelect
+                          id={`jersey-size-${idx}`}
+                          value={order.size}
+                          onChange={e => handleJerseyOrderChange(idx, "size", e.target.value)}
+                        >
+                          {TSHIRT_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
+                        </JerseySelect>
+                      </div>
+                      <div>
+                        <Label htmlFor={`jersey-quantity-${idx}`} style={{marginBottom: '0.1rem', fontSize: '0.8rem'}}>Menge</Label>
+                        <JerseyInput
+                          id={`jersey-quantity-${idx}`}
+                          type="number"
+                          min="1"
+                          value={order.quantity}
+                          onChange={e => handleJerseyOrderChange(idx, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                      </div>
                       <JerseyRemoveBtn
                         type="button"
                         onClick={() => removeJerseyOrder(idx)}
@@ -371,7 +379,7 @@ export default function EventRegistration() {
               <Separator />
               <Label><Heart style={{ color: '#ffb522' }} /> Zusätzlich spenden</Label>
               <Input type="number" min="0" value={donation} onChange={e => setDonation(Number(e.target.value) || 0)} placeholder="0" />
-              <div style={{ fontSize: 13, color: '#b48a2c', marginBottom: 8 }}>100% deiner Spende geht an den Verein für krebskranke Kinder e.V.</div>
+              <div style={{ fontSize: 13, color: '#b48a2c', marginBottom: 8 }}>100% deiner Spende geht an den Elternverein krebskranker Kinder e.V. Chemnitz</div>
               <Separator />
               <Label><Ticket style={{ color: '#ffb522' }} /> Gutschein- / Rabattcode</Label>
               <Input value={voucherCode} onChange={e => setVoucherCode(e.target.value)} />
@@ -381,11 +389,11 @@ export default function EventRegistration() {
               <CardTitle><ShieldAlert /> Wichtiger Hinweis & Newsletter</CardTitle>
               <CheckboxLabel>
                 <input type="checkbox" checked={acceptWaiver} onChange={e => setAcceptWaiver(e.target.checked)} required />
-                Ich habe die <LiabilityWaiver />  gelesen und akzeptiere die Bedingungen.
+                <span>Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Bedingungen.</span>
               </CheckboxLabel>
               <CheckboxLabel>
                 <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)} />
-                Ja, ich möchte den Newsletter mit Infos zu zukünftigen Events erhalten.
+                <span>Ja, ich möchte den Newsletter mit Infos zu zukünftigen Events erhalten.</span>
               </CheckboxLabel>
             </Card>
           </div>

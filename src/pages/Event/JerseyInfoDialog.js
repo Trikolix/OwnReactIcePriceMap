@@ -14,7 +14,7 @@ const Modal = styled.div`
   background: #fffdfa;
   border-radius: 12px;
   box-shadow: 0 4px 32px rgba(0,0,0,0.18);
-  max-width: 600px;
+  max-width: 800px;
   width: 95vw;
   max-height: 80vh;
   display: flex;

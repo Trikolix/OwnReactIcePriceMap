@@ -72,6 +72,22 @@ const Header = ({ refreshShops }) => {
   }, [userId]);
 
   useEffect(() => {
+    const handleNewAwards = (event) => {
+      const awards = event.detail;
+      if (awards && awards.length > 0) {
+        setNewAwards(awards);
+        setShowOverlay(true);
+      }
+    };
+
+    window.addEventListener('new-awards', handleNewAwards);
+
+    return () => {
+      window.removeEventListener('new-awards', handleNewAwards);
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const scanCode = params.get("scan");
 
@@ -188,9 +204,10 @@ const Header = ({ refreshShops }) => {
     }
   };
 
-  const currentUser = { month: "November", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/693b295df3b93_Nutzer_des_Monats_Nov25.png" };
+  const currentUser = { month: "Dezember", id: 40, name: "Anton ", image: "https://ice-app.de/uploads/award_icons/6955c1689d3c9_1000122828.png" };
 
   const pastUsers = [
+    { month: "November", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/693b295df3b93_Nutzer_des_Monats_Nov25.png" },
     { month: "Oktober", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/6905cebee5470_User_of_the_month_october25.png" },
     { month: "September", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68dd0401cf5ad_ChatGPT%20Image%201.%20Okt.%202025,%2012_32_52.png" },
     { month: "August", id: 53, name: "IceGoe ", image: "https://ice-app.de/uploads/award_icons/68bfc43ab0c79_1000101917.png" },
@@ -200,6 +217,19 @@ const Header = ({ refreshShops }) => {
     { month: "April", id: 3, name: "Leckermäulchen95", image: "https://ice-app.de/uploads/award_icons/68bfc3848cd3b_1000101913.png" },
   ];
 
+
+  const getLogoSrc = () => {
+    const today = new Date();
+    const month = today.getMonth(); // 0 for January, 11 for December
+    const day = today.getDate();
+
+    // Christmas time: December 1st to January 1st
+    if ((month === 11 && day >= 1) || (month === 0 && day === 1)) {
+      return require('./header_wide_christmas.png');
+    }
+    return require('./header_wide.png');
+  };
+
   return (
     <>
       <HeaderContainer>
@@ -208,7 +238,7 @@ const Header = ({ refreshShops }) => {
         </GewinnspielIcon>
 
         <LogoContainer>
-          <a href="/"><Logo src={require('./header_wide.png')} alt="Website Logo" /></a>
+          <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
         </LogoContainer>
         {isLoggedIn && <NotificationBell />}
         <BurgerMenu onClick={toggleMenu}>

@@ -25,7 +25,7 @@ class SeasonalPresentEvaluator extends BaseAwardEvaluator {
         $periods = [
             [
                 'start' => '2025-12-23',
-                'end' => '2026-01-01',
+                'end' => '2026-01-02',
                 'levels' => [
                     1 => ['requireCheckin' => false, 'replaceLevel' => null],
                     2 => ['requireCheckin' => true, 'replaceLevel' => 1],
@@ -33,7 +33,7 @@ class SeasonalPresentEvaluator extends BaseAwardEvaluator {
             ],
             [
                 'start' => '2026-04-02',
-                'end' => '2026-04-07',
+                'end' => '2026-04-08',
                 'levels' => [
                     3 => ['requireCheckin' => false, 'replaceLevel' => null],
                     4 => ['requireCheckin' => true, 'replaceLevel' => 3],
@@ -44,7 +44,7 @@ class SeasonalPresentEvaluator extends BaseAwardEvaluator {
 
         $activePeriod = null;
         foreach ($periods as $period) {
-            if ($dateStr >= $period['start'] && $dateStr <= $period['end']) {
+            if ($dateStr >= $period['start'] && $dateStr < $period['end']) {
                 $activePeriod = $period;
                 break;
             }

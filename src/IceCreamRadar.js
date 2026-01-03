@@ -17,6 +17,7 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
+import ChristmasElf, { isChristmasTime, secretWorkshopIcon } from './components/ChristmasElf';
 
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const DEFAULT_CONTEXT_MENU_STATE = {
@@ -327,6 +328,7 @@ const IceCreamRadar = () => {
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
+  const [currentZoom, setCurrentZoom] = useState(14);
   const handleMapInteraction = useCallback(() => {
     setHasInteractedWithMap(true);
   }, [setHasInteractedWithMap]);
@@ -370,7 +372,6 @@ const IceCreamRadar = () => {
       const detailQuery = openFilterQueryString ? `&${openFilterQueryString}` : "";
       const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${detailQuery}`);
       const data = await response.json();
-      console.log('fetchAndCenterShop', data)
       setActiveShop(data);
       setShowDetailsView(true);
     } catch (err) {
@@ -425,14 +426,12 @@ const IceCreamRadar = () => {
   };
 
   const refreshShops = async () => {
-    console.log("refreshShops");
 
     try {
       const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : "";
       const query = `${apiUrl}/get_all_eisdielen.php?&userId=${userId}${querySuffix}`;
       const response = await fetch(query);
       const data = await response.json();
-      console.log(data);
       setIceCreamShops(data);
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
@@ -720,6 +719,18 @@ const IceCreamRadar = () => {
     }
   }, [userId, openFilterQueryString]);
 
+  const MapEvents = () => {
+    const map = useMapEvents({
+      zoomend: () => {
+        setCurrentZoom(map.getZoom());
+      },
+    });
+    useEffect(() => {
+      setCurrentZoom(map.getZoom());
+    }, [map]);
+    return null;
+  };
+
   return (
     <div
       style={{
@@ -746,6 +757,7 @@ const IceCreamRadar = () => {
       </LogoContainer>
 
       <MapSection>
+        {isChristmasTime() && <ChristmasElf />}
         {isSearchVisible && (
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
@@ -822,6 +834,7 @@ const IceCreamRadar = () => {
             mapRef.current = mapInstance;
           }}
         >
+          <MapEvents />
           <MapContextMenuListener
             onOpen={handleMapContextMenuOpen}
             onDismiss={closeContextMenu}
@@ -836,6 +849,39 @@ const IceCreamRadar = () => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           {activeShop && <MapCenterOnShop shop={activeShop} />}
+          {isChristmasTime() && currentZoom > 5 && (
+            <Marker position={[78.223566, 15.65355993]} icon={secretWorkshopIcon}
+              eventHandlers={{
+                click: () => {
+                  if (!isLoggedIn) {
+                    setShowLoginModal(true);
+                    return;
+                  }
+                  fetch(`${apiUrl}/grant_secret_workshop_award.php`)
+                    .then(response => {
+                      if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                      }
+                      return response.json();
+                    })
+                    .then(data => {
+                      if (data.success && data.achievements && data.achievements.length > 0) {
+                        const event = new CustomEvent('new-awards', { detail: data.achievements });
+                        window.dispatchEvent(event);
+                      }
+                    })
+                    .catch(error => console.error('Error granting award:', error));
+                },
+              }}
+            >
+              <Popup>
+                <div>
+                  <h2>Geheime Eis-Werkstatt des Weihnachtsmanns</h2>
+                  <p>Du hast sie gefunden! Frohe Weihnachten!</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
           {clustering ? ( // show the clustered
             <MarkerClusterGroup maxClusterRadius={25}>
               {shopsWithDisplayValue.map(({ shop, value }) => {
