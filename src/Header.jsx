@@ -1,13 +1,8 @@
 import userOfTheMonthImg from './user_of_the_month.png';
-import headerWideImg from './header_wide.png';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
-  OverlayBackground as SharedOverlayBackground,
-  Overlay as SharedOverlay,
-  CloseButton as SharedCloseButton,
   SubmitButton as SharedSubmitButton,
-  LevelInfo as SharedLevelInfo,
   Modal as SharedModal,
 } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
@@ -18,6 +13,9 @@ import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { useLocation, useNavigate } from "react-router-dom";
+import { isChristmasTime } from './components/ChristmasElf';
+import headerWideChristmas from './header_wide_christmas.png';
+import headerWide from './header_wide.png';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -230,15 +228,10 @@ const Header = ({ refreshShops }) => {
 
 
   const getLogoSrc = () => {
-    const today = new Date();
-    const month = today.getMonth(); // 0 for January, 11 for December
-    const day = today.getDate();
-
-    // Christmas time: December 1st to January 1st
-    if ((month === 11 && day >= 1) || (month === 0 && day === 1)) {
-      return require('./header_wide_christmas.png');
+    if (isChristmasTime()) {
+      return headerWideChristmas;
     }
-    return require('./header_wide.png');
+    return headerWide;
   };
 
   return (
