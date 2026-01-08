@@ -5,11 +5,11 @@ import Header, { Button } from "./Header";
 import Footer from "./Footer";
 
 const Images = {
-    "eisdiele-1": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
-    "eisdiele-2": "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80",
-    "eisdiele-3": "https://ice-app.de/uploads/checkins/checkin_693ae020891c99.77757200.jpg",
-    "eisdiele-4": "https://ice-app.de/uploads/checkins/checkin_693ae020891c99.77757200.jpg",
-    "charity": "https://ice-app.de/uploads/checkins/checkin_693ae020891c99.77757200.jpg"
+    "eisstopp-klatt": "https://scontent-dus1-1.xx.fbcdn.net/v/t39.30808-6/474190233_922200500070659_4489896847841982265_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=f2Jieo4NxeIQ7kNvwEymZdf&_nc_oc=Admmhur-SjlFyrrcmgYgxasGpKasH8oB-82NyxGJyndSrwTLkbccPRYGosnixStGvCE&_nc_zt=23&_nc_ht=scontent-dus1-1.xx&_nc_gid=T4To4o42xMMITD_mnihQdA&oh=00_AfpOUAG0Cm3Bi6Z-1FlKDwVpc2Tf3-fRWD3e_O6qPVaITw&oe=6963F59E",
+    "eisstopp-braeunig": "https://www.baeckerei-braeunig.de/wp-content/uploads/baeckerei-braeunig-logo-1.png",
+    "eisstopp-ys": "https://eiscafeys.de/wp-content/uploads/2025/09/cropped-IMG_6203-scaled-1.jpeg",
+    "eisstopp-schoene": "https://lh3.googleusercontent.com/p/AF1QipMaZZ6abii-iQVOXLTq0AEQ-T7wqFuHJKhIWTg3=s680-w680-h510-rw",
+    "charity": "https://www.ekk-chemnitz.de/wp-content/uploads/2020/09/ekk-logo-300.png"
 };
 
 // Constants
@@ -111,10 +111,10 @@ const details = [
 
 // Ice Cream Parlors
 const parlors = [
-    { id: "eisdiele-1", name: "Klatt-Eismanufaktur", description: "Klassische Eissorten und kreative Neuschöpfungen im Herzen der Altstadt." },
-    { id: "eisdiele-2", name: "Bäckerei Bräunig", description: "Vegane und laktosefreie Eissorten, die jeden Gaumen verzaubern." },
-    { id: "eisdiele-3", name: "Ys Eiscafé", description: "Genießt euer Eis mit einem wunderschönen Blick auf den Fluss." },
-    { id: "eisdiele-4", name: "Eisdiele Schöne", description: "Genießt euer Eis mit einem wunderschönen Blick auf den Fluss." },
+    { id: "eisstopp-ys", name: "Ys Eiscafé", description: "Dein neues Lieblingscafé in mitten von Schneeberg und Bad Schlema. Von Eis, über Kuchen & Torten bis hin zu saftigen Zimtschnecken findest du hier genau das, was dein süßes Herz begehrt" },
+    { id: "eisstopp-braeunig", name: "Bäckerei Bräunig", description: "Die familiengeführte Handwerksbäckerei, bietet neben leckeren Kuchen, Brötchen und Brot auch selbst hergestelltes Eis an." },    
+    { id: "eisstopp-schoene", name: "Eisdiele Schöne", description: "In der Nähe des Schloss Lichtenwalde lockt die Eisdiele Schöne mit selbst hergestelltem Eis, exotische Sorten und freundlichem Service." },
+    { id: "eisstopp-klatt", name: "Klatt-Eismanufaktur", description: "Ein sehr gemütlicher Eis-Garten mitten im Grünen mit leckeren, kreativen, hausgemachten Eissorten." },
 ];
 
 const CharityGrid = styled.div`
