@@ -2,7 +2,7 @@
 require_once __DIR__ . '/BaseAwardEvaluator.php';
 require_once __DIR__ . '/../db_connect.php';
 
-class SecretWorkshopAwardEvaluator extends BaseAwardEvaluator {
+class SecretClickAwardEvaluator extends BaseAwardEvaluator {
     const AWARD_ID = 54;
 
     public function evaluate(int $userId, int $level = 1): array {

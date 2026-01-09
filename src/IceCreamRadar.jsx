@@ -17,8 +17,9 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
-import ChristmasElf, { isChristmasTime, secretWorkshopIcon } from './components/ChristmasElf';
-
+import ChristmasElf, { SecretWorkshopMarker } from './components/ChristmasElf';
+import EasterBunny, { EasterEggMarker } from './components/EasterBunny';
+import { isSpecialTime } from './utils/seasonal';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const DEFAULT_CONTEXT_MENU_STATE = {
   isVisible: false,
@@ -329,9 +330,23 @@ const IceCreamRadar = () => {
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
   const [currentZoom, setCurrentZoom] = useState(14);
+
   const handleMapInteraction = useCallback(() => {
     setHasInteractedWithMap(true);
   }, [setHasInteractedWithMap]);
+
+  const MapEvents = () => {
+    const map = useMapEvents({
+      zoomend: () => {
+        setCurrentZoom(map.getZoom());
+      },
+    });
+    useEffect(() => {
+      setCurrentZoom(map.getZoom());
+    }, [map]);
+    return null;
+  };
+
   const buildDefaultDateTimeValue = () => {
     const date = new Date();
     date.setMinutes(date.getMinutes() + 60);
@@ -719,17 +734,7 @@ const IceCreamRadar = () => {
     }
   }, [userId, openFilterQueryString]);
 
-  const MapEvents = () => {
-    const map = useMapEvents({
-      zoomend: () => {
-        setCurrentZoom(map.getZoom());
-      },
-    });
-    useEffect(() => {
-      setCurrentZoom(map.getZoom());
-    }, [map]);
-    return null;
-  };
+  const specialTime = isSpecialTime();
 
   return (
     <div
@@ -757,7 +762,8 @@ const IceCreamRadar = () => {
       </LogoContainer>
 
       <MapSection>
-        {isChristmasTime() && <ChristmasElf />}
+        {specialTime === 'christmas' && <ChristmasElf />}
+        {specialTime === 'easter' && <EasterBunny />}
         {isSearchVisible && (
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
@@ -847,41 +853,11 @@ const IceCreamRadar = () => {
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            maxZoom={19}
           />
           {activeShop && <MapCenterOnShop shop={activeShop} />}
-          {isChristmasTime() && currentZoom > 5 && (
-            <Marker position={[78.223566, 15.65355993]} icon={secretWorkshopIcon}
-              eventHandlers={{
-                click: () => {
-                  if (!isLoggedIn) {
-                    setShowLoginModal(true);
-                    return;
-                  }
-                  fetch(`${apiUrl}/grant_secret_workshop_award.php`)
-                    .then(response => {
-                      if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                      }
-                      return response.json();
-                    })
-                    .then(data => {
-                      if (data.success && data.achievements && data.achievements.length > 0) {
-                        const event = new CustomEvent('new-awards', { detail: data.achievements });
-                        window.dispatchEvent(event);
-                      }
-                    })
-                    .catch(error => console.error('Error granting award:', error));
-                },
-              }}
-            >
-              <Popup>
-                <div>
-                  <h2>Geheime Eis-Werkstatt des Weihnachtsmanns</h2>
-                  <p>Du hast sie gefunden! Frohe Weihnachten!</p>
-                </div>
-              </Popup>
-            </Marker>
-          )}
+          {specialTime === 'christmas' && currentZoom > 5 && <SecretWorkshopMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
+          {specialTime === 'easter' && currentZoom > 5 && <EasterEggMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
           {clustering ? ( // show the clustered
             <MarkerClusterGroup maxClusterRadius={25}>
               {shopsWithDisplayValue.map(({ shop, value }) => {
@@ -1082,7 +1058,7 @@ const IceCreamRadar = () => {
       {isSubmitIceShopModalOpen && (
         <SubmitIceShopModal
           showForm={isSubmitIceShopModalOpen}
-          setShowForm={handleSubmitModalVisibility}
+          setShowForm={setIsSubmitIceShopModalOpen}
           userId={userId}
           refreshShops={refreshShops}
           userLatitude={submitModalCoordinates?.lat ?? userPosition?.[0] ?? 50.83}

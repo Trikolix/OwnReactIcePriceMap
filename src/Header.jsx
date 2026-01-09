@@ -13,8 +13,9 @@ import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { useLocation, useNavigate } from "react-router-dom";
-import { isChristmasTime } from './components/ChristmasElf';
+import { isSpecialTime } from './utils/seasonal';
 import headerWideChristmas from './header_wide_christmas.png';
+import headerWideEaster from './header_wide_easter.png';
 import headerWide from './header_wide.png';
 
 const Header = ({ refreshShops }) => {
@@ -228,8 +229,12 @@ const Header = ({ refreshShops }) => {
 
 
   const getLogoSrc = () => {
-    if (isChristmasTime()) {
+    const specialTime = isSpecialTime();
+    if (specialTime === 'christmas') {
       return headerWideChristmas;
+    }
+    if (specialTime === 'easter') {
+        return headerWideEaster;
     }
     return headerWide;
   };
