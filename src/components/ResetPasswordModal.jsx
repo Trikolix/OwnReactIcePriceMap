@@ -94,7 +94,8 @@ const ResetPasswordModal = ({ resetToken, onClose }) => {
             <SharedModal>
                 <SharedCloseButton onClick={onClose}>x</SharedCloseButton>
                 <Title>Neues Passwort setzen</Title>
-                <form onSubmit={handleSubmit}>
+                <Description>Bitte gib dein neues Passwort ein und bestätige es. Es muss mindestens 6 Zeichen lang sein.</Description>
+                <FormContainer onSubmit={handleSubmit}>
                     <SharedInput
                         type="password"
                         placeholder="Neues Passwort"
@@ -110,8 +111,10 @@ const ResetPasswordModal = ({ resetToken, onClose }) => {
                         required
                     />
                     {error && <ErrorText>{error}</ErrorText>}
-                    <SharedButton type="submit">Passwort setzen</SharedButton>
-                </form>
+                    <ButtonWrapper>
+                        <SharedButton type="submit">Passwort setzen</SharedButton>
+                    </ButtonWrapper>
+                </FormContainer>
             </SharedModal>
         </SharedOverlay>
     );
@@ -121,11 +124,30 @@ export default ResetPasswordModal;
 
 const Title = styled.h2`
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     text-align: center;
+`;
+
+const Description = styled.p`
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #666;
+`;
+
+const FormContainer = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+`;
+
+const ButtonWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
 `;
 
 const ErrorText = styled.p`
     color: red;
     font-size: 0.95rem;
+    text-align: center;
 `;
