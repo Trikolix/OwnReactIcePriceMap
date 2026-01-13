@@ -190,29 +190,29 @@ function Challenges() {
       const data = await res.json();
 
       if (data.status === "success") {
+        const newChallengeObject = data.recreated ? {
+          id: data.challenge_id,
+          type: data.type,
+          difficulty: data.difficulty,
+          valid_until: data.valid_until,
+          shop_id: data.shop?.id,
+          shop_name: data.shop?.name,
+          shop_address: data.shop?.adresse || data.shop?.address || "",
+          recreated: data.recreated
+        } : null;
+
         setChallenges((prev) => {
-          // Alte Challenge rausfiltern
           const withoutOld = prev.filter((c) => c.id !== challengeId);
-
-          if (data.recreated) {
-            // Neue (aktualisierte) Challenge hinzufügen
-            return sortChallenges([
-              ...withoutOld,
-              {
-                id: data.challenge_id,
-                type: data.type,
-                difficulty: data.difficulty,
-                valid_until: data.valid_until,
-                shop_id: data.shop?.id,
-                shop_name: data.shop?.name,
-                shop_address: data.shop?.adresse || data.shop?.address || "",
-                recreated: data.recreated
-              }
-            ]);
+          if (newChallengeObject) {
+            return sortChallenges([...withoutOld, newChallengeObject]);
           }
-
-          return withoutOld; // Falls keine neue zurückkommt
+          return withoutOld;
         });
+
+        if (newChallengeObject) {
+          setNewChallenge(newChallengeObject);
+          setShowNewChallengeModal(true);
+        }
       } else {
         setError(data.message || "Challenge konnte nicht erneuert werden.");
       }
