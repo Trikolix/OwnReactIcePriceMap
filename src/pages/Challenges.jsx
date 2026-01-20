@@ -3,11 +3,97 @@ import styled from "styled-components";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
+
 import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
+// Custom marker icons for each difficulty
+const greenIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+const yellowIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+const orangeIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 function Challenges() {
+      // Hilfsfunktion: Gibt alle Kombinationen zurück, für die noch keine aktive Challenge existiert
+      const getMissingCombinations = () => {
+        const difficulties = ["leicht", "mittel", "schwer"];
+        const types = ["daily", "weekly"];
+        const active = challenges.filter(c => !c.completed);
+        const existing = new Set(active.map(c => `${c.difficulty}|${c.type}`));
+        const missing = [];
+        for (const d of difficulties) {
+          for (const t of types) {
+            if (!existing.has(`${d}|${t}`)) {
+              missing.push({ difficulty: d, type: t });
+            }
+          }
+        }
+        return missing;
+      };
+
+      // Generiert alle fehlenden Challenges (nacheinander, um API zu schonen)
+      const [bulkGenerating, setBulkGenerating] = useState(false);
+      const handleGenerateAllMissing = async () => {
+        const missing = getMissingCombinations();
+        if (!location || missing.length === 0) return;
+        setBulkGenerating(true);
+        setError(null);
+        try {
+          for (const combo of missing) {
+            const form = new FormData();
+            form.append("nutzer_id", String(userId));
+            form.append("lat", String(location.lat));
+            form.append("lon", String(location.lon));
+            form.append("difficulty", combo.difficulty);
+            form.append("type", combo.type);
+            const res = await fetch(`${apiUrl}/api/challenge_generate.php`, {
+              method: "POST",
+              body: form,
+            });
+            const data = await res.json();
+            if (data.status === "success") {
+              const challengeObj = {
+                id: data.challenge_id,
+                type: data.type,
+                difficulty: data.difficulty,
+                valid_until: data.valid_until,
+                shop_id: data.shop?.id,
+                shop_name: data.shop?.name,
+                shop_address: data.shop?.adresse || data.shop?.address || ""
+              };
+              setChallenges(prev => sortChallenges([...prev, challengeObj]));
+            } else {
+              setError((prev) => (prev ? prev + "\n" : "") + (data.message || data.error || `Fehler bei ${combo.difficulty} ${combo.type}`));
+            }
+          }
+        } catch (e) {
+          setError("Fehler beim Generieren mehrerer Challenges. Bitte Standortzugriff erlauben.");
+        } finally {
+          setBulkGenerating(false);
+        }
+      };
+    const [selectedTrophy, setSelectedTrophy] = useState(null);
   const { userId, isLoggedIn } = useUser();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -182,7 +268,6 @@ function Challenges() {
       form.append("difficulty", difficulty);
       form.append("type", type);
 
-
       const res = await fetch(`${apiUrl}/api/challenge_generate.php`, {
         method: "POST",
         body: form,
@@ -190,27 +275,41 @@ function Challenges() {
       const data = await res.json();
 
       if (data.status === "success") {
-        const newChallengeObject = data.recreated ? {
-          id: data.challenge_id,
-          type: data.type,
-          difficulty: data.difficulty,
-          valid_until: data.valid_until,
-          shop_id: data.shop?.id,
-          shop_name: data.shop?.name,
-          shop_address: data.shop?.adresse || data.shop?.address || "",
-          recreated: data.recreated
-        } : null;
-
+        let newChallengeObj = null;
         setChallenges((prev) => {
           const withoutOld = prev.filter((c) => c.id !== challengeId);
-          if (newChallengeObject) {
-            return sortChallenges([...withoutOld, newChallengeObject]);
+          if (data.recreated) {
+            // Neue (aktualisierte) Challenge hinzufügen
+            newChallengeObj = {
+              id: data.challenge_id,
+              type: data.type,
+              difficulty: data.difficulty,
+              valid_until: data.valid_until,
+              shop_id: data.shop?.id,
+              shop_name: data.shop?.name,
+              shop_address: data.shop?.adresse || data.shop?.address || "",
+              recreated: data.recreated
+            };
+            return sortChallenges([
+              ...withoutOld,
+              newChallengeObj
+            ]);
           }
           return withoutOld;
         });
-
-        if (newChallengeObject) {
-          setNewChallenge(newChallengeObject);
+        if (data.recreated) {
+          // newChallengeObj ist nach setChallenges nicht mehr direkt verfügbar, daher nochmal bauen:
+          const modalChallenge = {
+            id: data.challenge_id,
+            type: data.type,
+            difficulty: data.difficulty,
+            valid_until: data.valid_until,
+            shop_id: data.shop?.id,
+            shop_name: data.shop?.name,
+            shop_address: data.shop?.adresse || data.shop?.address || "",
+            recreated: data.recreated
+          };
+          setNewChallenge(modalChallenge);
           setShowNewChallengeModal(true);
         }
       } else {
@@ -244,8 +343,15 @@ function Challenges() {
     return `${diffHours}h ${diffMinutes}min`;
   };
 
-  const activeChallenges = challenges.filter(c => !c.completed);
-  const completedChallenges = challenges.filter(c => c.completed);
+  const activeChallenges = sortChallenges(challenges.filter(c => !c.completed));
+  const completedChallenges = challenges
+    .filter(c => c.completed)
+    .sort((a, b) => {
+      // Sortiere absteigend nach completed_at (neueste zuerst)
+      const dateA = new Date(a.completed_at || 0);
+      const dateB = new Date(b.completed_at || 0);
+      return dateB - dateA;
+    });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -361,6 +467,27 @@ function Challenges() {
                     radius={45000}
                     pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.1 }}
                   />
+                  {/* Aktive Challenges als Marker anzeigen */}
+                  {activeChallenges.map((ch, idx) => {
+                    // Erwartet: ch.shop_lat, ch.shop_lon oder ch.shop?.lat, ch.shop?.lon
+                    const lat = ch.shop_lat ?? ch.shop?.lat;
+                    const lon = ch.shop_lon ?? ch.shop?.lon;
+                    let icon = greenIcon;
+                    if (ch.difficulty === "mittel") icon = yellowIcon;
+                    else if (ch.difficulty === "schwer") icon = orangeIcon;
+                    if (typeof lat === 'number' && typeof lon === 'number') {
+                      return (
+                        <Marker key={ch.id || idx} position={[lat, lon]} icon={icon}>
+                          <Popup>
+                            <b>{ch.shop_name}</b><br />
+                            {ch.shop_address}
+                            <br />{ch.difficulty} – {ch.type === 'daily' ? 'Daily' : 'Weekly'}
+                          </Popup>
+                        </Marker>
+                      );
+                    }
+                    return null;
+                  })}
                 </MapContainer>
               </div>
             </>
@@ -380,10 +507,38 @@ function Challenges() {
               {loadingLocation ? (
                 <p>Standort wird geladen...</p>
               ) : (
-                <GenerateButton onClick={handleGenerateChallenge} disabled={generating}>
-                  {generating ? "Erstelle..." : "Neue Challenge generieren"}
-                </GenerateButton>)
-              }
+                <>
+                  <GenerateButton
+                    onClick={handleGenerateChallenge}
+                    disabled={
+                      generating ||
+                      bulkGenerating ||
+                      activeChallenges.some(
+                        (c) => c.difficulty === difficulty && c.type === challengeType
+                      )
+                    }
+                  >
+                    {generating
+                      ? "Erstelle..."
+                      : activeChallenges.some(
+                          (c) => c.difficulty === difficulty && c.type === challengeType
+                        )
+                        ? "Du hast bereits eine solche Challenge"
+                        : "Neue Challenge generieren"}
+                  </GenerateButton>
+                  <GenerateButton
+                    onClick={handleGenerateAllMissing}
+                    disabled={generating || bulkGenerating || !getMissingCombinations().length}
+                    title="Generiert alle noch fehlenden Kombinationen aus Schwierigkeit und Typ"
+                  >
+                    {bulkGenerating
+                      ? "Generiere..."
+                      : getMissingCombinations().length === 0
+                        ? "Alle Kombinationen sind bereits aktiv"
+                        : "Alle fehlenden Challenges generieren"}
+                  </GenerateButton>
+                </>
+              )}
             </SelectionWrapper>
             <p>
               Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
@@ -406,7 +561,12 @@ function Challenges() {
                 <Title>🍦 Deine Erfolge 🍦</Title>
                 <TrophyGrid>
                   {completedChallenges.map((ch) => (
-                    <TrophyCard key={ch.id}>
+                    <TrophyCard
+                      key={ch.id}
+                      onClick={() => setSelectedTrophy(ch)}
+                      tabIndex={0}
+                      title="Mehr Infos anzeigen"
+                    >
                       <TrophyIcon>🏆</TrophyIcon>
                       <TrophyName>{ch.shop_name}</TrophyName>
                       <TrophyDate>{new Date(ch.completed_at).toLocaleDateString()}</TrophyDate>
@@ -416,6 +576,21 @@ function Challenges() {
                     </TrophyCard>
                   ))}
                 </TrophyGrid>
+                {selectedTrophy && (
+                  <ModalOverlay onClick={() => setSelectedTrophy(null)}>
+                    <ModalBox onClick={e => e.stopPropagation()}>
+                      <h2>Challenge-Details</h2>
+                      <TrophyIcon style={{ fontSize: '3rem' }}>🏆</TrophyIcon>
+                      <h3 style={{ margin: '10px 0 5px 0' }}>{selectedTrophy.shop_name}</h3>
+                      <p style={{ color: '#666', fontSize: '0.95rem', marginBottom: 8 }}>{selectedTrophy.shop_address}</p>
+                      <TrophyType color={getDifficultyColor(selectedTrophy.difficulty)}>
+                        {selectedTrophy.difficulty.toUpperCase()} – {selectedTrophy.type === 'daily' ? 'Daily' : 'Weekly'}
+                      </TrophyType>
+                      <TrophyDate>Abgeschlossen am: {selectedTrophy.completed_at ? new Date(selectedTrophy.completed_at).toLocaleString() : '-'}</TrophyDate>
+                      <ModalButton onClick={() => setSelectedTrophy(null)} style={{ marginTop: 18 }}>Schließen</ModalButton>
+                    </ModalBox>
+                  </ModalOverlay>
+                )}
               </>
             )}
 
@@ -597,8 +772,17 @@ const GenerateButton = styled.button`
   cursor: pointer;
   font-weight: bold;
   font-size: 1rem;
-  transition: background-color 0.15s ease;
-  &:hover { background-color: #ffcb4c; }
+  transition: background-color 0.15s ease, opacity 0.15s;
+  &:hover:enabled {
+    background-color: #ffcb4c;
+  }
+  &:disabled {
+    opacity: 0.55;
+    background-color: #ffb522;
+    color: #fff;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 
   @media (max-width: 600px) {
     width: 100%;
@@ -626,6 +810,16 @@ const TrophyCard = styled.div`
   padding: 12px;
   text-align: center;
   border: 1px solid #eee;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s;
+  outline: none;
+  &:hover, &:focus {
+    transform: scale(1.045) translateY(-2px);
+    box-shadow: 0 6px 24px rgba(255,181,34,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    border-color: #ffb522;
+    z-index: 2;
+  }
 `;
 
 const TrophyIcon = styled.div`

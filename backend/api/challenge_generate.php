@@ -172,13 +172,21 @@ try {
     }
     
     // Response
+    // Shop-Objekt umbenennen/erweitern für Frontend-Kompatibilität
+    $shopOut = $randomShop;
+    if (isset($shopOut['latitude'])) {
+        $shopOut['shop_lat'] = $shopOut['latitude'];
+    }
+    if (isset($shopOut['longitude'])) {
+        $shopOut['shop_lon'] = $shopOut['longitude'];
+    }
     echo json_encode([
         "status" => "success",
         "challenge_id" => $newChallengeId,
         "type" => $type,
         "difficulty" => $difficulty,
         "valid_until" => $validUntil,
-        "shop" => $randomShop,
+        "shop" => $shopOut,
         "recreated" => $isRecreated
     ]);
 

@@ -14,7 +14,9 @@ try {
             c.*,
             e.id AS shop_id,
             e.name AS shop_name,
-            e.adresse AS shop_address
+            e.adresse AS shop_address,
+            e.latitude AS shop_lat,
+            e.longitude AS shop_lon
         FROM challenges c
         JOIN eisdielen e ON c.eisdiele_id = e.id
         WHERE c.nutzer_id = :nutzer_id
