@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import { useUser } from "../../context/UserContext";
+import jerseyImage from './jersey.png';
 
 const ENTRY_FEE = 15;
 const JERSEY_PRICE = 69;
@@ -157,6 +158,80 @@ const CheckboxLabel = styled.label`
   font-size: 1rem;
   margin-bottom: 0.5rem;
 `;
+function JerseyImageModal() {
+    const [showModal, setShowModal] = React.useState(false);
+    return (
+        <>
+            <img
+                src={jerseyImage}
+                alt="Radtrikot"
+                style={{ maxWidth: 120, cursor: 'pointer', marginBottom: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.10)', borderRadius: 10 }}
+                onClick={() => setShowModal(true)}
+                title="Bild vergrößern"
+            />
+            {showModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.6)',
+                        zIndex: 2000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    onClick={() => setShowModal(false)}
+                >
+                    <div
+                        style={{
+                            background: '#fffdfa',
+                            borderRadius: 12,
+                            padding: 0,
+                            maxWidth: 600,
+                            width: '90vw',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            position: 'relative',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <img
+                            src={jerseyImage}
+                            alt="Radtrikot groß"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                maxHeight: '80vh',
+                                borderRadius: 12,
+                                display: 'block',
+                            }}
+                        />
+                        <button
+                            onClick={() => setShowModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: 10,
+                                right: 10,
+                                background: '#ffb522',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '0.4em 1em',
+                                fontSize: 18,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
+                            }}
+                        >
+                            Schließen
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
 
 export default function EventRegistration() {
   const { userId, username, isLoggedIn, logout, authToken } = useUser();
@@ -171,6 +246,8 @@ export default function EventRegistration() {
   const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [newsletter, setNewsletter] = useState(false);
   const [totalCost, setTotalCost] = useState(0);
+  // Merke die letzte Auswahl der Trikots, wenn abgewählt
+  const lastJerseyOrdersRef = React.useRef([]);
 
   // Status für Feedback
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -311,7 +388,7 @@ export default function EventRegistration() {
                 </div>
               ) : (
                 <div style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "#64748b" }}>
-                  Bereits einen Account? <a href="/login" style={{ color: "#ffb522" }}>Jetzt einloggen</a>, um deine Daten zu übernehmen.
+                  Bereits einen Account? <a href="/#/login" style={{ color: "#ffb522" }}>Jetzt einloggen</a>, um deine Daten zu übernehmen.
                 </div>
               )}
               {participants.map((p, idx) => (
@@ -335,11 +412,45 @@ export default function EventRegistration() {
             </Card>
 
             <Card>
-              <CardTitle><Shirt /> Extras</CardTitle>
-              <CheckboxLabel>
-                <input type="checkbox" checked={jerseyOrder} onChange={e => { setJerseyOrder(e.target.checked); if (e.target.checked && jerseyOrders.length === 0) addJerseyOrder(); }} />
-                <JerseyInfoDialog />
-              </CheckboxLabel>
+            
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <CardTitle><Shirt /> Extras</CardTitle>
+                  <CheckboxLabel style={{ marginBottom: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={jerseyOrder}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setJerseyOrder(checked);
+                        if (checked) {
+                          // Wiederherstellen der letzten Auswahl, falls vorhanden
+                          if (lastJerseyOrdersRef.current.length > 0) {
+                            setJerseyOrders(lastJerseyOrdersRef.current);
+                          } else if (jerseyOrders.length === 0) {
+                            addJerseyOrder();
+                          }
+                        } else {
+                          // Auswahl merken und leeren
+                          lastJerseyOrdersRef.current = jerseyOrders;
+                          setJerseyOrders([]);
+                        }
+                      }}
+                      id="jersey-order-checkbox"
+                      style={{ marginRight: 8 }}
+                    />
+                    <label htmlFor="jersey-order-checkbox" style={{ margin: 0, cursor: 'pointer' }}>
+                      Exklusives Radtrikot bestellen (69€)
+                    </label>
+                  </CheckboxLabel>
+                  <div style={{ margin: '0.2em 0 0.8em 1.8em' }}>
+                    <JerseyInfoDialog linkOnly={true} />
+                  </div>
+                </div>
+                <div style={{ flex: '0 0 auto', textAlign: 'right', marginTop: '30px' }}>
+                  <JerseyImageModal />
+                </div>
+              </div>
               {jerseyOrder && (
                 <div style={{ marginLeft: 24 }}>
                   {jerseyOrders.map((order, idx) => (

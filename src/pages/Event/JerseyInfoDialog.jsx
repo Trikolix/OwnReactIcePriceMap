@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import jerseyImage from './jersey.png';
 
 const Overlay = styled.div`
   position: fixed;
@@ -102,21 +103,105 @@ const sizeChart = [
   { size: 14, internationaleGroesse: "3XL", konfektionsgroesseHerren: 66, konfektionsgroesseDamen: "", brustumfangCm: "126 -134" },
 ];
 
-export default function JerseyInfoDialog() {
+export default function JerseyInfoDialog({ showImageOnly = false, linkOnly = false }) {
   const [open, setOpen] = useState(false);
-  // Dummy image, replace with real one if available
-  const jerseyImageUrl = "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=600&q=80";
+
+  // Bild als Thumbnail, öffnet Modal bei Klick
+  if (showImageOnly) {
+    return (
+      <JerseyImage
+        src={jerseyImage}
+        alt="Radtrikot"
+        style={{ maxWidth: 120, cursor: 'pointer', marginBottom: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
+        onClick={() => setOpen(true)}
+        title="Bild vergrößern"
+      />
+      // Modal folgt unten
+      // ...
+      // Modal wird unterhalb gerendert, wenn open==true
+      // (siehe unten)
+      // Modal-Rendering folgt nach allen returns
+    );
+  }
+
+  // Nur Link anzeigen (z.B. unterhalb der Checkbox)
+  if (linkOnly) {
+    return (
+      <>
+        <LinkButton type="button" onClick={() => setOpen(true)}>
+          Größentabelle & Infos anzeigen
+        </LinkButton>
+        {open && (
+          <Overlay onClick={() => setOpen(false)}>
+            <Modal onClick={e => e.stopPropagation()}>
+              <ModalHeader>Exklusives Eisdielen Tour Radtrikot</ModalHeader>
+              <ModalContent>
+                <JerseyImage src={jerseyImage} alt="Radtrikot" />
+                <div style={{ marginBottom: 18 }}>
+                  <strong>Größentabelle</strong>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Größe</Th>
+                        <Th>Internationale Größe</Th>
+                        <Th>Konfektionsgröße Herren</Th>
+                        <Th>Konfektionsgröße Damen</Th>
+                        <Th>Brustumfang (cm)</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sizeChart.map(row => (
+                        <tr key={row.size}>
+                          <Td>{row.size}</Td>
+                          <Td>{row.internationaleGroesse}</Td>
+                          <Td>{row.konfektionsgroesseHerren}</Td>
+                          <Td>{row.konfektionsgroesseDamen}</Td>
+                          <Td>{row.brustumfangCm}</Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+                <div>
+                  <strong>Bestell- & Lieferinformationen</strong>
+                  <ul style={{ margin: '0.5em 0 0 1.2em', color: '#6b5b2b', fontSize: '0.98em' }}>
+                    <li>Die Bestellungen werden gesammelt und die Produktion startet ca. 4 Wochen vor der Veranstaltung.</li>
+                    <li>Die Trikots sind spätestens 1 Woche vor dem Event fertig.</li>
+                    <li><strong>Abholung/Lieferung:</strong>
+                      <ul style={{ margin: '0.3em 0 0 1.2em' }}>
+                        <li>Kostenlose Abholung in Chemnitz.</li>
+                        <li>Kostenlose Lieferung im 15km-Umkreis von Chemnitz.</li>
+                        <li>Alternative Ausgabe am Eventtag vor Ort.</li>
+                      </ul>
+                    </li>
+                  </ul>
+                </div>
+              </ModalContent>
+              <ModalFooter>
+                <CloseButton type="button" onClick={() => setOpen(false)}>
+                  Schließen
+                </CloseButton>
+              </ModalFooter>
+            </Modal>
+          </Overlay>
+        )}
+      </>
+    );
+  }
+
+  // Standard: Link wie bisher (zurückkompatibel)
   return (
     <>
       <LinkButton type="button" onClick={() => setOpen(true)}>
-        exklusives Radtrikot bestellen (€69/Stk.)
+        exklusives Radtrikot bestellen (69€)
       </LinkButton>
+      {/* Modal folgt unten */}
       {open && (
         <Overlay onClick={() => setOpen(false)}>
           <Modal onClick={e => e.stopPropagation()}>
             <ModalHeader>Exklusives Eisdielen Tour Radtrikot</ModalHeader>
             <ModalContent>
-              <JerseyImage src={jerseyImageUrl} alt="Radtrikot" />
+              <JerseyImage src={jerseyImage} alt="Radtrikot" />
               <div style={{ marginBottom: 18 }}>
                 <strong>Größentabelle</strong>
                 <Table>
@@ -167,4 +252,7 @@ export default function JerseyInfoDialog() {
       )}
     </>
   );
+
+  // Modal für showImageOnly und linkOnly
+  // (wird außerhalb der returns gerendert, damit Modal immer angezeigt wird, wenn open==true)
 }
