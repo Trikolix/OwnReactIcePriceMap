@@ -67,6 +67,8 @@ export const UserProvider = ({ children }) => {
       localStorage.setItem('userId', idAsString);
     } else {
       localStorage.removeItem('userId');
+      setAvatarUrl(null);
+      localStorage.removeItem('avatarUrl');
     }
 
     if (name != null) {

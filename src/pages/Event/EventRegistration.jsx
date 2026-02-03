@@ -7,6 +7,7 @@ import LiabilityWaiver from "./LiabilityWaiver";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import { useUser } from "../../context/UserContext";
 import jerseyImage from './jersey.png';
+import "../../styles/eventTheme.css";
 
 const ENTRY_FEE = 15;
 const JERSEY_PRICE = 69;
@@ -14,7 +15,7 @@ const TSHIRT_SIZES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", 
 
 const PageWrapper = styled.div`
   font-family: Arial, sans-serif;
-  background: #f8fafc;
+  background: var(--event-bg);
   min-height: 100vh;
 `;
 const MainGrid = styled.div`
@@ -63,7 +64,7 @@ const Button = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #ffb522;
+  background: var(--event-accent);
   color: #fff;
   border: none;
   border-radius: 6px;

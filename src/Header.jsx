@@ -14,6 +14,7 @@ import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { useLocation, useNavigate } from "react-router-dom";
 import { isSpecialTime } from './utils/seasonal';
+import OlympicsRulesModal from './components/OlympicsRulesModal';
 import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
 import headerWide from './header_wide.png';
@@ -29,9 +30,19 @@ const Header = ({ refreshShops }) => {
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showUserOfMonth, setShowUserOfMonth] = useState(false);
+  const [showOlympicsRules, setShowOlympicsRules] = useState(false);
+  const [olympicsPoints, setOlympicsPoints] = useState(null);
+  const [olympicsBreakdown, setOlympicsBreakdown] = useState({});
+  const [isOlympicsPointsLoading, setIsOlympicsPointsLoading] = useState(false);
+  const [olympicsLeaderboard, setOlympicsLeaderboard] = useState([]);
+  const [olympicsLeaderboardFull, setOlympicsLeaderboardFull] = useState([]);
+  const [olympicsUserRank, setOlympicsUserRank] = useState(null);
+  const [isOlympicsLeaderboardLoading, setIsOlympicsLeaderboardLoading] = useState(false);
+  const [isOlympicsLeaderboardExpanded, setIsOlympicsLeaderboardExpanded] = useState(false);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
+  const LEADERBOARD_COLLAPSED_COUNT = 3;
 
   const allowedPhotoChallenges = (userId) => {
     const allowedUsers = [1, 2, 13, 23]; // Liste der erlaubten Nutzer-IDs
@@ -239,12 +250,79 @@ const Header = ({ refreshShops }) => {
     return headerWide;
   };
 
+  const specialTime = isSpecialTime();
+
+  useEffect(() => {
+    if (specialTime !== 'olympics' || !userId) {
+      setOlympicsPoints(null);
+      setOlympicsBreakdown({});
+      return;
+    }
+
+    setIsOlympicsPointsLoading(true);
+    fetch(`${apiUrl}/api/olympics_progress.php?user_id=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const total = Number.isFinite(data?.points?.total) ? data.points.total : 0;
+        setOlympicsPoints(total);
+        setOlympicsBreakdown(data?.points?.breakdown || {});
+        if (data?.new_awards && data.new_awards.length > 0) {
+          setNewAwards(data.new_awards);
+          setShowOverlay(true);
+        }
+      })
+      .catch((err) => {
+        console.error('Fehler beim Laden der Olympia-Punkte:', err);
+        setOlympicsPoints(null);
+        setOlympicsBreakdown({});
+      })
+      .finally(() => {
+        setIsOlympicsPointsLoading(false);
+      });
+  }, [apiUrl, specialTime, userId]);
+
+  useEffect(() => {
+    if (specialTime !== 'olympics' || !showOlympicsRules) {
+      setOlympicsLeaderboard([]);
+      setOlympicsLeaderboardFull([]);
+      setOlympicsUserRank(null);
+      setIsOlympicsLeaderboardExpanded(false);
+      return;
+    }
+
+    setIsOlympicsLeaderboardLoading(true);
+    const userParam = userId ? `?user_id=${userId}` : '';
+    fetch(`${apiUrl}/api/olympics_leaderboard.php${userParam}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const fullLeaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
+        setOlympicsLeaderboardFull(fullLeaderboard);
+        setOlympicsLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
+        setOlympicsUserRank(data?.user_rank || null);
+      })
+      .catch((err) => {
+        console.error('Fehler beim Laden des Olympia-Leaderboards:', err);
+        setOlympicsLeaderboard([]);
+        setOlympicsLeaderboardFull([]);
+        setOlympicsUserRank(null);
+      })
+      .finally(() => {
+        setIsOlympicsLeaderboardLoading(false);
+      });
+  }, [apiUrl, specialTime, showOlympicsRules, userId]);
+
   return (
     <>
       <HeaderContainer>
-        <GewinnspielIcon onClick={() => setShowUserOfMonth(true)}>
-          <img src={userOfTheMonthImg} alt="Gewinnspiel" />
-        </GewinnspielIcon>
+        {specialTime === 'olympics' ? (
+          <GewinnspielIcon onClick={() => setShowOlympicsRules(true)}>
+            <img src="/assets/olympia.png" alt="Eis-Winterolympiade 2026" />
+          </GewinnspielIcon>
+        ) : (
+          <GewinnspielIcon onClick={() => setShowUserOfMonth(true)}>
+            <img src={userOfTheMonthImg} alt="Gewinnspiel" />
+          </GewinnspielIcon>
+        )}
 
         <LogoContainer>
           <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
@@ -329,6 +407,26 @@ const Header = ({ refreshShops }) => {
           </SharedModal>
         </OverlayBackground>
       )}
+
+      <OlympicsRulesModal
+        open={showOlympicsRules}
+        onClose={() => setShowOlympicsRules(false)}
+        points={olympicsPoints}
+        isLoggedIn={isLoggedIn}
+        breakdown={olympicsBreakdown}
+        leaderboard={olympicsLeaderboard}
+        leaderboardFull={olympicsLeaderboardFull}
+        userRank={olympicsUserRank}
+        isLeaderboardLoading={isOlympicsLeaderboardLoading}
+        isLeaderboardFullLoading={isOlympicsLeaderboardLoading}
+        isLeaderboardExpanded={isOlympicsLeaderboardExpanded}
+        onToggleLeaderboard={(expanded) => setIsOlympicsLeaderboardExpanded(expanded)}
+        currentUserId={userId}
+        onLogin={() => {
+          setShowOlympicsRules(false);
+          setShowLoginModal(true);
+        }}
+      />
 
       {showUserOfMonth && currentUser && (
         <OverlayBackground>

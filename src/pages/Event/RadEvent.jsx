@@ -1,8 +1,10 @@
+
 import React from "react";
 import styled from "styled-components";
 import { Calendar, Clock, MapPin, ListChecks, ShieldCheck, Euro, IceCream, Heart } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
+import "../../styles/eventTheme.css";
 
 const Images = {
     "eisstopp-klatt": "https://scontent-dus1-1.xx.fbcdn.net/v/t39.30808-6/474190233_922200500070659_4489896847841982265_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=f2Jieo4NxeIQ7kNvwEymZdf&_nc_oc=Admmhur-SjlFyrrcmgYgxasGpKasH8oB-82NyxGJyndSrwTLkbccPRYGosnixStGvCE&_nc_zt=23&_nc_ht=scontent-dus1-1.xx&_nc_gid=T4To4o42xMMITD_mnihQdA&oh=00_AfpOUAG0Cm3Bi6Z-1FlKDwVpc2Tf3-fRWD3e_O6qPVaITw&oe=6963F59E",
@@ -19,14 +21,14 @@ const ENTRY_FEE = 15;
 
 // Styled Components
 const PageWrapper = styled.div`
-  font-family: Arial, sans-serif;
-  background: #f8fafc;
-  min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background: var(--event-bg);
+    min-height: 100vh;
 `;
 
 const Section = styled.section`
-  padding: 3rem 0;
-  background: ${props => props.bg || "none"};
+    padding: 3rem 0;
+    background: ${props => props.bg || "none"};
 `;
 const Container = styled.div`
   max-width: 1100px;
@@ -40,10 +42,10 @@ const SectionTitle = styled.h2`
   margin-bottom: 0.5em;
 `;
 const SectionDesc = styled.p`
-  text-align: center;
-  color: #64748b;
-  font-size: 1.1rem;
-  margin-bottom: 2em;
+    text-align: center;
+    color: var(--event-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 2em;
 `;
 
 // Card Components
@@ -56,12 +58,13 @@ const CardGrid = styled.div`
   }
 `;
 const Card = styled.div`
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid var(--event-border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 `;
 const CardHeader = styled.div`
   display: flex;
@@ -74,18 +77,18 @@ const CardTitle = styled.div`
   font-weight: bold;
 `;
 const CardContent = styled.div`
-  padding: 0 1rem 1rem 1rem;
-  color: #475569;
+    padding: 0 1rem 1rem 1rem;
+    color: var(--event-text);
 `;
 const CardDescription = styled.div`
-  color: #64748b;
-  font-size: 1rem;
+    color: var(--event-secondary);
+    font-size: 1rem;
 `;
 
 // Hero
 const HeroSection = styled(Section)`
-  background: linear-gradient(90deg, #fff4e0ff 0%, #f8fafc 100%);
-  padding: 4rem 0 2rem 0;
+    background: linear-gradient(90deg, #fff4e0ff 0%, var(--event-bg) 100%);
+    padding: 4rem 0 2rem 0;
 `;
 const HeroTitle = styled.h1`
   font-size: 2.8rem;
@@ -94,9 +97,9 @@ const HeroTitle = styled.h1`
   margin-bottom: 1rem;
 `;
 const HeroSubtitle = styled.p`
-  text-align: center;
-  font-size: 1.3rem;
-  color: #475569;
+    text-align: center;
+    font-size: 1.3rem;
+    color: var(--event-text);
 `;
 
 // Event Details
@@ -106,7 +109,7 @@ const details = [
     { icon: ListChecks, title: "Ablauf", content: "Freier Start, Checkpunkte ansteuern, Eis genießen, Ziel erreichen." },
     { icon: MapPin, title: "Strecke", content: "Eine sportliche Route von ca. 220km, die euch zu den besten Eisdielen der Region führt. Die genaue Route bekommt ihr kurz vor dem Event zugeschickt." },
     { icon: ShieldCheck, title: "Teilnahmebedingungen", content: "Jeder ist willkommen! Helmpflicht für alle Teilnehmer. Teilnahme auf eigene Gefahr. Es gibt keine abgesperrten Straßen und der Straßenverkehrsordnung ist zu beachten." },
-    { icon: Euro, title: "Startgebühren", content: `€${ENTRY_FEE} pro Person. Inklusive einer Kugel Eis an jeder Checkpoint-Eisdiele.` },
+    { icon: Euro, title: "Startgebühren", content: `${ENTRY_FEE}€ pro Person. Inklusive einer Kugel Eis an jeder Checkpoint-Eisdiele.` },
 ];
 
 // Ice Cream Parlors
@@ -137,9 +140,9 @@ function Hero() {
     return (
         <HeroSection>
             <Container>
-                <HeroTitle>Eisdielen Tour</HeroTitle>
+                <HeroTitle>Eis-Tour</HeroTitle>
                 <HeroSubtitle>
-                    Die süßeste Versuchung, seit es Fahrräder gibt.
+                    Dicke Gänge, Große Kugeln.
                 </HeroSubtitle>
             </Container>
         </HeroSection>
@@ -148,7 +151,7 @@ function Hero() {
 
 function EventDetails() {
     return (
-        <Section bg="#f1f5f9">
+        <Section bg="var(--event-bg)">
             <Container>
                 <SectionTitle>Ausschreibung & Details</SectionTitle>
                 <SectionDesc>Alle wichtigen Informationen auf einen Blick.</SectionDesc>
@@ -156,7 +159,7 @@ function EventDetails() {
                     {details.map((item) => (
                         <Card key={item.title}>
                             <CardHeader>
-                                <item.icon size={32} color="#ffb522" />
+                                <item.icon size={32} color="var(--event-accent)" />
                                 <CardTitle>{item.title}</CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -187,7 +190,7 @@ function IceCreamParlors() {
                                 />
                             </div>
                             <CardHeader>
-                                <IceCream size={24} color="#ffb522" />
+                                <IceCream size={24} color="var(--event-accent)" />
                                 <CardTitle>{parlor.name}</CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -203,7 +206,7 @@ function IceCreamParlors() {
 
 function CharityInfo() {
     return (
-        <Section bg="#f1f5f9">
+        <Section bg="var(--event-bg)">
             <Container>
                 <CharityGrid>
                     <div className="charity-image">
@@ -221,7 +224,7 @@ function CharityInfo() {
                         <p style={{ color: "#64748b", marginBottom: "1.5em", textAlign: "center" }}>
                             Mit Ihrer Teilnahme unterstützen Sie nicht nur ein tolles Event, sondern helfen auch Familien in schwierigen Zeiten. Der Verein bietet psychosoziale Betreuung, finanzielle Unterstützung und organisiert Freizeitaktivitäten, um den Kindern und ihren Familien Momente der Freude zu schenken.
                             <br /><br />
-                            <Button href="/#/event-registration" style={{ border: "1px solid #ffb522", background: "#fff", color: "#ffb522" }}>
+                            <Button href="/#/event-registration" style={{ border: "1px solid var(--event-accent)", background: "#fff", color: "var(--event-accent)" }}>
                                 <Heart size={18} style={{ marginRight: 8 }} /> Spenden & Teilnehmen
                             </Button>
                         </p>

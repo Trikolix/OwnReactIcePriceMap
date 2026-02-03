@@ -55,7 +55,7 @@ export default function Header() {
       <HeaderInner>
         <Brand href="/#/rad-event">
           <Bike size={24} color="#ffb522" />
-          <BrandText>Eisdielen Tour</BrandText>
+          <BrandText>Eis-Tour</BrandText>
         </Brand>
         <Nav>
           <Button href="/#/event-registration">Jetzt Anmelden</Button>
