@@ -1,0 +1,11 @@
+:root {
+  --event-primary: #208f23;
+  --event-secondary: #333333;
+  --event-accent: #ff9800;
+  --event-bg: #f5f5f5;
+  --event-text: #222;
+  --event-border: #ddd;
+}
+
+/* Beispiel: 
+Farbe ändern? Einfach hier anpassen! */
