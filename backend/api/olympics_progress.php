@@ -26,6 +26,7 @@ try {
         'routes' => 0,
         'secret_location' => 0,
         'challenges_completed' => 0,
+        'referred_users' => 0,
     ];
 
     $counts = [
@@ -38,7 +39,27 @@ try {
         'secret_location' => 0,
         'challenges_completed' => 0,
         'login_days' => 0,
+        'referred_users_registered' => 0,
+        'referred_users_checked_in' => 0,
     ];
+    // XP für geworbene Nutzer: 5 XP für Registrierung, 60 XP für ersten Check-in
+    $stmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM nutzer WHERE invited_by = :user_id AND is_verified = 1 AND erstellt_am BETWEEN :start AND :end"
+    );
+    $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
+    $counts['referred_users_registered'] = (int)$stmt->fetchColumn();
+    $referredXp = $counts['referred_users_registered'] * 5;
+
+    $stmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM nutzer n WHERE n.invited_by = :user_id AND n.is_verified = 1 AND EXISTS (SELECT 1 FROM checkins c WHERE c.nutzer_id = n.id AND c.datum BETWEEN :start AND :end) AND n.erstellt_am BETWEEN :start AND :end"
+    );
+    $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
+    $counts['referred_users_checked_in'] = (int)$stmt->fetchColumn();
+    $referredXp += $counts['referred_users_checked_in'] * 60;
+
+    if ($referredXp > 0) {
+        $points['referred_users'] = $referredXp;
+    }
 
     $stmt = $pdo->prepare(
         "SELECT 1 FROM nutzer WHERE id = :user_id AND last_active_at BETWEEN :start AND :end LIMIT 1"
