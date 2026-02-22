@@ -1,4 +1,19 @@
-﻿import { useState } from 'react';
+﻿// Info texts for XP actions (edit these for custom info)
+const POINT_INFOS = {
+  login_active: 'Du erhälst einmalig 5 XP für das öffnen und einloggen in die App.',
+  login_days: 'Für jeden Tag im Aktionszeitraum an dem du die App öffnest erhälst du 2 XP.',
+  profile_image: 'Wenn du ein Profilbild in deinem Account hinterlegt hast, erhältst du 5 XP.',
+  checkins: 'Für jeden Checkin im Aktionszeitraum erhältst du 10 XP.',
+  prices: 'Für jeden Preis, den du im Aktionszeitraum gemeldet hast, erhältst du 5 XP.',
+  reviews: 'Für jede Bewertung, die du im Aktionszeitraum abgegeben hast, erhältst du 10 XP.',
+  comments: 'Wenn du einen Kommentar im Aktionszeitraum verfasst hast, erhältst du 5 XP.',
+  new_shops: 'Für jede neue Eisdiele, die du im Aktionszeitraum eingetragen hast, erhältst du 15 XP.',
+  routes: 'Für jede neue Route, die du im Aktionszeitraum eingetragen hast, erhältst du 20 XP.',
+  secret_location: 'Wenn du eine Olympische Spielstätte gefunden hast, erhältst du 10 XP.',
+  challenges_completed: 'Für jede Challenge, die du im Aktionszeitraum abgeschlossen hast, erhältst du 50 XP.',
+  referred_users: 'Für jeden geworbenen Nutzer, der sich registriert hat, erhältst du 5 XP. Für jeden geworbenen Nutzer, der seinen ersten Check-in absolviert hat, erhältst du 60 XP.',
+};
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 
@@ -43,6 +58,7 @@ const POINT_LABELS = {
   routes: 'Neue Routen eintragen',
   secret_location: 'Olympische Spielstätte gefunden',
   challenges_completed: 'Challenges abschließen',
+  referred_users: 'Geworbene Nutzer',
 };
 
 const POINT_REWARDS = {
@@ -57,6 +73,7 @@ const POINT_REWARDS = {
   routes: '20 XP',
   secret_location: '10 XP',
   challenges_completed: '50 XP',
+  referred_users: '60 XP',
 };
 
 const getNextTier = (points) => {
@@ -81,9 +98,25 @@ const OlympicsRulesModal = ({
   isLeaderboardLoading = false,
   isLeaderboardFullLoading = false,
   isLeaderboardExpanded = false,
-  onToggleLeaderboard = () => {},
+  onToggleLeaderboard = () => { },
   currentUserId = null,
 }) => {
+  // ...existing code...
+  // Info popover state
+  const [infoKey, setInfoKey] = useState(null);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  useEffect(() => {
+    if (!isMobile || !infoKey) return;
+    const handleClick = (e) => {
+      if (!document.querySelector('.info-popover')?.contains(e.target)) {
+        setInfoKey(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [isMobile, infoKey]);
   const safePoints = Number.isFinite(points)
     ? Math.max(0, Math.min(points, PROGRESS_MAX))
     : 0;
@@ -100,6 +133,14 @@ const OlympicsRulesModal = ({
       label: POINT_LABELS[key] || key,
       reward: POINT_REWARDS[key] || 'XP',
     }));
+  // Info popover state
+  // (already declared above)
+  const handleInfoOpen = (key) => {
+    setInfoKey(key);
+  };
+  const handleInfoClose = () => {
+    setInfoKey(null);
+  };
   const activeLeaderboard = (isLeaderboardExpanded && leaderboardFull.length > 0)
     ? leaderboardFull
     : leaderboard;
@@ -179,7 +220,7 @@ const OlympicsRulesModal = ({
               <LeaderboardHint>Lade Rangliste…</LeaderboardHint>
             ) : (
               <>
-              {userRank && (
+                {userRank && (
                   <LeaderboardOwn>
                     <span>Dein Rang</span>
                     <strong>#{userRank.rank}</strong>
@@ -221,9 +262,22 @@ const OlympicsRulesModal = ({
                 <ActionSummaryTitle>Erhaltene Punkte</ActionSummaryTitle>
                 <ActionList>
                   {earnedEntries.map((entry) => (
-                    <ActionItem key={entry.key} $state="earned">
+                    <ActionItem
+                      key={entry.key}
+                      $state="earned"
+                      onMouseEnter={!isMobile ? () => handleInfoOpen(entry.key) : undefined}
+                      onMouseLeave={!isMobile ? handleInfoClose : undefined}
+                      onClick={isMobile ? () => handleInfoOpen(entry.key) : undefined}
+                      style={{ position: 'relative' }}
+                    >
                       <span>{POINT_LABELS[entry.key] || entry.key}</span>
                       <ActionPoints $state="earned">+{entry.value} XP</ActionPoints>
+                      {infoKey === entry.key && (
+                        <InfoPopover className="info-popover" onClick={isMobile ? handleInfoClose : undefined}>
+                          <strong>Info:</strong> <br />
+                          <span>{POINT_INFOS[entry.key] || 'Noch kein Info-Text hinterlegt.'}</span>
+                        </InfoPopover>
+                      )}
                     </ActionItem>
                   ))}
                 </ActionList>
@@ -234,9 +288,22 @@ const OlympicsRulesModal = ({
                 <ActionSummaryTitle>{isResultsOnly ? 'Im Aktionszeitraum möglich' : 'Noch möglich'}</ActionSummaryTitle>
                 <ActionList>
                   {remainingEntries.map((entry) => (
-                    <ActionItem key={entry.key} $state="pending">
+                    <ActionItem
+                      key={entry.key}
+                      $state="pending"
+                      onMouseEnter={!isMobile ? () => handleInfoOpen(entry.key) : undefined}
+                      onMouseLeave={!isMobile ? handleInfoClose : undefined}
+                      onClick={isMobile ? () => handleInfoOpen(entry.key) : undefined}
+                      style={{ position: 'relative' }}
+                    >
                       <span>{entry.label}</span>
                       <ActionPoints $state="pending">{entry.reward}</ActionPoints>
+                      {infoKey === entry.key && (
+                        <InfoPopover className="info-popover" onClick={isMobile ? handleInfoClose : undefined}>
+                          <strong>Info:</strong> <br />
+                          <span>{POINT_INFOS[entry.key] || 'Noch kein Info-Text hinterlegt.'}</span>
+                        </InfoPopover>
+                      )}
                     </ActionItem>
                   ))}
                 </ActionList>
@@ -256,13 +323,31 @@ const OlympicsRulesModal = ({
             </LoginButton>
           </div>
         )}
-        
+
       </Overlay>
     </OverlayBackground>
   );
 };
 
 export default OlympicsRulesModal;
+
+const InfoPopover = styled.div`
+            position: absolute;
+            top: 110%;
+            left: 0;
+            z-index: 10;
+            min-width: 220px;
+            max-width: 320px;
+            background: #fffbe9;
+            color: #3a2a00;
+            border: 1px solid #ffe2a0;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+          `;
 
 const OverlayBackground = styled.div`
   position: fixed;
