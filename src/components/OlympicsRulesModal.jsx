@@ -70,6 +70,7 @@ const getNextTier = (points) => {
 const OlympicsRulesModal = ({
   open,
   onClose,
+  isResultsOnly = false,
   points,
   isLoggedIn,
   onLogin,
@@ -113,8 +114,17 @@ const OlympicsRulesModal = ({
         <CloseButton onClick={onClose}>&times;</CloseButton>
         <h2>❄️🍦 Eis-Winterolympiade 2026</h2>
         <ProgressSection>
-          <p>Vom <strong>6.–22. Februar</strong> wird die Ice-App olympisch!</p>
-            <p>Sammle Punkte durch einfache Aktionen und sichere dir exklusive Winter-Olympia-Awards.</p>
+          {isResultsOnly ? (
+            <>
+              <p><strong>Die Aktion ist beendet.</strong></p>
+              <p>Hier siehst du die Auswertung der Eis-Winterolympiade vom <strong>6.–22. Februar 2026</strong>.</p>
+            </>
+          ) : (
+            <>
+              <p>Vom <strong>6.–22. Februar</strong> wird die Ice-App olympisch!</p>
+              <p>Sammle Punkte durch einfache Aktionen und sichere dir exklusive Winter-Olympia-Awards.</p>
+            </>
+          )}
           <ProgressLabel>Fortschritt</ProgressLabel>
           <ProgressBar>
             <ProgressFill style={{ width: `${safePoints}%` }} />
@@ -153,7 +163,9 @@ const OlympicsRulesModal = ({
           {Number.isFinite(points) && (
             <div>
               <p>Deine erreichten Punkte: <ActionPoints $state="earned">{safePoints} XP</ActionPoints><br/>
-              {nextTier ? (
+              {isResultsOnly ? (
+                <>Finale Auswertung nach Aktionsende.</>
+              ) : nextTier ? (
                 <>Noch {pointsToNextTier} Punkte bis zur nächsten Stufe.</>
               ) : (
                 <>Maximale Stufe erreicht</>
@@ -219,7 +231,7 @@ const OlympicsRulesModal = ({
             )}
             {remainingEntries.length > 0 && (
               <>
-                <ActionSummaryTitle>Noch möglich</ActionSummaryTitle>
+                <ActionSummaryTitle>{isResultsOnly ? 'Im Aktionszeitraum möglich' : 'Noch möglich'}</ActionSummaryTitle>
                 <ActionList>
                   {remainingEntries.map((entry) => (
                     <ActionItem key={entry.key} $state="pending">
@@ -234,7 +246,11 @@ const OlympicsRulesModal = ({
         </ProgressSection>
         {!isLoggedIn && (
           <div>
-            <p>Bitte logge dich ein oder registriere dich, um an der Challenge teilzunehmen.</p>
+            <p>
+              {isResultsOnly
+                ? 'Bitte logge dich ein oder registriere dich, um deine persönliche Olympia-Auswertung zu sehen.'
+                : 'Bitte logge dich ein oder registriere dich, um an der Challenge teilzunehmen.'}
+            </p>
             <LoginButton type="button" onClick={onLogin}>
               Login / Registrieren
             </LoginButton>

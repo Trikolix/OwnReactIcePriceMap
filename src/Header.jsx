@@ -251,6 +251,8 @@ const Header = ({ refreshShops }) => {
   };
 
   const specialTime = isSpecialTime();
+  const isOlympicsResultsOnly =
+    specialTime === 'olympics' && new Date() >= new Date(2026, 1, 23);
 
   useEffect(() => {
     if (specialTime !== 'olympics' || !userId) {
@@ -411,6 +413,7 @@ const Header = ({ refreshShops }) => {
       <OlympicsRulesModal
         open={showOlympicsRules}
         onClose={() => setShowOlympicsRules(false)}
+        isResultsOnly={isOlympicsResultsOnly}
         points={olympicsPoints}
         isLoggedIn={isLoggedIn}
         breakdown={olympicsBreakdown}

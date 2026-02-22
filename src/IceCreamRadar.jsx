@@ -376,6 +376,10 @@ const IceCreamRadar = () => {
   }, [openFilterMode, openFilterDateTime]);
   const { shopId, token } = useParams();
   const navigate = useNavigate();
+  const getShopCacheKey = useCallback(
+    (queryString) => `iceCreamShopsCache::user:${userId ?? 'guest'}::filter:${queryString || 'all'}`,
+    [userId]
+  );
 
   useEffect(() => {
     if (location.pathname === "/login") {
@@ -429,30 +433,54 @@ const IceCreamRadar = () => {
     setPlaceMatches([]);
   }, [searchQuery, iceCreamShops]);
 
-  const fetchIceCreamShops = async () => {
+  const loadIceCreamShops = useCallback(async () => {
+    const cacheKey = getShopCacheKey(openFilterQueryString);
+    const fallbackCacheKey = getShopCacheKey('');
+    const parseCachedShops = (key) => {
+      const cachedValue = localStorage.getItem(key);
+      if (!cachedValue) {
+        return null;
+      }
+      try {
+        const parsed = JSON.parse(cachedValue);
+        return Array.isArray(parsed) ? parsed : null;
+      } catch (parseError) {
+        console.warn('Ungültiger Eisdielen-Cache wurde verworfen:', parseError);
+        localStorage.removeItem(key);
+        return null;
+      }
+    };
+
+    if (!navigator.onLine) {
+      const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
+      if (cachedShops) {
+        setIceCreamShops(cachedShops);
+      }
+      return;
+    }
+
     try {
-      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : "";
+      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : '';
       const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
       const response = await fetch(query);
       const data = await response.json();
       setIceCreamShops(data);
+
+      if (Array.isArray(data)) {
+        // Immer den Cache für den aktuellen Query-Stand komplett ersetzen.
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      }
     } catch (error) {
       console.error('Fehler beim Abrufen der Eisdielen:', error);
+      const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
+      if (cachedShops) {
+        setIceCreamShops(cachedShops);
+      }
     }
-  };
+  }, [apiUrl, userId, openFilterQueryString, getShopCacheKey]);
 
-  const refreshShops = async () => {
-
-    try {
-      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : "";
-      const query = `${apiUrl}/get_all_eisdielen.php?&userId=${userId}${querySuffix}`;
-      const response = await fetch(query);
-      const data = await response.json();
-      setIceCreamShops(data);
-    } catch (error) {
-      console.error('Fehler beim Abrufen der Eisdielen:', error);
-    }
-  };
+  const fetchIceCreamShops = loadIceCreamShops;
+  const refreshShops = loadIceCreamShops;
 
   const fetchShopDetails = async (shop) => {
     try {
