@@ -62,9 +62,9 @@ try {
     }
 
     $stmt = $pdo->prepare(
-        "SELECT 1 FROM nutzer WHERE id = :user_id AND last_active_at BETWEEN :start AND :end LIMIT 1"
+        "SELECT 1 FROM olympics_user_progress WHERE user_id = :user_id AND total_xp > 0"
     );
-    $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
+    $stmt->execute(['user_id' => $userId]);
     if ($stmt->fetchColumn()) {
         $points['login_active'] = 5;
     }
@@ -201,16 +201,8 @@ try {
     }
 
     echo json_encode([
-        'user_id' => $userId,
-        'period' => [
-            'start' => $periodStart,
-            'end' => $periodEnd,
-        ],
-        'points' => [
-            'total' => $totalPoints,
-            'breakdown' => $points,
-        ],
-        'counts' => $counts,
+        'total_xp' => $totalPoints,
+        'breakdown' => $points,
         'new_awards' => $newAwards,
     ]);
 } catch (PDOException $e) {

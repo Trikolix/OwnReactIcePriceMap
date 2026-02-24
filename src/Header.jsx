@@ -15,6 +15,7 @@ import NewAwards from './components/NewAwards';
 import { useLocation, useNavigate } from "react-router-dom";
 import { isSpecialTime } from './utils/seasonal';
 import OlympicsRulesModal from './components/OlympicsRulesModal';
+import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
 import headerWide from './header_wide.png';
@@ -30,6 +31,7 @@ const Header = ({ refreshShops }) => {
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showUserOfMonth, setShowUserOfMonth] = useState(false);
+  const [showActionsOverview, setShowActionsOverview] = useState(false);
   const [showOlympicsRules, setShowOlympicsRules] = useState(false);
   const [olympicsPoints, setOlympicsPoints] = useState(null);
   const [olympicsBreakdown, setOlympicsBreakdown] = useState({});
@@ -265,9 +267,9 @@ const Header = ({ refreshShops }) => {
     fetch(`${apiUrl}/api/olympics_progress.php?user_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
-        const total = Number.isFinite(data?.points?.total) ? data.points.total : 0;
+        const total = Number.isFinite(data?.total_xp) ? data.total_xp : 0;
         setOlympicsPoints(total);
-        setOlympicsBreakdown(data?.points?.breakdown || {});
+        setOlympicsBreakdown(data?.breakdown || {});
         if (data?.new_awards && data.new_awards.length > 0) {
           setNewAwards(data.new_awards);
           setShowOverlay(true);
@@ -316,15 +318,11 @@ const Header = ({ refreshShops }) => {
   return (
     <>
       <HeaderContainer>
-        {specialTime === 'olympics' ? (
-          <GewinnspielIcon onClick={() => setShowOlympicsRules(true)}>
-            <img src="/assets/olympia.png" alt="Eis-Winterolympiade 2026" />
+        <PromoIconsContainer>
+          <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
+            <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
           </GewinnspielIcon>
-        ) : (
-          <GewinnspielIcon onClick={() => setShowUserOfMonth(true)}>
-            <img src={userOfTheMonthImg} alt="Gewinnspiel" />
-          </GewinnspielIcon>
-        )}
+        </PromoIconsContainer>
 
         <LogoContainer>
           <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
@@ -429,6 +427,10 @@ const Header = ({ refreshShops }) => {
           setShowOlympicsRules(false);
           setShowLoginModal(true);
         }}
+      />
+      <ActionsOverviewModal
+        open={showActionsOverview}
+        onClose={() => setShowActionsOverview(false)}
       />
 
       {showUserOfMonth && currentUser && (
@@ -619,7 +621,7 @@ const ButtonWrapper = styled.div`
 
 const GewinnspielIcon = styled.div`
   cursor: pointer;
-  margin-right: 10px;
+  margin-right: 8px;
 
   img {
     width: 80px;
@@ -637,6 +639,11 @@ const GewinnspielIcon = styled.div`
       height: 50px;
     }
   }
+`;
+
+const PromoIconsContainer = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
 const UserLink = styled(Link)`
