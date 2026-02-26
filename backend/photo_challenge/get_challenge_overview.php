@@ -23,9 +23,11 @@ try {
     if (!$challenge) {
         throw new RuntimeException('Challenge existiert nicht.');
     }
-
-    $challenge['submission_deadline'] = $challenge['submission_deadline'] ? date(DATE_ATOM, strtotime($challenge['submission_deadline'])) : null;
-    $challenge['submission_limit_per_user'] = $challenge['submission_limit_per_user'] !== null ? (int)$challenge['submission_limit_per_user'] : null;
+    $submissionEditableForUser = isPhotoChallengeSubmissionEditable($challenge);
+    $effectiveChallengeStatus = getPhotoChallengeEffectiveStatus($challenge);
+    $challengeForResponse = enrichPhotoChallengeForApi($challenge);
+    $challengeForResponse['submission_deadline'] = $challenge['submission_deadline'] ? date(DATE_ATOM, strtotime($challenge['submission_deadline'])) : null;
+    $challengeForResponse['submission_limit_per_user'] = $challenge['submission_limit_per_user'] !== null ? (int)$challenge['submission_limit_per_user'] : null;
 
     $stmt = $pdo->prepare("
         SELECT g.id AS group_id,
@@ -278,6 +280,7 @@ try {
             'viewer_id' => $viewerId,
         ]);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $isPending = ($row['status'] ?? '') === 'pending';
             $userSubmissions[] = [
                 'id' => (int)$row['id'],
                 'image_id' => (int)$row['image_id'],
@@ -286,6 +289,8 @@ try {
                 'url' => $row['url'],
                 'beschreibung' => $row['beschreibung'],
                 'created_at' => $row['created_at'],
+                'can_edit' => $submissionEditableForUser && $isPending,
+                'can_delete' => $submissionEditableForUser && $isPending,
             ];
         }
     }
@@ -337,7 +342,14 @@ try {
 
     $response = [
         'status' => 'success',
-        'challenge' => $challenge,
+        'challenge' => $challengeForResponse,
+        'challenge_flags' => [
+            'submission_is_open_effective' => $effectiveChallengeStatus === 'submission_open',
+            'submission_is_closed_effective' => $effectiveChallengeStatus === 'submission_closed',
+            'submission_is_editable_for_user' => $submissionEditableForUser,
+            'is_planning_phase' => $effectiveChallengeStatus === 'submission_closed',
+            'show_voting_phases' => in_array($effectiveChallengeStatus, ['group_running', 'ko_running', 'finished'], true),
+        ],
         'groups' => $groups,
         'ko_matches' => $koMatches,
         'winner' => $winnerPayload,

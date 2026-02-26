@@ -23,6 +23,26 @@ requirePhotoChallengeAdmin($userId);
 try {
     ensurePhotoChallengeSchema($pdo);
 
+    $stmt = $pdo->prepare("SELECT status FROM photo_challenges WHERE id = :id");
+    $stmt->execute(['id' => $challengeId]);
+    $challengeStatus = $stmt->fetchColumn();
+    if ($challengeStatus === false) {
+        http_response_code(404);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Challenge existiert nicht.',
+        ]);
+        exit;
+    }
+    if (in_array($challengeStatus, ['group_running', 'ko_running', 'finished'], true)) {
+        http_response_code(422);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Bilder können nach Start der Gruppenphase nicht mehr entfernt werden.',
+        ]);
+        exit;
+    }
+
     $stmt = $pdo->prepare("
         DELETE FROM photo_challenge_images
         WHERE challenge_id = :challenge_id AND image_id = :image_id

@@ -23,7 +23,7 @@ requirePhotoChallengeAdmin($userId);
 try {
     ensurePhotoChallengeSchema($pdo);
     $stmt = $pdo->prepare("
-        SELECT s.*, c.status AS challenge_status
+        SELECT s.*, c.status AS challenge_status, c.submission_deadline
         FROM photo_challenge_submissions s
         JOIN photo_challenges c ON c.id = s.challenge_id
         WHERE s.id = :id
@@ -34,6 +34,13 @@ try {
     $submission = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$submission) {
         throw new RuntimeException('Einreichung nicht gefunden.');
+    }
+    $challengeForPhase = [
+        'status' => $submission['challenge_status'] ?? 'draft',
+        'submission_deadline' => $submission['submission_deadline'] ?? null,
+    ];
+    if (getPhotoChallengeEffectiveStatus($challengeForPhase) !== 'submission_closed') {
+        throw new RuntimeException('Einreichungen können erst nach Ende der Einreichphase final geprüft werden.');
     }
     if ($submission['status'] !== 'pending') {
         throw new RuntimeException('Einreichung wurde bereits bewertet.');
@@ -92,4 +99,3 @@ try {
         'details' => $e->getMessage(),
     ]);
 }
-

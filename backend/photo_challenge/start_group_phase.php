@@ -25,7 +25,14 @@ try {
     if (!$challenge) {
         throw new RuntimeException('Challenge existiert nicht.');
     }
-    if (!in_array($challenge['status'], ['draft', 'submission_open'], true)) {
+    $effectiveStatus = getPhotoChallengeEffectiveStatus($challenge);
+    if ($effectiveStatus === 'submission_closed' && ($challenge['status'] ?? '') !== 'submission_closed') {
+        throw new RuntimeException('Bitte schlieÃŸe zuerst die Einreichphase im Admin-Panel, bevor du die Gruppenphase startest.');
+    }
+    if (($challenge['status'] ?? '') !== 'submission_closed') {
+        throw new RuntimeException('Die Gruppenphase kann nur nach abgeschlossener Einreichphase (Status "submission_closed") gestartet werden.');
+    }
+    if (false && !in_array($challenge['status'], ['draft', 'submission_open'], true)) {
         throw new RuntimeException('Die Gruppenphase kann nur bei Challenges im Status "draft" oder während der Einreichphase gestartet werden.');
     }
 

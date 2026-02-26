@@ -41,8 +41,26 @@ if ($title === '') {
     exit;
 }
 
-if (!in_array($status, ['draft', 'active', 'finished', 'submission_open', 'group_running', 'ko_running'], true)) {
+if (!in_array($status, ['draft', 'active', 'finished', 'submission_open', 'submission_closed', 'group_running', 'ko_running'], true)) {
     $status = 'draft';
+}
+
+if ($status === 'submission_open' && !$submissionDeadline) {
+    http_response_code(422);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Bitte setze eine Einreichdeadline, wenn die Challenge direkt in der Einreichphase startet.',
+    ]);
+    exit;
+}
+
+if ($startAt && $submissionDeadline && strtotime($submissionDeadline) <= strtotime($startAt)) {
+    http_response_code(422);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Die Einreichdeadline muss nach dem Startzeitpunkt liegen.',
+    ]);
+    exit;
 }
 
 if ($groupSize < 2) {
@@ -117,6 +135,9 @@ try {
     $stmt = $pdo->prepare("SELECT * FROM photo_challenges WHERE id = :id");
     $stmt->execute(['id' => $challengeId]);
     $challenge = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($challenge) {
+        $challenge = enrichPhotoChallengeForApi($challenge);
+    }
 
     echo json_encode([
         'status' => 'success',

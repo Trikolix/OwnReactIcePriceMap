@@ -20,10 +20,16 @@ const createScheduleSlot = () => ({
   groups: '2',
 });
 
-const createDefaultForm = () => ({
+const createDefaultCreateForm = () => ({
   title: '',
   description: '',
   status: 'draft',
+  startAt: '',
+  submissionDeadline: '',
+  submissionLimitPerUser: 3,
+});
+
+const createDefaultPlanningForm = () => ({
   plannedGroupCount: 4,
   groupSize: 4,
   groupAdvancers: 2,
@@ -50,6 +56,48 @@ const formatDateTimeLocal = (value) => {
   )}:${pad(date.getMinutes())}`;
 };
 
+const parseGroupScheduleSlots = (rawSchedule) => {
+  if (!rawSchedule) return [createScheduleSlot()];
+  let schedule = rawSchedule;
+  if (typeof schedule === 'string') {
+    try {
+      schedule = JSON.parse(schedule);
+    } catch {
+      return [createScheduleSlot()];
+    }
+  }
+  if (!Array.isArray(schedule) || schedule.length === 0) {
+    return [createScheduleSlot()];
+  }
+  return schedule.map((slot, index) => ({
+    id: `loaded-slot-${Date.now()}-${index}`,
+    startAt: formatDateTimeLocal(slot.start_at || slot.startAt || ''),
+    durationDays: String(slot.duration_days ?? slot.durationDays ?? 14),
+    groups: String(slot.groups ?? slot.group_count ?? slot.groupCount ?? 1),
+  }));
+};
+
+const buildPlanningFormFromChallenge = (challenge) => {
+  if (!challenge) return createDefaultPlanningForm();
+  const groupSize = Number(challenge.group_size) || 4;
+  const imageCount = Number(challenge.image_count) || 0;
+  const plannedGroupCount = groupSize > 0 ? Math.max(1, Math.ceil(imageCount / groupSize)) : 1;
+  return {
+    plannedGroupCount,
+    groupSize,
+    groupAdvancers: Number(challenge.group_advancers ?? 2) || 2,
+    luckyLoserSlots: Number(challenge.lucky_loser_slots ?? 0) || 0,
+    koBracketSize: challenge.ko_bracket_size ? Number(challenge.ko_bracket_size) : '',
+    startAt: formatDateTimeLocal(challenge.start_at),
+    submissionDeadline: formatDateTimeLocal(challenge.submission_deadline),
+    submissionLimitPerUser:
+      challenge.submission_limit_per_user !== null && challenge.submission_limit_per_user !== undefined
+        ? Number(challenge.submission_limit_per_user)
+        : 3,
+    groupSchedule: parseGroupScheduleSlots(challenge.group_schedule),
+  };
+};
+
 function PhotoChallengeAdmin() {
   const { userId, isLoggedIn } = useUser();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -60,12 +108,16 @@ function PhotoChallengeAdmin() {
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
   const [challengeImages, setChallengeImages] = useState([]);
   const [challengeImagesLoading, setChallengeImagesLoading] = useState(false);
-  const [formState, setFormState] = useState(() => createDefaultForm());
+  const [createFormState, setCreateFormState] = useState(() => createDefaultCreateForm());
+  const [formState, setFormState] = useState(() => createDefaultPlanningForm());
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [planningSaveLoading, setPlanningSaveLoading] = useState(false);
+  const [planningWizardStep, setPlanningWizardStep] = useState('submission');
   const [feedback, setFeedback] = useState(null);
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [groupActionLoading, setGroupActionLoading] = useState(false);
+  const [closeSubmissionLoading, setCloseSubmissionLoading] = useState(false);
   const [koActionLoading, setKoActionLoading] = useState(false);
   const [koAdvanceLoading, setKoAdvanceLoading] = useState(false);
   const [submissions, setSubmissions] = useState([]);
@@ -84,6 +136,7 @@ function PhotoChallengeAdmin() {
     active: 'Aktiv',
     finished: 'Abgeschlossen',
     submission_open: 'Einreichphase',
+    submission_closed: 'Planung / Auswahl',
     group_running: 'Gruppenphase',
     ko_running: 'KO-Phase',
   };
@@ -93,6 +146,28 @@ function PhotoChallengeAdmin() {
     [challenges, selectedChallengeId]
   );
   const challengeConfig = overview?.challenge || selectedChallenge || null;
+  const challengeStatus = challengeConfig?.status || null;
+  const challengeRawStatus = challengeConfig?.status_raw || challengeConfig?.status || null;
+  const isPlanningPhase = challengeStatus === 'submission_closed';
+  const canEditChallengeImagePool = ['draft', 'submission_open', 'submission_closed'].includes(challengeStatus);
+  const submissionDeadlinePassed = Boolean(challengeConfig?.submission_deadline_passed);
+  const canCloseSubmissionPhase =
+    challengeRawStatus === 'submission_open' && (challengeConfig?.submission_deadline ? submissionDeadlinePassed : true);
+  const canReopenSubmissionPhase = ['draft', 'submission_closed'].includes(challengeRawStatus);
+
+  useEffect(() => {
+    if (!challengeConfig) return;
+    setFormState(buildPlanningFormFromChallenge(challengeConfig));
+    if (challengeStatus === 'submission_open') {
+      setPlanningWizardStep('submission');
+    } else if (challengeStatus === 'submission_closed') {
+      setPlanningWizardStep('config');
+    } else if (challengeStatus === 'group_running') {
+      setPlanningWizardStep('group');
+    } else if (challengeStatus === 'ko_running' || challengeStatus === 'finished') {
+      setPlanningWizardStep('ko');
+    }
+  }, [challengeConfig?.id, challengeStatus]);
 
   const derivedPlan = useMemo(() => {
     const plannedGroups = Math.max(0, Number(formState.plannedGroupCount) || 0);
@@ -119,6 +194,16 @@ function PhotoChallengeAdmin() {
       needsExpansion: nextPower > koParticipants,
     };
   }, [formState.plannedGroupCount, formState.groupSize, formState.groupAdvancers, formState.luckyLoserSlots]);
+
+  const submissionStats = useMemo(() => {
+    const stats = { total: submissions.length, pending: 0, accepted: 0, rejected: 0 };
+    submissions.forEach((submission) => {
+      if (submission.status === 'accepted') stats.accepted++;
+      else if (submission.status === 'rejected') stats.rejected++;
+      else stats.pending++;
+    });
+    return stats;
+  }, [submissions]);
 
   const getGroupTimeDraft = useCallback(
     (groupId) => {
@@ -256,6 +341,14 @@ function PhotoChallengeAdmin() {
     }
   }, [isAdmin, selectedChallengeId, loadChallengeImages, loadChallengeOverview, loadSubmissions]);
 
+  const handleCreateFormChange = (field) => (event) => {
+    let { value } = event.target;
+    if (field === 'submissionLimitPerUser') {
+      value = Number(value);
+    }
+    setCreateFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleCreateChallenge = async (event) => {
     event.preventDefault();
     if (!apiUrl || !isAdmin) return;
@@ -263,41 +356,17 @@ function PhotoChallengeAdmin() {
     try {
       const formData = new FormData();
       formData.append('nutzer_id', userId);
-      formData.append('title', formState.title);
-      formData.append('description', formState.description);
-      formData.append('status', formState.status);
-      formData.append('group_size', formState.groupSize);
-      formData.append('group_advancers', formState.groupAdvancers);
-      formData.append('lucky_loser_slots', formState.luckyLoserSlots);
-      if (formState.koBracketSize) {
-        formData.append('ko_bracket_size', formState.koBracketSize);
+      formData.append('title', createFormState.title);
+      formData.append('description', createFormState.description);
+      formData.append('status', createFormState.status);
+      if (createFormState.startAt) {
+        formData.append('start_at', createFormState.startAt);
       }
-      if (formState.startAt) {
-        formData.append('start_at', formState.startAt);
+      if (createFormState.submissionDeadline) {
+        formData.append('submission_deadline', createFormState.submissionDeadline);
       }
-      if (formState.submissionDeadline) {
-        formData.append('submission_deadline', formState.submissionDeadline);
-      }
-      if (formState.submissionLimitPerUser !== '' && formState.submissionLimitPerUser !== null) {
-        formData.append('submission_limit_per_user', formState.submissionLimitPerUser);
-      }
-      const schedulePayload = formState.groupSchedule
-        .map((slot) => {
-          const duration = Number(slot.durationDays);
-          const groups = Number(slot.groups);
-          const startAt = slot.startAt || formState.startAt || '';
-          if (!startAt || Number.isNaN(duration) || duration <= 0 || Number.isNaN(groups) || groups <= 0) {
-            return null;
-          }
-          return {
-            start_at: startAt,
-            duration_days: duration,
-            groups,
-          };
-        })
-        .filter(Boolean);
-      if (schedulePayload.length) {
-        formData.append('group_schedule', JSON.stringify(schedulePayload));
+      if (createFormState.submissionLimitPerUser !== '' && createFormState.submissionLimitPerUser !== null) {
+        formData.append('submission_limit_per_user', createFormState.submissionLimitPerUser);
       }
 
       const res = await fetch(`${apiUrl}/photo_challenge/create_challenge.php`, {
@@ -307,7 +376,7 @@ function PhotoChallengeAdmin() {
       const data = await res.json();
       if (data.status === 'success') {
         setChallenges((prev) => [data.challenge, ...prev]);
-        setFormState(createDefaultForm());
+        setCreateFormState(createDefaultCreateForm());
         setSelectedChallengeId(data.challenge.id);
         showFeedback('Challenge angelegt.', 'success');
       } else {
@@ -427,6 +496,33 @@ function PhotoChallengeAdmin() {
     }
   };
 
+  const handleCloseSubmissionPhase = async () => {
+    if (!selectedChallengeId || !apiUrl) return;
+    setCloseSubmissionLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('challenge_id', selectedChallengeId);
+      const res = await fetch(`${apiUrl}/photo_challenge/close_submission_phase.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        throw new Error(data.message || 'Einreichphase konnte nicht geschlossen werden.');
+      }
+      showFeedback(data.message || 'Einreichphase wurde geschlossen.', 'success');
+      loadChallengeOverview(selectedChallengeId);
+      loadChallenges();
+      loadSubmissions(selectedChallengeId);
+      loadChallengeImages(selectedChallengeId);
+    } catch (err) {
+      showFeedback(err.message || 'Einreichphase konnte nicht geschlossen werden.', 'error');
+    } finally {
+      setCloseSubmissionLoading(false);
+    }
+  };
+
   const handleStartKoPhase = async () => {
     if (!selectedChallengeId || !apiUrl) return;
     setKoActionLoading(true);
@@ -513,6 +609,101 @@ function PhotoChallengeAdmin() {
     }));
   };
 
+  const handleSavePlanningConfig = async () => {
+    if (!apiUrl || !selectedChallengeId || !isAdmin) return;
+    setPlanningSaveLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('challenge_id', selectedChallengeId);
+      formData.append('group_size', formState.groupSize);
+      formData.append('group_advancers', formState.groupAdvancers);
+      formData.append('lucky_loser_slots', formState.luckyLoserSlots);
+      formData.append('ko_bracket_size', formState.koBracketSize ?? '');
+      formData.append('start_at', formState.startAt || '');
+      formData.append('submission_deadline', formState.submissionDeadline || '');
+      formData.append('submission_limit_per_user', formState.submissionLimitPerUser ?? '');
+
+      const schedulePayload = (formState.groupSchedule || [])
+        .map((slot) => {
+          const duration = Number(slot.durationDays);
+          const groups = Number(slot.groups);
+          const startAt = slot.startAt || formState.startAt || '';
+          if (!startAt || Number.isNaN(duration) || duration <= 0 || Number.isNaN(groups) || groups <= 0) {
+            return null;
+          }
+          return {
+            start_at: startAt,
+            duration_days: duration,
+            groups,
+          };
+        })
+        .filter(Boolean);
+      if (schedulePayload.length) {
+        formData.append('group_schedule', JSON.stringify(schedulePayload));
+      } else {
+        formData.append('group_schedule', '');
+      }
+
+      const res = await fetch(`${apiUrl}/photo_challenge/update_challenge.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        throw new Error(data.message || 'Planung konnte nicht gespeichert werden.');
+      }
+      showFeedback(data.message || 'Planung gespeichert.', 'success');
+      loadChallenges();
+      loadChallengeOverview(selectedChallengeId);
+    } catch (err) {
+      showFeedback(err.message || 'Planung konnte nicht gespeichert werden.', 'error');
+    } finally {
+      setPlanningSaveLoading(false);
+    }
+  };
+
+  const handleSaveSubmissionPhaseSettings = async (nextStatus = null) => {
+    if (!apiUrl || !selectedChallengeId || !isAdmin) return;
+    setPlanningSaveLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('challenge_id', selectedChallengeId);
+      formData.append('start_at', formState.startAt || '');
+      formData.append('submission_deadline', formState.submissionDeadline || '');
+      formData.append('submission_limit_per_user', formState.submissionLimitPerUser ?? '');
+      if (nextStatus) {
+        formData.append('status', nextStatus);
+      }
+
+      const res = await fetch(`${apiUrl}/photo_challenge/update_challenge.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        throw new Error(data.message || 'Einreichungsdaten konnten nicht gespeichert werden.');
+      }
+
+      showFeedback(
+        nextStatus === 'submission_open'
+          ? 'Einreichungsdaten gespeichert und Einreichphase geöffnet.'
+          : nextStatus === 'draft'
+          ? 'Challenge auf Draft gesetzt und Einreichungsdaten gespeichert.'
+          : (data.message || 'Einreichungsdaten gespeichert.'),
+        'success'
+      );
+
+      loadChallenges();
+      loadChallengeOverview(selectedChallengeId);
+    } catch (err) {
+      showFeedback(err.message || 'Einreichungsdaten konnten nicht gespeichert werden.', 'error');
+    } finally {
+      setPlanningSaveLoading(false);
+    }
+  };
+
   const handleGroupTimeChange = (groupId, field, value) => {
     setGroupTimeDrafts((prev) => {
       const base = prev[groupId] ?? getGroupTimeDraft(groupId);
@@ -566,6 +757,10 @@ function PhotoChallengeAdmin() {
 
   const handleSubmissionAction = async (submissionId, action) => {
     if (!apiUrl || !selectedChallengeId) return;
+    if (!isPlanningPhase) {
+      showFeedback('Einreichungen können erst in der Planungsphase nach Einreichschluss final geprüft werden.', 'error');
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('nutzer_id', userId);
@@ -596,7 +791,7 @@ function PhotoChallengeAdmin() {
     >
       <h4>{challenge.title}</h4>
       <ChallengeMeta>
-        <span>Status: {challenge.status}</span>
+        <span>Status: {STATUS_LABELS[challenge.status] || challenge.status}</span>
         <span>Größe: {challenge.group_size}</span>
         <span>Bilder: {challenge.image_count ?? 0}</span>
         <span>Weiter: {challenge.group_advancers ?? 2}</span>
@@ -627,7 +822,7 @@ function PhotoChallengeAdmin() {
         <ImageActionButton
           type="button"
           onClick={() => handleRemoveImage(image.image_id)}
-          disabled={!['draft', 'submission_open'].includes(challengeConfig?.status)}
+          disabled={!canEditChallengeImagePool}
         >
           Entfernen
         </ImageActionButton>
@@ -635,7 +830,7 @@ function PhotoChallengeAdmin() {
         <ImageActionButton
           type="button"
           onClick={() => handleAddImage(image.id)}
-          disabled={!['draft', 'submission_open'].includes(challengeConfig?.status)}
+          disabled={!canEditChallengeImagePool}
         >
           Hinzufügen
         </ImageActionButton>
@@ -674,8 +869,8 @@ function PhotoChallengeAdmin() {
                   <input
                     id="challenge-title"
                     type="text"
-                    value={formState.title}
-                    onChange={handleFormChange('title')}
+                    value={createFormState.title}
+                    onChange={handleCreateFormChange('title')}
                     required
                   />
                 </Field>
@@ -684,8 +879,8 @@ function PhotoChallengeAdmin() {
                   <textarea
                     id="challenge-description"
                     rows="3"
-                    value={formState.description}
-                    onChange={handleFormChange('description')}
+                    value={createFormState.description}
+                    onChange={handleCreateFormChange('description')}
                   />
                 </Field>
                 <FieldGroup>
@@ -693,98 +888,14 @@ function PhotoChallengeAdmin() {
                     <label htmlFor="challenge-status">Status</label>
                     <select
                       id="challenge-status"
-                      value={formState.status}
-                      onChange={handleFormChange('status')}
+                      value={createFormState.status}
+                      onChange={handleCreateFormChange('status')}
                     >
                       <option value="draft">Draft</option>
                       <option value="submission_open">Einreichphase</option>
-                      <option value="active">Aktiv</option>
-                      <option value="finished">Abgeschlossen</option>
                     </select>
                   </Field>
-                  <Field>
-                    <label htmlFor="challenge-group">Gruppengröße</label>
-                    <input
-                      id="challenge-group"
-                      type="number"
-                      min="2"
-                      max="8"
-                      value={formState.groupSize}
-                      onChange={handleFormChange('groupSize')}
-                    />
-                  </Field>
                 </FieldGroup>
-                <Field>
-                  <label htmlFor="challenge-planned-groups">Geplante Gruppenanzahl</label>
-                  <input
-                    id="challenge-planned-groups"
-                    type="number"
-                    min="1"
-                    value={formState.plannedGroupCount}
-                    onChange={handleFormChange('plannedGroupCount')}
-                  />
-                </Field>
-                <FieldGroup>
-                  <Field>
-                    <label htmlFor="challenge-advancers">Weiterkommende pro Gruppe</label>
-                    <input
-                      id="challenge-advancers"
-                      type="number"
-                      min="1"
-                      max={formState.groupSize}
-                      value={formState.groupAdvancers}
-                      onChange={handleFormChange('groupAdvancers')}
-                    />
-                  </Field>
-                  <Field>
-                    <label htmlFor="challenge-lucky">Lucky-Loser Slots</label>
-                    <input
-                      id="challenge-lucky"
-                      type="number"
-                      min="0"
-                      value={formState.luckyLoserSlots}
-                      onChange={handleFormChange('luckyLoserSlots')}
-                    />
-                  </Field>
-                </FieldGroup>
-                <PlanSummary>
-                  <div>
-                    <strong>Plan:</strong> {derivedPlan.plannedGroups} Gruppen à {derivedPlan.groupSize} Bilder ={' '}
-                    {derivedPlan.totalImages} Bilder gesamt.
-                  </div>
-                  <div>Direkt weiter: {derivedPlan.directAdvancers} · Lucky-Loser nutzbar: {derivedPlan.luckyUsed}</div>
-                  <div>
-                    KO-Teilnehmer: {derivedPlan.koParticipants || '—'}{' '}
-                    {derivedPlan.koParticipants
-                      ? `(nächste 2er-Potenz: ${derivedPlan.nextPower || '—'})`
-                      : null}
-                  </div>
-                  {derivedPlan.limitedLucky && (
-                    <PlanSummaryNote>
-                      Hinweis: Es stehen nur {derivedPlan.luckyUsed} Lucky-Loser zur Verfügung – überschüssige Slots werden
-                      ignoriert.
-                    </PlanSummaryNote>
-                  )}
-                  {derivedPlan.needsExpansion && (
-                    <PlanSummaryWarning>
-                      Für ein KO-Feld mit {derivedPlan.nextPower} Teilnehmern fehlen noch {derivedPlan.nextPower - derivedPlan.koParticipants}{' '}
-                      Plätze. Erhöhe Lucky-Loser oder die Gruppenanzahl.
-                    </PlanSummaryWarning>
-                  )}
-                </PlanSummary>
-                <Field>
-                  <label htmlFor="challenge-ko-size">Teilnehmer KO-Phase (optional)</label>
-                  <input
-                    id="challenge-ko-size"
-                    type="number"
-                    min="2"
-                    step="2"
-                    placeholder="z. B. 16"
-                    value={formState.koBracketSize}
-                    onChange={handleFormChange('koBracketSize')}
-                  />
-                  <FormHint>Leer lassen für automatische Berechnung (nächste 2er-Potenz, sofern möglich).</FormHint>
-                </Field>
                 <FieldGroup>
                   <Field>
                     <label htmlFor="challenge-submission-limit">Einsendungen pro Nutzer</label>
@@ -792,88 +903,34 @@ function PhotoChallengeAdmin() {
                       id="challenge-submission-limit"
                       type="number"
                       min="0"
-                      value={formState.submissionLimitPerUser}
-                      onChange={handleFormChange('submissionLimitPerUser')}
+                      value={createFormState.submissionLimitPerUser}
+                      onChange={handleCreateFormChange('submissionLimitPerUser')}
                     />
                     <FormHint>0 bedeutet unbegrenzt.</FormHint>
+                  </Field>
+                  <Field>
+                    <label htmlFor="challenge-start">Einreichstart</label>
+                    <input
+                      id="challenge-start"
+                      type="datetime-local"
+                      value={createFormState.startAt}
+                      onChange={handleCreateFormChange('startAt')}
+                    />
                   </Field>
                   <Field>
                     <label htmlFor="challenge-submission-deadline">Einreichdeadline</label>
                     <input
                       id="challenge-submission-deadline"
                       type="datetime-local"
-                      value={formState.submissionDeadline}
-                      onChange={handleFormChange('submissionDeadline')}
+                      value={createFormState.submissionDeadline}
+                      onChange={handleCreateFormChange('submissionDeadline')}
+                      required={createFormState.status === 'submission_open'}
                     />
                   </Field>
                 </FieldGroup>
-                <Field>
-                  <label htmlFor="challenge-start">Start (optional)</label>
-                  <input
-                    id="challenge-start"
-                    type="datetime-local"
-                    value={formState.startAt}
-                    onChange={handleFormChange('startAt')}
-                  />
-                </Field>
-                <SectionTitle>Gruppen-Zeitplan</SectionTitle>
                 <FormHint>
-                  Definiere Start und Dauer pro Slot. Alle Gruppen eines Slots starten gleichzeitig, weitere Slots sorgen für
-                  gestaffelte Starts.
+                  Turnierstruktur (Gruppen, Lucky-Loser, KO-Feld, Zeitplan) konfigurierst du später im Planungsbereich nach Ende der Einreichphase.
                 </FormHint>
-                {formState.groupSchedule.length === 0 && (
-                  <PlaceholderText>
-                    Keine Slots angelegt – Standardwerte (2 Gruppen pro Woche, 14 Tage Dauer) werden genutzt.
-                  </PlaceholderText>
-                )}
-                {formState.groupSchedule.length > 0 && (
-                  <ScheduleList>
-                    {formState.groupSchedule.map((slot, index) => (
-                      <ScheduleSlot key={slot.id}>
-                        <ScheduleSlotHeader>
-                          <span>Slot {index + 1}</span>
-                          <RemoveSlotButton type="button" onClick={() => handleRemoveScheduleSlot(slot.id)}>
-                            Slot entfernen
-                          </RemoveSlotButton>
-                        </ScheduleSlotHeader>
-                        <FieldGroup>
-                          <Field>
-                            <label htmlFor={`schedule-start-${slot.id}`}>Startzeit</label>
-                            <input
-                              id={`schedule-start-${slot.id}`}
-                              type="datetime-local"
-                              value={slot.startAt}
-                              onChange={handleScheduleChange(slot.id, 'startAt')}
-                            />
-                          </Field>
-                          <Field>
-                            <label htmlFor={`schedule-duration-${slot.id}`}>Dauer (Tage)</label>
-                            <input
-                              id={`schedule-duration-${slot.id}`}
-                              type="number"
-                              min="1"
-                              value={slot.durationDays}
-                              onChange={handleScheduleChange(slot.id, 'durationDays')}
-                            />
-                          </Field>
-                          <Field>
-                            <label htmlFor={`schedule-groups-${slot.id}`}>Gruppen pro Slot</label>
-                            <input
-                              id={`schedule-groups-${slot.id}`}
-                              type="number"
-                              min="1"
-                              value={slot.groups}
-                              onChange={handleScheduleChange(slot.id, 'groups')}
-                            />
-                          </Field>
-                        </FieldGroup>
-                      </ScheduleSlot>
-                    ))}
-                  </ScheduleList>
-                )}
-                <SecondaryButton type="button" onClick={handleAddScheduleSlot}>
-                  Slot hinzufügen
-                </SecondaryButton>
                 <PrimaryButton type="submit" disabled={formSubmitting}>
                   {formSubmitting ? 'Speichere...' : 'Challenge erstellen'}
                 </PrimaryButton>
@@ -920,13 +977,6 @@ function PhotoChallengeAdmin() {
                     <ActionButtonRow>
                       <SecondaryButton
                         type="button"
-                        onClick={handleStartGroupPhase}
-                        disabled={groupActionLoading || !['draft', 'submission_open'].includes(challengeConfig?.status)}
-                      >
-                        {groupActionLoading ? 'Starte…' : 'Gruppenphase aufsetzen'}
-                      </SecondaryButton>
-                      <SecondaryButton
-                        type="button"
                         onClick={handleStartKoPhase}
                         disabled={koActionLoading || ['ko_running', 'finished', 'ko_finished', 'closed'].includes(challengeConfig?.status)}
                       >
@@ -940,10 +990,366 @@ function PhotoChallengeAdmin() {
                         {koAdvanceLoading ? 'Schließe…' : 'Aktuelle KO-Runde abschließen'}
                       </SecondaryButton>
                     </ActionButtonRow>
+                    <FormHint>Einreichphase schließen, Turnier konfigurieren und Gruppenstart findest du im Planungs-Wizard darunter.</FormHint>
                   </>
                 )}
               </PanelCard>
             )}
+            {selectedChallenge && (
+              <PanelCard>
+                <PanelHeader>
+                  <h3>Planungs-Wizard</h3>
+                  <span>Schrittweise zur Gruppenphase</span>
+                </PanelHeader>
+
+                <ActionButtonRow>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setPlanningWizardStep('submission')}
+                    style={planningWizardStep === 'submission' ? { borderColor: '#ffb522', color: '#a85b00' } : undefined}
+                  >
+                    1. Einreichung
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setPlanningWizardStep('selection')}
+                    style={planningWizardStep === 'selection' ? { borderColor: '#ffb522', color: '#a85b00' } : undefined}
+                  >
+                    2. Auswahl
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setPlanningWizardStep('config')}
+                    style={planningWizardStep === 'config' ? { borderColor: '#ffb522', color: '#a85b00' } : undefined}
+                  >
+                    3. Konfiguration
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setPlanningWizardStep('group')}
+                    style={planningWizardStep === 'group' ? { borderColor: '#ffb522', color: '#a85b00' } : undefined}
+                  >
+                    4. Gruppenstart
+                  </SecondaryButton>
+                </ActionButtonRow>
+
+                {planningWizardStep === 'submission' && (
+                  <>
+                    <SectionTitle>Schritt 1: Einreichphase überwachen und schließen</SectionTitle>
+                    <SubmissionMeta>
+                      <span>Status: {STATUS_LABELS[challengeStatus] || challengeStatus}</span>
+                      <span>Raw-Status: {challengeRawStatus}</span>
+                      <span>Deadline erreicht: {submissionDeadlinePassed ? 'ja' : 'nein'}</span>
+                      <span>
+                        Deadline:{' '}
+                        {challengeConfig?.submission_deadline
+                          ? new Date(challengeConfig.submission_deadline).toLocaleString('de-DE')
+                          : 'keine'}
+                      </span>
+                    </SubmissionMeta>
+                    <FormHint>
+                      Nutzer können bis zur Deadline ihre Einreichungen ändern. Danach schließt du die Einreichphase und gehst zur Auswahl/Planung über.
+                    </FormHint>
+                    <FieldGroup>
+                      <Field>
+                        <label htmlFor="wizard-submission-start">Einreichstart</label>
+                        <input
+                          id="wizard-submission-start"
+                          type="datetime-local"
+                          value={formState.startAt}
+                          onChange={handleFormChange('startAt')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                      </Field>
+                      <Field>
+                        <label htmlFor="wizard-submission-deadline">Einreichende</label>
+                        <input
+                          id="wizard-submission-deadline"
+                          type="datetime-local"
+                          value={formState.submissionDeadline}
+                          onChange={handleFormChange('submissionDeadline')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                      </Field>
+                      <Field>
+                        <label htmlFor="wizard-submission-limit">Limit pro Nutzer</label>
+                        <input
+                          id="wizard-submission-limit"
+                          type="number"
+                          min="0"
+                          value={formState.submissionLimitPerUser}
+                          onChange={handleFormChange('submissionLimitPerUser')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                        <FormHint>0 = unbegrenzt</FormHint>
+                      </Field>
+                    </FieldGroup>
+                    <ActionButtonRow>
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => handleSaveSubmissionPhaseSettings()}
+                        disabled={planningSaveLoading || !canEditChallengeImagePool}
+                      >
+                        {planningSaveLoading ? 'Speichere...' : 'Einreichdaten speichern'}
+                      </PrimaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => handleSaveSubmissionPhaseSettings('draft')}
+                        disabled={planningSaveLoading || !canEditChallengeImagePool || challengeRawStatus === 'draft'}
+                      >
+                        Als Draft speichern
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => handleSaveSubmissionPhaseSettings('submission_open')}
+                        disabled={planningSaveLoading || !canEditChallengeImagePool || !canReopenSubmissionPhase}
+                      >
+                        Einreichphase öffnen
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={handleCloseSubmissionPhase}
+                        disabled={closeSubmissionLoading || !canCloseSubmissionPhase}
+                      >
+                        {closeSubmissionLoading ? 'Schließe…' : 'Einreichphase schließen'}
+                      </SecondaryButton>
+                      <SecondaryButton type="button" onClick={() => setPlanningWizardStep('selection')}>
+                        Weiter zu Auswahl
+                      </SecondaryButton>
+                    </ActionButtonRow>
+                  </>
+                )}
+
+                {planningWizardStep === 'selection' && (
+                  <>
+                    <SectionTitle>Schritt 2: Teilnehmerbilder auswählen</SectionTitle>
+                    <ChallengeStats>
+                      <span>Einreichungen gesamt: {submissionStats.total}</span>
+                      <span>Pending: {submissionStats.pending}</span>
+                      <span>Übernommen: {submissionStats.accepted}</span>
+                      <span>Abgelehnt: {submissionStats.rejected}</span>
+                      <span>Bilder im Teilnehmerfeld: {challengeImages.length}</span>
+                    </ChallengeStats>
+                    <FormHint>
+                      Nutze die Bereiche „Einreichungen“ und „Bildverwaltung“ darunter, um Bilder freizugeben/abzulehnen und das Teilnehmerfeld final festzulegen.
+                    </FormHint>
+                    {!isPlanningPhase && (
+                      <PlanSummaryWarning>
+                        Für die finale Auswahl sollte die Challenge im Status „Planung / Auswahl“ (`submission_closed`) sein.
+                      </PlanSummaryWarning>
+                    )}
+                    <ActionButtonRow>
+                      <SecondaryButton type="button" onClick={() => setPlanningWizardStep('config')}>
+                        Weiter zu Konfiguration
+                      </SecondaryButton>
+                    </ActionButtonRow>
+                  </>
+                )}
+
+                {planningWizardStep === 'config' && (
+                  <>
+                    <SectionTitle>Schritt 3: Turnier konfigurieren</SectionTitle>
+                    <FormHint>
+                      Diese Einstellungen legst du nach Ende der Einreichphase fest. Sie werden separat gespeichert und erst beim Gruppenstart verwendet.
+                    </FormHint>
+                    <Field>
+                      <label htmlFor="plan-planned-groups">Geplante Gruppenanzahl (Hilfswert)</label>
+                      <input
+                        id="plan-planned-groups"
+                        type="number"
+                        min="1"
+                        value={formState.plannedGroupCount}
+                        onChange={handleFormChange('plannedGroupCount')}
+                        disabled={!canEditChallengeImagePool}
+                      />
+                    </Field>
+                    <FieldGroup>
+                      <Field>
+                        <label htmlFor="plan-group-size">Gruppengröße</label>
+                        <input
+                          id="plan-group-size"
+                          type="number"
+                          min="2"
+                          max="8"
+                          value={formState.groupSize}
+                          onChange={handleFormChange('groupSize')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                      </Field>
+                      <Field>
+                        <label htmlFor="plan-advancers">Weiterkommende pro Gruppe</label>
+                        <input
+                          id="plan-advancers"
+                          type="number"
+                          min="1"
+                          max={formState.groupSize}
+                          value={formState.groupAdvancers}
+                          onChange={handleFormChange('groupAdvancers')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                      </Field>
+                      <Field>
+                        <label htmlFor="plan-lucky">Lucky-Loser Slots</label>
+                        <input
+                          id="plan-lucky"
+                          type="number"
+                          min="0"
+                          value={formState.luckyLoserSlots}
+                          onChange={handleFormChange('luckyLoserSlots')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                      </Field>
+                    </FieldGroup>
+                    <PlanSummary>
+                      <div>
+                        <strong>Plan:</strong> {derivedPlan.plannedGroups} Gruppen à {derivedPlan.groupSize} Bilder = {derivedPlan.totalImages} Bilder gesamt.
+                      </div>
+                      <div>Direkt weiter: {derivedPlan.directAdvancers} · Lucky-Loser nutzbar: {derivedPlan.luckyUsed}</div>
+                      <div>
+                        KO-Teilnehmer: {derivedPlan.koParticipants || '—'}{' '}
+                        {derivedPlan.koParticipants ? `(nächste 2er-Potenz: ${derivedPlan.nextPower || '—'})` : null}
+                      </div>
+                      {derivedPlan.limitedLucky && (
+                        <PlanSummaryNote>
+                          Hinweis: Es stehen nur {derivedPlan.luckyUsed} Lucky-Loser zur Verfügung – überschüssige Slots werden ignoriert.
+                        </PlanSummaryNote>
+                      )}
+                      {derivedPlan.needsExpansion && (
+                        <PlanSummaryWarning>
+                          Für ein KO-Feld mit {derivedPlan.nextPower} Teilnehmern fehlen noch {derivedPlan.nextPower - derivedPlan.koParticipants} Plätze.
+                        </PlanSummaryWarning>
+                      )}
+                    </PlanSummary>
+                    <FieldGroup>
+                      <Field>
+                        <label htmlFor="plan-ko-size">Teilnehmer KO-Phase (optional)</label>
+                        <input
+                          id="plan-ko-size"
+                          type="number"
+                          min="2"
+                          step="2"
+                          placeholder="z. B. 16"
+                          value={formState.koBracketSize}
+                          onChange={handleFormChange('koBracketSize')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                        <FormHint>Leer lassen für automatische Berechnung.</FormHint>
+                      </Field>
+                      <Field>
+                        <label htmlFor="plan-start">Start (Basis für Zeitplan)</label>
+                        <input
+                          id="plan-start"
+                          type="datetime-local"
+                          value={formState.startAt}
+                          onChange={handleFormChange('startAt')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                      </Field>
+                    </FieldGroup>
+
+                    <SectionTitle>Gruppen-Zeitplan</SectionTitle>
+                    <FormHint>
+                      Definiere Slots für Gruppenstarts. Alle Gruppen eines Slots starten gleichzeitig.
+                    </FormHint>
+                    {formState.groupSchedule.length === 0 && (
+                      <PlaceholderText>Keine Slots angelegt – Standardwerte werden verwendet.</PlaceholderText>
+                    )}
+                    {formState.groupSchedule.length > 0 && (
+                      <ScheduleList>
+                        {formState.groupSchedule.map((slot, index) => (
+                          <ScheduleSlot key={slot.id}>
+                            <ScheduleSlotHeader>
+                              <span>Slot {index + 1}</span>
+                              <RemoveSlotButton
+                                type="button"
+                                onClick={() => handleRemoveScheduleSlot(slot.id)}
+                                disabled={!canEditChallengeImagePool}
+                              >
+                                Slot entfernen
+                              </RemoveSlotButton>
+                            </ScheduleSlotHeader>
+                            <FieldGroup>
+                              <Field>
+                                <label htmlFor={`plan-schedule-start-${slot.id}`}>Startzeit</label>
+                                <input
+                                  id={`plan-schedule-start-${slot.id}`}
+                                  type="datetime-local"
+                                  value={slot.startAt}
+                                  onChange={handleScheduleChange(slot.id, 'startAt')}
+                                  disabled={!canEditChallengeImagePool}
+                                />
+                              </Field>
+                              <Field>
+                                <label htmlFor={`plan-schedule-duration-${slot.id}`}>Dauer (Tage)</label>
+                                <input
+                                  id={`plan-schedule-duration-${slot.id}`}
+                                  type="number"
+                                  min="1"
+                                  value={slot.durationDays}
+                                  onChange={handleScheduleChange(slot.id, 'durationDays')}
+                                  disabled={!canEditChallengeImagePool}
+                                />
+                              </Field>
+                              <Field>
+                                <label htmlFor={`plan-schedule-groups-${slot.id}`}>Gruppen pro Slot</label>
+                                <input
+                                  id={`plan-schedule-groups-${slot.id}`}
+                                  type="number"
+                                  min="1"
+                                  value={slot.groups}
+                                  onChange={handleScheduleChange(slot.id, 'groups')}
+                                  disabled={!canEditChallengeImagePool}
+                                />
+                              </Field>
+                            </FieldGroup>
+                          </ScheduleSlot>
+                        ))}
+                      </ScheduleList>
+                    )}
+                    <ActionButtonRow>
+                      <SecondaryButton type="button" onClick={handleAddScheduleSlot} disabled={!canEditChallengeImagePool}>
+                        Slot hinzufügen
+                      </SecondaryButton>
+                      <PrimaryButton type="button" onClick={handleSavePlanningConfig} disabled={planningSaveLoading || !canEditChallengeImagePool}>
+                        {planningSaveLoading ? 'Speichere...' : 'Planung speichern'}
+                      </PrimaryButton>
+                      <SecondaryButton type="button" onClick={() => setPlanningWizardStep('group')}>
+                        Weiter zu Gruppenstart
+                      </SecondaryButton>
+                    </ActionButtonRow>
+                  </>
+                )}
+
+                {planningWizardStep === 'group' && (
+                  <>
+                    <SectionTitle>Schritt 4: Gruppenphase starten</SectionTitle>
+                    <ChallengeStats>
+                      <span>Status: {STATUS_LABELS[challengeStatus] || challengeStatus}</span>
+                      <span>Teilnehmerbilder: {challengeImages.length}</span>
+                      <span>Gruppengröße: {formState.groupSize}</span>
+                      <span>Weiter/Gruppe: {formState.groupAdvancers}</span>
+                      <span>Lucky-Loser: {formState.luckyLoserSlots}</span>
+                    </ChallengeStats>
+                    <FormHint>
+                      Vor dem Start: Einreichphase schließen, Teilnehmerfeld finalisieren, Konfiguration speichern.
+                    </FormHint>
+                    <ActionButtonRow>
+                      <PrimaryButton
+                        type="button"
+                        onClick={handleStartGroupPhase}
+                        disabled={groupActionLoading || challengeStatus !== 'submission_closed'}
+                      >
+                        {groupActionLoading ? 'Starte…' : 'Gruppenphase aufsetzen'}
+                      </PrimaryButton>
+                      <SecondaryButton type="button" onClick={() => setPlanningWizardStep('config')}>
+                        Zurück zur Konfiguration
+                      </SecondaryButton>
+                    </ActionButtonRow>
+                  </>
+                )}
+              </PanelCard>
+            )}
+
             {selectedChallenge && (
               <PanelCard>
                 <PanelHeader>
@@ -953,7 +1359,14 @@ function PhotoChallengeAdmin() {
                   </button>
                 </PanelHeader>
                 <SubmissionMeta>
-                  <span>Status: {challengeConfig?.status === 'submission_open' ? 'Einreichungsphase aktiv' : 'Phase beendet'}</span>
+                  <span>
+                    Status:{' '}
+                    {challengeStatus === 'submission_open'
+                      ? 'Einreichungsphase aktiv'
+                      : challengeStatus === 'submission_closed'
+                      ? 'Planungsphase / Auswahl'
+                      : 'Phase beendet'}
+                  </span>
                   <span>
                     Limit pro Nutzer:{' '}
                     {challengeConfig?.submission_limit_per_user ? challengeConfig.submission_limit_per_user : 'unbegrenzt'}
@@ -964,6 +1377,7 @@ function PhotoChallengeAdmin() {
                       ? new Date(challengeConfig.submission_deadline).toLocaleString('de-DE')
                       : 'keine'}
                   </span>
+                  <span>Deadline erreicht: {submissionDeadlinePassed ? 'ja' : 'nein'}</span>
                 </SubmissionMeta>
                 {submissionsLoading && <PlaceholderText>Lade Einreichungen…</PlaceholderText>}
                 {!submissionsLoading && !submissions.length && (
@@ -994,7 +1408,7 @@ function PhotoChallengeAdmin() {
                             ? 'Abgelehnt'
                             : 'Wartet auf Entscheidung'}
                         </SubmissionStatusChip>
-                        {submission.status === 'pending' && (
+                        {submission.status === 'pending' && isPlanningPhase && (
                           <SubmissionActions>
                             <SecondaryButton type="button" onClick={() => handleSubmissionAction(submission.id, 'approve')}>
                               Übernehmen
@@ -1023,7 +1437,7 @@ function PhotoChallengeAdmin() {
               {selectedChallenge && (
                 <>
                   <ChallengeStats>
-                    <span>Status: {selectedChallenge.status}</span>
+                    <span>Status: {STATUS_LABELS[challengeStatus] || challengeStatus}</span>
                     <span>Gruppengröße: {selectedChallenge.group_size}</span>
                     <span>Aktuelle Bilder: {challengeImages.length}</span>
                   </ChallengeStats>
@@ -1056,7 +1470,7 @@ function PhotoChallengeAdmin() {
                     </SecondaryButton>
                   )}
 
-                  {['draft', 'submission_open'].includes(challengeConfig?.status) ? (
+                  {canEditChallengeImagePool ? (
                     <>
                       <SectionTitle>Ausgewählte Bilder</SectionTitle>
                       {challengeImagesLoading && <PlaceholderText>Lade zugewiesene Bilder…</PlaceholderText>}

@@ -35,6 +35,10 @@ function PhotoChallengeVoting() {
   const [userImagesPage, setUserImagesPage] = useState(1);
   const getKoRoundLabel = useKoRoundLabel(overview);
   const requestIdRef = React.useRef(0);
+  const challengeFlags = overview?.challenge_flags || {};
+  const isSubmissionStage = Boolean(
+    challengeFlags.submission_is_open_effective || challengeFlags.submission_is_closed_effective
+  );
 
   const fetchOverview = useCallback(async () => {
     if (!apiUrl || !challengeId) return;
@@ -123,7 +127,7 @@ function PhotoChallengeVoting() {
 
   useEffect(() => {
     if (!overview) return;
-    if (overview.challenge?.status === 'submission_open') {
+    if (challengeFlags.submission_is_open_effective || challengeFlags.submission_is_closed_effective) {
       setActivePhase('submission');
       return;
     }
@@ -139,15 +143,15 @@ function PhotoChallengeVoting() {
         setActivePhase(`ko_round_${maxRound}`);
       }
     }
-  }, [overview]);
+  }, [overview, challengeFlags.submission_is_open_effective, challengeFlags.submission_is_closed_effective]);
 
   useEffect(() => {
-    if (overview?.challenge?.status === 'submission_open' && isLoggedIn) {
+    if (isSubmissionStage && isLoggedIn) {
       loadUserImages();
     } else {
       setUserImages([]);
     }
-  }, [overview?.challenge?.status, isLoggedIn, loadUserImages]);
+  }, [isSubmissionStage, isLoggedIn, loadUserImages]);
 
   const phases = useMemo(() => {
     const base = [];
@@ -409,6 +413,55 @@ function PhotoChallengeVoting() {
     }
   };
 
+  const handleDeleteSubmission = async (submissionId) => {
+    if (!apiUrl || !userId) {
+      setActionMessage('Bitte logge dich ein, um Einreichungen zu verwalten.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('submission_id', submissionId);
+      const res = await fetch(`${apiUrl}/photo_challenge/delete_submission.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        throw new Error(data.message || 'Einreichung konnte nicht entfernt werden.');
+      }
+      setActionMessage(data.message || 'Einreichung wurde entfernt.');
+      setRefreshKey((val) => val + 1);
+    } catch (err) {
+      setActionMessage(err.message || 'Einreichung konnte nicht entfernt werden.');
+    }
+  };
+
+  const handleUpdateSubmissionTitle = async (submissionId, title = '') => {
+    if (!apiUrl || !userId) {
+      setActionMessage('Bitte logge dich ein, um Einreichungen zu verwalten.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('nutzer_id', userId);
+      formData.append('submission_id', submissionId);
+      formData.append('title', title);
+      const res = await fetch(`${apiUrl}/photo_challenge/update_submission.php`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        throw new Error(data.message || 'Einreichung konnte nicht aktualisiert werden.');
+      }
+      setActionMessage(data.message || 'Einreichung wurde aktualisiert.');
+      setRefreshKey((val) => val + 1);
+    } catch (err) {
+      setActionMessage(err.message || 'Einreichung konnte nicht aktualisiert werden.');
+    }
+  };
+
   const submissionLimit = overview?.challenge?.submission_limit_per_user
     ? Number(overview.challenge.submission_limit_per_user)
     : null;
@@ -494,6 +547,7 @@ function PhotoChallengeVoting() {
 
         <SubmissionPanel
           overview={overview}
+          challengeFlags={challengeFlags}
           isLoggedIn={isLoggedIn}
           submissionsRemaining={submissionsRemaining}
           userImages={userImages}
@@ -501,13 +555,15 @@ function PhotoChallengeVoting() {
           submittedImageIds={submittedImageIds}
           submissionLimit={submissionLimit}
           handleSubmitPhoto={handleSubmitPhoto}
+          handleDeleteSubmission={handleDeleteSubmission}
+          handleUpdateSubmissionTitle={handleUpdateSubmissionTitle}
           userImagesHasMore={userImagesHasMore}
           loadUserImages={loadUserImages}
           userImagesPage={userImagesPage}
           userSubmissions={userSubmissions}
         />
 
-        {overview?.challenge?.status !== 'submission_open' && (
+        {!isSubmissionStage && (
           <S.PhaseSlider>
             {phases.map((phase) => (
               <S.PhasePill
@@ -529,12 +585,12 @@ function PhotoChallengeVoting() {
           <Winner winner={overview.winner} />
         )}
 
-        {!loading && overview?.challenge?.status !== 'submission_open' && activePhase === 'group' && (
+        {!loading && !isSubmissionStage && activePhase === 'group' && (
           <Group groups={groupsSorted} openGroupModal={openGroupModal} />
         )}
 
         {!loading &&
-          overview?.challenge?.status !== 'submission_open' &&
+          !isSubmissionStage &&
           activePhase !== 'group' &&
           activePhase !== 'winner' &&
           <KoMatches

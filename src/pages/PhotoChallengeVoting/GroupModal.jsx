@@ -72,19 +72,18 @@ const GroupModal = ({
                   key={side.id}
                   type="button"
                   onClick={() => handleModalVote(activeModalMatch, side.id)}
-                  disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
+                  disabled={activeModalMatch.status !== 'open' || !isLoggedIn || activeModalMatch.has_voted}
                   $selected={activeModalMatch.user_choice === side.id}
                 >
                   <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
                   <S.VoteMeta>
-                    {console.log(side)}
                     <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
                     {!isLoggedIn ? (
                       <span style={{ color: 'red', fontWeight: 'bold' }}>Zum Abstimmen bitte anmelden oder registrieren</span>
-                    ) : activeModalMatch.user_choice === side.id ? (
-                      <span>Deine aktuelle Stimme</span>
+                    ) : activeModalMatch.has_voted ? (
+                      <span>Du hast in diesem Duell bereits abgestimmt</span>
                     ) : (
-                      <span>Stimme ändern</span>
+                      <span>Tippe zum Abstimmen</span>
                     )}
                   </S.VoteMeta>
                 </S.ModalVoteOption>
@@ -130,7 +129,6 @@ const GroupModal = ({
                         <S.ResultImage src={buildAssetUrl(result.url)} alt={result.title || `Bild ${result.image_id}`} />
                       </S.ResultImageButton>
                       <div>
-                        {console.log(result)}
                         <strong>{result.title ? `"${result.title}"` : `Bild #${result.image_id}`}</strong><br />
                         <small>{result.username || 'Unbekannt'}</small>
                         {result.is_advancer && (
