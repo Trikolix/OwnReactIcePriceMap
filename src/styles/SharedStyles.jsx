@@ -43,14 +43,17 @@ export const RightContent = styled.div`
 `;
 
 export const CommentToggle = styled.button`
-  margin-top: 0.5rem;
+  margin-top: 0.65rem;
   background: transparent;
   border: none;
-  color: #ffb522;
+  color: #8a5600;
   cursor: pointer;
-  font-weight: bold;
-  padding: 0.25rem 0;
+  font-weight: 700;
+  padding: 0.3rem 0;
   text-align: left;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
 
   &:hover {
     text-decoration: underline;
@@ -249,16 +252,19 @@ export const LevelInfo = styled.div`
 
 export const Card = styled.div`
   position: relative;
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  padding: 2rem;
+  background:
+    radial-gradient(circle at top right, rgba(255, 181, 34, 0.08), transparent 44%),
+    rgba(255, 255, 255, 0.96);
+  border-radius: 20px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  padding: 1.35rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 
   &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 14px 34px rgba(28, 20, 0, 0.12);
+    transform: translateY(-1px);
   }
 `;
 

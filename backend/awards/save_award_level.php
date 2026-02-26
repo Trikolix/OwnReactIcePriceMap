@@ -1,6 +1,8 @@
 <?php
 require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 require_once '../db_connect.php';
+require_once __DIR__ . '/awards_cache.php';
+require_once __DIR__ . '/award_icon_variants.php';
 
 header('Content-Type: application/json');
 
@@ -23,6 +25,7 @@ try {
     if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] === UPLOAD_ERR_OK) {
         // Altes Icon löschen
         if ($newIconPath && file_exists("../../" . $newIconPath)) {
+            awardIconDeleteVariant($newIconPath);
             unlink("../../" . $newIconPath);
         }
 
@@ -32,6 +35,10 @@ try {
         $filename = uniqid() . '_' . basename($_FILES['icon_file']['name']);
         $newIconPath = $uploadDir . $filename;
         move_uploaded_file($_FILES['icon_file']['tmp_name'], "../../" . $newIconPath);
+    }
+
+    if (!empty($newIconPath)) {
+        awardIconCreateVariant($newIconPath);
     }
 
     // Wenn vorhanden: UPDATE, sonst INSERT
@@ -50,6 +57,8 @@ try {
         $stmt_dev = $pdo_dev->prepare("INSERT INTO award_levels (award_id, level, threshold, ep, icon_path, title_de, description_de) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt_dev->execute([$award_id, $level, $threshold, $ep, $newIconPath, $title_de, $description_de]);
     }
+
+    invalidateAwardsCache();
 
     // Erfolgsmeldung
     echo json_encode(['success' => true]);

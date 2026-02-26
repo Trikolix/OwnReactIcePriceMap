@@ -10,6 +10,7 @@ const ShopMarker = ({
   displayValue,
   formatValue,
   invertScale,
+  isFocused = false,
 }) => {
   const getColorForValue = (value, status) => {
     const iconOpacity =
@@ -41,16 +42,32 @@ const ShopMarker = ({
       : `${Number(displayValue).toFixed(2)}`;
 
   const backgroundColor = getColorForValue(displayValue, shop.status);
+  const isFavorite = Number(shop.is_favorit) === 1;
+  const hasActiveChallenge = Number(shop.has_active_challenge) === 1;
+  const size = isFocused ? 48 : 40;
+  const borderColor = isFavorite ? "#ffd54a" : "#ffffff";
+  const textColor = isFavorite ? "#ffd54a" : "#ffffff";
+  const focusGlow = isFocused ? "0 0 0 4px rgba(255, 111, 0, 0.35), 0 6px 18px rgba(0,0,0,0.35)" : "0 3px 10px rgba(0,0,0,0.25)";
+  const challengeBadge = hasActiveChallenge
+    ? `<div title="Aktive Challenge" style="position:absolute; top:-4px; right:-4px; width:18px; height:18px; border-radius:50%; background:#ff6f00; color:#fff; border:2px solid #fff; font-size:10px; line-height:14px; text-align:center; font-weight:700;">C</div>`
+    : "";
 
   return (
     <Marker
       position={[shop.latitude, shop.longitude]}
       icon={L.divIcon({
         className: "price-icon",
-        html: `<div style="background-color:${backgroundColor}; color: white; text-align: center; border-radius: 50%; width: 40px; height: 40px; line-height: 40px;">${formattedValue}</div>`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        popupAnchor: [0, -19],
+        html: `
+          <div class="price-icon-wrapper" style="position:relative; width:${size}px; height:${size}px;">
+            <div class="price-icon-circle" style="background-color:${backgroundColor}; color:${textColor}; text-align:center; border-radius:50%; width:${size}px; height:${size}px; line-height:${size}px; border:3px solid ${borderColor}; box-shadow:${focusGlow}; font-weight:${isFocused ? 700 : 600}; transform:${isFocused ? "scale(1.05)" : "scale(1)"}; box-sizing:border-box;">
+              ${formattedValue}
+            </div>
+            ${challengeBadge}
+          </div>
+        `,
+        iconSize: [size, size],
+        iconAnchor: [Math.round(size / 2), Math.round(size / 2)],
+        popupAnchor: [0, -Math.round(size / 2)],
       })}
       eventHandlers={{
         click: () => {

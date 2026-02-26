@@ -36,6 +36,11 @@ if (isset($_GET['logout'])) {
     .award-preview {
         max-width: 100px;
     }
+
+    .award-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 180px;
+    }
     </style>
 </head>
 
@@ -112,40 +117,78 @@ if (isset($_GET['logout'])) {
 
     <script>
     const isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
-    async function fetchAwards() {
-        const response = await fetch("get_awards.php");
-        const data = await response.json();
-        const container = document.getElementById("awardList");
+    const awardListEl = document.getElementById("awardList");
+    const levelEditStore = new Map();
 
-        if (data.length === 0) {
-            container.innerHTML = "<p>Keine Awards vorhanden.</p>";
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function buildAwardCardHtml(award) {
+        let html =
+            `<div class="mb-3 border p-3 rounded award-card" data-award-id="${award.id}">` +
+            `<strong>ID: ${award.id} - ${escapeHtml(award.code)}</strong> (${escapeHtml(award.category || 'keine Kategorie')})`;
+
+        if (award.levels && award.levels.length > 0) {
+            html += '<ul class="mt-2">';
+            award.levels.forEach(level => {
+                const levelKey = `${award.id}:${level.level}`;
+                levelEditStore.set(levelKey, level);
+
+                const iconHtml = level.icon_path ?
+                    `<img src="../../${escapeHtml(level.icon_path)}" alt="Icon" class="award-preview ms-2" loading="lazy" decoding="async">` :
+                    '';
+
+                const editButtonHtml = isAdmin ?
+                    `<button type="button" class="btn btn-sm btn-outline-secondary ms-2 js-edit-level" data-award-id="${award.id}" data-level="${level.level}">Bearbeiten</button>` :
+                    '';
+
+                html += `<li>
+                ${iconHtml}
+                Stufe ${level.level}: ${escapeHtml(level.title_de)} – ${level.threshold} Punkte (${level.ep} EP) "${escapeHtml(level.description_de)}"
+                ${editButtonHtml}
+                </li>`;
+            });
+            html += '</ul>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function renderAwards(data) {
+        levelEditStore.clear();
+
+        if (!Array.isArray(data) || data.length === 0) {
+            awardListEl.innerHTML = "<p>Keine Awards vorhanden.</p>";
             return;
         }
 
-        data.forEach(award => {
-            const el = document.createElement("div");
-            el.classList.add("mb-3", "border", "p-3", "rounded");
-            el.setAttribute("data-award-id", award.id);
+        const html = data.map(buildAwardCardHtml).join('');
+        awardListEl.innerHTML = html;
+    }
 
-            let html =
-                `<strong>ID: ${award.id} - ${award.code}</strong> (${award.category || 'keine Kategorie'})`;
-            if (award.levels && award.levels.length > 0) {
-                html += '<ul class="mt-2">';
-                award.levels.forEach(level => {
-                    html += `<li>
-                <img src="../../${level.icon_path}" alt="Icon" class="award-preview ms-2">
-                Stufe ${level.level}: ${level.title_de} – ${level.threshold} Punkte (${level.ep} EP) "${level.description_de}"
-                ${isAdmin ? `
-                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick='editLevel(${JSON.stringify(level)}, ${award.id})'>Bearbeiten</button>
-                ` : ''}
-                </li>`;
-                });
-                html += '</ul>';
+    async function fetchAwards() {
+        awardListEl.innerHTML = "<p>Lade Awards...</p>";
+
+        try {
+            const response = await fetch("get_awards.php");
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
             }
 
-            el.innerHTML = html;
-            container.appendChild(el);
-        });
+            const data = await response.json();
+            renderAwards(data);
+        } catch (error) {
+            console.error("Awards konnten nicht geladen werden:", error);
+            awardListEl.innerHTML = "<p>Fehler beim Laden der Awards.</p>";
+            return;
+        }
 
         const scrollToId = localStorage.getItem("scrollToAwardId");
         if (scrollToId) {
@@ -160,6 +203,23 @@ if (isset($_GET['logout'])) {
     }
 
     fetchAwards();
+
+    awardListEl.addEventListener("click", function(e) {
+        const button = e.target.closest(".js-edit-level");
+        if (!button) return;
+
+        const awardId = Number(button.dataset.awardId);
+        const levelNumber = Number(button.dataset.level);
+        const levelKey = `${awardId}:${levelNumber}`;
+        const level = levelEditStore.get(levelKey);
+
+        if (!level) {
+            alert("Level-Daten konnten nicht geladen werden.");
+            return;
+        }
+
+        editLevel(level, awardId);
+    });
 
     function editLevel(level, awardId) {
         document.getElementById("formTitle").innerText = "Award-Level bearbeiten";

@@ -481,6 +481,11 @@ const IceCreamRadar = () => {
 
   const fetchIceCreamShops = loadIceCreamShops;
   const refreshShops = loadIceCreamShops;
+  const activeShopId =
+    activeShop?.eisdiele?.id ??
+    activeShop?.eisdielen_id ??
+    activeShop?.id ??
+    null;
 
   const fetchShopDetails = async (shop) => {
     try {
@@ -902,6 +907,7 @@ const IceCreamRadar = () => {
                     invertScale={activeDisplayConfig.invertScale}
                     fetchShopDetails={fetchShopDetails}
                     fetchAndCenterShop={fetchAndCenterShop}
+                    isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                   />
                 );
               })}
@@ -919,6 +925,7 @@ const IceCreamRadar = () => {
                   invertScale={activeDisplayConfig.invertScale}
                   fetchShopDetails={fetchShopDetails}
                   fetchAndCenterShop={fetchAndCenterShop}
+                  isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                 />
               );
             })

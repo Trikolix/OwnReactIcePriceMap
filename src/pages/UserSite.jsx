@@ -10,6 +10,7 @@ import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import { Sparkles } from 'lucide-react';
+import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -513,15 +514,26 @@ function UserSite() {
               </SectionHeader>
               {displayedAwards.length ? (
                 <AwardsGrid>
-                  {displayedAwards.map((award, index) => (
-                    <AwardCard key={index}>
-                      <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
-                      <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
-                      <AwardTitle>{award.title_de}</AwardTitle>
-                      <AwardDescription>{award.description_de}</AwardDescription>
-                      <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
-                    </AwardCard>
-                  ))}
+                  {displayedAwards.map((award, index) => {
+                    const iconSources = getAwardIconSources(award?.icon_path, 512);
+
+                    return (
+                      <AwardCard key={index}>
+                        <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
+                        <AwardImage
+                          src={iconSources.src || ''}
+                          data-fallback-src={iconSources.fallbackSrc || ''}
+                          onError={handleAwardIconFallback}
+                          loading="lazy"
+                          decoding="async"
+                          alt={award.title_de}
+                        />
+                        <AwardTitle>{award.title_de}</AwardTitle>
+                        <AwardDescription>{award.description_de}</AwardDescription>
+                        <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
+                      </AwardCard>
+                    );
+                  })}
                 </AwardsGrid>
               ) : (
                 <EmptyState>Keine Awards vorhanden.</EmptyState>
@@ -796,27 +808,30 @@ const FullPage = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #ffb522;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.34), transparent 42%),
+    linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
 `;
 
 const WhiteBackground = styled.div`
-  width: 100vw;
-  background-color: #fff;
+  width: 100%;
+  background: transparent;
   flex: 1;
 `;
 
 const DashboardWrapper = styled.div`
-  width: 92%;
-  max-width: 1100px;
+  width: min(96%, 1120px);
   margin: 0 auto;
-  padding: 2rem 1rem 3rem;
+  padding: 1rem 1rem 2.5rem;
 `;
 
 const LoadingCard = styled.div`
-  background: #fff;
+  background: rgba(255, 252, 243, 0.96);
   padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  border-radius: 18px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  color: #2f2100;
 `;
 
 const ProfileHeader = styled.div`
@@ -824,13 +839,20 @@ const ProfileHeader = styled.div`
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
 `;
 
 const AvatarCircle = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: #ffe2b5;
+  background: linear-gradient(180deg, #ffe2b5, #ffd08a);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(255, 181, 34, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -851,7 +873,8 @@ const ProfileInfo = styled.div`
   min-width: 240px;
   h1 {
     margin: 0;
-    font-size: 2rem;
+    font-size: clamp(1.35rem, 2vw, 2rem);
+    color: #2f2100;
   }
 `;
 
@@ -863,33 +886,45 @@ const MetaRow = styled.div`
 `;
 
 const Chip = styled.span`
-  background: #f5f5f5;
+  background: rgba(47, 33, 0, 0.04);
+  border: 1px solid rgba(47, 33, 0, 0.08);
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
   font-size: 0.9rem;
-  color: #555;
+  color: #5b4520;
 `;
 
 const SettingsButton = styled.button`
   margin-left: auto;
   background: #ffb522;
-  color: white;
-  border: none;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.5);
   border-radius: 999px;
   padding: 0.65rem 1.5rem;
   font-size: 1rem;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
   &:hover {
-    background: #da9c20;
+    background: #ffc34a;
+    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
   }
 `;
 
 const InviteCard = styled.div`
-  background: #fff7e6;
+  background: rgba(255, 247, 230, 0.94);
+  border: 1px solid rgba(255, 181, 34, 0.2);
+  box-shadow: 0 10px 24px rgba(28, 20, 0, 0.05);
   padding: 1.5rem;
-  border-radius: 16px;
+  border-radius: 18px;
   margin-top: 1.5rem;
+  color: #2f2100;
+
+  h3 {
+    margin: 0 0 0.75rem;
+    color: #2f2100;
+  }
 `;
 
 const LevelCardWrapper = styled.div`
@@ -898,6 +933,11 @@ const LevelCardWrapper = styled.div`
 
 const AwardsCard = styled.div`
   margin-top: 2rem;
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
 `;
 
 const SectionHeader = styled.div`
@@ -909,16 +949,18 @@ const SectionHeader = styled.div`
 
   h2, h3 {
     margin: 0;
+    color: #2f2100;
   }
 
   span {
-    color: #888;
+    color: rgba(47, 33, 0, 0.62);
     font-size: 0.9rem;
   }
 `;
 
 const StatsArea = styled.section`
   margin-bottom: 2.5rem;
+  margin-top: 2rem;
 `;
 
 const HighlightGrid = styled.div`
@@ -929,15 +971,16 @@ const HighlightGrid = styled.div`
 `;
 
 const HighlightCard = styled.div`
-  background: #f7fbff;
+  background: rgba(255, 252, 243, 0.94);
   border-radius: 16px;
   padding: 1.5rem;
   text-align: center;
-  box-shadow: inset 0 0 0 1px #e5f0ff;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 8px 22px rgba(28, 20, 0, 0.05);
 
   h3 {
     margin: 0;
-    color: #5f6c80;
+    color: #6b5327;
     font-size: 0.95rem;
   }
 
@@ -945,11 +988,11 @@ const HighlightCard = styled.div`
     display: block;
     font-size: 2rem;
     margin-top: 0.5rem;
-    color: #0d3b66;
+    color: #2f2100;
   }
 
   small {
-    color: #9aa6c1;
+    color: rgba(47, 33, 0, 0.55);
   }
 `;
 
@@ -961,19 +1004,21 @@ const ContentGrid = styled.div`
 `;
 
 const ContentCard = styled.div`
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.94);
+  border-radius: 18px;
   padding: 1.5rem;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
 `;
 
 const CardTitle = styled.h3`
   margin: 0 0 0.25rem;
+  color: #2f2100;
 `;
 
 const CardSubtitle = styled.p`
   margin: 0 0 1rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.65);
 `;
 
 const PortionRow = styled.div`
@@ -986,7 +1031,7 @@ const PortionRow = styled.div`
 
 const PortionBar = styled.div`
   height: 8px;
-  background: #f2f2f2;
+  background: rgba(47, 33, 0, 0.06);
   border-radius: 999px;
   overflow: hidden;
 `;
@@ -1007,7 +1052,7 @@ const RankingItem = styled.li`
   flex-direction: column;
   align-items: stretch;
   gap: ${(props) => (props.$hasDetail ? 0.5 : 0)}rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
   padding: 0.65rem 0;
   font-weight: 500;
   cursor: ${(props) => (props.$clickable ? 'pointer' : 'default')};
@@ -1039,8 +1084,8 @@ const FlavorDetail = styled.div`
   width: 100%;
   padding: 0.75rem;
   border-radius: 12px;
-  background: #f9fafb;
-  border: 1px solid #eee;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(47, 33, 0, 0.08);
 `;
 
 const FlavorDetailList = styled.ul`
@@ -1055,13 +1100,13 @@ const FlavorDetailList = styled.ul`
 const FlavorDetailEntry = styled.li`
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  background: #fff;
-  border: 1px solid #f0f0f0;
+  background: rgba(255, 252, 243, 0.95);
+  border: 1px solid rgba(47, 33, 0, 0.08);
   cursor: pointer;
   transition: box-shadow 0.2s ease;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 6px 14px rgba(28, 20, 0, 0.08);
   }
 
   &:focus-visible {
@@ -1079,31 +1124,31 @@ const FlavorDetailHeader = styled.div`
 
 const FlavorDetailMeta = styled.span`
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.62);
 `;
 
 const FlavorDetailSub = styled.div`
   font-size: 0.8rem;
-  color: #888;
+  color: rgba(47, 33, 0, 0.58);
   margin-top: 0.25rem;
 `;
 
 const FlavorDetailNote = styled.p`
   margin: 0;
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.62);
 `;
 
 const RankingMeta = styled.span`
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.62);
 `;
 
 const ListToggle = styled.button`
   margin-top: 0.75rem;
   background: none;
   border: none;
-  color: #ff8a00;
+  color: #8a5700;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -1115,7 +1160,7 @@ const ListToggle = styled.button`
 const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(24, 17, 0, 0.38);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1124,14 +1169,15 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalCard = styled.div`
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.98);
+  border-radius: 18px;
   max-width: 640px;
   width: 100%;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(28, 20, 0, 0.2);
 `;
 
 const ModalHeader = styled.div`
@@ -1139,19 +1185,24 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
 
   h3 {
     margin: 0;
+    color: #2f2100;
   }
 `;
 
 const CloseModalButton = styled.button`
-  border: none;
-  background: transparent;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.6);
   font-size: 1.5rem;
   cursor: pointer;
   line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: #5b4520;
 `;
 
 const ModalBody = styled.div`
@@ -1161,7 +1212,7 @@ const ModalBody = styled.div`
 
 const EmptyState = styled.p`
   margin: 0.5rem 0 0;
-  color: #999;
+  color: rgba(47, 33, 0, 0.55);
 `;
 
 const ChartWrapper = styled.div`
@@ -1176,55 +1227,91 @@ const ActivityTabs = styled.div`
 `;
 
 const ActivityTabButton = styled.button`
-  border: none;
+  border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.45)' : 'rgba(47,33,0,0.08)')};
   border-radius: 999px;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
   cursor: pointer;
-  background: ${(props) => (props.active ? '#ffb522' : '#f3f3f3')};
-  color: ${(props) => (props.active ? '#fff' : '#555')};
+  background: ${(props) => (props.active ? 'rgba(255, 181, 34, 0.18)' : 'rgba(255,255,255,0.75)')};
+  color: ${(props) => (props.active ? '#7a4a00' : '#5b4520')};
+  font-weight: 700;
 `;
 
 const ActivityTable = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 1rem;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
 
   th, td {
-    padding: 0.5rem;
+    padding: 0.6rem 0.7rem;
     text-align: left;
   }
 
   th {
-    color: #777;
+    color: #5f3f00;
     font-size: 0.85rem;
+    background: rgba(255, 252, 243, 0.98);
+    border-bottom: 1px solid rgba(47, 33, 0, 0.08);
   }
 
   tbody tr:nth-child(even) {
-    background: #fafafa;
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  tbody tr:nth-child(odd) {
+    background: rgba(255, 252, 243, 0.45);
+  }
+
+  td {
+    border-bottom: 1px solid rgba(47, 33, 0, 0.06);
+    color: #2f2100;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
   }
 `;
 
 const FeedTabContainer = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.45rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
   justify-content: center;
+  padding: 0.35rem;
+  background: rgba(255, 252, 243, 0.88);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
 `;
 
 const FeedTabButton = styled.button`
   padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
+  border-radius: 10px;
+  border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.55)' : 'transparent')};
   cursor: pointer;
-  background-color: ${(props) => (props.active ? '#ffb522' : '#f0f0f0')};
-  color: ${(props) => (props.active ? 'white' : '#333')};
-  font-weight: 600;
+  background-color: ${(props) => (props.active ? '#ffb522' : 'transparent')};
+  color: ${(props) => (props.active ? '#2f2100' : '#5c4a25')};
+  font-weight: 700;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: ${(props) => (props.active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+
+  &:hover {
+    background-color: ${(props) => (props.active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
+  }
 `;
 
 const TabContent = styled.div`
   margin-top: 1rem;
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
 `;
 
 const LoadMoreButton = styled.button`
@@ -1232,15 +1319,18 @@ const LoadMoreButton = styled.button`
   margin: 1rem auto;
   padding: 0.5rem 1rem;
   background-color: #ffb522;
-  color: white;
-  border: none;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.5);
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
+  transition: background-color 0.2s, box-shadow 0.2s;
 
   &:hover {
-    background-color: #da9c20;
+    background-color: #ffc34a;
+    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
   }
 `;
 
@@ -1255,19 +1345,20 @@ const Input = styled.input`
   flex: 1;
   min-width: 200px;
   padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  background: rgba(255,255,255,0.95);
   font-family: monospace;
 `;
 
 const CopyButton = styled.button`
   padding: 0.5rem 1rem;
   background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 8px;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.45);
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
 `;
 
 const Toast = styled.div`
@@ -1301,9 +1392,10 @@ const AwardsGrid = styled.div`
 `;
 
 const AwardCard = styled.div`
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 252, 243, 0.95);
+  border-radius: 14px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
   padding: 16px;
   text-align: center;
   position: relative;
@@ -1316,17 +1408,18 @@ const AwardImage = styled.img`
 
 const AwardTitle = styled.h3`
   font-weight: 600;
+  color: #2f2100;
 `;
 
 const AwardDescription = styled.p`
   font-size: 0.875rem;
-  color: #666;
+  color: rgba(47, 33, 0, 0.62);
   margin-top: 4px;
 `;
 
 const AwardDate = styled.span`
   font-size: 0.75rem;
-  color: #999;
+  color: rgba(47, 33, 0, 0.55);
   margin-top: 8px;
   display: block;
 `;
@@ -1346,8 +1439,9 @@ const EPBadge = styled.div`
 
 const AvatarModalContent = styled.div`
   position: relative;
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.98);
+  border-radius: 18px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
   padding: 2rem;
   max-width: 420px;
   width: 90vw;
@@ -1369,9 +1463,9 @@ const CloseAvatarModalButton = styled.button`
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: #eee;
-  color: #333;
-  border: none;
+  background: rgba(255,255,255,0.8);
+  color: #5b4520;
+  border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 50%;
   width: 2.2rem;
   height: 2.2rem;
@@ -1380,6 +1474,6 @@ const CloseAvatarModalButton = styled.button`
   cursor: pointer;
   z-index: 2;
   &:hover {
-    background: #ddd;
+    background: rgba(255, 181, 34, 0.12);
   }
 `;

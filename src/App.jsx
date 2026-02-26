@@ -22,7 +22,6 @@ import Community from './pages/Community';
 import RegisterPage from './pages/RegisterPage';
 import Challenges from './pages/Challenges';
 import SystemmeldungForm from './components/SystemmeldungForm';
-import IceShopDetailPage from './pages/IceShopDetailPage';
 
 const App = () => {
   return (
@@ -41,7 +40,6 @@ const App = () => {
           <Route path="/favoriten" element={<FavoritenListe />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/user/:userId?" element={<UserSite />} />
-          <Route path="/eisdiele/:shopId" element={<IceShopDetailPage />} />
           <Route path="/verify" element={<VerifyAccount />} />
           <Route path="/agb" element={<AGB />} />
           <Route path="/datenschutz" element={<Datenschutz />} />

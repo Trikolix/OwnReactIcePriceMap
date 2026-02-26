@@ -172,6 +172,23 @@ function Statistics() {
       .filter(Boolean);
   }, [normalizedSearch, priceHierarchy]);
 
+  const priceOverviewStats = useMemo(() => {
+    let bundeslaender = 0;
+    let landkreise = 0;
+    filteredPriceHierarchy.forEach((land) => {
+      const states = land.bundeslaender || [];
+      bundeslaender += states.length;
+      states.forEach((bundesland) => {
+        landkreise += (bundesland.landkreise || []).length;
+      });
+    });
+    return {
+      laender: filteredPriceHierarchy.length,
+      bundeslaender,
+      landkreise,
+    };
+  }, [filteredPriceHierarchy]);
+
   const formatCurrencyValue = (value, symbol = '€') => {
     if (value === null || value === undefined || value === '0.00') {
       return '';
@@ -236,11 +253,16 @@ function Statistics() {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#fff7e8' }}>
       <Header />
-      <div style={{ width: '100vw', height: '100vh', backgroundColor: 'white' }}>
-        <Title>Statistiken</Title>
+      <div style={{ width: '100%', minHeight: '100%', backgroundColor: 'transparent' }}>
         <Container>
+          <HeroCard>
+            <Title>Statistiken</Title>
+            <HeroSubtitle>
+              Community-Aktivität, beliebte Sorten und regionale Preisübersichten auf einen Blick.
+            </HeroSubtitle>
+          </HeroCard>
           <TabContainer>
             <TabButton
               active={activeTab === 'activeUsers'}
@@ -263,16 +285,32 @@ function Statistics() {
           </TabContainer>
 
           <TabContent>
-            {activeTab === 'priceHierarchy' && (<div>
-              <Title>Durchschnittlicher Kugelpreis je Region</Title>
-              <SearchContainer>
-                <SearchInput
-                  type="search"
-                  placeholder="Land, Bundesland oder Landkreis suchen..."
-                  value={priceSearch}
-                  onChange={(e) => setPriceSearch(e.target.value)}
-                />
-              </SearchContainer>
+            {activeTab === 'priceHierarchy' && (<SectionCard>
+              <PriceOverviewToolbar>
+                <div>
+                  <SectionTitle style={{ textAlign: 'left', marginBottom: '0.35rem' }}>
+                    Durchschnittlicher Kugelpreis je Region
+                  </SectionTitle>
+                  <PriceOverviewSubline>
+                    Hierarchische Preisübersicht von Land bis Landkreis, sortiert nach Ø Kugelpreis.
+                  </PriceOverviewSubline>
+                </div>
+                <SearchContainer>
+                  <SearchInput
+                    type="search"
+                    placeholder="Land, Bundesland oder Landkreis suchen..."
+                    value={priceSearch}
+                    onChange={(e) => setPriceSearch(e.target.value)}
+                  />
+                </SearchContainer>
+              </PriceOverviewToolbar>
+              <PriceOverviewMeta>
+                <MetaPill>{priceOverviewStats.laender} Länder</MetaPill>
+                <MetaPill>{priceOverviewStats.bundeslaender} Bundesländer</MetaPill>
+                <MetaPill>{priceOverviewStats.landkreise} Landkreise</MetaPill>
+                {searchActive && <MetaPill $accent>Filter aktiv: „{priceSearch.trim()}“</MetaPill>}
+              </PriceOverviewMeta>
+              <TableScrollArea>
               <Table>
                 <thead>
                   <tr>
@@ -284,7 +322,7 @@ function Statistics() {
                 <tbody>
                   {filteredPriceHierarchy.length === 0 ? (
                     <tr>
-                      <Td colSpan="3" style={{ textAlign: 'center' }}>Keine Daten gefunden</Td>
+                      <EmptyStateCell colSpan="3">Keine Daten gefunden</EmptyStateCell>
                     </tr>
                   ) : (
                     filteredPriceHierarchy.map((land) => {
@@ -304,14 +342,14 @@ function Statistics() {
                               <NameWrapper>
                                 <Indent level={0} />
                                 {landHasChildren ? (
-                                  <ExpandIndicator>{landExpanded ? 'v' : '>'}</ExpandIndicator>
+                                  <ExpandIndicator $expanded={landExpanded}>{landExpanded ? '▾' : '▸'}</ExpandIndicator>
                                 ) : <LeafSpacer />}
                                 <LevelBadge>Land</LevelBadge>
-                                <span>{land.name}</span>
+                                <RegionName>{land.name}</RegionName>
                               </NameWrapper>
                             </PriceNameCell>
-                            <Td>{formatPriceDisplay(land)}</Td>
-                            <Td>{land.anzahl_eisdielen}</Td>
+                            <PriceValueCell><PriceValuePill>{formatPriceDisplay(land)}</PriceValuePill></PriceValueCell>
+                            <Td><CountPill>{land.anzahl_eisdielen}</CountPill></Td>
                           </PriceTableRow>
 
                           {landExpanded && bundeslaender.map((bundesland) => {
@@ -336,14 +374,14 @@ function Statistics() {
                                     <NameWrapper>
                                       <Indent level={1} />
                                       {bundeslandHasChildren ? (
-                                        <ExpandIndicator>{bundeslandExpanded ? 'v' : '>'}</ExpandIndicator>
+                                        <ExpandIndicator $expanded={bundeslandExpanded}>{bundeslandExpanded ? '▾' : '▸'}</ExpandIndicator>
                                       ) : <LeafSpacer />}
                                       <LevelBadge>Bundesland</LevelBadge>
-                                      <span>{bundesland.name}</span>
+                                      <RegionName>{bundesland.name}</RegionName>
                                     </NameWrapper>
                                   </PriceNameCell>
-                                  <Td>{formatPriceDisplay(bundesland)}</Td>
-                                  <Td>{bundesland.anzahl_eisdielen}</Td>
+                                  <PriceValueCell><PriceValuePill>{formatPriceDisplay(bundesland)}</PriceValuePill></PriceValueCell>
+                                  <Td><CountPill>{bundesland.anzahl_eisdielen}</CountPill></Td>
                                 </PriceTableRow>
 
                                 {bundeslandExpanded && landkreise.map((landkreis) => (
@@ -353,11 +391,11 @@ function Statistics() {
                                         <Indent level={2} />
                                         <LeafSpacer />
                                         <LevelBadge>Landkreis</LevelBadge>
-                                        <span>{landkreis.name}</span>
+                                        <RegionName>{landkreis.name}</RegionName>
                                       </NameWrapper>
                                     </PriceNameCell>
-                                    <Td>{formatPriceDisplay(landkreis)}</Td>
-                                    <Td>{landkreis.anzahl_eisdielen}</Td>
+                                    <PriceValueCell><PriceValuePill>{formatPriceDisplay(landkreis)}</PriceValuePill></PriceValueCell>
+                                    <Td><CountPill>{landkreis.anzahl_eisdielen}</CountPill></Td>
                                   </PriceTableRow>
                                 ))}
                               </React.Fragment>
@@ -369,11 +407,13 @@ function Statistics() {
                   )}
                 </tbody>
               </Table>
-            </div>
+              </TableScrollArea>
+            </SectionCard>
             )}
 
-            {activeTab === 'mostPopularFlavours' && (<div>
-              <Title>beliebteste Sorten</Title>
+            {activeTab === 'mostPopularFlavours' && (<SectionCard>
+              <SectionTitle>Beliebteste Sorten</SectionTitle>
+              <TableScrollArea>
               <Table>
                 <thead>
                   <tr>
@@ -420,12 +460,14 @@ function Statistics() {
                 </tbody>
 
               </Table>
-            </div>
+              </TableScrollArea>
+            </SectionCard>
             )}
 
-            {activeTab === 'activeUsers' && (<div>
+            {activeTab === 'activeUsers' && (<SectionCard>
 
-              <Title>Benutzer nach Level</Title>
+              <SectionTitle>Benutzer nach Level</SectionTitle>
+              <TableScrollArea>
               <Table>
                 <thead>
                   <tr>
@@ -466,7 +508,8 @@ function Statistics() {
                   ))}
                 </tbody>
               </Table>
-            </div>
+              </TableScrollArea>
+            </SectionCard>
             )}
           </TabContent>
         </Container>
@@ -478,48 +521,151 @@ function Statistics() {
 export default Statistics;
 
 const Container = styled.div`
-  background-color: white;
-  height: 100%;
-  gap: 2rem;
-
-  width: 90%;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.28), transparent 45%),
+    linear-gradient(180deg, #fffaf0 0%, #fff7e7 100%);
+  min-height: 100%;
+  gap: 1rem;
+  width: min(96%, 1480px);
+  box-sizing: border-box;
   margin: 0 auto;
-  padding: 0rem 1rem;
+  padding: 1rem;
 `;
 
 const Title = styled.h2`
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-weight: 800;
+  margin: 0;
   text-align: center;
+  color: #2f2100;
+`;
+
+const HeroCard = styled.div`
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem 1rem 0.9rem;
+  margin-bottom: 1rem;
+`;
+
+const HeroSubtitle = styled.p`
+  margin: 0.35rem 0 0;
+  text-align: center;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.95rem;
+`;
+
+const SectionCard = styled.div`
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
+`;
+
+const SectionTitle = styled.h3`
+  margin: 0 0 0.85rem;
+  text-align: center;
+  color: #2f2100;
+  font-size: 1.05rem;
+  font-weight: 800;
+`;
+
+const PriceOverviewToolbar = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  margin-bottom: 0.55rem;
+
+  @media (min-width: 900px) {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 1rem;
+  }
+`;
+
+const PriceOverviewSubline = styled.p`
+  margin: 0;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.9rem;
+  text-align: left;
+`;
+
+const PriceOverviewMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+`;
+
+const MetaPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  background: ${({ $accent }) => ($accent ? 'rgba(255, 181, 34, 0.18)' : 'rgba(47, 33, 0, 0.04)')};
+  border: 1px solid ${({ $accent }) => ($accent ? 'rgba(255, 181, 34, 0.35)' : 'rgba(47, 33, 0, 0.08)')};
+  color: #6a4908;
+  font-weight: 700;
+  font-size: 0.78rem;
+`;
+
+const TableScrollArea = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.8);
 `;
 
 const Table = styled.table`
   width: 100%;
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  border-collapse: collapse;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
 `;
 
 const Th = styled.th`
   text-align: left;
-  padding: 0.75rem;
-  background: #f0f0f0;
-  border-bottom: 2px solid #ccc;
+  padding: 0.7rem 0.75rem;
+  background: rgba(255, 252, 243, 0.98);
+  color: #5f3f00;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.12);
+  font-weight: 800;
+  font-size: 0.83rem;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 `;
 
 const Td = styled.td`
-  padding: 0.75rem;
-  border-bottom: 1px solid #eee;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+  color: #2f2100;
+  font-size: 0.92rem;
+  vertical-align: top;
+`;
+
+const EmptyStateCell = styled(Td)`
+  text-align: center;
+  padding: 1.2rem 0.75rem;
+  color: rgba(47, 33, 0, 0.62);
+  font-style: italic;
 `;
 
 const TabContainer = styled.div`
   display: flex;
   justify-content: center;
-  flex-wrap: wrap; /* Tabs umbrechen, wenn nötig */
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-bottom: 1rem;
+  padding: 0.35rem;
+  background: rgba(255, 252, 243, 0.88);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
 
   @media (max-width: 600px) {
     justify-content: flex-start;
@@ -532,18 +678,21 @@ const TabContainer = styled.div`
 `;
 
 const TabButton = styled.button`
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   margin: 0;
-  background-color: ${(props) => (props.active ? '#ffb522' : '#f0f0f0')};
-  color: ${(props) => (props.active ? 'white' : '#333')};
-  border: none;
-  border-radius: 5px;
+  background-color: ${(props) => (props.active ? '#ffb522' : 'transparent')};
+  color: ${(props) => (props.active ? '#2f2100' : '#5c4a25')};
+  border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.55)' : 'transparent')};
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
   white-space: nowrap;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: ${(props) => (props.active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
 
   &:hover {
-    background-color: ${(props) => (props.active ? '#da9c20ff' : '#e0e0e0')};
+    background-color: ${(props) => (props.active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
   }
 
   @media (max-width: 600px) {
@@ -555,7 +704,8 @@ const TabButton = styled.button`
 
 const TabContent = styled.div`
   margin-top: 1rem;
-  overflow: auto; /* Scrollen nur hier */
+  display: grid;
+  gap: 1rem;
 `;
 
 
@@ -571,13 +721,17 @@ const UserLink = styled(Link)`
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+
+  &:hover {
+    color: #8a5600;
+  }
 `;
 
 const ExpandContainer = styled.div`
   max-height: ${(props) => (props.expanded ? '500px' : '0')};
   overflow: hidden;
   transition: max-height 0.4s ease;
-  background-color: #fafafa;
+  background: linear-gradient(180deg, rgba(255,248,225,0.7), rgba(255,255,255,0.9));
   padding: ${(props) => (props.expanded ? '0.5rem 1rem' : '0 1rem')};
 `;
 
@@ -591,7 +745,7 @@ const DetailList = styled.ul`
 const EmptyText = styled.div`
   padding: 0.5rem;
   font-style: italic;
-  color: #777;
+  color: #7a6440;
 `;
 
 const CleanLink = styled(Link)`
@@ -602,17 +756,20 @@ const CleanLink = styled(Link)`
 const SearchContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
 `;
 
 const SearchInput = styled.input`
   width: 100%;
   max-width: 360px;
+  min-width: min(100%, 320px);
   padding: 0.5rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  border-radius: 10px;
   font-size: 1rem;
   outline: none;
+  background: rgba(255,255,255,0.95);
+  color: #2f2100;
 
   &:focus {
     border-color: #ffb522;
@@ -624,11 +781,24 @@ const PriceTableRow = styled.tr`
   cursor: ${(props) => (props.clickable ? 'pointer' : 'default')};
   background-color: ${(props) =>
     props.level === 'land'
-      ? '#fff8ec'
+      ? 'rgba(255, 181, 34, 0.10)'
       : props.level === 'bundesland'
-        ? '#fffdf6'
+        ? 'rgba(255, 181, 34, 0.04)'
         : 'transparent'};
   transition: background-color 0.2s ease;
+
+  &:hover td {
+    background: ${(props) => (props.clickable ? 'rgba(255, 181, 34, 0.10)' : 'transparent')};
+  }
+
+  td {
+    background: ${(props) =>
+      props.level === 'land'
+        ? 'rgba(255, 248, 225, 0.6)'
+        : props.level === 'bundesland'
+          ? 'rgba(255, 255, 255, 0.86)'
+          : 'rgba(255, 255, 255, 0.72)'};
+  }
 `;
 
 const PriceNameCell = styled(Td)`
@@ -640,6 +810,12 @@ const NameWrapper = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
+  min-height: 28px;
+`;
+
+const RegionName = styled.span`
+  font-weight: 700;
+  color: #2f2100;
 `;
 
 const Indent = styled.span`
@@ -653,21 +829,59 @@ const LevelBadge = styled.span`
   align-items: center;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  background-color: #ffe0a3;
+  background-color: rgba(255, 181, 34, 0.18);
   color: #8a5700;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  border: 1px solid rgba(255, 181, 34, 0.3);
 `;
 
 const ExpandIndicator = styled.span`
-  display: inline-block;
-  width: 1rem;
+  display: inline-grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
   text-align: center;
   font-weight: bold;
+  border-radius: 999px;
+  color: #7f5300;
+  background: ${({ $expanded }) => ($expanded ? 'rgba(255,181,34,0.22)' : 'rgba(47,33,0,0.05)')};
+  border: 1px solid ${({ $expanded }) => ($expanded ? 'rgba(255,181,34,0.35)' : 'rgba(47,33,0,0.08)')};
+  font-size: 0.75rem;
 `;
 
 const LeafSpacer = styled.span`
   display: inline-block;
-  width: 1rem;
+  width: 1.05rem;
+`;
+
+const PriceValueCell = styled(Td)`
+  white-space: nowrap;
+`;
+
+const PriceValuePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 181, 34, 0.12);
+  border: 1px solid rgba(255, 181, 34, 0.22);
+  color: #7a4a00;
+  font-weight: 700;
+  min-width: 72px;
+  justify-content: center;
+`;
+
+const CountPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.04);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  color: #5b4520;
+  font-weight: 700;
 `;

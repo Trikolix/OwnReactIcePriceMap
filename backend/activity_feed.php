@@ -3,9 +3,11 @@ require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
+require_once  __DIR__ . '/lib/comment_registration.php';
 
 function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $activities = [];
+    $hasUserRegistrationCommentSupport = ensureKommentarUserRegistrationSupport($pdo);
 
     // 🟢 CHECKINS
     $stmtCheckins = $pdo->prepare("
@@ -93,6 +95,56 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
             'typ'  => 'eisdiele',
             'id'   => $shop['id'],
             'data' => $shop
+        ];
+    }
+
+    // 🆕 Neu registrierte (verifizierte) Benutzer
+    $newUserSql = $hasUserRegistrationCommentSupport
+        ? "
+            SELECT n.id,
+                   n.username,
+                   n.erstellt_am,
+                   n.current_level,
+                   up.avatar_path AS avatar_url,
+                   COALESCE(kc.comment_count, 0) AS commentCount
+            FROM nutzer n
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
+            LEFT JOIN (
+                SELECT user_registration_id, COUNT(*) AS comment_count
+                FROM kommentare
+                WHERE user_registration_id IS NOT NULL
+                GROUP BY user_registration_id
+            ) kc ON kc.user_registration_id = n.id
+            WHERE n.is_verified = 1
+              AND n.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+              AND n.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+            ORDER BY n.erstellt_am DESC
+        "
+        : "
+            SELECT n.id,
+                   n.username,
+                   n.erstellt_am,
+                   n.current_level,
+                   up.avatar_path AS avatar_url,
+                   0 AS commentCount
+            FROM nutzer n
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
+            WHERE n.is_verified = 1
+              AND n.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+              AND n.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+            ORDER BY n.erstellt_am DESC
+        ";
+    $stmtNewUsers = $pdo->prepare($newUserSql);
+    $stmtNewUsers->execute([
+        'offsetPlusDays' => $offsetDays + $days,
+        'offset'         => $offsetDays
+    ]);
+    $newUsers = $stmtNewUsers->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($newUsers as $newUser) {
+        $activities[] = [
+            'typ'  => 'new_user',
+            'id'   => $newUser['id'],
+            'data' => $newUser
         ];
     }
 

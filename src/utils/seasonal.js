@@ -23,10 +23,10 @@ export const isSpecialTime = () => {
         }
     }
 
-    // Olympic Winter Games visibility: active phase plus short post-event results phase
+    // Olympic Winter Games time: February 6th to February 22nd, 2026
     if (currentYear === 2026) {
         const olympicsStart = new Date('2026-02-06');
-        const olympicsEnd = new Date('2026-03-02');
+        const olympicsEnd = new Date('2026-02-22');
         if (today >= olympicsStart && today <= olympicsEnd) {
             return 'olympics';
         }

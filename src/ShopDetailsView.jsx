@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, use } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
+import { X } from 'lucide-react';
 import { SubmitButton as SharedSubmitButton } from './styles/SharedStyles';
 import { useSearchParams } from 'react-router-dom';
-import Rating from "./components/Rating";
+import Rating from './components/Rating';
 import { useUser } from './context/UserContext';
 import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
@@ -17,7 +18,7 @@ import ShareIcon from './components/ShareButton';
 import CheckinFrom from './CheckinForm';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
-import SubmitIceShopModal from "./SubmitIceShopModal";
+import SubmitIceShopModal from './SubmitIceShopModal';
 
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -36,24 +37,18 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const [currentHeight, setCurrentHeight] = useState(window.innerHeight * 0.5);
   const [{ height }, api] = useSpring(() => ({ height: currentHeight }));
   const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const focusCheckinId = searchParams.get("focusCheckin");
-  const focusReviewId = searchParams.get("focusReview");
-  const createReferencedCheckin = searchParams.get("createReferencedCheckin");
-  const openAtParam = searchParams.get("open_at");
-
-  const handleEditClick = () => {
-    setShowEditModal(true);
-  };
+  const tabParam = searchParams.get('tab');
+  const focusCheckinId = searchParams.get('focusCheckin');
+  const focusReviewId = searchParams.get('focusReview');
+  const createReferencedCheckin = searchParams.get('createReferencedCheckin');
+  const openAtParam = searchParams.get('open_at');
 
   useEffect(() => {
     if (createReferencedCheckin) setShowCheckinForm(true);
   }, [createReferencedCheckin]);
 
   useEffect(() => {
-    if (tabParam) {
-      setActiveTab(tabParam);
-    }
+    if (tabParam) setActiveTab(tabParam);
   }, [tabParam]);
 
   const minHeight = window.innerHeight * 0.3;
@@ -69,15 +64,14 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
     api.start({ height: newHeight });
   };
 
-  const handleTouchEnd = (e) => {
-    // Setze neue aktuelle Höhe, um später weiterrechnen zu können
+  const handleTouchEnd = () => {
     api.start({ height: height.get() });
     setCurrentHeight(height.get());
   };
 
   const fetchShopData = useCallback(async (id) => {
     try {
-      const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : "";
+      const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : '';
       const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${referenceQuery}`);
       const data = await response.json();
       setShopData(data);
@@ -86,18 +80,11 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
     }
   }, [apiUrl, openAtParam]);
 
-  const refreshShop = () => {
-    fetchShopData(shopData.eisdiele.id);
-  };
-
-  const fetchRoutes = useCallback(async (id, userId) => {
+  const fetchRoutes = useCallback(async (id, currentUserId) => {
     try {
-      // Basis-URL mit der Eisdiele-ID
       let url = `${apiUrl}/routen/getRoutes.php?eisdiele_id=${id}`;
-
-      // Wenn userId gesetzt ist, hänge sie an die URL an
-      if (userId) {
-        url += `&nutzer_id=${userId}`;
+      if (currentUserId) {
+        url += `&nutzer_id=${currentUserId}`;
       }
       const response = await fetch(url);
       const data = await response.json();
@@ -105,100 +92,112 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
     } catch (err) {
       console.error('Fehler beim Abrufen der Routen via URL:', err);
     }
-  }, []);
-
-  const refreshRoutes = () => {
-    fetchRoutes(shopId, userId);
-  };
+  }, [apiUrl]);
 
   useEffect(() => {
-    if (shopId) {
-      fetchShopData(shopId);
-      fetchRoutes(shopId, userId);
-    }
+    if (!shopId) return;
+    fetchShopData(shopId);
+    fetchRoutes(shopId, userId);
   }, [shopId, userId, fetchShopData, fetchRoutes]);
 
+  const refreshShop = () => {
+    if (shopData?.eisdiele?.id) {
+      fetchShopData(shopData.eisdiele.id);
+    }
+  };
 
-  if (!shopData) return null;
+  const refreshRoutes = () => {
+    if (shopId) {
+      fetchRoutes(shopId, userId);
+    }
+  };
+
+  const ShellComponent = isMobile ? AnimatedContainer : Container;
+  const shellProps = isMobile
+    ? {
+      style: { height },
+      onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
+      onTouchEnd: handleTouchEnd,
+    }
+    : {};
+
+  if (!shopData) {
+    return (
+      <Container>
+        <LoadingWrap>
+          <LoadingCard>
+            <LoadingTitle>Eisdiele wird geladen...</LoadingTitle>
+            <LoadingText>Details, Preise und Community-Aktivitaet werden vorbereitet.</LoadingText>
+          </LoadingCard>
+        </LoadingWrap>
+      </Container>
+    );
+  }
 
   return (
     <>
-      {isMobile ? (
-        <AnimatedContainer
-          style={{ height }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Inhalt */}
-          <Header ref={headerRef}>
+      <ShellComponent {...shellProps}>
+        {isMobile && <DragHandle aria-hidden="true" />}
+        <Header ref={headerRef}>
+          <HeaderMain>
             <IceShopHeader>{shopData.eisdiele.name}</IceShopHeader>
-            <CloseButton onClick={onClose}>✖</CloseButton>
-            <FavoritenButton
-              eisdieleId={shopData.eisdiele.id}
-              setIceCreamShops={setIceCreamShops}
-            />
-            <ShareIcon path={"/map/activeShop/" + shopData.eisdiele.id} />
-          </Header>
-          <Tabs>
-            <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-            <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-Ins</Tab>
-            <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
-          </Tabs>
-          <Content>
-            <ShopDetailsContent
-              activeTab={activeTab}
-              shopData={shopData}
-              isLoggedIn={isLoggedIn}
-              setShowPriceForm={setShowPriceForm}
-              refreshShop={refreshShop}
-              setShowCheckinForm={setShowCheckinForm}
-              setShowRouteForm={setShowRouteForm}
-              setShowReviewForm={setShowReviewForm}
-              routes={routes}
-              refreshRoutes={refreshRoutes}
-              focusCheckinId={focusCheckinId}
-              focusReviewId={focusReviewId}
-              userId={userId}
-              handleEditClick={handleEditClick}
-            />
-          </Content>
-        </AnimatedContainer>
-      ) : (
-        <Container>
-          <Header ref={headerRef}>
-            <IceShopHeader>{shopData.eisdiele.name}</IceShopHeader>
-            <CloseButton onClick={onClose}>✖</CloseButton>
-            <FavoritenButton
-              eisdieleId={shopData.eisdiele.id}
-              setIceCreamShops={setIceCreamShops}
-            />
-            <ShareIcon path={"/map/activeShop/" + shopData.eisdiele.id} />
-          </Header>
-          <Tabs>
-            <Tab onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-            <Tab onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
-            <Tab onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
-          </Tabs>
-          <Content>
-            <ShopDetailsContent
-              activeTab={activeTab}
-              shopData={shopData}
-              isLoggedIn={isLoggedIn}
-              setShowPriceForm={setShowPriceForm}
-              refreshShop={refreshShop}
-              setShowCheckinForm={setShowCheckinForm}
-              setShowRouteForm={setShowRouteForm}
-              setShowReviewForm={setShowReviewForm}
-              routes={routes}
-              refreshRoutes={refreshRoutes}
-              focusCheckinId={focusCheckinId}
-              focusReviewId={focusReviewId}
-              userId={userId}
-              handleEditClick={handleEditClick}
-            />
-          </Content>
-        </Container>)}
+            <HeaderSubline>{shopData.eisdiele.adresse || 'Adresse nicht hinterlegt'}</HeaderSubline>
+            <HeaderMeta>
+              {shopData.eisdiele.land && <MetaPill>{shopData.eisdiele.land}</MetaPill>}
+              {shopData.eisdiele.bundesland && <MetaPill>{shopData.eisdiele.bundesland}</MetaPill>}
+              {shopData.eisdiele.landkreis && <MetaPill>{shopData.eisdiele.landkreis}</MetaPill>}
+            </HeaderMeta>
+
+          </HeaderMain>
+          <HeaderActions>
+            <CloseButton onClick={onClose} aria-label="Details schliessen">
+              <X size={16} />
+            </CloseButton>
+            <HeaderUtilityRow>
+              <ActionSlot>
+                <FavoritenButton
+                  eisdieleId={shopData.eisdiele.id}
+                  setIceCreamShops={setIceCreamShops}
+                />
+              </ActionSlot>
+              <ActionSlot>
+                <ShareIcon path={`/map/activeShop/${shopData.eisdiele.id}`} />
+              </ActionSlot>
+            </HeaderUtilityRow>
+          </HeaderActions>
+        </Header>
+        {isLoggedIn && (
+          <HeaderCtaBar>
+            <PrimaryButton type="button" onClick={() => setShowCheckinForm(true)}>Einchecken</PrimaryButton>
+            <PrimaryButton type="button" onClick={() => setShowReviewForm(true)}>Bewerten</PrimaryButton>
+          </HeaderCtaBar>
+        )}
+        <Tabs>
+          <Tab type="button" onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
+          <Tab type="button" onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
+          <Tab type="button" onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
+        </Tabs>
+
+        <Content>
+          <ShopDetailsContent
+            activeTab={activeTab}
+            shopData={shopData}
+            isLoggedIn={isLoggedIn}
+            setShowPriceForm={setShowPriceForm}
+            refreshShop={refreshShop}
+            setShowCheckinForm={setShowCheckinForm}
+            setShowRouteForm={setShowRouteForm}
+            setShowReviewForm={setShowReviewForm}
+            routes={routes}
+            refreshRoutes={refreshRoutes}
+            focusCheckinId={focusCheckinId}
+            focusReviewId={focusReviewId}
+            handleEditClick={() => setShowEditModal(true)}
+          />
+        </Content>
+      </ShellComponent>
+
       {showRouteForm && (
         <SubmitRouteForm
           showForm={showRouteForm}
@@ -208,44 +207,76 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           onSuccess={refreshRoutes}
         />
       )}
-      {showPriceForm && (<SubmitPriceModal
-        shop={shopData}
-        userId={userId}
-        showPriceForm={showPriceForm}
-        setShowPriceForm={setShowPriceForm}
-        onSuccess={() => { refreshShop(); refreshMapShops(); }}
-      />)}
 
-      {showReviewForm && (<SubmitReviewModal
-        shop={shopData}
-        userId={userId}
-        showForm={showReviewForm}
-        setShowForm={setShowReviewForm}
-        setShowPriceForm={setShowPriceForm}
-        onSuccess={() => { refreshShop(); refreshMapShops(); }}
-      />)}
-      {showCheckinForm && (<CheckinFrom
-        shopId={shopData.eisdiele.id}
-        shopName={shopData.eisdiele.name}
-        userId={userId}
-        showCheckinForm={showCheckinForm}
-        setShowCheckinForm={setShowCheckinForm}
-        onSuccess={refreshShop}
-        shop={shopData}
-        setShowPriceForm={setShowPriceForm}
-        referencedCheckinId={createReferencedCheckin}
-      />)}
-      {showEditModal && (<SubmitIceShopModal
-        showForm={showEditModal}
-        setShowForm={setShowEditModal}
-        userId={userId}
-        refreshShops={refreshShop}
-        existingIceShop={shopData.eisdiele}
-      />)}
+      {showPriceForm && (
+        <SubmitPriceModal
+          shop={shopData}
+          userId={userId}
+          showPriceForm={showPriceForm}
+          setShowPriceForm={setShowPriceForm}
+          onSuccess={() => {
+            refreshShop();
+            refreshMapShops();
+          }}
+        />
+      )}
 
-    </>);
+      {showReviewForm && (
+        <SubmitReviewModal
+          shop={shopData}
+          userId={userId}
+          showForm={showReviewForm}
+          setShowForm={setShowReviewForm}
+          setShowPriceForm={setShowPriceForm}
+          onSuccess={() => {
+            refreshShop();
+            refreshMapShops();
+          }}
+        />
+      )}
+
+      {showCheckinForm && (
+        <CheckinFrom
+          shopId={shopData.eisdiele.id}
+          shopName={shopData.eisdiele.name}
+          userId={userId}
+          showCheckinForm={showCheckinForm}
+          setShowCheckinForm={setShowCheckinForm}
+          onSuccess={refreshShop}
+          shop={shopData}
+          setShowPriceForm={setShowPriceForm}
+          referencedCheckinId={createReferencedCheckin}
+        />
+      )}
+
+      {showEditModal && (
+        <SubmitIceShopModal
+          showForm={showEditModal}
+          setShowForm={setShowEditModal}
+          userId={userId}
+          refreshShops={refreshShop}
+          existingIceShop={shopData.eisdiele}
+        />
+      )}
+    </>
+  );
 };
-const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm, refreshShop, setShowCheckinForm, setShowRouteForm, setShowReviewForm, routes, refreshRoutes, focusCheckinId, focusReviewId, handleEditClick, userId }) => {
+
+const ShopDetailsContent = ({
+  activeTab,
+  shopData,
+  isLoggedIn,
+  setShowPriceForm,
+  refreshShop,
+  setShowCheckinForm,
+  setShowRouteForm,
+  setShowReviewForm,
+  routes,
+  refreshRoutes,
+  focusCheckinId,
+  focusReviewId,
+  handleEditClick,
+}) => {
   const checkinRefs = useRef({});
   const reviewRefs = useRef({});
 
@@ -265,173 +296,271 @@ const ShopDetailsContent = ({ activeTab, shopData, isLoggedIn, setShowPriceForm,
     ) {
       reviewRefs.current[focusReviewId].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [activeTab, shopData?.checkins, focusCheckinId, focusReviewId]);
-
-
+  }, [activeTab, shopData?.checkins, shopData?.reviews, focusCheckinId, focusReviewId]);
 
   const calculateTimeDifference = (dateString) => {
     const currentDate = new Date();
     const pastDate = new Date(dateString);
-
-    // Berechnen der Differenz in Millisekunden
     const diffInMilliseconds = currentDate - pastDate;
-
-    // Umrechnen in Tage
     const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
 
     if (diffInDays > 365) {
       const diffInYears = Math.floor(diffInDays / 365);
       return `Vor ${diffInYears} Jahr${diffInYears > 1 ? 'en' : ''}`;
-    } else if (diffInDays > 30) {
+    }
+    if (diffInDays > 30) {
       const diffInMonths = Math.floor(diffInDays / 30);
       return `Vor ${diffInMonths} Monat${diffInMonths > 1 ? 'en' : ''}`;
-    } else if (diffInDays === 0)
-      return 'Vor < 24 Stunden';
-    else {
-      return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
     }
+    if (diffInDays === 0) {
+      return 'Vor < 24 Stunden';
+    }
+    return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
   };
+
+  const hasPriceData = shopData.preise.kugel != null || shopData.preise.softeis != null;
+  const hasRatingData = Boolean(
+    shopData.bewertungen.auswahl ||
+    shopData.scores.kugel ||
+    shopData.scores.softeis ||
+    shopData.scores.eisbecher ||
+    shopData.attribute?.length > 0
+  );
+
   if (activeTab === 'info') {
     return (
-      <div>
-        <strong>Eisdiele in: </strong>{shopData.eisdiele.land} - {shopData.eisdiele.bundesland} - {shopData.eisdiele.landkreis}<br />
-        <strong>Adresse:</strong> {shopData.eisdiele.adresse}<br />
-        <OpeningHours eisdiele={shopData.eisdiele} />
-        <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
-        {isLoggedIn && (
-          <SuggestionButton type="button" onClick={handleEditClick}>
-            Änderung vorschlagen
-          </SuggestionButton>
-        )}
-        <h2>Preise</h2>
-        {(shopData.preise.kugel == null && shopData.preise.softeis == null) && (<>Es sind noch keine Preise für die Eisdiele gemeldet. {isLoggedIn && <>Trage jetzt gerne Preise ein:</>} </>)}
-        <Table>
-          {shopData.preise.kugel != null && (
-            <tr>
-              <th>Kugelpreis:</th>
-              <td>
-                <strong>{shopData.preise?.kugel?.preis?.toFixed(2) ?? "-"} {shopData.preise?.kugel?.waehrung_symbol ?? "€"} </strong>
-                {shopData.preise?.kugel?.beschreibung ? (<>({shopData.preise.kugel.beschreibung}) </>) : <></>}
-                <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.kugel.letztes_update)} aktualisiert)</span>
-              </td>
-            </tr>)}
-          {shopData.preise.softeis != null && (
-            <tr>
-              <th>Softeispreis:</th>
-              <td>
-                <strong>{shopData.preise?.softeis?.preis?.toFixed(2) ?? "-"} {shopData.preise?.softeis?.waehrung_symbol ?? "€"} </strong>
-                {shopData.preise?.softeis?.beschreibung ? (<>({shopData.preise.softeis.beschreibung}) </>) : <></>}
-                <span style={{ fontSize: 'smaller', color: 'grey' }}>({calculateTimeDifference(shopData.preise.softeis.letztes_update)} aktualisiert)</span>
-              </td>
-            </tr>)}
-        </Table>
-        {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button></ButtonContainer>)}
-        {(shopData.bewertungen.auswahl || shopData.scores.kugel || shopData.scores.softeis || shopData.scores.eisbecher || shopData.attribute?.length > 0) ? (
-          <>
-            <h2>Durchschnittliche Bewertung</h2>
-            <Table>
-              {shopData.scores.kugel !== null && (
-                <tr>
-                  <th>Kugeleis:</th>
-                  <td>
-                    <Rating stars={shopData.scores.kugel} />{" "}
-                    <strong>{shopData.scores.kugel}</strong>
-                  </td>
-                </tr>)}
-              {shopData.scores.softeis !== null && (
-                <tr>
-                  <th>Softeis:</th>
-                  <td>
-                    <Rating stars={shopData.scores.softeis} />{" "}
-                    <strong>{shopData.scores.softeis}</strong>
-                  </td>
-                </tr>)}
-              {shopData.scores.eisbecher !== null && (
-                <tr>
-                  <th>Eisbecher:</th>
-                  <td>
-                    <Rating stars={shopData.scores.eisbecher} />{" "}
-                    <strong>{shopData.scores.eisbecher}</strong>
-                  </td>
-                </tr>)}
-              {shopData.bewertungen.auswahl !== null && (
-                <tr>
-                  <th>Auswahl:</th>
-                  <td>
-                    ~ <strong>{shopData.bewertungen.auswahl}</strong> Sorten
-                  </td>
-                </tr>)}
-              {shopData.attribute?.length > 0 &&
-                <tr>
-                  <th>Attribute:</th>
-                  <td>
-                    <AttributeSection>
-                      {shopData.attribute.map(attribute => (<AttributeBadge>{attribute.anzahl} x {attribute.name}</AttributeBadge>))}
-                    </AttributeSection>
-                  </td>
-                </tr>}
-            </Table>
-          </>
-        ) : (
-          <>
-            <h2>Bewertungen</h2>
-            Es sind noch keine Bewertungen für die Eisdiele abgegeben wurden.<br /><br />
-          </>
-        )}
-        {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis-Besuch einchecken</Button></ButtonContainer>)}
-        {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
-        <h2>Komoot Routen</h2>
-        {routes.length < 1 && (<>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</>)}
-        {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button></ButtonContainer>)}
-        {routes.map((route, index) => (
-          <RouteCard key={index} route={route} shopId={shopData.eisdiele.id} shopName={shopData.eisdiele.name} onSuccess={refreshRoutes} />
-        ))}
-      </div>
+      <TabStack>
+        <SectionCard>
+          <InfoList>
+            <InfoRow>
+              <InfoLabel>Adresse</InfoLabel>
+              <InfoValue>{shopData.eisdiele.adresse || 'Keine Adresse eingetragen'}</InfoValue>
+            </InfoRow>
+          </InfoList>
+          <InlineContent>
+            <OpeningHours eisdiele={shopData.eisdiele} />
+            <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
+          </InlineContent>
+          {isLoggedIn && (
+            <SecondaryActionRow>
+              <SuggestionButton type="button" onClick={handleEditClick}>
+                Aenderung vorschlagen
+              </SuggestionButton>
+            </SecondaryActionRow>
+          )}
+        </SectionCard>
+
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>Preise</SectionTitle>
+              <SectionSubline>Zuletzt gemeldete Kugel- und Softeispreise.</SectionSubline>
+            </div>
+          </SectionHead>
+          {!hasPriceData && (
+            <EmptyState>
+              Es sind noch keine Preise fuer diese Eisdiele gemeldet.{isLoggedIn ? ' Trage gerne einen Preis ein.' : ''}
+            </EmptyState>
+          )}
+          {hasPriceData && (
+            <TableScroll>
+              <Table>
+                <tbody>
+                  {shopData.preise.kugel != null && (
+                    <tr>
+                      <th>Kugelpreis</th>
+                      <td>
+                        <ValuePill>
+                          {shopData.preise?.kugel?.preis?.toFixed(2) ?? '-'} {shopData.preise?.kugel?.waehrung_symbol ?? 'EUR'}
+                        </ValuePill>{' '}
+                        {shopData.preise?.kugel?.beschreibung ? <InlineMuted>({shopData.preise.kugel.beschreibung})</InlineMuted> : null}{' '}
+                        <InlineMuted>({calculateTimeDifference(shopData.preise.kugel.letztes_update)} aktualisiert)</InlineMuted>
+                      </td>
+                    </tr>
+                  )}
+                  {shopData.preise.softeis != null && (
+                    <tr>
+                      <th>Softeispreis</th>
+                      <td>
+                        <ValuePill>
+                          {shopData.preise?.softeis?.preis?.toFixed(2) ?? '-'} {shopData.preise?.softeis?.waehrung_symbol ?? 'EUR'}
+                        </ValuePill>{' '}
+                        {shopData.preise?.softeis?.beschreibung ? <InlineMuted>({shopData.preise.softeis.beschreibung})</InlineMuted> : null}{' '}
+                        <InlineMuted>({calculateTimeDifference(shopData.preise.softeis.letztes_update)} aktualisiert)</InlineMuted>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </TableScroll>
+          )}
+          {isLoggedIn && (
+            <ActionBar>
+              <Button type="button" onClick={() => setShowPriceForm(true)}>Preis melden / bestaetigen</Button>
+            </ActionBar>
+          )}
+        </SectionCard>
+
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>Durchschnittliche Bewertung</SectionTitle>
+              <SectionSubline>Community-Bewertungen fuer Sorten, Auswahl und Attribute.</SectionSubline>
+            </div>
+          </SectionHead>
+          {!hasRatingData && (
+            <EmptyState>Es sind noch keine Bewertungen fuer diese Eisdiele vorhanden.</EmptyState>
+          )}
+          {hasRatingData && (
+            <TableScroll>
+              <Table>
+                <tbody>
+                  {shopData.scores.kugel !== null && (
+                    <tr>
+                      <th>Kugeleis</th>
+                      <td><Rating stars={shopData.scores.kugel} /> <strong>{shopData.scores.kugel}</strong></td>
+                    </tr>
+                  )}
+                  {shopData.scores.softeis !== null && (
+                    <tr>
+                      <th>Softeis</th>
+                      <td><Rating stars={shopData.scores.softeis} /> <strong>{shopData.scores.softeis}</strong></td>
+                    </tr>
+                  )}
+                  {shopData.scores.eisbecher !== null && (
+                    <tr>
+                      <th>Eisbecher</th>
+                      <td><Rating stars={shopData.scores.eisbecher} /> <strong>{shopData.scores.eisbecher}</strong></td>
+                    </tr>
+                  )}
+                  {shopData.bewertungen.auswahl !== null && (
+                    <tr>
+                      <th>Auswahl</th>
+                      <td>~ <strong>{shopData.bewertungen.auswahl}</strong> Sorten</td>
+                    </tr>
+                  )}
+                  {shopData.attribute?.length > 0 && (
+                    <tr>
+                      <th>Attribute</th>
+                      <td>
+                        <AttributeSection>
+                          {shopData.attribute.map((attribute) => (
+                            <AttributeBadge key={`${attribute.name}-${attribute.anzahl}`}>
+                              {attribute.anzahl} x {attribute.name}
+                            </AttributeBadge>
+                          ))}
+                        </AttributeSection>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </TableScroll>
+          )}
+        </SectionCard>
+
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>Komoot Routen</SectionTitle>
+              <SectionSubline>Oeffentliche Routen mit Stopps bei dieser Eisdiele.</SectionSubline>
+            </div>
+            <CountPill>{routes.length}</CountPill>
+          </SectionHead>
+          {routes.length < 1 && <EmptyState>Es sind noch keine oeffentlichen Routen fuer die Eisdiele vorhanden.</EmptyState>}
+          {isLoggedIn && (
+            <ActionBar>
+              <Button type="button" onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button>
+            </ActionBar>
+          )}
+          <FeedStack>
+            {routes.map((route, index) => (
+              <RouteCard
+                key={route.id || index}
+                route={route}
+                shopId={shopData.eisdiele.id}
+                shopName={shopData.eisdiele.name}
+                onSuccess={refreshRoutes}
+              />
+            ))}
+          </FeedStack>
+        </SectionCard>
+      </TabStack>
     );
-  } else if (activeTab === 'checkins') {
+  }
+
+  if (activeTab === 'checkins') {
     return (
-      <div>
-        <h2>Check-Ins</h2>
-        {shopData.checkins.length <= 0 && (<>Es wurden noch Eis-Besuche eingecheckt.</>)}
-        {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button></ButtonContainer>)}
-        {shopData.checkins && (shopData.checkins.map((checkin, index) => (
-          <div
-            key={checkin.id}
-            ref={(el) => checkinRefs.current[checkin.id] = el}
-          >
-            <CheckinCard
-              key={checkin.id}
-              checkin={checkin}
-              onSuccess={refreshShop}
-              showComments={checkin.id.toString() === focusCheckinId?.toString()}
-            />
-          </div>
-        )))}
-      </div>);
-  } else if (activeTab === 'reviews') {
-    return (<div>
-      <h2>Bewertungen</h2>
-      {shopData.reviews.length <= 0 && (<>Es wurden noch keine Reviews abgegeben.</>)}
-      {isLoggedIn && (<ButtonContainer><Button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button></ButtonContainer>)}
-      {shopData.reviews && (shopData.reviews.map((review, index) => (
-        <div
-          key={review.id}
-          ref={(el) => reviewRefs.current[review.id] = el}
-        >
-          <ReviewCard
-            key={index}
-            review={review}
-            setShowReviewForm={setShowReviewForm}
-            showComments={review.id.toString() === focusReviewId?.toString()}
-          />
-        </div>
-      )))}
-    </div>);
+      <TabStack>
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>Check-ins</SectionTitle>
+              <SectionSubline>Alle eingetragenen Eis-Besuche fuer diese Eisdiele.</SectionSubline>
+            </div>
+            <CountPill>{shopData.checkins?.length || 0}</CountPill>
+          </SectionHead>
+          {isLoggedIn && (
+            <ActionBar>
+              <Button type="button" onClick={() => setShowCheckinForm(true)}>Eis geschleckert</Button>
+            </ActionBar>
+          )}
+          {shopData.checkins.length <= 0 && <EmptyState>Es wurden noch keine Eis-Besuche eingecheckt.</EmptyState>}
+        </SectionCard>
+
+        <FeedStack>
+          {shopData.checkins?.map((checkin) => (
+            <div key={checkin.id} ref={(el) => { checkinRefs.current[checkin.id] = el; }}>
+              <CheckinCard
+                checkin={checkin}
+                onSuccess={refreshShop}
+                showComments={checkin.id.toString() === focusCheckinId?.toString()}
+              />
+            </div>
+          ))}
+        </FeedStack>
+      </TabStack>
+    );
+  }
+
+  if (activeTab === 'reviews') {
+    return (
+      <TabStack>
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>Bewertungen</SectionTitle>
+              <SectionSubline>Community-Reviews mit Bildern und Kommentaren.</SectionSubline>
+            </div>
+            <CountPill>{shopData.reviews?.length || 0}</CountPill>
+          </SectionHead>
+          {isLoggedIn && (
+            <ActionBar>
+              <Button type="button" onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</Button>
+            </ActionBar>
+          )}
+          {shopData.reviews.length <= 0 && <EmptyState>Es wurden noch keine Reviews abgegeben.</EmptyState>}
+        </SectionCard>
+
+        <FeedStack>
+          {shopData.reviews?.map((review, index) => (
+            <div key={review.id} ref={(el) => { reviewRefs.current[review.id] = el; }}>
+              <ReviewCard
+                key={index}
+                review={review}
+                setShowReviewForm={setShowReviewForm}
+                showComments={review.id.toString() === focusReviewId?.toString()}
+              />
+            </div>
+          ))}
+        </FeedStack>
+      </TabStack>
+    );
   }
 
   return null;
+};
 
-}
 export default ShopDetailsView;
 
 const AnimatedContainer = styled(animated.div)`
@@ -439,13 +568,16 @@ const AnimatedContainer = styled(animated.div)`
   bottom: 0;
   left: 0;
   width: 100%;
-  background: white;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  border-radius: 12px 12px 0 0;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.28), transparent 48%),
+    linear-gradient(180deg, #fffaf0 0%, #fff7e7 100%);
+  box-shadow: 0 -8px 28px rgba(28, 20, 0, 0.18);
+  border-radius: 18px 18px 0 0;
   display: flex;
   flex-direction: column;
   z-index: 1000;
   overflow: hidden;
+  border: 1px solid rgba(47, 33, 0, 0.08);
 `;
 
 const Container = styled.div.withConfig({
@@ -457,147 +589,505 @@ const Container = styled.div.withConfig({
   left: 0;
   width: 100%;
   height: ${({ isfullheight }) => (isfullheight ? '100%' : '50%')};
-  background: white;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  border-radius: 12px 12px 0 0;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.28), transparent 48%),
+    linear-gradient(180deg, #fffaf0 0%, #fff7e7 100%);
+  box-shadow: 0 -8px 28px rgba(28, 20, 0, 0.18);
+  border-radius: 18px 18px 0 0;
   display: flex;
   flex-direction: column;
   z-index: 1000;
   transition: height 0.3s ease;
+  border: 1px solid rgba(47, 33, 0, 0.08);
 
   @media (min-width: 768px) {
-    width: 30%;
+    width: clamp(420px, 42vw, 720px);
     height: 100%;
     top: 0;
     bottom: auto;
     left: 0;
     right: auto;
-    border-radius: 0;
+    border-radius: 0 18px 18px 0;
+    box-shadow: 12px 0 28px rgba(28, 20, 0, 0.14);
   }
 `;
 
+const DragHandle = styled.div`
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.16);
+  align-self: center;
+  margin: 0.55rem 0 0.1rem;
+  flex-shrink: 0;
+`;
+
 const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0rem 1rem;
-  background: #ffb522;
-  color: black;
-  font-weight: bold;
-  border-bottom: 1px solid #ddd;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.8rem;
+  padding: 0.75rem 0.9rem 0.7rem;
+  background: rgba(255, 252, 243, 0.94);
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
 
   @media (min-width: 768px) {
     padding: 1rem;
   }
 `;
 
+const HeaderMain = styled.div`
+  flex: 1;
+  min-width: 0;
+  padding-right: 0.2rem;
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  max-width: 120px;
+`;
+
+const HeaderUtilityRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+`;
+
+const ActionSlot = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+
+  svg {
+    position: static !important;
+    inset: auto !important;
+    width: 16px !important;
+    height: 16px !important;
+    color: #5b4520 !important;
+  }
+
+  button {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
+  span {
+    line-height: 1;
+  }
+`;
+
 const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 1.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+  color: #5b4520;
   cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.12);
+  }
 `;
 
 const Tabs = styled.div`
   display: flex;
-  border-bottom: 1px solid #ddd;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  margin: 0.35rem 0.6rem 0;
+  background: rgba(255, 252, 243, 0.88);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.04);
 `;
 
 const Tab = styled.button`
   flex: 1;
-  padding: 0.5rem;
-  background: ${({ active }) => (active ? '#ffb522' : 'white')};
-  border: none;
-  border-bottom: ${({ active }) => (active ? '2px solid black' : 'none')};
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  background: ${({ active }) => (active ? '#ffb522' : 'transparent')};
+  color: ${({ active }) => (active ? '#2f2100' : '#5c4a25')};
+  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: ${({ active }) => (active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+
+  &:hover {
+    background: ${({ active }) => (active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
+  }
 `;
 
 const Content = styled.div`
   flex: 1;
-  padding: 1rem;
+  padding: 0.85rem;
   overflow-y: auto;
+  min-height: 0;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(47, 33, 0, 0.14);
+    border-radius: 999px;
+  }
+`;
+
+const HeaderMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+`;
+
+const HeaderCtaBar = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0.55rem;
+`;
+
+const MetaPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.04);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  color: #5b4520;
+  font-size: 0.78rem;
+  font-weight: 700;
+`;
+
+const IceShopHeader = styled.h2`
+  margin: 0;
+  color: #2f2100;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  line-height: 1.15;
+`;
+
+const HeaderSubline = styled.p`
+  margin: 0.3rem 0 0;
+  color: rgba(47, 33, 0, 0.66);
+  font-size: 0.88rem;
+  line-height: 1.3;
+`;
+
+const TabStack = styled.div`
+  display: grid;
+  gap: 0.9rem;
+  padding-bottom: 0.5rem;
+`;
+
+const SectionCard = styled.section`
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.06);
+  padding: 1rem;
+`;
+
+const SectionHead = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+`;
+
+const SectionTitle = styled.h3`
+  margin: 0;
+  color: #2f2100;
+  font-size: 1.03rem;
+`;
+
+const SectionSubline = styled.p`
+  margin: 0.25rem 0 0;
+  color: rgba(47, 33, 0, 0.62);
+  font-size: 0.87rem;
+`;
+
+const CountPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 181, 34, 0.14);
+  border: 1px solid rgba(255, 181, 34, 0.28);
+  color: #7a4a00;
+  font-weight: 700;
+`;
+
+const InfoList = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.8rem;
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 0.5rem;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+`;
+
+const InfoLabel = styled.span`
+  color: #5f3f00;
+  font-weight: 700;
+  font-size: 0.9rem;
+`;
+
+const InfoValue = styled.span`
+  color: #2f2100;
+  font-size: 0.92rem;
+  line-height: 1.35;
+`;
+
+const InlineContent = styled.div`
+  display: grid;
+  gap: 0.45rem;
+`;
+
+const TableScroll = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+
+  @media (max-width: 640px) {
+    overflow-x: visible;
+  }
 `;
 
 const Table = styled.table`
-  border-spacing: 0.5rem 0.25rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 520px;
 
-  th {
+  th,
+  td {
     text-align: left;
     vertical-align: top;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid rgba(47, 33, 0, 0.07);
+  }
+
+  tr:last-child th,
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  th {
+    width: 120px;
+    color: #5f3f00;
+    font-weight: 700;
     white-space: nowrap;
-    color: #555;
-    font-weight: normal;
-    padding-right: 0.5rem;
+    background: rgba(255, 252, 243, 0.92);
   }
 
   td {
-    vertical-align: top;
+    color: #2f2100;
+    line-height: 1.35;
+    background: rgba(255, 255, 255, 0.65);
+  }
+
+  @media (max-width: 640px) {
+    min-width: 0;
+
+    tbody,
+    tr,
+    th,
+    td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      border-bottom: 1px solid rgba(47, 33, 0, 0.07);
+      padding: 0.25rem 0;
+    }
+
+    tr:last-child {
+      border-bottom: none;
+    }
+
+    th,
+    td {
+      border-bottom: none;
+      padding: 0.35rem 0.6rem;
+      white-space: normal;
+    }
+
+    th {
+      width: auto;
+      padding-bottom: 0.15rem;
+      background: rgba(255, 252, 243, 0.75);
+      border-radius: 8px 8px 0 0;
+    }
+
+    td {
+      padding-top: 0.2rem;
+      border-radius: 0 0 8px 8px;
+    }
   }
 `;
 
-const ButtonContainer = styled.div`
+const ActionBar = styled.div`
   display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
 `;
 
-// Use the shared SubmitButton styling for primary CTAs in the shop details
+const SecondaryActionRow = styled.div`
+  margin-top: 0.7rem;
+`;
+
 const Button = styled(SharedSubmitButton)`
-  /* keep any shop-specific tweaks here if needed */
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 181, 34, 0.5);
+  background: #ffb522;
+  color: #2f2100;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.2);
+
+  &:hover {
+    background-color: #ffc34a;
+  }
+`;
+
+const PrimaryButton = styled(Button)`
+  width: 100%;
+  justify-content: center;
+  font-size: 0.9rem;
+  padding: 0.48rem 0.82rem;
+  border-radius: 10px;
+  min-height: 0;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.18);
 `;
 
 const SuggestionButton = styled.button`
-  margin-top: 0.5rem;
   background: none;
   border: none;
-  color: #4f4f4f;
+  color: #8a5700;
   font-size: 0.9rem;
   cursor: pointer;
   text-decoration: underline;
   padding: 0;
-  font-weight: 500;
+  font-weight: 600;
 
   &:hover {
-    color: #1f1f1f;
+    color: #6f4300;
   }
 `;
 
 const AttributeSection = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
 `;
 
 const AttributeBadge = styled.span`
-  background-color: #e0f3ff;
-  color: #0077b6;
-  padding: 0.35rem 0.75rem;
+  background: rgba(255, 181, 34, 0.12);
+  color: #7a4a00;
+  border: 1px solid rgba(255, 181, 34, 0.25);
+  padding: 0.28rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 700;
 `;
 
-const IceShopHeader = styled.h2`
-  margin-top: 2rem;
-`
+const ValuePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 181, 34, 0.12);
+  border: 1px solid rgba(255, 181, 34, 0.22);
+  color: #7a4a00;
+  font-weight: 700;
+`;
 
-const EditButton = styled.button`
-  align-self: flex-start;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
+const InlineMuted = styled.span`
+  color: rgba(47, 33, 0, 0.56);
+  font-size: 0.83rem;
+`;
 
-  &:hover {
-    background-color: #228be6;
-  }
+const EmptyState = styled.div`
+  border-radius: 14px;
+  border: 1px dashed rgba(47, 33, 0, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  color: rgba(47, 33, 0, 0.62);
+  padding: 0.85rem 0.9rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+`;
+
+const FeedStack = styled.div`
+  display: grid;
+  gap: 0.8rem;
+`;
+
+const LoadingWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+`;
+
+const LoadingCard = styled.div`
+  width: min(92%, 460px);
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
+`;
+
+const LoadingTitle = styled.h3`
+  margin: 0;
+  color: #2f2100;
+`;
+
+const LoadingText = styled.p`
+  margin: 0.35rem 0 0;
+  color: rgba(47, 33, 0, 0.64);
 `;

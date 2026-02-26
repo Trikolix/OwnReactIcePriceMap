@@ -8,12 +8,12 @@ import {
 import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
-import { Link } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
-import { useLocation, useNavigate } from "react-router-dom";
 import { isSpecialTime } from './utils/seasonal';
+import { buildAssetUrl } from './utils/assets.jsx';
 import OlympicsRulesModal from './components/OlympicsRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
@@ -41,6 +41,7 @@ const Header = ({ refreshShops }) => {
   const [olympicsUserRank, setOlympicsUserRank] = useState(null);
   const [isOlympicsLeaderboardLoading, setIsOlympicsLeaderboardLoading] = useState(false);
   const [isOlympicsLeaderboardExpanded, setIsOlympicsLeaderboardExpanded] = useState(false);
+  const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,6 +55,8 @@ const Header = ({ refreshShops }) => {
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
+  const closeMenu = () => setMenuOpen(false);
+  const isAdmin = Number(userId) === 1;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,6 +75,47 @@ const Header = ({ refreshShops }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setHeaderAvatarUrl(null);
+      return;
+    }
+    setHeaderAvatarUrl(localStorage.getItem('avatarUrl'));
+  }, [isLoggedIn, userId, username, menuOpen]);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key === 'avatarUrl') {
+        setHeaderAvatarUrl(event.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || !userId || !apiUrl) return;
+    if (headerAvatarUrl) return;
+
+    let isCancelled = false;
+    fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${userId}&cur_user_id=${userId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const nextAvatar = data?.avatar_url || null;
+        if (isCancelled || !nextAvatar) return;
+        setHeaderAvatarUrl(nextAvatar);
+        localStorage.setItem('avatarUrl', nextAvatar);
+      })
+      .catch((error) => {
+        console.warn('Header avatar could not be loaded:', error);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [apiUrl, isLoggedIn, userId, headerAvatarUrl]);
 
   useEffect(() => {
     if (!userId) return;
@@ -255,6 +299,7 @@ const Header = ({ refreshShops }) => {
   const specialTime = isSpecialTime();
   const isOlympicsResultsOnly =
     specialTime === 'olympics' && new Date() >= new Date(2026, 1, 23);
+  const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
 
   useEffect(() => {
     if (specialTime !== 'olympics' || !userId) {
@@ -327,37 +372,142 @@ const Header = ({ refreshShops }) => {
         <LogoContainer>
           <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
         </LogoContainer>
-        {isLoggedIn && <NotificationBell />}
-        <BurgerMenu onClick={toggleMenu}>
-          <span />
-          <span />
-          <span />
-        </BurgerMenu>
+        <DesktopNav aria-label="Hauptnavigation">
+          <DesktopNavLink to="/" end>Karte</DesktopNavLink>
+          <DesktopNavLink to="/dashboard">Aktivitäten</DesktopNavLink>
+          <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
+          <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
+          <DesktopNavLink to="/routes">Routen</DesktopNavLink>
+        </DesktopNav>
+        <HeaderRight>
+          {isLoggedIn ? (
+            <AccountCluster>
+              <NotificationBellWrap aria-label="Benachrichtigungen">
+                <NotificationBell />
+              </NotificationBellWrap>
+              <AccountClusterDivider aria-hidden="true" />
+              <UserStatusLink to={`/user/${userId}`} onClick={() => setMenuOpen(false)}>
+                <UserStatusAvatar aria-hidden="true">
+                  {headerAvatarSrc ? (
+                    <img src={headerAvatarSrc} alt="" />
+                  ) : (
+                    (username || '?').slice(0, 1).toUpperCase()
+                  )}
+                </UserStatusAvatar>
+                <UserStatusText>
+                  <UserStatusLabel>Eingeloggt</UserStatusLabel>
+                  <UserStatusName>{username || `Nutzer ${userId}`}</UserStatusName>
+                </UserStatusText>
+              </UserStatusLink>
+            </AccountCluster>
+          ) : (
+            <LoginHeaderButton
+              type="button"
+              onClick={() => {
+                setShowLoginModal(true);
+                setMenuOpen(false);
+              }}
+            >
+              Einloggen
+            </LoginHeaderButton>
+          )}
+          <BurgerMenu
+            type="button"
+            aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
+            aria-expanded={menuOpen}
+            onClick={toggleMenu}
+          >
+            <span />
+            <span />
+            <span />
+          </BurgerMenu>
+        </HeaderRight>
         {menuOpen && (
           <Menu ref={menuRef}>
-            <MenuItemLink to="/" onClick={() => setMenuOpen(false)}>Eisdielen-Karte</MenuItemLink>
-            <MenuItemLink to="/dashboard" onClick={() => setMenuOpen(false)}>Aktivitäten</MenuItemLink>
-            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
-            <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
-            {allowedPhotoChallenges(userId) && (<MenuItemLink to="/photo-challenge" onClick={() => setMenuOpen(false)}>Foto-Challenges</MenuItemLink>)}
-            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>
+            <MenuHeader>
+              {isLoggedIn ? (
+                <>
+                  <MenuHeaderTitle>{username || `Nutzer ${userId}`}</MenuHeaderTitle>
+                  <MenuHeaderSubtitle>{isAdmin ? 'Eingeloggt · Admin' : 'Eingeloggt'}</MenuHeaderSubtitle>
+                </>
+              ) : (
+                <>
+                  <MenuHeaderTitle>Gastmodus</MenuHeaderTitle>
+                  <MenuHeaderSubtitle>Einloggen für Favoriten, Challenges und Profil</MenuHeaderSubtitle>
+                </>
+              )}
+            </MenuHeader>
+
+            <MenuSection>
+              <MenuSectionTitle>Entdecken</MenuSectionTitle>
+              <MenuItemLink to="/" end onClick={closeMenu}>Eisdielen-Karte</MenuItemLink>
+              <MenuItemLink to="/dashboard" onClick={closeMenu}>Aktivitäten</MenuItemLink>
+              <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
+              <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
+              <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
+              {allowedPhotoChallenges(userId) && (
+                <MenuItemLink to="/photo-challenge" onClick={closeMenu}>Foto-Challenges</MenuItemLink>
+              )}
+            </MenuSection>
+
+            <MenuDivider />
             {isLoggedIn ? (
               <>
-                <MenuItemLink to={`/user/${userId}`} className="logged-in" onClick={() => setMenuOpen(false)}>Profil ({username})</MenuItemLink>
-                <MenuItem onClick={() => { setShowSubmitNewIceShop(true); setMenuOpen(false); }} className="logged-in">Eisdiele hinzufügen</MenuItem>
-                <MenuItemLink to="/favoriten" className="logged-in" onClick={() => setMenuOpen(false)}>Favoriten</MenuItemLink>
-                <MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>
-
-                {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
-                {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
-                {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Änderungsvorschläge</MenuItemLink>)}
-                <MenuItem onClick={() => { logout(); setMenuOpen(false); }} className="logged-in">Ausloggen</MenuItem>
+                <MenuSection>
+                  <MenuSectionTitle>Mein Konto</MenuSectionTitle>
+                  <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
+                  <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
+                  <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
+                  <MenuActionButton
+                    type="button"
+                    onClick={() => {
+                      setShowSubmitNewIceShop(true);
+                      closeMenu();
+                    }}
+                  >
+                    Eisdiele hinzufügen
+                  </MenuActionButton>
+                </MenuSection>
+                {isAdmin && (
+                  <>
+                    <MenuDivider />
+                    <MenuSection>
+                      <MenuSectionTitle>Admin</MenuSectionTitle>
+                      <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
+                      <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
+                      <MenuItemLink to="/shop-change-requests" onClick={closeMenu}>Änderungsvorschläge</MenuItemLink>
+                    </MenuSection>
+                  </>
+                )}
+                <MenuDivider />
+                <MenuSection>
+                  <MenuActionButton onClick={() => { logout(); closeMenu(); }} type="button" $danger>
+                    Ausloggen
+                  </MenuActionButton>
+                </MenuSection>
               </>
             ) : (
-              <MenuItem onClick={() => { setShowLoginModal(true); setMenuOpen(false); }}>Einloggen</MenuItem>
+              <MenuSection>
+                <MenuSectionTitle>Konto</MenuSectionTitle>
+                <MenuActionButton onClick={() => { setShowLoginModal(true); closeMenu(); }} type="button">
+                  Einloggen
+                </MenuActionButton>
+              </MenuSection>
             )}
-            <MenuItemLink to="/impressum" onClick={() => setMenuOpen(false)}>Über diese Website</MenuItemLink>
-            <MenuItemLink to="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" onClick={() => setMenuOpen(false)}>Instagram</MenuItemLink>
+
+            <MenuDivider />
+            <MenuSection>
+              <MenuSectionTitle>Info</MenuSectionTitle>
+              <MenuItemLink to="/impressum" onClick={closeMenu}>Über diese Website</MenuItemLink>
+              <MenuItemAnchor
+                href="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                target="_blank"
+                rel="noreferrer"
+                onClick={closeMenu}
+              >
+                Instagram
+              </MenuItemAnchor>
+            </MenuSection>
           </Menu>
         )}
       </HeaderContainer>
@@ -489,15 +639,32 @@ const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0px 20px;
+  gap: 12px;
+  padding: 10px 16px;
   background-color: #ffb522;
+  position: relative;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 `;
 
 const LogoContainer = styled.div`
-  display: ruby;
+  display: flex;
   align-items: center;
-  margin: 5px auto;
+  margin: 0 auto;
   color: black;
+
+  @media (min-width: 769px) {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 0;
+  }
 `;
 
 const Logo = styled.img`
@@ -507,65 +674,299 @@ const Logo = styled.img`
   }
 `;
 
-const BurgerMenu = styled.div`
+const DesktopNav = styled.nav`
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+
+  @media (min-width: 1100px) {
+    display: flex;
+  }
+`;
+
+const DesktopNavLink = styled(NavLink)`
+  color: #3d2c00;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.4);
+    color: #251900;
+  }
+
+  &.active {
+    background: rgba(255, 255, 255, 0.9);
+    color: #2b1d00;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+`;
+
+const AccountCluster = styled.div`
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  @media (max-width: 768px) {
+    max-width: calc(100vw - 150px);
+  }
+`;
+
+const AccountClusterDivider = styled.div`
+  width: 1px;
+  align-self: stretch;
+  background: rgba(47, 33, 0, 0.12);
+`;
+
+const NotificationBellWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 40px;
+  color: #2f2100;
+  padding: 0 2px 0 4px;
+`;
+
+const UserStatusLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #2f2100;
+  background: transparent;
+  border-radius: 14px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid transparent;
+  min-height: 40px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  @media (max-width: 768px) {
+    padding-right: 8px;
+  }
+`;
+
+const UserStatusAvatar = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #2f2100;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+`;
+
+const UserStatusText = styled.div`
   display: flex;
   flex-direction: column;
+  line-height: 1.05;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const UserStatusLabel = styled.span`
+  font-size: 0.65rem;
+  opacity: 0.85;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const UserStatusName = styled.span`
+  font-size: 0.82rem;
+  font-weight: 800;
+`;
+
+const LoginHeaderButton = styled.button`
+  border: none;
+  background: #fff;
+  color: #2f2100;
+  border-radius: 14px;
+  padding: 0 12px;
+  min-height: 40px;
+  font-weight: 800;
   cursor: pointer;
-  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    background: #fff8e6;
+  }
+
+  @media (max-width: 420px) {
+    display: none;
+  }
+`;
+
+const BurgerMenu = styled.button`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: #2f2100;
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   span {
     height: 3px;
-    background: #fff;
-    margin: 4px 0;
-    width: 25px;
+    background: currentColor;
+    width: 20px;
+    border-radius: 999px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.78);
   }
 `;
 
 const Menu = styled.nav`
   position: absolute;
-  top: 60px;
-  right: 20px;
-  background: #ffb522;
+  top: calc(100% + 8px);
+  right: 16px;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(78vh, calc(100dvh - 88px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(255, 252, 243, 0.98);
   padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
   z-index: 1002;
+  color: #2f2100;
+
+  @media (max-width: 480px) {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    border-radius: 0 0 16px 16px;
+  }
+`;
+
+const MenuHeader = styled.div`
+  padding: 8px 10px 10px;
+`;
+
+const MenuHeaderTitle = styled.div`
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #231900;
+`;
+
+const MenuHeaderSubtitle = styled.div`
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: rgba(47, 33, 0, 0.7);
+  line-height: 1.25;
+`;
+
+const MenuSection = styled.div`
+  display: grid;
+  gap: 2px;
+`;
+
+const MenuSectionTitle = styled.div`
+  padding: 6px 10px 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(47, 33, 0, 0.62);
+`;
+
+const MenuDivider = styled.hr`
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid rgba(47, 33, 0, 0.1);
+`;
+
+const menuItemBase = `
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: #2f2100;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  color: white;
-`;
-
-const MenuItem = styled.a`
-  display: block;
-  padding: 10px;
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
-
-  &.logged-in {
-    margin-left: 15px;
-    color:rgb(255, 255, 255);
-  }
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
 
   &:hover {
-    background: rgb(206, 137, 0);
+    background: rgba(255, 181, 34, 0.18);
+    color: #231900;
   }
 `;
 
-const MenuItemLink = styled(Link)`
-  display: block;
-  padding: 10px;
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
+const MenuItemLink = styled(NavLink)`
+  ${menuItemBase}
 
+  &.active {
+    background: rgba(255, 181, 34, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 181, 34, 0.35);
+  }
+`;
 
-  &.logged-in {
-    margin-left: 15px;
-  }
-  &:hover {
-    background: rgb(206, 137, 0);
-    color: white;
-  }
+const MenuItemAnchor = styled.a`
+  ${menuItemBase}
+`;
+
+const MenuActionButton = styled.button`
+  ${menuItemBase}
+  ${({ $danger }) =>
+    $danger
+      ? `
+    color: #9f1f1f;
+    &:hover {
+      background: rgba(220, 38, 38, 0.10);
+      color: #861313;
+    }
+  `
+      : ''}
 `;
 
 const OverlayBackground = styled.div`

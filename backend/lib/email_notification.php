@@ -2,6 +2,24 @@
 require_once __DIR__ . '/../db_connect.php';
 
 /**
+ * Erkennt eine lokale/dev-Ausfuehrung anhand des Dateipfads (backend_dev).
+ *
+ * @return bool
+ */
+function isBackendDevNotificationContext() {
+    $pathsToCheck = [__DIR__, realpath(__DIR__ . '/../db_connect.php') ?: ''];
+
+    foreach ($pathsToCheck as $path) {
+        $normalizedPath = str_replace('\\', '/', (string)$path);
+        if (preg_match('~(^|/)backend_dev(/|$)~', $normalizedPath) === 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Send a notification email to a user if their settings allow it (or no settings exist).
  *
  * @param PDO $pdo
@@ -121,6 +139,24 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $mailBody .= "<small>Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter 'Einstellungen' ändern.<br>";
     $mailBody .= "Profil-Link: <a href='https://ice-app.de/#/user/" . $userId . "?openSettings=1' style='color:#0077b6;'>https://ice-app.de/#/user/" . $userId . "?openSettings=1</a></small>";
     $mailBody .= "</body></html>";
+
+    // Im backend_dev werden Mails nur real an user_id=1 gesendet.
+    // Alle anderen Mails werden an die Dev-Adresse umgeleitet.
+    if (isBackendDevNotificationContext() && (int)$userId !== 1) {
+        $originalMailTo = $mailTo;
+        $mailTo = 'ch_helbig@mail';
+        $mailSubject = '[DEV-Weiterleitung] ' . $mailSubject;
+        $devNotice = "<p style='background:#fff3cd;color:#664d03;border:1px solid #ffecb5;padding:12px;border-radius:6px;'>" .
+            "<strong>Hinweis (backend_dev):</strong> Diese E-Mail waere eigentlich an <strong>" .
+            htmlspecialchars($originalMailTo, ENT_QUOTES, 'UTF-8') .
+            "</strong> (user_id=" . (int)$userId . ") gesendet worden." .
+            "</p>";
+        $mailBody = str_replace(
+            "<html><body style='font-family:sans-serif;color:#222;'>",
+            "<html><body style='font-family:sans-serif;color:#222;'>" . $devNotice,
+            $mailBody
+        );
+    }
 
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";

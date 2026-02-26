@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/email_notification.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/comment_registration.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -35,18 +36,28 @@ switch ("$method:$action") {
 }
 
 function createKommentar($pdo, $currentUserId) {
+    $supportsUserRegistrationComments = ensureKommentarUserRegistrationSupport($pdo);
     $input = json_decode(file_get_contents('php://input'), true);
     $checkinId = isset($input['checkin_id']) ? (int)$input['checkin_id'] : null;
     $bewertungId = isset($input['bewertung_id']) ? (int)$input['bewertung_id'] : null;
     $routeId = isset($input['route_id']) ? (int)$input['route_id'] : null;
+    $userRegistrationId = isset($input['user_registration_id']) ? (int)$input['user_registration_id'] : null;
     $kommentar = trim($input['kommentar']);
 
     // Validierung: genau eine ID muss gesetzt sein
-    $ids = array_filter([$checkinId, $bewertungId, $routeId], fn($v) => $v !== null);
+    $ids = array_filter([$checkinId, $bewertungId, $routeId, $userRegistrationId], fn($v) => $v !== null);
     if (count($ids) !== 1) {
         echo json_encode([
             "status" => "error",
-            "message" => "Genau eine von checkin_id, bewertung_id oder route_id muss gesetzt sein."
+            "message" => "Genau eine von checkin_id, bewertung_id, route_id oder user_registration_id muss gesetzt sein."
+        ]);
+        return;
+    }
+
+    if ($userRegistrationId && !$supportsUserRegistrationComments) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Kommentare für neue Nutzer sind auf diesem Server noch nicht verfügbar (Datenbank-Update fehlt)."
         ]);
         return;
     }
@@ -60,11 +71,19 @@ function createKommentar($pdo, $currentUserId) {
     }
 
     // Kommentar einfügen
-    $stmt = $pdo->prepare("
-        INSERT INTO kommentare (checkin_id, bewertung_id, route_id, nutzer_id, kommentar)
-        VALUES (?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([$checkinId, $bewertungId, $routeId, $currentUserId, $kommentar]);
+    if ($supportsUserRegistrationComments) {
+        $stmt = $pdo->prepare("
+            INSERT INTO kommentare (checkin_id, bewertung_id, route_id, user_registration_id, nutzer_id, kommentar)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$checkinId, $bewertungId, $routeId, $userRegistrationId, $currentUserId, $kommentar]);
+    } else {
+        $stmt = $pdo->prepare("
+            INSERT INTO kommentare (checkin_id, bewertung_id, route_id, nutzer_id, kommentar)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$checkinId, $bewertungId, $routeId, $currentUserId, $kommentar]);
+    }
     $kommentarId = $pdo->lastInsertId();
 
     if ($checkinId) {
@@ -73,12 +92,71 @@ function createKommentar($pdo, $currentUserId) {
         handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $currentUserId, $kommentarId);
     } elseif ($routeId) {
         handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, $kommentarId);
+    } elseif ($userRegistrationId) {
+        handleUserRegistrationKommentarBenachrichtigungen($pdo, $userRegistrationId, $currentUserId, $kommentarId);
     }
 
     echo json_encode([
         "status" => "success",
         "kommentar_id" => $kommentarId
     ]);
+}
+
+function handleUserRegistrationKommentarBenachrichtigungen($pdo, $registeredUserId, $currentUserId, $kommentarId) {
+    try {
+        $stmt = $pdo->prepare("SELECT id, username FROM nutzer WHERE id = ?");
+        $stmt->execute([$registeredUserId]);
+        $registeredUser = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$registeredUser) {
+            return;
+        }
+
+        $stmt = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
+        $stmt->execute([$currentUserId]);
+        $kommentatorName = $stmt->fetchColumn();
+        if (!$kommentatorName) {
+            return;
+        }
+
+        $zusatzdaten = json_encode([
+            'user_registration_id' => (int)$registeredUser['id'],
+            'kommentar_id' => (int)$kommentarId
+        ]);
+
+        // 1. Benachrichtigung an den neu registrierten Nutzer
+        if ((int)$registeredUser['id'] !== (int)$currentUserId) {
+            $stmt = $pdo->prepare("
+                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
+                VALUES (?, 'kommentar_new_user', ?, ?, ?)
+            ");
+            $text = "$kommentatorName hat deinen Profil-Feed-Eintrag kommentiert.";
+            $stmt->execute([(int)$registeredUser['id'], $kommentarId, $text, $zusatzdaten]);
+        }
+
+        // 2. Andere Kommentierende benachrichtigen
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT nutzer_id
+            FROM kommentare
+            WHERE user_registration_id = ?
+              AND nutzer_id NOT IN (?, ?)
+              AND id != ?
+        ");
+        $stmt->execute([(int)$registeredUser['id'], (int)$currentUserId, (int)$registeredUser['id'], (int)$kommentarId]);
+        $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if ($beteiligteIds) {
+            $stmt = $pdo->prepare("
+                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
+                VALUES (?, 'kommentar_new_user', ?, ?, ?)
+            ");
+            $text = "$kommentatorName hat einen Profil-Feed-Eintrag kommentiert, den du auch kommentiert hast.";
+            foreach ($beteiligteIds as $beteiligterId) {
+                $stmt->execute([(int)$beteiligterId, $kommentarId, $text, $zusatzdaten]);
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error in handleUserRegistrationKommentarBenachrichtigungen: " . $e->getMessage());
+    }
 }
 
 function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUserId, $kommentarId) {
@@ -338,16 +416,27 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, 
 }
 
 function listKommentare($pdo) {
+    $supportsUserRegistrationComments = ensureKommentarUserRegistrationSupport($pdo);
     $checkinId = isset($_GET['checkin_id']) ? (int)$_GET['checkin_id'] : null;
     $bewertungId = isset($_GET['bewertung_id']) ? (int)$_GET['bewertung_id'] : null;
     $routeId = isset($_GET['route_id']) ? (int)$_GET['route_id'] : null;
+    $userRegistrationId = isset($_GET['user_registration_id']) ? (int)$_GET['user_registration_id'] : null;
 
     // Validierung: genau eine ID muss gesetzt sein
-    $ids = array_filter([$checkinId, $bewertungId, $routeId], fn($v) => $v !== null);
+    $ids = array_filter([$checkinId, $bewertungId, $routeId, $userRegistrationId], fn($v) => $v !== null);
     if (count($ids) !== 1) {
         echo json_encode([
             "status" => "error",
-            "message" => "Genau eine von checkin_id, bewertung_id oder route_id muss als Parameter übergeben werden."
+            "message" => "Genau eine von checkin_id, bewertung_id, route_id oder user_registration_id muss als Parameter übergeben werden."
+        ]);
+        return;
+    }
+
+    if ($userRegistrationId && !$supportsUserRegistrationComments) {
+        echo json_encode([
+            "status" => "success",
+            "anzahl" => 0,
+            "kommentare" => []
         ]);
         return;
     }
@@ -358,9 +447,12 @@ function listKommentare($pdo) {
     } elseif ($bewertungId) {
         $whereClause = "k.bewertung_id = ?";
         $parameter = $bewertungId;
-    } else {
+    } elseif ($routeId) {
         $whereClause = "k.route_id = ?";
         $parameter = $routeId;
+    } else {
+        $whereClause = "k.user_registration_id = ?";
+        $parameter = $userRegistrationId;
     }
 
     $stmt = $pdo->prepare("
@@ -381,6 +473,7 @@ function listKommentare($pdo) {
 }
 
 function updateKommentar($pdo, $currentUserId) {
+    ensureKommentarUserRegistrationSupport($pdo);
     $input = json_decode(file_get_contents('php://input'), true);
     $kommentarId = (int)$input['id'];
     $kommentar = trim($input['kommentar']);
@@ -414,6 +507,7 @@ function updateKommentar($pdo, $currentUserId) {
 }
 
 function deleteKommentar($pdo, $currentUserId) {
+    ensureKommentarUserRegistrationSupport($pdo);
     $input = json_decode(file_get_contents('php://input'), true);
     $kommentarId = (int)$input['id'];
 
@@ -432,7 +526,7 @@ function deleteKommentar($pdo, $currentUserId) {
     }
 
     // Zuerst Benachrichtigungen löschen (sowohl für Checkins als auch Bewertungen)
-    $stmt = $pdo->prepare("DELETE FROM benachrichtigungen WHERE (typ = 'kommentar' OR typ = 'kommentar_bewertung') AND referenz_id = ?");
+    $stmt = $pdo->prepare("DELETE FROM benachrichtigungen WHERE (typ = 'kommentar' OR typ = 'kommentar_bewertung' OR typ = 'kommentar_route' OR typ = 'kommentar_new_user') AND referenz_id = ?");
     $stmt->execute([$kommentarId]);
 
     // Dann Kommentar löschen

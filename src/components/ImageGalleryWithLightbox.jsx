@@ -10,6 +10,19 @@ const GalleryWrapper = styled.div`
   overflow-x: auto;
   gap: 8px;
   padding-bottom: 8px;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  }
 `;
 
 const ThumbnailWrapper = styled.div`
@@ -19,12 +32,27 @@ const ThumbnailWrapper = styled.div`
   overflow: hidden;
   border-radius: 8px;
   cursor: pointer;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+
+  @media (min-width: 768px) {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+  }
 `;
 
 const ThumbnailImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  transition: transform 0.2s ease;
+
+  ${ThumbnailWrapper}:hover & {
+    transform: scale(1.03);
+  }
 `;
 
 const LightboxOverlay = styled.div`

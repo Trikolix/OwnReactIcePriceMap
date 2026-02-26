@@ -7,7 +7,7 @@ h1 {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.price-icon div {
+.price-icon .price-icon-circle {
   background-color: #14923a;
   background-image: "/img/icon/ice-cream-cup.png";
   border-radius: 50%;

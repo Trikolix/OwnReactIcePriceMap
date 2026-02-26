@@ -1,6 +1,8 @@
 <?php
 require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 require_once '../db_connect.php';
+require_once __DIR__ . '/awards_cache.php';
+require_once __DIR__ . '/award_icon_variants.php';
 header('Content-Type: application/json');
 
 // Zielverzeichnis für Uploads
@@ -32,6 +34,10 @@ if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] === UPLOAD_ERR_
 }
 
 try {
+    if (!empty($icon_path)) {
+        awardIconCreateVariant($icon_path);
+    }
+
     // Produktiv
     $stmt = $pdo->prepare("INSERT INTO award_levels 
         (award_id, level, threshold, icon_path, title_de, description_de) 
@@ -42,6 +48,8 @@ try {
         (award_id, level, threshold, icon_path, title_de, description_de) 
         VALUES (?, ?, ?, ?, ?, ?)");
     $stmt_dev->execute([$award_id, $level, $threshold, $icon_path, $title_de, $description_de]);
+
+    invalidateAwardsCache();
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     http_response_code(500);

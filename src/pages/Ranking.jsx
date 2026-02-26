@@ -464,6 +464,12 @@ const Ranking = () => {
         return applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher);
     }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
 
+    const activeResultCount = React.useMemo(() => {
+        if (activeTab === 'kugel') return sortedEisdielenKugel.length;
+        if (activeTab === 'softeis') return sortedEisdielenSofteis.length;
+        return sortedEisdielenEisbecher.length;
+    }, [activeTab, sortedEisdielenKugel.length, sortedEisdielenSofteis.length, sortedEisdielenEisbecher.length]);
+
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
     };
@@ -585,7 +591,18 @@ const Ranking = () => {
             <Header />
             <Container>
                 <TableContainer className="container">
-                    <h2 className="text-center">🏆 Eisdielen-Ranking</h2>
+                    <HeroCard>
+                        <PageTitle>🏆 Eisdielen-Ranking</PageTitle>
+                        <PageSubtitle>
+                            Vergleiche Eisdielen nach Geschmack, Preis-Leistung und Community-Rating.
+                        </PageSubtitle>
+                        <MetaChips>
+                            <MetaChip>{activeResultCount} Treffer</MetaChip>
+                            {searchTerm.trim() && <MetaChip>Suche: {searchTerm.trim()}</MetaChip>}
+                            {distanceFilter !== 'any' && <MetaChip>Entfernung: ≤ {distanceFilter} km</MetaChip>}
+                            {selectedAttributes.length > 0 && <MetaChip>{selectedAttributes.length} Attribut-Filter</MetaChip>}
+                        </MetaChips>
+                    </HeroCard>
                     <TabContainer>
                         <TabButton
                             $active={activeTab === 'kugel'}
@@ -616,7 +633,11 @@ const Ranking = () => {
                             </FiltersToggleButton>
                         </FiltersToggleBar>
                     )}
-                    {(!isCompactFilters || areFiltersExpanded) && filtersContent}
+                    {(!isCompactFilters || areFiltersExpanded) && (
+                        <FiltersPanel>
+                            {filtersContent}
+                        </FiltersPanel>
+                    )}
                     {activeTab === 'kugel' && (
                         <>
                             <TableScrollArea>
@@ -1023,8 +1044,10 @@ const CleanLink = styled(Link)`
 
 const Container = styled.div`
   padding: 1rem;
-  background-color: white;
-  height: 100%;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 45%),
+    linear-gradient(180deg, #fffaf0 0%, #fff7e5 100%);
+  min-height: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
@@ -1035,6 +1058,49 @@ const TableContainer = styled.div`
   justify-content: center;
   text-align: center;
   width: 100%;
+  max-width: 1440px;
+`;
+
+const HeroCard = styled.div`
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem 1rem 0.9rem;
+  margin-bottom: 1rem;
+`;
+
+const PageTitle = styled.h2`
+  margin: 0;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  color: #2f2100;
+  line-height: 1.2;
+`;
+
+const PageSubtitle = styled.p`
+  margin: 0.35rem 0 0;
+  color: rgba(47, 33, 0, 0.7);
+  font-size: 0.95rem;
+`;
+
+const MetaChips = styled.div`
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+`;
+
+const MetaChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 181, 34, 0.14);
+  border: 1px solid rgba(255, 181, 34, 0.28);
+  color: #6c4500;
+  font-size: 0.8rem;
+  font-weight: 700;
 `;
 
 const LeftAlign = styled.p`
@@ -1043,27 +1109,65 @@ const LeftAlign = styled.p`
 
 const Table = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 980px;
+
   th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
+    border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+    padding: 10px 10px;
   }
   th {
     cursor: pointer;
-    background-color: #f2f2f2;
+    background: rgba(255, 252, 243, 0.98);
+    color: #5f3f00;
+    font-weight: 800;
+    font-size: 0.85rem;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
   }
-  tr {
+
+  td {
+    color: #2f2100;
+    font-size: 0.92rem;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  tbody tr:not(.details-row) {
     cursor: pointer;
+  }
+
+  tbody tr:not(.details-row):hover td {
+    background: rgba(255, 181, 34, 0.08);
+  }
+
+  tbody tr:not(.details-row):nth-child(4n + 1) td {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  tbody tr:not(.details-row) td:first-child {
+    font-weight: 700;
   }
 `;
 
 const TableScrollArea = styled.div`
   width: 100%;
   overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  background: rgba(255, 252, 243, 0.92);
 `;
 const Explanation = styled.div`
   margin-top: 2rem;
   text-align: center;
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
   h4 {
     margin-bottom: 1rem;
   }
@@ -1082,37 +1186,59 @@ const DetailsRow = styled.tr`
 
 const DetailsContainer = styled.div`
   text-align: left;
-  background-color: #fffae9ff;
-  border: 1px solid #fff1b3ff;
-  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255, 248, 225, 0.95), rgba(255, 253, 244, 0.95));
+  border: 1px solid rgba(255, 181, 34, 0.25);
+  border-radius: 12px;
   padding: 1rem;
   h3 {
     margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #2f2100;
   }
   strong {
     font-weight: bold;
+    color: #5f3f00;
   }
 `;
 
 const TabContainer = styled.div`
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-bottom: 1rem;
+  padding: 0.35rem;
+  background: rgba(255, 252, 243, 0.88);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
 `;
 
 const TabButton = styled.button`
-    padding: 0.5rem 1rem;
-    margin: 0 0.5rem;
-    background-color: ${(props) => (props.$active ? '#ffb522' : '#f0f0f0')};
-    color: ${(props) => (props.$active ? 'white' : '#333')};
-    border: none;
-    border-radius: 5px;
+    padding: 0.55rem 0.95rem;
+    margin: 0;
+    background-color: ${(props) => (props.$active ? '#ffb522' : 'transparent')};
+    color: ${(props) => (props.$active ? '#2f2100' : '#5c4a25')};
+    border: 1px solid ${(props) => (props.$active ? 'rgba(255,181,34,0.55)' : 'transparent')};
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    box-shadow: ${(props) => (props.$active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 
     &:hover {
-        background-color: ${(props) => (props.$active ? '#da9c20ff' : '#e0e0e0')};
+        background-color: ${(props) => (props.$active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
     }
+`;
+
+const FiltersPanel = styled.div`
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
+  padding: 0.6rem 0.6rem 0.1rem;
+  margin-bottom: 1rem;
 `;
 
 const FiltersRow = styled.div`
@@ -1120,7 +1246,7 @@ const FiltersRow = styled.div`
   flex-wrap: wrap;
   gap: 1rem;
   justify-content: center;
-  margin: 1rem 0;
+  margin: 0.4rem 0 0.8rem;
 `;
 
 const FiltersToggleBar = styled.div`
@@ -1133,10 +1259,11 @@ const FiltersToggleButton = styled.button`
   padding: 0.4rem 1.2rem;
   border-radius: 999px;
   border: 1px solid #ffb522;
-  background-color: #fff4d9;
-  color: #a36100;
+  background-color: rgba(255, 244, 217, 0.95);
+  color: #7b4a00;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 181, 34, 0.12);
 
   &:hover {
     background-color: #ffe2a9;
@@ -1147,27 +1274,33 @@ const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 180px;
+  text-align: left;
 `;
 
 const FilterLabel = styled.label`
   font-size: 0.85rem;
   margin-bottom: 0.3rem;
   text-align: left;
-  color: #555;
+  color: #6b5327;
+  font-weight: 700;
 `;
 
 const FilterInput = styled.input`
   padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
   font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2f2100;
 `;
 
 const FilterSelect = styled.select`
   padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
   font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2f2100;
 `;
 
 const AttributeFilterSection = styled.div`
@@ -1180,10 +1313,10 @@ const AttributeFilterSection = styled.div`
 
 const AttributeToggleButton = styled.button`
   padding: 0.4rem 1.2rem;
-  border: 1px solid #ffb522;
-  border-radius: 4px;
-  background-color: #fff;
-  color: #a36100;
+  border: 1px solid rgba(255, 181, 34, 0.45);
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #7b4a00;
   font-weight: 600;
   cursor: pointer;
 
@@ -1194,7 +1327,10 @@ const AttributeToggleButton = styled.button`
 
 const AttributeFilterWrapper = styled.div`
   width: 100%;
-  padding: 0 1rem;
+  padding: 0.25rem 0.75rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(47, 33, 0, 0.06);
 `;
 
 const AttributeFilterContainer = styled.div`
@@ -1204,15 +1340,17 @@ const AttributeFilterContainer = styled.div`
   margin-top: 0.5rem;
   max-height: 180px;
   overflow-y: auto;
+  padding-right: 0.25rem;
 `;
 
 const AttributePill = styled.button`
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid ${(props) => (props.$active ? '#ffb522' : '#ccc')};
-  background-color: ${(props) => (props.$active ? '#fff4d9' : '#fff')};
+  border: 1px solid ${(props) => (props.$active ? '#ffb522' : 'rgba(47,33,0,0.15)')};
+  background-color: ${(props) => (props.$active ? '#fff4d9' : 'rgba(255,255,255,0.95)')};
   cursor: pointer;
   font-size: 0.85rem;
+  color: #4f390f;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 
   &:hover {
@@ -1224,14 +1362,14 @@ const ClearFilterButton = styled.button`
   margin-top: 0.5rem;
   border: none;
   background: none;
-  color: #0066cc;
+  color: #8c4600;
   cursor: pointer;
   font-size: 0.85rem;
   padding: 0;
   text-decoration: underline;
 
   &:hover {
-    color: #004999;
+    color: #6f3200;
   }
 `;
 
@@ -1283,7 +1421,7 @@ const OpenBadge = styled.span`
 const FilterHint = styled.p`
   text-align: center;
   font-size: 0.85rem;
-  color: #555;
+  color: #6b5327;
   margin: 0.5rem 0 1rem;
 `;
 
@@ -1293,18 +1431,19 @@ const LocationHint = styled.div`
   align-items: center;
   gap: 0.4rem;
   font-size: 0.85rem;
-  color: #555;
+  color: #6b5327;
   margin-bottom: 1rem;
 `;
 
 const LocationButton = styled.button`
   padding: 0.4rem 1rem;
   background-color: #ffb522;
-  color: white;
+  color: #2f2100;
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(255, 181, 34, 0.2);
 
   &:disabled {
     opacity: 0.6;
@@ -1318,18 +1457,19 @@ const LocationError = styled.span`
 `;
 
 const ScoreExplanation = styled.div`
-  background: #f9f9f9;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,250,239,0.95));
   padding: 1.5rem;
   border-radius: 1rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
   line-height: 1.6;
   font-size: 1rem;
-  color: #333;
+  color: #2f2100;
 
   h3 {
     margin-top: 0;
     font-size: 1.25rem;
-    color: #444;
+    color: #4c3400;
   }
 
   ul {
@@ -1338,11 +1478,11 @@ const ScoreExplanation = styled.div`
   }
 
   strong {
-    color: #222;
+    color: #2f2100;
   }
 
   code {
-    background: #efefef;
+    background: rgba(47, 33, 0, 0.06);
     padding: 0.1rem 0.3rem;
     border-radius: 4px;
     font-size: 0.95rem;
