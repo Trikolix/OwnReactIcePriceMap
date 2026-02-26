@@ -575,7 +575,7 @@ const AnimatedContainer = styled(animated.div)`
   border-radius: 18px 18px 0 0;
   display: flex;
   flex-direction: column;
-  z-index: 1000;
+  z-index: 1400;
   overflow: hidden;
   border: 1px solid rgba(47, 33, 0, 0.08);
 `;
@@ -596,7 +596,7 @@ const Container = styled.div.withConfig({
   border-radius: 18px 18px 0 0;
   display: flex;
   flex-direction: column;
-  z-index: 1000;
+  z-index: 1400;
   transition: height 0.3s ease;
   border: 1px solid rgba(47, 33, 0, 0.08);
 
