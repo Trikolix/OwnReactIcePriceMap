@@ -33,13 +33,20 @@ export default SystemModal;
 // uses SharedOverlay from SharedStyles
 
 const Wrapper = styled.div`
+  --modal-viewport-gap: 1rem;
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  box-sizing: border-box;
+  padding: var(--modal-viewport-gap);
+  overflow: hidden;
   z-index: 9999;
+
+  @media (min-width: 640px) {
+    --modal-viewport-gap: 1.5rem;
+  }
 `;
 
 const Panel = styled.div`
@@ -48,6 +55,10 @@ const Panel = styled.div`
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   max-width: 420px;
   width: 100%;
+  box-sizing: border-box;
+  max-height: calc(100vh - (var(--modal-viewport-gap) * 2));
+  max-height: calc(100dvh - (var(--modal-viewport-gap) * 2));
+  overflow-y: auto;
   padding: 24px;
   z-index: 10000;
 `;
