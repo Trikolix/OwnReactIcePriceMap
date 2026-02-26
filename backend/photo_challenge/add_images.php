@@ -72,7 +72,12 @@ try {
     echo json_encode([
         'status' => 'success',
         'message' => 'Bilder wurden hinzugefügt.',
-        'data' => $updatedImages,
+        'data' => array_map(function($img) {
+            return array_merge(
+                ['image_id' => $img['image_id'], 'title' => isset($img['title']) ? $img['title'] : null],
+                $img
+            );
+        }, $updatedImages),
     ]);
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) {

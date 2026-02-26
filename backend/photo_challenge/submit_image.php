@@ -5,9 +5,11 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/helpers.php';
 
+
 $userId = isset($_POST['nutzer_id']) ? (int)$_POST['nutzer_id'] : 0;
 $challengeId = isset($_POST['challenge_id']) ? (int)$_POST['challenge_id'] : 0;
 $imageId = isset($_POST['image_id']) ? (int)$_POST['image_id'] : 0;
+$title = isset($_POST['title']) ? trim($_POST['title']) : null;
 
 if (!$userId || !$challengeId || !$imageId) {
     http_response_code(422);
@@ -54,13 +56,14 @@ try {
     }
 
     $stmt = $pdo->prepare("
-        INSERT INTO photo_challenge_submissions (challenge_id, image_id, nutzer_id)
-        VALUES (:challenge_id, :image_id, :nutzer_id)
+        INSERT INTO photo_challenge_submissions (challenge_id, image_id, nutzer_id, title)
+        VALUES (:challenge_id, :image_id, :nutzer_id, :title)
     ");
     $stmt->execute([
         'challenge_id' => $challengeId,
         'image_id' => $imageId,
         'nutzer_id' => $userId,
+        'title' => $title,
     ]);
 
     echo json_encode([

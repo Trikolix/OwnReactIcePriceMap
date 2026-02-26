@@ -39,6 +39,7 @@ require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
+require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -392,6 +393,7 @@ try {
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
         new MultipleVehicleEvaluator(),
+        new SeasonalPresentEvaluator(),
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();

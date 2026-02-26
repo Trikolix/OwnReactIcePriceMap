@@ -37,39 +37,36 @@ class WeekStreakEvaluator extends BaseAwardEvaluator {
     }
 
     function getLongestWeekStreak($nutzerId) {
-        global $pdo;
-        $sql = "WITH wochen AS (
-                  SELECT
-                    nutzer_id,
-                    YEARWEEK(datum, 3) AS jahrwoche
-                  FROM checkins
-                  WHERE nutzer_id = :nutzer_id
-                  GROUP BY YEARWEEK(datum, 3)
-                ),
-                gruppen AS (
-                  SELECT
-                    jahrwoche,
-                    ROW_NUMBER() OVER (ORDER BY jahrwoche) AS rn
-                  FROM wochen
-                ),
-                sequenzgruppen AS (
-                  SELECT
-                    jahrwoche,
-                    jahrwoche - rn AS gruppe_id
-                  FROM gruppen
-                )
-                SELECT MAX(anzahl_wochen) AS max_fortlaufende_wochen
-                FROM (
-                  SELECT COUNT(*) AS anzahl_wochen
-                  FROM sequenzgruppen
-                  GROUP BY gruppe_id
-                ) AS untergruppen;";
-    
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(['nutzer_id' => $nutzerId]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-        return (int)($result['max_fortlaufende_wochen'] ?? 0);
+      global $pdo;
+       
+      $sql = "WITH wochen_daten AS (
+                SELECT DISTINCT 
+                  YEARWEEK(datum, 3) AS jahrwoche,
+                  -- Wir normieren jeden Check-in auf den Montag der jeweiligen Woche
+                  STR_TO_DATE(CONCAT(YEARWEEK(datum, 3), ' Monday'), '%X%V %W') AS wochen_montag
+                FROM checkins
+                WHERE nutzer_id = :nutzer_id
+              ),
+              serien_gruppen AS (
+                SELECT 
+                  -- Der Trick: (Montag_der_Woche - Zeilennummer * 7 Tage)
+                  -- bleibt identisch, solange die Wochen aufeinanderfolgen.
+                  DATE_SUB(wochen_montag, INTERVAL ROW_NUMBER() OVER (ORDER BY wochen_montag) WEEK) AS gruppe_id
+                FROM wochen_daten
+              ),
+              streak_liste AS (
+                SELECT COUNT(*) AS streak_laenge
+                FROM serien_gruppen
+                GROUP BY gruppe_id
+              )
+              SELECT COALESCE(MAX(streak_laenge), 0) AS max_fortlaufende_wochen
+              FROM streak_liste";
+      
+      $stmt = $pdo->prepare($sql);
+      $stmt->execute(['nutzer_id' => $nutzerId]);
+      $result = $stmt->fetch(PDO::FETCH_ASSOC);
+       
+      return (int)$result['max_fortlaufende_wochen'];
     }
 }
 ?>

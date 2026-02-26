@@ -37,6 +37,7 @@ try {
         $row['id'] = (int)$row['id'];
         $row['challenge_id'] = (int)$row['challenge_id'];
         $row['image_id'] = (int)$row['image_id'];
+        $row['title'] = isset($row['title']) ? $row['title'] : null;
         $row['nutzer_id'] = (int)$row['nutzer_id'];
         $row['reviewer_id'] = $row['reviewer_id'] !== null ? (int)$row['reviewer_id'] : null;
         return $row;

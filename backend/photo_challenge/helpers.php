@@ -45,6 +45,7 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             CONSTRAINT fk_challenge_image FOREIGN KEY (image_id) REFERENCES bilder(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+    addColumnIfMissing($pdo, 'photo_challenge_images', 'title', 'VARCHAR(100) NULL AFTER image_id');
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS photo_challenge_groups (
@@ -129,6 +130,7 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             CONSTRAINT fk_submission_user FOREIGN KEY (nutzer_id) REFERENCES nutzer(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+    addColumnIfMissing($pdo, 'photo_challenge_submissions', 'title', ' VARCHAR(100) NULL AFTER nutzer_id');
 
     $initialized = true;
 }
@@ -333,12 +335,13 @@ function fetchChallengeImages(PDO $pdo, int $challengeId): array
                b.url,
                b.beschreibung,
                b.nutzer_id,
-               n.username,
+               COALESCE(pci.title, sub.title, b.beschreibung) AS title,
                b.checkin_id,
                c.datum AS checkin_datum,
                e.name AS eisdiele_name
         FROM photo_challenge_images pci
         JOIN bilder b ON b.id = pci.image_id
+        LEFT JOIN photo_challenge_submissions sub ON sub.challenge_id = pci.challenge_id AND sub.image_id = pci.image_id
         LEFT JOIN nutzer n ON n.id = b.nutzer_id
         LEFT JOIN checkins c ON c.id = b.checkin_id
         LEFT JOIN eisdielen e ON e.id = c.eisdiele_id

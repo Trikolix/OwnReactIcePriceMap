@@ -3,7 +3,6 @@ require_once  __DIR__ . '/../db_connect.php';
 
 $empfaenger1 = 'ch_helbig@mail.de';
 $empfaenger2 = 'Bocki00@web.de';
-$absender = 'From: noreply@ice-app.de';
 
 // --- Zeitraum berechnen (letzte Woche Montag bis Sonntag) ---
 $heute = new DateTimeImmutable();
@@ -30,28 +29,17 @@ $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $neueAwards = $stmt->fetchColumn();
 
 // 3. Verteilung der Check-ins nach Typ
-$stmt = $pdo->prepare("
-    SELECT typ, COUNT(*) as anzahl
-    FROM checkins
-    WHERE datum BETWEEN :start AND :ende
-    GROUP BY typ
-");
+$stmt = $pdo->prepare("\n    SELECT typ, COUNT(*) as anzahl\n    FROM checkins\n    WHERE datum BETWEEN :start AND :ende\n    GROUP BY typ\n");
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkinsNachTyp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 4. Verteilung der Check-ins nach Anreise
-$stmt = $pdo->prepare("
-    SELECT anreise, COUNT(*) as anzahl
-    FROM checkins
-    WHERE datum BETWEEN :start AND :ende
-    GROUP BY anreise
-");
+$stmt = $pdo->prepare("\n    SELECT anreise, COUNT(*) as anzahl\n    FROM checkins\n    WHERE datum BETWEEN :start AND :ende\n    GROUP BY anreise\n");
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $checkinsNachAnreise = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 5. Verteilung der Check-ins mit oder ohne Bild
-$stmt = $pdo->prepare("
-    SELECT 
+$stmt = $pdo->prepare("\n    SELECT 
         CASE WHEN b.id IS NOT NULL THEN 'Mit Bild' ELSE 'Ohne Bild' END AS bild_status,
         COUNT(DISTINCT c.id) AS anzahl
     FROM checkins c
@@ -68,8 +56,7 @@ $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $aktiveNutzer = $stmt->fetchColumn();
 
 // 7. Eisportionen
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) FROM checkin_sorten
+$stmt = $pdo->prepare("\n    SELECT COUNT(*) FROM checkin_sorten
     WHERE checkin_id IN (
         SELECT id FROM checkins WHERE datum BETWEEN :start AND :ende
     )
@@ -83,26 +70,13 @@ $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $neueEisdielen = $stmt->fetchColumn();
 
 // 9. Unterschiedliche Länder mit Check-ins
-$stmt = $pdo->prepare("
-    SELECT COUNT(DISTINCT e.land_id)
+$stmt = $pdo->prepare("\n    SELECT COUNT(DISTINCT e.land_id)
     FROM checkins c
     JOIN eisdielen e ON c.eisdiele_id = e.id
     WHERE c.datum BETWEEN :start AND :ende
 ");
 $stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
 $laenderMitCheckins = $stmt->fetchColumn();
-
-// 9b. Verteilung Check-in Vor Ort / Nicht vor Ort (per is_on_site)
-$stmt = $pdo->prepare("
-    SELECT 
-        CASE WHEN is_on_site = 1 THEN 'Vor Ort' ELSE 'Nicht vor Ort' END AS ort_status,
-        COUNT(*) AS anzahl
-    FROM checkins
-    WHERE datum BETWEEN :start AND :ende
-    GROUP BY ort_status
-");
-$stmt->execute(['start' => $startStr, 'ende' => $endeStr]);
-$checkinsNachOrt = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 10. Gesamtanzahl Nutzer
 $gesamtNutzer = $pdo->query("SELECT COUNT(*) FROM nutzer")->fetchColumn();
@@ -114,7 +88,7 @@ $gesamtCheckins = $pdo->query("SELECT COUNT(*) FROM checkins")->fetchColumn();
 $gesamtEisdielen = $pdo->query("SELECT COUNT(*) FROM eisdielen")->fetchColumn();
 
 // --- Mailtext erstellen ---
-$betreff = "Ice-App Wochenreport: " . $wochenstart->format('d.m.Y') . " – " . $wochenende->format('d.m.Y');
+$betreff_raw = "Ice-App Wochenreport: " . $wochenstart->format('d.m.Y') . " – " . $wochenende->format('d.m.Y');
 
 $datumStart = $wochenstart->format('d.m.Y');
 $datumEnde = $wochenende->format('d.m.Y');
@@ -152,16 +126,11 @@ foreach ($checkinsNachAnreise as $anreise) {
     $nachricht .= "  - {$anreise['anreise']}: {$anreise['anzahl']}\n";
 }
 
-// Check-in Verteilung mit / ohne Bild hinzufügen
 $nachricht .= "\n📸 Mit oder ohne Bild:\n";
+
+// Check-in Verteilung mit oder ohne Bild hinzufügen
 foreach ($checkinsNachBild as $bild) {
     $nachricht .= "  - {$bild['bild_status']}: {$bild['anzahl']}\n";
-}
-
-// Check-in Verteilung Vor Ort / Nicht vor Ort hinzufügen
-$nachricht .= "\n🏠 Vor Ort / Nicht vor Ort:\n";
-foreach ($checkinsNachOrt as $ort) {
-    $nachricht .= "  - {$ort['ort_status']}: {$ort['anzahl']}\n";
 }
 
 $nachricht .= <<<EOT
@@ -176,20 +145,19 @@ Deine Ice-App
 EOT;
 
 // Insert in die Statistik-Tabelle
-$stmt = $pdo->prepare("
-    INSERT INTO wochenstatistiken (
+$stmt = $pdo->prepare("\n    INSERT INTO wochenstatistiken (
         start_datum, end_datum,
         neue_nutzer, neue_eisdielen, aktive_nutzer,
         checkins, portionen, laender_mit_checkins,
         gesamt_nutzer, gesamt_checkins, gesamt_eisdielen,
-    verteilung_checkins_typ, verteilung_anreise, verteilung_bild, verteilung_ort
+        verteilung_checkins_typ, verteilung_anreise, verteilung_bild
     )
     VALUES (
         :start_datum, :end_datum,
         :neue_nutzer, :neue_eisdielen, :aktive_nutzer,
         :checkins, :portionen, :laender_mit_checkins,
         :gesamt_nutzer, :gesamt_checkins, :gesamt_eisdielen,
-    :verteilung_checkins_typ, :verteilung_anreise, :verteilung_bild, :verteilung_ort
+        :verteilung_checkins_typ, :verteilung_anreise, :verteilung_bild
     )
 ");
 
@@ -207,11 +175,19 @@ $stmt->execute([
     'gesamt_eisdielen' => $gesamtEisdielen,
     'verteilung_checkins_typ' => json_encode($checkinsNachTyp),
     'verteilung_anreise' => json_encode($checkinsNachAnreise),
-    'verteilung_bild' => json_encode($checkinsNachBild),
-    'verteilung_ort' => json_encode($checkinsNachOrt)
+    'verteilung_bild' => json_encode($checkinsNachBild)
 ]);
 
 // --- E-Mail versenden ---
-mail($empfaenger1, $betreff, $nachricht, $absender);
-mail($empfaenger2, $betreff, $nachricht, $absender);
+$nachricht_html = "<html><body style='font-family:sans-serif;color:#222;'>" . nl2br(htmlspecialchars($nachricht)) . "</body></html>";
+
+$headers = "MIME-Version: 1.0\r\n";
+$headers .= "Content-type: text/html; charset=UTF-8\r\n";
+$headers .= "From: noreply@ice-app.de\r\n";
+
+// Betreff für Sonderzeichen kodieren
+$betreff_encoded = '=?UTF-8?B?' . base64_encode($betreff_raw) . '?=';
+
+mail($empfaenger1, $betreff_encoded, $nachricht_html, $headers);
+mail($empfaenger2, $betreff_encoded, $nachricht_html, $headers);
 ?>

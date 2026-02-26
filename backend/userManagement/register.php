@@ -86,13 +86,52 @@ $userId = $pdo->lastInsertId();
 $stmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news) VALUES (?, 1, 1, 1, ?)");
 $stmt->execute([$userId, $newsletterOptIn]);
 
-// 8. Bestätigungs-E-Mail senden
+// 8. Bestätigungs-E-Mail senden (Multipart)
 $verifyUrl = "https://ice-app.de/#/verify?token=" . urlencode($token);
-$subject = "Bitte bestätige deine Registrierung";
-$message = "Hallo $username,\n\nBitte bestätige deine Registrierung, indem du auf folgenden Link klickst:\n\n$verifyUrl\n\nViele Grüße\ndein Eis-Team";
-$headers = "From: noreply@ice-app.de";
 
-$mailSent = mail($email, $subject, $message, $headers);
+// ---- E-Mail Aufbau ----
+$boundary = "----=" . md5(uniqid(rand()));
+
+// 1. Betreff (UTF-8 und Base64 kodiert)
+$subject_text = "Bestätige deine Registrierung für die Ice-App";
+$subject = "=?UTF-8?B?" . base64_encode($subject_text) . "?=";
+
+// 2. Headers für Multipart
+$headers_user = "MIME-Version: 1.0\r\n";
+$headers_user .= "Content-Type: multipart/alternative; boundary=\"$boundary\"\r\n";
+$headers_user .= "From: Ice-App <noreply@ice-app.de>\r\n";
+$headers_user .= "Reply-To: noreply@ice-app.de\r\n";
+
+// 3. Plain-Text Teil
+$message_plain = "Hallo " . $username . ",\n\n";
+$message_plain .= "fast geschafft! Bitte bestätige deine Registrierung für die Ice-App.\n\n";
+$message_plain .= "Falls dein E-Mail-Programm keine HTML-Links unterstützt, kopiere bitte den folgenden Link in deinen Browser:\n";
+$message_plain .= $verifyUrl . "\n\n";
+$message_plain .= "Wir freuen uns auf dich!\nDein Ice-App Team";
+
+// 4. HTML Teil
+$message_html = "<html><body style='font-family:sans-serif;color:#222;'>";
+$message_html .= "<h2>Willkommen bei der Ice-App!</h2>";
+$message_html .= "<p>Hallo " . htmlspecialchars($username) . ",</p>";
+$message_html .= "<p>fast geschafft! Bitte klicke auf den folgenden Link, um deine Registrierung abzuschließen:</p>";
+$message_html .= "<p><a href='" . $verifyUrl . "' style='color:#0077b6; padding:10px 15px; background-color:#f0f0f0; border-radius:5px; text-decoration:none;'>Registrierung jetzt bestätigen</a></p>";
+$message_html .= "<p>Sollte der Button nicht funktionieren, kopiere bitte diesen Link in deinen Browser:<br>" . $verifyUrl . "</p>";
+$message_html .= "<p>Wir freuen uns auf dich!</p>";
+$message_html .= "<hr style='margin:24px 0;'><p>Dein Ice-App Team</p>";
+$message_html .= "</body></html>";
+
+// 5. Gesamte Nachricht zusammenbauen
+$message_user = "--" . $boundary . "\r\n";
+$message_user .= "Content-Type: text/plain; charset=UTF-8\r\n";
+$message_user .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+$message_user .= $message_plain . "\r\n\r\n";
+$message_user .= "--" . $boundary . "\r\n";
+$message_user .= "Content-Type: text/html; charset=UTF-8\r\n";
+$message_user .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+$message_user .= $message_html . "\r\n\r\n";
+$message_user .= "--" . $boundary . "--";
+
+$mailSent = mail($email, $subject, $message_user, $headers_user);
 
 // Info Mail an Admin senden
 $subject = "Neue Registrierung";
