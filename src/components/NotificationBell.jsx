@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
@@ -149,6 +149,16 @@ const NotificationBell = () => {
             </BellButton>
             {show && (
                 <Dropdown ref={dropdownRef}>
+                    <DropdownHeader>
+                        <DropdownTitle>Benachrichtigungen</DropdownTitle>
+                        <DropdownCloseButton
+                            type="button"
+                            onClick={() => setShow(false)}
+                            aria-label="Benachrichtigungen schließen"
+                        >
+                            <X size={18} />
+                        </DropdownCloseButton>
+                    </DropdownHeader>
                     {notifications.length === 0 ? (
                         <EmptyMessage>Keine Benachrichtigungen</EmptyMessage>
                     ) : (
@@ -244,7 +254,7 @@ const Dropdown = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.12);
   box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
   overflow-y: auto;
-  z-index: 1100;
+  z-index: 5000;
   color: #2f2100;
 
   @media (max-width: 480px) {
@@ -255,7 +265,10 @@ const Dropdown = styled.div`
     width: 100vw;
     max-width: 100vw;
     box-sizing: border-box;
-    max-height: calc(100dvh - (env(safe-area-inset-top, 0px) + 84px));
+    max-height: min(
+      calc(100dvh - (env(safe-area-inset-top, 0px) + 84px)),
+      66dvh
+    );
     border-radius: 0 0 16px 16px;
   }
 `;
@@ -264,6 +277,42 @@ const NotificationList = styled.ul`
   list-style: none;
   padding: 0.5rem;
   margin: 0;
+`;
+
+const DropdownHeader = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  background: rgba(255, 252, 243, 0.98);
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+`;
+
+const DropdownTitle = styled.div`
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #2f2100;
+`;
+
+const DropdownCloseButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #2f2100;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(47, 33, 0, 0.07);
+  }
 `;
 
 const NotificationItem = styled.li`

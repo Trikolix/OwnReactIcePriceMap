@@ -643,6 +643,7 @@ const HeaderContainer = styled.header`
   padding: 10px 16px;
   background-color: #ffb522;
   position: relative;
+  z-index: 1300;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 
   > * {

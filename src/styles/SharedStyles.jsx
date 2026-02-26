@@ -10,7 +10,7 @@ export const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1001;
+  z-index: 3000;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 `;
 
@@ -21,7 +21,7 @@ export const OverlayBackground = styled.div`
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,0.4);
-  z-index: 2000;
+  z-index: 3000;
 `;
 
 export const ContentWrapper = styled.div`
