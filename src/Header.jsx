@@ -14,7 +14,7 @@ import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { isSpecialTime } from './utils/seasonal';
 import { buildAssetUrl } from './utils/assets.jsx';
-import OlympicsRulesModal from './components/OlympicsRulesModal';
+import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
@@ -32,15 +32,20 @@ const Header = ({ refreshShops }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showUserOfMonth, setShowUserOfMonth] = useState(false);
   const [showActionsOverview, setShowActionsOverview] = useState(false);
-  const [showOlympicsRules, setShowOlympicsRules] = useState(false);
-  const [olympicsPoints, setOlympicsPoints] = useState(null);
-  const [olympicsBreakdown, setOlympicsBreakdown] = useState({});
-  const [isOlympicsPointsLoading, setIsOlympicsPointsLoading] = useState(false);
-  const [olympicsLeaderboard, setOlympicsLeaderboard] = useState([]);
-  const [olympicsLeaderboardFull, setOlympicsLeaderboardFull] = useState([]);
-  const [olympicsUserRank, setOlympicsUserRank] = useState(null);
-  const [isOlympicsLeaderboardLoading, setIsOlympicsLeaderboardLoading] = useState(false);
-  const [isOlympicsLeaderboardExpanded, setIsOlympicsLeaderboardExpanded] = useState(false);
+  const [showBirthdayRules, setShowBirthdayRules] = useState(false);
+  const [birthdayPoints, setBirthdayPoints] = useState(null);
+  const [birthdayMaxPoints, setBirthdayMaxPoints] = useState(null);
+  const [birthdayBreakdown, setBirthdayBreakdown] = useState({});
+  const [birthdayStatus, setBirthdayStatus] = useState({});
+  const [birthdayCounts, setBirthdayCounts] = useState({});
+  const [birthdayMandatoryCompleted, setBirthdayMandatoryCompleted] = useState(0);
+  const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(10);
+  const [birthdayRewardUnlocked, setBirthdayRewardUnlocked] = useState(false);
+  const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
+  const [birthdayLeaderboardFull, setBirthdayLeaderboardFull] = useState([]);
+  const [birthdayUserRank, setBirthdayUserRank] = useState(null);
+  const [isBirthdayLeaderboardLoading, setIsBirthdayLeaderboardLoading] = useState(false);
+  const [isBirthdayLeaderboardExpanded, setIsBirthdayLeaderboardExpanded] = useState(false);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
@@ -297,74 +302,89 @@ const Header = ({ refreshShops }) => {
   };
 
   const specialTime = isSpecialTime();
-  const isOlympicsResultsOnly =
-    specialTime === 'olympics' && new Date() >= new Date(2026, 1, 23);
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
 
   useEffect(() => {
-    if (specialTime !== 'olympics' || !userId) {
-      setOlympicsPoints(null);
-      setOlympicsBreakdown({});
+    if (specialTime !== 'birthday' || !userId) {
+      setBirthdayPoints(null);
+      setBirthdayBreakdown({});
+      setBirthdayStatus({});
+      setBirthdayCounts({});
+      setBirthdayMandatoryCompleted(0);
+      setBirthdayRewardUnlocked(false);
       return;
     }
 
-    setIsOlympicsPointsLoading(true);
-    fetch(`${apiUrl}/api/olympics_progress.php?user_id=${userId}`)
+    fetch(`${apiUrl}/api/birthday_progress.php?user_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
-        const total = Number.isFinite(data?.total_xp) ? data.total_xp : 0;
-        setOlympicsPoints(total);
-        setOlympicsBreakdown(data?.breakdown || {});
+        const total = Number.isFinite(data?.points?.total) ? data.points.total : 0;
+        setBirthdayPoints(total);
+        setBirthdayMaxPoints(Number.isFinite(data?.points?.max) ? data.points.max : null);
+        setBirthdayBreakdown(data?.points?.breakdown || {});
+        setBirthdayStatus(data?.status || {});
+        setBirthdayCounts(data?.counts || {});
+        setBirthdayMandatoryCompleted(Number.isFinite(data?.mandatory?.completed) ? data.mandatory.completed : 0);
+        setBirthdayMandatoryTotal(Number.isFinite(data?.mandatory?.total) ? data.mandatory.total : 10);
+        setBirthdayRewardUnlocked(Boolean(data?.reward_unlocked));
         if (data?.new_awards && data.new_awards.length > 0) {
           setNewAwards(data.new_awards);
           setShowOverlay(true);
         }
       })
       .catch((err) => {
-        console.error('Fehler beim Laden der Olympia-Punkte:', err);
-        setOlympicsPoints(null);
-        setOlympicsBreakdown({});
-      })
-      .finally(() => {
-        setIsOlympicsPointsLoading(false);
+        console.error('Fehler beim Laden der Geburtstags-Punkte:', err);
+        setBirthdayPoints(null);
+        setBirthdayBreakdown({});
+        setBirthdayStatus({});
+        setBirthdayCounts({});
+        setBirthdayMandatoryCompleted(0);
+        setBirthdayMandatoryTotal(10);
+        setBirthdayRewardUnlocked(false);
       });
   }, [apiUrl, specialTime, userId]);
 
   useEffect(() => {
-    if (specialTime !== 'olympics' || !showOlympicsRules) {
-      setOlympicsLeaderboard([]);
-      setOlympicsLeaderboardFull([]);
-      setOlympicsUserRank(null);
-      setIsOlympicsLeaderboardExpanded(false);
+    if (specialTime !== 'birthday' || !showBirthdayRules) {
+      setBirthdayLeaderboard([]);
+      setBirthdayLeaderboardFull([]);
+      setBirthdayUserRank(null);
+      setIsBirthdayLeaderboardExpanded(false);
       return;
     }
 
-    setIsOlympicsLeaderboardLoading(true);
+    setIsBirthdayLeaderboardLoading(true);
     const userParam = userId ? `?user_id=${userId}` : '';
-    fetch(`${apiUrl}/api/olympics_leaderboard.php${userParam}`)
+    fetch(`${apiUrl}/api/birthday_leaderboard.php${userParam}`)
       .then((res) => res.json())
       .then((data) => {
         const fullLeaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
-        setOlympicsLeaderboardFull(fullLeaderboard);
-        setOlympicsLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
-        setOlympicsUserRank(data?.user_rank || null);
+        setBirthdayLeaderboardFull(fullLeaderboard);
+        setBirthdayLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
+        setBirthdayUserRank(data?.user_rank || null);
       })
       .catch((err) => {
-        console.error('Fehler beim Laden des Olympia-Leaderboards:', err);
-        setOlympicsLeaderboard([]);
-        setOlympicsLeaderboardFull([]);
-        setOlympicsUserRank(null);
+        console.error('Fehler beim Laden des Geburtstags-Leaderboards:', err);
+        setBirthdayLeaderboard([]);
+        setBirthdayLeaderboardFull([]);
+        setBirthdayUserRank(null);
       })
       .finally(() => {
-        setIsOlympicsLeaderboardLoading(false);
+        setIsBirthdayLeaderboardLoading(false);
       });
-  }, [apiUrl, specialTime, showOlympicsRules, userId]);
+  }, [apiUrl, specialTime, showBirthdayRules, userId]);
 
   return (
     <>
       <HeaderContainer>
         <PromoIconsContainer>
-          <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
+          <GewinnspielIcon onClick={() => {
+            if (specialTime === 'birthday') {
+              setShowBirthdayRules(true);
+              return;
+            }
+            setShowActionsOverview(true);
+          }}>
             <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
           </GewinnspielIcon>
         </PromoIconsContainer>
@@ -558,23 +578,28 @@ const Header = ({ refreshShops }) => {
         </OverlayBackground>
       )}
 
-      <OlympicsRulesModal
-        open={showOlympicsRules}
-        onClose={() => setShowOlympicsRules(false)}
-        isResultsOnly={isOlympicsResultsOnly}
-        points={olympicsPoints}
+      <BirthdayRulesModal
+        open={showBirthdayRules}
+        onClose={() => setShowBirthdayRules(false)}
+        points={birthdayPoints}
+        maxPoints={birthdayMaxPoints}
         isLoggedIn={isLoggedIn}
-        breakdown={olympicsBreakdown}
-        leaderboard={olympicsLeaderboard}
-        leaderboardFull={olympicsLeaderboardFull}
-        userRank={olympicsUserRank}
-        isLeaderboardLoading={isOlympicsLeaderboardLoading}
-        isLeaderboardFullLoading={isOlympicsLeaderboardLoading}
-        isLeaderboardExpanded={isOlympicsLeaderboardExpanded}
-        onToggleLeaderboard={(expanded) => setIsOlympicsLeaderboardExpanded(expanded)}
+        breakdown={birthdayBreakdown}
+        status={birthdayStatus}
+        counts={birthdayCounts}
+        mandatoryCompleted={birthdayMandatoryCompleted}
+        mandatoryTotal={birthdayMandatoryTotal}
+        rewardUnlocked={birthdayRewardUnlocked}
+        leaderboard={birthdayLeaderboard}
+        leaderboardFull={birthdayLeaderboardFull}
+        userRank={birthdayUserRank}
+        isLeaderboardLoading={isBirthdayLeaderboardLoading}
+        isLeaderboardFullLoading={isBirthdayLeaderboardLoading}
+        isLeaderboardExpanded={isBirthdayLeaderboardExpanded}
+        onToggleLeaderboard={(expanded) => setIsBirthdayLeaderboardExpanded(expanded)}
         currentUserId={userId}
         onLogin={() => {
-          setShowOlympicsRules(false);
+          setShowBirthdayRules(false);
           setShowLoginModal(true);
         }}
       />

@@ -20,6 +20,7 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 import ChristmasElf, { SecretWorkshopMarker } from './components/ChristmasElf';
 import EasterBunny, { EasterEggMarker } from './components/EasterBunny';
 import OlympicsVenueMarkers from './components/OlympicsVenues';
+import BirthdayPresentMarkers from './components/BirthdayPresentMarkers';
 import { isSpecialTime } from './utils/seasonal';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const DEFAULT_CONTEXT_MENU_STATE = {
@@ -893,6 +894,14 @@ const IceCreamRadar = () => {
           {specialTime === 'christmas' && currentZoom > 5 && <SecretWorkshopMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
           {specialTime === 'easter' && currentZoom > 5 && <EasterEggMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
           {specialTime === 'olympics' && currentZoom > 9 && <OlympicsVenueMarkers isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
+          {specialTime === 'birthday' && currentZoom > 9 && (
+            <BirthdayPresentMarkers
+              shops={iceCreamShops}
+              isLoggedIn={isLoggedIn}
+              userId={userId}
+              setShowLoginModal={setShowLoginModal}
+            />
+          )}
           {clustering ? ( // show the clustered
             <MarkerClusterGroup maxClusterRadius={25}>
               {shopsWithDisplayValue.map(({ shop, value }) => {

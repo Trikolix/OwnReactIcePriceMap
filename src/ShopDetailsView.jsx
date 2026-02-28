@@ -128,7 +128,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         <LoadingWrap>
           <LoadingCard>
             <LoadingTitle>Eisdiele wird geladen...</LoadingTitle>
-            <LoadingText>Details, Preise und Community-Aktivitaet werden vorbereitet.</LoadingText>
+            <LoadingText>Details, Preise und Community-Aktivität werden vorbereitet.</LoadingText>
           </LoadingCard>
         </LoadingWrap>
       </Container>
@@ -344,7 +344,7 @@ const ShopDetailsContent = ({
           {isLoggedIn && (
             <SecondaryActionRow>
               <SuggestionButton type="button" onClick={handleEditClick}>
-                Aenderung vorschlagen
+                Änderung vorschlagen
               </SuggestionButton>
             </SecondaryActionRow>
           )}
@@ -396,7 +396,7 @@ const ShopDetailsContent = ({
           )}
           {isLoggedIn && (
             <ActionBar>
-              <Button type="button" onClick={() => setShowPriceForm(true)}>Preis melden / bestaetigen</Button>
+              <Button type="button" onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button>
             </ActionBar>
           )}
         </SectionCard>

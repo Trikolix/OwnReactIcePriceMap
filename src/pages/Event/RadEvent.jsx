@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { Calendar, Clock, MapPin, ListChecks, ShieldCheck, Euro, IceCream, Heart } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import "../../styles/eventTheme.css";
+import { useUser } from "../../context/UserContext";
 
 const Images = {
     "eisstopp-klatt": "https://scontent-dus1-1.xx.fbcdn.net/v/t39.30808-6/474190233_922200500070659_4489896847841982265_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=f2Jieo4NxeIQ7kNvwEymZdf&_nc_oc=Admmhur-SjlFyrrcmgYgxasGpKasH8oB-82NyxGJyndSrwTLkbccPRYGosnixStGvCE&_nc_zt=23&_nc_ht=scontent-dus1-1.xx&_nc_gid=T4To4o42xMMITD_mnihQdA&oh=00_AfpOUAG0Cm3Bi6Z-1FlKDwVpc2Tf3-fRWD3e_O6qPVaITw&oe=6963F59E",
@@ -239,6 +240,25 @@ function CharityInfo() {
 
 
 export default function RadEvent() {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const { userId, isLoggedIn } = useUser();
+
+    useEffect(() => {
+        if (!isLoggedIn || !userId || !apiUrl) {
+            return;
+        }
+
+        fetch(`${apiUrl}/api/birthday_track_event_page.php`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ user_id: userId }),
+        }).catch((error) => {
+            console.error("Fehler beim Tracking der Event-Seite:", error);
+        });
+    }, [apiUrl, isLoggedIn, userId]);
+
     return (
         <PageWrapper>
             <Header />

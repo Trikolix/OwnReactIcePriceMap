@@ -30,6 +30,12 @@ export const isSpecialTime = () => {
         if (today >= olympicsStart && today <= olympicsEnd) {
             return 'olympics';
         }
+
+        const birthdayStart = new Date('2026-02-28');
+        const birthdayEnd = new Date('2026-03-22');
+        if (today >= birthdayStart && today <= birthdayEnd) {
+            return 'birthday';
+        }
     }
 
     return null;
