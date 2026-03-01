@@ -65,7 +65,7 @@ function DashBoard() {
 
   const extractActivityDate = (data) => {
     if (!data) return null;
-    return parseActivityDate(data.datum || data.erstellt_am || data.created_at || null);
+    return parseActivityDate(data.aktivitaet_am || data.datum || data.erstellt_am || data.created_at || null);
   };
 
   // Hilfsfunktion: Gruppiert Activities nach group_id

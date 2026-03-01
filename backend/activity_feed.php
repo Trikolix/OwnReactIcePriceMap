@@ -189,8 +189,8 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
 
     // 🔄 Nach Datum sortieren
     usort($activities, function ($a, $b) {
-        $dateA = $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
-        $dateB = $b['data']['erstellt_am'] ?? $b['data']['datum'] ?? null;
+        $dateA = $a['data']['aktivitaet_am'] ?? $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
+        $dateB = $b['data']['aktivitaet_am'] ?? $b['data']['erstellt_am'] ?? $b['data']['datum'] ?? null;
         return strtotime($dateB) <=> strtotime($dateA);
     });
 
@@ -226,7 +226,7 @@ function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 
 
     // Meta-Daten vorbereiten
     $meta['count']      = count($activities);
-    $meta['hasMore']    = (end($activities)['data']['erstellt_am'] ?? end($activities)['data']['datum'] ??  null) > $earliestDate;
+    $meta['hasMore']    = (end($activities)['data']['aktivitaet_am'] ?? end($activities)['data']['erstellt_am'] ?? end($activities)['data']['datum'] ??  null) > $earliestDate;
     $meta['nextOffset'] = $offset;
 
     return [

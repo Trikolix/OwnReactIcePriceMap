@@ -16,7 +16,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
 
     const [waehrung, setWaehrung] = useState(shop.eisdiele.waehrung_id ?? 1);
     const [waehrungSymbol, setWaehrungSymbol] = useState(shop.eisdiele.waehrung_symbol ?? '€');
-    console.log(shop);
+    const hasSecondCurrency = shop.eisdiele.waehrung_symbol && shop.eisdiele.waehrung_symbol !== '€';
 
     const toggleWaehrung = () => {
         if (shop.eisdiele.waehrung_symbol !== '€') {
@@ -51,16 +51,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     waehrung
                 })
             });
-            console.log(JSON.stringify({
-                shopId: shop.eisdiele.id,
-                userId: userId,
-                kugelPreis,
-                additionalInfoKugelPreis,
-                softeisPreis,
-                additionalInfoSofteisPreis
-            }));
             const data = await response.json();
-            console.log(data);
             let localAwards = null;
             data.forEach(element => {
                 if (element.typ) {
@@ -82,9 +73,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     });
                 }
             });
-            if (localAwards && localAwards.length !== 0) {
-                console.log("Neue Auszeichnungen:", localAwards);
-            } else {
+            if (!localAwards || localAwards.length === 0) {
                 setTimeout(() => {
                     setMessage('');
                     setShowPriceForm(false);
@@ -100,61 +89,70 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
     }
     return showPriceForm ? (
         <Overlay>
-            <Modal>
+            <StyledModal>
                 <CloseButton onClick={() => setShowPriceForm(false)}>×</CloseButton>
                 <Heading>Preis für {shop.eisdiele.name} einreichen</Heading>
+                <IntroText>Bitte trage den aktuell beobachteten Preis ein. Du kannst optional eine kurze Notiz ergänzen.</IntroText>
                 {!submitted && (<>
-                    <Label>
-                        Preis pro Kugel:
-                        <NarrowInput
-                            type="number"
-                            min="1.0"
-                            max="5.0"
-                            step="0.1"
-                            placeholder="0.0"
-                            value={kugelPreis ?? ''}
-                            onChange={(e) => setKugelPreis(e.target.value)}
-                        />
-                        <span onClick={toggleWaehrung} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                            {waehrungSymbol}
-                        </span>
-                    </Label>
-
-                    <Label>
-                        Zusatzbeschreibung für die Kugel:
-                        <Textarea
+                    <SectionCard>
+                        <Label>Preis pro Kugel</Label>
+                        <PriceInputRow>
+                            <PriceInput
+                                type="number"
+                                min="0.1"
+                                max="20.0"
+                                step="0.1"
+                                placeholder="z. B. 1.80"
+                                value={kugelPreis ?? ''}
+                                onChange={(e) => setKugelPreis(e.target.value)}
+                            />
+                            <CurrencyPill
+                                type="button"
+                                onClick={toggleWaehrung}
+                                disabled={!hasSecondCurrency}
+                                title={hasSecondCurrency ? 'Währung wechseln' : 'Nur Euro verfügbar'}
+                            >
+                                {waehrungSymbol}
+                            </CurrencyPill>
+                        </PriceInputRow>
+                        <StyledTextarea
                             rows={3}
-                            value={additionalInfoKugelPreis}
+                            value={additionalInfoKugelPreis ?? ''}
+                            placeholder="Optional: Bechergröße, Angebot, Sondergröße ..."
                             onChange={(e) => setAdditionalInfoKugelPreis(e.target.value)}
                         />
-                    </Label>
+                    </SectionCard>
 
-                    <Label>
-                        Preis für Softeis:
-                        <NarrowInput
-                            type="number"
-                            min="1.0"
-                            max="5.0"
-                            step="0.1"
-                            placeholder="0.0"
-                            value={softeisPreis ?? ''}
-                            onChange={(e) => setSofteiPreis(e.target.value)}
-                        />
-                        <span onClick={toggleWaehrung} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                            {waehrungSymbol}
-                        </span>
-                    </Label>
-
-                    <Label>
-                        Zusatzbeschreibung für Softeis:
-                        <Textarea
+                    <SectionCard>
+                        <Label>Preis für Softeis</Label>
+                        <PriceInputRow>
+                            <PriceInput
+                                type="number"
+                                min="0.1"
+                                max="20.0"
+                                step="0.1"
+                                placeholder="z. B. 2.40"
+                                value={softeisPreis ?? ''}
+                                onChange={(e) => setSofteiPreis(e.target.value)}
+                            />
+                            <CurrencyPill
+                                type="button"
+                                onClick={toggleWaehrung}
+                                disabled={!hasSecondCurrency}
+                                title={hasSecondCurrency ? 'Währung wechseln' : 'Nur Euro verfügbar'}
+                            >
+                                {waehrungSymbol}
+                            </CurrencyPill>
+                        </PriceInputRow>
+                        <StyledTextarea
                             rows={3}
-                            value={additionalInfoSofteisPreis}
+                            value={additionalInfoSofteisPreis ?? ''}
+                            placeholder="Optional: Portionsgröße, Topping, Besonderheit ..."
                             onChange={(e) => setAdditionalInfoSofteisPreis(e.target.value)}
                         />
-                    </Label>
+                    </SectionCard>
                     <ButtonGroup>
-                        <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                        <PrimarySubmit type="button" onClick={submit}>Einreichen</PrimarySubmit>
                     </ButtonGroup>
                 </>)}
                 <Message>{message}</Message>
@@ -166,31 +164,86 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     </LevelInfo>
                 )}
                 <NewAwards awards={awards} />
-            </Modal>
+            </StyledModal>
         </Overlay>) : null;
 };
 
 export default SubmitPriceModal;
 // File-specific overrides using shared components
-const NarrowInput = styled(Input)`
-    width: 40px;
-    padding: 0.5rem;
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+const StyledModal = styled(Modal)`
+    width: min(96vw, 560px);
+    background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
 `;
 
-const TextArea = styled(Textarea)`
+const IntroText = styled.p`
+    margin: -0.15rem 0 1rem;
+    color: rgba(47, 33, 0, 0.7);
+    font-size: 0.92rem;
+`;
+
+const SectionCard = styled.div`
+    display: grid;
+    gap: 0.45rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(47, 33, 0, 0.1);
+    border-radius: 14px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+`;
+
+const PriceInputRow = styled.div`
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+`;
+
+const PriceInput = styled(Input)`
     width: 100%;
-    padding: 0.5rem;
-    margin-top: 0.5rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid rgba(47, 33, 0, 0.2);
+    padding: 0.62rem 0.72rem;
 `;
 
-const LocalButtonGroup = styled.div`
-    text-align: center;
+const StyledTextarea = styled(Textarea)`
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid rgba(47, 33, 0, 0.2);
+    padding: 0.62rem 0.72rem;
+`;
+
+const CurrencyPill = styled.button`
+    min-width: 52px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(47, 33, 0, 0.24);
+    background: rgba(255, 181, 34, 0.18);
+    color: #5d3a00;
+    font-weight: 800;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const PrimarySubmit = styled(SubmitButton)`
+    width: 100%;
+    margin: 0;
+    border-radius: 12px;
+    color: #2f2100;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+
+    &:hover {
+        background: linear-gradient(180deg, #ffd97f 0%, #ffbf3f 100%);
+    }
 `;
 
 // large submit styling is provided globally via SharedStyles SubmitButton

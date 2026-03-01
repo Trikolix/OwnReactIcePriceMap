@@ -222,9 +222,10 @@ const SubmitIceShopModal = ({
 
   return showForm && (
     <Overlay>
-      <Modal>
+      <StyledModal>
         <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
         <Heading>{modalTitle}</Heading>
+        <IntroText>Trage die wichtigsten Infos zur Eisdiele ein. Position und Öffnungszeiten helfen anderen Nutzerinnen und Nutzern besonders.</IntroText>
         {existingIceShop && (
           <InfoBanner $needsReview={!autoApproveChanges}>
             {autoApproveChanges
@@ -236,6 +237,7 @@ const SubmitIceShopModal = ({
           e.preventDefault();
           submit();
         }}>
+          <SectionCard>
           <Group>
             <label>Name:</label>
             <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required="true" />
@@ -245,7 +247,9 @@ const SubmitIceShopModal = ({
             <label>Adresse:</label>
             <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} onBlur={handleAddressBlur} />
           </Group>
+          </SectionCard>
 
+          <SectionCard>
           <LocationPicker
             latitude={latitude || userLatitude || 50.83}
             longitude={longitude || userLongitude || 12.92}
@@ -254,20 +258,20 @@ const SubmitIceShopModal = ({
             readOnly={coordinatesLocked}
           />
           <ButtonGroup>
-            <SmallButton
+            <UtilityButton
               type="button"
               onClick={handleGeocode}
               disabled={coordinatesLocked}
             >
               Position aus Adresse bestimmen
-            </SmallButton>
-            <SmallButton
+            </UtilityButton>
+            <UtilityButton
               type="button"
               onClick={handleReverseGeocode}
               disabled={!latitude || !longitude}
             >
               Adresse aus Position übernehmen
-            </SmallButton>
+            </UtilityButton>
           </ButtonGroup>
           {coordinatesLocked && (
             <CoordinateNotice>
@@ -299,7 +303,9 @@ const SubmitIceShopModal = ({
               />
             </Group>
           </GroupInline>
+          </SectionCard>
 
+          <SectionCard>
           <Group>
             <label>Öffnungszeiten (optional):</label>
             <OpeningHoursEditor value={openingHoursData} onChange={setOpeningHoursData} />
@@ -309,9 +315,10 @@ const SubmitIceShopModal = ({
             <label>Website (optional):</label>
             <Input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </Group>
+          </SectionCard>
 
           {existingIceShop && (
-            <>
+            <SectionCard>
               <Group>
                 <label>Status:</label>
                 <Select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -328,11 +335,11 @@ const SubmitIceShopModal = ({
                 <label>Saison-Ende (optional):</label>
                 <Input type="date" value={closingDate} onChange={(e) => setClosingDate(e.target.value)} />
               </Group>
-            </>
+            </SectionCard>
           )}
 
           <ButtonGroup>
-            <SubmitButton type="submit">{submitLabel}</SubmitButton>
+            <PrimarySubmit type="submit">{submitLabel}</PrimarySubmit>
           </ButtonGroup>
         </form>)}
 
@@ -345,7 +352,7 @@ const SubmitIceShopModal = ({
           </LevelInfo>
         )}
         <NewAwards awards={awards} />
-      </Modal>
+      </StyledModal>
     </Overlay>
   );
 };
@@ -356,13 +363,25 @@ export default SubmitIceShopModal;
 const Group = styled.div`
   display: flex;
   flex-direction: column;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
+
+  label {
+    font-weight: 700;
+    color: #4f3800;
+    margin-bottom: 0.2rem;
+    font-size: 0.92rem;
+  }
 `;
 
 const GroupInline = styled.div`
   display: flex;
   gap: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.1rem;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
 `;
 
 const CoordinateInput = styled(Input)`
@@ -374,14 +393,45 @@ const CoordinateInput = styled(Input)`
 `;
 
 // Local size tweaks for buttons
-const SmallButton = styled(Button)`
+const StyledModal = styled(Modal)`
+  width: min(96vw, 760px);
+  background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
+`;
+
+const IntroText = styled.p`
+  margin: -0.2rem 0 0.8rem;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.92rem;
+`;
+
+const SectionCard = styled.div`
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(47, 33, 0, 0.1);
+  border-radius: 14px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+`;
+
+const UtilityButton = styled(Button)`
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
-  border-radius: 6px;
+  border-radius: 8px;
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
+`;
+
+const PrimarySubmit = styled(SubmitButton)`
+  width: 100%;
+  margin: 0;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.6);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
 `;
 
 const InfoBanner = styled.div`

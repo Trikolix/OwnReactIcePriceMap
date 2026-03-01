@@ -970,6 +970,7 @@ const Table = styled.table`
 const ActionBar = styled.div`
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.6rem;
   margin-top: 0.85rem;
 `;
@@ -979,27 +980,45 @@ const SecondaryActionRow = styled.div`
 `;
 
 const Button = styled(SharedSubmitButton)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   margin: 0;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 181, 34, 0.5);
-  background: #ffb522;
-  color: #2f2100;
+  width: 100%;
+  max-width: 320px;
+  border-radius: 12px;
+  border: 1px solid rgba(138, 87, 0, 0.32);
+  background: linear-gradient(180deg, #fffdf7 0%, #fff3d6 100%);
+  color: #5a3900;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.2);
+  box-shadow: 0 4px 12px rgba(47, 33, 0, 0.08);
 
   &:hover {
-    background-color: #ffc34a;
+    background: linear-gradient(180deg, #fff6e4 0%, #ffe9ba 100%);
+    border-color: rgba(138, 87, 0, 0.44);
+  }
+
+  @media (max-width: 480px) {
+    max-width: none;
   }
 `;
 
 const PrimaryButton = styled(Button)`
   width: 100%;
-  justify-content: center;
+  max-width: none;
+  border-color: rgba(255, 181, 34, 0.6);
+  background: linear-gradient(180deg, #ffcf63 0%, #ffb522 100%);
+  color: #2f2100;
   font-size: 0.9rem;
   padding: 0.48rem 0.82rem;
   border-radius: 10px;
   min-height: 0;
-  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.18);
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.2);
+
+  &:hover {
+    background: linear-gradient(180deg, #ffd879 0%, #ffbf3f 100%);
+  }
 `;
 
 const SuggestionButton = styled.button`

@@ -59,7 +59,7 @@ const ShopMarker = ({
         className: "price-icon",
         html: `
           <div class="price-icon-wrapper" style="position:relative; width:${size}px; height:${size}px;">
-            <div class="price-icon-circle" style="background-color:${backgroundColor}; color:${textColor}; text-align:center; border-radius:50%; width:${size}px; height:${size}px; line-height:${size}px; border:3px solid ${borderColor}; box-shadow:${focusGlow}; font-weight:${isFocused ? 700 : 600}; transform:${isFocused ? "scale(1.05)" : "scale(1)"}; box-sizing:border-box;">
+            <div class="price-icon-circle" style="background-color:${backgroundColor}; color:${textColor}; text-align:center; border-radius:50%; width:${size}px; height:${size}px; border:3px solid ${borderColor}; box-shadow:${focusGlow}; font-weight:400; font-size:${isFocused ? 12 : 11}px; font-family:'Segoe UI', Tahoma, Arial, sans-serif; line-height:1; white-space:nowrap; display:flex; align-items:center; justify-content:center; padding:0 4px; transform:${isFocused ? "scale(1.05)" : "scale(1)"}; box-sizing:border-box;">
               ${formattedValue}
             </div>
             ${challengeBadge}

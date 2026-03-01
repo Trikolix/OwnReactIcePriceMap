@@ -260,27 +260,30 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
 
     return showForm ? (
         <Overlay>
-            <Modal>
+            <StyledModal>
                 <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
                 <Heading>
                     {existingRoute ? "Route bearbeiten" : "Route einreichen"}
                 </Heading>
+                <IntroText>Verknüpfe Eisdielen mit deiner Route und teile die wichtigsten Tourdaten mit der Community.</IntroText>
 
                 {!submitted && (<>
                     <Group>
-                        <Label>
-                            Routenname:
-                            <Input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="z. B. 'Rund um Eisdiele X'"
-                                required
-                            />
-                        </Label>
+                        <InlineField>
+                            <InlineLabel>Routenname:</InlineLabel>
+                            <InlineControl>
+                                <Input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="z. B. 'Rund um Eisdiele X'"
+                                    required
+                                />
+                            </InlineControl>
+                        </InlineField>
                     </Group>
 
-                    <Label>
+                    <FieldLabel>
                         Eisdielen entlang der Route:
                         <SelectedShopList>
                             {selectedShops.map((shop) => (
@@ -336,20 +339,22 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                                 </SuggestionList>
                             )}
                         </ShopSearchWrapper>
-                    </Label>
+                    </FieldLabel>
 
-                    <Label>
-                        URL:
-                        <Textarea
-                            rows={2}
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            placeholder="URL zur Komoot / Stava / Outdooractive Route"
-                            required
-                        />
-                    </Label>
+                    <InlineField>
+                        <InlineLabel>URL:</InlineLabel>
+                        <InlineControl>
+                            <Input
+                                type="url"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                placeholder="URL zur Komoot / Strava / Outdooractive Route"
+                                required
+                            />
+                        </InlineControl>
+                    </InlineField>
 
-                    <Label>
+                    <FieldLabel>
                         Beschreibung:
                         <TextArea
                             rows={3}
@@ -357,60 +362,68 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                             onChange={(e) => setBeschreibung(e.target.value)}
                             placeholder="Hier kannst du deine Route beschreiben."
                         />
-                    </Label>
+                    </FieldLabel>
 
-                    <Label>
-                        Typ:
-                        <Select value={typ} onChange={(e) => setTyp(e.target.value)}>
-                            <option value="Rennrad">Rennrad</option>
-                            <option value="Wanderung">Wanderung</option>
-                            <option value="MTB">MTB</option>
-                            <option value="Gravel">Gravel</option>
-                            <option value="Sonstiges">Sonstiges</option>
-                        </Select>
-                    </Label>
+                    <InlineField>
+                        <InlineLabel>Typ:</InlineLabel>
+                        <InlineControl>
+                            <Select value={typ} onChange={(e) => setTyp(e.target.value)}>
+                                <option value="Rennrad">Rennrad</option>
+                                <option value="Wanderung">Wanderung</option>
+                                <option value="MTB">MTB</option>
+                                <option value="Gravel">Gravel</option>
+                                <option value="Sonstiges">Sonstiges</option>
+                            </Select>
+                        </InlineControl>
+                    </InlineField>
 
-                    <Label>
-                        Länge (km):
-                        <Input
-                            type="number"
-                            step="0.1"
-                            value={laenge_km}
-                            onChange={(e) => setLaenge_km(e.target.value)}
-                            placeholder="z. B. 42.3"
-                        />
-                    </Label>
+                    <InlineField>
+                        <InlineLabel>Länge (km):</InlineLabel>
+                        <InlineControl>
+                            <Input
+                                type="number"
+                                step="0.1"
+                                value={laenge_km}
+                                onChange={(e) => setLaenge_km(e.target.value)}
+                                placeholder="z. B. 42.3"
+                            />
+                        </InlineControl>
+                    </InlineField>
 
-                    <Label>
-                        Höhenmeter:
-                        <Input
-                            type="number"
-                            value={hoehenmeter}
-                            onChange={(e) => setHoehenmeter(e.target.value)}
-                            placeholder="z. B. 680"
-                        />
-                    </Label>
+                    <InlineField>
+                        <InlineLabel>Höhenmeter:</InlineLabel>
+                        <InlineControl>
+                            <Input
+                                type="number"
+                                value={hoehenmeter}
+                                onChange={(e) => setHoehenmeter(e.target.value)}
+                                placeholder="z. B. 680"
+                            />
+                        </InlineControl>
+                    </InlineField>
 
-                    <Label>
-                        Schwierigkeit:
-                        <Select value={schwierigkeit} onChange={(e) => setSchwierigkeit(e.target.value)}>
-                            <option value="Leicht">Leicht</option>
-                            <option value="Mittel">Mittel</option>
-                            <option value="Schwer">Schwer</option>
-                        </Select>
-                    </Label>
+                    <InlineField>
+                        <InlineLabel>Schwierigkeit:</InlineLabel>
+                        <InlineControl>
+                            <Select value={schwierigkeit} onChange={(e) => setSchwierigkeit(e.target.value)}>
+                                <option value="Leicht">Leicht</option>
+                                <option value="Mittel">Mittel</option>
+                                <option value="Schwer">Schwer</option>
+                            </Select>
+                        </InlineControl>
+                    </InlineField>
 
-                    <Label>
+                    <FieldLabel>
                         Private Tour:
                         <Checkbox
                             type="checkbox"
                             checked={isPrivat}
                             onChange={(e) => setisPrivat(e.target.checked)}
                         />
-                    </Label>
+                    </FieldLabel>
 
                     {userId === "1" && (
-                        <Label>
+                        <FieldLabel>
                             Embed Code (Admin):
                             <TextArea
                                 rows={3}
@@ -418,15 +431,15 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                                 onChange={(e) => setEmbedCode(e.target.value)}
                                 placeholder="<iframe ...></iframe>"
                             />
-                        </Label>
+                        </FieldLabel>
                     )}
                     <ButtonGroup>
-                        <SubmitButton type="submit" onClick={handleSubmit}>
+                        <PrimarySubmit type="submit" onClick={handleSubmit}>
                             {existingRoute ? "Änderungen speichern" : "Route einreichen"}
-                        </SubmitButton>
-                        <SubmitButton type="button" onClick={() => setShowForm(false)}>
+                        </PrimarySubmit>
+                        <SecondarySubmit type="button" onClick={() => setShowForm(false)}>
                             Abbrechen
-                        </SubmitButton>
+                        </SecondarySubmit>
                         {existingRoute && (<><br />
                             <DeleteButton type="button" onClick={handleDeleteClick} >
                                 Route löschen
@@ -442,7 +455,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                     </LevelInfo>
                 )}
                 <NewAwards awards={awards} />
-            </Modal>
+            </StyledModal>
         </Overlay>
     ) : null;
 };
@@ -458,8 +471,38 @@ const Group = styled.div`
     flex-direction: column;
     margin-bottom: 0.5rem;
 `;
+const InlineField = styled.div`
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 0.65rem;
+    align-items: center;
+    margin-bottom: 0.55rem;
+
+    @media (max-width: 700px) {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+`;
+const InlineLabel = styled.span`
+    font-weight: 700;
+    color: #4f3800;
+    font-size: 0.92rem;
+`;
+const InlineControl = styled.div`
+    width: 100%;
+`;
+const FieldLabel = styled(Label)`
+    display: grid;
+    gap: 0.3rem;
+    margin: 0 0 0.55rem;
+    color: #4f3800;
+    font-weight: 700;
+    font-size: 0.92rem;
+`;
 const Checkbox = styled.input`
-    margin-right: 0.5rem;
+    width: auto;
+    margin: 0;
+    justify-self: start;
 `;
 // Provide aliases for shared components expected by JSX
 const TextArea = Textarea;
@@ -542,4 +585,48 @@ const SuggestionList = styled.ul`
         display: block;
         color: #777;
     }
+`;
+
+const StyledModal = styled(Modal)`
+    width: min(96vw, 760px);
+    background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
+
+    input:not([type="checkbox"]),
+    select,
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        border-radius: 12px;
+        border: 1px solid rgba(47, 33, 0, 0.2);
+        min-height: 42px;
+    }
+
+    textarea {
+        min-height: 96px;
+        resize: vertical;
+    }
+`;
+
+const IntroText = styled.p`
+    margin: -0.2rem 0 0.8rem;
+    color: rgba(47, 33, 0, 0.72);
+    font-size: 0.92rem;
+`;
+
+const PrimarySubmit = styled(SubmitButton)`
+    color: #2f2100;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+`;
+
+const SecondarySubmit = styled(SubmitButton)`
+    color: #5d3a00;
+    border: 1px solid rgba(47, 33, 0, 0.2);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
 `;

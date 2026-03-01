@@ -127,20 +127,24 @@ const LoginModal = ({ setShowLoginModal }) => {
     setIsRegisterMode(false);
   };
 
+  const modalTitle = isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login";
+  const resetHint = resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen.";
+  const loginHint = isLoggedIn && !isRegisterMode ? `Willkommen zurück, ${username}!` : "";
+
   return (
-    <div className="modal-overlay" style={{ zIndex: '1002' }}>
-      <div className="modal-content" style={{ position: 'relative', zIndex: '1002' }}>
+    <ModalOverlay>
+      <ModalCard>
         <CloseX onClick={closeLoginForm}>x</CloseX>
-        <h2>{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</h2>
+        <Title>{modalTitle}</Title>
 
         {loginSuccess ? (
-          <>
-            <p>{message}</p>
-            {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
-          </>
+          <MessageBlock>
+            {message && <StatusText>{message}</StatusText>}
+            {loginHint && <SubtleText>{loginHint}</SubtleText>}
+          </MessageBlock>
         ) : (
           <>
-            <form onSubmit={(e) => {
+            <Form onSubmit={(e) => {
               e.preventDefault();
               if (isResetMode) {
                 handlePasswordReset();
@@ -150,14 +154,14 @@ const LoginModal = ({ setShowLoginModal }) => {
                 handleLogin();
               }
             }}>
-              {!isResetMode && (<Input
+              {!isResetMode && (<ModalInput
                 type="text"
                 placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />)}
-              {isRegisterMode && (<Input
+              {isRegisterMode && (<ModalInput
                   type="email"
                   placeholder="E-Mail"
                   value={email}
@@ -165,44 +169,34 @@ const LoginModal = ({ setShowLoginModal }) => {
                   required
                 />
               )}
-              {!isResetMode && (<><Input
+              {!isResetMode && (<><ModalInput
                 type="password"
                 placeholder="Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-              /><br /></>)}
+              /></>)}
               {!isRegisterMode && !isResetMode && (
-                    <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                      <button
+                    <InlineRow>
+                      <InlineTextButton
                         type="button"
                         onClick={() => setIsResetMode(true)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#0077cc',
-                          textDecoration: 'underline',
-                          cursor: 'pointer',
-                          padding: 0
-                        }}
                       >
                         Passwort vergessen?
-                      </button>
-                    </p>
+                      </InlineTextButton>
+                    </InlineRow>
                   )}
 
               {isResetMode && (
                 <>
-                  <Input
+                  <ModalInput
                     type="email"
                     placeholder="E-Mail-Adresse"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     required
                   />
-                  <p style={{ fontSize: '0.9rem' }}>
-                    { resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen."}
-                  </p>
+                  <HintText>{resetHint}</HintText>
                 </>
               )}
               {isRegisterMode && (
@@ -235,31 +229,128 @@ const LoginModal = ({ setShowLoginModal }) => {
                 </CheckboxGroup>
               )}
 
-              <SubmitButton type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</SubmitButton>
-            </form>
+              <PrimaryAction type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</PrimaryAction>
+            </Form>
 
-            <p>{message}</p>
-            {isLoggedIn && !isRegisterMode && <p>Willkommen zurück, {username}!</p>}
+            {message && <StatusText>{message}</StatusText>}
+            {loginHint && <SubtleText>{loginHint}</SubtleText>}
 
             {isResetMode ? (
-              <p>
-                <SmallButton onClick={() => setIsResetMode(false)}>Zurück zum Login</SmallButton>
-              </p>
+              <SwitchLine>
+                <SwitchTextButton onClick={() => setIsResetMode(false)}>Zurück zum Login</SwitchTextButton>
+              </SwitchLine>
             ) : !isRegisterMode ? (
-              <p>Noch keinen Account? <SmallButton onClick={() => setIsRegisterMode(true)}>Registrieren</SmallButton></p>
+              <SwitchLine>Noch keinen Account? <SwitchTextButton onClick={() => setIsRegisterMode(true)}>Registrieren</SwitchTextButton></SwitchLine>
             ) : (
-              <p>Bereits registriert? <SmallButton onClick={() => setIsRegisterMode(false)}>Zurück zum Login</SmallButton></p>
+              <SwitchLine>Bereits registriert? <SwitchTextButton onClick={() => setIsRegisterMode(false)}>Zurück zum Login</SwitchTextButton></SwitchLine>
             )}
 
-            <SmallButton onClick={closeLoginForm}>Schließen</SmallButton>
+            <FooterAction onClick={closeLoginForm}>Schließen</FooterAction>
           </>
         )}
-      </div>
-    </div>
+      </ModalCard>
+    </ModalOverlay>
   );
 };
 
 export default LoginModal;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 10, 0, 0.5);
+  backdrop-filter: blur(2px);
+  padding: 1rem;
+`;
+
+const ModalCard = styled.div`
+  width: min(460px, 100%);
+  max-height: min(90dvh, 760px);
+  overflow-y: auto;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+  padding: 1.2rem;
+  position: relative;
+`;
+
+const Title = styled.h2`
+  margin: 0 2rem 0.9rem 0;
+  color: #2f2100;
+  font-size: 1.25rem;
+`;
+
+const Form = styled.form`
+  display: grid;
+  gap: 0.62rem;
+`;
+
+const ModalInput = styled(Input)`
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid rgba(47, 33, 0, 0.22);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.95);
+`;
+
+const PrimaryAction = styled(SubmitButton)`
+  width: 100%;
+  margin: 0.3rem 0 0;
+  color: #2f2100;
+  background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+  border: 1px solid rgba(255, 181, 34, 0.65);
+  border-radius: 12px;
+
+  &:hover {
+    background: linear-gradient(180deg, #ffd97f 0%, #ffbf3f 100%);
+  }
+`;
+
+const MessageBlock = styled.div`
+  display: grid;
+  gap: 0.35rem;
+`;
+
+const StatusText = styled.p`
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  color: #5f3f00;
+`;
+
+const SubtleText = styled.p`
+  margin: 0;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.9rem;
+`;
+
+const HintText = styled.p`
+  margin: 0.1rem 0 0;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.88rem;
+  line-height: 1.35;
+`;
+
+const InlineRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin-top: -0.1rem;
+`;
+
+const InlineTextButton = styled.button`
+  background: none;
+  border: none;
+  color: #8a5700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+`;
 
 const CheckboxGroup = styled.div`
   display: flex;
@@ -271,49 +362,86 @@ const CheckboxGroup = styled.div`
 
 const CheckboxLabel = styled.label`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  color: #3f2b00;
   width: 100%;
+
+  input {
+    margin-top: 0.18rem;
+  }
+
   & > span {
     text-align: left;
     flex: 1;
+    line-height: 1.35;
   }
 `;
 
 const CloseX = styled.button`
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
+  top: 0.65rem;
+  right: 0.65rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  color: #5b4520;
+  font-size: 1.3rem;
+  line-height: 1;
   cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.16);
+  }
 `;
 
+const SwitchLine = styled.p`
+  margin: 0.55rem 0 0;
+  font-size: 0.9rem;
+  color: rgba(47, 33, 0, 0.76);
+`;
 
-const SmallButton = styled.button`
-  padding: 0.5rem 0.5rem;
-  background-color:rgb(148, 148, 148);
-  color: white;
+const SwitchTextButton = styled.button`
+  background: none;
   border: none;
-  border-radius: 12px;
-  font-weight: bold;
+  color: #8a5700;
+  text-decoration: underline;
   cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+`;
+
+const FooterAction = styled.button`
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.56rem 0.8rem;
+  border: 1px solid rgba(47, 33, 0, 0.2);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #4b3500;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.95);
+  }
 `;
 
 const StyledLink = styled(Link)`
-  color: #0077cc;
+  color: #8a5700;
   text-decoration: underline;
   &:hover {
-    color: #005999;
+    color: #6f4300;
   }
 `;
 
 const ErrorText = styled.p`
-  color: red;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
+  margin: 0.1rem 0 0;
+  color: #c62828;
+  font-size: 0.86rem;
 `;
 
 // SubmitButton and Input are imported from SharedStyles

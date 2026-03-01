@@ -11,6 +11,10 @@ import { MessageCircle } from "lucide-react";
 const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
+  const activityDate = review.aktivitaet_am || review.erstellt_am;
+  const isEditedActivity = review.activity_type === "edit";
+  const parsedActivityDate = new Date(activityDate);
+  const hasValidActivityDate = !Number.isNaN(parsedActivityDate.getTime());
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("de-DE");
@@ -18,14 +22,15 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   return (
     <Card>
       <CardMetaRow>
-        <DateText dateTime={review.erstellt_am}>
-          {new Date(review.erstellt_am).toLocaleDateString("de-DE", {
+        <DateText dateTime={activityDate}>
+          {isEditedActivity ? "Bearbeitet: " : ""}
+          {hasValidActivityDate ? parsedActivityDate.toLocaleDateString("de-DE", {
             day: "numeric",
             month: "long",
             year: "numeric",
             hour: "numeric",
             minute: "numeric",
-          })}
+          }) : "Unbekannt"}
         </DateText>
       </CardMetaRow>
       <Header>

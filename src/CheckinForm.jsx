@@ -421,9 +421,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     localAwards = element.new_awards;
                 }
             });
-            if (localAwards && localAwards.length !== 0) {
-                console.log("Neue Auszeichnungen:", localAwards);
-            } else {
+            if (!localAwards || localAwards.length === 0) {
                 setTimeout(() => {
                     setShowCheckinForm(false);
                 }, 2000);
@@ -440,6 +438,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 {isAllowed && (<>
                     {!submitted && (<Form onSubmit={submit}>
                         <Heading>Eis-Checkin für {shopName} {checkinId && ("bearbeiten")}</Heading>
+                        <IntroText>Bewerte dein Eis kurz und teile bei Bedarf Fotos und Notizen mit der Community.</IntroText>
                         <Section>
                             <Label>Eistyp</Label>
                             <Select value={type} onChange={(e) => setType(e.target.value)}>
@@ -460,7 +459,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         alleSorten={alleSorten[type] || []}
                                     />
                                     {showSortenBewertung && (<>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -468,7 +467,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             value={sorte.bewertung}
                                             placeholder="Bewertung"
                                             onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
-                                            style={{ width: "100px" }}
                                         />
                                         <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
                                     </>
@@ -477,15 +475,15 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 </Row>
                             ))}
                             <AddButton type="button" onClick={addSorte}>+ Sorte hinzufügen</AddButton>
-                            <div style={{ marginTop: "0.5rem" }}>
-                                <label>
+                            <SortenToggleWrap>
+                                <SortenToggleLabel>
                                     <input
                                         type="checkbox"
                                         checked={showSortenBewertung}
                                         onChange={() => setShowSortenBewertung(!showSortenBewertung)}
                                     /> Sorten einzeln bewerten
-                                </label>
-                            </div>
+                                </SortenToggleLabel>
+                            </SortenToggleWrap>
                         </Section>
 
                         <Table>
@@ -498,7 +496,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <tr>
                                     <td><Label>Bewertung Geschmack:</Label></td>
                                     <td>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -506,7 +504,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={geschmackbewertung}
                                             onChange={(e) => setGeschmackbewertung(e.target.value)}
-                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
@@ -514,7 +511,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <tr>
                                     <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
                                     <td>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -522,7 +519,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={preisleistungsbewertung}
                                             onChange={(e) => setPreisleistungsbewertung(e.target.value)}
-                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
@@ -530,7 +526,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 {type !== "Eisbecher" && (<tr>
                                     <td><Label>Bewertung Waffel:</Label></td>
                                     <td>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -538,7 +534,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={waffelbewertung}
                                             onChange={(e) => setWaffelbewertung(e.target.value)}
-                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
@@ -590,9 +585,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             />
                             {/* Ein Button öffnet eine Auswahl (Kamera/Galerie). Auf Mobilgeräten
                                 zeigt sich die entsprechende Option; auf Desktop eine JS-Prompt zur Auswahl. */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                <Button type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</Button>
-                            </div>
+                            <UploadActionRow>
+                                <ActionButton type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</ActionButton>
+                            </UploadActionRow>
                             {showImageChooser && (
                                 <ImageChooserModal
                                     onClose={() => setShowImageChooser(false)}
@@ -607,12 +602,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             src={bild.previewUrl || bild.url}
                                             alt={`Bild ${index + 1}`}
                                         />
-                                        <Input
+                                        <ImageCaptionInput
                                             type="text"
                                             placeholder="Beschreibung eingeben (optional)"
                                             value={bild.beschreibung}
                                             onChange={(e) => updateBildBeschreibung(index, e.target.value)}
-                                            style={{ margin: "0.5rem 0", width: "90%" }}
                                         />
                                         <DeleteButton type="button" onClick={() => removeBild(index)}>
                                             Bild entfernen
@@ -627,21 +621,21 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <UserMentionMultiSelect onChange={setMentionedUsers} />
                             </Section>) :
                             (<Section>
-                                <p style={{ fontStyle: "italic", color: "#666" }}>
+                                <ReferenceHint>
                                     Dieser Check-in wird mit <strong>{referencedCheckin.nutzer_name}'s</strong> Check-in vom {referencedCheckin.datum} verknüpft.
-                                </p>
+                                </ReferenceHint>
                             </Section>)
                         }
 
-                        <ButtonGroup>
-                            <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
-                            <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>
-                            {checkinId && (<><br />
+                        <FormButtonGroup>
+                            <PrimaryAction type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</PrimaryAction>
+                            <SecondaryAction type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</SecondaryAction>
+                            {checkinId && (<>
                                 <DeleteButton type="button" onClick={handleDeleteClick} >
                                     Check-in löschen
                                 </DeleteButton></>
                             )}
-                        </ButtonGroup>
+                        </FormButtonGroup>
                     </Form>)}
                 </>)}
                 <Message>{message}</Message>
@@ -677,7 +671,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 export default CheckinForm;
 // Re-export some shared styled names for backwards compatibility in this file
 const Overlay = SharedOverlay;
-const Modal = SharedModal;
+const Modal = styled(SharedModal)`
+    width: min(96vw, 760px);
+    background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
+`;
 const CloseButton = SharedCloseButton;
 const Heading = SharedHeading;
 const Form = SharedForm;
@@ -698,34 +698,94 @@ const LevelInfo = SharedLevelInfo;
 const SubmitButton = SharedSubmitButton;
 
 // Small local helpers that existed previously and are referenced in JSX
+const IntroText = styled.p`
+    margin: -0.3rem 0 0.9rem;
+    color: rgba(47, 33, 0, 0.72);
+    font-size: 0.92rem;
+`;
+
 const Row = styled.div`
-    display: flex;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 0.55rem;
     align-items: center;
-    padding-bottom: 0.2rem;
+    padding-bottom: 0.35rem;
+
+    @media (max-width: 760px) {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+    }
 `;
 
 const RemoveButton = styled.button`
-    background: transparent;
-    border: none;
-    color: #d9534f;
-    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(217, 83, 79, 0.35);
+    color: #b4332f;
+    border-radius: 10px;
+    min-width: 42px;
+    min-height: 40px;
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
 `;
 
 const AddButton = styled.button`
-    background: #ffb522;
-    color: white;
-    border: none;
-    padding: 0.4rem 0.6rem;
-    border-radius: 6px;
+    background: rgba(255, 181, 34, 0.16);
+    color: #7a4a00;
+    border: 1px solid rgba(255, 181, 34, 0.35);
+    padding: 0.5rem 0.7rem;
+    border-radius: 10px;
+    font-weight: 700;
     cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 181, 34, 0.26);
+    }
 `;
 
 const Table = styled.table`
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid rgba(47, 33, 0, 0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.78);
     margin-bottom: 1rem;
+
+    td {
+        padding: 0.55rem 0.6rem;
+        border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    @media (max-width: 760px) {
+        display: block;
+
+        tbody {
+            display: grid;
+            gap: 0.35rem;
+            padding: 0.45rem;
+        }
+
+        tr {
+            display: grid;
+            gap: 0.35rem;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(47, 33, 0, 0.08);
+            border-radius: 10px;
+            padding: 0.45rem;
+        }
+
+        td {
+            border: none;
+            padding: 0;
+        }
+    }
 `;
 
 const StyledCol1 = styled.col`
@@ -741,6 +801,84 @@ const StyledCol3 = styled.col`
     text-align: right;
     align-items: right;
     align-content: right;
+`;
+
+const ScoreInput = styled(Input)`
+    width: 100%;
+    max-width: 130px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    border: 1px solid rgba(47, 33, 0, 0.2);
+`;
+
+const UploadActionRow = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+`;
+
+const ActionButton = styled(Button)`
+    color: #2f2100;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+
+    &:hover {
+        background: linear-gradient(180deg, #ffd97f 0%, #ffbf3f 100%);
+    }
+`;
+
+const ImageCaptionInput = styled(Input)`
+    margin: 0.5rem 0;
+    width: 90%;
+`;
+
+const SortenToggleWrap = styled.div`
+    margin-top: 0.45rem;
+`;
+
+const SortenToggleLabel = styled.label`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #4f3800;
+    font-size: 0.9rem;
+`;
+
+const FormButtonGroup = styled(ButtonGroup)`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+`;
+
+const PrimaryAction = styled(Button)`
+    color: #2f2100;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+
+    &:hover {
+        background: linear-gradient(180deg, #ffd97f 0%, #ffbf3f 100%);
+    }
+`;
+
+const SecondaryAction = styled(Button)`
+    color: #5d3a00;
+    border-radius: 11px;
+    border: 1px solid rgba(47, 33, 0, 0.22);
+    background: rgba(255, 255, 255, 0.85);
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.96);
+    }
+`;
+
+const ReferenceHint = styled.p`
+    margin: 0;
+    font-style: italic;
+    color: rgba(47, 33, 0, 0.68);
 `;
 
 const Text = styled.p``;

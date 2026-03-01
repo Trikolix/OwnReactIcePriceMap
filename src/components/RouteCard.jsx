@@ -51,7 +51,6 @@ const formatCreatedAt = (value) => {
 
 const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showEmbed, setShowEmbed] = useState(false);
   const { userId } = useUser();
 
   const routeShops = useMemo(() => {
@@ -70,6 +69,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
   const isOwner = Number(route.nutzer_id) === Number(userId);
   const isPrivate = String(route.ist_oeffentlich) !== "1";
   const hasEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
+  const [showEmbed, setShowEmbed] = useState(hasEmbed);
   const eisdielenCount = routeShops.length;
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
@@ -202,13 +202,13 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
 
           {route.url && (
             <ActionLink href={route.url} target="_blank" rel="noopener noreferrer">
-              Zu Route
+              Externe Route öffnen
               <ExternalLink size={20} style={{ marginLeft: 5, verticalAlign: 'text-bottom' }} />
             </ActionLink>
           )}
 
           {isOwner && (
-            <ActionButton type="button" onClick={() => setShowEditModal(true)}>
+            <ActionButton type="button" $variant="subtle" onClick={() => setShowEditModal(true)}>
               Bearbeiten
             </ActionButton>
           )}
@@ -394,9 +394,9 @@ const actionButtonStyles = css`
   border-radius: 12px;
   padding: 10px 16px;
   font-weight: 600;
-  background: ${ACCENT};
-  color: #2f2100;
-  border: 1px solid rgba(255, 181, 34, 0.5);
+  background: ${({ $variant }) => ($variant === "subtle" ? "rgba(255, 255, 255, 0.86)" : ACCENT)};
+  color: ${({ $variant }) => ($variant === "subtle" ? "#6b4a00" : "#2f2100")};
+  border: 1px solid ${({ $variant }) => ($variant === "subtle" ? "rgba(47, 33, 0, 0.22)" : "rgba(255, 181, 34, 0.5)")};
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
   text-decoration: none;
@@ -408,7 +408,7 @@ const actionButtonStyles = css`
   line-height: 1;
 
   &:hover {
-    background: #ffc34a;
+    background: ${({ $variant }) => ($variant === "subtle" ? "rgba(255, 255, 255, 0.96)" : "#ffc34a")};
     transform: translateY(-1px);
   }
 `;
