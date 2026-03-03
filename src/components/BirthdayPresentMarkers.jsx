@@ -57,7 +57,7 @@ const BirthdayPresentMarkers = ({ shops = [], isLoggedIn, userId, setShowLoginMo
         setFoundCount(parsed.foundCount);
       }
     } catch (error) {
-      console.warn('Konnte Easter-Egg-State nicht lesen:', error);
+      console.warn('Konnte Geschenk-State nicht lesen:', error);
     }
   }, [stateStorageKey]);
 
@@ -106,7 +106,7 @@ const BirthdayPresentMarkers = ({ shops = [], isLoggedIn, userId, setShowLoginMo
         foundCount: nextFoundCount,
       }));
     } catch (error) {
-      console.warn('Konnte Easter-Egg-State nicht speichern:', error);
+      console.warn('Konnte Geschenk-State nicht speichern:', error);
     }
   };
 
@@ -173,7 +173,7 @@ const BirthdayPresentMarkers = ({ shops = [], isLoggedIn, userId, setShowLoginMo
         });
       }
     } catch (error) {
-      console.error('Fehler beim Speichern des Easter Eggs:', error);
+      console.error('Fehler beim Speichern des Geschenks:', error);
     }
   };
 
@@ -188,7 +188,7 @@ const BirthdayPresentMarkers = ({ shops = [], isLoggedIn, userId, setShowLoginMo
         >
           <Popup>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ margin: '0 0 6px' }}>Easter Egg</h3>
+              <h3 style={{ margin: '0 0 6px' }}>Geschenk auf der Karte</h3>
               <p style={{ margin: 0 }}>
                 {isLoggedIn
                   ? 'Geschenk gefunden. Wird für die Geburtstagsaktion gewertet.'

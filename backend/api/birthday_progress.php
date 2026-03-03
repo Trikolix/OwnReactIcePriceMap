@@ -9,9 +9,10 @@ if ($userId <= 0) {
 }
 
 date_default_timezone_set('Europe/Berlin');
-$periodStart = '2026-02-28 00:00:00';
+$periodStart = '2026-03-08 00:00:00';
 $periodEnd = '2026-03-22 23:59:59';
-$photoChallengeStart = '2026-03-14 00:00:00';
+$photoChallengeStart = '2026-03-08 00:00:00';
+$anniversaryUnlockAt = '2026-03-14 12:00:00';
 $eggCooldownHours = 3;
 $easterEggEpSchedule = [12, 10, 8, 6, 4];
 $photoChallengeSubmissionEp = 40;
@@ -20,6 +21,7 @@ $photoChallengeVoteEp = 0;
 $mandatoryKeys = [
     'checkin_with_photo',
     'price_reported',
+    'favorite_shop_added',
     'invited_user_with_checkin',
     'login_days_7',
     'profile_image',
@@ -31,6 +33,50 @@ $mandatoryKeys = [
 ];
 
 try {
+    $now = new DateTime('now');
+    $startDate = new DateTime($periodStart);
+    $endDate = new DateTime($periodEnd);
+    $eventUnlockDate = new DateTime($anniversaryUnlockAt);
+    $inPeriod = ($now >= $startDate && $now <= $endDate);
+    $today = $now->format('Y-m-d');
+
+    $campaignPhase = 'closed';
+    if ($now < $startDate) {
+        $campaignPhase = 'prelaunch';
+    } elseif ($now < $eventUnlockDate) {
+        $campaignPhase = 'live';
+    } elseif ($now <= $endDate) {
+        $campaignPhase = 'anniversary';
+    }
+
+    $eisTourRegistrationOpen = false;
+    $tableExistsStmt = $pdo->query(
+        "SELECT COUNT(*)
+         FROM information_schema.tables
+         WHERE table_schema = DATABASE()
+           AND table_name = 'event_flags'"
+    );
+    $eventFlagsTableExists = ((int)$tableExistsStmt->fetchColumn()) > 0;
+    if ($eventFlagsTableExists) {
+        $flagStmt = $pdo->prepare(
+            "SELECT flag_value
+             FROM event_flags
+             WHERE event_key = :event_key
+               AND flag_key = :flag_key
+             ORDER BY id DESC
+             LIMIT 1"
+        );
+        $flagStmt->execute([
+            'event_key' => 'birthday_2026',
+            'flag_key' => 'eis_tour_registration_open',
+        ]);
+        $rawFlagValue = $flagStmt->fetchColumn();
+        if ($rawFlagValue !== false && $rawFlagValue !== null) {
+            $normalizedFlag = strtolower((string)$rawFlagValue);
+            $eisTourRegistrationOpen = in_array($normalizedFlag, ['1', 'true', 'yes', 'on'], true);
+        }
+    }
+
     $status = [];
     $counts = [
         'checkins_total' => 0,
@@ -41,6 +87,7 @@ try {
         'invited_users_with_checkin_count' => 0,
         'login_days' => 0,
         'comments_unique_targets' => 0,
+        'favorite_shops_added_count' => 0,
         'easter_eggs_found' => 0,
         'new_shops_count' => 0,
         'challenges_completed' => 0,
@@ -53,7 +100,16 @@ try {
     $stmt = $pdo->prepare(
         "SELECT
             COUNT(*) AS checkins_total,
-            SUM(CASE WHEN bild_url IS NOT NULL AND bild_url <> '' THEN 1 ELSE 0 END) AS checkins_with_photo,
+            SUM(
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM bilder b
+                        WHERE b.checkin_id = checkins.id
+                    ) THEN 1
+                    ELSE 0
+                END
+            ) AS checkins_with_photo,
             SUM(CASE WHEN is_on_site = 1 THEN 1 ELSE 0 END) AS checkins_on_site
          FROM checkins
          WHERE nutzer_id = :user_id
@@ -92,6 +148,15 @@ try {
     $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
     $priceReports = (int)$stmt->fetchColumn();
     $status['price_reported'] = $priceReports > 0;
+
+    $stmt = $pdo->prepare(
+        "SELECT COUNT(*)
+         FROM favoriten
+         WHERE nutzer_id = :user_id"
+    );
+    $stmt->execute(['user_id' => $userId]);
+    $counts['favorite_shops_added_count'] = (int)$stmt->fetchColumn();
+    $status['favorite_shop_added'] = $counts['favorite_shops_added_count'] > 0;
 
     $stmt = $pdo->prepare(
         "SELECT COUNT(*)
@@ -142,14 +207,19 @@ try {
     $counts['comments_unique_targets'] = (int)$stmt->fetchColumn();
     $status['comment_written'] = $counts['comments_unique_targets'] > 0;
 
-    $stmt = $pdo->prepare(
-        "SELECT COUNT(*)
-         FROM birthday_event_page_visits
-         WHERE user_id = :user_id
-           AND first_visited_at BETWEEN :start AND :end"
-    );
-    $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
-    $status['rad_event_page_visited'] = ((int)$stmt->fetchColumn()) > 0;
+    // Eis-Tour-Seite besucht Event erst ab 14.03. zählen
+    if ($now >= $eventUnlockDate) {
+        $stmt = $pdo->prepare(
+            "SELECT COUNT(*)
+             FROM birthday_event_page_visits
+             WHERE user_id = :user_id
+               AND first_visited_at BETWEEN :start AND :end"
+        );
+        $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
+        $status['rad_event_page_visited'] = ((int)$stmt->fetchColumn()) > 0;
+    } else {
+        $status['rad_event_page_visited'] = false;
+    }
 
     $stmt = $pdo->prepare(
         "SELECT COUNT(DISTINCT shop_id)
@@ -175,12 +245,6 @@ try {
         $latestEggAt->modify("+{$eggCooldownHours} hours");
         $nextEggAvailableAt = $latestEggAt->format('Y-m-d H:i:s');
     }
-
-    $now = new DateTime('now');
-    $startDate = new DateTime($periodStart);
-    $endDate = new DateTime($periodEnd);
-    $inPeriod = ($now >= $startDate && $now <= $endDate);
-    $today = $now->format('Y-m-d');
 
     $stmt = $pdo->prepare(
         "SELECT login_days, last_login_date
@@ -278,6 +342,7 @@ try {
         'checkins_photo_ep' => $counts['checkins_with_photo'] * 5,
         'checkins_on_site_ep' => $counts['checkins_on_site'] * 5,
         'price_reported_ep' => $status['price_reported'] ? 15 : 0,
+        'favorite_shop_added_ep' => $status['favorite_shop_added'] ? 5 : 0,
         'invite_registered_ep' => $counts['invited_users_count'] * 20,
         'invite_checkin_ep' => $counts['invited_users_with_checkin_count'] * 60,
         'login_days_ep' => $counts['login_days'] * 5,
@@ -303,6 +368,11 @@ try {
     }
 
     $mandatoryTotal = count($mandatoryKeys);
+    // Eis-Bonus erst ab 14.03. anzeigen
+    $extraIceReward = false;
+    if ($now >= $eventUnlockDate && $mandatoryCompleted === $mandatoryTotal) {
+        $extraIceReward = true;
+    }
     $rewardUnlocked = $mandatoryCompleted === $mandatoryTotal;
 
     $bonusCompleted = 0;
@@ -339,6 +409,9 @@ try {
             'is_active' => $inPeriod,
             'is_results_only' => ($now > $endDate),
         ],
+        'campaign_phase' => $campaignPhase,
+        'anniversary_unlocked_at' => $eventUnlockDate->format(DateTime::ATOM),
+        'eis_tour_registration_open' => $eisTourRegistrationOpen,
         'points' => [
             'total' => $totalPoints,
             'max' => null,
@@ -351,6 +424,7 @@ try {
         ],
         'status' => $status,
         'reward_unlocked' => $rewardUnlocked,
+        'extra_ice_reward' => $extraIceReward,
         'easter_egg_model' => [
             'cooldown_hours' => $eggCooldownHours,
             'ep_schedule_first_finds' => $easterEggEpSchedule,

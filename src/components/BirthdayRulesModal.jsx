@@ -5,25 +5,27 @@ const POINT_LABELS = {
   checkin_with_photo: 'Check-in mit Bild',
   group_checkin_with_other: 'Check-in mit weiterer Person',
   price_reported: 'Preis gemeldet',
+  favorite_shop_added: 'Eisdiele zu Favoriten hinzugefuegt',
   invited_user_with_checkin: 'Nutzer eingeladen (mit Check-in)',
   login_days_7: 'An 7 Tagen eingeloggt',
   profile_image: 'Profilbild vorhanden',
   comment_written: 'Kommentar geschrieben',
   rad_event_page_visited: 'Eis-Tour-Seite besucht',
-  easter_eggs_3: '3 Easter Eggs gefunden',
+  easter_eggs_3: '3 Geschenke auf der Karte entdeckt',
   photo_challenge_participated: 'An der Fotochallenge teilgenommen',
   checkins_base_ep: 'Check-ins (15 EP je Check-in)',
   checkins_photo_ep: 'Check-ins mit Bild (+5 EP je Check-in)',
   checkins_on_site_ep: 'Vor-Ort-Check-ins (+5 EP je Check-in)',
   price_reported_ep: 'Preis gemeldet (einmalig)',
+  favorite_shop_added_ep: 'Eisdiele zu Favoriten hinzugefuegt (einmalig)',
   invite_registered_ep: 'Nutzer eingeladen (20 EP je Nutzer)',
   invite_checkin_ep: 'Eingeladener Nutzer mit Check-in (60 EP)',
   login_days_ep: 'Login-Tage (5 EP je Tag)',
   profile_image_ep: 'Profilbild vorhanden (einmalig)',
   comment_ep: 'Kommentare (max. 5 x 5 EP)',
   rad_event_page_ep: 'Eis-Tour-Seite besucht',
-  easter_eggs_ep: 'Easter Eggs gefunden',
-  new_shop_ep: 'Neue Eisdielen (max. 3 x 15 EP)',
+  easter_eggs_ep: 'Geschenke auf der Karte entdeckt',
+  new_shop_ep: 'Neue Eisdielen eingetragen (max. 3 x 15 EP)',
   challenge_completed_ep: 'Challenges abgeschlossen (45 EP je Challenge)',
   ice_shop_reviewed_ep: 'Eisdielen bewertet (max. 3 x 10 EP)',
   route_submitted_ep: 'Routen eingetragen (max. 3 x 15 EP)',
@@ -31,10 +33,44 @@ const POINT_LABELS = {
   photo_challenge_vote_ep: 'Fotochallenge: Votes abgegeben',
 };
 
+const GROUPED_ACTIONS = {
+  checkins_total_ep: {
+    label: 'Check-ins (bis zu 25 EP je Check-in)',
+    sourceKeys: ['checkins_base_ep', 'checkins_photo_ep', 'checkins_on_site_ep'],
+    defaultEP: 25,
+    hover: '15 EP für einfachen Check-in + 5 EP für Check-in mit Bild + 5 EP für Vor-Ort-Check-in',
+  },
+  invited_users_total_ep: {
+    label: 'Eingeladene Nutzer (bis zu 80 EP je Nutzer)',
+    sourceKeys: ['invite_registered_ep', 'invite_checkin_ep'],
+    defaultEP: 80,
+    hover: '20 EP für Einladung + 60 EP wenn eingeladener Nutzer einen Check-in macht',
+  },
+};
+
+const ACTION_DISPLAY_ORDER = [
+  'checkins_total_ep',
+  'price_reported_ep',
+  'favorite_shop_added_ep',
+  'invited_users_total_ep',
+  'login_days_ep',
+  'profile_image_ep',
+  'comment_ep',
+  'rad_event_page_ep',
+  'easter_eggs_ep',
+  'new_shop_ep',
+  'challenge_completed_ep',
+  'ice_shop_reviewed_ep',
+  'route_submitted_ep',
+  'photo_challenge_submission_ep',
+  'photo_challenge_vote_ep',
+];
+
 const MANDATORY_KEYS = [
   'checkin_with_photo',
   'group_checkin_with_other',
   'price_reported',
+  'favorite_shop_added',
   'invited_user_with_checkin',
   'login_days_7',
   'profile_image',
@@ -44,12 +80,32 @@ const MANDATORY_KEYS = [
   'photo_challenge_participated',
 ];
 
-const PROGRESS_MARKERS = [
-  { value: 25, label: '25%' },
-  { value: 50, label: '50%' },
-  { value: 75, label: '75%' },
-  { value: 100, label: '100%' },
-];
+// Hilfsfunktion für Default-EP
+const getDefaultEP = (key) => {
+  const defaults = {
+    checkins_total_ep: 25,
+    checkins_base_ep: 15,
+    checkins_photo_ep: 5,
+    checkins_on_site_ep: 5,
+    price_reported_ep: 15,
+    favorite_shop_added_ep: 5,
+    invited_users_total_ep: 80,
+    invite_registered_ep: 20,
+    invite_checkin_ep: 60,
+    login_days_ep: 5,
+    profile_image_ep: 15,
+    comment_ep: 5,
+    rad_event_page_ep: 15,
+    easter_eggs_ep: 12,
+    new_shop_ep: 15,
+    challenge_completed_ep: 45,
+    ice_shop_reviewed_ep: 10,
+    route_submitted_ep: 15,
+    photo_challenge_submission_ep: 40,
+    photo_challenge_vote_ep: 0,
+  };
+  return defaults[key] || 5;
+};
 
 const BirthdayRulesModal = ({
   open,
@@ -62,7 +118,7 @@ const BirthdayRulesModal = ({
   status = {},
   counts = {},
   mandatoryCompleted = 0,
-  mandatoryTotal = 10,
+  mandatoryTotal = 11,
   rewardUnlocked = false,
   leaderboard = [],
   leaderboardFull = [],
@@ -72,6 +128,11 @@ const BirthdayRulesModal = ({
   isLeaderboardFullLoading = false,
   onToggleLeaderboard = () => {},
   currentUserId = null,
+  extraIceReward = false,
+  campaignPhase = 'live',
+  anniversaryUnlockedAt = null,
+  eisTourRegistrationOpen = false,
+  forceLocalUnlock = false,
 }) => {
   if (!open) {
     return null;
@@ -80,10 +141,57 @@ const BirthdayRulesModal = ({
   const safeCompleted = Math.max(0, Math.min(mandatoryCompleted, mandatoryTotal));
   const progressPercent = mandatoryTotal > 0 ? Math.round((safeCompleted / mandatoryTotal) * 100) : 0;
   const safePoints = Number.isFinite(points) ? points : 0;
-  const hasPointCap = Number.isFinite(maxPoints) && maxPoints > 0;
   const activeLeaderboard = (isLeaderboardExpanded && leaderboardFull.length > 0)
     ? leaderboardFull
     : leaderboard;
+
+  // Award thresholds
+  const awardThresholds = [50, 150, 400];
+  const awardImages = [
+    '/assets/birthday_bronze.png',
+    '/assets/birthday_silver.png',
+    '/assets/birthday_gold.png',
+  ];
+  const now = new Date();
+  const defaultUnlockDate = new Date('2026-03-14T12:00:00+01:00');
+  const parsedUnlockDate = anniversaryUnlockedAt ? new Date(anniversaryUnlockedAt) : null;
+  const unlockDate = parsedUnlockDate && !Number.isNaN(parsedUnlockDate.getTime())
+    ? parsedUnlockDate
+    : defaultUnlockDate;
+  const eventUnlocked = forceLocalUnlock || now >= unlockDate;
+  const tourRegistrationUnlocked = forceLocalUnlock || (eventUnlocked && Boolean(eisTourRegistrationOpen));
+  const actionEntries = ACTION_DISPLAY_ORDER.map((key) => {
+    if (GROUPED_ACTIONS[key]) {
+      const group = GROUPED_ACTIONS[key];
+      const earnedPoints = group.sourceKeys.reduce((sum, sourceKey) => {
+        const value = Number.isFinite(breakdown[sourceKey]) ? breakdown[sourceKey] : 0;
+        return sum + value;
+      }, 0);
+
+      return {
+        key,
+        label: group.label,
+        points: earnedPoints > 0 ? earnedPoints : group.defaultEP,
+        earned: earnedPoints > 0,
+        hover: group.hover,
+      };
+    }
+
+    const earnedPoints = Number.isFinite(breakdown[key]) ? breakdown[key] : 0;
+    return {
+      key,
+      label: POINT_LABELS[key] || key,
+      points: earnedPoints > 0 ? earnedPoints : getDefaultEP(key),
+      earned: earnedPoints > 0,
+      hover: null,
+    };
+  });
+  const campaignPhaseLabel = {
+    prelaunch: 'Phase: Vorlauf',
+    live: 'Phase: Aktionszeitraum',
+    anniversary: 'Phase: Jubiläumstag',
+    closed: 'Phase: Beendet',
+  }[campaignPhase] || 'Phase: Aktionszeitraum';
 
   return (
     <OverlayBackground>
@@ -91,65 +199,30 @@ const BirthdayRulesModal = ({
         <CloseButton onClick={onClose}>&times;</CloseButton>
         <h2>🎂🍦 Ice-App Geburtstagsaktion</h2>
         <p>
-          Die Ice-App wird am <strong>14. März</strong> ein Jahr alt, deshalb gibt es eine Reihe toller Aktionen,
-          um das zu feiern.
+          Die Ice-App wird am <strong>14. März</strong> ein Jahr alt, deshalb gibt es im Aktionszeitraum vom <strong>8.–22. März</strong> eine Reihe toller Aktionen, um das zu feiern.
         </p>
-        <p>
-          Sammle EP, steige in der Rangliste auf und schließe alle 10 unten gelisteten Aktionen ab.
-          Dann erhältst du ein Kugel Eis spendiert.*
+        <p style={{ color: '#8a5a00', fontWeight: 700 }}>
+          Am 14. März wird es eine Zusatzüberraschung geben.
         </p>
-        <p>
-          <small>* Teilnahmebedingungen werden noch ergänzt.</small>
+        <p style={{ marginTop: '-0.2rem', color: '#6f5b3a', fontWeight: 700, fontSize: '0.92rem' }}>
+          {campaignPhaseLabel}
         </p>
-
-        <ProgressLabel>Pflichtaktionen: {safeCompleted}/{mandatoryTotal}</ProgressLabel>
-        <ProgressBar>
-          <ProgressFill style={{ width: `${progressPercent}%` }} />
-          {PROGRESS_MARKERS.map((marker) => (
-            <ProgressMarker key={marker.value} style={{ left: `${marker.value}%` }}>
-              {marker.label}
+        <ProgressLabel>EP-Fortschritt</ProgressLabel>
+        <ProgressBar style={{ marginBottom: '3rem', height: '18px', background: '#eaf2fa', marginTop: '2.5rem' }}>
+          <ProgressFill style={{ width: `${Math.min(safePoints / 4, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #ffb522, #ff7a18)' }} />
+          {awardThresholds.map((threshold, idx) => (
+            <ProgressMarker key={threshold} style={{ left: `${threshold / 4}%`, top: '-30px' }}>
+              <img
+                src={awardImages[idx]}
+                alt={`Award ${idx + 1}`}
+                style={{ height: '64px', opacity: safePoints >= threshold ? 1 : 0.35, filter: safePoints >= threshold ? 'none' : 'grayscale(1)' }}
+              />
+              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: safePoints >= threshold ? '#0f7c2f' : '#888' }}>
+                {safePoints >= threshold ? 'Freigeschaltet' : `${threshold} EP`}
+              </div>
             </ProgressMarker>
           ))}
         </ProgressBar>
-
-        <StatusInfo>
-          <strong>{progressPercent}%</strong> Fortschritt
-          <br />
-          Punkte: <strong>{safePoints} EP{hasPointCap ? ` / ${maxPoints} EP` : ''}</strong>
-          <br />
-          Login-Tage: <strong>{counts.login_days || 0}/7</strong>
-          <br />
-          Easter Eggs: <strong>{counts.easter_eggs_found || 0}/3</strong>
-          <br />
-          {rewardUnlocked ? (
-            <RewardOk>Alle Pflichtaktionen geschafft. Eis freigeschaltet.</RewardOk>
-          ) : (
-            <RewardPending>Noch nicht alle Pflichtaktionen abgeschlossen.</RewardPending>
-          )}
-        </StatusInfo>
-
-        <ActionSummary>
-          <ActionSummaryTitle>Pflichtaktionen</ActionSummaryTitle>
-          <ActionList>
-            {MANDATORY_KEYS.map((key) => (
-              <ActionItem key={key} $done={!!status[key]}>
-                <span>{POINT_LABELS[key] || key}</span>
-                <ActionState>{status[key] ? 'Erfüllt' : 'Offen'}</ActionState>
-              </ActionItem>
-            ))}
-          </ActionList>
-          <ActionSummaryTitle>EP-Aufschlüsselung</ActionSummaryTitle>
-          <ActionList>
-            {Object.keys(breakdown)
-              .filter((key) => Number.isFinite(breakdown[key]) && breakdown[key] > 0)
-              .map((key) => (
-                <ActionItem key={key} $done>
-                  <span>{POINT_LABELS[key] || key}</span>
-                  <ActionState>+{breakdown[key] || 0} EP</ActionState>
-                </ActionItem>
-              ))}
-          </ActionList>
-        </ActionSummary>
 
         <LeaderboardSection>
           <LeaderboardTitle>🏆 Bestenliste</LeaderboardTitle>
@@ -190,6 +263,72 @@ const BirthdayRulesModal = ({
             </>
           )}
         </LeaderboardSection>
+
+        {/* EP-Aktionen & Aufschlüsselung vereinigt */}
+        <ActionSummary>
+          <ActionSummaryTitle>EP-Aktionen</ActionSummaryTitle>
+          <p style={{margin: '0 0 0.5rem', color: '#444', fontSize: '0.98rem'}}>Für diese Aktionen erhältst du EP. Fahre mit der Maus oder tippe auf eine Aktion für Details/Limits.</p>
+          <ActionList>
+            {actionEntries.map((entry) => {
+              return (
+                <ActionItem
+                  key={entry.key}
+                  $done={entry.earned}
+                  {...(entry.hover ? { title: entry.hover || 'Siehe Aktionsbeschreibung' } : {})}
+                  style={!entry.earned ? { color: '#aaa', background: '#f5f5f5' } : {}}
+                >
+                  <span>{entry.label}</span>
+                  <ActionState>+{entry.points} EP</ActionState>
+                </ActionItem>
+              );
+            })}
+          </ActionList>
+
+        </ActionSummary>
+
+        {eventUnlocked && (
+          <div style={{ marginTop: '2rem', background: '#eeeeee', borderRadius: '12px', padding: '18px 12px' }}>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#2b1b00' }}>Sonderaktion: Eis-Tour</h3>
+            <p>
+              Es ist öffentlich: Es wird eine <a href="/rad-event" style={{ color: '#ffb522', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Eis-Tour</a> geben! Alle, die bis zum Ende des Aktionszeitraum alle Pflichtaktionen erledigt haben, erhalten ein kostenloses Eis
+              am Start / Ziel der Eis-Tour.
+            </p>
+            <ProgressLabel>Pflichtaktionen-Fortschritt</ProgressLabel>
+            <ProgressBar style={{ marginBottom: '0.5rem', height: '12px', background: '#eaf2fa' }}>
+              <ProgressFill style={{ width: `${progressPercent}%` }} />
+            </ProgressBar>
+            <ActionList>
+              {MANDATORY_KEYS.map((key) => (
+                <ActionItem key={key} $done={!!status[key]}>
+                  <span>{POINT_LABELS[key] || key}</span>
+                  <ActionState>{status[key] ? 'Erfüllt' : 'Offen'}</ActionState>
+                </ActionItem>
+              ))}
+            </ActionList>
+            <div style={{ marginTop: '10px' }}>
+              {rewardUnlocked ? (
+                <RewardOk>Alle Pflichtaktionen geschafft. Eis freigeschaltet.</RewardOk>
+              ) : (
+                <RewardPending>Noch nicht alle Pflichtaktionen abgeschlossen.</RewardPending>
+              )}
+              {extraIceReward && (
+                <div style={{ marginTop: '10px', color: '#0f7c2f', fontWeight: 700 }}>
+                  🎉 Zusatzaktion: Du hast alle Aktionen abgeschlossen und erhältst ein Eis!
+                </div>
+              )}
+              <TourGateBox>
+                {tourRegistrationUnlocked ? (
+                  <>
+                    <TourGateText>Jetzt anmelden.</TourGateText>
+                    <TourCtaLink to="/event-registration">Zur Eis-Tour-Anmeldung</TourCtaLink>
+                  </>
+                ) : (
+                  <TourGateText>Anmeldung folgt in Kürze.</TourGateText>
+                )}
+              </TourGateBox>
+            </div>
+          </div>
+        )}
 
         {!isLoggedIn && (
           <div>
@@ -260,15 +399,22 @@ const ProgressFill = styled.div`
 
 const ProgressMarker = styled.span`
   position: absolute;
-  top: 16px;
+  top: -8px;
   transform: translateX(-50%);
   font-size: 0.72rem;
   color: #666;
-`;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-const StatusInfo = styled.p`
-  margin: 0.25rem 0 1rem;
-  line-height: 1.5;
+  img {
+    transition: transform 0.18s cubic-bezier(.4,1.4,.6,1.0);
+    will-change: transform;
+  }
+  &:hover img, &:focus img {
+    transform: scale(1.18);
+    z-index: 2;
+  }
 `;
 
 const RewardOk = styled.span`
@@ -282,8 +428,8 @@ const RewardPending = styled.span`
 `;
 
 const ActionSummary = styled.div`
-  text-align: left;
-  margin-top: 0.75rem;
+  text-align: center;
+  margin-top: 1.75rem;
 `;
 
 const ActionSummaryTitle = styled.p`
@@ -381,6 +527,30 @@ const LeaderboardToggle = styled.button`
   font-weight: 700;
   font-size: 0.85rem;
   color: #3a2a00;
+`;
+
+const TourGateBox = styled.div`
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+`;
+
+const TourGateText = styled.div`
+  font-weight: 700;
+  color: #2b1b00;
+`;
+
+const TourCtaLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  background: #ffb522;
+  color: #2b1b00;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 800;
 `;
 
 const LoginButton = styled.button`

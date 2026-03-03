@@ -1,8 +1,15 @@
 export const isSpecialTime = () => {
     const today = new Date();
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth(); // 0-11
     const currentDay = today.getDate();
+
+    // Local development override to test birthday campaign UI before live date.
+    if (isLocalHost) {
+        return 'birthday';
+    }
 
     // Christmas time: December 1st to January 6th
     if ((currentMonth === 11 && currentDay >= 1) || (currentMonth === 0 && currentDay <= 6)) {
@@ -31,8 +38,8 @@ export const isSpecialTime = () => {
             return 'olympics';
         }
 
-        const birthdayStart = new Date('2026-02-28');
-        const birthdayEnd = new Date('2026-03-22');
+        const birthdayStart = new Date('2026-03-08T00:00:00+01:00');
+        const birthdayEnd = new Date('2026-03-22T23:59:59+01:00');
         if (today >= birthdayStart && today <= birthdayEnd) {
             return 'birthday';
         }

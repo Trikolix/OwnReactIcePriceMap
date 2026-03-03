@@ -39,8 +39,11 @@ const Header = ({ refreshShops }) => {
   const [birthdayStatus, setBirthdayStatus] = useState({});
   const [birthdayCounts, setBirthdayCounts] = useState({});
   const [birthdayMandatoryCompleted, setBirthdayMandatoryCompleted] = useState(0);
-  const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(10);
+  const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(11);
   const [birthdayRewardUnlocked, setBirthdayRewardUnlocked] = useState(false);
+  const [birthdayCampaignPhase, setBirthdayCampaignPhase] = useState('live');
+  const [birthdayAnniversaryUnlockedAt, setBirthdayAnniversaryUnlockedAt] = useState(null);
+  const [birthdayEisTourRegistrationOpen, setBirthdayEisTourRegistrationOpen] = useState(false);
   const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
   const [birthdayLeaderboardFull, setBirthdayLeaderboardFull] = useState([]);
   const [birthdayUserRank, setBirthdayUserRank] = useState(null);
@@ -302,16 +305,26 @@ const Header = ({ refreshShops }) => {
   };
 
   const specialTime = isSpecialTime();
+  const forceLocalBirthdayUnlock =
+    typeof window !== 'undefined'
+    && (window.location.hostname === 'localhost'
+      || window.location.hostname === '127.0.0.1'
+      || window.location.hostname === '::1');
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
 
   useEffect(() => {
     if (specialTime !== 'birthday' || !userId) {
       setBirthdayPoints(null);
+      setBirthdayMaxPoints(null);
       setBirthdayBreakdown({});
       setBirthdayStatus({});
       setBirthdayCounts({});
       setBirthdayMandatoryCompleted(0);
+      setBirthdayMandatoryTotal(11);
       setBirthdayRewardUnlocked(false);
+      setBirthdayCampaignPhase('live');
+      setBirthdayAnniversaryUnlockedAt(null);
+      setBirthdayEisTourRegistrationOpen(false);
       return;
     }
 
@@ -325,8 +338,13 @@ const Header = ({ refreshShops }) => {
         setBirthdayStatus(data?.status || {});
         setBirthdayCounts(data?.counts || {});
         setBirthdayMandatoryCompleted(Number.isFinite(data?.mandatory?.completed) ? data.mandatory.completed : 0);
-        setBirthdayMandatoryTotal(Number.isFinite(data?.mandatory?.total) ? data.mandatory.total : 10);
+        setBirthdayMandatoryTotal(Number.isFinite(data?.mandatory?.total) ? data.mandatory.total : 11);
         setBirthdayRewardUnlocked(Boolean(data?.reward_unlocked));
+        setBirthdayCampaignPhase(typeof data?.campaign_phase === 'string' ? data.campaign_phase : 'live');
+        setBirthdayAnniversaryUnlockedAt(
+          typeof data?.anniversary_unlocked_at === 'string' ? data.anniversary_unlocked_at : null
+        );
+        setBirthdayEisTourRegistrationOpen(Boolean(data?.eis_tour_registration_open));
         if (data?.new_awards && data.new_awards.length > 0) {
           setNewAwards(data.new_awards);
           setShowOverlay(true);
@@ -335,12 +353,16 @@ const Header = ({ refreshShops }) => {
       .catch((err) => {
         console.error('Fehler beim Laden der Geburtstags-Punkte:', err);
         setBirthdayPoints(null);
+        setBirthdayMaxPoints(null);
         setBirthdayBreakdown({});
         setBirthdayStatus({});
         setBirthdayCounts({});
         setBirthdayMandatoryCompleted(0);
-        setBirthdayMandatoryTotal(10);
+        setBirthdayMandatoryTotal(11);
         setBirthdayRewardUnlocked(false);
+        setBirthdayCampaignPhase('live');
+        setBirthdayAnniversaryUnlockedAt(null);
+        setBirthdayEisTourRegistrationOpen(false);
       });
   }, [apiUrl, specialTime, userId]);
 
@@ -598,6 +620,11 @@ const Header = ({ refreshShops }) => {
         isLeaderboardExpanded={isBirthdayLeaderboardExpanded}
         onToggleLeaderboard={(expanded) => setIsBirthdayLeaderboardExpanded(expanded)}
         currentUserId={userId}
+        extraIceReward={birthdayStatus?.extra_ice_reward}
+        campaignPhase={birthdayCampaignPhase}
+        anniversaryUnlockedAt={birthdayAnniversaryUnlockedAt}
+        eisTourRegistrationOpen={birthdayEisTourRegistrationOpen}
+        forceLocalUnlock={forceLocalBirthdayUnlock}
         onLogin={() => {
           setShowBirthdayRules(false);
           setShowLoginModal(true);

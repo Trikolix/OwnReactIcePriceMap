@@ -29,7 +29,7 @@ if ($now < $startDate || $now > $endDate) {
     echo json_encode([
         'success' => false,
         'in_period' => false,
-        'message' => 'Easter Eggs sind aktuell nicht aktiv.',
+        'message' => 'Geschenke auf der Karte sind aktuell nicht aktiv.',
     ]);
     exit;
 }
@@ -55,7 +55,7 @@ try {
                 'cooldown_active' => true,
                 'next_available_at' => $nextAvailable->format('Y-m-d H:i:s'),
                 'remaining_seconds' => max(0, $remainingSeconds),
-                'message' => 'Neues Easter Egg erst nach Cooldown verfügbar.',
+                'message' => 'Neues Geschenk erst nach Cooldown verfügbar.',
             ]);
             exit;
         }
