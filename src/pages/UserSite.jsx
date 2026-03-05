@@ -1,5 +1,5 @@
 import Header from './../Header';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -47,6 +47,8 @@ function UserSite() {
   const [flavorDetails, setFlavorDetails] = useState({});
   const [flavorLoading, setFlavorLoading] = useState({});
   const [flavorErrors, setFlavorErrors] = useState({});
+  const profile156AutoScanTriggeredRef = useRef(false);
+  const PROFILE_156_SCAN_CODE = '3cb55cb87747d1ed4069e612cef2e75d';
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -57,6 +59,27 @@ function UserSite() {
       setActiveTab('routen');
     }
   }, [location.search]);
+
+  useEffect(() => {
+    if (Number(finalUserId) !== 156) return;
+    if (profile156AutoScanTriggeredRef.current) return;
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('scan') === PROFILE_156_SCAN_CODE) {
+      profile156AutoScanTriggeredRef.current = true;
+      return;
+    }
+
+    params.set('scan', PROFILE_156_SCAN_CODE);
+    profile156AutoScanTriggeredRef.current = true;
+    navigate(
+      {
+        pathname: location.pathname,
+        search: `?${params.toString()}`,
+      },
+      { replace: true }
+    );
+  }, [finalUserId, location.pathname, location.search, navigate]);
 
   const loadMoreCheckins = () => setCheckinPage((prev) => prev + 1);
   const loadMoreReviews = () => setReviewPage((prev) => prev + 1);

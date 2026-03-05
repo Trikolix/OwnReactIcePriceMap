@@ -1,4 +1,4 @@
-import userOfTheMonthImg from './user_of_the_month.png';
+﻿import userOfTheMonthImg from './user_of_the_month.png';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -135,7 +135,7 @@ const Header = ({ refreshShops }) => {
       checkForLevelUp();
     }, 5 * 60 * 1000); // alle 5 Minuten
 
-    // sofort einmal ausführen (optional)
+    // sofort einmal ausfÃ¼hren (optional)
     checkForLevelUp();
 
     return () => clearInterval(checkLevelInterval);
@@ -159,10 +159,16 @@ const Header = ({ refreshShops }) => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const scanCode = params.get("scan");
+    const rootParams = new URLSearchParams(window.location.search);
+    let scanCode = params.get("scan");
+
+    // Support both HashRouter query (/#/?scan=...) and root query (/?scan=...)
+    if (!scanCode) {
+      scanCode = rootParams.get("scan");
+    }
 
     if (scanCode) {
-      // ✅ QR-Code erkannt – weiterverarbeiten
+      // âœ… QR-Code erkannt â€“ weiterverarbeiten
       console.log("Scan-Code erkannt:", scanCode);
 
       // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
@@ -181,16 +187,25 @@ const Header = ({ refreshShops }) => {
         .then((data) => {
           console.log("Antwort von API:", data);
           if (data.status === "success") {
-            // 🧠 Wenn nicht eingeloggt → lokal speichern
+            if (data.already_scanned) {
+              console.log("QR-Code wurde bereits gescannt. Kein Popup.");
+              return;
+            }
+
+            // ðŸ§  Wenn nicht eingeloggt â†’ lokal speichern
             if (!userId) {
               const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+              if (stored.includes(scanCode)) {
+                console.log("QR-Code ist bereits lokal vorgemerkt. Kein Popup.");
+                return;
+              }
               if (!stored.includes(scanCode)) {
                 stored.push(scanCode);
                 localStorage.setItem("pendingQrScans", JSON.stringify(stored));
               }
             }
 
-            // ✅ Modal anzeigen
+            // âœ… Modal anzeigen
             console.log("setModalData", {
               icon: data.icon,
               name: data.name,
@@ -212,7 +227,7 @@ const Header = ({ refreshShops }) => {
           console.error("Fehler beim Senden des QR-Codes:", err);
         })
         .finally(() => {
-          // ✅ Parameter aus URL entfernen, ohne Reload
+          // âœ… Parameter aus URL entfernen, ohne Reload
           params.delete("scan");
           const newSearch = params.toString();
           navigate(
@@ -222,33 +237,65 @@ const Header = ({ refreshShops }) => {
             },
             { replace: true }
           );
+
+          // Also cleanup root query in case scan came as /?scan=...
+          if (rootParams.has("scan")) {
+            rootParams.delete("scan");
+            const nextRootSearch = rootParams.toString();
+            window.history.replaceState(
+              {},
+              "",
+              `${window.location.pathname}${nextRootSearch ? `?${nextRootSearch}` : ""}${window.location.hash}`
+            );
+          }
         });
     }
   }, [location, userId, apiUrl, navigate]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !apiUrl) return;
 
-    const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
-    if (stored.length > 0) {
-      stored.forEach((code) => {
-        fetch(`${apiUrl}/api/qr_scan.php`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, nutzer_id: userId }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log("QR-Scan nach Login übertragen:", data);
-          })
-          .catch((err) => {
-            console.error("Fehler beim Nachsenden des QR-Codes:", err);
-          });
-      });
-
-      localStorage.removeItem("pendingQrScans");
+    let stored = [];
+    try {
+      stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+      if (!Array.isArray(stored)) stored = [];
+    } catch {
+      stored = [];
     }
-  }, [userId]);
+
+    if (stored.length === 0) return;
+
+    const syncPendingScans = async () => {
+      const failedCodes = [];
+
+      for (const code of stored) {
+        try {
+          const res = await fetch(`${apiUrl}/api/qr_scan.php`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, nutzer_id: userId }),
+          });
+          const data = await res.json();
+          console.log("QR-Scan nach Login Ã¼bertragen:", data);
+
+          if (data?.status !== "success") {
+            failedCodes.push(code);
+          }
+        } catch (err) {
+          console.error("Fehler beim Nachsenden des QR-Codes:", err);
+          failedCodes.push(code);
+        }
+      }
+
+      if (failedCodes.length > 0) {
+        localStorage.setItem("pendingQrScans", JSON.stringify([...new Set(failedCodes)]));
+      } else {
+        localStorage.removeItem("pendingQrScans");
+      }
+    };
+
+    syncPendingScans();
+  }, [userId, apiUrl]);
 
   const checkForLevelUp = async () => {
     try {
@@ -459,7 +506,7 @@ const Header = ({ refreshShops }) => {
           )}
           <BurgerMenu
             type="button"
-            aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
+            aria-label={menuOpen ? 'MenÃ¼ schlieÃŸen' : 'MenÃ¼ Ã¶ffnen'}
             aria-expanded={menuOpen}
             onClick={toggleMenu}
           >
@@ -595,7 +642,7 @@ const Header = ({ refreshShops }) => {
 
             {levelUpInfo && (
               <>
-                <h2>🎉 Level-Up!</h2>
+                <h2>ðŸŽ‰ Level-Up!</h2>
                 <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
                 <p><em>{levelUpInfo.level_name}</em></p>
               </>
@@ -652,7 +699,7 @@ const Header = ({ refreshShops }) => {
         <OverlayBackground>
           <Overlay>
             <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
-            <h2>🏅 Nutzer/in des Monats 🏅</h2>
+            <h2>ðŸ… Nutzer/in des Monats ðŸ…</h2>
             <CurrentUserWrapper>
               <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
                 <UserCard>
@@ -668,7 +715,7 @@ const Header = ({ refreshShops }) => {
               </UserLink>
             </CurrentUserWrapper>
             <hr></hr>
-            <h3>🏅 Vorherige Nutzer/innen des Monats 🏅</h3>
+            <h3>ðŸ… Vorherige Nutzer/innen des Monats ðŸ…</h3>
             <PastUsersGrid>
               {pastUsers.map((user) => (
                 <UserLink to={`/user/${user.id}`} key={`${user.month}-${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>

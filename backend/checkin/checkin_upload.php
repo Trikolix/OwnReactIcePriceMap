@@ -36,6 +36,7 @@ require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
+require_once __DIR__ . '/../evaluators/TheTasteOfChemnitzEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
@@ -380,6 +381,7 @@ try {
         new CountryVisitEvaluator(),
         new CountryCountEvaluator(),
         new Chemnitz2025Evaluator(),
+        new TheTasteOfChemnitzEvaluator(),
         new BundeslandExperteEvaluator(),
         new IceSeasonEvaluator(),
         new DifferentIceShopCountEvaluator(),
