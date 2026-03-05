@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import { useUser } from "../../context/UserContext";
+import LoginModal from "../../LoginModal";
 import jerseyImage from './jersey.png';
 import "../../styles/eventTheme.css";
 
@@ -23,7 +24,7 @@ const MainGrid = styled.div`
   grid-template-columns: 1fr;
   gap: 2rem;
   max-width: 1100px;
-  margin: 0 auto;
+  margin: 1.5rem auto;
   @media (min-width: 1000px) {
     grid-template-columns: 2fr 1fr;
   }
@@ -101,7 +102,7 @@ const Summary = styled.div`
   max-height: fit-content;
   @media (min-width: 1000px) {
     position: sticky;
-    top: 5rem;
+    top: 11rem;
   }
 `;
 const Flex = styled.div`
@@ -235,8 +236,9 @@ function JerseyImageModal() {
 }
 
 export default function EventRegistration() {
-  const { userId, username, isLoggedIn, logout, authToken } = useUser();
+  const { userId, username, isLoggedIn, logout, authToken, login } = useUser();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [participants, setParticipants] = useState([{ name: "", email: "" }]);
   const [teamName, setTeamName] = useState("");
@@ -389,7 +391,23 @@ export default function EventRegistration() {
                 </div>
               ) : (
                 <div style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "#64748b" }}>
-                  Bereits einen Account? <a href="/#/login" style={{ color: "#ffb522" }}>Jetzt einloggen</a>, um deine Daten zu übernehmen.
+                  Bereits einen Account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginModal(true)}
+                    style={{
+                      color: "#ffb522",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline",
+                      font: "inherit",
+                    }}
+                  >
+                    Jetzt einloggen
+                  </button>
+                  , um deine Daten zu übernehmen.
                 </div>
               )}
               {participants.map((p, idx) => (
@@ -553,6 +571,14 @@ export default function EventRegistration() {
         </MainGrid>
       </form>
       <Footer />
+      {showLoginModal && (
+        <LoginModal
+          userId={userId}
+          isLoggedIn={isLoggedIn}
+          login={login}
+          setShowLoginModal={setShowLoginModal}
+        />
+      )}
     </PageWrapper>
   );
 }

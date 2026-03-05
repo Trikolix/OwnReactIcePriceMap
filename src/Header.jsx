@@ -54,10 +54,14 @@ const Header = ({ refreshShops }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const LEADERBOARD_COLLAPSED_COUNT = 3;
+  const now = new Date();
+  const isPhotoChallengePublic = now >= new Date(2026, 2, 8, 0, 0, 0);
+  const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
+  const showEisTourNavLink = now >= new Date(2026, 2, 14, 0, 0, 0);
 
   const allowedPhotoChallenges = (userId) => {
     const allowedUsers = [1, 2, 13, 23]; // Liste der erlaubten Nutzer-IDs
-    return allowedUsers.includes(Number(userId));
+    return isPhotoChallengePublic || allowedUsers.includes(Number(userId));
   };
 
   const toggleMenu = () => {
@@ -487,8 +491,17 @@ const Header = ({ refreshShops }) => {
               <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
               <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
               <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
+              {showEisTourNavLink && (
+                <MenuItemLink to="/rad-event" onClick={closeMenu}>
+                  Zur Eis-Tour
+                  <MenuItemBadge>NEU</MenuItemBadge>
+                </MenuItemLink>
+              )}
               {allowedPhotoChallenges(userId) && (
-                <MenuItemLink to="/photo-challenge" onClick={closeMenu}>Foto-Challenges</MenuItemLink>
+                <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
+                  Foto-Challenges
+                  {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+                </MenuItemLink>
               )}
             </MenuSection>
 
@@ -1018,6 +1031,18 @@ const MenuActionButton = styled.button`
     }
   `
       : ''}
+`;
+
+const MenuItemBadge = styled.span`
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
 `;
 
 const OverlayBackground = styled.div`
