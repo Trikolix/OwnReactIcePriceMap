@@ -10,16 +10,22 @@ import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recha
 import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 const TRAVEL_COLORS = ["#ffb522", "#ff8a00", "#ff595e", "#8ac926", "#33658a", "#6a4c93", "#1982c4", "#6f2dbd"];
 const buildAssetUrl = (path) => (path ? `${ASSET_BASE}/${path.replace(/^\/+/, "")}` : null);
-const toNumberOrDefault = (value, defaultValue = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : defaultValue;
+const formatTimeLeft = (secondsInput) => {
+  const seconds = Math.max(0, Number(secondsInput) || 0);
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `${days}T ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}min`;
+  return `${minutes}min`;
 };
 
 function UserSite() {
@@ -61,6 +67,9 @@ function UserSite() {
     }
     if (params.get('tab') === 'routes') {
       setActiveTab('routen');
+    }
+    if (params.get('tab') === 'stats') {
+      setActiveTab('stats');
     }
   }, [location.search]);
 
@@ -169,21 +178,29 @@ function UserSite() {
   const displayedReviews = reviews.slice(0, reviewPage * 5);
   const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
   const displayedRoutes = routes.slice(0, routePage * 5);
-  const fallbackImageCount = React.useMemo(() => {
-    const checkinImages = checkins.reduce((sum, checkin) => sum + (checkin?.bilder?.length || 0), 0);
-    const reviewImages = reviews.reduce((sum, review) => sum + (review?.bilder?.length || 0), 0);
-    return checkinImages + reviewImages;
-  }, [checkins, reviews]);
-  const fallbackCommentCount = React.useMemo(() => {
-    const checkinComments = checkins.reduce((sum, checkin) => sum + (Number(checkin?.commentCount) || 0), 0);
-    const reviewComments = reviews.reduce((sum, review) => sum + (Number(review?.commentCount) || 0), 0);
-    return checkinComments + reviewComments;
-  }, [checkins, reviews]);
-  const reviewCount = data?.review_count != null ? toNumberOrDefault(data.review_count, 0) : reviews.length;
-  const imageCount = data?.image_count != null ? toNumberOrDefault(data.image_count, 0) : fallbackImageCount;
-  const routeCount = data?.route_count != null ? toNumberOrDefault(data.route_count, 0) : routes.length;
-  const commentCount = data?.comment_count != null ? toNumberOrDefault(data.comment_count, 0) : fallbackCommentCount;
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
+  const dayStreak = data?.streaks?.day || {};
+  const weekStreak = data?.streaks?.week || {};
+  const dayStreakState = dayStreak.state || 'none';
+  const weekStreakState = weekStreak.state || 'none';
+  const dayStreakValue = Number(dayStreak.value || 0);
+  const weekStreakValue = Number(weekStreak.value || 0);
+  const dayStreakHint = dayStreakState === 'at_risk'
+    ? `Heute noch kein Check-in. Noch ${formatTimeLeft(dayStreak.seconds_left)} bis der Streak verfällt.`
+    : dayStreakState === 'active'
+      ? 'Heute bereits eingecheckt. Streak gesichert.'
+      : 'Kein aktiver Tages-Streak. Check heute ein, um zu starten.';
+  const weekStreakHint = weekStreakState === 'at_risk'
+    ? `Diese Woche noch kein Check-in. Noch ${formatTimeLeft(weekStreak.seconds_left)} bis der Wochen-Streak verfällt.`
+    : weekStreakState === 'active'
+      ? 'Diese Woche bereits eingecheckt. Wochen-Streak gesichert.'
+      : 'Kein aktiver Wochen-Streak. Ein Check-in pro Woche startet die Serie.';
+
+  const renderStreakIcon = (state) => {
+    if (state === 'active') return <CheckCircle2 size={18} />;
+    if (state === 'at_risk') return <Flame size={18} />;
+    return <CircleOff size={18} />;
+  };
   const portionBreakdown = [
     { key: 'Kugel', label: 'Kugeleis', value: Number(data?.eisarten?.Kugel || 0) },
     { key: 'Softeis', label: 'Softeis', value: Number(data?.eisarten?.Softeis || 0) },
@@ -199,6 +216,12 @@ function UserSite() {
   };
   const activeActivityData = activityData[activityLevel]?.data || [];
   const activityPreview = activeActivityData.slice(0, PREVIEW_COUNT);
+
+  useEffect(() => {
+    if (activeTab === 'routen' && routes.length === 0) {
+      setActiveTab('checkins');
+    }
+  }, [activeTab, routes.length]);
 
   const sortedMostVisited = React.useMemo(() => {
     if (!data?.meistbesuchte_eisdielen) return [];
@@ -537,23 +560,25 @@ function UserSite() {
               <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
                 {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
               </AvatarCircle>
-              <ProfileInfo>
-                <h1>{data.nutzername}</h1>
-                <MetaRow>
-                  <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
-                  <Chip>{data.eisdielen_besucht} verschiedene Eisdielen</Chip>
-                  <Chip>{data.anzahl_checkins} Check-ins</Chip>
-                  <Chip>{reviewCount} Reviews</Chip>
-                  <Chip>{imageCount} hochgeladene Bilder</Chip>
-                  <Chip>{routeCount} Routen</Chip>
-                  <Chip>{commentCount} Kommentare</Chip>
-                </MetaRow>
-              </ProfileInfo>
-              {isOwnProfile && (
-                <SettingsButton onClick={() => setShowSettings(true)}>
-                  ⚙️ Profil & Einstellungen
-                </SettingsButton>
-              )}
+              <ProfileMainColumn>
+                <ProfileInfo>
+                  <h1>{data.nutzername}</h1>
+                  <MetaRow>
+                    <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
+                    {isOwnProfile && <Chip>Dein Profil</Chip>}
+                  </MetaRow>
+                </ProfileInfo>
+                <LevelInlineCard>
+                  <LevelDisplay levelInfo={data.level_info} />
+                </LevelInlineCard>
+              </ProfileMainColumn>
+              <ProfileActions>
+                {isOwnProfile && (
+                  <SettingsButton onClick={() => setShowSettings(true)}>
+                    ⚙️ Profil & Einstellungen
+                  </SettingsButton>
+                )}
+              </ProfileActions>
             </ProfileHeader>
             {isOwnProfile && (
               <InviteCard>
@@ -573,9 +598,42 @@ function UserSite() {
                 onAvatarUpdated={handleAvatarUpdated}
               />
             )}
-            <LevelCardWrapper>
-              <LevelDisplay levelInfo={data.level_info} />
-            </LevelCardWrapper>
+            <HighlightGrid>
+              <HighlightCard>
+                <StatIconWrap><Calendar size={18} /></StatIconWrap>
+                <h3>Check-ins gesamt</h3>
+                <strong>{data.anzahl_checkins}</strong>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap><MapPin size={18} /></StatIconWrap>
+                <h3>Verschiedene&nbsp;Eisdielen</h3>
+                <strong>{data.eisdielen_besucht}</strong>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap><IceCream size={18} /></StatIconWrap>
+                <h3>Portionen Eis</h3>
+                <strong>{totalIcePortions}</strong>
+                <small>Kugel · Softeis · Becher</small>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap $tone={dayStreakState}>
+                  {renderStreakIcon(dayStreakState)}
+                </StatIconWrap>
+                <h3>Tages-Streak</h3>
+                <strong>{dayStreakValue} Tage</strong>
+                <small>Rekord: {data?.streaks?.day_record ?? 0} Tage</small>
+                <small>{dayStreakHint}</small>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap $tone={weekStreakState}>
+                  {renderStreakIcon(weekStreakState)}
+                </StatIconWrap>
+                <h3>Wochen-Streak</h3>
+                <strong>{weekStreakValue} Wochen</strong>
+                <small>Rekord: {data?.streaks?.week_record ?? 0} Wochen</small>
+                <small>{weekStreakHint}</small>
+              </HighlightCard>
+            </HighlightGrid>
             <AwardsCard>
               <SectionHeader>
                 <h3>Awards</h3>
@@ -617,10 +675,47 @@ function UserSite() {
               ) : (
                 <EmptyState>Keine Awards vorhanden.</EmptyState>
               )}
-              {displayedAwards.length < awards.length && (
-                <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+              {(displayedAwards.length < awards.length || awardPage > 1) && (
+                <AwardsFooterActions>
+                  {displayedAwards.length < awards.length && (
+                    <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+                  )}
+                  {awardPage > 1 && (
+                    <LoadMoreButton type="button" onClick={() => setAwardPage(1)}>
+                      Awards einklappen
+                    </LoadMoreButton>
+                  )}
+                </AwardsFooterActions>
               )}
             </AwardsCard>
+            <UnifiedTabBar>
+              <UnifiedTabButton
+                active={activeTab === 'checkins'}
+                onClick={() => setActiveTab('checkins')}
+              >
+                Check-ins
+              </UnifiedTabButton>
+              <UnifiedTabButton
+                active={activeTab === 'reviews'}
+                onClick={() => setActiveTab('reviews')}
+              >
+                Reviews
+              </UnifiedTabButton>
+              {routes.length > 0 && (
+                <UnifiedTabButton
+                  active={activeTab === 'routen'}
+                  onClick={() => setActiveTab('routen')}
+                >
+                  Routen
+                </UnifiedTabButton>
+              )}
+              <UnifiedTabButton
+                active={activeTab === 'stats'}
+                onClick={() => setActiveTab('stats')}
+              >
+                Statistiken
+              </UnifiedTabButton>
+            </UnifiedTabBar>
             {selectedAward && typeof document !== 'undefined' && createPortal(
               <AwardLightboxOverlay onClick={() => setSelectedAward(null)}>
                 <AwardLightboxCard onClick={(event) => event.stopPropagation()}>
@@ -638,26 +733,12 @@ function UserSite() {
               document.body
             )}
 
+          {activeTab === 'stats' && (
           <StatsArea>
             <SectionHeader>
               <h2>Deine Statistiken</h2>
               <span>Ein Überblick über deine Eis-Abenteuer</span>
             </SectionHeader>
-            <HighlightGrid>
-              <HighlightCard>
-                <h3>Check-ins gesamt</h3>
-                <strong>{data.anzahl_checkins}</strong>
-              </HighlightCard>
-              <HighlightCard>
-                <h3>Verschiedene Eisdielen</h3>
-                <strong>{data.eisdielen_besucht}</strong>
-              </HighlightCard>
-              <HighlightCard>
-                <h3>Portionen Eis</h3>
-                <strong>{totalIcePortions}</strong>
-                <small>Kugel · Softeis · Becher</small>
-              </HighlightCard>
-            </HighlightGrid>
             <ContentGrid>
               <ContentCard>
                 <CardTitle>Portionen & Verteilung</CardTitle>
@@ -795,34 +876,14 @@ function UserSite() {
               </ContentCard>
             </ContentGrid>
           </StatsArea>
+          )}
 
+            {activeTab !== 'stats' && (
+            <>
             <SectionHeader>
               <h2>Aktivitätsfeed</h2>
               <span>Check-ins, Reviews & Routen</span>
             </SectionHeader>
-            <FeedTabContainer>
-              <FeedTabButton
-                active={activeTab === 'checkins'}
-                onClick={() => setActiveTab('checkins')}
-              >
-                Check-ins
-              </FeedTabButton>
-              <FeedTabButton
-                active={activeTab === 'reviews'}
-                onClick={() => setActiveTab('reviews')}
-              >
-                Reviews
-              </FeedTabButton>
-              {routes.length > 0 && (
-                <FeedTabButton
-                  active={activeTab === 'routen'}
-                  onClick={() => setActiveTab('routen')}
-                >
-                  Routen
-                </FeedTabButton>
-              )}
-            </FeedTabContainer>
-
             <TabContent>
               {activeTab === 'checkins' && (
                 <div>
@@ -869,6 +930,8 @@ function UserSite() {
                 </div>
               )}
             </TabContent>
+            </>
+            )}
         </DashboardWrapper>
       </WhiteBackground>
       {listModal && (
@@ -930,15 +993,20 @@ const LoadingCard = styled.div`
 `;
 
 const ProfileHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem 1.2rem;
   background: rgba(255, 252, 243, 0.96);
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
 `;
 
 const AvatarCircle = styled.div`
@@ -973,6 +1041,31 @@ const ProfileInfo = styled.div`
   }
 `;
 
+const ProfileMainColumn = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+`;
+
+const LevelInlineCard = styled.div`
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.4rem 0.55rem;
+`;
+
+const ProfileActions = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  @media (max-width: 980px) {
+    justify-content: stretch;
+  }
+`;
+
 const MetaRow = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -990,7 +1083,6 @@ const Chip = styled.span`
 `;
 
 const SettingsButton = styled.button`
-  margin-left: auto;
   background: #ffb522;
   color: #2f2100;
   border: 1px solid rgba(255, 181, 34, 0.5);
@@ -1004,6 +1096,10 @@ const SettingsButton = styled.button`
   &:hover {
     background: #ffc34a;
     box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
+  }
+
+  @media (max-width: 900px) {
+    width: 100%;
   }
 `;
 
@@ -1022,8 +1118,26 @@ const InviteCard = styled.div`
   }
 `;
 
-const LevelCardWrapper = styled.div`
-  margin-top: 2rem;
+const UnifiedTabBar = styled.div`
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.6rem;
+  margin-bottom: 0.3rem;
+`;
+
+const UnifiedTabButton = styled.button`
+  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.65)' : 'rgba(47, 33, 0, 0.12)')};
+  background: ${({ active }) => (active ? 'rgba(255, 181, 34, 0.2)' : 'rgba(255,255,255,0.92)')};
+  color: #2f2100;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.45rem 0.95rem;
+  min-width: 120px;
+  cursor: pointer;
+  text-align: center;
 `;
 
 const AwardsCard = styled.div`
@@ -1033,6 +1147,14 @@ const AwardsCard = styled.div`
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem;
+`;
+
+const AwardsFooterActions = styled.div`
+  margin-top: 0.85rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 `;
 
 const SectionHeader = styled.div`
@@ -1062,21 +1184,27 @@ const HighlightGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
+  margin-top: 1rem;
   margin-bottom: 2rem;
 `;
 
 const HighlightCard = styled.div`
   background: rgba(255, 252, 243, 0.94);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.2rem 1rem 1.1rem;
   text-align: center;
   border: 1px solid rgba(47, 33, 0, 0.08);
   box-shadow: 0 8px 22px rgba(28, 20, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
   h3 {
-    margin: 0;
+    margin: 0.35rem 0 0;
     color: #6b5327;
     font-size: 0.95rem;
+    min-height: 1.35rem;
+    white-space: nowrap;
   }
 
   strong {
@@ -1089,6 +1217,46 @@ const HighlightCard = styled.div`
   small {
     color: rgba(47, 33, 0, 0.55);
   }
+
+  @media (max-width: 520px) {
+    h3 {
+      white-space: normal;
+      min-height: auto;
+    }
+  }
+`;
+
+const StatIconWrap = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $tone }) =>
+    $tone === 'active'
+      ? 'rgba(34, 197, 94, 0.2)'
+      : $tone === 'at_risk'
+        ? 'rgba(248, 113, 113, 0.2)'
+        : $tone === 'none'
+          ? 'rgba(148, 163, 184, 0.25)'
+          : 'rgba(255, 181, 34, 0.22)'};
+  color: ${({ $tone }) =>
+    $tone === 'active'
+      ? '#15803d'
+      : $tone === 'at_risk'
+        ? '#b91c1c'
+        : $tone === 'none'
+          ? '#64748b'
+          : '#7d4b00'};
+  border: 1px solid ${({ $tone }) =>
+    $tone === 'active'
+      ? 'rgba(21, 128, 61, 0.35)'
+      : $tone === 'at_risk'
+        ? 'rgba(185, 28, 28, 0.35)'
+        : $tone === 'none'
+          ? 'rgba(100, 116, 139, 0.35)'
+          : 'rgba(255, 181, 34, 0.35)'};
 `;
 
 const ContentGrid = styled.div`
@@ -1371,35 +1539,6 @@ const ActivityTable = styled.table`
   }
 `;
 
-const FeedTabContainer = styled.div`
-  display: flex;
-  gap: 0.45rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 0.35rem;
-  background: rgba(255, 252, 243, 0.88);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
-`;
-
-const FeedTabButton = styled.button`
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
-  border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.55)' : 'transparent')};
-  cursor: pointer;
-  background-color: ${(props) => (props.active ? '#ffb522' : 'transparent')};
-  color: ${(props) => (props.active ? '#2f2100' : '#5c4a25')};
-  font-weight: 700;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: ${(props) => (props.active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
-
-  &:hover {
-    background-color: ${(props) => (props.active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
-  }
-`;
-
 const TabContent = styled.div`
   margin-top: 1rem;
   background: rgba(255, 252, 243, 0.94);
@@ -1474,7 +1613,7 @@ const Toast = styled.div`
 
 const AwardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
 
   @media (max-width: 768px) {

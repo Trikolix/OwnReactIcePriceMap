@@ -27,6 +27,24 @@ import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
+import { Bike, Car, Footprints, HelpCircle, IceCream, MapPin } from "lucide-react";
+
+const TYPE_OPTIONS = [
+    { value: "Kugel", label: "Kugeleis", description: "Einzelne Kugeln, auch im Becher", tone: "kugel", icon: IceCream },
+    { value: "Softeis", label: "Softeis", description: "Gezapftes Softeis", tone: "softeis", icon: IceCream },
+    { value: "Eisbecher", label: "Eisbecher", description: "Komponierter Eisbecher / Sundae", tone: "becher", icon: IceCream },
+];
+
+const ARRIVAL_OPTIONS = [
+    { value: "Fahrrad", label: "Fahrrad", tone: "bike", icon: Bike },
+    { value: "Motorrad", label: "Motorrad", tone: "bike", icon: Bike },
+    { value: "Zu Fuß", label: "Zu Fuß", tone: "walk", icon: Footprints },
+    { value: "Auto", label: "Auto", tone: "car", icon: Car },
+    { value: "Bus / Bahn", label: "Bus / Bahn", tone: "transit", icon: MapPin },
+    { value: "Sonstiges", label: "Sonstiges", tone: "other", icon: HelpCircle },
+];
+
+const ARRIVAL_ICON_MAP = Object.fromEntries(ARRIVAL_OPTIONS.map((option) => [option.value, option.icon]));
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId }) => {
     const [type, setType] = useState("Kugel");
@@ -56,6 +74,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const MAX_IMAGES = SHARED_MAX_IMAGES;
     const [showImageChooser, setShowImageChooser] = useState(false);
+    const SelectedArrivalIcon = ARRIVAL_ICON_MAP[anreise] || HelpCircle;
 
     // Läuft beim Laden der Seite automatisch
     useEffect(() => {
@@ -441,11 +460,29 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         <IntroText>Bewerte dein Eis kurz und teile bei Bedarf Fotos und Notizen mit der Community.</IntroText>
                         <Section>
                             <Label>Eistyp</Label>
-                            <Select value={type} onChange={(e) => setType(e.target.value)}>
-                                <option value="Kugel">Kugel</option>
-                                <option value="Softeis">Softeis</option>
-                                <option value="Eisbecher">Eisbecher</option>
-                            </Select>
+                            <OptionGrid>
+                                {TYPE_OPTIONS.map((option) => {
+                                    const Icon = option.icon;
+                                    return (
+                                        <OptionButton
+                                            key={option.value}
+                                            type="button"
+                                            $active={type === option.value}
+                                            $tone={option.tone}
+                                            onClick={() => setType(option.value)}
+                                            aria-pressed={type === option.value}
+                                        >
+                                            <OptionIconWrap $active={type === option.value} $tone={option.tone}>
+                                                <Icon size={16} />
+                                            </OptionIconWrap>
+                                            <OptionTextWrap>
+                                                <OptionLabel>{option.label}</OptionLabel>
+                                                <OptionDescription>{option.description}</OptionDescription>
+                                            </OptionTextWrap>
+                                        </OptionButton>
+                                    );
+                                })}
+                            </OptionGrid>
                         </Section>
 
                         <Section>
@@ -524,7 +561,17 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                     <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
                                 </tr>
                                 {type !== "Eisbecher" && (<tr>
-                                    <td><Label>Bewertung Waffel:</Label></td>
+                                    <td>
+                                        <Label>
+                                            Bewertung Waffel:
+                                            <InfoHint tabIndex={0} aria-label="Hinweis zur Waffel-Bewertung">
+                                                <InfoHintIcon>i</InfoHintIcon>
+                                                <InfoHintBubble>
+                                                    Wenn du Kugel- oder Softeis im Becher isst, kannst du die Waffel-Bewertung leer lassen.
+                                                </InfoHintBubble>
+                                            </InfoHint>
+                                        </Label>
+                                    </td>
                                     <td>
                                         <ScoreInput
                                             type="number"
@@ -543,15 +590,17 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
                         <Section>
                             <Label>Wie bist du zur Eisdiele gekommen?</Label>
-                            <Select value={anreise} onChange={(e) => setAnreise(e.target.value)}>
-                                <option value="">Bitte wählen</option>
-                                <option value="Fahrrad">Fahrrad</option>
-                                <option value="Motorrad">Motorrad</option>
-                                <option value="Zu Fuß">Zu Fuß</option>
-                                <option value="Auto">Auto</option>
-                                <option value="Bus / Bahn">Bus / Bahn</option>
-                                <option value="Sonstiges">Sonstiges</option>
-                            </Select>
+                            <ArrivalSelectRow>
+                                <ArrivalIconBadge>
+                                    <SelectedArrivalIcon size={16} />
+                                </ArrivalIconBadge>
+                                <Select value={anreise} onChange={(e) => setAnreise(e.target.value)}>
+                                    <option value="">Bitte wählen</option>
+                                    {ARRIVAL_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                </Select>
+                            </ArrivalSelectRow>
                         </Section>
 
                         <Section>
@@ -749,7 +798,7 @@ const Table = styled.table`
     border-spacing: 0;
     border: 1px solid rgba(47, 33, 0, 0.1);
     border-radius: 14px;
-    overflow: hidden;
+    overflow: visible;
     background: rgba(255, 255, 255, 0.78);
     margin-bottom: 1rem;
 
@@ -843,6 +892,199 @@ const SortenToggleLabel = styled.label`
     gap: 0.45rem;
     color: #4f3800;
     font-size: 0.9rem;
+`;
+
+const OptionGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.55rem;
+`;
+
+const OptionButton = styled.button`
+    border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.55)' : 'rgba(47, 33, 0, 0.12)')};
+    background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.16)' : 'rgba(255, 255, 255, 0.86)')};
+    border-radius: 12px;
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    text-align: left;
+    color: #2f2100;
+    font-weight: 600;
+    transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+
+    &:hover {
+        background: rgba(255, 181, 34, 0.12);
+    }
+
+    &:focus-visible {
+        outline: 2px solid rgba(255, 181, 34, 0.55);
+        outline-offset: 2px;
+    }
+`;
+
+const OptionIconWrap = styled.span`
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid;
+    background: ${({ $active, $tone }) =>
+        $active
+            ? ($tone === 'softeis'
+                ? 'rgba(56, 189, 248, 0.22)'
+                : $tone === 'becher'
+                    ? 'rgba(167, 139, 250, 0.22)'
+                    : $tone === 'car'
+                        ? 'rgba(251, 146, 60, 0.22)'
+                        : $tone === 'walk'
+                            ? 'rgba(74, 222, 128, 0.22)'
+                            : $tone === 'bike'
+                                ? 'rgba(96, 165, 250, 0.22)'
+                                : $tone === 'transit'
+                                    ? 'rgba(52, 211, 153, 0.22)'
+                                    : $tone === 'none'
+                                        ? 'rgba(148, 163, 184, 0.25)'
+                                        : 'rgba(255, 181, 34, 0.22)')
+            : 'rgba(255, 255, 255, 0.7)'};
+    border-color: ${({ $active, $tone }) =>
+        $active
+            ? ($tone === 'softeis'
+                ? 'rgba(2, 132, 199, 0.35)'
+                : $tone === 'becher'
+                    ? 'rgba(109, 40, 217, 0.35)'
+                    : $tone === 'car'
+                        ? 'rgba(194, 65, 12, 0.35)'
+                        : $tone === 'walk'
+                            ? 'rgba(22, 163, 74, 0.35)'
+                            : $tone === 'bike'
+                                ? 'rgba(37, 99, 235, 0.35)'
+                                : $tone === 'transit'
+                                    ? 'rgba(5, 150, 105, 0.35)'
+                                    : $tone === 'none'
+                                        ? 'rgba(100, 116, 139, 0.35)'
+                                        : 'rgba(217, 119, 6, 0.35)')
+            : 'rgba(47, 33, 0, 0.2)'};
+    color: ${({ $active, $tone }) =>
+        $active
+            ? ($tone === 'softeis'
+                ? '#0369a1'
+                : $tone === 'becher'
+                    ? '#6d28d9'
+                    : $tone === 'car'
+                        ? '#9a3412'
+                        : $tone === 'walk'
+                            ? '#15803d'
+                            : $tone === 'bike'
+                                ? '#1d4ed8'
+                                : $tone === 'transit'
+                                    ? '#047857'
+                                    : $tone === 'none'
+                                        ? '#64748b'
+                                        : '#9a3412')
+            : '#5f4a25'};
+`;
+
+const OptionTextWrap = styled.span`
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.06rem;
+`;
+
+const OptionLabel = styled.span`
+    font-size: 0.9rem;
+    line-height: 1.2;
+`;
+
+const OptionDescription = styled.span`
+    font-size: 0.73rem;
+    color: rgba(47, 33, 0, 0.65);
+    font-weight: 500;
+`;
+
+const TypeHelperBox = styled.div`
+    margin-top: 0.55rem;
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.76);
+    color: #5a3f1a;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.6rem;
+`;
+
+const InfoHint = styled.span`
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.35rem;
+    cursor: help;
+    outline: none;
+    z-index: 30;
+
+    &:hover > span:last-child,
+    &:focus-visible > span:last-child {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+`;
+
+const InfoHintIcon = styled.span`
+    width: 17px;
+    height: 17px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    background: rgba(96, 165, 250, 0.2);
+    border: 1px solid rgba(37, 99, 235, 0.28);
+    color: #1d4ed8;
+`;
+
+const InfoHintBubble = styled.span`
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 0.35rem);
+    transform: translate(-50%, -6px);
+    width: min(280px, 72vw);
+    padding: 0.45rem 0.55rem;
+    border-radius: 9px;
+    background: rgba(17, 24, 39, 0.94);
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 500;
+    line-height: 1.3;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+`;
+
+const ArrivalSelectRow = styled.div`
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem;
+    align-items: center;
+`;
+
+const ArrivalIconBadge = styled.span`
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 181, 34, 0.16);
+    border: 1px solid rgba(255, 181, 34, 0.32);
+    color: #7d4b00;
 `;
 
 const FormButtonGroup = styled(ButtonGroup)`
