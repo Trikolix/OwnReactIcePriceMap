@@ -290,7 +290,7 @@ const BirthdayRulesModal = ({
           <div style={{ marginTop: '2rem', background: '#eeeeee', borderRadius: '12px', padding: '18px 12px' }}>
             <h3 style={{ margin: '0 0 0.5rem', color: '#2b1b00' }}>Sonderaktion: Eis-Tour</h3>
             <p>
-              Es ist öffentlich: Es wird eine <a href="/rad-event" style={{ color: '#ffb522', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Eis-Tour</a> geben! Alle, die bis zum Ende des Aktionszeitraum alle Pflichtaktionen erledigt haben, erhalten ein kostenloses Eis
+              Es ist öffentlich: Es wird eine <a href="/eis-tour" style={{ color: '#ffb522', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Eis-Tour</a> geben! Alle, die bis zum Ende des Aktionszeitraum alle Pflichtaktionen erledigt haben, erhalten ein kostenloses Eis
               am Start / Ziel der Eis-Tour.
             </p>
             <ProgressLabel>Pflichtaktionen-Fortschritt</ProgressLabel>

@@ -1,57 +1,88 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import styled from "styled-components";
-import { Bike, Heart, Shirt, ShoppingCart, ShieldAlert, Ticket, Trash2, Users, PlusCircle } from "lucide-react";
+import { Bike, Heart, Shirt, ShieldAlert, Users, PlusCircle, Trash2, Flag } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import { useUser } from "../../context/UserContext";
-import LoginModal from "../../LoginModal";
-import jerseyImage from './jersey.png';
+import jerseyImage from "./jersey.png";
 import "../../styles/eventTheme.css";
 
 const ENTRY_FEE = 15;
-const JERSEY_PRICE = 69;
 const TSHIRT_SIZES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14"];
+const DISTANCE_OPTIONS = [
+  { value: 140, label: "140 km / 1.600 hm (3 Eis-Stopps)" },
+  { value: 175, label: "175 km / 1.950 hm (4 Eis-Stopps)" },
+];
+const PACE_OPTIONS = [
+  { value: "unter_24", label: "unter 24 km/h" },
+  { value: "24_27", label: "24-27 km/h" },
+  { value: "27_30", label: "27-30 km/h" },
+  { value: "ueber_30", label: "über 30 km/h" },
+];
+
+const createParticipant = () => ({
+  name: "",
+  email: "",
+  distance: 140,
+  paceGroup: "24_27",
+  womenWaveOptIn: false,
+  publicNameConsent: true,
+  jerseyInterest: false,
+  jerseySize: "",
+});
+
+const formatLegalContent = (content) =>
+  (content || "")
+    .replace(/^##\s*/gm, "")
+    .replace(/^- /gm, "• ");
 
 const PageWrapper = styled.div`
   font-family: Arial, sans-serif;
   background: var(--event-bg);
   min-height: 100vh;
 `;
+
 const MainGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
   max-width: 1100px;
-  margin: 1.5rem auto;
+  margin: 0 auto;
   @media (min-width: 1000px) {
     grid-template-columns: 2fr 1fr;
   }
 `;
+
 const Card = styled.div`
   background: #fffdfa;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(255,181,34,0.08);
+  box-shadow: 0 2px 8px rgba(255, 181, 34, 0.08);
   padding: 2rem;
   margin-bottom: 1.5rem;
 `;
+
 const CardTitle = styled.h2`
   font-size: 1.3rem;
   font-weight: bold;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 `;
+
 const FieldGroup = styled.div`
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 `;
+
 const Label = styled.label`
   font-weight: 500;
   margin-bottom: 0.3rem;
   display: block;
 `;
+
 const Input = styled.input`
   width: 95%;
   padding: 0.5em 0.8em;
@@ -61,6 +92,17 @@ const Input = styled.input`
   margin-bottom: 0.5rem;
   background: #fff;
 `;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.5em 0.8em;
+  border: 1px solid #ffd77a;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  background: #fff;
+`;
+
 const Button = styled.button`
   display: inline-flex;
   align-items: center;
@@ -75,273 +117,306 @@ const Button = styled.button`
   cursor: pointer;
   margin-top: 0.5rem;
   transition: background 0.2s;
+
   &:hover {
     background: #ffcb47;
   }
+
   &:disabled {
     background: #ffe6a1;
     color: #b48a2c;
     cursor: not-allowed;
   }
 `;
+
 const RemoveBtn = styled(Button)`
   background: #fff3c2;
   color: #b48a2c;
   border: 1px solid #ffd77a;
+
   &:hover {
     background: #ffe6a1;
     color: #b48a2c;
   }
 `;
+
 const Separator = styled.hr`
   border: none;
   border-top: 1px solid #ffd77a;
   margin: 1.5rem 0;
 `;
+
 const Summary = styled.div`
   max-height: fit-content;
   @media (min-width: 1000px) {
     position: sticky;
-    top: 11rem;
+    top: 5rem;
   }
 `;
+
 const Flex = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.5rem;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  & > * {
-    flex-shrink: 0;
-  }
-  span:last-child {
-    margin-left: auto;
-    text-align: right;
-    min-width: 60px;
-    display: inline-block;
-  }
 `;
-const JerseySelect = styled.select`
-  max-width: 120px;
-  min-width: 80px;
-  flex: 1 1 100px;
-  width: auto;
-  padding: 0.5em 0.8em;
-  border: 1px solid #ffd77a;
-  border-radius: 6px;
-  font-size: 1rem;
-  background: #fff;
-`;
-const JerseyInput = styled.input`
-  width: 80px;
-  flex: 0 0 80px;
-  margin-bottom: 0;
-  padding: 0.5em 0.8em;
-  border: 1px solid #ffd77a;
-  border-radius: 6px;
-  font-size: 1rem;
-  background: #fff;
-`;
-const JerseyRemoveBtn = styled(Button)`
-  flex: 0 0 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin-top: 0;
-`;
+
 const CheckboxLabel = styled.label`
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.97rem;
+  margin-bottom: 0.6rem;
 `;
+
+const GridRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  @media (min-width: 760px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const StatusBanner = styled.div`
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  background: ${({ tone }) => (tone === "danger" ? "#fee2e2" : "#fff7e5")};
+  border: 1px solid ${({ tone }) => (tone === "danger" ? "#fecaca" : "#ffd77a")};
+  color: ${({ tone }) => (tone === "danger" ? "#9f1239" : "#8a5700")};
+`;
+
 function JerseyImageModal() {
-    const [showModal, setShowModal] = React.useState(false);
-    return (
-        <>
+  const [showModal, setShowModal] = useState(false);
+  return (
+    <>
+      <img
+        src={jerseyImage}
+        alt="Radtrikot"
+        style={{ maxWidth: 120, cursor: "pointer", marginBottom: 6, boxShadow: "0 2px 8px rgba(0,0,0,0.10)", borderRadius: 10 }}
+        onClick={() => setShowModal(true)}
+        title="Bild vergrößern"
+      />
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 2000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            style={{
+              background: "#fffdfa",
+              borderRadius: 12,
+              padding: 0,
+              maxWidth: 600,
+              width: "90vw",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <img
-                src={jerseyImage}
-                alt="Radtrikot"
-                style={{ maxWidth: 120, cursor: 'pointer', marginBottom: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.10)', borderRadius: 10 }}
-                onClick={() => setShowModal(true)}
-                title="Bild vergrößern"
+              src={jerseyImage}
+              alt="Radtrikot groß"
+              style={{ width: "100%", height: "auto", maxHeight: "80vh", borderRadius: 12, display: "block" }}
             />
-            {showModal && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.6)',
-                        zIndex: 2000,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                    onClick={() => setShowModal(false)}
-                >
-                    <div
-                        style={{
-                            background: '#fffdfa',
-                            borderRadius: 12,
-                            padding: 0,
-                            maxWidth: 600,
-                            width: '90vw',
-                            maxHeight: '90vh',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            position: 'relative',
-                        }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <img
-                            src={jerseyImage}
-                            alt="Radtrikot groß"
-                            style={{
-                                width: '100%',
-                                height: 'auto',
-                                maxHeight: '80vh',
-                                borderRadius: 12,
-                                display: 'block',
-                            }}
-                        />
-                        <button
-                            onClick={() => setShowModal(false)}
-                            style={{
-                                position: 'absolute',
-                                top: 10,
-                                right: 10,
-                                background: '#ffb522',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 6,
-                                padding: '0.4em 1em',
-                                fontSize: 18,
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
-                            }}
-                        >
-                            Schließen
-                        </button>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+            <button
+              onClick={() => setShowModal(false)}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                background: "#ffb522",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "0.4em 1em",
+                fontSize: 18,
+                fontWeight: 500,
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+              }}
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function EventRegistration() {
-  const { userId, username, isLoggedIn, logout, authToken, login } = useUser();
+  const { username, isLoggedIn, logout, authToken } = useUser();
+  const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const [participants, setParticipants] = useState([{ name: "", email: "" }]);
+  const [participants, setParticipants] = useState([createParticipant()]);
   const [teamName, setTeamName] = useState("");
-  const [jerseyOrder, setJerseyOrder] = useState(false);
-  const [jerseyOrders, setJerseyOrders] = useState([]);
   const [donation, setDonation] = useState(0);
-  const [voucherCode, setVoucherCode] = useState("");
-  const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [newsletter, setNewsletter] = useState(false);
-  const [totalCost, setTotalCost] = useState(0);
-  // Merke die letzte Auswahl der Trikots, wenn abgewählt
-  const lastJerseyOrdersRef = React.useRef([]);
+  const [acceptWaiver, setAcceptWaiver] = useState(false);
+  const [acceptEventLegal, setAcceptEventLegal] = useState(false);
+  const [acceptAccountTerms, setAcceptAccountTerms] = useState(false);
+  const [newAccount, setNewAccount] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
 
-  // Status für Feedback
+  const [eventMeta, setEventMeta] = useState(null);
+  const [legal, setLegal] = useState(null);
+  const [accountEmail, setAccountEmail] = useState("");
+  const [loadingMeta, setLoadingMeta] = useState(true);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    if (isLoggedIn && username) {
-      setParticipants(prev => {
-        const newParticipants = [...prev];
-        // Wir nehmen an, dass der erste Teilnehmer der eingeloggte User ist
-        newParticipants[0] = {
-          name: "",
-          email: "Eingeloggt (Profil-Email wird genutzt)", // Backend findet Email via userId
-          isAutoFilled: true
-        };
-        return newParticipants;
-      });
-    } else {
-      // Wenn nicht eingeloggt oder ausgeloggt: Ersten Teilnehmer leeren
-      setParticipants(prev => {
-        const newParticipants = [...prev];
-        if (newParticipants[0]?.isAutoFilled) {
-          newParticipants[0] = { name: "", email: "", isAutoFilled: false };
+    let aborted = false;
+
+    const loadMeta = async () => {
+      setLoadingMeta(true);
+      try {
+        const res = await fetch(`${API_BASE}/event2026/registrations.php`);
+        const data = await res.json();
+        if (aborted) {
+          return;
         }
-        return newParticipants;
-      });
-    }
-  }, [isLoggedIn, username]);
+        if (data.status !== "success") {
+          throw new Error(data.message || "Eventdaten konnten nicht geladen werden.");
+        }
+        setEventMeta(data.event);
+        setLegal(data.legal);
+        setAccountEmail(data.account?.email || "");
+      } catch (err) {
+        if (!aborted) {
+          setError(err.message || "Eventdaten konnten nicht geladen werden.");
+        }
+      } finally {
+        if (!aborted) {
+          setLoadingMeta(false);
+        }
+      }
+    };
+
+    loadMeta();
+    return () => {
+      aborted = true;
+    };
+  }, [API_BASE]);
 
   useEffect(() => {
-    let jerseyTotal = jerseyOrders.reduce(
-      (sum, order) => sum + (order.quantity || 0) * JERSEY_PRICE,
-      0
+    if (!isLoggedIn || !accountEmail) {
+      return;
+    }
+    setParticipants((prev) =>
+      prev.map((item, idx) => {
+        if (idx !== 0) return item;
+        if (item.email && item.email.trim() !== "") return item;
+        return { ...item, email: accountEmail };
+      })
     );
-    setTotalCost(participants.length * ENTRY_FEE + jerseyTotal + Number(donation || 0));
-  }, [participants, jerseyOrders, donation]);
+  }, [accountEmail, isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn || !newAccount.email) {
+      return;
+    }
+    setParticipants((prev) =>
+      prev.map((item, idx) => (idx === 0 ? { ...item, email: newAccount.email } : item))
+    );
+  }, [isLoggedIn, newAccount.email]);
 
   const handleParticipantChange = (idx, field, value) => {
     setParticipants((prev) =>
-      prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p))
+      prev.map((p, i) => {
+        if (i !== idx) return p;
+        const next = { ...p, [field]: value };
+        if (field === "jerseyInterest" && !value) {
+          next.jerseySize = "";
+        }
+        return next;
+      })
     );
   };
-  const addParticipant = () => setParticipants([...participants, { name: "", email: "" }]);
-  const removeParticipant = (idx) => setParticipants(participants.filter((_, i) => i !== idx));
 
-  const handleJerseyOrderChange = (idx, field, value) => {
-    setJerseyOrders((prev) =>
-      prev.map((o, i) => (i === idx ? { ...o, [field]: value } : o))
-    );
-  };
-  const addJerseyOrder = () => setJerseyOrders([...jerseyOrders, { size: "5", quantity: 1 }]);
-  const removeJerseyOrder = (idx) => setJerseyOrders(jerseyOrders.filter((_, i) => i !== idx));
+  const addParticipant = () => setParticipants((prev) => [...prev, createParticipant()]);
+  const removeParticipant = (idx) => setParticipants((prev) => prev.filter((_, i) => i !== idx));
+
+  const totalCost = useMemo(() => participants.length * ENTRY_FEE + Number(donation || 0), [participants.length, donation]);
+
+  const availableSlots = eventMeta?.available_slots ?? 0;
+  const isSoldOut = eventMeta?.event_status === "cancelled" || availableSlots <= 0;
+  const hasCapacityForCurrentSelection = availableSlots >= participants.length;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setSuccess(null);
 
-    // Payload für das PHP Backend zusammenbauen
     const payload = {
-      isLoggedIn,
-      registeredByUserId: userId,
       participants,
       teamName,
-      jerseyOrders: jerseyOrder ? jerseyOrders : [],
-      donation,
-      totalCost,
-      newsletter
+      newsletter,
+      paymentMethodPreference: "paypal_friends",
+      acceptWaiver,
+      acceptLegal: acceptEventLegal,
+      legalVersion: legal?.version ?? null,
+      account: !isLoggedIn
+        ? {
+          username: newAccount.username,
+          email: newAccount.email,
+          password: newAccount.password,
+          acceptedTerms: acceptAccountTerms,
+        }
+        : null,
     };
 
     try {
-      const response = await fetch(`${API_BASE}/event/submit_registration.php`, {
+      const response = await fetch(`${API_BASE}/event2026/registrations.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Falls dein Backend JWT nutzt, Token mitschicken:
-          ...(authToken && { "Authorization": `Bearer ${authToken}` })
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify(payload),
       });
 
       const result = await response.json();
 
-      if (result.status === "success") {
-        // Hier erfolgt die Weiterleitung zur Zahlung (z.B. PayPal)
-        // oder eine Erfolgsmeldung
-        console.log("Erfolg:", result.payment_session_id);
-        alert("Anmeldung gespeichert! Du wirst nun zur Zahlung weitergeleitet.");
-        // window.location.href = `payment_gateway.php?session_id=${result.payment_session_id}`;
-      } else {
+      if (!response.ok || result.status !== "success") {
+        if (result.status === "sold_out") {
+          throw new Error("Event ist ausgebucht oder es sind nicht genug freie Plätze verfügbar.");
+        }
         throw new Error(result.message || "Fehler beim Speichern");
+      }
+
+      setSuccess(result);
+
+      localStorage.setItem("event2026_has_registration", "1");
+      navigate(`/event-registration-summary?registrationId=${result.registration_id}`, {
+        state: { registrationResult: result },
+      });
+
+      const refreshRes = await fetch(`${API_BASE}/event2026/registrations.php`);
+      const refreshData = await refreshRes.json();
+      if (refreshData.status === "success") {
+        setEventMeta(refreshData.event);
+        setLegal(refreshData.legal);
       }
     } catch (err) {
       setError(err.message);
@@ -350,179 +425,363 @@ export default function EventRegistration() {
     }
   };
 
-  const totalJerseyQuantity = jerseyOrders.reduce((sum, o) => sum + (o.quantity || 0), 0);
-
   return (
     <PageWrapper>
       <Header />
       <form onSubmit={handleSubmit}>
         <MainGrid>
           <div>
+            {loadingMeta && <StatusBanner>Eventdaten werden geladen…</StatusBanner>}
+
             {error && (
-              <div style={{ color: "red", background: "#fee2e2", padding: "1rem", borderRadius: "8px", marginBottom: "1rem" }}>
+              <StatusBanner tone="danger">
                 ⚠️ {error}
-              </div>
+              </StatusBanner>
+            )}
+
+            {success && (
+              <StatusBanner>
+                <strong>Anmeldung gespeichert.</strong>
+                <div style={{ marginTop: 6 }}>
+                  Referenzcode für Zahlung: <strong>{success.payment_reference_code}</strong>
+                </div>
+                <div style={{ marginTop: 4 }}>{success.payment_instruction}</div>
+                {Array.isArray(success.participant_slots) && success.participant_slots.some((slot) => slot.claim_token_status?.token) && (
+                  <div style={{ marginTop: 10 }}>
+                    <strong>Invite-Links für weitere Teilnehmer:</strong>
+                    {success.participant_slots
+                      .filter((slot) => slot.claim_token_status?.token)
+                      .map((slot) => (
+                        <div key={slot.slot_id} style={{ marginTop: 6 }}>
+                          {slot.full_name}:{" "}
+                          <a
+                            href={`/#/event-invite/${slot.claim_token_status.token}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "#8a5700" }}
+                          >
+                            /#/event-invite/{slot.claim_token_status.token}
+                          </a>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </StatusBanner>
+            )}
+
+            {eventMeta && (
+              <Card>
+                <CardTitle>
+                  <Flag size={20} /> Eventstatus
+                </CardTitle>
+                <Flex>
+                  <span>Verfügbare Startplätze</span>
+                  <span>noch <strong>
+                    {eventMeta.max_participants - eventMeta.reserved_slots} / {eventMeta.max_participants}
+                  </strong> verfügbar</span>
+                </Flex>
+                <div style={{ marginTop: 6, color: "#8a5700", fontSize: 14 }}>
+                  Maximal 150 Teilnehmer. Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.
+                </div>
+                {eventMeta.event_status === "cancelled" && (
+                  <StatusBanner tone="danger" style={{ marginTop: 12, marginBottom: 0 }}>
+                    Das Event wurde abgesagt.
+                  </StatusBanner>
+                )}
+                {!isSoldOut && !hasCapacityForCurrentSelection && (
+                  <StatusBanner tone="danger" style={{ marginTop: 12, marginBottom: 0 }}>
+                    Für deine aktuelle Teilnehmeranzahl sind nicht genug freie Plätze verfügbar.
+                  </StatusBanner>
+                )}
+              </Card>
             )}
 
             <Card>
-              <CardTitle><Users /> Teilnehmer & Team</CardTitle>
+              <CardTitle>
+                <Users /> Teilnehmer & Team
+              </CardTitle>
 
               {isLoggedIn ? (
-                <div style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  padding: "1rem",
-                  borderRadius: "8px",
-                  marginBottom: "1.5rem",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}>
+                <div
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    padding: "1rem",
+                    borderRadius: "8px",
+                    marginBottom: "1.5rem",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <span>
-                    Angemeldet als <strong>{username}</strong>. Du meldest dich selbst als Teilnehmer 1 an.
+                    Angemeldet als <strong>{username}</strong>.
                   </span>
                   <Button
                     type="button"
                     onClick={logout}
-                    style={{ background: "#ef4444", fontSize: "0.8rem", padding: "0.4rem 0.8rem" }}
+                    style={{ background: "#ef4444", fontSize: "0.8rem", padding: "0.4rem 0.8rem", marginTop: 0 }}
                   >
                     Abmelden / Anderer Account
                   </Button>
                 </div>
               ) : (
-                <div style={{ marginBottom: "1.5rem", fontSize: "0.9rem", color: "#64748b" }}>
-                  Bereits einen Account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginModal(true)}
-                    style={{
-                      color: "#ffb522",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 0,
-                      textDecoration: "underline",
-                      font: "inherit",
-                    }}
-                  >
-                    Jetzt einloggen
-                  </button>
-                  , um deine Daten zu übernehmen.
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div style={{ marginBottom: "0.8rem", fontSize: "0.9rem", color: "#64748b" }}>
+                    Mit der Registrierung erstellst du ein Ice-App Account. Dieser wird benötigt um die Checkins bei den Eisdielen / Checkpunkten zu registrieren.
+                    <div style={{ marginTop: "0.4rem", fontSize: "0.85rem", color: "#7c4f00" }}>
+                      Du bist bereits bei der Ice-App registriert? <a href="/#/login" style={{ color: "#ffb522" }}>Hier einloggen</a>.
+                    </div>
+                  </div>
+                  <GridRow>
+                    <div>
+                      <Label>Benutzername (neu)</Label>
+                      <Input
+                        value={newAccount.username}
+                        onChange={(e) => setNewAccount((prev) => ({ ...prev, username: e.target.value }))}
+                        placeholder="z. B. EisRider"
+                        required={!isLoggedIn}
+                      />
+                    </div>
+                    <div>
+                      <Label>E-Mail (Account)</Label>
+                      <Input
+                        value={newAccount.email}
+                        onChange={(e) => setNewAccount((prev) => ({ ...prev, email: e.target.value }))}
+                        placeholder="du@example.com"
+                        type="email"
+                        required={!isLoggedIn}
+                      />
+                    </div>
+                  </GridRow>
+                  <Label>Passwort (mind. 6 Zeichen)</Label>
+                  <Input
+                    value={newAccount.password}
+                    onChange={(e) => setNewAccount((prev) => ({ ...prev, password: e.target.value }))}
+                    placeholder="******"
+                    type="password"
+                    required={!isLoggedIn}
+                  />
+                  <CheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={acceptAccountTerms}
+                      onChange={(e) => setAcceptAccountTerms(e.target.checked)}
+                    />
+                    <span>
+                      Ich akzeptiere die <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>,{" "}
+                      <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutzerklärung</a> und{" "}
+                      <a href="/#/community" target="_blank" rel="noreferrer">Community-Richtlinien</a>.
+                    </span>
+                  </CheckboxLabel>
                 </div>
               )}
+
               {participants.map((p, idx) => (
                 <FieldGroup key={idx} style={{ position: "relative", border: "1px solid #ffd77a", borderRadius: 8, padding: 16, marginBottom: 16 }}>
                   <div style={{ fontWeight: 600, marginBottom: 8 }}>Teilnehmer {idx + 1}</div>
-                  <Label>Vollständiger Name</Label>
-                  <Input value={p.name} onChange={e => handleParticipantChange(idx, "name", e.target.value)} placeholder="Max Mustermann" required />
-                  <Label>E-Mail Adresse</Label>
-                  <Input value={p.email} onChange={e => handleParticipantChange(idx, "email", e.target.value)} placeholder="max@example.com" type="email" required disabled={p.isAutoFilled} />
+
+                  <Label>Vollständiger Name (Echtname)</Label>
+                  <Input
+                    value={p.name}
+                    onChange={(e) => handleParticipantChange(idx, "name", e.target.value)}
+                    placeholder="Max Mustermann"
+                    required
+                  />
+
+                  <Label>E-Mail-Adresse</Label>
+                  <Input
+                    value={p.email}
+                    onChange={(e) => handleParticipantChange(idx, "email", e.target.value)}
+                    placeholder="max@example.com"
+                    type="email"
+                    required
+                  />
+
+                  <GridRow>
+                    <div>
+                      <Label>Strecke</Label>
+                      <Select
+                        value={p.distance}
+                        onChange={(e) => handleParticipantChange(idx, "distance", Number(e.target.value))}
+                      >
+                        {DISTANCE_OPTIONS.map((distance) => (
+                          <option key={distance.value} value={distance.value}>
+                            {distance.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Selbsteinschätzung</Label>
+                      <Select
+                        value={p.paceGroup}
+                        onChange={(e) => handleParticipantChange(idx, "paceGroup", e.target.value)}
+                      >
+                        {PACE_OPTIONS.map((pace) => (
+                          <option key={pace.value} value={pace.value}>
+                            {pace.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  </GridRow>
+
+                  <CheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={p.womenWaveOptIn}
+                      onChange={(e) => handleParticipantChange(idx, "womenWaveOptIn", e.target.checked)}
+                    />
+                    <span>Wunsch: separate Frauen-Startwelle (bei ausreichender Anzahl)</span>
+                  </CheckboxLabel>
+
+                  <CheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={p.publicNameConsent}
+                      onChange={(e) => handleParticipantChange(idx, "publicNameConsent", e.target.checked)}
+                    />
+                    <span>Ich stimme zu, dass Name und Checkpoint-Zeiten auf der Event-Live-Karte sichtbar sind.</span>
+                  </CheckboxLabel>
+
+                  <div
+                    style={{
+                      border: "1px solid #ffd77a",
+                      borderRadius: 8,
+                      padding: 10,
+                      marginTop: 8,
+                      background: "#fffaf0",
+                    }}
+                  >
+                    <CheckboxLabel>
+                      <input
+                        type="checkbox"
+                        checked={p.jerseyInterest}
+                        onChange={(e) => handleParticipantChange(idx, "jerseyInterest", e.target.checked)}
+                      />
+                      <span>
+                        Verbindliches Interesse am Event-Trikot (Richtpreis 75€, ggf. günstiger bei größerer Menge)
+                      </span>
+                    </CheckboxLabel>
+
+                    {p.jerseyInterest && (
+                      <div style={{ marginTop: 8 }}>
+                        <Label>Trikotgröße</Label>
+                        <Select
+                          value={p.jerseySize}
+                          onChange={(e) => handleParticipantChange(idx, "jerseySize", e.target.value)}
+                          required={p.jerseyInterest}
+                        >
+                          <option value="">Bitte wählen</option>
+                          {TSHIRT_SIZES.map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
                   {idx > 0 && (
-                    <RemoveBtn type="button" style={{ position: "absolute", top: 8, right: 8 }} onClick={() => removeParticipant(idx)}>
+                    <RemoveBtn
+                      type="button"
+                      style={{ position: "absolute", top: 8, right: 8, marginTop: 0 }}
+                      onClick={() => removeParticipant(idx)}
+                    >
                       <Trash2 size={16} />
                     </RemoveBtn>
                   )}
                 </FieldGroup>
               ))}
-              <Button type="button" onClick={addParticipant}><PlusCircle size={18} /> Weiteren Teilnehmer hinzufügen</Button>
+
+              <Button type="button" onClick={addParticipant} disabled={isSoldOut}>
+                <PlusCircle size={18} /> Weiteren Teilnehmer hinzufügen
+              </Button>
+
               <Separator />
               <Label>Verein / Team (optional)</Label>
-              <Input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Team Eislover" />
+              <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team Eislover" />
             </Card>
 
             <Card>
-            
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <CardTitle><Shirt /> Extras</CardTitle>
-                  <CheckboxLabel style={{ marginBottom: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={jerseyOrder}
-                      onChange={e => {
-                        const checked = e.target.checked;
-                        setJerseyOrder(checked);
-                        if (checked) {
-                          // Wiederherstellen der letzten Auswahl, falls vorhanden
-                          if (lastJerseyOrdersRef.current.length > 0) {
-                            setJerseyOrders(lastJerseyOrdersRef.current);
-                          } else if (jerseyOrders.length === 0) {
-                            addJerseyOrder();
-                          }
-                        } else {
-                          // Auswahl merken und leeren
-                          lastJerseyOrdersRef.current = jerseyOrders;
-                          setJerseyOrders([]);
-                        }
-                      }}
-                      id="jersey-order-checkbox"
-                      style={{ marginRight: 8 }}
-                    />
-                    <label htmlFor="jersey-order-checkbox" style={{ margin: 0, cursor: 'pointer' }}>
-                      Exklusives Radtrikot bestellen (69€)
-                    </label>
-                  </CheckboxLabel>
-                  <div style={{ margin: '0.2em 0 0.8em 1.8em' }}>
-                    <JerseyInfoDialog linkOnly={true} />
+                  <CardTitle>
+                    <Shirt /> Trikot-Interesse
+                  </CardTitle>
+                  <div style={{ marginBottom: "0.6em", color: "#8a5700", fontSize: "0.95rem" }}>
+                    Keine direkte Trikot-Bestellung in der Anmeldung. Wir sammeln verbindliches Interesse und melden uns später zur finalen Bestellung.
                   </div>
+                  <JerseyInfoDialog linkOnly={true} />
                 </div>
-                <div style={{ flex: '0 0 auto', textAlign: 'right', marginTop: '30px' }}>
+                <div style={{ flex: "0 0 auto", textAlign: "right", marginTop: "20px" }}>
                   <JerseyImageModal />
                 </div>
               </div>
-              {jerseyOrder && (
-                <div style={{ marginLeft: 24 }}>
-                  {jerseyOrders.map((order, idx) => (
-                    <Flex key={idx} style={{ marginBottom: 8, alignItems: 'flex-end' }}>
-                      <div>
-                        <Label htmlFor={`jersey-size-${idx}`} style={{marginBottom: '0.1rem', fontSize: '0.8rem'}}>Größe</Label>
-                        <JerseySelect
-                          id={`jersey-size-${idx}`}
-                          value={order.size}
-                          onChange={e => handleJerseyOrderChange(idx, "size", e.target.value)}
-                        >
-                          {TSHIRT_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
-                        </JerseySelect>
-                      </div>
-                      <div>
-                        <Label htmlFor={`jersey-quantity-${idx}`} style={{marginBottom: '0.1rem', fontSize: '0.8rem'}}>Menge</Label>
-                        <JerseyInput
-                          id={`jersey-quantity-${idx}`}
-                          type="number"
-                          min="1"
-                          value={order.quantity}
-                          onChange={e => handleJerseyOrderChange(idx, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
-                        />
-                      </div>
-                      <JerseyRemoveBtn
-                        type="button"
-                        onClick={() => removeJerseyOrder(idx)}
-                        aria-label="Größe entfernen"
-                      >
-                        <Trash2 size={16} />
-                      </JerseyRemoveBtn>
-                    </Flex>
-                  ))}
-                  <Button type="button" onClick={addJerseyOrder}><PlusCircle size={16} /> Größe hinzufügen</Button>
-                </div>
-              )}
+
               <Separator />
-              <Label><Heart style={{ color: '#ffb522' }} /> Zusätzlich spenden</Label>
-              <Input type="number" min="0" value={donation} onChange={e => setDonation(Number(e.target.value) || 0)} placeholder="0" />
-              <div style={{ fontSize: 13, color: '#b48a2c', marginBottom: 8 }}>100% deiner Spende geht an den Elternverein krebskranker Kinder e.V. Chemnitz</div>
-              <Separator />
-              <Label><Ticket style={{ color: '#ffb522' }} /> Gutschein- / Rabattcode</Label>
-              <Input value={voucherCode} onChange={e => setVoucherCode(e.target.value)} />
+              <Label>
+                <Heart style={{ color: "#ffb522" }} /> Zusätzlich spenden
+              </Label>
+              <Input type="number" min="0" value={donation} onChange={(e) => setDonation(Number(e.target.value) || 0)} placeholder="0" />
+              <div style={{ fontSize: 13, color: "#b48a2c", marginBottom: 8 }}>
+                100% deiner Spende geht an den Elternverein krebskranker Kinder e.V. Chemnitz.
+              </div>
             </Card>
 
             <Card>
-              <CardTitle><ShieldAlert /> Wichtiger Hinweis & Newsletter</CardTitle>
+              <CardTitle>
+                <ShieldAlert /> Haftung, Regeln & Newsletter
+              </CardTitle>
+
+              <div
+                style={{
+                  background: "#fff7e5",
+                  border: "1px solid #ffd77a",
+                  borderRadius: 8,
+                  padding: "0.8rem",
+                  marginBottom: "0.9rem",
+                  color: "#7c4f00",
+                }}
+              >
+                <strong>Wichtige Regeln:</strong>
+                <div style={{ marginTop: 6, lineHeight: 1.45 }}>
+                  Teilnahme auf eigene Gefahr und Kosten. StVO ist einzuhalten. Dies ist kein Rennen/keine Zeitfahrveranstaltung.
+                  Maximal 150 Teilnehmer. Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.
+                </div>
+              </div>
+
+              {legal && (
+                <div
+                  style={{
+                    background: "#fffdf7",
+                    border: "1px solid #ffe3a2",
+                    borderRadius: 8,
+                    padding: "0.8rem",
+                    marginBottom: "0.9rem",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Rechtstextversion {legal.version}</div>
+                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.45 }}>{formatLegalContent(legal.content_md)}</div>
+                </div>
+              )}
+
               <CheckboxLabel>
-                <input type="checkbox" checked={acceptWaiver} onChange={e => setAcceptWaiver(e.target.checked)} required />
-                <span>Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Bedingungen.</span>
+                <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} required />
+                <span>
+                  Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Bedingungen.
+                </span>
               </CheckboxLabel>
+
               <CheckboxLabel>
-                <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)} />
+                <input type="checkbox" checked={acceptEventLegal} onChange={(e) => setAcceptEventLegal(e.target.checked)} required />
+                <span>Ich akzeptiere die oben angezeigten Teilnahmebedingungen in der aktuellen Version.</span>
+              </CheckboxLabel>
+
+              <CheckboxLabel>
+                <input type="checkbox" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} />
                 <span>Ja, ich möchte den Newsletter mit Infos zu zukünftigen Events erhalten.</span>
               </CheckboxLabel>
             </Card>
@@ -530,24 +789,13 @@ export default function EventRegistration() {
 
           <Summary>
             <Card>
-              <CardTitle><ShoppingCart /> Zusammenfassung</CardTitle>
+              <CardTitle>
+                <Bike /> Zusammenfassung
+              </CardTitle>
               <Flex>
                 <span>Teilnehmer ({participants.length})</span>
                 <span>€{participants.length * ENTRY_FEE}</span>
               </Flex>
-              {jerseyOrder && totalJerseyQuantity > 0 && (
-                <Flex>
-                  <span>Trikots ({totalJerseyQuantity})</span>
-                  <span>€{totalJerseyQuantity * JERSEY_PRICE}</span>
-                </Flex>
-              )}
-              {jerseyOrder && jerseyOrders.map((order, idx) => (
-                order.quantity > 0 &&
-                <Flex key={idx} style={{ fontSize: 14, marginLeft: 12 }}>
-                  <span>{order.quantity} x Größe {order.size}</span>
-                  <span>€{order.quantity * JERSEY_PRICE}</span>
-                </Flex>
-              ))}
               {donation > 0 && (
                 <Flex>
                   <span>Spende</span>
@@ -559,26 +807,33 @@ export default function EventRegistration() {
                 <span>Gesamtsumme</span>
                 <span>€{totalCost}</span>
               </Flex>
+              <div style={{ fontSize: 13, color: "#8a5700", marginTop: 8 }}>
+                Die Trikot-Anfrage ist nicht Teil dieser Zahlung.
+              </div>
               <Button
                 type="submit"
-                style={{ width: "100%", marginTop: 16 }}
-                disabled={!acceptWaiver || isSubmitting}
+                style={{ width: "100%", marginTop: 16, justifyContent: "center" }}
+                disabled={
+                  !acceptWaiver
+                  || !acceptEventLegal
+                  || isSubmitting
+                  || isSoldOut
+                  || !hasCapacityForCurrentSelection
+                  || (!isLoggedIn && (!newAccount.username || !newAccount.email || !newAccount.password || !acceptAccountTerms))
+                }
               >
-                {isSubmitting ? "Wird verarbeitet..." : <><Bike style={{ marginRight: 8 }} /> Kostenpflichtig anmelden</>}
+                {isSubmitting ? "Wird verarbeitet..." : "Kostenpflichtig anmelden"}
               </Button>
+              {!isLoggedIn && (
+                <div style={{ color: "#9f1239", marginTop: 10, fontSize: 14 }}>
+                  Für die Anmeldung muss ein Ice-App Account verwendet werden.
+                </div>
+              )}
             </Card>
           </Summary>
         </MainGrid>
       </form>
       <Footer />
-      {showLoginModal && (
-        <LoginModal
-          userId={userId}
-          isLoggedIn={isLoggedIn}
-          login={login}
-          setShowLoginModal={setShowLoginModal}
-        />
-      )}
     </PageWrapper>
   );
 }

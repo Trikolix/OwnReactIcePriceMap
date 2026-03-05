@@ -65,7 +65,7 @@ export default function Header() {
   return (
     <>
       <HeaderContainer>
-        <BrandCenter to="/rad-event" onClick={() => setMenuOpen(false)}>
+        <BrandCenter to="/eis-tour" onClick={() => setMenuOpen(false)}>
           <Logo src={eisTourLogo} alt="Eis-Tour" />
         </BrandCenter>
 
@@ -110,7 +110,7 @@ export default function Header() {
           <Menu ref={menuRef}>
             <MenuSection>
               <MenuSectionTitle>Eis-Tour</MenuSectionTitle>
-              <MenuItemLink to="/rad-event" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
+              <MenuItemLink to="/eis-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
               <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>
             </MenuSection>
 

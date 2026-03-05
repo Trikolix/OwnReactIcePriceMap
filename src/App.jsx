@@ -52,7 +52,7 @@ const App = () => {
           <Route path="/photo-challenge-admin" element={<PhotoChallengeAdmin />} />
           <Route path="/shop-change-requests" element={<ShopChangeRequestsAdmin />} />
           <Route path="/photo-challenge/:challengeId" element={<PhotoChallengeVoting />} />
-          <Route path="/rad-event" element={<RadEvent />} />
+          <Route path="/eis-tour" element={<RadEvent />} />
           <Route path="/event-registration" element={<EventRegistration />} />
         </Routes>
       </UserProvider>
