@@ -1,4 +1,5 @@
-import React, { forwardRef } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -21,56 +22,92 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
     const { userId } = useUser();
     const awardDate = parseAwardDate(award?.datum);
     const iconSources = getAwardIconSources(award?.icon_path, 512);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+    useEffect(() => {
+      if (!isLightboxOpen) return undefined;
+      const onKeyDown = (event) => {
+        if (event.key === "Escape") {
+          setIsLightboxOpen(false);
+        }
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }, [isLightboxOpen]);
 
 
     return (
+      <>
         <Card ref={ref}>
-            <CardMetaRow>
-                <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
-                    {awardDate
-                        ? awardDate.toLocaleDateString("de-DE", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "numeric",
-                        })
-                        : award?.datum}
-                </DateText>
-            </CardMetaRow>
+          <CardMetaRow>
+            <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
+              {awardDate
+                ? awardDate.toLocaleDateString("de-DE", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                  })
+                : award?.datum}
+            </DateText>
+          </CardMetaRow>
 
-            <ContentWrapper>
-                {/* --- Icon links --- */}
-                <IconWrapper>
-                    <AwardIcon
-                        src={iconSources.src || ""}
-                        data-fallback-src={iconSources.fallbackSrc || ""}
-                        onError={handleAwardIconFallback}
-                        loading="lazy"
-                        decoding="async"
-                        alt="Award Icon"
-                    />
-                    <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
-                </IconWrapper>
+          <ContentWrapper>
+            {/* --- Icon links --- */}
+            <IconWrapper>
+              <IconButton
+                type="button"
+                onClick={() => setIsLightboxOpen(true)}
+                aria-label={`Award ${award?.title_de || ""} groß anzeigen`}
+              >
+                <AwardIcon
+                  src={iconSources.src || ""}
+                  data-fallback-src={iconSources.fallbackSrc || ""}
+                  onError={handleAwardIconFallback}
+                  loading="lazy"
+                  decoding="async"
+                  alt="Award Icon"
+                />
+              </IconButton>
+              <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: "bottom" }} /></EPBadge>
+            </IconWrapper>
 
-                {/* --- Text rechts --- */}
-                <TextContent>
-                    {userId === award.user_id ? (
-                        <>Du hast den Award <strong>{award.title_de}</strong> erhalten.</>
-                    ) : (
-                        <>
-                            <strong>
-                                <CleanLink to={`/user/${award.user_id}`}>
-                                    {award.user_name}
-                                </CleanLink>
-                            </strong>{" "}
-                            hat den Award <strong>{award.title_de}</strong> erhalten.
-                        </>
-                    )}
-                    <p>{award.description_de}</p>
-                </TextContent>
-            </ContentWrapper>
+            {/* --- Text rechts --- */}
+            <TextContent>
+              {userId === award.user_id ? (
+                <>Du hast den Award <strong>{award.title_de}</strong> erhalten.</>
+              ) : (
+                <>
+                  <strong>
+                    <CleanLink to={`/user/${award.user_id}`}>
+                      {award.user_name}
+                    </CleanLink>
+                  </strong>{" "}
+                  hat den Award <strong>{award.title_de}</strong> erhalten.
+                </>
+              )}
+              <p>{award.description_de}</p>
+            </TextContent>
+          </ContentWrapper>
         </Card>
+        {isLightboxOpen && typeof document !== "undefined" && createPortal(
+          <LightboxOverlay onClick={() => setIsLightboxOpen(false)}>
+            <LightboxCard onClick={(event) => event.stopPropagation()}>
+              <LightboxClose type="button" onClick={() => setIsLightboxOpen(false)}>
+                Schließen
+              </LightboxClose>
+              <LightboxImage
+                src={iconSources.src || ""}
+                data-fallback-src={iconSources.fallbackSrc || ""}
+                onError={handleAwardIconFallback}
+                alt={award?.title_de ? `Award ${award.title_de}` : "Award"}
+              />
+            </LightboxCard>
+          </LightboxOverlay>,
+          document.body
+        )}
+      </>
     );
 
 });
@@ -140,12 +177,61 @@ const IconWrapper = styled.div`
   flex-shrink: 0;
 `;
 
+const IconButton = styled.button`
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 8px;
+`;
+
 const AwardIcon = styled.img`
   height: 150px;
 
   @media (max-width: 640px) {
     height: 92px;
   }
+`;
+
+const LightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`;
+
+const LightboxCard = styled.div`
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.8rem;
+  max-width: min(92vw, 860px);
+  max-height: 92vh;
+`;
+
+const LightboxImage = styled.img`
+  display: block;
+  max-width: min(88vw, 820px);
+  max-height: 82vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+`;
+
+const LightboxClose = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
 `;
 
 const EPBadge = styled.div`

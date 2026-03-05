@@ -1,5 +1,6 @@
 import Header from './../Header';
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -36,6 +37,7 @@ function UserSite() {
   const [checkinPage, setCheckinPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
   const [awardPage, setAwardPage] = useState(1);
+  const [awardColumns, setAwardColumns] = useState(1);
   const [routePage, setRoutePage] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const [activityLevel, setActivityLevel] = useState('land');
@@ -48,7 +50,9 @@ function UserSite() {
   const [flavorLoading, setFlavorLoading] = useState({});
   const [flavorErrors, setFlavorErrors] = useState({});
   const profile156AutoScanTriggeredRef = useRef(false);
+  const awardsGridRef = useRef(null);
   const PROFILE_156_SCAN_CODE = '3cb55cb87747d1ed4069e612cef2e75d';
+  const [selectedAward, setSelectedAward] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -104,6 +108,47 @@ function UserSite() {
     fetchUserData(finalUserId);
   }, [finalUserId]);
 
+  useEffect(() => {
+    if (!selectedAward) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedAward(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedAward]);
+
+  useEffect(() => {
+    const grid = awardsGridRef.current;
+    if (!grid) return undefined;
+
+    const updateAwardColumns = () => {
+      const style = window.getComputedStyle(grid);
+      const columnCount = style.gridTemplateColumns
+        .split(' ')
+        .filter(Boolean)
+        .length;
+      setAwardColumns(Math.max(1, columnCount));
+    };
+
+    updateAwardColumns();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateAwardColumns);
+      return () => {
+        window.removeEventListener('resize', updateAwardColumns);
+      };
+    }
+    const observer = new ResizeObserver(updateAwardColumns);
+    observer.observe(grid);
+    window.addEventListener('resize', updateAwardColumns);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateAwardColumns);
+    };
+  }, [data?.user_awards?.length]);
+
   const refreshUser = () => fetchUserData(finalUserId);
   const copyToClipboard = async (text) => {
     try {
@@ -118,10 +163,11 @@ function UserSite() {
   const checkins = data?.checkins || [];
   const reviews = data?.reviews || [];
   const awards = data?.user_awards || [];
+  const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routes = data?.routen || [];
   const displayedCheckins = checkins.slice(0, checkinPage * 5);
   const displayedReviews = reviews.slice(0, reviewPage * 5);
-  const displayedAwards = awards.slice(0, awardPage * 6);
+  const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
   const displayedRoutes = routes.slice(0, routePage * 5);
   const fallbackImageCount = React.useMemo(() => {
     const checkinImages = checkins.reduce((sum, checkin) => sum + (checkin?.bilder?.length || 0), 0);
@@ -536,21 +582,31 @@ function UserSite() {
                 <span>{awards.length}</span>
               </SectionHeader>
               {displayedAwards.length ? (
-                <AwardsGrid>
+                <AwardsGrid ref={awardsGridRef}>
                   {displayedAwards.map((award, index) => {
                     const iconSources = getAwardIconSources(award?.icon_path, 512);
 
                     return (
                       <AwardCard key={index}>
                         <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
-                        <AwardImage
-                          src={iconSources.src || ''}
-                          data-fallback-src={iconSources.fallbackSrc || ''}
-                          onError={handleAwardIconFallback}
-                          loading="lazy"
-                          decoding="async"
-                          alt={award.title_de}
-                        />
+                        <AwardImageButton
+                          type="button"
+                          onClick={() => setSelectedAward({
+                            src: iconSources.src || '',
+                            fallbackSrc: iconSources.fallbackSrc || '',
+                            title: award.title_de || 'Award',
+                          })}
+                          aria-label={`Award ${award.title_de || ''} groß anzeigen`}
+                        >
+                          <AwardImage
+                            src={iconSources.src || ''}
+                            data-fallback-src={iconSources.fallbackSrc || ''}
+                            onError={handleAwardIconFallback}
+                            loading="lazy"
+                            decoding="async"
+                            alt={award.title_de}
+                          />
+                        </AwardImageButton>
                         <AwardTitle>{award.title_de}</AwardTitle>
                         <AwardDescription>{award.description_de}</AwardDescription>
                         <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
@@ -565,6 +621,22 @@ function UserSite() {
                 <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
               )}
             </AwardsCard>
+            {selectedAward && typeof document !== 'undefined' && createPortal(
+              <AwardLightboxOverlay onClick={() => setSelectedAward(null)}>
+                <AwardLightboxCard onClick={(event) => event.stopPropagation()}>
+                  <AwardLightboxClose type="button" onClick={() => setSelectedAward(null)}>
+                    Schließen
+                  </AwardLightboxClose>
+                  <AwardLightboxImage
+                    src={selectedAward.src}
+                    data-fallback-src={selectedAward.fallbackSrc || ''}
+                    onError={handleAwardIconFallback}
+                    alt={selectedAward.title}
+                  />
+                </AwardLightboxCard>
+              </AwardLightboxOverlay>,
+              document.body
+            )}
 
           <StatsArea>
             <SectionHeader>
@@ -1429,6 +1501,14 @@ const AwardImage = styled.img`
   object-fit: contain;
 `;
 
+const AwardImageButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
+  border-radius: 8px;
+`;
+
 const AwardTitle = styled.h3`
   font-weight: 600;
   color: #2f2100;
@@ -1458,6 +1538,47 @@ const EPBadge = styled.div`
   padding: 4px 8px;
   border-radius: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+`;
+
+const AwardLightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`;
+
+const AwardLightboxCard = styled.div`
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.8rem;
+  max-width: min(92vw, 900px);
+  max-height: 92vh;
+`;
+
+const AwardLightboxImage = styled.img`
+  display: block;
+  max-width: min(88vw, 860px);
+  max-height: 82vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+`;
+
+const AwardLightboxClose = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
 `;
 
 const AvatarModalContent = styled.div`
