@@ -4,6 +4,7 @@ import styled from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
+import { useUser } from "../../context/UserContext";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -36,6 +37,7 @@ const Badge = styled.span`
 
 export default function EventRegistrationSummary() {
   const API_BASE = getApiBaseUrl();
+  const { authToken } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -45,6 +47,7 @@ export default function EventRegistrationSummary() {
 
   const stateData = useMemo(() => location.state?.registrationResult || null, [location.state]);
   const registrationId = Number(searchParams.get("registrationId") || stateData?.registration_id || 0);
+  const summaryToken = searchParams.get("summaryToken") || stateData?.registration_summary_access_token || "";
 
   useEffect(() => {
     if (!registrationId || !API_BASE) {
@@ -55,7 +58,16 @@ export default function EventRegistrationSummary() {
     setLoading(true);
     setError("");
 
-    fetch(`${API_BASE}/event2026/registration_summary.php?registration_id=${registrationId}`)
+    const query = new URLSearchParams({
+      registration_id: String(registrationId),
+      ...(summaryToken ? { summary_token: summaryToken } : {}),
+    });
+
+    fetch(`${API_BASE}/event2026/registration_summary.php?${query.toString()}`, {
+      headers: {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+    })
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.status !== "success") {
@@ -79,7 +91,7 @@ export default function EventRegistrationSummary() {
     return () => {
       cancelled = true;
     };
-  }, [API_BASE, registrationId]);
+  }, [API_BASE, authToken, registrationId, summaryToken]);
 
   const inviteSlots = stateData?.participant_slots?.filter((slot) => slot.claim_token_status?.token) || [];
 

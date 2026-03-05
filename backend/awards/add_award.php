@@ -1,6 +1,6 @@
 <?php
 require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
-require_once '../db_connect.php';
+require_once __DIR__ . '/auth_awards_admin.php';
 require_once __DIR__ . '/awards_cache.php';
 header('Content-Type: application/json');
 

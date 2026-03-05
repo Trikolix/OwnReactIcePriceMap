@@ -8,10 +8,16 @@ try {
     $event = event2026_current_event($pdo);
     $eventId = (int) $event['id'];
 
-    $registrationStmt = $pdo->prepare("SELECT *
-        FROM event2026_registrations
-        WHERE event_id = :event_id AND registered_by_user_id = :user_id
-        ORDER BY created_at DESC
+    $registrationStmt = $pdo->prepare("SELECT
+            r.*,
+            p.method AS payment_method,
+            p.expected_amount,
+            p.paid_amount,
+            p.status AS payment_status_detail
+        FROM event2026_registrations r
+        LEFT JOIN event2026_payments p ON p.registration_id = r.id
+        WHERE r.event_id = :event_id AND r.registered_by_user_id = :user_id
+        ORDER BY r.created_at DESC
         LIMIT 1");
     $registrationStmt->execute([
         ':event_id' => $eventId,
@@ -132,6 +138,15 @@ try {
             'status' => $event['status'],
         ],
         'registration' => $registration ?: null,
+        'payment' => $registration ? [
+            'method' => $registration['payment_method'] ?: null,
+            'expected_amount' => $registration['expected_amount'] !== null ? (float) $registration['expected_amount'] : null,
+            'paid_amount' => $registration['paid_amount'] !== null ? (float) $registration['paid_amount'] : null,
+            'status' => $registration['payment_status_detail'] ?: null,
+        ] : null,
+        'payment_instruction' => $registration
+            ? 'Bitte per PayPal Freunde oder Überweisung zahlen und den Referenzcode im Verwendungszweck angeben. Nach Zahlung wird dein Status manuell bestätigt.'
+            : null,
         'slots' => $slots,
         'invites' => $inviteStatus,
         'checkpoints' => $checkpoints,

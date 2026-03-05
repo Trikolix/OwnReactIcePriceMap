@@ -32,6 +32,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "version:generate": "node scripts/generate-build-info.mjs",
+    "prebuild": "npm run version:generate",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "start": "vite",

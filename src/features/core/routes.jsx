@@ -6,6 +6,7 @@ import AGB from "../../pages/AGB";
 import Datenschutz from "../../pages/Datenschutz";
 import Community from "../../pages/Community";
 import SystemmeldungForm from "../../components/SystemmeldungForm";
+import AwardsAdmin from "../../pages/AwardsAdmin";
 
 export const coreRoutes = [
   { path: "/dashboard", element: <DashBoard /> },
@@ -14,5 +15,6 @@ export const coreRoutes = [
   { path: "/datenschutz", element: <Datenschutz /> },
   { path: "/community", element: <Community /> },
   { path: "/systemmeldungenform", element: <SystemmeldungForm /> },
+  { path: "/awards-admin", element: <AwardsAdmin /> },
   { path: "/shop-change-requests", element: <ShopChangeRequestsAdmin /> },
 ];

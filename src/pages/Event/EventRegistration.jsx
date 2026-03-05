@@ -94,6 +94,18 @@ const Input = styled.input`
   background: #fff;
 `;
 
+const Textarea = styled.textarea`
+  width: 95%;
+  padding: 0.6em 0.8em;
+  border: 1px solid #ffd77a;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  background: #fff;
+  min-height: 90px;
+  resize: vertical;
+`;
+
 const Select = styled.select`
   width: 100%;
   padding: 0.5em 0.8em;
@@ -151,7 +163,7 @@ const Summary = styled.div`
   max-height: fit-content;
   @media (min-width: 1000px) {
     position: sticky;
-    top: 5rem;
+    top: 11rem;
   }
 `;
 
@@ -265,6 +277,7 @@ export default function EventRegistration() {
 
   const [participants, setParticipants] = useState([createParticipant()]);
   const [teamName, setTeamName] = useState("");
+  const [registrationNote, setRegistrationNote] = useState("");
   const [donation, setDonation] = useState(0);
   const [newsletter, setNewsletter] = useState(false);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
@@ -374,6 +387,7 @@ export default function EventRegistration() {
       teamName,
       newsletter,
       paymentMethodPreference: "paypal_friends",
+      registrationNote,
       acceptWaiver,
       acceptLegal: acceptEventLegal,
       legalVersion: legal?.version ?? null,
@@ -409,7 +423,10 @@ export default function EventRegistration() {
       setSuccess(result);
 
       localStorage.setItem("event2026_has_registration", "1");
-      navigate(`/event-registration-summary?registrationId=${result.registration_id}`, {
+      const summaryToken = result.registration_summary_access_token
+        ? `&summaryToken=${encodeURIComponent(result.registration_summary_access_token)}`
+        : "";
+      navigate(`/event-registration-summary?registrationId=${result.registration_id}${summaryToken}`, {
         state: { registrationResult: result },
       });
 
@@ -704,6 +721,16 @@ export default function EventRegistration() {
               <Separator />
               <Label>Verein / Team (optional)</Label>
               <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team Eislover" />
+              <Label>Bemerkung an das Orga-Team (optional)</Label>
+              <Textarea
+                value={registrationNote}
+                onChange={(e) => setRegistrationNote(e.target.value)}
+                maxLength={220}
+                placeholder="z. B. Besonderheiten zur Anmeldung, Teamhinweise, Rückfragen"
+              />
+              <div style={{ fontSize: 12, color: "#8a5700" }}>
+                {registrationNote.length} / 220 Zeichen
+              </div>
             </Card>
 
             <Card>

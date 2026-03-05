@@ -42,7 +42,7 @@ const Button = styled.button`
 export default function EventInviteClaim() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, authToken } = useUser();
   const API_BASE = getApiBaseUrl();
 
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,10 @@ export default function EventInviteClaim() {
 
       const res = await fetch(`${API_BASE}/event2026/invite_claim.php?token=${encodeURIComponent(token)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({}),
       });
 

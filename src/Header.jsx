@@ -18,6 +18,7 @@ import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
+import headerWideBirthday from './header_wide_1st_birthday.png';
 import headerWide from './header_wide.png';
 
 const Header = ({ refreshShops }) => {
@@ -352,6 +353,9 @@ const Header = ({ refreshShops }) => {
     if (specialTime === 'easter') {
         return headerWideEaster;
     }
+    if (specialTime === 'birthday') {
+      return headerWideBirthday;
+    }
     return headerWide;
   };
 
@@ -576,6 +580,7 @@ const Header = ({ refreshShops }) => {
                     <MenuSection>
                       <MenuSectionTitle>Admin</MenuSectionTitle>
                       <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
+                      <MenuItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuItemLink>
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
                       <MenuItemLink to="/shop-change-requests" onClick={closeMenu}>Änderungsvorschläge</MenuItemLink>
                     </MenuSection>

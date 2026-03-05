@@ -2,6 +2,7 @@
 require_once __DIR__ . '/bootstrap.php';
 
 const EVENT2026_ENTRY_FEE = 15.0;
+const EVENT2026_ADMIN_NOTIFY_EMAIL = 'admin@ice-app.de';
 
 function event2026_send_utf8_mail(string $to, string $subjectText, string $body): bool
 {
@@ -166,6 +167,10 @@ try {
     }
 
     $newsletterOptIn = !empty($data['newsletter']);
+    $registrationNote = trim((string) ($data['registrationNote'] ?? ''));
+    if (strlen($registrationNote) > 220) {
+        throw new InvalidArgumentException('Bemerkung ist zu lang (max. 220 Zeichen).');
+    }
 
     $pdo->beginTransaction();
 
@@ -240,10 +245,11 @@ try {
         ':registered_by_user_id' => $auth['user_id'],
         ':team_name' => trim((string) ($data['teamName'] ?? '')) ?: null,
         ':payment_reference_code' => $paymentRef,
-        ':notes' => $newsletterOptIn ? 'newsletter_opt_in=1' : null,
+        ':notes' => $registrationNote !== '' ? $registrationNote : null,
     ]);
 
     $registrationId = (int) $pdo->lastInsertId();
+    $registrationAccessToken = event2026_create_registration_access_token($pdo, $registrationId);
 
     $slotStmt = $pdo->prepare("INSERT INTO event2026_participant_slots (
         registration_id,
@@ -425,10 +431,29 @@ try {
         $mailSent = event2026_send_utf8_mail($accountEmail, 'Eis-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
     }
 
+    $participantNames = implode(', ', array_map(static function (array $slot): string {
+        return (string) ($slot['full_name'] ?? '');
+    }, $slotResults));
+
+    $adminMailBody = "Neue Event-Registrierung eingegangen.\n\n";
+    $adminMailBody .= "Registrierung: #{$registrationId}\n";
+    $adminMailBody .= "Referenzcode: {$paymentRef}\n";
+    $adminMailBody .= "Angelegt von User: {$auth['username']} (#{$auth['user_id']})\n";
+    $adminMailBody .= "Team: " . (trim((string) ($data['teamName'] ?? '')) ?: '-') . "\n";
+    $adminMailBody .= "Teilnehmer (" . count($participants) . "): {$participantNames}\n";
+    $adminMailBody .= "Erwarteter Betrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Zahlungsmethode: {$paymentMethod}\n";
+    $adminMailBody .= "Newsletter: " . ($newsletterOptIn ? 'Ja' : 'Nein') . "\n";
+    $adminMailBody .= "Bemerkung: " . ($registrationNote !== '' ? $registrationNote : '-') . "\n";
+    $adminMailBody .= "\nZeit: " . (new DateTimeImmutable('now'))->format('Y-m-d H:i:s') . "\n";
+    event2026_send_utf8_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Eis-Tour Registrierung #' . $registrationId, $adminMailBody);
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Anmeldung erfolgreich gespeichert. Bitte Zahlung manuell abschließen.',
         'registration_id' => $registrationId,
+        'registration_summary_access_token' => $registrationAccessToken['token'],
+        'registration_summary_access_token_expires_at' => $registrationAccessToken['expires_at'],
         'payment_reference_code' => $paymentRef,
         'payment_instruction' => 'Bitte per PayPal Freunde oder Überweisung mit dem Referenzcode zahlen. Finale Freigabe erfolgt nach Prüfung.',
         'payment_expected_amount' => $expectedAmount,

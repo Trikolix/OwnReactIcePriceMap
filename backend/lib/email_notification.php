@@ -96,7 +96,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
             $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
         } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
-            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['bewertungId'];
+            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
         }
         if ($link) {
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
@@ -110,7 +110,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
             $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
         } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
-            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['bewertungId'];
+            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
         }
         if ($link) {
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";

@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 05. Nov 2025 um 08:16
--- Server-Version: 8.0.39-30
--- PHP-Version: 7.2.34
+-- Host: 10.35.233.205:3306
+-- Erstellungszeit: 05. Mrz 2026 um 20:37
+-- Server-Version: 8.0.44
+-- PHP-Version: 8.4.17
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Datenbank: `db_439770_2`
+-- Datenbank: `k320202_iceapp`
 --
 
 -- --------------------------------------------------------
@@ -48,19 +48,19 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (9, 1, 3, 7, 'uploads/award_icons/68303be9f0d21_ChatGPT Image 23. Mai 2025, 11_10_57.png', 'Kreisläufer auf Eis-Mission', '7 Landkreise voller Kugelkunst liegen hinter dir! Du bist ein echter Eis-Explorer, dein Gaumen hat schon fast einen eigenen Reisepass.', 150),
 (10, 1, 4, 10, 'uploads/award_icons/68329e1a3e97d_1000080565.png', 'Der Eis-Nomade', '10 Landkreise, 10 mal Glück! Wo du auftauchst, schmilzt das Eis – und die Herzen gleich mit. Du bist die mobile Legende der Schleckkultur.', 250),
 (11, 1, 5, 20, 'uploads/award_icons/682d64a4a0d8b_21. Mai 2025, 07_12_42.png', 'Der Landkr(eis)könig', '20 Landkreise? Du bist die höchste Eisdielen-Instanz im Umkreis von 200 Kilometern. Wer dir folgt, folgt dem Geschmack.', 500),
-(12, 6, 1, 1, 'uploads/awards/award_6808d7097cc6e.png', 'Erster Schnappschuss', 'Du hast dein allererstes Foto eingereicht – ein historischer Moment! Jetzt wissen wir: Du kannst nicht nur Eis essen, sondern auch knipsen.', 20),
-(13, 6, 3, 20, 'uploads/awards/award_6808d733e0df6.png', 'Der Eisfluencer', '20 visuelle Eiswerke später: Du bringst Glanz in jede Waffel und Stil in jeden Becher. Insta-worthy durch und durch!', 150),
-(14, 6, 4, 50, 'uploads/awards/award_6808d7638faaa.png', 'Fotogeschmacksexperte', '50 mal Eis, 50 mal Klick – du dokumentierst Eiskunst wie ein Profi. Deine Galerie ist eine Ode an den Sommer.', 300),
-(15, 6, 2, 10, 'uploads/awards/award_6809f6c323bbe.png', 'Kugel-Knipser', '10 Fotos, 10 mal Genuss im Bildformat! Deine Kamera liebt Eis fast so sehr wie du – weiter so!', 60),
-(16, 6, 5, 100, 'uploads/awards/award_6809f8a524f5e.png', 'Der Paparazzi des Speiseeises', '100 Fotos? Du bist der Meister der eiskalten Momentaufnahmen. Wenn irgendwo Eis serviert wird, bist du mit der Linse schon da.', 500),
+(12, 6, 1, 1, 'uploads/award_icons/69a96e91951b5_1_Bild_geschossen.png', 'Erster Schnappschuss', 'Du hast dein allererstes Foto eingereicht – ein historischer Moment! Jetzt wissen wir: Du kannst nicht nur Eis essen, sondern auch knipsen.', 20),
+(13, 6, 3, 20, 'uploads/award_icons/69a97013382e7_20_Bilder_geschossen.png', 'Der Eisfluencer', '20 visuelle Eiswerke später: Du bringst Glanz in jede Waffel und Stil in jeden Becher. Insta-worthy durch und durch!', 150),
+(14, 6, 4, 50, 'uploads/award_icons/69a9704777589_50_Bilder_geschossen.png', 'Fotogeschmacksexperte', '50 mal Eis, 50 mal Klick – du dokumentierst Eiskunst wie ein Profi. Deine Galerie ist eine Ode an den Sommer.', 300),
+(15, 6, 2, 10, 'uploads/award_icons/69a96ef61238f_10_Bilder_geschossen.png', 'Kugel-Knipser', '10 Fotos, 10 mal Genuss im Bildformat! Deine Kamera liebt Eis fast so sehr wie du – weiter so!', 60),
+(16, 6, 5, 100, 'uploads/award_icons/69a970720961e_100_Bilder_geschossen.png', 'Der Paparazzi des Speiseeises', '100 Fotos? Du bist der Meister der eiskalten Momentaufnahmen. Wenn irgendwo Eis serviert wird, bist du mit der Linse schon da.', 500),
 (22, 9, 1, 1, 'uploads/awards/award_680ae7ac902bf.png', 'Heilige Dreifaltigkeit', 'Du hast das Eis-Universum komplettiert: Kugeleis, Softeis und Eisbecher – alle genossen! Ein wahrer Eis-Gläubiger auf Pilgerreise zum ultimativen Genuss.', 100),
 (23, 10, 1, 1, 'uploads/awards/award_680ae9bb9320f.png', 'Fürst Pückler ', 'Du bist ein echter Klassiker! Mit Vanille, Erdbeer und Schoko hast du die legendäre Fürst-Pückler-Kombination vollendet. Ein Hoch auf deinen traditionellen Geschmack!', 100),
 (24, 11, 1, 1, 'uploads/awards/award_680aee0db3554.png', 'Perfekte Woche ', '7 Tage, 7 Eisdielen, 7 Glücksmomente! Du hast eine ganze Woche lang täglich Eis eingecheckt – wahrlich eine perfekte Woche voller süßer Abenteuer', 400),
-(27, 3, 1, 3, 'uploads/awards/award_680a357b235ed.png', 'Kugel-Kenner', '3 Kugeln Eis – du weißt, was schmeckt! Deine Geschmacksknospen haben sich gerade aufgewärmt – das Abenteuer hat gerade erst begonnen.', 10),
-(28, 3, 2, 10, 'uploads/awards/award_680a35a2d3362.png', 'Triple-Scooper', '10 Kugeln – du jonglierst Sorten wie ein echter Profi! Du bist auf dem besten Weg zur Eis-Elite.', 40),
-(29, 3, 3, 50, 'uploads/awards/award_680a35c35870e.png', 'Eisberg voraus!', '50 Kugeln! (Kein Scherz.) Du bist offiziell eine wandelnde Eisdiele. Deine Lieblingssorte kennt dich beim Namen.', 150),
-(30, 3, 4, 100, 'uploads/awards/award_680a35e047707.png', 'Der Kugel-Kapitän', '100 Kugeln – du steuerst souverän durch jede Eiskarte. Dein Löffel ist dein Kompass, dein Magen ein Tresor für Glück.', 500),
-(31, 3, 5, 200, 'uploads/awards/award_680a3634585f6.png', 'Die Legende der Löffel', '200 Kugeln?! Du bist ein Mythos unter Eisfreunden. Irgendwo erzählt man sich Geschichten über dich – der oder die, der alles probiert hat. Mehrfach.', 1000),
+(27, 3, 1, 3, 'uploads/award_icons/69a96b48645a9_1000130385.png', 'Kugel-Kenner', '3 Kugeln Eis – du weißt, was schmeckt! Deine Geschmacksknospen haben sich gerade aufgewärmt – das Abenteuer hat gerade erst begonnen.', 10),
+(28, 3, 2, 10, 'uploads/award_icons/69a96c6a8d3cb_10_kugeln_eis.png', 'Triple-Scooper', '10 Kugeln – du jonglierst Sorten wie ein echter Profi! Du bist auf dem besten Weg zur Eis-Elite.', 40),
+(29, 3, 3, 50, 'uploads/award_icons/69a96c8ecd627_50_kugeln_eis.png', 'Eisberg voraus!', '50 Kugeln! (Kein Scherz.) Du bist offiziell eine wandelnde Eisdiele. Deine Lieblingssorte kennt dich beim Namen.', 150),
+(30, 3, 4, 100, 'uploads/award_icons/69a96cd096b4c_100_kugeln_eis.png', 'Der Kugel-Kapitän', '100 Kugeln – du steuerst souverän durch jede Eiskarte. Dein Löffel ist dein Kompass, dein Magen ein Tresor für Glück.', 500),
+(31, 3, 5, 200, 'uploads/award_icons/69a96d28c6816_200_kugeln_eis.png', 'Die Legende der Löffel', '200 Kugeln?! Du bist ein Mythos unter Eisfreunden. Irgendwo erzählt man sich Geschichten über dich – der oder die, der alles probiert hat. Mehrfach.', 1000),
 (32, 8, 1, 1, 'uploads/award_icons/68f4774e9e843_1000112653.png', 'Eisdielen-Entdecker', 'Du hast deine erste Eisdiele eingetragen. Der Anfang einer leckeren Reise!', 30),
 (33, 8, 2, 3, 'uploads/award_icons/68f4773549710_1000112654.png', 'Eisdielen-Kundschafter', 'Drei neue Eisdielen von dir entdeckt – danke für die Vielfalt!', 60),
 (34, 8, 4, 10, 'uploads/award_icons/68f4779a503df_1000112661.png', 'Eisdielen-Botschafter', 'Mit zehn neuen Eisdielen hast du die Karte spürbar erweitert.', 250),
@@ -78,7 +78,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (46, 2, 4, 10, 'uploads/awards/award_680bb7957c22f.png', 'Stammgast in Spe', '10-mal eingecheckt – man kennt dich! Die Kugelverkäufer nicken dir zu. Noch ein paar Besuche, und du bekommst den Ehrenlöffel.', 100),
 (47, 2, 5, 20, 'uploads/awards/award_680bb81fd37a2.png', 'Eis-Kenner', '20 Check-Ins sprechen eine klare Sprache: Du bist ein Genießer mit Erfahrung. Du erkennst gute Sorten blind – und isst trotzdem mit offenen Augen.', 200),
 (48, 2, 6, 50, 'uploads/awards/award_680bb90c0f608.png', 'Eisdielen-Legende', 'Schon 50-mal eingecheckt! Man erzählt sich von dir – du bist der oder die mit dem unersättlichen Hunger nach Kugelglück.', 500),
-(49, 2, 7, 75, 'uploads/award_icons/68f4aeea91567_75_Eis_eingecheckt.png', 'Der Gourmet des Gefrorenen Genusses', 'Mit 75 Eissorten auf deiner Tour bist du nicht nur Genießer, sondern wahrer Connaisseur des gefrorenen Glücks. Du erkennst Qualität am ersten Löffel und findest in jeder Stadt die beste Kugel. Dein Gaumen ist auf Goldkurs!', 750),
+(49, 2, 7, 75, 'uploads/award_icons/68f4aeea91567_75_Eis_eingecheckt.png', 'Der Gourmet des Gefrorenen Genusses', 'Mit 75 eingecheckten Eis bist du nicht nur Genießer, sondern wahrer Connaisseur des gefrorenen Glücks. Du erkennst Qualität am ersten Löffel und findest in jeder Stadt die beste Kugel. Dein Gaumen ist auf Goldkurs!', 750),
 (50, 2, 8, 100, 'uploads/award_icons/68f7232a1a7d9_100_checkins.png', 'Großmeister der Gelaterias', 'Du bist nicht einfach Genießer – du bist Legende. Hundertfach eingecheckt, hundertfach gefeiert. Dein Weg ist gepflastert mit Eiskugeln und Ruhm!', 1000),
 (51, 4, 2, 3, 'uploads/awards/award_680bbb0e33857.png', 'Dreher der Herzen', '3-mal hast du dir ein Softeis gegönnt – das ist wahre Liebe in Spiralform! Dein Geschmackssinn hat jetzt offiziell den Swirl-Segen.', 40),
 (52, 4, 3, 10, 'uploads/awards/award_680bbb252723c.png', 'Softe(r) Profi', '10 Softeis – du weißt genau, wie man die perfekte Höhe balanciert, ohne dass es tropft. Du bist bereit für extra Toppings und neidische Blicke.', 150),
@@ -247,9 +247,9 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (222, 40, 2, 1, 'uploads/award_icons/68af8ce4be4de_1000099125.png', 'EPR 2025 meets Ice-App', 'Für Teilnehmer des European Peace Rides 2025, die während des EPR ein Eis eingecheckt haben. Du verbindest Radfahrer mit europäischer Eis-Schleck-Kultur', 600),
 (223, 38, 2, 3, 'uploads/award_icons/68aaa970ef6f5_1000098625.png', '3 Eis direkt vor Ort ', 'Schon die dritte Kugel direkt vor Ort eingecheckt – du bist immer top aktuell auf der Ice-App unterwegs!', 25),
 (224, 38, 3, 7, 'uploads/award_icons/68aaaa017047f_1000098626.png', '7 Eis direkt vor Ort ', 'Mit 7 Eis die du direkt vor Ort eingecheckt hast, beweist du New-Reporter Qualitäten!', 50),
-(225, 38, 4, 15, 'uploads/award_icons/68aaaab3e3d47_1000098627.png', '15 Eis direkt vor Ort ', 'Schön 15 mal hast du die Eis-App direkt vor Ort gezückt und berichtet. Das ist Dedication!', 100),
-(226, 38, 5, 30, 'uploads/award_icons/68aaac26bdc94_1000098628.png', '30 Eis direkt vor Ort ', 'Dreißig Vor-Ort-Check-ins – kein Eis bleibt unentdeckt, du berichtest live von der Eisdielen-Front!', 250);
+(225, 38, 4, 15, 'uploads/award_icons/68aaaab3e3d47_1000098627.png', '15 Eis direkt vor Ort ', 'Schön 15 mal hast du die Eis-App direkt vor Ort gezückt und berichtet. Das ist Dedication!', 100);
 INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`, `title_de`, `description_de`, `ep`) VALUES
+(226, 38, 5, 30, 'uploads/award_icons/68aaac26bdc94_1000098628.png', '30 Eis direkt vor Ort ', 'Dreißig Vor-Ort-Check-ins – kein Eis bleibt unentdeckt, du berichtest live von der Eisdielen-Front!', 250),
 (227, 38, 6, 50, 'uploads/award_icons/68acb99202488_ChatGPT Image 25. Aug. 2025, 21_27_49.png', 'Breaking-Ice-Legende', '50 Mal direkt vor Ort eingecheckt – du bist die ultimative Live-Quelle für Eisdielen-Sensationen!', 600),
 (228, 41, 1, 1, 'uploads/award_icons/68b2484edcdca_1000099335.png', '1 Tägliche Challenge abgeschlossen', 'Du hast deine erste tägliche Challenge abgeschlossen – der Beginn deiner Eisabenteuer!', 100),
 (229, 41, 2, 2, 'uploads/award_icons/68b248a0a9b82_1000099336.png', '2 Tägliche Challenges abgeschlossen', 'Bereits 2 mal den Ruf der täglichen Challenges erfolgreich gefolgt. ', 100),
@@ -347,7 +347,37 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (324, 45, 22, 22, 'uploads/award_icons/690a4ff3cc821_1000114914.png', 'Der Eis-Magier – 22 Challenges abgeschlosen', '22 Challenges – du beherrschst die magische Kunst des Gefrorenen. Mit einem Handschwung zauberst du Kugeln, Softeis und Becher aus purer Energie herbei.', 150),
 (325, 45, 23, 23, 'uploads/award_icons/690a50cd85c04_1000114916.png', 'Der Galaktische Eis-Entdecker – 23 Challenges abgeschlosen', 'Grenzen existieren für dich nicht. 23 Challenges später fliegst du durch das Universum des Genusses – auf Mission Eis Infinity!', 150),
 (326, 45, 24, 24, 'uploads/award_icons/690a528aa52df_1000114918.png', 'Der Gentleman des Eises – 24 Challenges abgeschlosen', 'Mit 24 abgeschlossenen Challenges beweist du Stil, Klasse und kühlen Kopf. Du bist der Inbegriff des geschmackvollen Abenteurers – charmant, zielstrebig und immer mit perfektem Schliff serviert.', 150),
-(327, 45, 25, 25, 'uploads/award_icons/690a530d32fce_1000114920.png', 'Der Highspeed-Schlecker – 25 Challenges abgeschlosen', 'Du rast von Eisdiele zu Eisdiele, immer auf der Überholspur des Geschmacks. 25 Challenges – pure Geschwindigkeit trifft auf süße Perfektion.', 150);
+(327, 45, 25, 25, 'uploads/award_icons/690a530d32fce_1000114920.png', 'Der Highspeed-Schlecker – 25 Challenges abgeschlosen', 'Du rast von Eisdiele zu Eisdiele, immer auf der Überholspur des Geschmacks. 25 Challenges – pure Geschwindigkeit trifft auf süße Perfektion.', 150),
+(328, 19, 31, 27, 'uploads/award_icons/69124b4e1d681_Award_Malta.png', 'ĠELAT F’MALTA', 'Ein Eis auf der sonnigen Insel Malta – zwischen historischen Gassen, türkisblauen Buchten und mediterranem Flair. Dieser Award feiert deinen süßen Moment im Herzen des Mittelmeers!', 30),
+(329, 19, 32, 7, 'uploads/award_icons/69124d72289c5_Award_Andorra.png', 'GELAT ANDORRÀ', 'Ein Eis zwischen den Pyrenäen – wer hier schleckt, genießt frische Bergluft und süßen Geschmack in einem kleinen Land mit großem Charme.', 30),
+(330, 19, 33, 14, 'uploads/award_icons/69124d9dbdb05_Award_Estland.png', 'JÄÄTIS EESTIS', 'Eis im hohen Norden! Dieser Award ehrt deinen Genussmoment zwischen Ostsee, Kopfsteinpflaster und digitaler Zukunft in Estland.', 30),
+(331, 19, 34, 16, 'uploads/award_icons/69124ddebcf2a_Award_Georgien.png', 'Naqini Sakartveloshi', 'Ein Eis in Georgien – wo Berge, Meer und Wein zusammentreffen. Dieser Award feiert deinen Genussmoment zwischen Tradition und Gastfreundschaft.', 30),
+(332, 19, 35, 23, 'uploads/award_icons/69124eb83e43f_Award_Lettland.png', 'SALDĒJUMS LATVIJĀ', 'Eis in Lettland – ob am Ostseestrand von Jūrmala oder in der Jugendstilmetropole Riga. Ein goldener Moment im Baltikum!', 30),
+(333, 19, 36, 18, 'uploads/award_icons/69124e597f067_Award_Irland.png', 'ICE IN IRELAND', 'Ein Eis im Land der grünen Hügel und herzlichen Menschen – dieser Badge würdigt deinen cremigen Genuss auf der Smaragdinsel.', 30),
+(334, 45, 13, 13, 'uploads/award_icons/6916433b76434_Eisentdecker.png', 'Der Eis-Entdecker – 13 Challenges gemeistert', 'Dreizehn Challenges gemeistert – Wie ein fabelhafter Entdecker, erkundest du Eisdielen und neue Geschmäcker!', 150),
+(335, 45, 14, 14, 'uploads/award_icons/691643f8e02f5_GALAKTISCHES EIS-ABENTEUEUR 14 CHALLENGES ABGESCCHLOSSEN.png', 'Galaktisches Eis-Abenteuer – 14 Challenges gemeistert', 'Vierzehn Challenges gemeistert – Schon zu durchs halbe Universum gehuscht auf der Suche nach Eisdielen!', 150),
+(336, 45, 15, 15, 'uploads/award_icons/6916444b417ca_Eiskoenig.png', 'Der Eis-König – 15 Challenges gemeistert', 'Fünfzehn Challenges gemeistert – Ein Reich für den Eis-König!', 150),
+(337, 52, 1, 23, 'uploads/award_icons/69284d07767c7_1000118599.png', 'Gewinner der Instagram Foto-Challenge 2025', 'Aus 16 Bildern setzt sich Holzmichl mit seinem Bild bei der Instagram Foto-Challende erfolgreich durch und sichert sich den Meistertitel', 1000),
+(338, 43, 8, 53, 'uploads/award_icons/693b295df3b93_Nutzer_des_Monats_Nov25.png', 'Nutzer/in des Monats November 2025', 'IceGoe macht es wieder! Nicht nur seit 14 Wochen jede Woche Eis, sondern auch seit 4 Monaten klebt er bereits auf dem Thron des Nutzer des Monats, ganz ähnlich wie Karamelleis.', 250),
+(339, 53, 1, 1, 'uploads/award_icons/694685b467ad2_694652736c5c9_1000120745.png', 'Zwischen den Jahren 2025', '🎄✨ Schön, dass du zwischen den Jahren dabei warst!\r\nDieser Award feiert deinen Besuch in der Ice-App zum Jahresausklang.\r\nWir wünschen dir ein fröhliches Fest und einen guten Rutsch! 🎆🍦', 35),
+(340, 53, 2, 2, 'uploads/award_icons/694652d8557c3_1000120746.png', 'Eis zwischen den Jahren 2025', '🎆🍦 Zwischen den Jahren eingecheckt!\r\nDieser Award feiert dein Eis-Check-In in der Weihnachts- und Silvesterzeit.\r\nDanke fürs Mitmachen – frohe Feiertage und einen guten Rutsch! ✨🎄', 50),
+(341, 53, 3, 3, 'uploads/award_icons/69477cdceee84_1000120963.png', 'Ostern 2026 – Dabei gewesen', '🐣🍦 Frohe Ostern!\r\nDieser Award ist eine kleine frühlingshafte Belohnung dafür, dass du die Ice-App zu Ostern geöffnet hast.\r\nGenieße die Feiertage und lass es dir schmecken! 🌸✨', 35),
+(342, 53, 4, 4, 'uploads/award_icons/69477d32a2594_1000120966.png', 'Ostern 2026 – Eis eingecheckt', '🐰🍦 Oster-Check-In geschafft!\r\nDieser Award feiert dein Eis-Check-In während der Osterzeit.\r\nDanke fürs Mitmachen – frohe Ostern und weiterhin viel Eisgenuss! 🌸✨', 50),
+(343, 53, 5, 5, 'uploads/award_icons/694781526b5a2_1000120968.png', 'Zwischen den Jahren 2026', '🎄✨ Schön, dass du zwischen den Jahren dabei warst!\r\nDieser Award feiert deinen Besuch in der Ice-App zum Jahresausklang.\r\nWir wünschen dir ein fröhliches Fest und einen guten Rutsch! 🎆🍦', 35),
+(344, 53, 6, 6, 'uploads/award_icons/6947816c43b71_1000120970.png', 'Eis zwischen den Jahren 2026', '🎆🍦 Zwischen den Jahren eingecheckt!\r\nDieser Award feiert dein Eis-Check-In in der Weihnachts- und Silvesterzeit.\r\nDanke fürs Mitmachen – frohe Feiertage und einen guten Rutsch! ✨🎄', 50),
+(345, 54, 1, 1, 'uploads/award_icons/694bdde985236_ChatGPT Image 24. Dez. 2025, 13_31_22.png', 'Entdecker der geheimen Weihnachts-Eis-Werkstatt', 'Geheimnis gelüftet! Du hast 2025 die versteckte Eis-Werkstatt des Weihnachtsmanns entdeckt.', 150),
+(346, 36, 40, 41, 'uploads/award_icons/694fd8bc33ad9_ChatGPT Image 27. Dez. 2025, 14_00_44.png', '41 Wochen Eis-Streak', '41 Wochen Eis-Streak – du hast bewiesen, dass selbst die Zeit dem Eis nicht widerstehen kann. Woche für Woche fließt cremiger Genuss durch die Sanduhr deiner Beständigkeit. Nur wahre Eis-Chronisten erreichen diesen Meilenstein.', 420),
+(347, 36, 41, 42, 'uploads/award_icons/694fd9d0310cb_ChatGPT Image 27. Dez. 2025, 14_06_11.png', '42 Wochen Eis-Streak', '42 Wochen Eis-Streak – alles ist im Gleichgewicht. Geschmack, Geduld und Leidenschaft haben sich zu einer perfekten Eis-Harmonie verbunden. Dieser Award steht für Ordnung im Chaos der Sorten.', 430),
+(348, 36, 42, 43, 'uploads/award_icons/694fd953b1132_ChatGPT Image 27. Dez. 2025, 14_04_06.png', '43 Wochen Eis-Streak', '43 Wochen Eis-Streak – du hast das nächste Level erreicht. Das Eis selbst scheint dir den Weg zu weisen. Wer so lange durchhält, liest die Zukunft in Kugeln und Waffeln.', 440),
+(349, 43, 9, 40, 'uploads/award_icons/6955c1689d3c9_1000122828.png', 'Nutzer/in des Monats Dezember 2025', 'Anton checkte zwei mal im Duo ein, sichert sich jede Menge Awards und damit auch den Titel \"Nutzer des Monats Dezember 2025\" 🎉', 250),
+(350, 43, 10, 8, 'uploads/award_icons/697fb2cb897c1_1000125953.png', 'Nutzer/in des Monats Januar 2026', 'Enkiboy schnabbulierte zwei mal Eis in zwei verschiedenen Ländern und sichert sich damit auch den Titel \"Nutzer des Monats Januar 2026\" 🎉', 250),
+(351, 54, 3, 3, 'uploads/award_icons/6981e282e0fb6_olympia.png', 'Eis-Winterolympiade 2026 ', 'Du hast eine Spielstätte der Winterolympiade 2026 entdeckt und sicherst dir ein paar Punkte für die Eis-Winterolympiade.', 10),
+(352, 55, 1, 10, 'uploads/award_icons/6984974901ee9_Olympic_bronze.png', 'Bronze in der Eis-Winterolympiade 2026', 'Wie ein Wirbelwind startest du in die Eis-Winterolympiade!\r\nProfil gepflegt, App gestartet – der erste Schritt Richtung olympischen Eis-Gold. ❄️🍦', 50),
+(353, 55, 2, 40, 'uploads/award_icons/698497bc6d8f6_Olympic_silber.png', 'Silber in der Eis-Winterolympiade 2026', 'Mit eiskalter Präzision sammelst du XP und holst dir Silber am Eis-Schießstand!\r\nOlympisches Silber bei der Eis-Winterolympiade 2026! 🥈❄️', 100),
+(354, 55, 3, 100, 'uploads/award_icons/698498895fad6_Olympic_gold.png', 'Olympiasieger:in des Eises 2026', 'Eiskalt ziehst du durch und springst zu olympischen Gold!\r\nDu hast den olympischen Eis-Fünfkampf gemeistert. 🥇🍦❄️', 250),
+(355, 43, 11, 53, 'uploads/award_icons/69a35a533bbff_1000129843.png', 'Nutzer/in des Monats Februar 2026', 'Ice-Goe brilliert bei der Eis-Winterolympiade, macht in Prag einen Schleckmarathon mit 6 besuchten Eisdielen an nur einem Tag und sichert sich somit der Titel Nutzer des Monats Februar 2026! 🏅', 250),
+(356, 56, 1, 0, 'uploads/award_icons/69a945671b4d1_the_taste_of_chemitz_clouds.png', 'Vorschau: TheTasteOfChemnitz', 'Du hast den limitierten TheTasteOfChemnitz Award gefunden. Checke bis zum 31. Mai \'26 bei drei verschiedenen Chemnitzer Eisdielen ein und zeig so dass du ein echter Foodie bist und schalte den Award frei.', 0),
+(357, 56, 2, 1, 'uploads/award_icons/69a945ce3be87_the_taste_of_chemnitz.png', 'TheTasteOfChemnitz', 'Mit diesem limitierten Award zeigst du, dass du ein echter Chemnitzer Foodie bist und Chemnitz kulinarisch auf diversen Ebenen erkundest!', 250);
 
 --
 -- Indizes der exportierten Tabellen
@@ -368,7 +398,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=328;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=358;
 
 --
 -- Constraints der exportierten Tabellen

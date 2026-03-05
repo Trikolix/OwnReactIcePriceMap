@@ -115,6 +115,18 @@ function event2026_ensure_schema(PDO $pdo): void
             KEY idx_event2026_payment_status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+        "CREATE TABLE IF NOT EXISTS event2026_registration_access_tokens (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            registration_id INT NOT NULL,
+            token_hash VARCHAR(128) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            used_at DATETIME DEFAULT NULL,
+            CONSTRAINT fk_event2026_reg_access_token_reg FOREIGN KEY (registration_id) REFERENCES event2026_registrations(id) ON DELETE CASCADE,
+            UNIQUE KEY uniq_event2026_reg_access_token_hash (token_hash),
+            KEY idx_event2026_reg_access_token_reg (registration_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
         "CREATE TABLE IF NOT EXISTS event2026_payment_mail_matches (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             payment_id INT DEFAULT NULL,
@@ -438,6 +450,53 @@ function event2026_create_invite_token(PDO $pdo, int $slotId, int $days = 30): a
         'token' => $raw,
         'expires_at' => $expiresAt,
     ];
+}
+
+function event2026_create_registration_access_token(PDO $pdo, int $registrationId, int $days = 14): array
+{
+    $raw = bin2hex(random_bytes(24));
+    $hash = hash('sha256', $raw);
+    $expiresAt = (new DateTimeImmutable('now'))->modify('+' . $days . ' days')->format('Y-m-d H:i:s');
+
+    $stmt = $pdo->prepare("INSERT INTO event2026_registration_access_tokens (registration_id, token_hash, expires_at)
+        VALUES (:registration_id, :token_hash, :expires_at)");
+    $stmt->execute([
+        ':registration_id' => $registrationId,
+        ':token_hash' => $hash,
+        ':expires_at' => $expiresAt,
+    ]);
+
+    return [
+        'token' => $raw,
+        'expires_at' => $expiresAt,
+    ];
+}
+
+function event2026_validate_registration_access_token(PDO $pdo, int $registrationId, string $rawToken): bool
+{
+    if ($rawToken === '') {
+        return false;
+    }
+
+    $stmt = $pdo->prepare("SELECT id
+        FROM event2026_registration_access_tokens
+        WHERE registration_id = :registration_id
+          AND token_hash = :token_hash
+          AND expires_at >= NOW()
+        LIMIT 1");
+    $stmt->execute([
+        ':registration_id' => $registrationId,
+        ':token_hash' => hash('sha256', $rawToken),
+    ]);
+
+    $tokenId = (int) ($stmt->fetchColumn() ?: 0);
+    if ($tokenId <= 0) {
+        return false;
+    }
+
+    $pdo->prepare("UPDATE event2026_registration_access_tokens SET used_at = NOW() WHERE id = :id")
+        ->execute([':id' => $tokenId]);
+    return true;
 }
 
 function event2026_get_slot_for_user(PDO $pdo, int $eventId, int $userId): ?array

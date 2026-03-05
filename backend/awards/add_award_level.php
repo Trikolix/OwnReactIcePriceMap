@@ -1,12 +1,12 @@
 <?php
 require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
-require_once '../db_connect.php';
+require_once __DIR__ . '/auth_awards_admin.php';
 require_once __DIR__ . '/awards_cache.php';
 require_once __DIR__ . '/award_icon_variants.php';
 header('Content-Type: application/json');
 
-// Zielverzeichnis für Uploads
-$uploadDir = '../../uploads/awards/';
+// Zielverzeichnis für Uploads (konsistent mit save_award_level.php)
+$uploadDir = '../../uploads/award_icons/';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0755, true);
 }
@@ -27,7 +27,7 @@ if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] === UPLOAD_ERR_
     $destination = $uploadDir . $safeFilename;
 
     if (move_uploaded_file($tmpName, $destination)) {
-        $icon_path = 'uploads/awards/' . $safeFilename;
+        $icon_path = 'uploads/award_icons/' . $safeFilename;
     } else {
         die("Fehler beim Hochladen des Bildes.");
     }

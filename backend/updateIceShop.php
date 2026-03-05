@@ -57,6 +57,13 @@ if (!$autoApprove) {
 
     try {
         storeChangeRequest($pdo, $eisdieleId, $currentUserId, $changeSet);
+        sendChangeRequestNotificationMail(
+            $eisdieleId,
+            (string) ($data['name'] ?? ''),
+            $currentUserId,
+            (string) ($authData['username'] ?? 'unbekannt'),
+            $changeSet
+        );
         echo json_encode([
             "status" => "pending",
             "message" => "Vielen Dank! Dein Änderungsvorschlag wurde gespeichert und wartet auf Prüfung."
@@ -190,6 +197,29 @@ function storeChangeRequest(PDO $pdo, int $shopId, int $currentUserId, array $ch
         ':requested_by' => $currentUserId,
         ':payload' => $payload
     ]);
+}
+
+function sendChangeRequestNotificationMail(int $shopId, string $shopName, int $requestedByUserId, string $requestedByUsername, array $changes): void {
+    $to = 'admin@ice-app.de';
+    $subject = 'Neuer Änderungsvorschlag für Eisdiele #' . $shopId;
+    $changesJson = json_encode($changes, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    if ($changesJson === false) {
+        $changesJson = '(konnte Änderungen nicht serialisieren)';
+    }
+
+    $message = "Es wurde ein neuer Änderungsvorschlag eingereicht.\n\n";
+    $message .= "Shop-ID: {$shopId}\n";
+    $message .= "Shop-Name: {$shopName}\n";
+    $message .= "Eingereicht von: {$requestedByUsername} (User-ID {$requestedByUserId})\n\n";
+    $message .= "Vorgeschlagene Änderungen:\n{$changesJson}\n\n";
+    $message .= "Bitte im Admin-Bereich prüfen.\n";
+    $message .= "Direktlink: https://ice-app.de/#/shop-change-requests\n";
+
+    $headers = "From: Ice-App <noreply@ice-app.de>\r\n";
+    $headers .= "Reply-To: noreply@ice-app.de\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+    @mail($to, $subject, $message, $headers);
 }
 
 function buildChangeSet(array $data, array $validStatuses, array $normalizedHours, string $openingHoursText): array {
