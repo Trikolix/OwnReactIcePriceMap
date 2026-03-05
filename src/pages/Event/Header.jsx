@@ -5,6 +5,7 @@ import { useUser } from "../../context/UserContext";
 import LoginModal from "../../LoginModal";
 import eisTourLogo from "./eis_tour_logo.png";
 import { buildAssetUrl } from "../../utils/assets.jsx";
+import { getApiBaseUrl } from "../../shared/api/client";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,8 +13,13 @@ export default function Header() {
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem("avatarUrl"));
   const menuRef = useRef(null);
   const { userId, username, isLoggedIn, login, logout } = useUser();
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const apiUrl = getApiBaseUrl();
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  const now = new Date();
+  const liveStartDate = new Date(now.getFullYear(), 4, 15, 0, 0, 0, 0);
+  const shouldShowLiveMap = isLocalHost || now >= liveStartDate;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,7 +78,7 @@ export default function Header() {
         <HeaderRight>
           {isLoggedIn ? (
             <AccountCluster>
-              <UserStatusLink to={`/user/${userId}`} onClick={() => setMenuOpen(false)}>
+              <UserStatusLink to="/event-me" onClick={() => setMenuOpen(false)}>
                 <UserStatusAvatar aria-hidden="true">
                   {headerAvatarSrc ? <img src={headerAvatarSrc} alt="" /> : (username || "?").slice(0, 1).toUpperCase()}
                 </UserStatusAvatar>
@@ -112,6 +118,12 @@ export default function Header() {
               <MenuSectionTitle>Eis-Tour</MenuSectionTitle>
               <MenuItemLink to="/eis-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
               <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>
+              {shouldShowLiveMap && (
+                <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>
+              )}
+              {isLoggedIn && (
+                <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+              )}
             </MenuSection>
 
             <MenuDivider />
@@ -125,7 +137,7 @@ export default function Header() {
               <MenuSectionTitle>Konto</MenuSectionTitle>
               {isLoggedIn ? (
                 <>
-                  <MenuItemLink to={`/user/${userId}`} onClick={() => setMenuOpen(false)}>Profil</MenuItemLink>
+                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
                   <MenuActionButton
                     type="button"
                     $danger
@@ -350,8 +362,10 @@ const Menu = styled.nav`
   top: calc(100% + 8px);
   right: 16px;
   width: min(360px, calc(100vw - 24px));
+  box-sizing: border-box;
   max-height: min(78vh, calc(100dvh - 88px));
   overflow-y: auto;
+  overflow-x: hidden;
   background: rgba(255, 252, 243, 0.98);
   padding: 10px;
   border-radius: 16px;

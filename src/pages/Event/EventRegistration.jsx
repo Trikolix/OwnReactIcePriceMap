@@ -9,6 +9,7 @@ import JerseyInfoDialog from "./JerseyInfoDialog";
 import { useUser } from "../../context/UserContext";
 import jerseyImage from "./jersey.png";
 import "../../styles/eventTheme.css";
+import { getApiBaseUrl } from "../../shared/api/client";
 
 const ENTRY_FEE = 15;
 const TSHIRT_SIZES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14"];
@@ -260,7 +261,7 @@ function JerseyImageModal() {
 export default function EventRegistration() {
   const { username, isLoggedIn, logout, authToken } = useUser();
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const API_BASE = getApiBaseUrl();
 
   const [participants, setParticipants] = useState([createParticipant()]);
   const [teamName, setTeamName] = useState("");
