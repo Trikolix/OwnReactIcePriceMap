@@ -20,6 +20,7 @@ import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
 import headerWideBirthday from './header_wide_1st_birthday.png';
 import headerWide from './header_wide.png';
+import GewinnspielImage from './birthday_action.png';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,6 +46,7 @@ const Header = ({ refreshShops }) => {
   const [birthdayCampaignPhase, setBirthdayCampaignPhase] = useState('live');
   const [birthdayAnniversaryUnlockedAt, setBirthdayAnniversaryUnlockedAt] = useState(null);
   const [birthdayEisTourRegistrationOpen, setBirthdayEisTourRegistrationOpen] = useState(false);
+  const [birthdayAwardConfig, setBirthdayAwardConfig] = useState(null);
   const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
   const [birthdayLeaderboardFull, setBirthdayLeaderboardFull] = useState([]);
   const [birthdayUserRank, setBirthdayUserRank] = useState(null);
@@ -56,14 +58,8 @@ const Header = ({ refreshShops }) => {
   const navigate = useNavigate();
   const LEADERBOARD_COLLAPSED_COUNT = 3;
   const now = new Date();
-  const isPhotoChallengePublic = now >= new Date(2026, 2, 8, 0, 0, 0);
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
   const showEisTourNavLink = now >= new Date(2026, 2, 14, 0, 0, 0);
-
-  const allowedPhotoChallenges = (userId) => {
-    const allowedUsers = [1, 2, 13, 23]; // Liste der erlaubten Nutzer-IDs
-    return isPhotoChallengePublic || allowedUsers.includes(Number(userId));
-  };
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -380,6 +376,7 @@ const Header = ({ refreshShops }) => {
       setBirthdayCampaignPhase('live');
       setBirthdayAnniversaryUnlockedAt(null);
       setBirthdayEisTourRegistrationOpen(false);
+      setBirthdayAwardConfig(null);
       return;
     }
 
@@ -400,6 +397,7 @@ const Header = ({ refreshShops }) => {
           typeof data?.anniversary_unlocked_at === 'string' ? data.anniversary_unlocked_at : null
         );
         setBirthdayEisTourRegistrationOpen(Boolean(data?.eis_tour_registration_open));
+        setBirthdayAwardConfig(data?.birthday_awards || null);
         if (data?.new_awards && data.new_awards.length > 0) {
           setNewAwards(data.new_awards);
           setShowOverlay(true);
@@ -418,6 +416,7 @@ const Header = ({ refreshShops }) => {
         setBirthdayCampaignPhase('live');
         setBirthdayAnniversaryUnlockedAt(null);
         setBirthdayEisTourRegistrationOpen(false);
+        setBirthdayAwardConfig(null);
       });
   }, [apiUrl, specialTime, userId]);
 
@@ -462,7 +461,11 @@ const Header = ({ refreshShops }) => {
             }
             setShowActionsOverview(true);
           }}>
-            <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
+            {specialTime === 'birthday' ? (
+              <img src={GewinnspielImage} alt="Geburtstagsaktionen & Belohnungen" />
+            ) : (
+              <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
+            )}
           </GewinnspielIcon>
         </PromoIconsContainer>
 
@@ -471,12 +474,10 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
-          {allowedPhotoChallenges(userId) && (
-            <DesktopNavLink to="/photo-challenge" $compact>
-              Foto-Challenge
-              <DesktopNavBadge>NEU</DesktopNavBadge>
-            </DesktopNavLink>
-          )}
+          <DesktopNavLink to="/photo-challenge" $compact>
+            Foto-Challenge
+            <DesktopNavBadge>NEU</DesktopNavBadge>
+          </DesktopNavLink>
           <DesktopNavLink to="/dashboard">Aktivitäten</DesktopNavLink>
           <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
           <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
@@ -542,7 +543,11 @@ const Header = ({ refreshShops }) => {
 
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
-              <MenuItemLink to="/" end onClick={closeMenu}>Eisdielen-Karte</MenuItemLink>
+              <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
+              <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
+                Foto-Challenges
+                {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+              </MenuItemLink>
               <MenuItemLink to="/dashboard" onClick={closeMenu}>Aktivitäten</MenuItemLink>
               <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
               <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
@@ -551,12 +556,6 @@ const Header = ({ refreshShops }) => {
                 <MenuItemLink to="/rad-event" onClick={closeMenu}>
                   Zur Eis-Tour
                   <MenuItemBadge>NEU</MenuItemBadge>
-                </MenuItemLink>
-              )}
-              {allowedPhotoChallenges(userId) && (
-                <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
-                  Foto-Challenges
-                  {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
                 </MenuItemLink>
               )}
             </MenuSection>
@@ -694,6 +693,7 @@ const Header = ({ refreshShops }) => {
         campaignPhase={birthdayCampaignPhase}
         anniversaryUnlockedAt={birthdayAnniversaryUnlockedAt}
         eisTourRegistrationOpen={birthdayEisTourRegistrationOpen}
+        awardConfig={birthdayAwardConfig}
         forceLocalUnlock={forceLocalBirthdayUnlock}
         onLogin={() => {
           setShowBirthdayRules(false);
@@ -842,7 +842,7 @@ const DesktopNavBadge = styled.span`
   font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 1.1;
-  transform: translate(-20px, -12px) rotate(12deg);
+  transform: translate(-10px, -12px) rotate(12deg);
   transform-origin: center;
   box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
 `;
@@ -1003,6 +1003,8 @@ const Menu = styled.nav`
   right: 16px;
   width: min(360px, calc(100vw - 24px));
   max-height: min(78vh, calc(100dvh - 88px));
+  box-sizing: border-box;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: rgba(255, 252, 243, 0.98);

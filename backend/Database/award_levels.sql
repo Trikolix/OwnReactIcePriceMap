@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 10.35.233.205:3306
--- Erstellungszeit: 05. Mrz 2026 um 20:37
+-- Erstellungszeit: 06. Mrz 2026 um 10:40
 -- Server-Version: 8.0.44
 -- PHP-Version: 8.4.17
 
@@ -377,7 +377,10 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (354, 55, 3, 100, 'uploads/award_icons/698498895fad6_Olympic_gold.png', 'Olympiasieger:in des Eises 2026', 'Eiskalt ziehst du durch und springst zu olympischen Gold!\r\nDu hast den olympischen Eis-Fünfkampf gemeistert. 🥇🍦❄️', 250),
 (355, 43, 11, 53, 'uploads/award_icons/69a35a533bbff_1000129843.png', 'Nutzer/in des Monats Februar 2026', 'Ice-Goe brilliert bei der Eis-Winterolympiade, macht in Prag einen Schleckmarathon mit 6 besuchten Eisdielen an nur einem Tag und sichert sich somit der Titel Nutzer des Monats Februar 2026! 🏅', 250),
 (356, 56, 1, 0, 'uploads/award_icons/69a945671b4d1_the_taste_of_chemitz_clouds.png', 'Vorschau: TheTasteOfChemnitz', 'Du hast den limitierten TheTasteOfChemnitz Award gefunden. Checke bis zum 31. Mai \'26 bei drei verschiedenen Chemnitzer Eisdielen ein und zeig so dass du ein echter Foodie bist und schalte den Award frei.', 0),
-(357, 56, 2, 1, 'uploads/award_icons/69a945ce3be87_the_taste_of_chemnitz.png', 'TheTasteOfChemnitz', 'Mit diesem limitierten Award zeigst du, dass du ein echter Chemnitzer Foodie bist und Chemnitz kulinarisch auf diversen Ebenen erkundest!', 250);
+(357, 56, 2, 1, 'uploads/award_icons/69a945ce3be87_the_taste_of_chemnitz.png', 'TheTasteOfChemnitz', 'Mit diesem limitierten Award zeigst du, dass du ein echter Chemnitzer Foodie bist und Chemnitz kulinarisch auf diversen Ebenen erkundest!', 250),
+(358, 57, 1, 100, 'uploads/award_icons/69aa8e56aa859_birthday_bronze.png', 'Birthday Supporter', 'Die Ice-App wird 1 Jahr alt und du bist Teil der großen Party!', 40),
+(359, 57, 2, 200, 'uploads/award_icons/69aa8ed34b6d8_birthday_silver.png', 'Birthday Champion', 'Die Ice-App wird 1 Jahr alt und du lässt es so richtig krachen!', 150),
+(360, 57, 3, 500, 'uploads/award_icons/69aa8f2a0dd6b_birthday_gold.png', 'Birthday Legend', 'Du hast bei der Geburtstagsparty der Ice-App vollkommen abgeliefert und totalen Legendenstatus erreicht. Die Partycrew blickt zu dir auf!', 500);
 
 --
 -- Indizes der exportierten Tabellen
@@ -398,7 +401,7 @@ ALTER TABLE `award_levels`
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=358;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=361;
 
 --
 -- Constraints der exportierten Tabellen

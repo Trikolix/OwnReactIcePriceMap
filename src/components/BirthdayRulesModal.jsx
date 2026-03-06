@@ -1,5 +1,7 @@
+import { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { buildAssetUrl } from '../utils/assets.jsx';
 
 const POINT_LABELS = {
   checkin_with_photo: 'Check-in mit Bild',
@@ -29,7 +31,7 @@ const POINT_LABELS = {
   challenge_completed_ep: 'Challenges abgeschlossen (45 EP je Challenge)',
   ice_shop_reviewed_ep: 'Eisdielen bewertet (max. 3 x 10 EP)',
   route_submitted_ep: 'Routen eingetragen (max. 3 x 15 EP)',
-  photo_challenge_submission_ep: 'Fotochallenge: Bild eingereicht (40 EP je Bild)',
+  photo_challenge_submission_ep: 'Fotochallenge: Bild eingereicht (25 EP je Bild)',
   photo_challenge_vote_ep: 'Fotochallenge: Votes abgegeben',
 };
 
@@ -101,8 +103,8 @@ const getDefaultEP = (key) => {
     challenge_completed_ep: 45,
     ice_shop_reviewed_ep: 10,
     route_submitted_ep: 15,
-    photo_challenge_submission_ep: 40,
-    photo_challenge_vote_ep: 0,
+    photo_challenge_submission_ep: 25,
+    photo_challenge_vote_ep: 5,
   };
   return defaults[key] || 5;
 };
@@ -133,6 +135,7 @@ const BirthdayRulesModal = ({
   anniversaryUnlockedAt = null,
   eisTourRegistrationOpen = false,
   forceLocalUnlock = false,
+  awardConfig = null,
 }) => {
   if (!open) {
     return null;
@@ -145,13 +148,21 @@ const BirthdayRulesModal = ({
     ? leaderboardFull
     : leaderboard;
 
-  // Award thresholds
-  const awardThresholds = [50, 200, 600];
-  const awardImages = [
-    '/assets/birthday_bronze.png',
-    '/assets/birthday_silver.png',
-    '/assets/birthday_gold.png',
+  const fallbackAwardLevels = [
+    { threshold: 100, icon_path: '/assets/birthday_bronze.png' },
+    { threshold: 200, icon_path: '/assets/birthday_silver.png' },
+    { threshold: 500, icon_path: '/assets/birthday_gold.png' },
   ];
+  const awardLevels = Array.isArray(awardConfig?.levels) && awardConfig.levels.length > 0
+    ? awardConfig.levels
+        .filter((level) => Number(level?.threshold) > 0 && level?.icon_path)
+        .map((level) => ({
+          threshold: Number(level.threshold),
+          icon_path: String(level.icon_path),
+          title: level?.title || null,
+        }))
+    : fallbackAwardLevels;
+  const awardThresholds = awardLevels.map((level) => level.threshold);
   const now = new Date();
   const safeMaxPoints = Number.isFinite(maxPoints) && maxPoints > 0 ? maxPoints : 0;
   const progressMaxPoints = Math.max(1, safeMaxPoints, ...awardThresholds);
@@ -167,7 +178,9 @@ const BirthdayRulesModal = ({
     : defaultUnlockDate;
   const eventUnlocked = forceLocalUnlock || now >= unlockDate;
   const tourRegistrationUnlocked = forceLocalUnlock || (eventUnlocked && Boolean(eisTourRegistrationOpen));
-  const actionEntries = ACTION_DISPLAY_ORDER.map((key) => {
+  const actionEntries = ACTION_DISPLAY_ORDER
+    .filter((key) => key !== 'rad_event_page_ep' || eventUnlocked)
+    .map((key) => {
     if (GROUPED_ACTIONS[key]) {
       const group = GROUPED_ACTIONS[key];
       const earnedPoints = group.sourceKeys.reduce((sum, sourceKey) => {
@@ -192,13 +205,14 @@ const BirthdayRulesModal = ({
       earned: earnedPoints > 0,
       hover: null,
     };
-  });
-  const campaignPhaseLabel = {
-    prelaunch: 'Phase: Vorlauf',
-    live: 'Phase: Aktionszeitraum',
-    anniversary: 'Phase: Jubiläumstag',
-    closed: 'Phase: Beendet',
-  }[campaignPhase] || 'Phase: Aktionszeitraum';
+    });
+  const [showAllActions, setShowAllActions] = useState(false);
+  const earnedActionEntries = useMemo(
+    () => actionEntries.filter((entry) => entry.earned),
+    [actionEntries]
+  );
+  const displayedActionEntries = showAllActions ? actionEntries : earnedActionEntries;
+  const hasHiddenActions = actionEntries.length > earnedActionEntries.length;
 
   return (
     <OverlayBackground>
@@ -208,24 +222,23 @@ const BirthdayRulesModal = ({
         <p>
           Die Ice-App wird am <strong>14. März</strong> ein Jahr alt, deshalb gibt es im Aktionszeitraum vom <strong>6.–22. März</strong> eine Reihe toller Aktionen, um das zu feiern.
         </p>
-        <p style={{ color: '#8a5a00', fontWeight: 700 }}>
-          Am 14. März wird es eine Zusatzüberraschung geben.
-        </p>
-        <p style={{ marginTop: '-0.2rem', color: '#6f5b3a', fontWeight: 700, fontSize: '0.92rem' }}>
-          {campaignPhaseLabel}
-        </p>
+        {!eventUnlocked && (
+          <p style={{ color: '#8a5a00', fontWeight: 700 }}>
+            Am 14. März wird es eine Zusatzüberraschung geben.
+          </p>
+        )}
         <ProgressLabel>EP-Fortschritt</ProgressLabel>
         <ProgressBar style={{ marginBottom: '3rem', height: '18px', background: '#eaf2fa', marginTop: '2.5rem' }}>
           <ProgressFill style={{ width: `${pointsProgressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #ffb522, #ff7a18)' }} />
-          {awardThresholds.map((threshold, idx) => (
-            <ProgressMarker key={threshold} style={{ left: `${getMarkerLeftPercent(threshold)}%`, top: '-30px' }}>
+          {awardLevels.map((level, idx) => (
+            <ProgressMarker key={level.threshold} style={{ left: `${getMarkerLeftPercent(level.threshold)}%`, top: '-30px' }}>
               <img
-                src={awardImages[idx]}
-                alt={`Award ${idx + 1}`}
-                style={{ height: '64px', opacity: safePoints >= threshold ? 1 : 0.35, filter: safePoints >= threshold ? 'none' : 'grayscale(1)' }}
+                src={buildAssetUrl(level.icon_path)}
+                alt={level.title || `Award ${idx + 1}`}
+                style={{ height: '64px', opacity: safePoints >= level.threshold ? 1 : 0.35, filter: safePoints >= level.threshold ? 'none' : 'grayscale(1)' }}
               />
-              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: safePoints >= threshold ? '#0f7c2f' : '#888' }}>
-                {safePoints >= threshold ? 'Freigeschaltet' : `${threshold} EP`}
+              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: safePoints >= level.threshold ? '#0f7c2f' : '#888' }}>
+                {safePoints >= level.threshold ? 'Freigeschaltet' : `${level.threshold} EP`}
               </div>
             </ProgressMarker>
           ))}
@@ -275,8 +288,13 @@ const BirthdayRulesModal = ({
         <ActionSummary>
           <ActionSummaryTitle>EP-Aktionen</ActionSummaryTitle>
           <p style={{margin: '0 0 0.5rem', color: '#444', fontSize: '0.98rem'}}>Für diese Aktionen erhältst du EP. Fahre mit der Maus oder tippe auf eine Aktion für Details/Limits.</p>
+          {hasHiddenActions && (
+            <ActionToggleButton type="button" onClick={() => setShowAllActions((prev) => !prev)}>
+              {showAllActions ? 'Nur bereits erhaltene EP-Aktionen' : 'Weitere mögliche EP-Aktionen anzeigen'}
+            </ActionToggleButton>
+          )}
           <ActionList>
-            {actionEntries.map((entry) => {
+            {displayedActionEntries.map((entry) => {
               return (
                 <ActionItem
                   key={entry.key}
@@ -289,6 +307,9 @@ const BirthdayRulesModal = ({
                 </ActionItem>
               );
             })}
+            {!displayedActionEntries.length && (
+              <LeaderboardHint>Noch keine EP-Aktionen erreicht.</LeaderboardHint>
+            )}
           </ActionList>
 
         </ActionSummary>
@@ -442,6 +463,18 @@ const ActionSummary = styled.div`
 const ActionSummaryTitle = styled.p`
   margin: 0.7rem 0 0.35rem;
   font-weight: 700;
+`;
+
+const ActionToggleButton = styled.button`
+  margin-bottom: 0.6rem;
+  background: #ffffff;
+  border: 1px solid #e0c48a;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #3a2a00;
 `;
 
 const ActionList = styled.ul`

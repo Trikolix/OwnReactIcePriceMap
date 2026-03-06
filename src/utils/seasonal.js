@@ -38,7 +38,7 @@ export const isSpecialTime = () => {
             return 'olympics';
         }
 
-        const birthdayStart = new Date('2026-03-08T00:00:00+01:00');
+        const birthdayStart = new Date('2026-03-06T00:00:00+01:00');
         const birthdayEnd = new Date('2026-03-22T23:59:59+01:00');
         if (today >= birthdayStart && today <= birthdayEnd) {
             return 'birthday';

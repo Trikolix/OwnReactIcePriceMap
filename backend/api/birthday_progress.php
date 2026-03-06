@@ -16,7 +16,7 @@ $photoChallengeStart = '2026-03-06 00:00:00';
 $anniversaryUnlockAt = '2026-03-14 12:00:00';
 $eggCooldownHours = 3;
 $easterEggEpSchedule = [12, 10, 8, 6, 4];
-$photoChallengeSubmissionEp = 40;
+$photoChallengeSubmissionEp = 25;
 $photoChallengeVoteEp = 5;
 
 $mandatoryKeys = [
@@ -51,6 +51,7 @@ try {
     }
 
     $eisTourRegistrationOpen = false;
+    $birthdayAwardLevels = [];
     $tableExistsStmt = $pdo->query(
         "SELECT COUNT(*)
          FROM information_schema.tables
@@ -76,6 +77,22 @@ try {
             $normalizedFlag = strtolower((string)$rawFlagValue);
             $eisTourRegistrationOpen = in_array($normalizedFlag, ['1', 'true', 'yes', 'on'], true);
         }
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT level, threshold, icon_path, title_de
+         FROM award_levels
+         WHERE award_id = :award_id
+         ORDER BY threshold ASC, level ASC"
+    );
+    $stmt->execute(['award_id' => 57]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $awardRow) {
+        $birthdayAwardLevels[] = [
+            'level' => (int)($awardRow['level'] ?? 0),
+            'threshold' => (int)($awardRow['threshold'] ?? 0),
+            'icon_path' => (string)($awardRow['icon_path'] ?? ''),
+            'title' => (string)($awardRow['title_de'] ?? ''),
+        ];
     }
 
     $status = [];
@@ -443,6 +460,10 @@ try {
             'starts_at' => $photoChallengeStart,
             'submission_ep' => $photoChallengeSubmissionEp,
             'vote_ep' => $photoChallengeVoteEp,
+        ],
+        'birthday_awards' => [
+            'award_id' => 57,
+            'levels' => $birthdayAwardLevels,
         ],
         'new_awards' => $newAwards,
     ]);
