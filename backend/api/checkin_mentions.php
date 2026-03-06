@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
+require_once  __DIR__ . '/../lib/checkin_grouping.php';
 header('Content-Type: application/json');
 
 // GET: getStatus
@@ -52,9 +53,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'error', 'message' => 'responded_checkin_id erforderlich']);
             exit;
         }
-        $stmt = $pdo->prepare("UPDATE checkin_mentions SET status = 'accepted', responded_checkin_id = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$responded_checkin_id, $mention_id]);
-        echo json_encode(['status' => 'success', 'mention_id' => $mention_id, 'new_status' => 'accepted']);
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("
+                UPDATE checkin_mentions
+                SET status = 'accepted', responded_checkin_id = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([$responded_checkin_id, $mention_id]);
+
+            $groupId = resolveOrMergeCheckinGroup($pdo, [$checkin_id, $responded_checkin_id]);
+
+            $pdo->commit();
+            echo json_encode([
+                'status' => 'success',
+                'mention_id' => $mention_id,
+                'new_status' => 'accepted',
+                'group_id' => $groupId,
+            ]);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Accept fehlgeschlagen: ' . $e->getMessage()]);
+        }
         exit;
     }
     if ($action === 'decline') {

@@ -75,6 +75,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const MAX_IMAGES = SHARED_MAX_IMAGES;
     const [showImageChooser, setShowImageChooser] = useState(false);
     const SelectedArrivalIcon = ARRIVAL_ICON_MAP[anreise] || HelpCircle;
+    const [groupSuggestions, setGroupSuggestions] = useState([]);
+    const [groupSuggestionCheckinId, setGroupSuggestionCheckinId] = useState(null);
+    const [groupLinkLoading, setGroupLinkLoading] = useState(false);
 
     // Läuft beim Laden der Seite automatisch
     useEffect(() => {
@@ -272,6 +275,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
+                let suggestionsFound = false;
+                if (!checkinId && !referencedCheckinId && data.checkin_id) {
+                    suggestionsFound = await loadGroupSuggestions(data.checkin_id);
+                }
                 if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
@@ -294,9 +301,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     if (shop && askForPriceUpdate(shop.preise)) {
                         setPreisfrage(true);
                     } else {
-                        setTimeout(() => {
-                            setShowCheckinForm(false);
-                        }, 2000);
+                        if (!suggestionsFound) {
+                            setTimeout(() => {
+                                setShowCheckinForm(false);
+                            }, 2000);
+                        }
                     }
                 }
             } else {
@@ -306,6 +315,62 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             setMessage(`Ein Fehler ist aufgetreten: ${error}`);
             setSubmitted(false); // erneutes Absenden erlauben
         }
+    };
+
+    const loadGroupSuggestions = async (createdCheckinId) => {
+        try {
+            const windowMinutes = 45;
+            const res = await fetch(
+                `${apiUrl}/checkin/group_suggestions.php?checkin_id=${createdCheckinId}&user_id=${userId}&window_minutes=${windowMinutes}`
+            );
+            const json = await res.json();
+            if (json.status !== 'success') return false;
+
+            const candidates = (json.suggestions || []).filter((s) => !s.already_grouped);
+            if (candidates.length === 0) return false;
+
+            setGroupSuggestionCheckinId(createdCheckinId);
+            setGroupSuggestions(candidates);
+            setMessage((prev) => `${prev} Es gibt ${candidates.length} weitere Checkins in den letzten ${windowMinutes} Minuten an dieser Eisdiele.`);
+            return true;
+        } catch (error) {
+            console.warn('Gruppen-Vorschläge konnten nicht geladen werden:', error);
+            return false;
+        }
+    };
+
+    const handleLinkSuggestedCheckins = async () => {
+        if (!groupSuggestionCheckinId || groupSuggestions.length === 0) return;
+        try {
+            setGroupLinkLoading(true);
+            const res = await fetch(`${apiUrl}/checkin/group_link.php`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    checkin_id: groupSuggestionCheckinId,
+                    user_id: Number(userId),
+                    target_checkin_ids: groupSuggestions.map((s) => s.checkin_id),
+                }),
+            });
+            const json = await res.json();
+            if (json.status !== 'success') {
+                setMessage(`Verknüpfung fehlgeschlagen: ${json.message || 'Unbekannter Fehler'}`);
+                return;
+            }
+            setGroupSuggestions([]);
+            setGroupSuggestionCheckinId(null);
+            setMessage("Checkins wurden erfolgreich gruppiert.");
+            if (onSuccess) onSuccess();
+        } catch (error) {
+            setMessage(`Verknüpfung fehlgeschlagen: ${error.message || error}`);
+        } finally {
+            setGroupLinkLoading(false);
+        }
+    };
+
+    const dismissGroupSuggestions = () => {
+        setGroupSuggestions([]);
+        setGroupSuggestionCheckinId(null);
     };
 
     const handleDeleteClick = async () => {
@@ -688,6 +753,25 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </Form>)}
                 </>)}
                 <Message>{message}</Message>
+                {groupSuggestions.length > 0 && (
+                    <SuggestionBox>
+                        <h4>Gemeinsamer Checkin?</h4>
+                        <p>Andere Nutzer haben in den letzten Minuten ebenfalls hier eingecheckt:</p>
+                        <SuggestionList>
+                            {groupSuggestions.map((item) => (
+                                <li key={item.checkin_id}>
+                                    <strong>{item.username}</strong> · {new Date(item.datum).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                                </li>
+                            ))}
+                        </SuggestionList>
+                        <ButtonGroup>
+                            <SubmitButton type="button" onClick={handleLinkSuggestedCheckins} disabled={groupLinkLoading}>
+                                {groupLinkLoading ? "Verknüpfe…" : `Alle ${groupSuggestions.length} verknüpfen`}
+                            </SubmitButton>
+                            <Button type="button" onClick={dismissGroupSuggestions}>Später</Button>
+                        </ButtonGroup>
+                    </SuggestionBox>
+                )}
                 {preisfrage && (
                     <>
                         <Text>Stimmt der Preis von <strong>{shop.eisdiele.name}</strong> noch?</Text>
@@ -1124,3 +1208,29 @@ const ReferenceHint = styled.p`
 `;
 
 const Text = styled.p``;
+
+const SuggestionBox = styled.div`
+    margin-top: 0.9rem;
+    border: 1px solid rgba(47, 33, 0, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 0.75rem 0.85rem;
+
+    h4 {
+        margin: 0 0 0.3rem;
+        color: #3b2a00;
+    }
+
+    p {
+        margin: 0 0 0.45rem;
+        color: rgba(47, 33, 0, 0.76);
+        font-size: 0.9rem;
+    }
+`;
+
+const SuggestionList = styled.ul`
+    margin: 0 0 0.75rem;
+    padding-left: 1.1rem;
+    color: #4a3400;
+    font-size: 0.9rem;
+`;
