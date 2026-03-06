@@ -18,6 +18,7 @@ const SubmissionPanel = ({
   loadUserImages,
   userImagesPage,
   userSubmissions,
+  setImagePreview,
 }) => {
   const [newImageTitles, setNewImageTitles] = React.useState({});
   const [submissionTitles, setSubmissionTitles] = React.useState({});
@@ -89,10 +90,20 @@ const SubmissionPanel = ({
                   const draftTitle = getSubmissionDraftTitle(submission);
                   return (
                     <S.SubmissionCard key={`user-sub-${submission.id}`}>
-                      <S.SubmissionImage
-                        src={buildAssetUrl(submission.url)}
-                        alt={submission.title || submission.beschreibung || `Bild ${submission.image_id}`}
-                      />
+                      <S.ResultImageButton
+                        type="button"
+                        onClick={() =>
+                          setImagePreview({
+                            url: submission.url,
+                            label: submission.title || `Bild #${submission.image_id}`,
+                          })
+                        }
+                      >
+                        <S.SubmissionImage
+                          src={buildAssetUrl(submission.url)}
+                          alt={submission.title || submission.beschreibung || `Bild ${submission.image_id}`}
+                        />
+                      </S.ResultImageButton>
                       <S.SubmissionInfo>
                         {editable ? (
                           <input
@@ -151,7 +162,17 @@ const SubmissionPanel = ({
                   alreadySubmitted;
                 return (
                   <S.SubmissionImageCard key={image.id} $disabled={disabled}>
-                    <S.SubmissionImageThumb src={buildAssetUrl(image.url)} alt={image.beschreibung || `Bild ${image.id}`} />
+                    <S.ResultImageButton
+                      type="button"
+                      onClick={() =>
+                        setImagePreview({
+                          url: image.url,
+                          label: image.beschreibung || `Bild #${image.id}`,
+                        })
+                      }
+                    >
+                      <S.SubmissionImageThumb src={buildAssetUrl(image.url)} alt={image.beschreibung || `Bild ${image.id}`} />
+                    </S.ResultImageButton>
                     {image.beschreibung && <small>{image.beschreibung}</small>}
                     <input
                       type="text"

@@ -31,7 +31,9 @@ try {
     }
 
     $title = array_key_exists('title', $_POST) ? trim((string)$_POST['title']) : (string)$challenge['title'];
-    $description = array_key_exists('description', $_POST) ? trim((string)$_POST['description']) : (string)($challenge['description'] ?? '');
+    $description = array_key_exists('description', $_POST)
+        ? normalizeMultilineText((string)$_POST['description'])
+        : (string)($challenge['description'] ?? '');
     $status = array_key_exists('status', $_POST) ? trim((string)$_POST['status']) : (string)($challenge['status'] ?? 'draft');
     $groupSize = array_key_exists('group_size', $_POST) ? (int)$_POST['group_size'] : (int)$challenge['group_size'];
     $groupAdvancers = array_key_exists('group_advancers', $_POST) ? (int)$_POST['group_advancers'] : (int)($challenge['group_advancers'] ?? 2);

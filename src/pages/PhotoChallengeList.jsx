@@ -219,6 +219,7 @@ const ChallengeCard = styled(Link)`
     margin: 0;
     color: #615c76;
     font-size: 0.95rem;
+    white-space: pre-line;
   }
 `;
 

@@ -19,7 +19,7 @@ if (!$userId) {
 requirePhotoChallengeAdmin($userId);
 
 $title = trim($_POST['title'] ?? '');
-$description = trim($_POST['description'] ?? '');
+$description = normalizeMultilineText((string)($_POST['description'] ?? ''));
 $status = $_POST['status'] ?? 'draft';
 $groupSize = (int)($_POST['group_size'] ?? 4);
 $groupAdvancers = (int)($_POST['group_advancers'] ?? 2);

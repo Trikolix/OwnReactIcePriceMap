@@ -528,7 +528,9 @@ function PhotoChallengeVoting() {
         <S.HeroSection>
           <div>
             <h1>{overview?.challenge ? (overview.challenge.title) : "Foto-Challenge"}</h1>
-            <p>Stimme für deine Lieblingsbilder und hilf mit zu entscheiden, wer weiterkommt.</p>
+            <S.HeroDescription>
+              {overview?.challenge?.description || 'Stimme für deine Lieblingsbilder und hilf mit zu entscheiden, wer weiterkommt.'}
+            </S.HeroDescription>
           </div>
         </S.HeroSection>
 
@@ -561,6 +563,7 @@ function PhotoChallengeVoting() {
           loadUserImages={loadUserImages}
           userImagesPage={userImagesPage}
           userSubmissions={userSubmissions}
+          setImagePreview={setImagePreview}
         />
 
         {!isSubmissionStage && (

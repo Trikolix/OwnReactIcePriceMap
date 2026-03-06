@@ -174,6 +174,11 @@ function normalizeDateTime(?string $value): ?string
     return date('Y-m-d H:i:s', $timestamp);
 }
 
+function normalizeMultilineText(string $value): string
+{
+    return str_replace(["\r\n", "\r"], "\n", $value);
+}
+
 function getPhotoChallengeTimezone(): DateTimeZone
 {
     static $tz = null;

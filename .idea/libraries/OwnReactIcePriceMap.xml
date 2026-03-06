@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="OwnReactIcePriceMap">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/build.zip!/" />
+      <root url="jar://$PROJECT_DIR$/vendor.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
