@@ -471,10 +471,15 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
+          {allowedPhotoChallenges(userId) && (
+            <DesktopNavLink to="/photo-challenge" $compact>
+              Foto-Challenge
+              <DesktopNavBadge>NEU</DesktopNavBadge>
+            </DesktopNavLink>
+          )}
           <DesktopNavLink to="/dashboard">Aktivitäten</DesktopNavLink>
           <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
           <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
-          <DesktopNavLink to="/routes">Routen</DesktopNavLink>
         </DesktopNav>
         <HeaderRight>
           {isLoggedIn ? (
@@ -802,10 +807,14 @@ const DesktopNav = styled.nav`
 `;
 
 const DesktopNavLink = styled(NavLink)`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: #3d2c00;
   text-decoration: none;
   font-weight: 700;
-  padding: 8px 10px;
+  padding: 8px ${({ $compact }) => ($compact ? '0px' : '10px')} 8px 10px;
+  margin-right: ${({ $compact }) => ($compact ? '-4px' : '0')};
   border-radius: 10px;
   transition: background-color 0.15s ease, color 0.15s ease;
 
@@ -819,6 +828,23 @@ const DesktopNavLink = styled(NavLink)`
     color: #2b1d00;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
+`;
+
+const DesktopNavBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  transform: translate(-20px, -12px) rotate(12deg);
+  transform-origin: center;
+  box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
 `;
 
 const HeaderRight = styled.div`

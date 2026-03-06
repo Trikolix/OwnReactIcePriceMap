@@ -5,7 +5,6 @@ export default function LevelDisplay({ levelInfo }) {
   if (!levelInfo) return null;
 
   const { level, level_name, percent_to_next, ep_current, ep_to_next } = levelInfo;
-    console.log(levelInfo)
   return (
     <Container>
       <Title>Level {level}</Title>

@@ -174,6 +174,9 @@ function UserSite() {
   const awards = data?.user_awards || [];
   const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routes = data?.routen || [];
+  const hasCheckins = checkins.length > 0;
+  const hasReviews = reviews.length > 0;
+  const hasRoutes = routes.length > 0;
   const displayedCheckins = checkins.slice(0, checkinPage * 5);
   const displayedReviews = reviews.slice(0, reviewPage * 5);
   const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
@@ -218,10 +221,17 @@ function UserSite() {
   const activityPreview = activeActivityData.slice(0, PREVIEW_COUNT);
 
   useEffect(() => {
-    if (activeTab === 'routen' && routes.length === 0) {
-      setActiveTab('checkins');
+    const visibleActivityTabs = [
+      hasCheckins ? 'checkins' : null,
+      hasReviews ? 'reviews' : null,
+      hasRoutes ? 'routen' : null,
+    ].filter(Boolean);
+
+    if (activeTab === 'stats') return;
+    if (!visibleActivityTabs.includes(activeTab)) {
+      setActiveTab(visibleActivityTabs[0] || 'stats');
     }
-  }, [activeTab, routes.length]);
+  }, [activeTab, hasCheckins, hasReviews, hasRoutes]);
 
   const sortedMostVisited = React.useMemo(() => {
     if (!data?.meistbesuchte_eisdielen) return [];
@@ -689,19 +699,23 @@ function UserSite() {
               )}
             </AwardsCard>
             <UnifiedTabBar>
-              <UnifiedTabButton
-                active={activeTab === 'checkins'}
-                onClick={() => setActiveTab('checkins')}
-              >
-                Check-ins
-              </UnifiedTabButton>
-              <UnifiedTabButton
-                active={activeTab === 'reviews'}
-                onClick={() => setActiveTab('reviews')}
-              >
-                Reviews
-              </UnifiedTabButton>
-              {routes.length > 0 && (
+              {hasCheckins && (
+                <UnifiedTabButton
+                  active={activeTab === 'checkins'}
+                  onClick={() => setActiveTab('checkins')}
+                >
+                  Check-ins
+                </UnifiedTabButton>
+              )}
+              {hasReviews && (
+                <UnifiedTabButton
+                  active={activeTab === 'reviews'}
+                  onClick={() => setActiveTab('reviews')}
+                >
+                  Reviews
+                </UnifiedTabButton>
+              )}
+              {hasRoutes && (
                 <UnifiedTabButton
                   active={activeTab === 'routen'}
                   onClick={() => setActiveTab('routen')}
@@ -1050,10 +1064,67 @@ const ProfileMainColumn = styled.div`
 `;
 
 const LevelInlineCard = styled.div`
-  border: 1px solid rgba(47, 33, 0, 0.08);
+  position: relative;
+  border: 1px solid rgba(47, 33, 0, 0.1);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 0.4rem 0.55rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 229, 0.84)),
+    radial-gradient(circle at 90% 15%, rgba(255, 203, 91, 0.24), transparent 48%);
+  padding: 0.5rem 0.65rem 0.55rem;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0.4rem;
+    top: 0.45rem;
+    bottom: 0.45rem;
+    width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffb522, #ffd978);
+    opacity: 0.8;
+  }
+
+  > div {
+    margin: 0;
+    max-width: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0.15rem 0.15rem 0.15rem 0.65rem;
+  }
+
+  > div h2 {
+    margin: 0;
+    font-size: 1rem;
+    text-align: left;
+    color: #2f2100;
+    letter-spacing: 0.01em;
+  }
+
+  > div p {
+    margin: 0.2rem 0 0;
+    text-align: left;
+    color: #5b4520;
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+
+  > div p:last-child {
+    font-size: 0.85rem;
+    color: #6b5121;
+  }
+
+  > div > div {
+    margin-top: 0.5rem;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(47, 33, 0, 0.12);
+  }
+
+  > div > div > div {
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
 `;
 
 const ProfileActions = styled.div`
