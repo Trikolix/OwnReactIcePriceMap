@@ -562,6 +562,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                     />
                                     {showSortenBewertung && (<>
                                         <ScoreInput
+                                            $compact
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -570,7 +571,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="Bewertung"
                                             onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
                                         />
-                                        <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
+                                        <InlineSortenRating>
+                                            <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
+                                        </InlineSortenRating>
                                     </>
                                     )}
                                     <RemoveButton type="button" onClick={() => removeSorte(index)}>✕</RemoveButton>
@@ -608,7 +611,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             onChange={(e) => setGeschmackbewertung(e.target.value)}
                                         />
                                     </td>
-                                    <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
+                                    <td>
+                                        <TableRatingWrap>
+                                            <Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} />
+                                        </TableRatingWrap>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
@@ -623,7 +630,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             onChange={(e) => setPreisleistungsbewertung(e.target.value)}
                                         />
                                     </td>
-                                    <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
+                                    <td>
+                                        <TableRatingWrap>
+                                            <Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} />
+                                        </TableRatingWrap>
+                                    </td>
                                 </tr>
                                 {type !== "Eisbecher" && (<tr>
                                     <td>
@@ -648,7 +659,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             onChange={(e) => setWaffelbewertung(e.target.value)}
                                         />
                                     </td>
-                                    <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
+                                    <td>
+                                        <TableRatingWrap>
+                                            <Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} />
+                                        </TableRatingWrap>
+                                    </td>
                                 </tr>)}
                             </tbody>
                         </Table>
@@ -838,15 +853,19 @@ const IntroText = styled.p`
 `;
 
 const Row = styled.div`
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 0.55rem;
     align-items: center;
     padding-bottom: 0.35rem;
 
+    > :first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     @media (max-width: 760px) {
-        grid-template-columns: minmax(0, 1fr);
-        align-items: stretch;
+        gap: 0.45rem;
     }
 `;
 
@@ -907,7 +926,9 @@ const Table = styled.table`
 
         tr {
             display: grid;
-            gap: 0.35rem;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 0.4rem;
             background: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(47, 33, 0, 0.08);
             border-radius: 10px;
@@ -917,6 +938,11 @@ const Table = styled.table`
         td {
             border: none;
             padding: 0;
+            min-width: 0;
+        }
+
+        td:first-child {
+            padding-right: 0.2rem;
         }
     }
 `;
@@ -938,10 +964,64 @@ const StyledCol3 = styled.col`
 
 const ScoreInput = styled(Input)`
     width: 100%;
-    max-width: 130px;
+    max-width: ${({ $compact }) => ($compact ? '88px' : '130px')};
     box-sizing: border-box;
     border-radius: 10px;
     border: 1px solid rgba(47, 33, 0, 0.2);
+
+    @media (max-width: 760px) {
+        max-width: ${({ $compact }) => ($compact ? '72px' : '84px')};
+        padding-left: 0.5rem;
+        padding-right: 0.4rem;
+    }
+`;
+
+const InlineSortenRating = styled.div`
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    min-width: 104px;
+
+    .star-rating {
+        line-height: 1;
+        height: 1em;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .star-container {
+        height: 1em;
+        margin-top: 0;
+    }
+
+    @media (max-width: 760px) {
+        transform: scale(0.88);
+        transform-origin: left center;
+        min-width: 92px;
+    }
+`;
+
+const TableRatingWrap = styled.div`
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .star-rating {
+        line-height: 1;
+        height: 1em;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .star-container {
+        height: 1em;
+        margin-top: 0;
+    }
+
+    @media (max-width: 760px) {
+        transform: scale(0.9);
+        transform-origin: left center;
+    }
 `;
 
 const UploadActionRow = styled.div`
