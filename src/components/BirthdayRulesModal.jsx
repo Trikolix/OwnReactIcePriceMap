@@ -146,13 +146,20 @@ const BirthdayRulesModal = ({
     : leaderboard;
 
   // Award thresholds
-  const awardThresholds = [50, 150, 400];
+  const awardThresholds = [50, 200, 600];
   const awardImages = [
     '/assets/birthday_bronze.png',
     '/assets/birthday_silver.png',
     '/assets/birthday_gold.png',
   ];
   const now = new Date();
+  const safeMaxPoints = Number.isFinite(maxPoints) && maxPoints > 0 ? maxPoints : 0;
+  const progressMaxPoints = Math.max(1, safeMaxPoints, ...awardThresholds);
+  const pointsProgressPercent = Math.min((safePoints / progressMaxPoints) * 100, 100);
+  const getMarkerLeftPercent = (threshold) => {
+    const rawPercent = (threshold / progressMaxPoints) * 100;
+    return Math.min(92, Math.max(8, rawPercent));
+  };
   const defaultUnlockDate = new Date('2026-03-14T12:00:00+01:00');
   const parsedUnlockDate = anniversaryUnlockedAt ? new Date(anniversaryUnlockedAt) : null;
   const unlockDate = parsedUnlockDate && !Number.isNaN(parsedUnlockDate.getTime())
@@ -199,7 +206,7 @@ const BirthdayRulesModal = ({
         <CloseButton onClick={onClose}>&times;</CloseButton>
         <h2>🎂🍦 Ice-App Geburtstagsaktion</h2>
         <p>
-          Die Ice-App wird am <strong>14. März</strong> ein Jahr alt, deshalb gibt es im Aktionszeitraum vom <strong>8.–22. März</strong> eine Reihe toller Aktionen, um das zu feiern.
+          Die Ice-App wird am <strong>14. März</strong> ein Jahr alt, deshalb gibt es im Aktionszeitraum vom <strong>6.–22. März</strong> eine Reihe toller Aktionen, um das zu feiern.
         </p>
         <p style={{ color: '#8a5a00', fontWeight: 700 }}>
           Am 14. März wird es eine Zusatzüberraschung geben.
@@ -209,9 +216,9 @@ const BirthdayRulesModal = ({
         </p>
         <ProgressLabel>EP-Fortschritt</ProgressLabel>
         <ProgressBar style={{ marginBottom: '3rem', height: '18px', background: '#eaf2fa', marginTop: '2.5rem' }}>
-          <ProgressFill style={{ width: `${Math.min(safePoints / 4, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #ffb522, #ff7a18)' }} />
+          <ProgressFill style={{ width: `${pointsProgressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #ffb522, #ff7a18)' }} />
           {awardThresholds.map((threshold, idx) => (
-            <ProgressMarker key={threshold} style={{ left: `${threshold / 4}%`, top: '-30px' }}>
+            <ProgressMarker key={threshold} style={{ left: `${getMarkerLeftPercent(threshold)}%`, top: '-30px' }}>
               <img
                 src={awardImages[idx]}
                 alt={`Award ${idx + 1}`}

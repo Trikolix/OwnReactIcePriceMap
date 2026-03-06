@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../evaluators/BirthdayChallengeEvaluator.php';
 
 $userId = intval($_GET['user_id'] ?? $_GET['nutzer_id'] ?? 0);
 if ($userId <= 0) {
@@ -9,14 +10,14 @@ if ($userId <= 0) {
 }
 
 date_default_timezone_set('Europe/Berlin');
-$periodStart = '2026-03-08 00:00:00';
+$periodStart = '2026-03-06 00:00:00';
 $periodEnd = '2026-03-22 23:59:59';
-$photoChallengeStart = '2026-03-08 00:00:00';
+$photoChallengeStart = '2026-03-06 00:00:00';
 $anniversaryUnlockAt = '2026-03-14 12:00:00';
 $eggCooldownHours = 3;
 $easterEggEpSchedule = [12, 10, 8, 6, 4];
 $photoChallengeSubmissionEp = 40;
-$photoChallengeVoteEp = 0;
+$photoChallengeVoteEp = 5;
 
 $mandatoryKeys = [
     'checkin_with_photo',
@@ -401,6 +402,14 @@ try {
         'bonus_completed' => $bonusCompleted,
     ]);
 
+    $newAwards = [];
+    try {
+        $evaluator = new BirthdayChallengeEvaluator($totalPoints);
+        $newAwards = $evaluator->evaluate($userId);
+    } catch (Exception $e) {
+        error_log("Fehler beim BirthdayChallengeEvaluator: " . $e->getMessage());
+    }
+
     echo json_encode([
         'user_id' => $userId,
         'period' => [
@@ -435,6 +444,7 @@ try {
             'submission_ep' => $photoChallengeSubmissionEp,
             'vote_ep' => $photoChallengeVoteEp,
         ],
+        'new_awards' => $newAwards,
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

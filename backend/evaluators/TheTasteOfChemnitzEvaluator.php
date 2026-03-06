@@ -23,7 +23,7 @@ class TheTasteOfChemnitzEvaluator extends BaseAwardEvaluator {
             JOIN eisdielen e ON checkins.eisdiele_id = e.id
             WHERE nutzer_id = :userId 
               AND e.landkreis_id = 6
-              AND DATE(datum) BETWEEN '2026-03-05 00:00:00' AND '2026-05-31 23:59:59'
+              AND DATE(datum) BETWEEN '2026-03-06 00:00:00' AND '2026-05-31 23:59:59'
         ");
         $stmt->execute(['userId' => $userId]);
         $hasCheckin = $stmt->fetchColumn() >= 3;
