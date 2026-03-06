@@ -10,6 +10,7 @@
 
 # production
 /build
+build.zip
 
 # misc
 .DS_Store
@@ -21,3 +22,11 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# project cleanup
+*.bak
+*.zip
+*.sql.zip
+*.xcf
+uploads/
+backend/Database/restore_*.zip

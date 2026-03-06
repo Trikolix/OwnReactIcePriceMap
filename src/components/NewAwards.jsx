@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { Sparkles } from "lucide-react";
+import { getAwardIconSources, handleAwardIconFallback } from "../utils/awardIcons";
 
 const NewAwards = ({ awards }) => {
   if (!awards || awards.length === 0) return null;
@@ -9,18 +10,25 @@ const NewAwards = ({ awards }) => {
     <AwardsSection>
       <h3>Du hast neue Auszeichnungen erhalten:</h3>
       <ul>
-        {awards.map((award, index) => (
-          <AwardItem key={index}>
+        {awards.map((award, index) => {
+          const iconSources = getAwardIconSources(award?.icon, 512);
+          return (
+            <AwardItem key={index}>
             <IconWrapper>
               <AwardIcon
-                src={`https://ice-app.de/${award.icon}`}
+                src={iconSources.src || ""}
+                data-fallback-src={iconSources.fallbackSrc || ""}
+                onError={handleAwardIconFallback}
+                loading="lazy"
+                decoding="async"
                 alt="Award Icon"
               />
               <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
             </IconWrapper>
             <AwardText>{award.message}</AwardText>
-          </AwardItem>
-        ))}
+            </AwardItem>
+          );
+        })}
       </ul>
     </AwardsSection>
   );

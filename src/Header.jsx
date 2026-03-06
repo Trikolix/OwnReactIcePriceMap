@@ -1,4 +1,4 @@
-import userOfTheMonthImg from './user_of_the_month.png';
+﻿import userOfTheMonthImg from './user_of_the_month.png';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -8,17 +8,19 @@ import {
 import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
-import { Link } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
-import { useLocation, useNavigate } from "react-router-dom";
 import { isSpecialTime } from './utils/seasonal';
-import OlympicsRulesModal from './components/OlympicsRulesModal';
+import { buildAssetUrl } from './utils/assets.jsx';
+import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
+import headerWideBirthday from './header_wide_1st_birthday.png';
 import headerWide from './header_wide.png';
+import GewinnspielImage from './birthday_action.png';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -32,28 +34,38 @@ const Header = ({ refreshShops }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showUserOfMonth, setShowUserOfMonth] = useState(false);
   const [showActionsOverview, setShowActionsOverview] = useState(false);
-  const [showOlympicsRules, setShowOlympicsRules] = useState(false);
-  const [olympicsPoints, setOlympicsPoints] = useState(null);
-  const [olympicsBreakdown, setOlympicsBreakdown] = useState({});
-  const [isOlympicsPointsLoading, setIsOlympicsPointsLoading] = useState(false);
-  const [olympicsLeaderboard, setOlympicsLeaderboard] = useState([]);
-  const [olympicsLeaderboardFull, setOlympicsLeaderboardFull] = useState([]);
-  const [olympicsUserRank, setOlympicsUserRank] = useState(null);
-  const [isOlympicsLeaderboardLoading, setIsOlympicsLeaderboardLoading] = useState(false);
-  const [isOlympicsLeaderboardExpanded, setIsOlympicsLeaderboardExpanded] = useState(false);
+  const [showBirthdayRules, setShowBirthdayRules] = useState(false);
+  const [birthdayPoints, setBirthdayPoints] = useState(null);
+  const [birthdayMaxPoints, setBirthdayMaxPoints] = useState(null);
+  const [birthdayBreakdown, setBirthdayBreakdown] = useState({});
+  const [birthdayStatus, setBirthdayStatus] = useState({});
+  const [birthdayCounts, setBirthdayCounts] = useState({});
+  const [birthdayMandatoryCompleted, setBirthdayMandatoryCompleted] = useState(0);
+  const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(11);
+  const [birthdayRewardUnlocked, setBirthdayRewardUnlocked] = useState(false);
+  const [birthdayCampaignPhase, setBirthdayCampaignPhase] = useState('live');
+  const [birthdayAnniversaryUnlockedAt, setBirthdayAnniversaryUnlockedAt] = useState(null);
+  const [birthdayEisTourRegistrationOpen, setBirthdayEisTourRegistrationOpen] = useState(false);
+  const [birthdayAwardConfig, setBirthdayAwardConfig] = useState(null);
+  const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
+  const [birthdayLeaderboardFull, setBirthdayLeaderboardFull] = useState([]);
+  const [birthdayUserRank, setBirthdayUserRank] = useState(null);
+  const [isBirthdayLeaderboardLoading, setIsBirthdayLeaderboardLoading] = useState(false);
+  const [isBirthdayLeaderboardExpanded, setIsBirthdayLeaderboardExpanded] = useState(false);
+  const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
   const LEADERBOARD_COLLAPSED_COUNT = 3;
-
-  const allowedPhotoChallenges = (userId) => {
-    const allowedUsers = [1, 2, 13, 23]; // Liste der erlaubten Nutzer-IDs
-    return allowedUsers.includes(Number(userId));
-  };
+  const now = new Date();
+  const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
+  const showEisTourNavLink = now >= new Date(2026, 2, 14, 0, 0, 0);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
+  const closeMenu = () => setMenuOpen(false);
+  const isAdmin = Number(userId) === 1;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -74,12 +86,53 @@ const Header = ({ refreshShops }) => {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      setHeaderAvatarUrl(null);
+      return;
+    }
+    setHeaderAvatarUrl(localStorage.getItem('avatarUrl'));
+  }, [isLoggedIn, userId, username, menuOpen]);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key === 'avatarUrl') {
+        setHeaderAvatarUrl(event.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || !userId || !apiUrl) return;
+    if (headerAvatarUrl) return;
+
+    let isCancelled = false;
+    fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${userId}&cur_user_id=${userId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const nextAvatar = data?.avatar_url || null;
+        if (isCancelled || !nextAvatar) return;
+        setHeaderAvatarUrl(nextAvatar);
+        localStorage.setItem('avatarUrl', nextAvatar);
+      })
+      .catch((error) => {
+        console.warn('Header avatar could not be loaded:', error);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [apiUrl, isLoggedIn, userId, headerAvatarUrl]);
+
+  useEffect(() => {
     if (!userId) return;
     const checkLevelInterval = setInterval(() => {
       checkForLevelUp();
     }, 5 * 60 * 1000); // alle 5 Minuten
 
-    // sofort einmal ausführen (optional)
+    // sofort einmal ausfÃ¼hren (optional)
     checkForLevelUp();
 
     return () => clearInterval(checkLevelInterval);
@@ -103,10 +156,16 @@ const Header = ({ refreshShops }) => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const scanCode = params.get("scan");
+    const rootParams = new URLSearchParams(window.location.search);
+    let scanCode = params.get("scan");
+
+    // Support both HashRouter query (/#/?scan=...) and root query (/?scan=...)
+    if (!scanCode) {
+      scanCode = rootParams.get("scan");
+    }
 
     if (scanCode) {
-      // ✅ QR-Code erkannt – weiterverarbeiten
+      // âœ… QR-Code erkannt â€“ weiterverarbeiten
       console.log("Scan-Code erkannt:", scanCode);
 
       // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
@@ -125,16 +184,25 @@ const Header = ({ refreshShops }) => {
         .then((data) => {
           console.log("Antwort von API:", data);
           if (data.status === "success") {
-            // 🧠 Wenn nicht eingeloggt → lokal speichern
+            if (data.already_scanned) {
+              console.log("QR-Code wurde bereits gescannt. Kein Popup.");
+              return;
+            }
+
+            // ðŸ§  Wenn nicht eingeloggt â†’ lokal speichern
             if (!userId) {
               const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+              if (stored.includes(scanCode)) {
+                console.log("QR-Code ist bereits lokal vorgemerkt. Kein Popup.");
+                return;
+              }
               if (!stored.includes(scanCode)) {
                 stored.push(scanCode);
                 localStorage.setItem("pendingQrScans", JSON.stringify(stored));
               }
             }
 
-            // ✅ Modal anzeigen
+            // âœ… Modal anzeigen
             console.log("setModalData", {
               icon: data.icon,
               name: data.name,
@@ -156,7 +224,7 @@ const Header = ({ refreshShops }) => {
           console.error("Fehler beim Senden des QR-Codes:", err);
         })
         .finally(() => {
-          // ✅ Parameter aus URL entfernen, ohne Reload
+          // âœ… Parameter aus URL entfernen, ohne Reload
           params.delete("scan");
           const newSearch = params.toString();
           navigate(
@@ -166,33 +234,65 @@ const Header = ({ refreshShops }) => {
             },
             { replace: true }
           );
+
+          // Also cleanup root query in case scan came as /?scan=...
+          if (rootParams.has("scan")) {
+            rootParams.delete("scan");
+            const nextRootSearch = rootParams.toString();
+            window.history.replaceState(
+              {},
+              "",
+              `${window.location.pathname}${nextRootSearch ? `?${nextRootSearch}` : ""}${window.location.hash}`
+            );
+          }
         });
     }
   }, [location, userId, apiUrl, navigate]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !apiUrl) return;
 
-    const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
-    if (stored.length > 0) {
-      stored.forEach((code) => {
-        fetch(`${apiUrl}/api/qr_scan.php`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, nutzer_id: userId }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log("QR-Scan nach Login übertragen:", data);
-          })
-          .catch((err) => {
-            console.error("Fehler beim Nachsenden des QR-Codes:", err);
-          });
-      });
-
-      localStorage.removeItem("pendingQrScans");
+    let stored = [];
+    try {
+      stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+      if (!Array.isArray(stored)) stored = [];
+    } catch {
+      stored = [];
     }
-  }, [userId]);
+
+    if (stored.length === 0) return;
+
+    const syncPendingScans = async () => {
+      const failedCodes = [];
+
+      for (const code of stored) {
+        try {
+          const res = await fetch(`${apiUrl}/api/qr_scan.php`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, nutzer_id: userId }),
+          });
+          const data = await res.json();
+          console.log("QR-Scan nach Login Ã¼bertragen:", data);
+
+          if (data?.status !== "success") {
+            failedCodes.push(code);
+          }
+        } catch (err) {
+          console.error("Fehler beim Nachsenden des QR-Codes:", err);
+          failedCodes.push(code);
+        }
+      }
+
+      if (failedCodes.length > 0) {
+        localStorage.setItem("pendingQrScans", JSON.stringify([...new Set(failedCodes)]));
+      } else {
+        localStorage.removeItem("pendingQrScans");
+      }
+    };
+
+    syncPendingScans();
+  }, [userId, apiUrl]);
 
   const checkForLevelUp = async () => {
     try {
@@ -249,115 +349,276 @@ const Header = ({ refreshShops }) => {
     if (specialTime === 'easter') {
         return headerWideEaster;
     }
+    if (specialTime === 'birthday') {
+      return headerWideBirthday;
+    }
     return headerWide;
   };
 
   const specialTime = isSpecialTime();
-  const isOlympicsResultsOnly =
-    specialTime === 'olympics' && new Date() >= new Date(2026, 1, 23);
+  const forceLocalBirthdayUnlock =
+    typeof window !== 'undefined'
+    && (window.location.hostname === 'localhost'
+      || window.location.hostname === '127.0.0.1'
+      || window.location.hostname === '::1');
+  const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
 
   useEffect(() => {
-    if (specialTime !== 'olympics' || !userId) {
-      setOlympicsPoints(null);
-      setOlympicsBreakdown({});
+    if (specialTime !== 'birthday' || !userId) {
+      setBirthdayPoints(null);
+      setBirthdayMaxPoints(null);
+      setBirthdayBreakdown({});
+      setBirthdayStatus({});
+      setBirthdayCounts({});
+      setBirthdayMandatoryCompleted(0);
+      setBirthdayMandatoryTotal(11);
+      setBirthdayRewardUnlocked(false);
+      setBirthdayCampaignPhase('live');
+      setBirthdayAnniversaryUnlockedAt(null);
+      setBirthdayEisTourRegistrationOpen(false);
+      setBirthdayAwardConfig(null);
       return;
     }
 
-    setIsOlympicsPointsLoading(true);
-    fetch(`${apiUrl}/api/olympics_progress.php?user_id=${userId}`)
+    fetch(`${apiUrl}/api/birthday_progress.php?user_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
-        const total = Number.isFinite(data?.total_xp) ? data.total_xp : 0;
-        setOlympicsPoints(total);
-        setOlympicsBreakdown(data?.breakdown || {});
+        const total = Number.isFinite(data?.points?.total) ? data.points.total : 0;
+        setBirthdayPoints(total);
+        setBirthdayMaxPoints(Number.isFinite(data?.points?.max) ? data.points.max : null);
+        setBirthdayBreakdown(data?.points?.breakdown || {});
+        setBirthdayStatus(data?.status || {});
+        setBirthdayCounts(data?.counts || {});
+        setBirthdayMandatoryCompleted(Number.isFinite(data?.mandatory?.completed) ? data.mandatory.completed : 0);
+        setBirthdayMandatoryTotal(Number.isFinite(data?.mandatory?.total) ? data.mandatory.total : 11);
+        setBirthdayRewardUnlocked(Boolean(data?.reward_unlocked));
+        setBirthdayCampaignPhase(typeof data?.campaign_phase === 'string' ? data.campaign_phase : 'live');
+        setBirthdayAnniversaryUnlockedAt(
+          typeof data?.anniversary_unlocked_at === 'string' ? data.anniversary_unlocked_at : null
+        );
+        setBirthdayEisTourRegistrationOpen(Boolean(data?.eis_tour_registration_open));
+        setBirthdayAwardConfig(data?.birthday_awards || null);
         if (data?.new_awards && data.new_awards.length > 0) {
           setNewAwards(data.new_awards);
           setShowOverlay(true);
         }
       })
       .catch((err) => {
-        console.error('Fehler beim Laden der Olympia-Punkte:', err);
-        setOlympicsPoints(null);
-        setOlympicsBreakdown({});
-      })
-      .finally(() => {
-        setIsOlympicsPointsLoading(false);
+        console.error('Fehler beim Laden der Geburtstags-Punkte:', err);
+        setBirthdayPoints(null);
+        setBirthdayMaxPoints(null);
+        setBirthdayBreakdown({});
+        setBirthdayStatus({});
+        setBirthdayCounts({});
+        setBirthdayMandatoryCompleted(0);
+        setBirthdayMandatoryTotal(11);
+        setBirthdayRewardUnlocked(false);
+        setBirthdayCampaignPhase('live');
+        setBirthdayAnniversaryUnlockedAt(null);
+        setBirthdayEisTourRegistrationOpen(false);
+        setBirthdayAwardConfig(null);
       });
   }, [apiUrl, specialTime, userId]);
 
   useEffect(() => {
-    if (specialTime !== 'olympics' || !showOlympicsRules) {
-      setOlympicsLeaderboard([]);
-      setOlympicsLeaderboardFull([]);
-      setOlympicsUserRank(null);
-      setIsOlympicsLeaderboardExpanded(false);
+    if (specialTime !== 'birthday' || !showBirthdayRules) {
+      setBirthdayLeaderboard([]);
+      setBirthdayLeaderboardFull([]);
+      setBirthdayUserRank(null);
+      setIsBirthdayLeaderboardExpanded(false);
       return;
     }
 
-    setIsOlympicsLeaderboardLoading(true);
+    setIsBirthdayLeaderboardLoading(true);
     const userParam = userId ? `?user_id=${userId}` : '';
-    fetch(`${apiUrl}/api/olympics_leaderboard.php${userParam}`)
+    fetch(`${apiUrl}/api/birthday_leaderboard.php${userParam}`)
       .then((res) => res.json())
       .then((data) => {
         const fullLeaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
-        setOlympicsLeaderboardFull(fullLeaderboard);
-        setOlympicsLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
-        setOlympicsUserRank(data?.user_rank || null);
+        setBirthdayLeaderboardFull(fullLeaderboard);
+        setBirthdayLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
+        setBirthdayUserRank(data?.user_rank || null);
       })
       .catch((err) => {
-        console.error('Fehler beim Laden des Olympia-Leaderboards:', err);
-        setOlympicsLeaderboard([]);
-        setOlympicsLeaderboardFull([]);
-        setOlympicsUserRank(null);
+        console.error('Fehler beim Laden des Geburtstags-Leaderboards:', err);
+        setBirthdayLeaderboard([]);
+        setBirthdayLeaderboardFull([]);
+        setBirthdayUserRank(null);
       })
       .finally(() => {
-        setIsOlympicsLeaderboardLoading(false);
+        setIsBirthdayLeaderboardLoading(false);
       });
-  }, [apiUrl, specialTime, showOlympicsRules, userId]);
+  }, [apiUrl, specialTime, showBirthdayRules, userId]);
 
   return (
     <>
       <HeaderContainer>
         <PromoIconsContainer>
-          <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
-            <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
+          <GewinnspielIcon onClick={() => {
+            if (specialTime === 'birthday') {
+              setShowBirthdayRules(true);
+              return;
+            }
+            setShowActionsOverview(true);
+          }}>
+            {specialTime === 'birthday' ? (
+              <img src={GewinnspielImage} alt="Geburtstagsaktionen & Belohnungen" />
+            ) : (
+              <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
+            )}
           </GewinnspielIcon>
         </PromoIconsContainer>
 
         <LogoContainer>
           <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
         </LogoContainer>
-        {isLoggedIn && <NotificationBell />}
-        <BurgerMenu onClick={toggleMenu}>
-          <span />
-          <span />
-          <span />
-        </BurgerMenu>
+        <DesktopNav aria-label="Hauptnavigation">
+          <DesktopNavLink to="/" end>Karte</DesktopNavLink>
+          <DesktopNavLink to="/photo-challenge" $compact>
+            Foto-Challenge
+            <DesktopNavBadge>NEU</DesktopNavBadge>
+          </DesktopNavLink>
+          <DesktopNavLink to="/dashboard">Aktivitäten</DesktopNavLink>
+          <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
+          <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
+        </DesktopNav>
+        <HeaderRight>
+          {isLoggedIn ? (
+            <AccountCluster>
+              <NotificationBellWrap aria-label="Benachrichtigungen">
+                <NotificationBell />
+              </NotificationBellWrap>
+              <AccountClusterDivider aria-hidden="true" />
+              <UserStatusLink to={`/user/${userId}`} onClick={() => setMenuOpen(false)}>
+                <UserStatusAvatar aria-hidden="true">
+                  {headerAvatarSrc ? (
+                    <img src={headerAvatarSrc} alt="" />
+                  ) : (
+                    (username || '?').slice(0, 1).toUpperCase()
+                  )}
+                </UserStatusAvatar>
+                <UserStatusText>
+                  <UserStatusLabel>Eingeloggt</UserStatusLabel>
+                  <UserStatusName>{username || `Nutzer ${userId}`}</UserStatusName>
+                </UserStatusText>
+              </UserStatusLink>
+            </AccountCluster>
+          ) : (
+            <LoginHeaderButton
+              type="button"
+              onClick={() => {
+                setShowLoginModal(true);
+                setMenuOpen(false);
+              }}
+            >
+              Einloggen
+            </LoginHeaderButton>
+          )}
+          <BurgerMenu
+            type="button"
+            aria-label={menuOpen ? 'MenÃ¼ schlieÃŸen' : 'MenÃ¼ Ã¶ffnen'}
+            aria-expanded={menuOpen}
+            onClick={toggleMenu}
+          >
+            <span />
+            <span />
+            <span />
+          </BurgerMenu>
+        </HeaderRight>
         {menuOpen && (
           <Menu ref={menuRef}>
-            <MenuItemLink to="/" onClick={() => setMenuOpen(false)}>Eisdielen-Karte</MenuItemLink>
-            <MenuItemLink to="/dashboard" onClick={() => setMenuOpen(false)}>Aktivitäten</MenuItemLink>
-            <MenuItemLink to="/ranking" onClick={() => setMenuOpen(false)}>Top Eisdielen</MenuItemLink>
-            <MenuItemLink to="/statistics" onClick={() => setMenuOpen(false)}>Statistiken</MenuItemLink>
-            {allowedPhotoChallenges(userId) && (<MenuItemLink to="/photo-challenge" onClick={() => setMenuOpen(false)}>Foto-Challenges</MenuItemLink>)}
-            <MenuItemLink to="/routes" onClick={() => setMenuOpen(false)}>Routen</MenuItemLink>
+            <MenuHeader>
+              {isLoggedIn ? (
+                <>
+                  <MenuHeaderTitle>{username || `Nutzer ${userId}`}</MenuHeaderTitle>
+                  <MenuHeaderSubtitle>{isAdmin ? 'Eingeloggt · Admin' : 'Eingeloggt'}</MenuHeaderSubtitle>
+                </>
+              ) : (
+                <>
+                  <MenuHeaderTitle>Gastmodus</MenuHeaderTitle>
+                  <MenuHeaderSubtitle>Einloggen für Favoriten, Challenges und Profil</MenuHeaderSubtitle>
+                </>
+              )}
+            </MenuHeader>
+
+            <MenuSection>
+              <MenuSectionTitle>Entdecken</MenuSectionTitle>
+              <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
+              <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
+                Foto-Challenges
+                {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+              </MenuItemLink>
+              <MenuItemLink to="/dashboard" onClick={closeMenu}>Aktivitäten</MenuItemLink>
+              <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
+              <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
+              <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
+              {showEisTourNavLink && (
+                <MenuItemLink to="/rad-event" onClick={closeMenu}>
+                  Zur Eis-Tour
+                  <MenuItemBadge>NEU</MenuItemBadge>
+                </MenuItemLink>
+              )}
+            </MenuSection>
+
+            <MenuDivider />
             {isLoggedIn ? (
               <>
-                <MenuItemLink to={`/user/${userId}`} className="logged-in" onClick={() => setMenuOpen(false)}>Profil ({username})</MenuItemLink>
-                <MenuItem onClick={() => { setShowSubmitNewIceShop(true); setMenuOpen(false); }} className="logged-in">Eisdiele hinzufügen</MenuItem>
-                <MenuItemLink to="/favoriten" className="logged-in" onClick={() => setMenuOpen(false)}>Favoriten</MenuItemLink>
-                <MenuItemLink to="/challenge" className="logged-in" onClick={() => setMenuOpen(false)}>Challenges</MenuItemLink>
-
-                {userId == 1 && (<MenuItemLink to="/systemmeldungenform" className="logged-in" onClick={() => setMenuOpen(false)}>Systemmeldung erstellen</MenuItemLink>)}
-                {userId == 1 && (<MenuItemLink to="/photo-challenge-admin" className="logged-in" onClick={() => setMenuOpen(false)}>Fotochallenges verwalten</MenuItemLink>)}
-                {userId == 1 && (<MenuItemLink to="/shop-change-requests" className="logged-in" onClick={() => setMenuOpen(false)}>Änderungsvorschläge</MenuItemLink>)}
-                <MenuItem onClick={() => { logout(); setMenuOpen(false); }} className="logged-in">Ausloggen</MenuItem>
+                <MenuSection>
+                  <MenuSectionTitle>Mein Konto</MenuSectionTitle>
+                  <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
+                  <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
+                  <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
+                  <MenuActionButton
+                    type="button"
+                    onClick={() => {
+                      setShowSubmitNewIceShop(true);
+                      closeMenu();
+                    }}
+                  >
+                    Eisdiele hinzufügen
+                  </MenuActionButton>
+                </MenuSection>
+                {isAdmin && (
+                  <>
+                    <MenuDivider />
+                    <MenuSection>
+                      <MenuSectionTitle>Admin</MenuSectionTitle>
+                      <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
+                      <MenuItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuItemLink>
+                      <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
+                      <MenuItemLink to="/shop-change-requests" onClick={closeMenu}>Änderungsvorschläge</MenuItemLink>
+                    </MenuSection>
+                  </>
+                )}
+                <MenuDivider />
+                <MenuSection>
+                  <MenuActionButton onClick={() => { logout(); closeMenu(); }} type="button" $danger>
+                    Ausloggen
+                  </MenuActionButton>
+                </MenuSection>
               </>
             ) : (
-              <MenuItem onClick={() => { setShowLoginModal(true); setMenuOpen(false); }}>Einloggen</MenuItem>
+              <MenuSection>
+                <MenuSectionTitle>Konto</MenuSectionTitle>
+                <MenuActionButton onClick={() => { setShowLoginModal(true); closeMenu(); }} type="button">
+                  Einloggen
+                </MenuActionButton>
+              </MenuSection>
             )}
-            <MenuItemLink to="/impressum" onClick={() => setMenuOpen(false)}>Über diese Website</MenuItemLink>
-            <MenuItemLink to="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" onClick={() => setMenuOpen(false)}>Instagram</MenuItemLink>
+
+            <MenuDivider />
+            <MenuSection>
+              <MenuSectionTitle>Info</MenuSectionTitle>
+              <MenuItemLink to="/impressum" onClick={closeMenu}>Über diese Website</MenuItemLink>
+              <MenuItemAnchor
+                href="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                target="_blank"
+                rel="noreferrer"
+                onClick={closeMenu}
+              >
+                Instagram
+              </MenuItemAnchor>
+            </MenuSection>
           </Menu>
         )}
       </HeaderContainer>
@@ -390,7 +651,7 @@ const Header = ({ refreshShops }) => {
 
             {levelUpInfo && (
               <>
-                <h2>🎉 Level-Up!</h2>
+                <h2>ðŸŽ‰ Level-Up!</h2>
                 <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
                 <p><em>{levelUpInfo.level_name}</em></p>
               </>
@@ -408,23 +669,34 @@ const Header = ({ refreshShops }) => {
         </OverlayBackground>
       )}
 
-      <OlympicsRulesModal
-        open={showOlympicsRules}
-        onClose={() => setShowOlympicsRules(false)}
-        isResultsOnly={isOlympicsResultsOnly}
-        points={olympicsPoints}
+      <BirthdayRulesModal
+        open={showBirthdayRules}
+        onClose={() => setShowBirthdayRules(false)}
+        points={birthdayPoints}
+        maxPoints={birthdayMaxPoints}
         isLoggedIn={isLoggedIn}
-        breakdown={olympicsBreakdown}
-        leaderboard={olympicsLeaderboard}
-        leaderboardFull={olympicsLeaderboardFull}
-        userRank={olympicsUserRank}
-        isLeaderboardLoading={isOlympicsLeaderboardLoading}
-        isLeaderboardFullLoading={isOlympicsLeaderboardLoading}
-        isLeaderboardExpanded={isOlympicsLeaderboardExpanded}
-        onToggleLeaderboard={(expanded) => setIsOlympicsLeaderboardExpanded(expanded)}
+        breakdown={birthdayBreakdown}
+        status={birthdayStatus}
+        counts={birthdayCounts}
+        mandatoryCompleted={birthdayMandatoryCompleted}
+        mandatoryTotal={birthdayMandatoryTotal}
+        rewardUnlocked={birthdayRewardUnlocked}
+        leaderboard={birthdayLeaderboard}
+        leaderboardFull={birthdayLeaderboardFull}
+        userRank={birthdayUserRank}
+        isLeaderboardLoading={isBirthdayLeaderboardLoading}
+        isLeaderboardFullLoading={isBirthdayLeaderboardLoading}
+        isLeaderboardExpanded={isBirthdayLeaderboardExpanded}
+        onToggleLeaderboard={(expanded) => setIsBirthdayLeaderboardExpanded(expanded)}
         currentUserId={userId}
+        extraIceReward={birthdayStatus?.extra_ice_reward}
+        campaignPhase={birthdayCampaignPhase}
+        anniversaryUnlockedAt={birthdayAnniversaryUnlockedAt}
+        eisTourRegistrationOpen={birthdayEisTourRegistrationOpen}
+        awardConfig={birthdayAwardConfig}
+        forceLocalUnlock={forceLocalBirthdayUnlock}
         onLogin={() => {
-          setShowOlympicsRules(false);
+          setShowBirthdayRules(false);
           setShowLoginModal(true);
         }}
       />
@@ -437,7 +709,7 @@ const Header = ({ refreshShops }) => {
         <OverlayBackground>
           <Overlay>
             <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
-            <h2>🏅 Nutzer/in des Monats 🏅</h2>
+            <h2>ðŸ… Nutzer/in des Monats ðŸ…</h2>
             <CurrentUserWrapper>
               <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
                 <UserCard>
@@ -453,7 +725,7 @@ const Header = ({ refreshShops }) => {
               </UserLink>
             </CurrentUserWrapper>
             <hr></hr>
-            <h3>🏅 Vorherige Nutzer/innen des Monats 🏅</h3>
+            <h3>ðŸ… Vorherige Nutzer/innen des Monats ðŸ…</h3>
             <PastUsersGrid>
               {pastUsers.map((user) => (
                 <UserLink to={`/user/${user.id}`} key={`${user.month}-${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
@@ -489,15 +761,31 @@ const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0px 20px;
+  gap: 12px;
+  padding: 10px 16px;
   background-color: #ffb522;
+  position: relative;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  > * {
+    position: relative;
+  }
 `;
 
 const LogoContainer = styled.div`
-  display: ruby;
+  display: flex;
   align-items: center;
-  margin: 5px auto;
+  margin: 0 auto;
   color: black;
+
+  @media (min-width: 769px) {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 0;
+  }
 `;
 
 const Logo = styled.img`
@@ -507,65 +795,334 @@ const Logo = styled.img`
   }
 `;
 
-const BurgerMenu = styled.div`
+const DesktopNav = styled.nav`
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+
+  @media (min-width: 1100px) {
+    display: flex;
+  }
+`;
+
+const DesktopNavLink = styled(NavLink)`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #3d2c00;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 8px ${({ $compact }) => ($compact ? '0px' : '10px')} 8px 10px;
+  margin-right: ${({ $compact }) => ($compact ? '-4px' : '0')};
+  border-radius: 10px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.4);
+    color: #251900;
+  }
+
+  &.active {
+    background: rgba(255, 255, 255, 0.9);
+    color: #2b1d00;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+`;
+
+const DesktopNavBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  transform: translate(-10px, -12px) rotate(12deg);
+  transform-origin: center;
+  box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+`;
+
+const AccountCluster = styled.div`
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  @media (max-width: 768px) {
+    max-width: calc(100vw - 150px);
+  }
+`;
+
+const AccountClusterDivider = styled.div`
+  width: 1px;
+  align-self: stretch;
+  background: rgba(47, 33, 0, 0.12);
+`;
+
+const NotificationBellWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 40px;
+  color: #2f2100;
+  padding: 0 2px 0 4px;
+`;
+
+const UserStatusLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #2f2100;
+  background: transparent;
+  border-radius: 14px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid transparent;
+  min-height: 40px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  @media (max-width: 768px) {
+    padding-right: 8px;
+  }
+`;
+
+const UserStatusAvatar = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #2f2100;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+`;
+
+const UserStatusText = styled.div`
   display: flex;
   flex-direction: column;
+  line-height: 1.05;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const UserStatusLabel = styled.span`
+  font-size: 0.65rem;
+  opacity: 0.85;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const UserStatusName = styled.span`
+  font-size: 0.82rem;
+  font-weight: 800;
+`;
+
+const LoginHeaderButton = styled.button`
+  border: none;
+  background: #fff;
+  color: #2f2100;
+  border-radius: 14px;
+  padding: 0 12px;
+  min-height: 40px;
+  font-weight: 800;
   cursor: pointer;
-  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    background: #fff8e6;
+  }
+
+  @media (max-width: 420px) {
+    display: none;
+  }
+`;
+
+const BurgerMenu = styled.button`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: #2f2100;
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   span {
     height: 3px;
-    background: #fff;
-    margin: 4px 0;
-    width: 25px;
+    background: currentColor;
+    width: 20px;
+    border-radius: 999px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.78);
   }
 `;
 
 const Menu = styled.nav`
   position: absolute;
-  top: 60px;
-  right: 20px;
-  background: #ffb522;
+  top: calc(100% + 8px);
+  right: 16px;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(78vh, calc(100dvh - 88px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(255, 252, 243, 0.98);
   padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
   z-index: 1002;
+  color: #2f2100;
+
+  @media (max-width: 480px) {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    border-radius: 0 0 16px 16px;
+  }
+`;
+
+const MenuHeader = styled.div`
+  padding: 8px 10px 10px;
+`;
+
+const MenuHeaderTitle = styled.div`
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #231900;
+`;
+
+const MenuHeaderSubtitle = styled.div`
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: rgba(47, 33, 0, 0.7);
+  line-height: 1.25;
+`;
+
+const MenuSection = styled.div`
+  display: grid;
+  gap: 2px;
+`;
+
+const MenuSectionTitle = styled.div`
+  padding: 6px 10px 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(47, 33, 0, 0.62);
+`;
+
+const MenuDivider = styled.hr`
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid rgba(47, 33, 0, 0.1);
+`;
+
+const menuItemBase = `
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: #2f2100;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  color: white;
-`;
-
-const MenuItem = styled.a`
-  display: block;
-  padding: 10px;
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
-
-  &.logged-in {
-    margin-left: 15px;
-    color:rgb(255, 255, 255);
-  }
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
 
   &:hover {
-    background: rgb(206, 137, 0);
+    background: rgba(255, 181, 34, 0.18);
+    color: #231900;
   }
 `;
 
-const MenuItemLink = styled(Link)`
-  display: block;
-  padding: 10px;
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
+const MenuItemLink = styled(NavLink)`
+  ${menuItemBase}
 
+  &.active {
+    background: rgba(255, 181, 34, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 181, 34, 0.35);
+  }
+`;
 
-  &.logged-in {
-    margin-left: 15px;
-  }
-  &:hover {
-    background: rgb(206, 137, 0);
-    color: white;
-  }
+const MenuItemAnchor = styled.a`
+  ${menuItemBase}
+`;
+
+const MenuActionButton = styled.button`
+  ${menuItemBase}
+  ${({ $danger }) =>
+    $danger
+      ? `
+    color: #9f1f1f;
+    &:hover {
+      background: rgba(220, 38, 38, 0.10);
+      color: #861313;
+    }
+  `
+      : ''}
+`;
+
+const MenuItemBadge = styled.span`
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
 `;
 
 const OverlayBackground = styled.div`

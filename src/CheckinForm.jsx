@@ -27,6 +27,24 @@ import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
+import { Bike, Car, Footprints, HelpCircle, IceCream, MapPin } from "lucide-react";
+
+const TYPE_OPTIONS = [
+    { value: "Kugel", label: "Kugeleis", description: "Einzelne Kugeln, auch im Becher", tone: "kugel", icon: IceCream },
+    { value: "Softeis", label: "Softeis", description: "Gezapftes Softeis", tone: "softeis", icon: IceCream },
+    { value: "Eisbecher", label: "Eisbecher", description: "Komponierter Eisbecher / Sundae", tone: "becher", icon: IceCream },
+];
+
+const ARRIVAL_OPTIONS = [
+    { value: "Fahrrad", label: "Fahrrad", tone: "bike", icon: Bike },
+    { value: "Motorrad", label: "Motorrad", tone: "bike", icon: Bike },
+    { value: "Zu Fuß", label: "Zu Fuß", tone: "walk", icon: Footprints },
+    { value: "Auto", label: "Auto", tone: "car", icon: Car },
+    { value: "Bus / Bahn", label: "Bus / Bahn", tone: "transit", icon: MapPin },
+    { value: "Sonstiges", label: "Sonstiges", tone: "other", icon: HelpCircle },
+];
+
+const ARRIVAL_ICON_MAP = Object.fromEntries(ARRIVAL_OPTIONS.map((option) => [option.value, option.icon]));
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId }) => {
     const [type, setType] = useState("Kugel");
@@ -56,6 +74,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const MAX_IMAGES = SHARED_MAX_IMAGES;
     const [showImageChooser, setShowImageChooser] = useState(false);
+    const SelectedArrivalIcon = ARRIVAL_ICON_MAP[anreise] || HelpCircle;
+    const [groupSuggestions, setGroupSuggestions] = useState([]);
+    const [groupSuggestionCheckinId, setGroupSuggestionCheckinId] = useState(null);
+    const [groupLinkLoading, setGroupLinkLoading] = useState(false);
 
     // Läuft beim Laden der Seite automatisch
     useEffect(() => {
@@ -253,6 +275,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 if (onSuccess) onSuccess();
+                let suggestionsFound = false;
+                if (!checkinId && !referencedCheckinId && data.checkin_id) {
+                    suggestionsFound = await loadGroupSuggestions(data.checkin_id);
+                }
                 if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
@@ -275,9 +301,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     if (shop && askForPriceUpdate(shop.preise)) {
                         setPreisfrage(true);
                     } else {
-                        setTimeout(() => {
-                            setShowCheckinForm(false);
-                        }, 2000);
+                        if (!suggestionsFound) {
+                            setTimeout(() => {
+                                setShowCheckinForm(false);
+                            }, 2000);
+                        }
                     }
                 }
             } else {
@@ -287,6 +315,62 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             setMessage(`Ein Fehler ist aufgetreten: ${error}`);
             setSubmitted(false); // erneutes Absenden erlauben
         }
+    };
+
+    const loadGroupSuggestions = async (createdCheckinId) => {
+        try {
+            const windowMinutes = 45;
+            const res = await fetch(
+                `${apiUrl}/checkin/group_suggestions.php?checkin_id=${createdCheckinId}&user_id=${userId}&window_minutes=${windowMinutes}`
+            );
+            const json = await res.json();
+            if (json.status !== 'success') return false;
+
+            const candidates = (json.suggestions || []).filter((s) => !s.already_grouped);
+            if (candidates.length === 0) return false;
+
+            setGroupSuggestionCheckinId(createdCheckinId);
+            setGroupSuggestions(candidates);
+            setMessage((prev) => `${prev} Es gibt ${candidates.length} weitere Checkins in den letzten ${windowMinutes} Minuten an dieser Eisdiele.`);
+            return true;
+        } catch (error) {
+            console.warn('Gruppen-Vorschläge konnten nicht geladen werden:', error);
+            return false;
+        }
+    };
+
+    const handleLinkSuggestedCheckins = async () => {
+        if (!groupSuggestionCheckinId || groupSuggestions.length === 0) return;
+        try {
+            setGroupLinkLoading(true);
+            const res = await fetch(`${apiUrl}/checkin/group_link.php`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    checkin_id: groupSuggestionCheckinId,
+                    user_id: Number(userId),
+                    target_checkin_ids: groupSuggestions.map((s) => s.checkin_id),
+                }),
+            });
+            const json = await res.json();
+            if (json.status !== 'success') {
+                setMessage(`Verknüpfung fehlgeschlagen: ${json.message || 'Unbekannter Fehler'}`);
+                return;
+            }
+            setGroupSuggestions([]);
+            setGroupSuggestionCheckinId(null);
+            setMessage("Checkins wurden erfolgreich gruppiert.");
+            if (onSuccess) onSuccess();
+        } catch (error) {
+            setMessage(`Verknüpfung fehlgeschlagen: ${error.message || error}`);
+        } finally {
+            setGroupLinkLoading(false);
+        }
+    };
+
+    const dismissGroupSuggestions = () => {
+        setGroupSuggestions([]);
+        setGroupSuggestionCheckinId(null);
     };
 
     const handleDeleteClick = async () => {
@@ -421,9 +505,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     localAwards = element.new_awards;
                 }
             });
-            if (localAwards && localAwards.length !== 0) {
-                console.log("Neue Auszeichnungen:", localAwards);
-            } else {
+            if (!localAwards || localAwards.length === 0) {
                 setTimeout(() => {
                     setShowCheckinForm(false);
                 }, 2000);
@@ -440,13 +522,32 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 {isAllowed && (<>
                     {!submitted && (<Form onSubmit={submit}>
                         <Heading>Eis-Checkin für {shopName} {checkinId && ("bearbeiten")}</Heading>
+                        <IntroText>Bewerte dein Eis kurz und teile bei Bedarf Fotos und Notizen mit der Community.</IntroText>
                         <Section>
                             <Label>Eistyp</Label>
-                            <Select value={type} onChange={(e) => setType(e.target.value)}>
-                                <option value="Kugel">Kugel</option>
-                                <option value="Softeis">Softeis</option>
-                                <option value="Eisbecher">Eisbecher</option>
-                            </Select>
+                            <OptionGrid>
+                                {TYPE_OPTIONS.map((option) => {
+                                    const Icon = option.icon;
+                                    return (
+                                        <OptionButton
+                                            key={option.value}
+                                            type="button"
+                                            $active={type === option.value}
+                                            $tone={option.tone}
+                                            onClick={() => setType(option.value)}
+                                            aria-pressed={type === option.value}
+                                        >
+                                            <OptionIconWrap $active={type === option.value} $tone={option.tone}>
+                                                <Icon size={16} />
+                                            </OptionIconWrap>
+                                            <OptionTextWrap>
+                                                <OptionLabel>{option.label}</OptionLabel>
+                                                <OptionDescription>{option.description}</OptionDescription>
+                                            </OptionTextWrap>
+                                        </OptionButton>
+                                    );
+                                })}
+                            </OptionGrid>
                         </Section>
 
                         <Section>
@@ -460,7 +561,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                         alleSorten={alleSorten[type] || []}
                                     />
                                     {showSortenBewertung && (<>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -468,7 +569,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             value={sorte.bewertung}
                                             placeholder="Bewertung"
                                             onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
-                                            style={{ width: "100px" }}
                                         />
                                         <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
                                     </>
@@ -477,15 +577,15 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 </Row>
                             ))}
                             <AddButton type="button" onClick={addSorte}>+ Sorte hinzufügen</AddButton>
-                            <div style={{ marginTop: "0.5rem" }}>
-                                <label>
+                            <SortenToggleWrap>
+                                <SortenToggleLabel>
                                     <input
                                         type="checkbox"
                                         checked={showSortenBewertung}
                                         onChange={() => setShowSortenBewertung(!showSortenBewertung)}
                                     /> Sorten einzeln bewerten
-                                </label>
-                            </div>
+                                </SortenToggleLabel>
+                            </SortenToggleWrap>
                         </Section>
 
                         <Table>
@@ -498,7 +598,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <tr>
                                     <td><Label>Bewertung Geschmack:</Label></td>
                                     <td>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -506,7 +606,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={geschmackbewertung}
                                             onChange={(e) => setGeschmackbewertung(e.target.value)}
-                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} /></td>
@@ -514,7 +613,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <tr>
                                     <td><Label>Preis-Leistungs-Verhältnis:</Label></td>
                                     <td>
-                                        <Input
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -522,15 +621,24 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={preisleistungsbewertung}
                                             onChange={(e) => setPreisleistungsbewertung(e.target.value)}
-                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} /></td>
                                 </tr>
                                 {type !== "Eisbecher" && (<tr>
-                                    <td><Label>Bewertung Waffel:</Label></td>
                                     <td>
-                                        <Input
+                                        <Label>
+                                            Bewertung Waffel:
+                                            <InfoHint tabIndex={0} aria-label="Hinweis zur Waffel-Bewertung">
+                                                <InfoHintIcon>i</InfoHintIcon>
+                                                <InfoHintBubble>
+                                                    Wenn du Kugel- oder Softeis im Becher isst, kannst du die Waffel-Bewertung leer lassen.
+                                                </InfoHintBubble>
+                                            </InfoHint>
+                                        </Label>
+                                    </td>
+                                    <td>
+                                        <ScoreInput
                                             type="number"
                                             step="0.1"
                                             min="1.0"
@@ -538,7 +646,6 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             placeholder="1.0 - 5.0"
                                             value={waffelbewertung}
                                             onChange={(e) => setWaffelbewertung(e.target.value)}
-                                            style={{ width: "70%" }}
                                         />
                                     </td>
                                     <td><Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} /></td>
@@ -548,15 +655,17 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
                         <Section>
                             <Label>Wie bist du zur Eisdiele gekommen?</Label>
-                            <Select value={anreise} onChange={(e) => setAnreise(e.target.value)}>
-                                <option value="">Bitte wählen</option>
-                                <option value="Fahrrad">Fahrrad</option>
-                                <option value="Motorrad">Motorrad</option>
-                                <option value="Zu Fuß">Zu Fuß</option>
-                                <option value="Auto">Auto</option>
-                                <option value="Bus / Bahn">Bus / Bahn</option>
-                                <option value="Sonstiges">Sonstiges</option>
-                            </Select>
+                            <ArrivalSelectRow>
+                                <ArrivalIconBadge>
+                                    <SelectedArrivalIcon size={16} />
+                                </ArrivalIconBadge>
+                                <Select value={anreise} onChange={(e) => setAnreise(e.target.value)}>
+                                    <option value="">Bitte wählen</option>
+                                    {ARRIVAL_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                </Select>
+                            </ArrivalSelectRow>
                         </Section>
 
                         <Section>
@@ -590,9 +699,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             />
                             {/* Ein Button öffnet eine Auswahl (Kamera/Galerie). Auf Mobilgeräten
                                 zeigt sich die entsprechende Option; auf Desktop eine JS-Prompt zur Auswahl. */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                <Button type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</Button>
-                            </div>
+                            <UploadActionRow>
+                                <ActionButton type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</ActionButton>
+                            </UploadActionRow>
                             {showImageChooser && (
                                 <ImageChooserModal
                                     onClose={() => setShowImageChooser(false)}
@@ -607,12 +716,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             src={bild.previewUrl || bild.url}
                                             alt={`Bild ${index + 1}`}
                                         />
-                                        <Input
+                                        <ImageCaptionInput
                                             type="text"
                                             placeholder="Beschreibung eingeben (optional)"
                                             value={bild.beschreibung}
                                             onChange={(e) => updateBildBeschreibung(index, e.target.value)}
-                                            style={{ margin: "0.5rem 0", width: "90%" }}
                                         />
                                         <DeleteButton type="button" onClick={() => removeBild(index)}>
                                             Bild entfernen
@@ -627,24 +735,43 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                 <UserMentionMultiSelect onChange={setMentionedUsers} />
                             </Section>) :
                             (<Section>
-                                <p style={{ fontStyle: "italic", color: "#666" }}>
+                                <ReferenceHint>
                                     Dieser Check-in wird mit <strong>{referencedCheckin.nutzer_name}'s</strong> Check-in vom {referencedCheckin.datum} verknüpft.
-                                </p>
+                                </ReferenceHint>
                             </Section>)
                         }
 
-                        <ButtonGroup>
-                            <Button type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</Button>
-                            <Button type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</Button>
-                            {checkinId && (<><br />
+                        <FormButtonGroup>
+                            <PrimaryAction type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</PrimaryAction>
+                            <SecondaryAction type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</SecondaryAction>
+                            {checkinId && (<>
                                 <DeleteButton type="button" onClick={handleDeleteClick} >
                                     Check-in löschen
                                 </DeleteButton></>
                             )}
-                        </ButtonGroup>
+                        </FormButtonGroup>
                     </Form>)}
                 </>)}
                 <Message>{message}</Message>
+                {groupSuggestions.length > 0 && (
+                    <SuggestionBox>
+                        <h4>Gemeinsamer Checkin?</h4>
+                        <p>Andere Nutzer haben in den letzten Minuten ebenfalls hier eingecheckt:</p>
+                        <SuggestionList>
+                            {groupSuggestions.map((item) => (
+                                <li key={item.checkin_id}>
+                                    <strong>{item.username}</strong> · {new Date(item.datum).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                                </li>
+                            ))}
+                        </SuggestionList>
+                        <ButtonGroup>
+                            <SubmitButton type="button" onClick={handleLinkSuggestedCheckins} disabled={groupLinkLoading}>
+                                {groupLinkLoading ? "Verknüpfe…" : `Alle ${groupSuggestions.length} verknüpfen`}
+                            </SubmitButton>
+                            <Button type="button" onClick={dismissGroupSuggestions}>Später</Button>
+                        </ButtonGroup>
+                    </SuggestionBox>
+                )}
                 {preisfrage && (
                     <>
                         <Text>Stimmt der Preis von <strong>{shop.eisdiele.name}</strong> noch?</Text>
@@ -677,7 +804,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 export default CheckinForm;
 // Re-export some shared styled names for backwards compatibility in this file
 const Overlay = SharedOverlay;
-const Modal = SharedModal;
+const Modal = styled(SharedModal)`
+    width: min(96vw, 760px);
+    background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
+`;
 const CloseButton = SharedCloseButton;
 const Heading = SharedHeading;
 const Form = SharedForm;
@@ -698,34 +831,94 @@ const LevelInfo = SharedLevelInfo;
 const SubmitButton = SharedSubmitButton;
 
 // Small local helpers that existed previously and are referenced in JSX
+const IntroText = styled.p`
+    margin: -0.3rem 0 0.9rem;
+    color: rgba(47, 33, 0, 0.72);
+    font-size: 0.92rem;
+`;
+
 const Row = styled.div`
-    display: flex;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 0.55rem;
     align-items: center;
-    padding-bottom: 0.2rem;
+    padding-bottom: 0.35rem;
+
+    @media (max-width: 760px) {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+    }
 `;
 
 const RemoveButton = styled.button`
-    background: transparent;
-    border: none;
-    color: #d9534f;
-    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(217, 83, 79, 0.35);
+    color: #b4332f;
+    border-radius: 10px;
+    min-width: 42px;
+    min-height: 40px;
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
 `;
 
 const AddButton = styled.button`
-    background: #ffb522;
-    color: white;
-    border: none;
-    padding: 0.4rem 0.6rem;
-    border-radius: 6px;
+    background: rgba(255, 181, 34, 0.16);
+    color: #7a4a00;
+    border: 1px solid rgba(255, 181, 34, 0.35);
+    padding: 0.5rem 0.7rem;
+    border-radius: 10px;
+    font-weight: 700;
     cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 181, 34, 0.26);
+    }
 `;
 
 const Table = styled.table`
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid rgba(47, 33, 0, 0.1);
+    border-radius: 14px;
+    overflow: visible;
+    background: rgba(255, 255, 255, 0.78);
     margin-bottom: 1rem;
+
+    td {
+        padding: 0.55rem 0.6rem;
+        border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    @media (max-width: 760px) {
+        display: block;
+
+        tbody {
+            display: grid;
+            gap: 0.35rem;
+            padding: 0.45rem;
+        }
+
+        tr {
+            display: grid;
+            gap: 0.35rem;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(47, 33, 0, 0.08);
+            border-radius: 10px;
+            padding: 0.45rem;
+        }
+
+        td {
+            border: none;
+            padding: 0;
+        }
+    }
 `;
 
 const StyledCol1 = styled.col`
@@ -743,4 +936,301 @@ const StyledCol3 = styled.col`
     align-content: right;
 `;
 
+const ScoreInput = styled(Input)`
+    width: 100%;
+    max-width: 130px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    border: 1px solid rgba(47, 33, 0, 0.2);
+`;
+
+const UploadActionRow = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+`;
+
+const ActionButton = styled(Button)`
+    color: #2f2100;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+
+    &:hover {
+        background: linear-gradient(180deg, #ffd97f 0%, #ffbf3f 100%);
+    }
+`;
+
+const ImageCaptionInput = styled(Input)`
+    margin: 0.5rem 0;
+    width: 90%;
+`;
+
+const SortenToggleWrap = styled.div`
+    margin-top: 0.45rem;
+`;
+
+const SortenToggleLabel = styled.label`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #4f3800;
+    font-size: 0.9rem;
+`;
+
+const OptionGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.55rem;
+`;
+
+const OptionButton = styled.button`
+    border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.55)' : 'rgba(47, 33, 0, 0.12)')};
+    background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.16)' : 'rgba(255, 255, 255, 0.86)')};
+    border-radius: 12px;
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    text-align: left;
+    color: #2f2100;
+    font-weight: 600;
+    transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+
+    &:hover {
+        background: rgba(255, 181, 34, 0.12);
+    }
+
+    &:focus-visible {
+        outline: 2px solid rgba(255, 181, 34, 0.55);
+        outline-offset: 2px;
+    }
+`;
+
+const OptionIconWrap = styled.span`
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid;
+    background: ${({ $active, $tone }) =>
+        $active
+            ? ($tone === 'softeis'
+                ? 'rgba(56, 189, 248, 0.22)'
+                : $tone === 'becher'
+                    ? 'rgba(167, 139, 250, 0.22)'
+                    : $tone === 'car'
+                        ? 'rgba(251, 146, 60, 0.22)'
+                        : $tone === 'walk'
+                            ? 'rgba(74, 222, 128, 0.22)'
+                            : $tone === 'bike'
+                                ? 'rgba(96, 165, 250, 0.22)'
+                                : $tone === 'transit'
+                                    ? 'rgba(52, 211, 153, 0.22)'
+                                    : $tone === 'none'
+                                        ? 'rgba(148, 163, 184, 0.25)'
+                                        : 'rgba(255, 181, 34, 0.22)')
+            : 'rgba(255, 255, 255, 0.7)'};
+    border-color: ${({ $active, $tone }) =>
+        $active
+            ? ($tone === 'softeis'
+                ? 'rgba(2, 132, 199, 0.35)'
+                : $tone === 'becher'
+                    ? 'rgba(109, 40, 217, 0.35)'
+                    : $tone === 'car'
+                        ? 'rgba(194, 65, 12, 0.35)'
+                        : $tone === 'walk'
+                            ? 'rgba(22, 163, 74, 0.35)'
+                            : $tone === 'bike'
+                                ? 'rgba(37, 99, 235, 0.35)'
+                                : $tone === 'transit'
+                                    ? 'rgba(5, 150, 105, 0.35)'
+                                    : $tone === 'none'
+                                        ? 'rgba(100, 116, 139, 0.35)'
+                                        : 'rgba(217, 119, 6, 0.35)')
+            : 'rgba(47, 33, 0, 0.2)'};
+    color: ${({ $active, $tone }) =>
+        $active
+            ? ($tone === 'softeis'
+                ? '#0369a1'
+                : $tone === 'becher'
+                    ? '#6d28d9'
+                    : $tone === 'car'
+                        ? '#9a3412'
+                        : $tone === 'walk'
+                            ? '#15803d'
+                            : $tone === 'bike'
+                                ? '#1d4ed8'
+                                : $tone === 'transit'
+                                    ? '#047857'
+                                    : $tone === 'none'
+                                        ? '#64748b'
+                                        : '#9a3412')
+            : '#5f4a25'};
+`;
+
+const OptionTextWrap = styled.span`
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.06rem;
+`;
+
+const OptionLabel = styled.span`
+    font-size: 0.9rem;
+    line-height: 1.2;
+`;
+
+const OptionDescription = styled.span`
+    font-size: 0.73rem;
+    color: rgba(47, 33, 0, 0.65);
+    font-weight: 500;
+`;
+
+const TypeHelperBox = styled.div`
+    margin-top: 0.55rem;
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.76);
+    color: #5a3f1a;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.6rem;
+`;
+
+const InfoHint = styled.span`
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.35rem;
+    cursor: help;
+    outline: none;
+    z-index: 30;
+
+    &:hover > span:last-child,
+    &:focus-visible > span:last-child {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+`;
+
+const InfoHintIcon = styled.span`
+    width: 17px;
+    height: 17px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    background: rgba(96, 165, 250, 0.2);
+    border: 1px solid rgba(37, 99, 235, 0.28);
+    color: #1d4ed8;
+`;
+
+const InfoHintBubble = styled.span`
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 0.35rem);
+    transform: translate(-50%, -6px);
+    width: min(280px, 72vw);
+    padding: 0.45rem 0.55rem;
+    border-radius: 9px;
+    background: rgba(17, 24, 39, 0.94);
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 500;
+    line-height: 1.3;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+`;
+
+const ArrivalSelectRow = styled.div`
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem;
+    align-items: center;
+`;
+
+const ArrivalIconBadge = styled.span`
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 181, 34, 0.16);
+    border: 1px solid rgba(255, 181, 34, 0.32);
+    color: #7d4b00;
+`;
+
+const FormButtonGroup = styled(ButtonGroup)`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+`;
+
+const PrimaryAction = styled(Button)`
+    color: #2f2100;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+
+    &:hover {
+        background: linear-gradient(180deg, #ffd97f 0%, #ffbf3f 100%);
+    }
+`;
+
+const SecondaryAction = styled(Button)`
+    color: #5d3a00;
+    border-radius: 11px;
+    border: 1px solid rgba(47, 33, 0, 0.22);
+    background: rgba(255, 255, 255, 0.85);
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.96);
+    }
+`;
+
+const ReferenceHint = styled.p`
+    margin: 0;
+    font-style: italic;
+    color: rgba(47, 33, 0, 0.68);
+`;
+
 const Text = styled.p``;
+
+const SuggestionBox = styled.div`
+    margin-top: 0.9rem;
+    border: 1px solid rgba(47, 33, 0, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 0.75rem 0.85rem;
+
+    h4 {
+        margin: 0 0 0.3rem;
+        color: #3b2a00;
+    }
+
+    p {
+        margin: 0 0 0.45rem;
+        color: rgba(47, 33, 0, 0.76);
+        font-size: 0.9rem;
+    }
+`;
+
+const SuggestionList = styled.ul`
+    margin: 0 0 0.75rem;
+    padding-left: 1.1rem;
+    color: #4a3400;
+    font-size: 0.9rem;
+`;

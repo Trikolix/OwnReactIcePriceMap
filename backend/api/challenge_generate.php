@@ -180,6 +180,20 @@ try {
     if (isset($shopOut['longitude'])) {
         $shopOut['shop_lon'] = $shopOut['longitude'];
     }
+    $challengeOut = [
+        "id" => (int)$newChallengeId,
+        "challenge_id" => (int)$newChallengeId,
+        "type" => $type,
+        "difficulty" => $difficulty,
+        "valid_until" => $validUntil,
+        "completed" => 0,
+        "recreated" => $isRecreated ? 1 : 0,
+        "shop_id" => isset($randomShop['id']) ? (int)$randomShop['id'] : null,
+        "shop_name" => $randomShop['name'] ?? null,
+        "shop_address" => $randomShop['adresse'] ?? null,
+        "shop_lat" => isset($randomShop['latitude']) ? (float)$randomShop['latitude'] : null,
+        "shop_lon" => isset($randomShop['longitude']) ? (float)$randomShop['longitude'] : null,
+    ];
     echo json_encode([
         "status" => "success",
         "challenge_id" => $newChallengeId,
@@ -187,7 +201,8 @@ try {
         "difficulty" => $difficulty,
         "valid_until" => $validUntil,
         "shop" => $shopOut,
-        "recreated" => $isRecreated
+        "recreated" => $isRecreated,
+        "challenge" => $challengeOut
     ]);
 
 } catch (Exception $e) {

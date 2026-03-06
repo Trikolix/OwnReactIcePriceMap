@@ -8,6 +8,7 @@ import RouteCard from '../components/RouteCard';
 import ShopCard from '../components/ShopCard';
 import AwardCard from '../components/AwardCard';
 import AwardBundleCard from '../components/AwardBundleCard';
+import NewUserCard from '../components/NewUserCard';
 
 function DashBoard() {
   const [activities, setActivities] = useState([]);
@@ -64,7 +65,7 @@ function DashBoard() {
 
   const extractActivityDate = (data) => {
     if (!data) return null;
-    return parseActivityDate(data.datum || data.erstellt_am || data.created_at || null);
+    return parseActivityDate(data.aktivitaet_am || data.datum || data.erstellt_am || data.created_at || null);
   };
 
   // Hilfsfunktion: Gruppiert Activities nach group_id
@@ -223,9 +224,14 @@ function DashBoard() {
   return (
     <Page>
       <Header />
-      <Title>Aktivitäten</Title>
-
       <Container>
+        <HeroCard>
+          <Title>Aktivitäten</Title>
+          <Subtitle>
+            Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
+          </Subtitle>
+        </HeroCard>
+
         {/* Initial-Loader: nur Platzhalter innerhalb des Containers */}
         {loadingInitial && activities.length === 0 && (
           <Placeholder>Lade Dashboard Daten...</Placeholder>
@@ -252,6 +258,8 @@ function DashBoard() {
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
               case 'award':
                 return <AwardCard key={`award-${id}`} award={data} />;
+              case 'new_user':
+                return <NewUserCard key={`new-user-${id}`} user={data} />;
               case 'award_bundle': {
                 const firstAward = Array.isArray(data) ? data[0] : null;
                 const latestAward = Array.isArray(data) ? data[data.length - 1] : null;
@@ -300,57 +308,82 @@ export default DashBoard;
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  min-height: 100vh;     /* nicht height: 100vh -> verhindert hartes Clipping */
-  background-color: #ffb522;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 40%),
+    linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
 `;
 
 const Container = styled.div`
   padding: 1rem;
-  background-color: white;
-  /* entferne height: 100% -> lässt die Seite natürlich wachsen, behält Scroll */
   display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
+  flex-direction: column;
+  gap: 1rem;
   justify-content: center;
+  width: min(96%, 1040px);
+  box-sizing: border-box;
+  margin: 0 auto;
 `;
 
 const Title = styled.h2`
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin: 1rem 0;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  font-weight: 800;
+  margin: 0;
   text-align: center;
+  color: #2f2100;
 `;
 
 const Section = styled.div`
-  flex: 1 1 300px;
-  max-width: 900px;
-  min-width: 300px;
+  width: 100%;
 `;
 
 const Controls = styled.div`
-  margin: 1rem 0 4rem;
+  margin: 1rem 0 3rem;
   text-align: center;
 `;
 
 const Placeholder = styled.div`
   width: 100%;
   text-align: center;
-  padding: 2rem 0;
+  padding: 1.25rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 252, 243, 0.94);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.05);
+  color: #6b5327;
 `;
 
 const LoadButton = styled.button`
   align-self: flex-start;
   background-color: #ffb522;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.55);
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
 
   &:hover {
-    background-color: #db9d20ff;
+    background-color: #ffc34a;
+    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
   }
+`;
+
+const HeroCard = styled.div`
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem 1rem 0.9rem;
+  margin-top: 0.25rem;
+`;
+
+const Subtitle = styled.p`
+  margin: 0.4rem 0 0;
+  text-align: center;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.95rem;
 `;

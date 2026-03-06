@@ -23,7 +23,6 @@ import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
 
 const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceForm, onSuccess }) => {
-    console.log(shop);
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
     const [waffel, setWaffel] = useState(null);
@@ -249,9 +248,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     localAwards = element.new_awards;
                 }
             });
-            if (localAwards && localAwards.length !== 0) {
-                console.log("Neue Auszeichnungen:", localAwards);
-            } else {
+            if (!localAwards || localAwards.length === 0) {
                 setTimeout(() => {
                     setShowForm(false);
                 }, 2000);
@@ -328,18 +325,20 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 <CloseButton onClick={() => setShowForm(false)}>x</CloseButton>
                 {!submitted && (<>
                     <FormTitle>{shop.eisdiele.name} bewerten</FormTitle>
+                    <IntroText>Teile deinen Gesamteindruck zur Eisdiele. Für Sorten und Geschmacksdetails nutzt du am besten den Check-in.</IntroText>
 
-                    <GridForm>
-                        <label>Auswahl:</label>
+                    <SectionCard>
+                        <Label>Auswahl (Anzahl Sorten)</Label>
                         <Input type="number" min="1" step="1" value={auswahl || ''} placeholder="Anzahl Sorten" onChange={(e) => setAuswahl(parseInt(e.target.value))} />
-                    </GridForm>
+                    </SectionCard>
 
-                    <TextAreaGroup>
-                        <label>Bewertung:</label>
+                    <SectionCard>
+                        <Label>Bewertung</Label>
                         <TextArea rows="7" value={beschreibung} placeholder="Beschreibe wie du die Eisdiele im allgemeinen findest. Ambiente, Lage, Service etc. Für Geschmacksberichte gibt es die Check-in Funktion." onChange={(e) => setBeschreibung(e.target.value)} />
-                    </TextAreaGroup>
+                    </SectionCard>
 
-                    <AttributeSection>
+                    <SectionCard>
+                        <AttributeSection>
                         <BoldText>Ausgewählte Attribute:</BoldText>
                         <FlexWrap>
                             {selectedAttributes.map((attr) => (
@@ -356,17 +355,18 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                                 </AvailableAttr>
                             ))}
                             {attribute.length > 5 && (
-                                <AvailableAttr onClick={() => setShowAllAttributes(!showAllAttributes)}>
-                                    {showAllAttributes ? "..." : "..."}
-                                </AvailableAttr>
+                                <ToggleAttrButton type="button" onClick={() => setShowAllAttributes(!showAllAttributes)}>
+                                    {showAllAttributes ? "Weniger anzeigen" : "Mehr anzeigen"}
+                                </ToggleAttrButton>
                             )}
                         </FlexWrap>
                         <AddAttributeRow>
                             <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
                             <SharedSmallButton onClick={handleNewAttribute}>Hinzufügen</SharedSmallButton>
                         </AddAttributeRow>
-                    </AttributeSection>
-                    <Section>
+                        </AttributeSection>
+                    </SectionCard>
+                    <SectionCard>
                         <Label>Bilder hochladen</Label>
                         <input
                             type="file"
@@ -385,9 +385,9 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                             ref={galleryInputRef}
                             onChange={(e) => { handleBildUpload(e); e.target.value = ''; }}
                         />
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <UploadActionRow>
                             <SharedSmallButton type="button" onClick={handleAddImagesClick}>Bilder hinzufügen</SharedSmallButton>
-                        </div>
+                        </UploadActionRow>
                         {showImageChooser && (
                             <ImageChooserModal
                                 onClose={() => setShowImageChooser(false)}
@@ -407,7 +407,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                                         placeholder="Beschreibung eingeben (optional)"
                                         value={bild.beschreibung}
                                         onChange={(e) => updateBildBeschreibung(index, e.target.value)}
-                                        style={{ margin: "0.5rem 0", width: "90%" }}
+                                        as={ImageCaptionInput}
                                     />
                                     <DeleteButton type="button" onClick={() => removeBild(index)}>
                                         Bild entfernen
@@ -415,9 +415,9 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                                 </div>
                             ))}
                         </BilderContainer>
-                    </Section>
+                    </SectionCard>
                     <ButtonGroup>
-                        <SubmitButton onClick={submit}>Einreichen</SubmitButton>
+                        <PrimarySubmit type="button" onClick={submit}>Einreichen</PrimarySubmit>
                     </ButtonGroup>
                 </>)}
                 {(submitted && !preisfrage) ? (
@@ -450,7 +450,12 @@ export default SubmitReviewModal;
 // Re-export / provide the styled names expected by the component (map to shared ones)
 const ModalOverlay = SharedOverlay;
 const ModalContent = styled(SharedModal)`
-    max-width: 600px;
+    width: min(96vw, 700px);
+    max-width: 700px;
+    background: linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+    border: 1px solid rgba(47, 33, 0, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
     padding: 1rem;
 `;
 const CloseButton = SharedCloseButton;
@@ -460,12 +465,19 @@ const Section = SharedSection;
 const Label = SharedLabel;
 const FormTitle = styled.h2`
     margin-top: 0;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
+    color: #2f2100;
 `;
-const GridForm = styled.div``;
-const TextAreaGroup = styled.div``;
+const IntroText = styled.p`
+    margin: 0 0 0.85rem;
+    color: rgba(47, 33, 0, 0.72);
+    font-size: 0.9rem;
+`;
 const TextArea = SharedTextarea;
-const AttributeSection = styled.div``;
+const AttributeSection = styled.div`
+    display: grid;
+    gap: 0.5rem;
+`;
 const BoldText = styled.strong``;
 const FlexWrap = styled.div`
     display: flex;
@@ -473,20 +485,35 @@ const FlexWrap = styled.div`
     flex-wrap: wrap;
 `;
 const SelectedAttr = styled.button`
-    background: #ffb522; /* warm orange */
-    color: white;
-    border: none;
+    background: rgba(255, 181, 34, 0.16);
+    color: #7a4a00;
+    border: 1px solid rgba(255, 181, 34, 0.35);
     padding: 0.35rem 0.6rem;
     border-radius: 999px;
     cursor: pointer;
     font-weight: 600;
 `;
 const AvailableAttr = styled.button`
-    background: #f0f0f0;
-    border: none;
+    background: rgba(255, 255, 255, 0.85);
+    color: #5d3a00;
+    border: 1px solid rgba(47, 33, 0, 0.16);
     padding: 0.25rem 0.5rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
+`;
+const ToggleAttrButton = styled.button`
+    background: linear-gradient(180deg, #ffe6a8 0%, #ffd36f 100%);
+    color: #4d2f00;
+    border: 1px solid rgba(255, 181, 34, 0.62);
+    padding: 0.28rem 0.62rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(255, 181, 34, 0.25);
+
+    &:hover {
+        background: linear-gradient(180deg, #ffeebd 0%, #ffd879 100%);
+    }
 `;
 const AddAttributeRow = styled.div`
     display:flex;
@@ -500,4 +527,27 @@ const SubmitButton = SharedSubmitButton;
 const ButtonGroup = SharedButtonGroup;
 const Message = SharedMessage;
 const DeleteButton = SharedDeleteButton;
+const SectionCard = styled(SharedSection)`
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(47, 33, 0, 0.1);
+    border-radius: 14px;
+    padding: 0.7rem;
+`;
+const UploadActionRow = styled.div`
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+`;
+const ImageCaptionInput = styled(SharedInput)`
+    margin: 0.5rem 0;
+    width: 90%;
+`;
+const PrimarySubmit = styled(SharedSubmitButton)`
+    width: 100%;
+    margin: 0;
+    color: #2f2100;
+    border: 1px solid rgba(255, 181, 34, 0.6);
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffd36f 0%, #ffb522 100%);
+`;
 const Text = styled.p``;

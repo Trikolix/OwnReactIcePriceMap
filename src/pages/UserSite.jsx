@@ -1,5 +1,6 @@
 import Header from './../Header';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -9,15 +10,22 @@ import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recha
 import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
+import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 const TRAVEL_COLORS = ["#ffb522", "#ff8a00", "#ff595e", "#8ac926", "#33658a", "#6a4c93", "#1982c4", "#6f2dbd"];
 const buildAssetUrl = (path) => (path ? `${ASSET_BASE}/${path.replace(/^\/+/, "")}` : null);
-const toNumberOrDefault = (value, defaultValue = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : defaultValue;
+const formatTimeLeft = (secondsInput) => {
+  const seconds = Math.max(0, Number(secondsInput) || 0);
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `${days}T ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}min`;
+  return `${minutes}min`;
 };
 
 function UserSite() {
@@ -35,6 +43,7 @@ function UserSite() {
   const [checkinPage, setCheckinPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
   const [awardPage, setAwardPage] = useState(1);
+  const [awardColumns, setAwardColumns] = useState(1);
   const [routePage, setRoutePage] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const [activityLevel, setActivityLevel] = useState('land');
@@ -46,6 +55,10 @@ function UserSite() {
   const [flavorDetails, setFlavorDetails] = useState({});
   const [flavorLoading, setFlavorLoading] = useState({});
   const [flavorErrors, setFlavorErrors] = useState({});
+  const profile156AutoScanTriggeredRef = useRef(false);
+  const awardsGridRef = useRef(null);
+  const PROFILE_156_SCAN_CODE = '3cb55cb87747d1ed4069e612cef2e75d';
+  const [selectedAward, setSelectedAward] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -55,7 +68,31 @@ function UserSite() {
     if (params.get('tab') === 'routes') {
       setActiveTab('routen');
     }
+    if (params.get('tab') === 'stats') {
+      setActiveTab('stats');
+    }
   }, [location.search]);
+
+  useEffect(() => {
+    if (Number(finalUserId) !== 156) return;
+    if (profile156AutoScanTriggeredRef.current) return;
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('scan') === PROFILE_156_SCAN_CODE) {
+      profile156AutoScanTriggeredRef.current = true;
+      return;
+    }
+
+    params.set('scan', PROFILE_156_SCAN_CODE);
+    profile156AutoScanTriggeredRef.current = true;
+    navigate(
+      {
+        pathname: location.pathname,
+        search: `?${params.toString()}`,
+      },
+      { replace: true }
+    );
+  }, [finalUserId, location.pathname, location.search, navigate]);
 
   const loadMoreCheckins = () => setCheckinPage((prev) => prev + 1);
   const loadMoreReviews = () => setReviewPage((prev) => prev + 1);
@@ -80,6 +117,47 @@ function UserSite() {
     fetchUserData(finalUserId);
   }, [finalUserId]);
 
+  useEffect(() => {
+    if (!selectedAward) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedAward(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedAward]);
+
+  useEffect(() => {
+    const grid = awardsGridRef.current;
+    if (!grid) return undefined;
+
+    const updateAwardColumns = () => {
+      const style = window.getComputedStyle(grid);
+      const columnCount = style.gridTemplateColumns
+        .split(' ')
+        .filter(Boolean)
+        .length;
+      setAwardColumns(Math.max(1, columnCount));
+    };
+
+    updateAwardColumns();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateAwardColumns);
+      return () => {
+        window.removeEventListener('resize', updateAwardColumns);
+      };
+    }
+    const observer = new ResizeObserver(updateAwardColumns);
+    observer.observe(grid);
+    window.addEventListener('resize', updateAwardColumns);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateAwardColumns);
+    };
+  }, [data?.user_awards?.length]);
+
   const refreshUser = () => fetchUserData(finalUserId);
   const copyToClipboard = async (text) => {
     try {
@@ -94,26 +172,38 @@ function UserSite() {
   const checkins = data?.checkins || [];
   const reviews = data?.reviews || [];
   const awards = data?.user_awards || [];
+  const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routes = data?.routen || [];
+  const hasCheckins = checkins.length > 0;
+  const hasReviews = reviews.length > 0;
+  const hasRoutes = routes.length > 0;
   const displayedCheckins = checkins.slice(0, checkinPage * 5);
   const displayedReviews = reviews.slice(0, reviewPage * 5);
-  const displayedAwards = awards.slice(0, awardPage * 6);
+  const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
   const displayedRoutes = routes.slice(0, routePage * 5);
-  const fallbackImageCount = React.useMemo(() => {
-    const checkinImages = checkins.reduce((sum, checkin) => sum + (checkin?.bilder?.length || 0), 0);
-    const reviewImages = reviews.reduce((sum, review) => sum + (review?.bilder?.length || 0), 0);
-    return checkinImages + reviewImages;
-  }, [checkins, reviews]);
-  const fallbackCommentCount = React.useMemo(() => {
-    const checkinComments = checkins.reduce((sum, checkin) => sum + (Number(checkin?.commentCount) || 0), 0);
-    const reviewComments = reviews.reduce((sum, review) => sum + (Number(review?.commentCount) || 0), 0);
-    return checkinComments + reviewComments;
-  }, [checkins, reviews]);
-  const reviewCount = data?.review_count != null ? toNumberOrDefault(data.review_count, 0) : reviews.length;
-  const imageCount = data?.image_count != null ? toNumberOrDefault(data.image_count, 0) : fallbackImageCount;
-  const routeCount = data?.route_count != null ? toNumberOrDefault(data.route_count, 0) : routes.length;
-  const commentCount = data?.comment_count != null ? toNumberOrDefault(data.comment_count, 0) : fallbackCommentCount;
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
+  const dayStreak = data?.streaks?.day || {};
+  const weekStreak = data?.streaks?.week || {};
+  const dayStreakState = dayStreak.state || 'none';
+  const weekStreakState = weekStreak.state || 'none';
+  const dayStreakValue = Number(dayStreak.value || 0);
+  const weekStreakValue = Number(weekStreak.value || 0);
+  const dayStreakHint = dayStreakState === 'at_risk'
+    ? `Heute noch kein Check-in. Noch ${formatTimeLeft(dayStreak.seconds_left)} bis der Streak verfällt.`
+    : dayStreakState === 'active'
+      ? 'Heute bereits eingecheckt. Streak gesichert.'
+      : 'Kein aktiver Tages-Streak. Check heute ein, um zu starten.';
+  const weekStreakHint = weekStreakState === 'at_risk'
+    ? `Diese Woche noch kein Check-in. Noch ${formatTimeLeft(weekStreak.seconds_left)} bis der Wochen-Streak verfällt.`
+    : weekStreakState === 'active'
+      ? 'Diese Woche bereits eingecheckt. Wochen-Streak gesichert.'
+      : 'Kein aktiver Wochen-Streak. Ein Check-in pro Woche startet die Serie.';
+
+  const renderStreakIcon = (state) => {
+    if (state === 'active') return <CheckCircle2 size={18} />;
+    if (state === 'at_risk') return <Flame size={18} />;
+    return <CircleOff size={18} />;
+  };
   const portionBreakdown = [
     { key: 'Kugel', label: 'Kugeleis', value: Number(data?.eisarten?.Kugel || 0) },
     { key: 'Softeis', label: 'Softeis', value: Number(data?.eisarten?.Softeis || 0) },
@@ -129,6 +219,19 @@ function UserSite() {
   };
   const activeActivityData = activityData[activityLevel]?.data || [];
   const activityPreview = activeActivityData.slice(0, PREVIEW_COUNT);
+
+  useEffect(() => {
+    const visibleActivityTabs = [
+      hasCheckins ? 'checkins' : null,
+      hasReviews ? 'reviews' : null,
+      hasRoutes ? 'routen' : null,
+    ].filter(Boolean);
+
+    if (activeTab === 'stats') return;
+    if (!visibleActivityTabs.includes(activeTab)) {
+      setActiveTab(visibleActivityTabs[0] || 'stats');
+    }
+  }, [activeTab, hasCheckins, hasReviews, hasRoutes]);
 
   const sortedMostVisited = React.useMemo(() => {
     if (!data?.meistbesuchte_eisdielen) return [];
@@ -467,23 +570,25 @@ function UserSite() {
               <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
                 {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
               </AvatarCircle>
-              <ProfileInfo>
-                <h1>{data.nutzername}</h1>
-                <MetaRow>
-                  <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
-                  <Chip>{data.eisdielen_besucht} verschiedene Eisdielen</Chip>
-                  <Chip>{data.anzahl_checkins} Check-ins</Chip>
-                  <Chip>{reviewCount} Reviews</Chip>
-                  <Chip>{imageCount} hochgeladene Bilder</Chip>
-                  <Chip>{routeCount} Routen</Chip>
-                  <Chip>{commentCount} Kommentare</Chip>
-                </MetaRow>
-              </ProfileInfo>
-              {isOwnProfile && (
-                <SettingsButton onClick={() => setShowSettings(true)}>
-                  ⚙️ Profil & Einstellungen
-                </SettingsButton>
-              )}
+              <ProfileMainColumn>
+                <ProfileInfo>
+                  <h1>{data.nutzername}</h1>
+                  <MetaRow>
+                    <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
+                    {isOwnProfile && <Chip>Dein Profil</Chip>}
+                  </MetaRow>
+                </ProfileInfo>
+                <LevelInlineCard>
+                  <LevelDisplay levelInfo={data.level_info} />
+                </LevelInlineCard>
+              </ProfileMainColumn>
+              <ProfileActions>
+                {isOwnProfile && (
+                  <SettingsButton onClick={() => setShowSettings(true)}>
+                    ⚙️ Profil & Einstellungen
+                  </SettingsButton>
+                )}
+              </ProfileActions>
             </ProfileHeader>
             {isOwnProfile && (
               <InviteCard>
@@ -503,54 +608,151 @@ function UserSite() {
                 onAvatarUpdated={handleAvatarUpdated}
               />
             )}
-            <LevelCardWrapper>
-              <LevelDisplay levelInfo={data.level_info} />
-            </LevelCardWrapper>
+            <HighlightGrid>
+              <HighlightCard>
+                <StatIconWrap><Calendar size={18} /></StatIconWrap>
+                <h3>Check-ins gesamt</h3>
+                <strong>{data.anzahl_checkins}</strong>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap><MapPin size={18} /></StatIconWrap>
+                <h3>Verschiedene&nbsp;Eisdielen</h3>
+                <strong>{data.eisdielen_besucht}</strong>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap><IceCream size={18} /></StatIconWrap>
+                <h3>Portionen Eis</h3>
+                <strong>{totalIcePortions}</strong>
+                <small>Kugel · Softeis · Becher</small>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap $tone={dayStreakState}>
+                  {renderStreakIcon(dayStreakState)}
+                </StatIconWrap>
+                <h3>Tages-Streak</h3>
+                <strong>{dayStreakValue} Tage</strong>
+                <small>Rekord: {data?.streaks?.day_record ?? 0} Tage</small>
+                <small>{dayStreakHint}</small>
+              </HighlightCard>
+              <HighlightCard>
+                <StatIconWrap $tone={weekStreakState}>
+                  {renderStreakIcon(weekStreakState)}
+                </StatIconWrap>
+                <h3>Wochen-Streak</h3>
+                <strong>{weekStreakValue} Wochen</strong>
+                <small>Rekord: {data?.streaks?.week_record ?? 0} Wochen</small>
+                <small>{weekStreakHint}</small>
+              </HighlightCard>
+            </HighlightGrid>
             <AwardsCard>
               <SectionHeader>
                 <h3>Awards</h3>
                 <span>{awards.length}</span>
               </SectionHeader>
               {displayedAwards.length ? (
-                <AwardsGrid>
-                  {displayedAwards.map((award, index) => (
-                    <AwardCard key={index}>
-                      <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
-                      <AwardImage src={`https://ice-app.de/${award.icon_path}`} alt={award.title_de} />
-                      <AwardTitle>{award.title_de}</AwardTitle>
-                      <AwardDescription>{award.description_de}</AwardDescription>
-                      <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
-                    </AwardCard>
-                  ))}
+                <AwardsGrid ref={awardsGridRef}>
+                  {displayedAwards.map((award, index) => {
+                    const iconSources = getAwardIconSources(award?.icon_path, 512);
+
+                    return (
+                      <AwardCard key={index}>
+                        <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
+                        <AwardImageButton
+                          type="button"
+                          onClick={() => setSelectedAward({
+                            src: iconSources.src || '',
+                            fallbackSrc: iconSources.fallbackSrc || '',
+                            title: award.title_de || 'Award',
+                          })}
+                          aria-label={`Award ${award.title_de || ''} groß anzeigen`}
+                        >
+                          <AwardImage
+                            src={iconSources.src || ''}
+                            data-fallback-src={iconSources.fallbackSrc || ''}
+                            onError={handleAwardIconFallback}
+                            loading="lazy"
+                            decoding="async"
+                            alt={award.title_de}
+                          />
+                        </AwardImageButton>
+                        <AwardTitle>{award.title_de}</AwardTitle>
+                        <AwardDescription>{award.description_de}</AwardDescription>
+                        <AwardDate>Vergeben am {new Date(award.awarded_at).toLocaleDateString()}</AwardDate>
+                      </AwardCard>
+                    );
+                  })}
                 </AwardsGrid>
               ) : (
                 <EmptyState>Keine Awards vorhanden.</EmptyState>
               )}
-              {displayedAwards.length < awards.length && (
-                <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+              {(displayedAwards.length < awards.length || awardPage > 1) && (
+                <AwardsFooterActions>
+                  {displayedAwards.length < awards.length && (
+                    <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+                  )}
+                  {awardPage > 1 && (
+                    <LoadMoreButton type="button" onClick={() => setAwardPage(1)}>
+                      Awards einklappen
+                    </LoadMoreButton>
+                  )}
+                </AwardsFooterActions>
               )}
             </AwardsCard>
+            <UnifiedTabBar>
+              {hasCheckins && (
+                <UnifiedTabButton
+                  active={activeTab === 'checkins'}
+                  onClick={() => setActiveTab('checkins')}
+                >
+                  Check-ins
+                </UnifiedTabButton>
+              )}
+              {hasReviews && (
+                <UnifiedTabButton
+                  active={activeTab === 'reviews'}
+                  onClick={() => setActiveTab('reviews')}
+                >
+                  Reviews
+                </UnifiedTabButton>
+              )}
+              {hasRoutes && (
+                <UnifiedTabButton
+                  active={activeTab === 'routen'}
+                  onClick={() => setActiveTab('routen')}
+                >
+                  Routen
+                </UnifiedTabButton>
+              )}
+              <UnifiedTabButton
+                active={activeTab === 'stats'}
+                onClick={() => setActiveTab('stats')}
+              >
+                Statistiken
+              </UnifiedTabButton>
+            </UnifiedTabBar>
+            {selectedAward && typeof document !== 'undefined' && createPortal(
+              <AwardLightboxOverlay onClick={() => setSelectedAward(null)}>
+                <AwardLightboxCard onClick={(event) => event.stopPropagation()}>
+                  <AwardLightboxClose type="button" onClick={() => setSelectedAward(null)}>
+                    Schließen
+                  </AwardLightboxClose>
+                  <AwardLightboxImage
+                    src={selectedAward.src}
+                    data-fallback-src={selectedAward.fallbackSrc || ''}
+                    onError={handleAwardIconFallback}
+                    alt={selectedAward.title}
+                  />
+                </AwardLightboxCard>
+              </AwardLightboxOverlay>,
+              document.body
+            )}
 
+          {activeTab === 'stats' && (
           <StatsArea>
             <SectionHeader>
               <h2>Deine Statistiken</h2>
               <span>Ein Überblick über deine Eis-Abenteuer</span>
             </SectionHeader>
-            <HighlightGrid>
-              <HighlightCard>
-                <h3>Check-ins gesamt</h3>
-                <strong>{data.anzahl_checkins}</strong>
-              </HighlightCard>
-              <HighlightCard>
-                <h3>Verschiedene Eisdielen</h3>
-                <strong>{data.eisdielen_besucht}</strong>
-              </HighlightCard>
-              <HighlightCard>
-                <h3>Portionen Eis</h3>
-                <strong>{totalIcePortions}</strong>
-                <small>Kugel · Softeis · Becher</small>
-              </HighlightCard>
-            </HighlightGrid>
             <ContentGrid>
               <ContentCard>
                 <CardTitle>Portionen & Verteilung</CardTitle>
@@ -688,34 +890,14 @@ function UserSite() {
               </ContentCard>
             </ContentGrid>
           </StatsArea>
+          )}
 
+            {activeTab !== 'stats' && (
+            <>
             <SectionHeader>
               <h2>Aktivitätsfeed</h2>
               <span>Check-ins, Reviews & Routen</span>
             </SectionHeader>
-            <FeedTabContainer>
-              <FeedTabButton
-                active={activeTab === 'checkins'}
-                onClick={() => setActiveTab('checkins')}
-              >
-                Check-ins
-              </FeedTabButton>
-              <FeedTabButton
-                active={activeTab === 'reviews'}
-                onClick={() => setActiveTab('reviews')}
-              >
-                Reviews
-              </FeedTabButton>
-              {routes.length > 0 && (
-                <FeedTabButton
-                  active={activeTab === 'routen'}
-                  onClick={() => setActiveTab('routen')}
-                >
-                  Routen
-                </FeedTabButton>
-              )}
-            </FeedTabContainer>
-
             <TabContent>
               {activeTab === 'checkins' && (
                 <div>
@@ -762,6 +944,8 @@ function UserSite() {
                 </div>
               )}
             </TabContent>
+            </>
+            )}
         </DashboardWrapper>
       </WhiteBackground>
       {listModal && (
@@ -796,41 +980,56 @@ const FullPage = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #ffb522;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.34), transparent 42%),
+    linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
 `;
 
 const WhiteBackground = styled.div`
-  width: 100vw;
-  background-color: #fff;
+  width: 100%;
+  background: transparent;
   flex: 1;
 `;
 
 const DashboardWrapper = styled.div`
-  width: 92%;
-  max-width: 1100px;
+  width: min(96%, 1120px);
   margin: 0 auto;
-  padding: 2rem 1rem 3rem;
+  padding: 1rem 1rem 2.5rem;
 `;
 
 const LoadingCard = styled.div`
-  background: #fff;
+  background: rgba(255, 252, 243, 0.96);
   padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  border-radius: 18px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  color: #2f2100;
 `;
 
 const ProfileHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem 1.2rem;
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
 `;
 
 const AvatarCircle = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: #ffe2b5;
+  background: linear-gradient(180deg, #ffe2b5, #ffd08a);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(255, 181, 34, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -851,7 +1050,90 @@ const ProfileInfo = styled.div`
   min-width: 240px;
   h1 {
     margin: 0;
-    font-size: 2rem;
+    font-size: clamp(1.35rem, 2vw, 2rem);
+    color: #2f2100;
+  }
+`;
+
+const ProfileMainColumn = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+`;
+
+const LevelInlineCard = styled.div`
+  position: relative;
+  border: 1px solid rgba(47, 33, 0, 0.1);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 229, 0.84)),
+    radial-gradient(circle at 90% 15%, rgba(255, 203, 91, 0.24), transparent 48%);
+  padding: 0.5rem 0.65rem 0.55rem;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0.4rem;
+    top: 0.45rem;
+    bottom: 0.45rem;
+    width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffb522, #ffd978);
+    opacity: 0.8;
+  }
+
+  > div {
+    margin: 0;
+    max-width: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0.15rem 0.15rem 0.15rem 0.65rem;
+  }
+
+  > div h2 {
+    margin: 0;
+    font-size: 1rem;
+    text-align: left;
+    color: #2f2100;
+    letter-spacing: 0.01em;
+  }
+
+  > div p {
+    margin: 0.2rem 0 0;
+    text-align: left;
+    color: #5b4520;
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+
+  > div p:last-child {
+    font-size: 0.85rem;
+    color: #6b5121;
+  }
+
+  > div > div {
+    margin-top: 0.5rem;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(47, 33, 0, 0.12);
+  }
+
+  > div > div > div {
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+`;
+
+const ProfileActions = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  @media (max-width: 980px) {
+    justify-content: stretch;
   }
 `;
 
@@ -863,41 +1145,87 @@ const MetaRow = styled.div`
 `;
 
 const Chip = styled.span`
-  background: #f5f5f5;
+  background: rgba(47, 33, 0, 0.04);
+  border: 1px solid rgba(47, 33, 0, 0.08);
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
   font-size: 0.9rem;
-  color: #555;
+  color: #5b4520;
 `;
 
 const SettingsButton = styled.button`
-  margin-left: auto;
   background: #ffb522;
-  color: white;
-  border: none;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.5);
   border-radius: 999px;
   padding: 0.65rem 1.5rem;
   font-size: 1rem;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
   &:hover {
-    background: #da9c20;
+    background: #ffc34a;
+    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
+  }
+
+  @media (max-width: 900px) {
+    width: 100%;
   }
 `;
 
 const InviteCard = styled.div`
-  background: #fff7e6;
+  background: rgba(255, 247, 230, 0.94);
+  border: 1px solid rgba(255, 181, 34, 0.2);
+  box-shadow: 0 10px 24px rgba(28, 20, 0, 0.05);
   padding: 1.5rem;
-  border-radius: 16px;
+  border-radius: 18px;
   margin-top: 1.5rem;
+  color: #2f2100;
+
+  h3 {
+    margin: 0 0 0.75rem;
+    color: #2f2100;
+  }
 `;
 
-const LevelCardWrapper = styled.div`
-  margin-top: 2rem;
+const UnifiedTabBar = styled.div`
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.6rem;
+  margin-bottom: 0.3rem;
+`;
+
+const UnifiedTabButton = styled.button`
+  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.65)' : 'rgba(47, 33, 0, 0.12)')};
+  background: ${({ active }) => (active ? 'rgba(255, 181, 34, 0.2)' : 'rgba(255,255,255,0.92)')};
+  color: #2f2100;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.45rem 0.95rem;
+  min-width: 120px;
+  cursor: pointer;
+  text-align: center;
 `;
 
 const AwardsCard = styled.div`
   margin-top: 2rem;
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
+`;
+
+const AwardsFooterActions = styled.div`
+  margin-top: 0.85rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 `;
 
 const SectionHeader = styled.div`
@@ -909,48 +1237,97 @@ const SectionHeader = styled.div`
 
   h2, h3 {
     margin: 0;
+    color: #2f2100;
   }
 
   span {
-    color: #888;
+    color: rgba(47, 33, 0, 0.62);
     font-size: 0.9rem;
   }
 `;
 
 const StatsArea = styled.section`
   margin-bottom: 2.5rem;
+  margin-top: 2rem;
 `;
 
 const HighlightGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
+  margin-top: 1rem;
   margin-bottom: 2rem;
 `;
 
 const HighlightCard = styled.div`
-  background: #f7fbff;
+  background: rgba(255, 252, 243, 0.94);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.2rem 1rem 1.1rem;
   text-align: center;
-  box-shadow: inset 0 0 0 1px #e5f0ff;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 8px 22px rgba(28, 20, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
   h3 {
-    margin: 0;
-    color: #5f6c80;
+    margin: 0.35rem 0 0;
+    color: #6b5327;
     font-size: 0.95rem;
+    min-height: 1.35rem;
+    white-space: nowrap;
   }
 
   strong {
     display: block;
     font-size: 2rem;
     margin-top: 0.5rem;
-    color: #0d3b66;
+    color: #2f2100;
   }
 
   small {
-    color: #9aa6c1;
+    color: rgba(47, 33, 0, 0.55);
   }
+
+  @media (max-width: 520px) {
+    h3 {
+      white-space: normal;
+      min-height: auto;
+    }
+  }
+`;
+
+const StatIconWrap = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $tone }) =>
+    $tone === 'active'
+      ? 'rgba(34, 197, 94, 0.2)'
+      : $tone === 'at_risk'
+        ? 'rgba(248, 113, 113, 0.2)'
+        : $tone === 'none'
+          ? 'rgba(148, 163, 184, 0.25)'
+          : 'rgba(255, 181, 34, 0.22)'};
+  color: ${({ $tone }) =>
+    $tone === 'active'
+      ? '#15803d'
+      : $tone === 'at_risk'
+        ? '#b91c1c'
+        : $tone === 'none'
+          ? '#64748b'
+          : '#7d4b00'};
+  border: 1px solid ${({ $tone }) =>
+    $tone === 'active'
+      ? 'rgba(21, 128, 61, 0.35)'
+      : $tone === 'at_risk'
+        ? 'rgba(185, 28, 28, 0.35)'
+        : $tone === 'none'
+          ? 'rgba(100, 116, 139, 0.35)'
+          : 'rgba(255, 181, 34, 0.35)'};
 `;
 
 const ContentGrid = styled.div`
@@ -961,19 +1338,21 @@ const ContentGrid = styled.div`
 `;
 
 const ContentCard = styled.div`
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.94);
+  border-radius: 18px;
   padding: 1.5rem;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
 `;
 
 const CardTitle = styled.h3`
   margin: 0 0 0.25rem;
+  color: #2f2100;
 `;
 
 const CardSubtitle = styled.p`
   margin: 0 0 1rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.65);
 `;
 
 const PortionRow = styled.div`
@@ -986,7 +1365,7 @@ const PortionRow = styled.div`
 
 const PortionBar = styled.div`
   height: 8px;
-  background: #f2f2f2;
+  background: rgba(47, 33, 0, 0.06);
   border-radius: 999px;
   overflow: hidden;
 `;
@@ -1007,7 +1386,7 @@ const RankingItem = styled.li`
   flex-direction: column;
   align-items: stretch;
   gap: ${(props) => (props.$hasDetail ? 0.5 : 0)}rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
   padding: 0.65rem 0;
   font-weight: 500;
   cursor: ${(props) => (props.$clickable ? 'pointer' : 'default')};
@@ -1039,8 +1418,8 @@ const FlavorDetail = styled.div`
   width: 100%;
   padding: 0.75rem;
   border-radius: 12px;
-  background: #f9fafb;
-  border: 1px solid #eee;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(47, 33, 0, 0.08);
 `;
 
 const FlavorDetailList = styled.ul`
@@ -1055,13 +1434,13 @@ const FlavorDetailList = styled.ul`
 const FlavorDetailEntry = styled.li`
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  background: #fff;
-  border: 1px solid #f0f0f0;
+  background: rgba(255, 252, 243, 0.95);
+  border: 1px solid rgba(47, 33, 0, 0.08);
   cursor: pointer;
   transition: box-shadow 0.2s ease;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 6px 14px rgba(28, 20, 0, 0.08);
   }
 
   &:focus-visible {
@@ -1079,31 +1458,31 @@ const FlavorDetailHeader = styled.div`
 
 const FlavorDetailMeta = styled.span`
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.62);
 `;
 
 const FlavorDetailSub = styled.div`
   font-size: 0.8rem;
-  color: #888;
+  color: rgba(47, 33, 0, 0.58);
   margin-top: 0.25rem;
 `;
 
 const FlavorDetailNote = styled.p`
   margin: 0;
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.62);
 `;
 
 const RankingMeta = styled.span`
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.62);
 `;
 
 const ListToggle = styled.button`
   margin-top: 0.75rem;
   background: none;
   border: none;
-  color: #ff8a00;
+  color: #8a5700;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -1115,7 +1494,7 @@ const ListToggle = styled.button`
 const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(24, 17, 0, 0.38);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1124,14 +1503,15 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalCard = styled.div`
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.98);
+  border-radius: 18px;
   max-width: 640px;
   width: 100%;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(28, 20, 0, 0.2);
 `;
 
 const ModalHeader = styled.div`
@@ -1139,19 +1519,24 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
 
   h3 {
     margin: 0;
+    color: #2f2100;
   }
 `;
 
 const CloseModalButton = styled.button`
-  border: none;
-  background: transparent;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.6);
   font-size: 1.5rem;
   cursor: pointer;
   line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: #5b4520;
 `;
 
 const ModalBody = styled.div`
@@ -1161,7 +1546,7 @@ const ModalBody = styled.div`
 
 const EmptyState = styled.p`
   margin: 0.5rem 0 0;
-  color: #999;
+  color: rgba(47, 33, 0, 0.55);
 `;
 
 const ChartWrapper = styled.div`
@@ -1176,55 +1561,62 @@ const ActivityTabs = styled.div`
 `;
 
 const ActivityTabButton = styled.button`
-  border: none;
+  border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.45)' : 'rgba(47,33,0,0.08)')};
   border-radius: 999px;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
   cursor: pointer;
-  background: ${(props) => (props.active ? '#ffb522' : '#f3f3f3')};
-  color: ${(props) => (props.active ? '#fff' : '#555')};
+  background: ${(props) => (props.active ? 'rgba(255, 181, 34, 0.18)' : 'rgba(255,255,255,0.75)')};
+  color: ${(props) => (props.active ? '#7a4a00' : '#5b4520')};
+  font-weight: 700;
 `;
 
 const ActivityTable = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 1rem;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
 
   th, td {
-    padding: 0.5rem;
+    padding: 0.6rem 0.7rem;
     text-align: left;
   }
 
   th {
-    color: #777;
+    color: #5f3f00;
     font-size: 0.85rem;
+    background: rgba(255, 252, 243, 0.98);
+    border-bottom: 1px solid rgba(47, 33, 0, 0.08);
   }
 
   tbody tr:nth-child(even) {
-    background: #fafafa;
+    background: rgba(255, 255, 255, 0.55);
   }
-`;
 
-const FeedTabContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
+  tbody tr:nth-child(odd) {
+    background: rgba(255, 252, 243, 0.45);
+  }
 
-const FeedTabButton = styled.button`
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background-color: ${(props) => (props.active ? '#ffb522' : '#f0f0f0')};
-  color: ${(props) => (props.active ? 'white' : '#333')};
-  font-weight: 600;
+  td {
+    border-bottom: 1px solid rgba(47, 33, 0, 0.06);
+    color: #2f2100;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
 `;
 
 const TabContent = styled.div`
   margin-top: 1rem;
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
 `;
 
 const LoadMoreButton = styled.button`
@@ -1232,15 +1624,18 @@ const LoadMoreButton = styled.button`
   margin: 1rem auto;
   padding: 0.5rem 1rem;
   background-color: #ffb522;
-  color: white;
-  border: none;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.5);
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
+  transition: background-color 0.2s, box-shadow 0.2s;
 
   &:hover {
-    background-color: #da9c20;
+    background-color: #ffc34a;
+    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
   }
 `;
 
@@ -1255,19 +1650,20 @@ const Input = styled.input`
   flex: 1;
   min-width: 200px;
   padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  background: rgba(255,255,255,0.95);
   font-family: monospace;
 `;
 
 const CopyButton = styled.button`
   padding: 0.5rem 1rem;
   background-color: #ffb522;
-  color: white;
-  border: none;
-  border-radius: 8px;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.45);
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
 `;
 
 const Toast = styled.div`
@@ -1288,7 +1684,7 @@ const Toast = styled.div`
 
 const AwardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
 
   @media (max-width: 768px) {
@@ -1301,9 +1697,10 @@ const AwardsGrid = styled.div`
 `;
 
 const AwardCard = styled.div`
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 252, 243, 0.95);
+  border-radius: 14px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
   padding: 16px;
   text-align: center;
   position: relative;
@@ -1314,19 +1711,28 @@ const AwardImage = styled.img`
   object-fit: contain;
 `;
 
+const AwardImageButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
+  border-radius: 8px;
+`;
+
 const AwardTitle = styled.h3`
   font-weight: 600;
+  color: #2f2100;
 `;
 
 const AwardDescription = styled.p`
   font-size: 0.875rem;
-  color: #666;
+  color: rgba(47, 33, 0, 0.62);
   margin-top: 4px;
 `;
 
 const AwardDate = styled.span`
   font-size: 0.75rem;
-  color: #999;
+  color: rgba(47, 33, 0, 0.55);
   margin-top: 8px;
   display: block;
 `;
@@ -1344,10 +1750,52 @@ const EPBadge = styled.div`
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 `;
 
+const AwardLightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`;
+
+const AwardLightboxCard = styled.div`
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.8rem;
+  max-width: min(92vw, 900px);
+  max-height: 92vh;
+`;
+
+const AwardLightboxImage = styled.img`
+  display: block;
+  max-width: min(88vw, 860px);
+  max-height: 82vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+`;
+
+const AwardLightboxClose = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+`;
+
 const AvatarModalContent = styled.div`
   position: relative;
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.98);
+  border-radius: 18px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
   padding: 2rem;
   max-width: 420px;
   width: 90vw;
@@ -1369,9 +1817,9 @@ const CloseAvatarModalButton = styled.button`
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: #eee;
-  color: #333;
-  border: none;
+  background: rgba(255,255,255,0.8);
+  color: #5b4520;
+  border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 50%;
   width: 2.2rem;
   height: 2.2rem;
@@ -1380,6 +1828,6 @@ const CloseAvatarModalButton = styled.button`
   cursor: pointer;
   z-index: 2;
   &:hover {
-    background: #ddd;
+    background: rgba(255, 181, 34, 0.12);
   }
 `;

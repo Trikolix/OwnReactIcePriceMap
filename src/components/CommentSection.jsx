@@ -3,8 +3,8 @@ import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
 
-// type: "checkin" | "bewertung" | "route"
-const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) => {
+// type: "checkin" | "bewertung" | "route" | "user_registration"
+const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, type = "checkin" }) => {
     const { userId } = useUser();
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
@@ -15,7 +15,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
     // Validierung der Props
     const isValidProps = () => {
         // Nur eine ID darf gesetzt sein
-        const ids = [checkinId, bewertungId, routeId].filter(Boolean);
+        const ids = [checkinId, bewertungId, routeId, userRegistrationId].filter(Boolean);
         return ids.length === 1;
     };
 
@@ -32,7 +32,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
 
     const loadComments = async () => {
         if (!isValidProps()) {
-            console.error("CommentSection: Entweder checkinId oder bewertungId muss gesetzt sein");
+            console.error("CommentSection: Genau eine Ziel-ID muss gesetzt sein");
             return;
         }
 
@@ -46,6 +46,9 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
         } else if (routeId) {
             parameterName = 'route_id';
             parameterValue = routeId;
+        } else if (userRegistrationId) {
+            parameterName = 'user_registration_id';
+            parameterValue = userRegistrationId;
         }
         const res = await fetch(`${apiUrl}/kommentare.php?action=list&${parameterName}=${parameterValue}`);
         const data = await res.json();
@@ -58,7 +61,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
 
     useEffect(() => {
         loadComments();
-    }, [checkinId]);
+    }, [checkinId, bewertungId, routeId, userRegistrationId]);
 
     const handleSubmit = async () => {
         if (!newComment.trim() || !isValidProps()) return;
@@ -76,6 +79,8 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
             requestBody.bewertung_id = bewertungId;
         } else if (routeId) {
             requestBody.route_id = routeId;
+        } else if (userRegistrationId) {
+            requestBody.user_registration_id = userRegistrationId;
         }
 
         const res = await fetch(`${apiUrl}/kommentare.php?action=create`, {
@@ -138,7 +143,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, type = "checkin" }) =
     if (!isValidProps()) {
         return (
             <ErrorMessage>
-                Fehler: Entweder checkinId oder bewertungId muss gesetzt sein, aber nicht beide.
+                Fehler: Genau eine Ziel-ID (Check-in, Bewertung, Route oder Nutzerregistrierung) muss gesetzt sein.
             </ErrorMessage>
         );
     }

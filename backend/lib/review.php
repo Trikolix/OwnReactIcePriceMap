@@ -1,5 +1,21 @@
 <?php
 
+function hasReviewEditedAtColumn(PDO $pdo): bool {
+    static $hasColumn = null;
+    if ($hasColumn !== null) {
+        return $hasColumn;
+    }
+
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM bewertungen LIKE 'zuletzt_bearbeitet_am'");
+        $hasColumn = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        $hasColumn = false;
+    }
+
+    return $hasColumn;
+}
+
 function getReviewById(PDO $pdo, int $reviewId): ?array {
     $stmt = $pdo->prepare("
         SELECT b.*, 
@@ -19,7 +35,7 @@ function getReviewById(PDO $pdo, int $reviewId): ?array {
 
     $review['attribute'] = getAttributesForReview($pdo, $reviewId);
     $review['bilder'] = getBilderForReview($pdo, $reviewId);
-    $review['commentCount'] = getCommentCountForReview($pdo, $id);
+    $review['commentCount'] = getCommentCountForReview($pdo, $reviewId);
     
     return $review;
 }
@@ -103,21 +119,67 @@ function getReviewsByNutzerId(PDO $pdo, int $userId): array {
 }
 
 function getLatestReviews(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
-    $stmt = $pdo->prepare("
-        SELECT b.*,
-               n.id AS nutzer_id,
-               n.username AS nutzer_name,
-               e.name AS eisdiele_name,
-               e.adresse,
-               up.avatar_path AS avatar_url
-        FROM bewertungen b
-        JOIN nutzer n ON b.nutzer_id = n.id
-        JOIN eisdielen e ON b.eisdiele_id = e.id
-        LEFT JOIN user_profile_images up ON up.user_id = n.id
-        WHERE b.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset + :days DAY)
-          AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
-        ORDER BY b.erstellt_am DESC
-    ");
+    if (hasReviewEditedAtColumn($pdo)) {
+        $stmt = $pdo->prepare("
+            SELECT b.*,
+                   n.id AS nutzer_id,
+                   n.username AS nutzer_name,
+                   e.name AS eisdiele_name,
+                   e.adresse,
+                   up.avatar_path AS avatar_url,
+                   CASE
+                       WHEN b.zuletzt_bearbeitet_am IS NOT NULL
+                            AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                       THEN b.zuletzt_bearbeitet_am
+                       ELSE b.erstellt_am
+                   END AS aktivitaet_am,
+                   CASE
+                       WHEN b.zuletzt_bearbeitet_am IS NOT NULL
+                            AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                       THEN 'edit'
+                       ELSE 'create'
+                   END AS activity_type
+            FROM bewertungen b
+            JOIN nutzer n ON b.nutzer_id = n.id
+            JOIN eisdielen e ON b.eisdiele_id = e.id
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
+            WHERE (
+                    CASE
+                        WHEN b.zuletzt_bearbeitet_am IS NOT NULL
+                             AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                        THEN b.zuletzt_bearbeitet_am
+                        ELSE b.erstellt_am
+                    END
+                  ) >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset + :days DAY)
+              AND (
+                    CASE
+                        WHEN b.zuletzt_bearbeitet_am IS NOT NULL
+                             AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                        THEN b.zuletzt_bearbeitet_am
+                        ELSE b.erstellt_am
+                    END
+                  ) < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+            ORDER BY aktivitaet_am DESC
+        ");
+    } else {
+        $stmt = $pdo->prepare("
+            SELECT b.*,
+                   n.id AS nutzer_id,
+                   n.username AS nutzer_name,
+                   e.name AS eisdiele_name,
+                   e.adresse,
+                   up.avatar_path AS avatar_url,
+                   b.erstellt_am AS aktivitaet_am,
+                   'create' AS activity_type
+            FROM bewertungen b
+            JOIN nutzer n ON b.nutzer_id = n.id
+            JOIN eisdielen e ON b.eisdiele_id = e.id
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
+            WHERE b.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset + :days DAY)
+              AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+            ORDER BY b.erstellt_am DESC
+        ");
+    }
     $stmt->execute([
         'offset' => $offsetDays,
         'days'   => $days

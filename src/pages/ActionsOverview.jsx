@@ -22,9 +22,9 @@ const UPCOMING_ACTIONS = [
   {
     id: 'birthday',
     title: 'Ice-App Geburtstagsaktion',
-    period: 'Termin bleibt geheim',
-    status: 'geplant',
-    details: 'Was genau passiert, bleibt vorerst ein kleines Geheimnis. Details folgen kurz vor dem Start.',
+    period: '07.03.2026 - 22.03.2026',
+    status: 'aktiv im März',
+    details: 'Pflichtaktionen erledigen, Fortschritt verfolgen und in der Bestenliste Punkte sammeln.',
   },
   {
     id: 'easter',

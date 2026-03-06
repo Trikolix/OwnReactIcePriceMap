@@ -11,11 +11,11 @@ import {
   ExternalLink, MessageCircle
 } from "lucide-react";
 
-const BORDER = "#ebe9f5";
+const BORDER = "rgba(47, 33, 0, 0.08)";
 const ACCENT = "#ffb522";
 const ACCENT_DARK = "#d99100";
 const ACCENT_SOFT = "#fff3da";
-const TEXT_MUTED = "#4a4a68";
+const TEXT_MUTED = "#5f4a25";
 
 const toNumberOrNull = (value) => {
   const num = Number(value);
@@ -51,7 +51,6 @@ const formatCreatedAt = (value) => {
 
 const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showEmbed, setShowEmbed] = useState(false);
   const { userId } = useUser();
 
   const routeShops = useMemo(() => {
@@ -70,6 +69,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
   const isOwner = Number(route.nutzer_id) === Number(userId);
   const isPrivate = String(route.ist_oeffentlich) !== "1";
   const hasEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
+  const [showEmbed, setShowEmbed] = useState(hasEmbed);
   const eisdielenCount = routeShops.length;
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
@@ -78,7 +78,9 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
   return (
     <>
       <StyledCard>
-        <DateText dateTime={route.erstellt_am}>{formatCreatedAt(route.erstellt_am)}</DateText>
+        <CardMetaRow>
+          <DateText dateTime={route.erstellt_am}>{formatCreatedAt(route.erstellt_am)}</DateText>
+        </CardMetaRow>
 
         <HeaderRow>
           <div>
@@ -200,13 +202,13 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
 
           {route.url && (
             <ActionLink href={route.url} target="_blank" rel="noopener noreferrer">
-              Zu Route
+              Externe Route öffnen
               <ExternalLink size={20} style={{ marginLeft: 5, verticalAlign: 'text-bottom' }} />
             </ActionLink>
           )}
 
           {isOwner && (
-            <ActionButton type="button" onClick={() => setShowEditModal(true)}>
+            <ActionButton type="button" $variant="subtle" onClick={() => setShowEditModal(true)}>
               Bearbeiten
             </ActionButton>
           )}
@@ -244,9 +246,30 @@ export default RouteCard;
 
 const StyledCard = styled(Card)`
   border: 1px solid ${BORDER};
-  border-radius: 22px;
-  box-shadow: 0 18px 40px rgba(15, 18, 63, 0.08);
-  padding: 2rem 2rem 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(255, 181, 34, 0.10), transparent 42%),
+    rgba(255, 255, 255, 0.96);
+  padding: 1.5rem 1.5rem 1.25rem;
+`;
+
+const CardMetaRow = styled.div`
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  @media (max-width: 640px) {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 0.6rem;
+    pointer-events: auto;
+  }
 `;
 
 const HeaderRow = styled.div`
@@ -260,7 +283,7 @@ const HeaderRow = styled.div`
 const RouteName = styled.h3`
   margin: 0;
   font-size: 1.4rem;
-  color: #2c2c54;
+  color: #2f2100;
 `;
 
 const MetaRow = styled.div`
@@ -371,9 +394,9 @@ const actionButtonStyles = css`
   border-radius: 12px;
   padding: 10px 16px;
   font-weight: 600;
-  background: ${ACCENT};
-  color: #fff;
-  border: 1px solid ${ACCENT_DARK};
+  background: ${({ $variant }) => ($variant === "subtle" ? "rgba(255, 255, 255, 0.86)" : ACCENT)};
+  color: ${({ $variant }) => ($variant === "subtle" ? "#6b4a00" : "#2f2100")};
+  border: 1px solid ${({ $variant }) => ($variant === "subtle" ? "rgba(47, 33, 0, 0.22)" : "rgba(255, 181, 34, 0.5)")};
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
   text-decoration: none;
@@ -385,7 +408,7 @@ const actionButtonStyles = css`
   line-height: 1;
 
   &:hover {
-    background: ${ACCENT_DARK};
+    background: ${({ $variant }) => ($variant === "subtle" ? "rgba(255, 255, 255, 0.96)" : "#ffc34a")};
     transform: translateY(-1px);
   }
 `;
@@ -395,15 +418,8 @@ const ActionButton = styled.button`
 `;
 
 const ActionLink = styled.a`
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    text-decoration: none;
-    color: ${ACCENT};
-    font-weight: 600;
-    &:hover {
-      color: ${ACCENT_DARK}
-    }
+  ${actionButtonStyles};
+  min-width: auto;
 `;
 
 const EmbedWrapper = styled.div`
@@ -420,16 +436,26 @@ const EmbedWrapper = styled.div`
 `;
 
 const DateText = styled.time`
-  position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  position: static;
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.56);
   font-style: italic;
   user-select: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+
+  @media (max-width: 640px) {
+    margin-bottom: 0;
+    justify-content: flex-end;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    flex-wrap: wrap;
+  }
 `;
 
 export const CommentToggle = styled.button`

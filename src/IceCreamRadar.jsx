@@ -20,6 +20,7 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 import ChristmasElf, { SecretWorkshopMarker } from './components/ChristmasElf';
 import EasterBunny, { EasterEggMarker } from './components/EasterBunny';
 import OlympicsVenueMarkers from './components/OlympicsVenues';
+import BirthdayPresentMarkers from './components/BirthdayPresentMarkers';
 import { isSpecialTime } from './utils/seasonal';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const DEFAULT_CONTEXT_MENU_STATE = {
@@ -95,6 +96,7 @@ const createDefaultFilters = () => ({
   favorites: false,
   visited: false,
   notVisited: false,
+  showPermanentClosed: false,
   types: {
     kugel: false,
     softeis: false,
@@ -481,6 +483,12 @@ const IceCreamRadar = () => {
 
   const fetchIceCreamShops = loadIceCreamShops;
   const refreshShops = loadIceCreamShops;
+  const activeShopId =
+    activeShop?.eisdiele?.id ??
+    activeShop?.eisdielen_id ??
+    activeShop?.id ??
+    null;
+  const mapRouteWithOpenFilter = openFilterQueryString ? `/map?${openFilterQueryString}` : '/map';
 
   const fetchShopDetails = async (shop) => {
     try {
@@ -492,6 +500,12 @@ const IceCreamRadar = () => {
       console.error('Fehler beim Abrufen der Shop-Details:', error);
     }
   };
+
+  const handleCloseShopDetails = useCallback(() => {
+    setActiveShop(null);
+    setShowDetailsView(false);
+    navigate(mapRouteWithOpenFilter, { replace: true });
+  }, [navigate, mapRouteWithOpenFilter]);
 
   const handleSearchSubmit = async (event) => {
     event.preventDefault();
@@ -661,6 +675,7 @@ const IceCreamRadar = () => {
   const favoritesFilterActive = filters.favorites && !!userId;
   const visitedFilterActive = filters.visited && !!userId;
   const notVisitedFilterActive = filters.notVisited && !!userId;
+  const showPermanentClosedFilterActive = !!filters.showPermanentClosed;
   const typeFilters = filters.types ?? { kugel: false, softeis: false, eisbecher: false };
   const hasTypeFilter = Object.values(typeFilters).some(Boolean);
 
@@ -668,7 +683,7 @@ const IceCreamRadar = () => {
     if (!activeDisplayConfig?.getValue) {
       return [];
     }
-    return iceCreamShops.reduce((acc, shop) => {
+    const filteredShops = iceCreamShops.reduce((acc, shop) => {
       if (favoritesFilterActive && shop.is_favorit !== 1) {
         return acc;
       }
@@ -676,6 +691,9 @@ const IceCreamRadar = () => {
         return acc;
       }
       if (notVisitedFilterActive && Number(shop.has_visited) !== 0) {
+        return acc;
+      }
+      if (!showPermanentClosedFilterActive && shop.status === 'permanent_closed') {
         return acc;
       }
       if (hasTypeFilter) {
@@ -690,12 +708,37 @@ const IceCreamRadar = () => {
       acc.push({ shop, value });
       return acc;
     }, []);
+
+    if (activeShopId === null) {
+      return filteredShops;
+    }
+
+    const isFocusedAlreadyVisible = filteredShops.some(
+      ({ shop }) => String(shop.eisdielen_id) === String(activeShopId)
+    );
+    if (isFocusedAlreadyVisible) {
+      return filteredShops;
+    }
+
+    const focusedShop = iceCreamShops.find(
+      (shop) => String(shop.eisdielen_id) === String(activeShopId)
+    );
+    if (!focusedShop || focusedShop.status !== 'permanent_closed') {
+      return filteredShops;
+    }
+
+    return [
+      ...filteredShops,
+      { shop: focusedShop, value: activeDisplayConfig.getValue(focusedShop) },
+    ];
   }, [
     iceCreamShops,
     activeDisplayConfig,
+    activeShopId,
     favoritesFilterActive,
     visitedFilterActive,
     notVisitedFilterActive,
+    showPermanentClosedFilterActive,
     hasTypeFilter,
     typeFilters,
   ]);
@@ -718,6 +761,7 @@ const IceCreamRadar = () => {
     if (favoritesFilterActive) count += 1;
     if (visitedFilterActive) count += 1;
     if (notVisitedFilterActive) count += 1;
+    if (showPermanentClosedFilterActive) count += 1;
     const typeCount = Object.values(typeFilters).filter(Boolean).length;
     count += typeCount;
     if (openFilterMode === 'now') count += 1;
@@ -727,6 +771,7 @@ const IceCreamRadar = () => {
     favoritesFilterActive,
     visitedFilterActive,
     notVisitedFilterActive,
+    showPermanentClosedFilterActive,
     typeFilters,
     openFilterMode,
     openFilterDateTime,
@@ -888,6 +933,14 @@ const IceCreamRadar = () => {
           {specialTime === 'christmas' && currentZoom > 5 && <SecretWorkshopMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
           {specialTime === 'easter' && currentZoom > 5 && <EasterEggMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
           {specialTime === 'olympics' && currentZoom > 9 && <OlympicsVenueMarkers isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
+          {specialTime === 'birthday' && currentZoom > 9 && (
+            <BirthdayPresentMarkers
+              shops={iceCreamShops}
+              isLoggedIn={isLoggedIn}
+              userId={userId}
+              setShowLoginModal={setShowLoginModal}
+            />
+          )}
           {clustering ? ( // show the clustered
             <MarkerClusterGroup maxClusterRadius={25}>
               {shopsWithDisplayValue.map(({ shop, value }) => {
@@ -902,6 +955,7 @@ const IceCreamRadar = () => {
                     invertScale={activeDisplayConfig.invertScale}
                     fetchShopDetails={fetchShopDetails}
                     fetchAndCenterShop={fetchAndCenterShop}
+                    isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                   />
                 );
               })}
@@ -919,6 +973,7 @@ const IceCreamRadar = () => {
                   invertScale={activeDisplayConfig.invertScale}
                   fetchShopDetails={fetchShopDetails}
                   fetchAndCenterShop={fetchAndCenterShop}
+                  isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                 />
               );
             })
@@ -1027,6 +1082,17 @@ const IceCreamRadar = () => {
               </FilterToggle>
             </FilterSection>
             <FilterSection>
+              <FilterSectionTitle>Status</FilterSectionTitle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={showPermanentClosedFilterActive}
+                  onChange={() => handleFilterToggle('showPermanentClosed')}
+                />
+                <span>Dauerhaft geschlossene anzeigen</span>
+              </FilterToggle>
+            </FilterSection>
+            <FilterSection>
               <FilterSectionTitle>Öffnungszeiten</FilterSectionTitle>
               <FilterToggle>
                 <input
@@ -1102,10 +1168,7 @@ const IceCreamRadar = () => {
           shopId={activeShop.eisdiele.id}
           setIceCreamShops={setIceCreamShops}
           refreshMapShops={refreshShops}
-          onClose={() => {
-            setActiveShop(null);
-            setShowDetailsView(false);
-          }}
+          onClose={handleCloseShopDetails}
         />
       )}
     </div>

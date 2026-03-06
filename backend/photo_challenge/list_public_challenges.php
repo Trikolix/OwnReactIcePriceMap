@@ -7,7 +7,10 @@ require_once __DIR__ . '/helpers.php';
 
 try {
     ensurePhotoChallengeSchema($pdo);
-    $challenges = fetchChallenges($pdo);
+    $challenges = array_values(array_filter(
+        fetchChallenges($pdo),
+        fn($challenge) => ($challenge['status'] ?? '') !== 'draft'
+    ));
 
     echo json_encode([
         'status' => 'success',
@@ -21,4 +24,3 @@ try {
         'details' => $e->getMessage(),
     ]);
 }
-

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
@@ -87,6 +87,12 @@ const NotificationBell = () => {
                 const url = `/#/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}`;
                 window.location.href = url;
             }
+        } else if (notification.typ === 'kommentar_new_user') {
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            const targetUserId = data.user_registration_id || notification.referenz_id;
+            if (targetUserId) {
+                window.location.href = `/#/user/${targetUserId}`;
+            }
         } else if (notification.typ === 'new_user') {
             const url = `/#/user/${notification.referenz_id}`;
             window.location.href = url;
@@ -138,11 +144,21 @@ const NotificationBell = () => {
     return (<>
         <BellWrapper>
             <BellButton onClick={() => setShow(!show)}>
-                <Bell size={35} color="#fff" style={{ verticalAlign: 'middle' }} />
+                <Bell size={28} color="currentColor" style={{ verticalAlign: 'middle' }} />
                 {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
             </BellButton>
             {show && (
                 <Dropdown ref={dropdownRef}>
+                    <DropdownHeader>
+                        <DropdownTitle>Benachrichtigungen</DropdownTitle>
+                        <DropdownCloseButton
+                            type="button"
+                            onClick={() => setShow(false)}
+                            aria-label="Benachrichtigungen schließen"
+                        >
+                            <X size={18} />
+                        </DropdownCloseButton>
+                    </DropdownHeader>
                     {notifications.length === 0 ? (
                         <EmptyMessage>Keine Benachrichtigungen</EmptyMessage>
                     ) : (
@@ -188,7 +204,7 @@ export default NotificationBell;
 
 const BellWrapper = styled.div`
   position: relative;
-  margin-right: 10px;
+  margin-right: 0;
 `;
 
 const BellButton = styled.button`
@@ -199,34 +215,62 @@ const BellButton = styled.button`
   position: relative;
   display: flex;
   align-items: center;
+  color: inherit;
+  padding: 0;
+  border-radius: 10px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 `;
 
 const Badge = styled.span`
   position: absolute;
-  top: -6px;
-  left: -6px;
-  background: red;
+  top: -7px;
+  left: -7px;
+  min-width: 18px;
+  height: 18px;
+  background: #d92d20;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   border-radius: 50%;
-  padding: 2px 6px;
-  border-color: white;
-  border-style: solid;
-  border-width: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #fff8ea;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
 `;
 
 const Dropdown = styled.div`
   position: absolute;
-  top: 36px;
+  top: 38px;
   right: 0;
-  width: 300px;
-  max-height: 400px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(60vh, 420px);
+  background: rgba(255, 252, 243, 0.98);
+  border-radius: 16px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
   overflow-y: auto;
-  z-index: 1100;
+  z-index: 5000;
+  color: #2f2100;
+
+  @media (max-width: 480px) {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 76px);
+    left: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100vw;
+    box-sizing: border-box;
+    max-height: min(
+      calc(100dvh - (env(safe-area-inset-top, 0px) + 84px)),
+      66dvh
+    );
+    border-radius: 0 0 16px 16px;
+  }
 `;
 
 const NotificationList = styled.ul`
@@ -235,30 +279,69 @@ const NotificationList = styled.ul`
   margin: 0;
 `;
 
-const NotificationItem = styled.li`
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  background: ${({ gelesen }) => (gelesen ? "#f8f8f8" : "#fff8e1")};
+const DropdownHeader = styled.div`
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  background: rgba(255, 252, 243, 0.98);
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+`;
+
+const DropdownTitle = styled.div`
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #2f2100;
+`;
+
+const DropdownCloseButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #2f2100;
   cursor: pointer;
-  transition: background 0.2s;
 
   &:hover {
-    background: ${({ gelesen }) => (gelesen ? "#efefef" : "#fff2b3")};
+    background: rgba(47, 33, 0, 0.07);
+  }
+`;
+
+const NotificationItem = styled.li`
+  padding: 10px;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 10px;
+  background: ${({ gelesen }) => (gelesen ? "rgba(47, 33, 0, 0.03)" : "rgba(255, 181, 34, 0.12)")};
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 2px;
+
+  &:hover {
+    background: ${({ gelesen }) => (gelesen ? "rgba(47, 33, 0, 0.07)" : "rgba(255, 181, 34, 0.22)")};
   }
 
   &:last-child {
     border-bottom: none;
+    margin-bottom: 0;
   }
 `;
 
 const Message = styled.div`
   font-size: 14px;
-  color: #333;
+  color: #2f2100;
+  line-height: 1.35;
 `;
 
 const Time = styled.div`
   font-size: 12px;
-  color: #888;
+  color: rgba(47, 33, 0, 0.6);
   margin-top: 4px;
 `;
 
@@ -266,5 +349,5 @@ const EmptyMessage = styled.div`
   padding: 1rem;
   text-align: center;
   font-size: 14px;
-  color: #888;
+  color: rgba(47, 33, 0, 0.62);
 `;

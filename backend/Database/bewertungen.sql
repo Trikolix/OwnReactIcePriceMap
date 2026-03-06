@@ -37,6 +37,7 @@ CREATE TABLE `bewertungen` (
   `auswahl` int DEFAULT NULL,
   `beschreibung` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `erstellt_am` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `zuletzt_bearbeitet_am` timestamp NULL DEFAULT NULL,
   `is_on_site` tinyint(1) NOT NULL DEFAULT '0'
 ) ;
 

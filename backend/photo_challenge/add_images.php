@@ -37,13 +37,22 @@ if (empty($imageIds)) {
 try {
     ensurePhotoChallengeSchema($pdo);
 
-    $stmt = $pdo->prepare("SELECT id FROM photo_challenges WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT id, status FROM photo_challenges WHERE id = :id");
     $stmt->execute(['id' => $challengeId]);
-    if (!$stmt->fetchColumn()) {
+    $challenge = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$challenge) {
         http_response_code(404);
         echo json_encode([
             'status' => 'error',
             'message' => 'Challenge existiert nicht.',
+        ]);
+        exit;
+    }
+    if (in_array($challenge['status'], ['group_running', 'ko_running', 'finished'], true)) {
+        http_response_code(422);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Bilder können nach Start der Gruppenphase nicht mehr manuell geändert werden.',
         ]);
         exit;
     }

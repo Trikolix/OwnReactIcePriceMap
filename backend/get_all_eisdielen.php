@@ -113,6 +113,19 @@ $sql = "SELECT
         ELSE 0
     END AS has_visited,
 
+    -- Aktive Challenge dieses Nutzers für die Eisdiele
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM challenges c
+            WHERE c.eisdiele_id = e.id
+              AND c.nutzer_id = :userId
+              AND c.completed = 0
+              AND (c.valid_until IS NULL OR c.valid_until >= NOW())
+        ) THEN 1
+        ELSE 0
+    END AS has_active_challenge,
+
     -- Kugelscore aus View
     ks.finaler_kugel_score,
     -- Softeisscore aus View

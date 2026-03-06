@@ -3,6 +3,7 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/email_notification.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
+require_once __DIR__ . '/../lib/checkin_grouping.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
@@ -36,6 +37,7 @@ require_once __DIR__ . '/../evaluators/DetailedCheckinCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/OnSiteEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
+require_once __DIR__ . '/../evaluators/TheTasteOfChemnitzEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
@@ -299,7 +301,7 @@ try {
 
     // Metadaten des neuen Checkins laden
     $checkinMeta = $pdo->prepare("
-        SELECT c.id, c.anreise, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land, e.name AS shop_name
+        SELECT c.id, c.anreise, c.datum, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land, e.name AS shop_name
         FROM checkins c
         JOIN eisdielen e ON c.eisdiele_id = e.id
         WHERE c.id = ?
@@ -314,13 +316,8 @@ try {
     // fügen Einträge in `checkin_mentions` und `benachrichtigungen` hinzu.
     // Vor dem Insert prüfen wir, ob die erwähnten Nutzer tatsächlich existieren.
     if (count($mentionedUsers) > 0) {
-        // Optional: checkin_groups anlegen, falls du Gruppierung nutzen willst
-        $pdo->exec("INSERT INTO checkin_groups () VALUES ()");
-        $groupId = $pdo->lastInsertId();
-
-        // Checkin mit group_id updaten
-        $stmt = $pdo->prepare("UPDATE checkins SET group_id = ? WHERE id = ?");
-        $stmt->execute([$groupId, $checkinId]);
+        // Für Mention-Checkins immer eine Gruppe bereitstellen (wird bei Bedarf gemerged)
+        $groupId = resolveOrMergeCheckinGroup($pdo, [$checkinId]);
 
         // Einladenden Nutzer holen
         $stmtUser = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
@@ -329,6 +326,7 @@ try {
         $inviterName = $inviter['username'] ?? 'Ein Nutzer';
 
         // Mentions einfügen + Notifications
+        $createdMentionByUser = [];
         $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
         $stmtNotif = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_mention_id', ?,'checkin_id', ?, 'by_user', ?, 'shop_id', ?, 'username', ?, 'shop_name', ?))");
         $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
@@ -340,8 +338,17 @@ try {
             $userRow = $stmtCheckUser->fetch(PDO::FETCH_ASSOC);
             if (!$userRow) continue;
 
+            $stmtMentionExists = $pdo->prepare("SELECT id FROM checkin_mentions WHERE checkin_id = ? AND mentioned_user_id = ? LIMIT 1");
+            $stmtMentionExists->execute([$checkinId, $mentionedUserId]);
+            $existingMentionId = (int)$stmtMentionExists->fetchColumn();
+            if ($existingMentionId > 0) {
+                $createdMentionByUser[$mentionedUserId] = $existingMentionId;
+                continue;
+            }
+
             $stmtMention->execute([$checkinId, $mentionedUserId]);
-            $mentionId = $pdo->lastInsertId();
+            $mentionId = (int)$pdo->lastInsertId();
+            $createdMentionByUser[$mentionedUserId] = $mentionId;
             $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $mentionId, $checkinId, $userId, $shopId, $inviterName, $meta['shop_name'] ?? 'einer Eisdiele']);
 
             // E-Mail über die generische Funktion
@@ -358,6 +365,58 @@ try {
                     'byUserId' => $userId
                 ]
             );
+        }
+
+        // Gegenseitige Pending-Mentions automatisch akzeptieren und Gruppen mergen.
+        // Fenster bewusst großzügig für Gruppen-/Tour-Kontext.
+        $autoLinkMinutes = 180;
+        foreach ($mentionedUsers as $mentionedUserId) {
+            $reciprocalStmt = $pdo->prepare("
+                SELECT cm.id AS mention_id, cm.checkin_id AS inviter_checkin_id
+                FROM checkin_mentions cm
+                JOIN checkins c ON c.id = cm.checkin_id
+                WHERE cm.mentioned_user_id = ?
+                  AND cm.status = 'pending'
+                  AND c.nutzer_id = ?
+                  AND c.eisdiele_id = ?
+                  AND cm.checkin_id <> ?
+                  AND ABS(TIMESTAMPDIFF(MINUTE, c.datum, ?)) <= ?
+                ORDER BY c.datum DESC
+                LIMIT 1
+            ");
+            $reciprocalStmt->execute([
+                (int)$userId,
+                (int)$mentionedUserId,
+                (int)$shopId,
+                (int)$checkinId,
+                $meta['datum'],
+                $autoLinkMinutes,
+            ]);
+            $reciprocal = $reciprocalStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$reciprocal) {
+                continue;
+            }
+
+            $reciprocalMentionId = (int)$reciprocal['mention_id'];
+            $inviterCheckinId = (int)$reciprocal['inviter_checkin_id'];
+
+            $acceptReciprocalStmt = $pdo->prepare("
+                UPDATE checkin_mentions
+                SET status = 'accepted', responded_checkin_id = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            $acceptReciprocalStmt->execute([(int)$checkinId, $reciprocalMentionId]);
+
+            if (!empty($createdMentionByUser[$mentionedUserId])) {
+                $acceptOwnStmt = $pdo->prepare("
+                    UPDATE checkin_mentions
+                    SET status = 'accepted', responded_checkin_id = ?, updated_at = NOW()
+                    WHERE id = ?
+                ");
+                $acceptOwnStmt->execute([$inviterCheckinId, (int)$createdMentionByUser[$mentionedUserId]]);
+            }
+
+            resolveOrMergeCheckinGroup($pdo, [$checkinId, $inviterCheckinId]);
         }
     }
 
@@ -380,6 +439,7 @@ try {
         new CountryVisitEvaluator(),
         new CountryCountEvaluator(),
         new Chemnitz2025Evaluator(),
+        new TheTasteOfChemnitzEvaluator(),
         new BundeslandExperteEvaluator(),
         new IceSeasonEvaluator(),
         new DifferentIceShopCountEvaluator(),
@@ -514,30 +574,20 @@ try {
         }
     }
 
+    // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.
+    if ($referencedCheckinId) {
+        $acceptReferencedStmt = $pdo->prepare("
+            UPDATE checkin_mentions
+            SET status = 'accepted', responded_checkin_id = ?, updated_at = NOW()
+            WHERE checkin_id = ? AND mentioned_user_id = ? AND status <> 'accepted'
+        ");
+        $acceptReferencedStmt->execute([(int)$checkinId, (int)$referencedCheckinId, (int)$userId]);
+        resolveOrMergeCheckinGroup($pdo, [(int)$checkinId, (int)$referencedCheckinId]);
+    }
+
     // Alle DB-Operationen erfolgreich -> Commit
     $pdo->commit();
     $__profiling['after_sorten'] = microtime(true);
-
-    // Falls referenzierter Checkin (z.B. für Mention), Status in checkin_mentions auf 'accepted' setzen
-    if ($referencedCheckinId) {
-        // checkin_id = referencedCheckinId, mentioned_user_id = $userId
-        $apiUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/backend/api/checkin_mentions.php?action=accept';
-        $payload = json_encode([
-            'action' => 'accept',
-            'checkin_id' => $referencedCheckinId,
-            'mentioned_user_id' => $userId,
-            'responded_checkin_id' => $checkinId
-        ]);
-        // Curl-Request an die API
-        $ch = curl_init($apiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        $result = curl_exec($ch);
-        curl_close($ch);
-        // Optional: Fehlerbehandlung/logging
-    }
 
     $levelChange = updateUserLevelIfChanged($pdo, $userId);
     $__profiling['after_level'] = microtime(true);

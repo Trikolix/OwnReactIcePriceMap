@@ -11,21 +11,28 @@ import { MessageCircle } from "lucide-react";
 const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
+  const activityDate = review.aktivitaet_am || review.erstellt_am;
+  const isEditedActivity = review.activity_type === "edit";
+  const parsedActivityDate = new Date(activityDate);
+  const hasValidActivityDate = !Number.isNaN(parsedActivityDate.getTime());
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("de-DE");
 
   return (
     <Card>
-      <DateText dateTime={review.erstellt_am}>
-        {new Date(review.erstellt_am).toLocaleDateString("de-DE", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-      </DateText>
+      <CardMetaRow>
+        <DateText dateTime={activityDate}>
+          {isEditedActivity ? "Bearbeitet: " : ""}
+          {hasValidActivityDate ? parsedActivityDate.toLocaleDateString("de-DE", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+          }) : "Unbekannt"}
+        </DateText>
+      </CardMetaRow>
       <Header>
         <UserAvatar
           userId={review.nutzer_id}
@@ -37,7 +44,7 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
           <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
         </HeaderText>
       </Header>
-      <ContentWrapper>
+      <StyledContentWrapper>
         <LeftContent>
           <Table>
             {review.auswahl !== null && (
@@ -63,7 +70,7 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
             <SamllerSubmitButton onClick={() => setShowReviewForm(true)}>Bearbeiten</SamllerSubmitButton>
           )}
         </LeftContent>
-        <RightContent>
+        <MediaColumn>
           {review.bilder?.length > 0 && (
             <ImageGalleryWithLightbox
               images={review.bilder.map(b => ({
@@ -74,8 +81,8 @@ const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
             />
           )}
 
-        </RightContent>
-      </ContentWrapper>
+        </MediaColumn>
+      </StyledContentWrapper>
       <CommentToggle
         title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
         onClick={() => setAreCommentsVisible(!areCommentsVisible)}
@@ -98,7 +105,7 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 `;
 
 const HeaderText = styled.div`
@@ -131,23 +138,73 @@ const AttributeSection = styled.div`
 `;
 
 const AttributeBadge = styled.span`
-  background: #e0f3ff;
-  color: #0077b6;
+  background: rgba(255, 181, 34, 0.12);
+  color: #7a4a00;
+  border: 1px solid rgba(255, 181, 34, 0.24);
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
 `;
 
-const DateText = styled.time`
+const CardMetaRow = styled.div`
   position: absolute;
   top: 1rem;
-  right: 1.5rem;
+  right: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  @media (max-width: 640px) {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+    pointer-events: auto;
+  }
+`;
+
+const StyledContentWrapper = styled(ContentWrapper)`
+  align-items: flex-start;
+`;
+
+const MediaColumn = styled(RightContent)`
+  flex: 1 1 320px;
+  min-width: min(100%, 280px);
+  max-width: 520px;
+  width: 100%;
+  justify-content: flex-end;
+  overflow: visible;
+  padding-bottom: 0;
+  margin-top: 0.55rem;
+
+  @media (max-width: 900px) {
+    max-width: none;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+`;
+
+const DateText = styled.time`
+  position: static;
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.56);
   font-style: italic;
   user-select: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+
+  @media (max-width: 640px) {
+    margin-bottom: 0;
+    justify-content: flex-end;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    flex-wrap: wrap;
+  }
 `;

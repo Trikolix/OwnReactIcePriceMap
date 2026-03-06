@@ -16,14 +16,17 @@ const SORT_OPTIONS = [
   { value: 'shops_desc', label: 'Meiste Eisdielen' },
   { value: 'shops_asc', label: 'Wenigste Eisdielen' },
 ];
-const PAGE_BG = 'ffffff';
-const CARD_BG = '#ffffff';
-const PANEL_BG = '#fffdfa';
-const BORDER = '#ebe9f5';
-const TEXT_MUTED = '#4a4a68';
+const PAGE_BG = `
+  radial-gradient(circle at top right, rgba(255, 218, 140, 0.32), transparent 42%),
+  linear-gradient(180deg, #fff9ef 0%, #fff4da 100%)
+`;
+const CARD_BG = 'rgba(255, 252, 243, 0.96)';
+const PANEL_BG = 'rgba(255, 252, 243, 0.94)';
+const BORDER = 'rgba(47, 33, 0, 0.08)';
+const TEXT_MUTED = 'rgba(47, 33, 0, 0.68)';
 const ACCENT = '#ffb522';
-const ACCENT_DARK = '#e09b10';
-const ACCENT_SOFT = '#fff3da';
+const ACCENT_DARK = '#8a5700';
+const ACCENT_SOFT = 'rgba(255, 181, 34, 0.14)';
 
 const RoutesPage = () => {
   const { userId } = useUser();
@@ -410,23 +413,32 @@ const PageWrapper = styled.div`
 `;
 
 const Content = styled.main`
-  max-width: 1200px;
+  width: min(96%, 1200px);
   margin: 0 auto;
   padding: 1rem;
 `;
 
 const TitleSection = styled.section`
-  margin-bottom: 24px;
+  margin-bottom: 1rem;
+  background: ${CARD_BG};
+  border: 1px solid ${BORDER};
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem 1rem 0.9rem;
 
   h1 {
-    margin: 0 0 8px;
-    font-size: 2rem;
-    color: #2c2c54;
+    margin: 0 0 0.35rem;
+    font-size: clamp(1.35rem, 2vw, 1.9rem);
+    color: #2f2100;
+    text-align: center;
+    font-weight: 800;
   }
 
   p {
     margin: 0;
     color: ${TEXT_MUTED};
+    text-align: center;
+    font-size: 0.95rem;
   }
 `;
 
@@ -435,7 +447,12 @@ const FiltersToggleBar = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 14px;
+  border: 1px solid ${BORDER};
+  background: rgba(255, 252, 243, 0.9);
+  box-shadow: 0 6px 16px rgba(28, 20, 0, 0.04);
 `;
 
 const ToggleFiltersButton = styled.button`
@@ -444,12 +461,16 @@ const ToggleFiltersButton = styled.button`
   gap: 10px;
   padding: 10px 16px;
   border-radius: 999px;
-  border: 1px solid ${BORDER};
-  background: ${CARD_BG};
-  font-weight: 600;
-  color: #2c2c54;
+  border: 1px solid rgba(47, 33, 0, 0.1);
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+  color: #2f2100;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.1);
+  }
 
   &:focus-visible {
     outline: none;
@@ -481,27 +502,33 @@ const ActiveFiltersBadge = styled.span`
   background: ${ACCENT_SOFT};
   color: ${ACCENT_DARK};
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid rgba(255, 181, 34, 0.3);
 `;
 
 const CollapsedResetButton = styled.button`
   padding: 6px 12px;
   border-radius: 999px;
-  border: none;
-  background: ${({ disabled }) => (disabled ? '#f4e9d4' : ACCENT)};
-  color: ${({ disabled }) => (disabled ? '#a38f6b' : '#fff')};
+  border: 1px solid ${({ disabled }) => (disabled ? 'rgba(47, 33, 0, 0.08)' : 'rgba(255,181,34,0.45)')};
+  background: ${({ disabled }) => (disabled ? 'rgba(47, 33, 0, 0.03)' : ACCENT)};
+  color: ${({ disabled }) => (disabled ? 'rgba(47, 33, 0, 0.4)' : '#2f2100')};
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.2s ease;
+  font-weight: 700;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+
+  &:not(:disabled):hover {
+    background: #ffc34a;
+    box-shadow: 0 6px 14px rgba(255, 181, 34, 0.24);
+  }
 `;
 
 const FiltersPanel = styled.section`
   background: ${PANEL_BG};
   border-radius: 18px;
   padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 15px 40px rgba(28, 30, 70, 0.08);
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   border: 1px solid ${BORDER};
   display: grid;
   gap: 16px;
@@ -514,18 +541,18 @@ const FilterColumn = styled.div`
 `;
 
 const FilterLabel = styled.label`
-  font-weight: 600;
-  color: #3c3c5a;
+  font-weight: 700;
+  color: #5f3f00;
   margin-bottom: 8px;
 `;
 
 const FilterInput = styled.input`
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid ${BORDER};
-  background: ${CARD_BG};
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  background: rgba(255,255,255,0.95);
   font-size: 0.95rem;
-  color: #2a2a3f;
+  color: #2f2100;
 
   &:focus {
     outline: none;
@@ -556,17 +583,19 @@ const FilterChips = styled.div`
 
 const FilterChip = styled.button`
   border-radius: 999px;
-  border: 1px solid ${({ $active }) => ($active ? ACCENT : BORDER)};
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(255,181,34,0.55)' : 'rgba(47, 33, 0, 0.08)')};
   padding: 6px 14px;
   font-size: 0.85rem;
-  background: ${({ $active }) => ($active ? ACCENT : '#fff')};
-  color: ${({ $active }) => ($active ? '#fff' : TEXT_MUTED)};
+  background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.18)' : 'rgba(255,255,255,0.9)')};
+  color: ${({ $active }) => ($active ? '#7a4a00' : '#5c4a25')};
   cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 700;
 
   &:hover {
     border-color: ${ACCENT};
-    color: ${({ $active }) => ($active ? '#fff' : ACCENT_DARK)};
+    color: ${({ $active }) => ($active ? '#7a4a00' : ACCENT_DARK)};
+    background: rgba(255, 181, 34, 0.12);
   }
 `;
 
@@ -579,13 +608,18 @@ const ResetButton = styled.button`
   width: 100%;
   padding: 12px;
   border-radius: 12px;
-  background: ${({ disabled }) => (disabled ? '#f4e9d4' : ACCENT)};
-  color: ${({ disabled }) => (disabled ? '#a38f6b' : '#fff')};
-  border: none;
+  background: ${({ disabled }) => (disabled ? 'rgba(47, 33, 0, 0.03)' : ACCENT)};
+  color: ${({ disabled }) => (disabled ? 'rgba(47, 33, 0, 0.4)' : '#2f2100')};
+  border: 1px solid ${({ disabled }) => (disabled ? 'rgba(47, 33, 0, 0.08)' : 'rgba(255,181,34,0.5)')};
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.02em;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+
+  &:not(:disabled):hover {
+    background: #ffc34a;
+    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.24);
+  }
 `;
 
 const ResultsBar = styled.div`
@@ -594,13 +628,18 @@ const ResultsBar = styled.div`
   justify-content: space-between;
   gap: 12px;
   align-items: flex-end;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  border: 1px solid ${BORDER};
+  background: rgba(255, 252, 243, 0.92);
+  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.05);
 `;
 
 const ResultsInfo = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 0;
   color: ${TEXT_MUTED};
-  font-weight: 500;
+  font-weight: 600;
 `;
 
 const SortControl = styled.div`
@@ -612,17 +651,17 @@ const SortControl = styled.div`
 
 const SortLabel = styled.label`
   font-size: 0.85rem;
-  font-weight: 600;
-  color: ${TEXT_MUTED};
+  font-weight: 700;
+  color: #5f3f00;
 `;
 
 const SortSelect = styled.select`
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid ${BORDER};
-  background: ${CARD_BG};
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  background: rgba(255,255,255,0.95);
   font-size: 0.95rem;
-  color: #2a2a3f;
+  color: #2f2100;
 
   &:focus {
     outline: none;
@@ -635,6 +674,7 @@ const RoutesGrid = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 0.25rem 0 2rem;
 `;
 
 const EmptyState = styled.div`
@@ -642,18 +682,19 @@ const EmptyState = styled.div`
   padding: 60px 20px;
   background: ${CARD_BG};
   border-radius: 18px;
-  box-shadow: inset 0 0 0 1px ${BORDER};
+  border: 1px solid ${BORDER};
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.06);
 
   strong {
     display: block;
     margin-bottom: 8px;
     font-size: 1.1rem;
-    color: #2a2a3f;
+    color: #2f2100;
   }
 
   p {
     margin: 0;
-    color: #6f6f8d;
+    color: ${TEXT_MUTED};
   }
 `;
 

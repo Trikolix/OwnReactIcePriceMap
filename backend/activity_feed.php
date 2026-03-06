@@ -3,9 +3,11 @@ require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
+require_once  __DIR__ . '/lib/comment_registration.php';
 
 function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $activities = [];
+    $hasUserRegistrationCommentSupport = ensureKommentarUserRegistrationSupport($pdo);
 
     // 🟢 CHECKINS
     $stmtCheckins = $pdo->prepare("
@@ -96,6 +98,56 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
         ];
     }
 
+    // 🆕 Neu registrierte (verifizierte) Benutzer
+    $newUserSql = $hasUserRegistrationCommentSupport
+        ? "
+            SELECT n.id,
+                   n.username,
+                   n.erstellt_am,
+                   n.current_level,
+                   up.avatar_path AS avatar_url,
+                   COALESCE(kc.comment_count, 0) AS commentCount
+            FROM nutzer n
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
+            LEFT JOIN (
+                SELECT user_registration_id, COUNT(*) AS comment_count
+                FROM kommentare
+                WHERE user_registration_id IS NOT NULL
+                GROUP BY user_registration_id
+            ) kc ON kc.user_registration_id = n.id
+            WHERE n.is_verified = 1
+              AND n.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+              AND n.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+            ORDER BY n.erstellt_am DESC
+        "
+        : "
+            SELECT n.id,
+                   n.username,
+                   n.erstellt_am,
+                   n.current_level,
+                   up.avatar_path AS avatar_url,
+                   0 AS commentCount
+            FROM nutzer n
+            LEFT JOIN user_profile_images up ON up.user_id = n.id
+            WHERE n.is_verified = 1
+              AND n.erstellt_am >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
+              AND n.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
+            ORDER BY n.erstellt_am DESC
+        ";
+    $stmtNewUsers = $pdo->prepare($newUserSql);
+    $stmtNewUsers->execute([
+        'offsetPlusDays' => $offsetDays + $days,
+        'offset'         => $offsetDays
+    ]);
+    $newUsers = $stmtNewUsers->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($newUsers as $newUser) {
+        $activities[] = [
+            'typ'  => 'new_user',
+            'id'   => $newUser['id'],
+            'data' => $newUser
+        ];
+    }
+
     // Awards
     $stmtAwards = $pdo->prepare("
         SELECT ua.id,
@@ -137,8 +189,8 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
 
     // 🔄 Nach Datum sortieren
     usort($activities, function ($a, $b) {
-        $dateA = $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
-        $dateB = $b['data']['erstellt_am'] ?? $b['data']['datum'] ?? null;
+        $dateA = $a['data']['aktivitaet_am'] ?? $a['data']['erstellt_am'] ?? $a['data']['datum'] ?? null;
+        $dateB = $b['data']['aktivitaet_am'] ?? $b['data']['erstellt_am'] ?? $b['data']['datum'] ?? null;
         return strtotime($dateB) <=> strtotime($dateA);
     });
 
@@ -174,7 +226,7 @@ function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 
 
     // Meta-Daten vorbereiten
     $meta['count']      = count($activities);
-    $meta['hasMore']    = (end($activities)['data']['erstellt_am'] ?? end($activities)['data']['datum'] ??  null) > $earliestDate;
+    $meta['hasMore']    = (end($activities)['data']['aktivitaet_am'] ?? end($activities)['data']['erstellt_am'] ?? end($activities)['data']['datum'] ??  null) > $earliestDate;
     $meta['nextOffset'] = $offset;
 
     return [

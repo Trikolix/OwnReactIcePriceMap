@@ -1,70 +1,61 @@
-# Getting Started with Create React App
+# Eiscreme Price Radar
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Überblick
+Dieses Repository enthält:
+- ein React/Vite-Frontend in `src/`
+- ein PHP-Backend in `backend/`
+- SQL- und Betriebsdokumentation in `backend/Database` und `docs/`
 
-## Available Scripts
+Ziel der aktuellen Aufräumphase ist eine klarere, modularere Struktur bei laufender Funktionalität.
 
-In the project directory, you can run:
+## Projektstruktur (aktueller Zielzustand)
+- `src/features/*`: fachliche Feature-Module (z. B. `event`, `core`)
+- `src/shared/*`: wiederverwendbare Infrastruktur (z. B. API-Client)
+- `backend/public/index.php`: Einstieg für neue `/api/v2/*` Routen
+- `backend/src/Modules/*`: modulare Backend-Controller/Services/Repositories
+- `backend/src/Shared/*`: gemeinsame Backend-Helfer
+- `backend/*` (Top-Level PHP): Legacy-Endpunkte, schrittweise Ablösung
 
-### `npm start`
+## Lokale Entwicklung
+Voraussetzungen:
+- Node.js + npm
+- PHP 8+
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Frontend starten:
+```bash
+npm start
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Build:
+```bash
+npm run build
+```
 
-### `npm test`
+## Neue API-Fassade (Start)
+Aktuell eingeführt:
+- `GET /api/v2/shops`
+- `GET /api/v2/shops/{id}`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Implementierung:
+- Router: `backend/public/index.php`
+- Controller: `backend/src/Modules/Shops/Controllers/ShopsController.php`
 
-### `npm run build`
+## Event-Routing
+Folgende Event-Routen sind aktiv in der App eingebunden:
+- `/#/eis-tour`
+- `/#/event-registration`
+- `/#/event-live`
+- `/#/event-me`
+- `/#/event-invite/:token`
+- `/#/event-registration-summary`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Cleanup-Regeln
+- Keine Build-Artefakte im Repo (`build/`, `*.zip`, `*.bak`, Rohdesign-Dateien).
+- `uploads/` wird nicht mehr versioniert.
+- Potenziell externe Legacy-Endpunkte werden zuerst als deprecated markiert, dann später entfernt.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Branch-Strategie für Aufräumarbeiten
+- `cleanup/trash-candidates`: Lösch-/Archivkandidaten
+- `cleanup/main-refactor`: Architekturumbau
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+So bleiben aggressive Cleanup-Schritte rückholbar.

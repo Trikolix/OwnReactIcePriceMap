@@ -6,6 +6,22 @@ require_once __DIR__ . '/../lib/auth.php';
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
 
+function hasReviewEditedAtColumn(PDO $pdo): bool {
+    static $hasColumn = null;
+    if ($hasColumn !== null) {
+        return $hasColumn;
+    }
+
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM bewertungen LIKE 'zuletzt_bearbeitet_am'");
+        $hasColumn = (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        $hasColumn = false;
+    }
+
+    return $hasColumn;
+}
+
 // 1. Hole POST-Daten direkt aus $_POST (da multipart/form-data)
 $shopId = $_POST['shopId'] ?? null;
 $auswahl = $_POST['auswahl'] ?? null;
@@ -94,7 +110,16 @@ try {
         }
     }
 
-    // 2. Bewertung einfügen oder updaten (ON DUPLICATE KEY UPDATE nur wenn eindeutiger Key definiert)
+    // 2. Vorab prüfen, ob bereits eine Bewertung des Nutzers für die Eisdiele existiert
+    $existingReviewStmt = $pdo->prepare("SELECT id FROM bewertungen WHERE nutzer_id = :userId AND eisdiele_id = :shopId");
+    $existingReviewStmt->execute([
+        ':userId' => $currentUserId,
+        ':shopId' => $shopId
+    ]);
+    $existingReviewId = $existingReviewStmt->fetchColumn();
+    $isUpdate = !empty($existingReviewId);
+
+    // 3. Bewertung einfügen oder updaten (ON DUPLICATE KEY UPDATE nur wenn eindeutiger Key definiert)
     $sql = "INSERT INTO bewertungen (eisdiele_id, nutzer_id, auswahl, beschreibung, is_on_site) 
             VALUES (:shopId, :userId, :auswahl, :beschreibung, :isOnSite) 
             ON DUPLICATE KEY UPDATE
@@ -109,7 +134,7 @@ try {
         ':isOnSite' => $isOnSite
     ]);
 
-    // 3. Bewertung-ID abfragen (für Verknüpfungen)
+    // 4. Bewertung-ID abfragen (für Verknüpfungen)
     $stmt = $pdo->prepare("SELECT id FROM bewertungen WHERE nutzer_id = :userId AND eisdiele_id = :shopId");
     $stmt->execute([':userId' => $currentUserId, ':shopId' => $shopId]);
     $bewertungId = $stmt->fetchColumn();
@@ -119,7 +144,13 @@ try {
         exit;
     }
 
-    // 4. Bilder verarbeiten (Uploads)
+    // Bei Bearbeitung Zeitstempel aktualisieren (nur für bestehende Reviews)
+    if ($isUpdate && hasReviewEditedAtColumn($pdo)) {
+        $stmtUpdateEditedAt = $pdo->prepare("UPDATE bewertungen SET zuletzt_bearbeitet_am = CURRENT_TIMESTAMP WHERE id = :id");
+        $stmtUpdateEditedAt->execute([':id' => $bewertungId]);
+    }
+
+    // 5. Bilder verarbeiten (Uploads)
     $bildUrls = [];
     if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
         try {
@@ -135,7 +166,7 @@ try {
         }
     }
 
-    // 5. Neue Bilder in DB speichern
+    // 6. Neue Bilder in DB speichern
     if (!empty($bildUrls)) {
         $stmt = $pdo->prepare("INSERT INTO bilder (bewertung_id, nutzer_id, url, beschreibung, shop_id) VALUES (?, ?, ?, ?, ?)");
         foreach ($bildUrls as $bild) {
@@ -143,7 +174,7 @@ try {
         }
     }
 
-    // 6. Bestehende Bilder aktualisieren (Beschreibung), falls gewünscht
+    // 7. Bestehende Bilder aktualisieren (Beschreibung), falls gewünscht
     if (!empty($bestehende_bilder)) {
         $stmtUpdateBild = $pdo->prepare("UPDATE bilder SET beschreibung = :beschreibung WHERE id = :id AND bewertung_id = :bewertungId");
         foreach ($bestehende_bilder as $bild) {
@@ -157,7 +188,7 @@ try {
         }
     }
 
-    // 6b. Gelöschte Bilder entfernen (Datenbank + Datei)
+    // 7b. Gelöschte Bilder entfernen (Datenbank + Datei)
     $deletedBildIds = json_decode($_POST['deleted_bild_ids'] ?? '[]', true);
     if (!empty($deletedBildIds)) {
         $stmtSelectDeleted = $pdo->prepare("SELECT url FROM bilder WHERE id = :id AND bewertung_id = :bewertungId");
@@ -186,7 +217,7 @@ try {
         }
     }
 
-    // 7. Attribute verarbeiten
+    // 8. Attribute verarbeiten
     $attributIds = [];
     foreach ($selectedAttributes as $name) {
         // prüfen, ob Attribut existiert
@@ -204,11 +235,11 @@ try {
         $attributIds[] = $id;
     }
 
-    // 8. Bisher verknüpfte Attribute löschen
+    // 9. Bisher verknüpfte Attribute löschen
     $stmt = $pdo->prepare("DELETE FROM bewertung_attribute WHERE bewertung_id = :bewertungId");
     $stmt->execute([':bewertungId' => $bewertungId]);
 
-    // 9. Neue Verknüpfungen einfügen
+    // 10. Neue Verknüpfungen einfügen
     $stmt = $pdo->prepare("INSERT INTO bewertung_attribute (bewertung_id, attribut_id) VALUES (:bewertungId, :attributId)");
     foreach ($attributIds as $attrId) {
         $stmt->execute([

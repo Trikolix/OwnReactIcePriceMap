@@ -57,6 +57,13 @@ export const UserProvider = ({ children }) => {
 
   const login = useCallback((id, name, token, expiresAt) => {
     const idAsString = id != null ? String(id) : null;
+    const previousUserId = localStorage.getItem('userId');
+
+    // Reset avatar cache when switching accounts to avoid showing the previous user's picture.
+    if (previousUserId && idAsString && previousUserId !== idAsString) {
+      localStorage.removeItem('avatarUrl');
+    }
+
     setUserId(idAsString);
     setUsername(name);
     setIsLoggedIn(true);
@@ -67,7 +74,6 @@ export const UserProvider = ({ children }) => {
       localStorage.setItem('userId', idAsString);
     } else {
       localStorage.removeItem('userId');
-      setAvatarUrl(null);
       localStorage.removeItem('avatarUrl');
     }
 
@@ -112,6 +118,7 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('tokenExpiresAt');
     localStorage.removeItem('userPosition');
+    localStorage.removeItem('avatarUrl');
     sessionValidatedRef.current = false;
   }, []);
 

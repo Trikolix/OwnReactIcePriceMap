@@ -6,6 +6,128 @@ require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/user_profile.php';
 
+function consecutiveLengthBackward(array $set, DateTimeImmutable $start, string $stepSpec): int
+{
+    $count = 0;
+    $cursor = $start;
+    while (isset($set[$cursor->format('Y-m-d')])) {
+        $count++;
+        $cursor = $cursor->modify($stepSpec);
+    }
+    return $count;
+}
+
+function calculateRecordStreak(array $sortedDates, int $stepDays): int
+{
+    if (empty($sortedDates)) {
+        return 0;
+    }
+
+    $record = 0;
+    $current = 0;
+    $previous = null;
+    foreach ($sortedDates as $dateValue) {
+        $date = new DateTimeImmutable($dateValue);
+        if ($previous === null) {
+            $current = 1;
+        } else {
+            $diffDays = (int)$previous->diff($date)->format('%r%a');
+            $current = ($diffDays === $stepDays) ? ($current + 1) : 1;
+        }
+        $record = max($record, $current);
+        $previous = $date;
+    }
+
+    return $record;
+}
+
+function calculateStreakStats(array $dateRows): array
+{
+    $dateSet = [];
+    $weekSet = [];
+
+    foreach ($dateRows as $row) {
+        $dateValue = $row['d'] ?? null;
+        if (!$dateValue) {
+            continue;
+        }
+
+        $dateSet[$dateValue] = true;
+
+        $weekStart = (new DateTimeImmutable($dateValue))->modify('monday this week')->format('Y-m-d');
+        $weekSet[$weekStart] = true;
+    }
+
+    $dates = array_keys($dateSet);
+    sort($dates);
+    $weeks = array_keys($weekSet);
+    sort($weeks);
+
+    $now = new DateTimeImmutable('now');
+    $today = new DateTimeImmutable('today');
+    $yesterday = $today->modify('-1 day');
+
+    $dayRecord = calculateRecordStreak($dates, 1);
+    $dayValue = 0;
+    $dayState = 'none';
+    $dayDeadline = null;
+    $daySecondsLeft = 0;
+
+    if (isset($dateSet[$today->format('Y-m-d')])) {
+        $dayValue = consecutiveLengthBackward($dateSet, $today, '-1 day');
+        $dayState = 'active';
+    } elseif (isset($dateSet[$yesterday->format('Y-m-d')])) {
+        $dayValue = consecutiveLengthBackward($dateSet, $yesterday, '-1 day');
+        $dayState = 'at_risk';
+        $dayDeadlineObj = $today->setTime(23, 59, 59);
+        $dayDeadline = $dayDeadlineObj->format(DateTimeInterface::ATOM);
+        $daySecondsLeft = max(0, $dayDeadlineObj->getTimestamp() - $now->getTimestamp());
+    }
+
+    $thisWeekStartObj = $today->modify('monday this week');
+    $lastWeekStartObj = $thisWeekStartObj->modify('-7 days');
+    $thisWeekStart = $thisWeekStartObj->format('Y-m-d');
+    $lastWeekStart = $lastWeekStartObj->format('Y-m-d');
+
+    $weekRecord = calculateRecordStreak($weeks, 7);
+    $weekValue = 0;
+    $weekState = 'none';
+    $weekDeadline = null;
+    $weekSecondsLeft = 0;
+
+    if (isset($weekSet[$thisWeekStart])) {
+        $weekValue = consecutiveLengthBackward($weekSet, $thisWeekStartObj, '-7 days');
+        $weekState = 'active';
+    } elseif (isset($weekSet[$lastWeekStart])) {
+        $weekValue = consecutiveLengthBackward($weekSet, $lastWeekStartObj, '-7 days');
+        $weekState = 'at_risk';
+        $weekDeadlineObj = $thisWeekStartObj->modify('+6 days')->setTime(23, 59, 59);
+        $weekDeadline = $weekDeadlineObj->format(DateTimeInterface::ATOM);
+        $weekSecondsLeft = max(0, $weekDeadlineObj->getTimestamp() - $now->getTimestamp());
+    }
+
+    return [
+        'day_current' => $dayState === 'active' ? $dayValue : 0,
+        'day_record' => $dayRecord,
+        'week_current' => $weekState === 'active' ? $weekValue : 0,
+        'week_record' => $weekRecord,
+        'day' => [
+            'value' => $dayValue,
+            'record' => $dayRecord,
+            'state' => $dayState,
+            'deadline_iso' => $dayDeadline,
+            'seconds_left' => $daySecondsLeft,
+        ],
+        'week' => [
+            'value' => $weekValue,
+            'record' => $weekRecord,
+            'state' => $weekState,
+            'deadline_iso' => $weekDeadline,
+            'seconds_left' => $weekSecondsLeft,
+        ],
+    ];
+}
+
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 $curUserId = intval($_GET['cur_user_id']);
 
@@ -198,6 +320,11 @@ try {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE nutzer_id = ?");
     $stmt->execute([$nutzerId]);
     $stats["comment_count"] = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT DATE(datum) AS d FROM checkins WHERE nutzer_id = ? GROUP BY DATE(datum) ORDER BY d ASC");
+    $stmt->execute([$nutzerId]);
+    $streakDates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stats["streaks"] = calculateStreakStats($streakDates);
 
     echo json_encode($stats);
 

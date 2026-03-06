@@ -6,6 +6,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import { Navigation, Pagination } from "swiper/modules";
+import { Card as SharedCard } from "../styles/SharedStyles";
 
 const GroupCheckinCard = ({ checkins, onSuccess }) => {
     const first = checkins[0];
@@ -72,15 +73,17 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
 
     return (
         <Card style={cardHeight ? { minHeight: cardHeight } : {}}>
-            <DateText dateTime={first.datum}>
-                {new Date(first.datum).toLocaleDateString("de-DE", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                })}
-            </DateText>
+            <CardMetaRow>
+                <DateText dateTime={first.datum}>
+                    {new Date(first.datum).toLocaleDateString("de-DE", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "numeric",
+                    })}
+                </DateText>
+            </CardMetaRow>
             <ContentWrapper>
                 <LeftContent>
                     {allNames} waren gemeinsam bei{" "}
@@ -114,33 +117,49 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
 
 export default GroupCheckinCard;
 
-const Card = styled.div`
-  position: relative;
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  padding: 2rem;
-  padding-bottom: -3rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s;
+const Card = styled(SharedCard)`
+  padding: 1rem 1rem 1.35rem;
+`;
 
-  &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+const CardMetaRow = styled.div`
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  @media (max-width: 640px) {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+    pointer-events: auto;
   }
 `;
 
 const DateText = styled.time`
-  position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  position: static;
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.56);
   font-style: italic;
   user-select: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+
+  @media (max-width: 640px) {
+    margin-bottom: 0;
+    justify-content: flex-end;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    flex-wrap: wrap;
+  }
 `;
 
 const ContentWrapper = styled.div`

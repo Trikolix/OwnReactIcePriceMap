@@ -174,6 +174,80 @@ function normalizeDateTime(?string $value): ?string
     return date('Y-m-d H:i:s', $timestamp);
 }
 
+function normalizeMultilineText(string $value): string
+{
+    return str_replace(["\r\n", "\r"], "\n", $value);
+}
+
+function getPhotoChallengeTimezone(): DateTimeZone
+{
+    static $tz = null;
+    if ($tz instanceof DateTimeZone) {
+        return $tz;
+    }
+    $tz = new DateTimeZone('Europe/Berlin');
+    return $tz;
+}
+
+function getPhotoChallengeNow(): DateTimeImmutable
+{
+    return new DateTimeImmutable('now', getPhotoChallengeTimezone());
+}
+
+function getPhotoChallengeDeadlineDateTime(array $challenge): ?DateTimeImmutable
+{
+    $deadline = $challenge['submission_deadline'] ?? null;
+    if (empty($deadline)) {
+        return null;
+    }
+    try {
+        return new DateTimeImmutable((string)$deadline, getPhotoChallengeTimezone());
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function isPhotoChallengeSubmissionDeadlinePassed(array $challenge, ?DateTimeImmutable $now = null): bool
+{
+    $deadline = getPhotoChallengeDeadlineDateTime($challenge);
+    if (!$deadline) {
+        return false;
+    }
+    $now = $now ?: getPhotoChallengeNow();
+    return $now > $deadline;
+}
+
+function getPhotoChallengeEffectiveStatus(array $challenge, ?DateTimeImmutable $now = null): string
+{
+    $status = (string)($challenge['status'] ?? 'draft');
+    if ($status === 'submission_open' && isPhotoChallengeSubmissionDeadlinePassed($challenge, $now)) {
+        return 'submission_closed';
+    }
+    return $status;
+}
+
+function isPhotoChallengeSubmissionEditable(array $challenge, ?DateTimeImmutable $now = null): bool
+{
+    return getPhotoChallengeEffectiveStatus($challenge, $now) === 'submission_open';
+}
+
+function enrichPhotoChallengeForApi(array $challenge, ?DateTimeImmutable $now = null): array
+{
+    $now = $now ?: getPhotoChallengeNow();
+    $rawStatus = (string)($challenge['status'] ?? 'draft');
+    $effectiveStatus = getPhotoChallengeEffectiveStatus($challenge, $now);
+    $deadlinePassed = isPhotoChallengeSubmissionDeadlinePassed($challenge, $now);
+
+    $challenge['status_raw'] = $rawStatus;
+    $challenge['effective_status'] = $effectiveStatus;
+    $challenge['status'] = $effectiveStatus;
+    $challenge['submission_deadline_passed'] = $deadlinePassed;
+    $challenge['submission_is_open_effective'] = $effectiveStatus === 'submission_open';
+    $challenge['submission_is_closed_effective'] = $effectiveStatus === 'submission_closed';
+
+    return $challenge;
+}
+
 function isPowerOfTwo(int $value): bool
 {
     if ($value <= 0) {
@@ -323,7 +397,12 @@ function fetchChallenges(PDO $pdo): array
         ) AS img_counts ON img_counts.challenge_id = c.id
         ORDER BY c.created_at DESC
     ");
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $now = getPhotoChallengeNow();
+    return array_map(
+        fn(array $row) => enrichPhotoChallengeForApi($row, $now),
+        $rows
+    );
 }
 
 function fetchChallengeImages(PDO $pdo, int $challengeId): array

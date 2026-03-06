@@ -7,13 +7,14 @@ const STATUS_LABELS = {
   group_running: 'Gruppenphase',
   ko_running: 'KO-Phase',
   submission_open: 'Einreichphase',
+  submission_closed: 'Planung läuft',
   finished: 'Abgeschlossen',
   draft: 'In Vorbereitung',
   active: 'Aktiv',
 };
 
 const statusOrder = (status) => {
-  if (['group_running', 'ko_running', 'submission_open'].includes(status)) return 0;
+  if (['group_running', 'ko_running', 'submission_open', 'submission_closed'].includes(status)) return 0;
   if (status === 'finished') return 2;
   return 1;
 };
@@ -56,7 +57,7 @@ function PhotoChallengeList() {
       .slice()
       .sort((a, b) => statusOrder(a.status) - statusOrder(b.status) || new Date(b.created_at) - new Date(a.created_at))
       .forEach((challenge) => {
-        if (['group_running', 'ko_running', 'submission_open'].includes(challenge.status)) {
+        if (['group_running', 'ko_running', 'submission_open', 'submission_closed'].includes(challenge.status)) {
           buckets.running.push(challenge);
         } else if (challenge.status === 'finished') {
           buckets.finished.push(challenge);
@@ -218,6 +219,7 @@ const ChallengeCard = styled(Link)`
     margin: 0;
     color: #615c76;
     font-size: 0.95rem;
+    white-space: pre-line;
   }
 `;
 

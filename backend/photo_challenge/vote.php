@@ -22,9 +22,13 @@ try {
     ensurePhotoChallengeSchema($pdo);
 
     $stmt = $pdo->prepare("
-        SELECT m.*, c.status AS challenge_status
+        SELECT m.*,
+               c.status AS challenge_status,
+               g.start_at AS group_start_at,
+               g.end_at AS group_end_at
         FROM photo_challenge_matches m
         JOIN photo_challenges c ON c.id = m.challenge_id
+        LEFT JOIN photo_challenge_groups g ON g.id = m.group_id
         WHERE m.id = :id
     ");
     $stmt->execute(['id' => $matchId]);
@@ -35,6 +39,21 @@ try {
     if ($match['status'] !== 'open') {
         throw new RuntimeException('Dieses Match ist bereits geschlossen.');
     }
+    if ($match['phase'] === 'group' && $match['challenge_status'] !== 'group_running') {
+        throw new RuntimeException('Voting ist für diese Gruppenphase derzeit nicht geöffnet.');
+    }
+    if ($match['phase'] === 'ko' && $match['challenge_status'] !== 'ko_running') {
+        throw new RuntimeException('Voting ist für diese KO-Phase derzeit nicht geöffnet.');
+    }
+    if ($match['phase'] === 'group') {
+        $now = time();
+        if (!empty($match['group_start_at']) && $now < strtotime((string)$match['group_start_at'])) {
+            throw new RuntimeException('Diese Gruppe ist noch nicht freigeschaltet.');
+        }
+        if (!empty($match['group_end_at']) && $now > strtotime((string)$match['group_end_at'])) {
+            throw new RuntimeException('Das Voting für diese Gruppe ist bereits beendet.');
+        }
+    }
     $imageA = (int)$match['image_a_id'];
     $imageB = (int)$match['image_b_id'];
     if ($imageId !== $imageA && $imageId !== $imageB) {
@@ -42,9 +61,22 @@ try {
     }
 
     $stmt = $pdo->prepare("
+        SELECT image_id
+        FROM photo_challenge_votes
+        WHERE match_id = :match_id AND nutzer_id = :nutzer_id
+        LIMIT 1
+    ");
+    $stmt->execute([
+        'match_id' => $matchId,
+        'nutzer_id' => $userId,
+    ]);
+    if ($stmt->fetchColumn() !== false) {
+        throw new RuntimeException('Du hast in diesem Duell bereits abgestimmt.');
+    }
+
+    $stmt = $pdo->prepare("
         INSERT INTO photo_challenge_votes (match_id, nutzer_id, image_id)
         VALUES (:match_id, :nutzer_id, :image_id)
-        ON DUPLICATE KEY UPDATE image_id = VALUES(image_id), created_at = CURRENT_TIMESTAMP
     ");
     $stmt->execute([
         'match_id' => $matchId,
@@ -74,6 +106,14 @@ try {
         'message' => $e->getMessage(),
     ]);
 } catch (PDOException $e) {
+    if (($e->getCode() ?? '') === '23000') {
+        http_response_code(422);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Du hast in diesem Duell bereits abgestimmt.',
+        ]);
+        exit;
+    }
     http_response_code(500);
     echo json_encode([
         'status' => 'error',

@@ -1,6 +1,7 @@
 <?php
 require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
-require_once '../db_connect.php';
+require_once __DIR__ . '/auth_awards_admin.php';
+require_once __DIR__ . '/awards_cache.php';
 header('Content-Type: application/json');
 
 $code = $_POST['code'] ?? '';
@@ -13,6 +14,8 @@ if ($code !== '') {
     // Entwicklung
     $stmt_dev = $pdo_dev->prepare("INSERT INTO awards (code, category) VALUES (?, ?)");
     $stmt_dev->execute([$code, $category]);
+
+    invalidateAwardsCache();
 }
 
 echo json_encode(['success' => true]);

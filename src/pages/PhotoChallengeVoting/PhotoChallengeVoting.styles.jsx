@@ -56,6 +56,12 @@ export const HeroSection = styled.header`
   }
 `;
 
+export const HeroDescription = styled.p`
+  margin: 0.2rem 0 0;
+  color: #6a6381;
+  white-space: pre-line;
+`;
+
 export const WarningBox = styled.div`
   background: #fff1e6;
   border: 1px solid #ffd7ba;

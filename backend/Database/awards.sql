@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 05. Nov 2025 um 08:16
--- Server-Version: 8.0.39-30
--- PHP-Version: 7.2.34
+-- Host: 10.35.233.205:3306
+-- Erstellungszeit: 06. Mrz 2026 um 10:40
+-- Server-Version: 8.0.44
+-- PHP-Version: 8.4.17
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Datenbank: `db_439770_2`
+-- Datenbank: `k320202_iceapp`
 --
 
 -- --------------------------------------------------------
@@ -89,7 +89,13 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (48, 'four_seasons', 'In allen 4 Jahreszeiten gut Eis gegessen', '2025-10-24 19:50:34'),
 (49, 'multiple_vehicle', 'Mit verschiedenen Verkehrsmitteln angereist', '2025-10-24 19:51:48'),
 (50, 'count_group_checkins', 'Anzahl Gruppen-Checkins', '2025-10-26 04:40:27'),
-(51, 'size_checkin_group', 'Eis mit einer richtig großen Meute gegessen', '2025-10-26 04:58:47');
+(51, 'size_checkin_group', 'Eis mit einer richtig großen Meute gegessen', '2025-10-26 04:58:47'),
+(52, 'photo_challenge_winners', 'Gewinner von Fotochallenges', '2025-11-27 11:12:05'),
+(53, 'Seasonal_presents', 'Kleine Bonus Awards für Feiertage', '2025-12-20 04:16:29'),
+(54, 'easter_eggs', 'geheime Awards für Aktionen', '2025-12-24 11:14:26'),
+(55, 'ice_olympia_2026', 'Eis-Winterolympiade 2026', '2026-02-04 07:01:37'),
+(56, 'taste_of_chemnitz', 'The Taste of Chemnitz', '2026-03-05 08:49:47'),
+(57, 'first_iceapp_birthday', 'Aktion zum 1. Geburtstag der Ice-App', '2026-03-06 08:18:12');
 
 --
 -- Indizes der exportierten Tabellen
@@ -110,7 +116,7 @@ ALTER TABLE `awards`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

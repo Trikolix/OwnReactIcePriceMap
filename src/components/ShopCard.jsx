@@ -23,15 +23,17 @@ const ShopCard = ({ iceShop, onSuccess }) => {
   return (<>
 
     <Card>
-      <DateText dateTime={iceShop.erstellt_am}>
-        {new Date(iceShop.erstellt_am).toLocaleDateString("de-DE", {
-            day: "numeric",
-            month: "long",
-            year: "numeric", 
-            hour: "numeric",
-            minute: "numeric",
-          })}
-      </DateText>
+      <CardMetaRow>
+        <DateText dateTime={iceShop.erstellt_am}>
+          {new Date(iceShop.erstellt_am).toLocaleDateString("de-DE", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            })}
+        </DateText>
+      </CardMetaRow>
       <Header>
         <UserAvatar
           userId={iceShop.user_id}
@@ -77,24 +79,52 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 `;
 
 const HeaderText = styled.div`
   line-height: 1.4;
 `;
 
-const DateText = styled.time`
+const CardMetaRow = styled.div`
   position: absolute;
   top: 1rem;
-  right: 1.5rem;
+  right: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  @media (max-width: 640px) {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+    pointer-events: auto;
+  }
+`;
+
+const DateText = styled.time`
+  position: static;
   font-size: 0.85rem;
-  color: #777;
+  color: rgba(47, 33, 0, 0.56);
   font-style: italic;
   user-select: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+
+  @media (max-width: 640px) {
+    margin-bottom: 0;
+    justify-content: flex-end;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    flex-wrap: wrap;
+  }
 `;
 
 const SuggestionLink = styled.button`
