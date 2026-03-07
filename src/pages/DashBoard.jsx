@@ -315,10 +315,9 @@ const Page = styled.div`
 `;
 
 const Container = styled.div`
-  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
   justify-content: center;
   width: min(96%, 1040px);
   box-sizing: border-box;

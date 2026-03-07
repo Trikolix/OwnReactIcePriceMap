@@ -1043,7 +1043,7 @@ const CleanLink = styled(Link)`
 `;
 
 const Container = styled.div`
-  padding: 1rem;
+  padding: 0.5rem;
   background:
     radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 45%),
     linear-gradient(180deg, #fffaf0 0%, #fff7e5 100%);
@@ -1150,6 +1150,70 @@ const Table = styled.table`
   tbody tr:not(.details-row) td:first-child {
     font-weight: 700;
   }
+
+  @media (max-width: 768px) {
+    min-width: 700px;
+    table-layout: fixed;
+
+    th,
+    td {
+      padding: 6px 6px;
+      font-size: 0.78rem;
+      line-height: 1.15;
+    }
+
+    th:first-child {
+      position: sticky;
+      left: 0;
+      width: 124px;
+      min-width: 124px;
+      max-width: 124px;
+      z-index: 3;
+    }
+
+    tbody tr:not(.details-row) td:first-child {
+      position: sticky;
+      left: 0;
+      width: 124px;
+      min-width: 124px;
+      max-width: 124px;
+      z-index: 3;
+    }
+
+    th:not(:first-child),
+    tbody tr:not(.details-row) td:not(:first-child) {
+      width: 72px;
+      min-width: 72px;
+      max-width: 72px;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+    }
+
+    th:first-child {
+      z-index: 5;
+      background: rgba(255, 252, 243, 0.99);
+      box-shadow: 1px 0 0 rgba(47, 33, 0, 0.08);
+    }
+
+    tbody tr:not(.details-row) td:first-child {
+      box-shadow: 1px 0 0 rgba(47, 33, 0, 0.08);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    tbody tr.details-row td {
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      z-index: 1;
+      background: rgba(255, 252, 243, 0.98);
+      box-sizing: border-box;
+      padding: 0.4rem;
+      border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+    }
+  }
 `;
 
 const TableScrollArea = styled.div`
@@ -1190,6 +1254,9 @@ const DetailsContainer = styled.div`
   border: 1px solid rgba(255, 181, 34, 0.25);
   border-radius: 12px;
   padding: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   h3 {
     margin-top: 0;
     margin-bottom: 0.5rem;
@@ -1198,6 +1265,16 @@ const DetailsContainer = styled.div`
   strong {
     font-weight: bold;
     color: #5f3f00;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    position: -webkit-sticky;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    width: calc(100vw - 34px);
+    max-width: calc(100vw - 34px);
   }
 `;
 

@@ -135,18 +135,18 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         }
     }, [referencedCheckinId, apiUrl]);
 
-    const askForPriceUpdate = (preise) => {
+    const shouldAskForPriceUpdate = (shopData) => {
+        if (!shopData) return false;
+
+        const lastUserPriceReport = shopData.letzte_preismeldung_user;
+        if (!lastUserPriceReport) return true;
+
+        const lastReportDate = new Date(lastUserPriceReport);
+        if (isNaN(lastReportDate.getTime())) return true;
+
         const now = new Date();
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        // Helper: prüft, ob ein Eintrag null ist oder dessen letztes_update zu alt ist
-        const isNullOrTooOld = (eintrag) => {
-            if (!eintrag) return true;
-            const updateDate = new Date(eintrag.letztes_update);
-            return isNaN(updateDate.getTime()) || updateDate < sevenDaysAgo;
-        };
-
-        return isNullOrTooOld(preise.kugel) && isNullOrTooOld(preise.softeis);
+        const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+        return now.getTime() - lastReportDate.getTime() >= sevenDaysMs;
     };
 
     useEffect(() => {
@@ -293,12 +293,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         setChallenges(data.completed_challenge);
                     }
 
-                    if (shop && askForPriceUpdate(shop.preise)) {
+                    if (!checkinId && shouldAskForPriceUpdate(shop)) {
                         setPreisfrage(true);
                     }
 
                 } else {
-                    if (shop && askForPriceUpdate(shop.preise)) {
+                    if (!checkinId && shouldAskForPriceUpdate(shop)) {
                         setPreisfrage(true);
                     } else {
                         if (!suggestionsFound) {
@@ -798,7 +798,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             {(shop.preise?.kugel?.preis || shop.preise?.softeis?.preis) && (
                                 <SubmitButton onClick={confirmPrice}>Stimmt noch</SubmitButton>)}
                             <SubmitButton onClick={() => openSubmitPriceForm()}>Änderung vorschlagen</SubmitButton>
-                            <SubmitButton onClick={() => setShowCheckinForm(false)}>Schließen</SubmitButton>
+                            <SubmitButton onClick={() => setShowCheckinForm(false)}>Weiß ich nicht</SubmitButton>
                         </ButtonGroup>
                     </>
                 )}

@@ -265,19 +265,19 @@ function Statistics() {
           </HeroCard>
           <TabContainer>
             <TabButton
-              active={activeTab === 'activeUsers'}
+              $active={activeTab === 'activeUsers'}
               onClick={() => changeTab('activeUsers')}
             >
               aktivste Benutzer
             </TabButton>
             <TabButton
-              active={activeTab === 'mostPopularFlavours'}
+              $active={activeTab === 'mostPopularFlavours'}
               onClick={() => changeTab('mostPopularFlavours')}
             >
               beliebteste Eissorten
             </TabButton>
             <TabButton
-              active={activeTab === 'priceHierarchy'}
+              $active={activeTab === 'priceHierarchy'}
               onClick={() => changeTab('priceHierarchy')}
             >
               Preisübersicht
@@ -414,7 +414,7 @@ function Statistics() {
             {activeTab === 'mostPopularFlavours' && (<SectionCard>
               <SectionTitle>Beliebteste Sorten</SectionTitle>
               <TableScrollArea>
-              <Table>
+              <Table $compactColumns>
                 <thead>
                   <tr>
                     <Th>Geschmacksrichtung</Th>
@@ -468,7 +468,7 @@ function Statistics() {
 
               <SectionTitle>Benutzer nach Level</SectionTitle>
               <TableScrollArea>
-              <Table>
+              <Table $stickyFirstColumn>
                 <thead>
                   <tr>
                     <Th>Nutzer</Th>
@@ -562,6 +562,7 @@ const SectionCard = styled.div`
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem;
+  min-width: 0;
 `;
 
 const SectionTitle = styled.h3`
@@ -624,6 +625,91 @@ const Table = styled.table`
   min-width: 760px;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: auto;
+  ${({ $stickyFirstColumn }) =>
+    $stickyFirstColumn &&
+    `
+    thead th:first-child {
+      left: 0;
+      z-index: 3;
+      background: rgba(255, 252, 243, 0.98);
+      box-shadow: 2px 0 0 rgba(47, 33, 0, 0.06);
+    }
+
+    tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 2px 0 0 rgba(47, 33, 0, 0.06);
+    }
+  `}
+
+  @media (max-width: 700px) {
+    ${({ $compactColumns }) =>
+      $compactColumns &&
+      `
+      min-width: 100%;
+      table-layout: fixed;
+    `}
+
+    th:first-child,
+    td:first-child {
+      width: 120px;
+      min-width: 120px;
+      max-width: 120px;
+    }
+
+    ${({ $compactColumns }) =>
+      $compactColumns &&
+      `
+      th,
+      td {
+        padding: 0.5rem 0.35rem;
+      }
+
+      th {
+        font-size: 0.78rem;
+      }
+
+      td {
+        font-size: 0.82rem;
+      }
+
+      th:first-child,
+      td:first-child {
+        width: 120px;
+        min-width: 120px;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 48px;
+        min-width: 48px;
+        max-width: 48px;
+      }
+
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 42px;
+        min-width: 42px;
+        max-width: 42px;
+        text-align: right;
+      }
+
+      th:nth-child(4),
+      td:nth-child(4) {
+        width: 66px;
+        min-width: 66px;
+        max-width: 66px;
+        text-align: right;
+      }
+    `}
+  }
 `;
 
 const Th = styled.th`
@@ -666,38 +752,24 @@ const TabContainer = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
-
-  @media (max-width: 600px) {
-    justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: wrap;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 0.5rem;
-    width: 100%;
-  }
 `;
 
 const TabButton = styled.button`
-  padding: 0.5rem 0.8rem;
+  padding: 0.55rem 0.95rem;
   margin: 0;
-  background-color: ${(props) => (props.active ? '#ffb522' : 'transparent')};
-  color: ${(props) => (props.active ? '#2f2100' : '#5c4a25')};
-  border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.55)' : 'transparent')};
+  background-color: ${(props) => (props.$active ? '#ffb522' : 'transparent')};
+  color: ${(props) => (props.$active ? '#2f2100' : '#5c4a25')};
+  border: 1px solid ${(props) => (props.$active ? 'rgba(255,181,34,0.55)' : 'transparent')};
   border-radius: 10px;
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 700;
   white-space: nowrap;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: ${(props) => (props.active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+  box-shadow: ${(props) => (props.$active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 
   &:hover {
-    background-color: ${(props) => (props.active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
-  }
-
-  @media (max-width: 600px) {
-    font-size: 0.875rem;
-    padding: 0.3rem 0.6rem;
+    background-color: ${(props) => (props.$active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
   }
 `;
 
@@ -706,6 +778,7 @@ const TabContent = styled.div`
   margin-top: 1rem;
   display: grid;
   gap: 1rem;
+  min-width: 0;
 `;
 
 
@@ -715,12 +788,17 @@ const UserInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 `;
 
 const UserLink = styled(Link)`
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &:hover {
     color: #8a5600;

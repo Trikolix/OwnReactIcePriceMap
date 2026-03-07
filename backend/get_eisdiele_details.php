@@ -108,7 +108,19 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $softeis_preis = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 4. Price history for chart
+// 4. Letzte Preismeldung des aktuellen Nutzers für diese Eisdiele
+$letzte_preismeldung_user = null;
+if (!empty($nutzer_id)) {
+    $stmt = $pdo->prepare("
+        SELECT MAX(gemeldet_am) AS letzte_preismeldung
+        FROM preise
+        WHERE eisdiele_id = ? AND gemeldet_von = ?
+    ");
+    $stmt->execute([$eisdiele_id, $nutzer_id]);
+    $letzte_preismeldung_user = $stmt->fetchColumn() ?: null;
+}
+
+// 5. Price history for chart
 $stmt = $pdo->prepare("
     SELECT 
         typ,
@@ -123,7 +135,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $preis_historie = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 5. Average selection from reviews
+// 6. Average selection from reviews
 $stmt = $pdo->prepare("
     SELECT AVG(auswahl) as auswahl
     FROM bewertungen
@@ -132,7 +144,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $bewertungen = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 6. Scores for Kugel, Softeis, Eisbecher
+// 7. Scores for Kugel, Softeis, Eisbecher
 $stmt = $pdo->prepare("
     SELECT 
         e.id AS eisdiele_id,
@@ -148,11 +160,11 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $score = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 7. Attributes with frequency
+// 8. Attributes with frequency
 $attributeMap = getReviewAttributesForEisdielen($pdo, [$eisdiele_id]);
 $attribute = $attributeMap[$eisdiele_id] ?? [];
 
-// 8. Statistics
+// 9. Statistics
 $stmt = $pdo->prepare("
     SELECT 
         COUNT(*) AS gesamt_checkins,
@@ -168,7 +180,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $statistiken = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 9. Travel mode distribution
+// 10. Travel mode distribution
 $stmt = $pdo->prepare("
     SELECT 
         anreise,
@@ -181,7 +193,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $anreise_verteilung = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 10. Most eaten flavors at this shop
+// 11. Most eaten flavors at this shop
 $stmt = $pdo->prepare("
     SELECT 
         cs.sortenname,
@@ -197,7 +209,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $meistgegessene_sorten = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 11. Best rated flavors at this shop (min 2 ratings)
+// 12. Best rated flavors at this shop (min 2 ratings)
 $stmt = $pdo->prepare("
     SELECT 
         cs.sortenname,
@@ -214,7 +226,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $bestbewertete_sorten = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 12. Checkin counts by ice type with average ratings
+// 13. Checkin counts by ice type with average ratings
 $stmt = $pdo->prepare("
     SELECT 
         typ,
@@ -230,13 +242,13 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $checkin_details_by_type = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 13. All reviews
+// 14. All reviews
 $reviews = getReviewsByEisdieleId($pdo, $eisdiele_id);
 
-// 14. All checkins
+// 15. All checkins
 $checkins = getCheckinsByEisdieleId($pdo, $eisdiele_id);
 
-// 15. Routes for this shop
+// 16. Routes for this shop
 $stmt = $pdo->prepare("
     SELECT r.*, 
            n.username,
@@ -260,7 +272,7 @@ if ($nutzer_id) {
     }
 }
 
-// 16. Photo gallery from checkins
+// 17. Photo gallery from checkins
 $stmt = $pdo->prepare("
     SELECT 
         b.id,
@@ -279,7 +291,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $foto_galerie = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 17. Similar shops nearby (same landkreis, different shop)
+// 18. Similar shops nearby (same landkreis, different shop)
 // $stmt = $pdo->prepare("
 //     SELECT 
 //         e.id,
@@ -298,7 +310,7 @@ $foto_galerie = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // $stmt->execute([$eisdiele['landkreis_id'], $eisdiele_id]);
 // $aehnliche_eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 18. User's personal stats at this shop (if logged in)
+// 19. User's personal stats at this shop (if logged in)
 $persoenliche_statistiken = null;
 if ($nutzer_id) {
     $stmt = $pdo->prepare("
@@ -336,6 +348,7 @@ $response = [
         "kugel" => $kugel_preis ?: null,
         "softeis" => $softeis_preis ?: null
     ],
+    "letzte_preismeldung_user" => $letzte_preismeldung_user,
     "preis_historie" => $preis_historie,
     "scores" => [
         "kugel" => isset($score["finaler_kugel_score"]) ? round($score["finaler_kugel_score"], 2) : null,

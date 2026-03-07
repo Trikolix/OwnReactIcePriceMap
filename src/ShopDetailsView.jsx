@@ -72,13 +72,14 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const fetchShopData = useCallback(async (id) => {
     try {
       const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : '';
-      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${referenceQuery}`);
+      const userQuery = userId ? `&nutzer_id=${userId}` : '';
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${userQuery}${referenceQuery}`);
       const data = await response.json();
       setShopData(data);
     } catch (err) {
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
-  }, [apiUrl, openAtParam]);
+  }, [apiUrl, openAtParam, userId]);
 
   const fetchRoutes = useCallback(async (id, currentUserId) => {
     try {

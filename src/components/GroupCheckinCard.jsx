@@ -118,7 +118,7 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
 export default GroupCheckinCard;
 
 const Card = styled(SharedCard)`
-  padding: 1rem 1rem 1.35rem;
+  padding: 1rem 1rem 3.35rem;
 `;
 
 const CardMetaRow = styled.div`

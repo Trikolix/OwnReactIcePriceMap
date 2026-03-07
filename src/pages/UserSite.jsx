@@ -174,9 +174,6 @@ function UserSite() {
   const awards = data?.user_awards || [];
   const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routes = data?.routen || [];
-  const hasCheckins = checkins.length > 0;
-  const hasReviews = reviews.length > 0;
-  const hasRoutes = routes.length > 0;
   const displayedCheckins = checkins.slice(0, checkinPage * 5);
   const displayedReviews = reviews.slice(0, reviewPage * 5);
   const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
@@ -219,19 +216,6 @@ function UserSite() {
   };
   const activeActivityData = activityData[activityLevel]?.data || [];
   const activityPreview = activeActivityData.slice(0, PREVIEW_COUNT);
-
-  useEffect(() => {
-    const visibleActivityTabs = [
-      hasCheckins ? 'checkins' : null,
-      hasReviews ? 'reviews' : null,
-      hasRoutes ? 'routen' : null,
-    ].filter(Boolean);
-
-    if (activeTab === 'stats') return;
-    if (!visibleActivityTabs.includes(activeTab)) {
-      setActiveTab(visibleActivityTabs[0] || 'stats');
-    }
-  }, [activeTab, hasCheckins, hasReviews, hasRoutes]);
 
   const sortedMostVisited = React.useMemo(() => {
     if (!data?.meistbesuchte_eisdielen) return [];
@@ -663,6 +647,9 @@ function UserSite() {
                             src: iconSources.src || '',
                             fallbackSrc: iconSources.fallbackSrc || '',
                             title: award.title_de || 'Award',
+                            description: award.description_de || '',
+                            ep: award.ep ?? 0,
+                            awardedAt: award.awarded_at || null,
                           })}
                           aria-label={`Award ${award.title_de || ''} groß anzeigen`}
                         >
@@ -699,30 +686,24 @@ function UserSite() {
               )}
             </AwardsCard>
             <UnifiedTabBar>
-              {hasCheckins && (
-                <UnifiedTabButton
-                  active={activeTab === 'checkins'}
-                  onClick={() => setActiveTab('checkins')}
-                >
-                  Check-ins
-                </UnifiedTabButton>
-              )}
-              {hasReviews && (
-                <UnifiedTabButton
-                  active={activeTab === 'reviews'}
-                  onClick={() => setActiveTab('reviews')}
-                >
-                  Reviews
-                </UnifiedTabButton>
-              )}
-              {hasRoutes && (
-                <UnifiedTabButton
-                  active={activeTab === 'routen'}
-                  onClick={() => setActiveTab('routen')}
-                >
-                  Routen
-                </UnifiedTabButton>
-              )}
+              <UnifiedTabButton
+                active={activeTab === 'checkins'}
+                onClick={() => setActiveTab('checkins')}
+              >
+                Check-ins
+              </UnifiedTabButton>
+              <UnifiedTabButton
+                active={activeTab === 'reviews'}
+                onClick={() => setActiveTab('reviews')}
+              >
+                Reviews
+              </UnifiedTabButton>
+              <UnifiedTabButton
+                active={activeTab === 'routen'}
+                onClick={() => setActiveTab('routen')}
+              >
+                Routen
+              </UnifiedTabButton>
               <UnifiedTabButton
                 active={activeTab === 'stats'}
                 onClick={() => setActiveTab('stats')}
@@ -742,6 +723,18 @@ function UserSite() {
                     onError={handleAwardIconFallback}
                     alt={selectedAward.title}
                   />
+                  <AwardLightboxMeta>
+                    <AwardLightboxTitle>{selectedAward.title}</AwardLightboxTitle>
+                    <AwardLightboxDescription>
+                      {selectedAward.description || 'Keine Beschreibung vorhanden.'}
+                    </AwardLightboxDescription>
+                    <AwardLightboxFooter>
+                      <strong>{selectedAward.ep} EP</strong>
+                      {selectedAward.awardedAt ? (
+                        <span>Vergeben am {new Date(selectedAward.awardedAt).toLocaleDateString()}</span>
+                      ) : null}
+                    </AwardLightboxFooter>
+                  </AwardLightboxMeta>
                 </AwardLightboxCard>
               </AwardLightboxOverlay>,
               document.body
@@ -901,6 +894,9 @@ function UserSite() {
             <TabContent>
               {activeTab === 'checkins' && (
                 <div>
+                  {checkins.length === 0 && (
+                    <EmptyState>Noch keine Check-ins vorhanden.</EmptyState>
+                  )}
                   {displayedCheckins.map((checkin, index) => (
                     <CheckinCard key={index} checkin={checkin} onSuccess={refreshUser} />
                   ))}
@@ -912,6 +908,9 @@ function UserSite() {
 
               {activeTab === 'reviews' && (
                 <div>
+                  {reviews.length === 0 && (
+                    <EmptyState>Noch keine Reviews vorhanden.</EmptyState>
+                  )}
                   {displayedReviews.map((review, index) => (
                     <ReviewCard key={index} review={review} />
                   ))}
@@ -923,6 +922,9 @@ function UserSite() {
 
               {activeTab === 'routen' && (
                 <div>
+                  {routes.length === 0 && (
+                    <EmptyState>Noch keine Routen vorhanden.</EmptyState>
+                  )}
                   {displayedRoutes.map((route, index) => (
                     <div
                       key={route.id || index}
@@ -994,7 +996,8 @@ const WhiteBackground = styled.div`
 const DashboardWrapper = styled.div`
   width: min(96%, 1120px);
   margin: 0 auto;
-  padding: 1rem 1rem 2.5rem;
+  padding: 0.5rem 0rem 0.5rem;
+  box-sizing: border-box;
 `;
 
 const LoadingCard = styled.div`
@@ -1332,7 +1335,7 @@ const StatIconWrap = styled.div`
 
 const ContentGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 `;
@@ -1648,7 +1651,7 @@ const LinkContainer = styled.div`
 
 const Input = styled.input`
   flex: 1;
-  min-width: 200px;
+  min-width: min(100%, 200px);
   padding: 0.5rem;
   border-radius: 10px;
   border: 1px solid rgba(47, 33, 0, 0.14);
@@ -1704,14 +1707,21 @@ const AwardCard = styled.div`
   padding: 16px;
   text-align: center;
   position: relative;
+  overflow: hidden;
 `;
 
 const AwardImage = styled.img`
+  width: 100%;
+  max-width: 140px;
   height: 140px;
   object-fit: contain;
 `;
 
 const AwardImageButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   border: none;
   background: transparent;
   padding: 0;
@@ -1765,18 +1775,20 @@ const AwardLightboxCard = styled.div`
   position: relative;
   background: #ffffff;
   border-radius: 12px;
-  padding: 0.8rem;
-  max-width: min(92vw, 900px);
+  padding: 0.9rem;
+  max-width: min(92vw, 760px);
   max-height: 92vh;
+  overflow: auto;
 `;
 
 const AwardLightboxImage = styled.img`
   display: block;
-  max-width: min(88vw, 860px);
-  max-height: 82vh;
-  width: auto;
+  max-width: 100%;
+  max-height: min(62vh, 620px);
+  width: 100%;
   height: auto;
   border-radius: 8px;
+  object-fit: contain;
 `;
 
 const AwardLightboxClose = styled.button`
@@ -1789,6 +1801,31 @@ const AwardLightboxClose = styled.button`
   color: #fff;
   padding: 0.35rem 0.6rem;
   cursor: pointer;
+`;
+
+const AwardLightboxMeta = styled.div`
+  margin-top: 0.85rem;
+  color: #2f2100;
+`;
+
+const AwardLightboxTitle = styled.h3`
+  margin: 0;
+  padding-right: 4.8rem;
+`;
+
+const AwardLightboxDescription = styled.p`
+  margin: 0.4rem 0 0;
+  color: rgba(47, 33, 0, 0.72);
+`;
+
+const AwardLightboxFooter = styled.div`
+  margin-top: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: rgba(47, 33, 0, 0.78);
+  font-size: 0.9rem;
 `;
 
 const AvatarModalContent = styled.div`

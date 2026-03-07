@@ -38,7 +38,19 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
 
     return (
       <>
-        <Card ref={ref}>
+        <Card
+          ref={ref}
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsLightboxOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setIsLightboxOpen(true);
+            }
+          }}
+          aria-label={`Award ${award?.title_de || ""} im Vollbild anzeigen`}
+        >
           <CardMetaRow>
             <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
               {awardDate
@@ -80,7 +92,11 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
               ) : (
                 <>
                   <strong>
-                    <CleanLink to={`/user/${award.user_id}`}>
+                    <CleanLink
+                      to={`/user/${award.user_id}`}
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
                       {award.user_name}
                     </CleanLink>
                   </strong>{" "}
@@ -103,6 +119,20 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
                 onError={handleAwardIconFallback}
                 alt={award?.title_de ? `Award ${award.title_de}` : "Award"}
               />
+              <LightboxMeta>
+                <LightboxTitle>{award?.title_de || "Award"}</LightboxTitle>
+                <LightboxDescription>
+                  {award?.description_de || "Keine Beschreibung vorhanden."}
+                </LightboxDescription>
+                <LightboxFooter>
+                  <strong>{award?.ep ?? 0} EP</strong>
+                  <span>
+                    {awardDate
+                      ? `Vergeben am ${awardDate.toLocaleDateString("de-DE")}`
+                      : award?.datum || ""}
+                  </span>
+                </LightboxFooter>
+              </LightboxMeta>
             </LightboxCard>
           </LightboxOverlay>,
           document.body
@@ -123,6 +153,7 @@ const CleanLink = styled(Link)`
 
 const Card = styled(SharedCard)`
   padding: 1rem;
+  cursor: zoom-in;
 `;
 
 const CardMetaRow = styled.div`
@@ -208,18 +239,20 @@ const LightboxCard = styled.div`
   position: relative;
   background: #ffffff;
   border-radius: 12px;
-  padding: 0.8rem;
-  max-width: min(92vw, 860px);
+  padding: 0.9rem;
+  max-width: min(92vw, 760px);
   max-height: 92vh;
+  overflow: auto;
 `;
 
 const LightboxImage = styled.img`
   display: block;
-  max-width: min(88vw, 820px);
-  max-height: 82vh;
-  width: auto;
+  max-width: 100%;
+  max-height: min(62vh, 620px);
+  width: 100%;
   height: auto;
   border-radius: 8px;
+  object-fit: contain;
 `;
 
 const LightboxClose = styled.button`
@@ -232,6 +265,31 @@ const LightboxClose = styled.button`
   color: #fff;
   padding: 0.35rem 0.6rem;
   cursor: pointer;
+`;
+
+const LightboxMeta = styled.div`
+  margin-top: 0.85rem;
+  color: #2f2100;
+`;
+
+const LightboxTitle = styled.h3`
+  margin: 0;
+  padding-right: 4.8rem;
+`;
+
+const LightboxDescription = styled.p`
+  margin: 0.4rem 0 0;
+  color: rgba(47, 33, 0, 0.72);
+`;
+
+const LightboxFooter = styled.div`
+  margin-top: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: rgba(47, 33, 0, 0.78);
+  font-size: 0.9rem;
 `;
 
 const EPBadge = styled.div`

@@ -258,7 +258,7 @@ export const Card = styled.div`
   border-radius: 20px;
   border: 1px solid rgba(47, 33, 0, 0.08);
   padding: 1.35rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 

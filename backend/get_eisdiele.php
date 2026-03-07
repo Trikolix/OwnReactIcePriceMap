@@ -7,6 +7,7 @@ require_once  __DIR__ . '/lib/opening_hours.php';
 
 // Eisdiele-ID aus Anfrage holen
 $eisdiele_id = isset($_GET['eisdiele_id']) ? intval($_GET['eisdiele_id']) : 0;
+$nutzer_id = isset($_GET['nutzer_id']) ? intval($_GET['nutzer_id']) : null;
 $openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
 $openReferenceIso = $openMoment instanceof \DateTimeImmutable ? $openMoment->format(\DateTimeInterface::ATOM) : null;
 if ($eisdiele_id <= 0) {
@@ -99,7 +100,19 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $softeis_preis = $stmt->fetch();
 
-// 4. Durchschnittliche Auswahl berechnen
+// 4. Letzte Preismeldung des aktuellen Nutzers für diese Eisdiele
+$letzte_preismeldung_user = null;
+if (!empty($nutzer_id)) {
+    $stmt = $pdo->prepare("
+        SELECT MAX(gemeldet_am) AS letzte_preismeldung
+        FROM preise
+        WHERE eisdiele_id = ? AND gemeldet_von = ?
+    ");
+    $stmt->execute([$eisdiele_id, $nutzer_id]);
+    $letzte_preismeldung_user = $stmt->fetchColumn() ?: null;
+}
+
+// 5. Durchschnittliche Auswahl berechnen
 $stmt = $pdo->prepare("
     SELECT
         AVG(auswahl) as auswahl
@@ -109,7 +122,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$eisdiele_id]);
 $bewertungen = $stmt->fetch();
 
-// 4. Scores für Kugel, Softeis und Eisbecher abrufen
+// 6. Scores für Kugel, Softeis und Eisbecher abrufen
 $stmt = $pdo->prepare("
 SELECT 
     e.id AS eisdiele_id,
@@ -126,14 +139,14 @@ $stmt->bindParam(':eisdieleId', $eisdiele_id);
 $stmt->execute();
 $score = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 5. Attribute mit Häufigkeit abrufen
+// 7. Attribute mit Häufigkeit abrufen
 $attributeMap = getReviewAttributesForEisdielen($pdo, [$eisdiele_id]);
 $attribute = $attributeMap[$eisdiele_id] ?? [];
 
-// 6. Alle Reviews holen
+// 8. Alle Reviews holen
 $reviews = getReviewsByEisdieleId($pdo, $eisdiele_id);
 
-// 7. Alle Checkins holen
+// 9. Alle Checkins holen
 $checkins = getCheckinsByEisdieleId($pdo, $eisdiele_id);
 
 // JSON-Antwort erstellen
@@ -143,6 +156,7 @@ $response = [
         "kugel" => $kugel_preis ?: null,
         "softeis" => $softeis_preis ?: null
     ],
+    "letzte_preismeldung_user" => $letzte_preismeldung_user,
     "scores" => [
         "kugel" => isset($score["finaler_kugel_score"]) ? round($score["finaler_kugel_score"], 2) : null,
         "softeis" => isset($score["finaler_softeis_score"]) ? round($score["finaler_softeis_score"], 2) : null,
