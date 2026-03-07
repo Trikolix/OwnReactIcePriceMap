@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
-require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../lib/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -20,7 +20,9 @@ $stmt = $pdo->query("
     ORDER BY start_datum ASC
 ");
 
-$data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$weeks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-?>
+echo json_encode([
+    'status' => 'success',
+    'weeks' => $weeks,
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

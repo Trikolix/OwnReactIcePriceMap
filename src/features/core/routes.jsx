@@ -7,6 +7,7 @@ import Datenschutz from "../../pages/Datenschutz";
 import Community from "../../pages/Community";
 import SystemmeldungForm from "../../components/SystemmeldungForm";
 import AwardsAdmin from "../../pages/AwardsAdmin";
+import AdminWeeklyStats from "../../pages/AdminWeeklyStats";
 
 export const coreRoutes = [
   { path: "/dashboard", element: <DashBoard /> },
@@ -17,4 +18,5 @@ export const coreRoutes = [
   { path: "/systemmeldungenform", element: <SystemmeldungForm /> },
   { path: "/awards-admin", element: <AwardsAdmin /> },
   { path: "/shop-change-requests", element: <ShopChangeRequestsAdmin /> },
+  { path: "/admin/weekly-stats", element: <AdminWeeklyStats /> },
 ];

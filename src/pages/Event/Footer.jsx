@@ -72,7 +72,7 @@ export default function Footer() {
         <FooterBrand>
           <Bike size={24} color="#ffb522" />
           <FooterText>
-            © {new Date().getFullYear()} Eis-Tour. Alle Rechte vorbehalten.
+            © {new Date().getFullYear()} Ice-Tour. Alle Rechte vorbehalten.
           </FooterText>
         </FooterBrand>
         <FooterLinks>

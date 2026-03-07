@@ -78,7 +78,7 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
 
     $verifyUrl = 'https://ice-app.de/#/verify?token=' . urlencode($verifyToken);
     $mailBody = "Hallo {$username},\n\n";
-    $mailBody .= "dein Ice-App Account für die Eis-Tour 2026 wurde erstellt.\n";
+    $mailBody .= "dein Ice-App Account für die Ice-Tour 2026 wurde erstellt.\n";
     $mailBody .= "Bitte bestätige deine E-Mail-Adresse über diesen Link:\n{$verifyUrl}\n\n";
     $mailBody .= "Viele Grüße\nIce-App Team";
 
@@ -412,7 +412,7 @@ try {
     $mailSent = false;
     if ($accountEmail) {
         $mailBody = "Hallo {$auth['username']},\n\n";
-        $mailBody .= "deine Anmeldung zur Eis-Tour 2026 wurde gespeichert.\n\n";
+        $mailBody .= "deine Anmeldung zur Ice-Tour 2026 wurde gespeichert.\n\n";
         $mailBody .= "Registrierung: #{$registrationId}\n";
         $mailBody .= "Referenzcode: {$paymentRef}\n";
         $mailBody .= "Erwarteter Betrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n";
@@ -428,7 +428,7 @@ try {
         }
         $mailBody .= "Dein Dashboard: {$appBaseUrl}/event-me\n\n";
         $mailBody .= "Viele Grüße\nIce-App Team";
-        $mailSent = event2026_send_utf8_mail($accountEmail, 'Eis-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
+        $mailSent = event2026_send_utf8_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
     }
 
     $participantNames = implode(', ', array_map(static function (array $slot): string {
@@ -446,7 +446,7 @@ try {
     $adminMailBody .= "Newsletter: " . ($newsletterOptIn ? 'Ja' : 'Nein') . "\n";
     $adminMailBody .= "Bemerkung: " . ($registrationNote !== '' ? $registrationNote : '-') . "\n";
     $adminMailBody .= "\nZeit: " . (new DateTimeImmutable('now'))->format('Y-m-d H:i:s') . "\n";
-    event2026_send_utf8_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Eis-Tour Registrierung #' . $registrationId, $adminMailBody);
+    event2026_send_utf8_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Ice-Tour Registrierung #' . $registrationId, $adminMailBody);
 
     echo json_encode([
         'status' => 'success',

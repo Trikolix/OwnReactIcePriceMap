@@ -553,8 +553,8 @@ const Header = ({ refreshShops }) => {
               <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
               <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
               {showEisTourNavLink && (
-                <MenuItemLink to="/rad-event" onClick={closeMenu}>
-                  Zur Eis-Tour
+                <MenuItemLink to="/ice-tour" onClick={closeMenu}>
+                  Zur Ice-Tour
                   <MenuItemBadge>NEU</MenuItemBadge>
                 </MenuItemLink>
               )}
@@ -583,6 +583,7 @@ const Header = ({ refreshShops }) => {
                     <MenuDivider />
                     <MenuSection>
                       <MenuSectionTitle>Admin</MenuSectionTitle>
+                      <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>
                       <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
                       <MenuItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuItemLink>
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
@@ -691,7 +692,7 @@ const Header = ({ refreshShops }) => {
         currentUserId={userId}
         extraIceReward={birthdayStatus?.extra_ice_reward}
         campaignPhase={birthdayCampaignPhase}
-        anniversaryUnlockedAt={birthdayAnniversaryUnlockedAt}
+        iceToursaryUnlockedAt={birthdayAnniversaryUnlockedAt}
         eisTourRegistrationOpen={birthdayEisTourRegistrationOpen}
         awardConfig={birthdayAwardConfig}
         forceLocalUnlock={forceLocalBirthdayUnlock}

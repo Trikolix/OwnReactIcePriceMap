@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Link, NavLink } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import LoginModal from "../../LoginModal";
-import eisTourLogo from "./eis_tour_logo.png";
+import iceTourLogo from "./eis_tour_logo.png";
 import { buildAssetUrl } from "../../utils/assets.jsx";
 import { getApiBaseUrl } from "../../shared/api/client";
 
@@ -71,8 +71,8 @@ export default function Header() {
   return (
     <>
       <HeaderContainer>
-        <BrandCenter to="/eis-tour" onClick={() => setMenuOpen(false)}>
-          <Logo src={eisTourLogo} alt="Eis-Tour" />
+        <BrandCenter to="/ice-tour" onClick={() => setMenuOpen(false)}>
+          <Logo src={iceTourLogo} alt="Ice-Tour" />
         </BrandCenter>
 
         <HeaderRight>
@@ -115,8 +115,8 @@ export default function Header() {
         {menuOpen && (
           <Menu ref={menuRef}>
             <MenuSection>
-              <MenuSectionTitle>Eis-Tour</MenuSectionTitle>
-              <MenuItemLink to="/eis-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
+              <MenuSectionTitle>Ice-Tour</MenuSectionTitle>
+              <MenuItemLink to="/ice-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
               <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>
               {shouldShowLiveMap && (
                 <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>

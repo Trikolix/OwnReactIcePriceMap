@@ -66,7 +66,7 @@ Referenz für Ziel-Workflow (Einreichphase -> Admin-Planung -> Voting):
 
 ## 2) Aktion zum 1. Geburtstag der Ice-App (14.03.2026 - 22.03.2026)
 
-Ziel laut Idee: Wer alle Aktionen innerhalb der Aktionswoche abschließt, bekommt eine Kugel Eis (Einlösung am Tag der Eis-Tour am Start-/Zielort).
+Ziel laut Idee: Wer alle Aktionen innerhalb der Aktionswoche abschließt, bekommt eine Kugel Eis (Einlösung am Tag der Ice-Tour am Start-/Zielort).
 
 ### 2.1 Fachliche Definition der Aktion (P1)
 

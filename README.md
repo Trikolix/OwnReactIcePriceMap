@@ -42,7 +42,7 @@ Implementierung:
 
 ## Event-Routing
 Folgende Event-Routen sind aktiv in der App eingebunden:
-- `/#/eis-tour`
+- `/#/ice-tour`
 - `/#/event-registration`
 - `/#/event-live`
 - `/#/event-me`

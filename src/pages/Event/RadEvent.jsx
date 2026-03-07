@@ -216,7 +216,7 @@ function Hero() {
         <HeroSection>
             <Container>
                 <HeroCard>
-                    <HeroTitle>Eis-Tour 2026</HeroTitle>
+                    <HeroTitle>Ice-Tour 2026</HeroTitle>
                     <HeroSubtitle>Dicke Gänge, große Kugeln, starke Beine.</HeroSubtitle>
                     <KeyFacts>
                         <Fact><Route size={16} color="#ffb522" /> 140 km / 175 km</Fact>
@@ -236,7 +236,7 @@ function Intro() {
                 <IntroCard>
                     <IntroText>
                         Wenn Asphalt auf Abenteuer trifft und der Sommer nach Vanille riecht, beginnt unsere
-                        <strong> Eis-Tour 2026</strong>: eine sportliche Rennrad-Herausforderung mit rund
+                        <strong> Ice-Tour 2026</strong>: eine sportliche Rennrad-Herausforderung mit rund
                         <strong> 140 Kilometern / 1.600 Höhenmetern</strong> oder
                         <strong> 175 Kilometern / 1.950 Höhenmetern</strong>, die Tempo, Teamgeist
                         und pure Ausdauer fordert. Start und Ziel wird noch bekannt gegeben. Auf beiden Strecken warten drei legendäre Eis-Stopps:
@@ -244,7 +244,7 @@ function Intro() {
                         <strong> Klatt-Eismanufaktur</strong>. Auf der langen Strecke kommt
                         <strong> Eiscafé Elisenhof </strong> als vierter Pflicht-Stopp dazu.
                         Hier geht es nicht nur um Watt und Bestzeiten,
-                        sondern um das perfekte Zusammenspiel aus harten Beinen, kühlem Kopf und großen Kugeln.
+                        sondern um das perfekte Zusammenspiel aus dicken Gängen, großen Kugeln und starken Beinen..
                         Gefahren wird unter Einhaltung der <strong>StVO</strong>, ausdrücklich <strong>nicht als Rennen</strong>.
                         Die Teilnehmerzahl ist auf <strong>150 Starter</strong> begrenzt; bei zu geringer Teilnehmerzahl
                         behalten wir uns eine Absage vor.

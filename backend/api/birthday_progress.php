@@ -50,7 +50,7 @@ try {
         $campaignPhase = 'anniversary';
     }
 
-    $eisTourRegistrationOpen = false;
+    $iceTourRegistrationOpen = false;
     $birthdayAwardLevels = [];
     $tableExistsStmt = $pdo->query(
         "SELECT COUNT(*)
@@ -75,7 +75,7 @@ try {
         $rawFlagValue = $flagStmt->fetchColumn();
         if ($rawFlagValue !== false && $rawFlagValue !== null) {
             $normalizedFlag = strtolower((string)$rawFlagValue);
-            $eisTourRegistrationOpen = in_array($normalizedFlag, ['1', 'true', 'yes', 'on'], true);
+            $iceTourRegistrationOpen = in_array($normalizedFlag, ['1', 'true', 'yes', 'on'], true);
         }
     }
 
@@ -225,7 +225,7 @@ try {
     $counts['comments_unique_targets'] = (int)$stmt->fetchColumn();
     $status['comment_written'] = $counts['comments_unique_targets'] > 0;
 
-    // Eis-Tour-Seite besucht Event erst ab 14.03. zählen
+    // Ice-Tour-Seite besucht Event erst ab 14.03. zählen
     if ($now >= $eventUnlockDate) {
         $stmt = $pdo->prepare(
             "SELECT COUNT(*)
@@ -437,7 +437,7 @@ try {
         ],
         'campaign_phase' => $campaignPhase,
         'anniversary_unlocked_at' => $eventUnlockDate->format(DateTime::ATOM),
-        'eis_tour_registration_open' => $eisTourRegistrationOpen,
+        'eis_tour_registration_open' => $iceTourRegistrationOpen,
         'points' => [
             'total' => $totalPoints,
             'max' => null,

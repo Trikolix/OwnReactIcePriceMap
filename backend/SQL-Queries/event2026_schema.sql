@@ -179,5 +179,5 @@ CREATE TABLE IF NOT EXISTS event2026_audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO event2026_seasons (slug, name, event_date, status, max_participants, min_participants_for_go, cancellation_deadline)
-SELECT 'event-2026', 'Eis-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
+SELECT 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
 WHERE NOT EXISTS (SELECT 1 FROM event2026_seasons WHERE slug = 'event-2026');

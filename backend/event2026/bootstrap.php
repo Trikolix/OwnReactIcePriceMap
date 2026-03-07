@@ -251,7 +251,7 @@ function event2026_ensure_schema(PDO $pdo): void
     }
 
     $pdo->exec("INSERT INTO event2026_seasons (slug, name, event_date, status, max_participants, min_participants_for_go, cancellation_deadline)
-        SELECT 'event-2026', 'Eis-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
+        SELECT 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
         WHERE NOT EXISTS (SELECT 1 FROM event2026_seasons WHERE slug = 'event-2026')");
 
     $eventIdStmt = $pdo->prepare("SELECT id FROM event2026_seasons WHERE slug = 'event-2026' LIMIT 1");
@@ -259,7 +259,7 @@ function event2026_ensure_schema(PDO $pdo): void
     $eventId = (int) ($eventIdStmt->fetchColumn() ?: 0);
 
     if ($eventId > 0) {
-        $defaultLegal = "## Teilnahmebedingungen Eis-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 150 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.";
+        $defaultLegal = "## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 150 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.";
 
         $legalStmt = $pdo->prepare("INSERT INTO event2026_legal_versions (event_id, version, content_md, is_active)
             SELECT :event_id, '2026.1', :content_md, 1

@@ -12,7 +12,7 @@ const POINT_LABELS = {
   login_days_7: 'An 7 Tagen eingeloggt',
   profile_image: 'Profilbild vorhanden',
   comment_written: 'Kommentar geschrieben',
-  rad_event_page_visited: 'Eis-Tour-Seite besucht',
+  rad_event_page_visited: 'Ice-Tour-Seite besucht',
   easter_eggs_3: '3 Geschenke auf der Karte entdeckt',
   photo_challenge_participated: 'An der Fotochallenge teilgenommen',
   checkins_base_ep: 'Check-ins (15 EP je Check-in)',
@@ -25,7 +25,7 @@ const POINT_LABELS = {
   login_days_ep: 'Login-Tage (5 EP je Tag)',
   profile_image_ep: 'Profilbild vorhanden (einmalig)',
   comment_ep: 'Kommentare (max. 5 x 5 EP)',
-  rad_event_page_ep: 'Eis-Tour-Seite besucht',
+  rad_event_page_ep: 'Ice-Tour-Seite besucht',
   easter_eggs_ep: 'Geschenke auf der Karte entdeckt',
   new_shop_ep: 'Neue Eisdielen eingetragen (max. 3 x 15 EP)',
   challenge_completed_ep: 'Challenges abgeschlossen (45 EP je Challenge)',
@@ -133,7 +133,7 @@ const BirthdayRulesModal = ({
   extraIceReward = false,
   campaignPhase = 'live',
   anniversaryUnlockedAt = null,
-  eisTourRegistrationOpen = false,
+  iceTourRegistrationOpen = false,
   forceLocalUnlock = false,
   awardConfig = null,
 }) => {
@@ -177,7 +177,7 @@ const BirthdayRulesModal = ({
     ? parsedUnlockDate
     : defaultUnlockDate;
   const eventUnlocked = forceLocalUnlock || now >= unlockDate;
-  const tourRegistrationUnlocked = forceLocalUnlock || (eventUnlocked && Boolean(eisTourRegistrationOpen));
+  const tourRegistrationUnlocked = forceLocalUnlock || (eventUnlocked && Boolean(iceTourRegistrationOpen));
   const actionEntries = ACTION_DISPLAY_ORDER
     .filter((key) => key !== 'rad_event_page_ep' || eventUnlocked)
     .map((key) => {
@@ -316,10 +316,10 @@ const BirthdayRulesModal = ({
 
         {eventUnlocked && (
           <div style={{ marginTop: '2rem', background: '#eeeeee', borderRadius: '12px', padding: '18px 12px' }}>
-            <h3 style={{ margin: '0 0 0.5rem', color: '#2b1b00' }}>Sonderaktion: Eis-Tour</h3>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#2b1b00' }}>Sonderaktion: Ice-Tour</h3>
             <p>
-              Es ist öffentlich: Es wird eine <a href="/eis-tour" style={{ color: '#ffb522', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Eis-Tour</a> geben! Alle, die bis zum Ende des Aktionszeitraum alle Pflichtaktionen erledigt haben, erhalten ein kostenloses Eis
-              am Start / Ziel der Eis-Tour.
+              Es ist öffentlich: Es wird eine <a href="/ice-tour" style={{ color: '#ffb522', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Ice-Tour</a> geben! Alle, die bis zum Ende des Aktionszeitraum alle Pflichtaktionen erledigt haben, erhalten ein kostenloses Eis
+              am Start / Ziel der Ice-Tour.
             </p>
             <ProgressLabel>Pflichtaktionen-Fortschritt</ProgressLabel>
             <ProgressBar style={{ marginBottom: '0.5rem', height: '12px', background: '#eaf2fa' }}>
@@ -348,7 +348,7 @@ const BirthdayRulesModal = ({
                 {tourRegistrationUnlocked ? (
                   <>
                     <TourGateText>Jetzt anmelden.</TourGateText>
-                    <TourCtaLink to="/event-registration">Zur Eis-Tour-Anmeldung</TourCtaLink>
+                    <TourCtaLink to="/event-registration">Zur Ice-Tour-Anmeldung</TourCtaLink>
                   </>
                 ) : (
                   <TourGateText>Anmeldung folgt in Kürze.</TourGateText>
