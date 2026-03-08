@@ -14,6 +14,12 @@ import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { isSpecialTime } from './utils/seasonal';
 import { buildAssetUrl } from './utils/assets.jsx';
+import {
+  countActivitiesSince,
+  readActivityFeedCache,
+  readActivityFeedSeenAt,
+  writeActivityFeedCache,
+} from './utils/activityFeed';
 import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
@@ -52,6 +58,7 @@ const Header = ({ refreshShops }) => {
   const [birthdayUserRank, setBirthdayUserRank] = useState(null);
   const [isBirthdayLeaderboardLoading, setIsBirthdayLeaderboardLoading] = useState(false);
   const [isBirthdayLeaderboardExpanded, setIsBirthdayLeaderboardExpanded] = useState(false);
+  const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
@@ -92,6 +99,56 @@ const Header = ({ refreshShops }) => {
     }
     setHeaderAvatarUrl(localStorage.getItem('avatarUrl'));
   }, [isLoggedIn, userId, username, menuOpen]);
+
+  useEffect(() => {
+    if (location.pathname === '/dashboard') {
+      setDashboardNewCount(0);
+      return;
+    }
+
+    const cachedFeed = readActivityFeedCache(userId);
+    const seenAt = readActivityFeedSeenAt(userId);
+    if (cachedFeed?.activities?.length && seenAt) {
+      setDashboardNewCount(countActivitiesSince(cachedFeed.activities, seenAt));
+    } else {
+      setDashboardNewCount(0);
+    }
+
+    const syncDashboardBadge = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/activity_feed.php?days=7&minimum=20&offset=0`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const activities = Array.isArray(data?.activities) ? data.activities : [];
+        writeActivityFeedCache(userId, {
+          activities,
+          nextOffset: Number.isFinite(data?.meta?.nextOffset) ? data.meta.nextOffset : activities.length,
+          hasMore: Boolean(data?.meta?.hasMore),
+          cachedAt: new Date().toISOString(),
+        });
+
+        const latestSeenAt = readActivityFeedSeenAt(userId);
+        setDashboardNewCount(latestSeenAt ? countActivitiesSince(activities, latestSeenAt) : 0);
+      } catch (error) {
+        console.error('Aktivitäts-Badge konnte nicht aktualisiert werden:', error);
+      }
+    };
+
+    syncDashboardBadge();
+
+    const handleFeedSeen = (event) => {
+      const seenUserId = event.detail?.userId ?? null;
+      if (Number(seenUserId || 0) === Number(userId || 0)) {
+        setDashboardNewCount(0);
+      }
+    };
+
+    window.addEventListener('activity-feed-seen', handleFeedSeen);
+    return () => window.removeEventListener('activity-feed-seen', handleFeedSeen);
+  }, [apiUrl, location.pathname, userId]);
 
   useEffect(() => {
     const handleStorage = (event) => {
@@ -478,7 +535,10 @@ const Header = ({ refreshShops }) => {
             Foto-Challenge
             <DesktopNavBadge>NEU</DesktopNavBadge>
           </DesktopNavLink>
-          <DesktopNavLink to="/dashboard">Aktivitäten</DesktopNavLink>
+          <DesktopNavLink to="/dashboard">
+            Aktivitäten
+            {dashboardNewCount > 0 && <ActivityBadge>{dashboardNewCount}</ActivityBadge>}
+          </DesktopNavLink>
           <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
           <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
         </DesktopNav>
@@ -548,7 +608,10 @@ const Header = ({ refreshShops }) => {
                 Foto-Challenges
                 {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
               </MenuItemLink>
-              <MenuItemLink to="/dashboard" onClick={closeMenu}>Aktivitäten</MenuItemLink>
+              <MenuItemLink to="/dashboard" onClick={closeMenu}>
+                Aktivitäten
+                {dashboardNewCount > 0 && <MenuItemBadge>{dashboardNewCount} neu</MenuItemBadge>}
+              </MenuItemLink>
               <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
               <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
               <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
@@ -846,6 +909,22 @@ const DesktopNavBadge = styled.span`
   transform: translate(-10px, -12px) rotate(12deg);
   transform-origin: center;
   box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
+`;
+
+const ActivityBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #c2410c;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(124, 45, 18, 0.22);
 `;
 
 const HeaderRight = styled.div`

@@ -9,8 +9,17 @@ import ShopCard from '../components/ShopCard';
 import AwardCard from '../components/AwardCard';
 import AwardBundleCard from '../components/AwardBundleCard';
 import NewUserCard from '../components/NewUserCard';
+import { useUser } from '../context/UserContext';
+import {
+  getLatestActivityTimestamp,
+  groupActivities,
+  readActivityFeedCache,
+  writeActivityFeedCache,
+  writeActivityFeedSeenAt,
+} from '../utils/activityFeed';
 
 function DashBoard() {
+  const { userId } = useUser();
   const [activities, setActivities] = useState([]);
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -22,8 +31,16 @@ function DashBoard() {
   const minimum = 20;
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
+  const markDashboardSeen = (activitiesToMark = []) => {
+    const latestTimestamp = getLatestActivityTimestamp(activitiesToMark) || new Date().toISOString();
+    writeActivityFeedSeenAt(userId, latestTimestamp);
+    window.dispatchEvent(new CustomEvent('activity-feed-seen', { detail: { userId, seenAt: latestTimestamp } }));
+  };
+
   const fetchActivities = async (append = false, customOffset = null) => {
-    append ? setLoadingMore(true) : setLoadingInitial(true);
+    const hasCachedActivities = Boolean(readActivityFeedCache(userId)?.activities?.length);
+    append ? setLoadingMore(true) : setLoadingInitial(!hasCachedActivities && activities.length === 0);
+    setError(null);
     try {
       const usedOffset = customOffset !== null ? customOffset : offset;
 
@@ -37,13 +54,38 @@ function DashBoard() {
       const meta = json.meta || {};
 
       if (newActivities.length === 0) {
+        if (!append) {
+          writeActivityFeedCache(userId, {
+            activities: [],
+            nextOffset: 0,
+            hasMore: false,
+            cachedAt: new Date().toISOString(),
+          });
+          markDashboardSeen([]);
+        }
+        setActivities((prev) => (append ? prev : []));
+        setOffset(0);
         setHasMore(false);
       } else {
-        setActivities((prev) =>
-          append ? [...prev, ...newActivities] : newActivities
-        );
-        setOffset(meta.nextOffset ?? (usedOffset + newActivities.length));
-        setHasMore(meta.hasMore ?? false);
+        const nextOffset = meta.nextOffset ?? (usedOffset + newActivities.length);
+        const nextHasMore = meta.hasMore ?? false;
+        setActivities((prev) => {
+          const nextActivities = append ? [...prev, ...newActivities] : newActivities;
+
+          if (!append) {
+            writeActivityFeedCache(userId, {
+              activities: nextActivities,
+              nextOffset,
+              hasMore: nextHasMore,
+              cachedAt: new Date().toISOString(),
+            });
+            markDashboardSeen(nextActivities);
+          }
+
+          return nextActivities;
+        });
+        setOffset(nextOffset);
+        setHasMore(nextHasMore);
       }
     } catch (err) {
       console.error("Fehler beim Laden der Dashboard-Daten:", err);
@@ -53,166 +95,18 @@ function DashBoard() {
     }
   };
 
-  const parseActivityDate = (rawValue) => {
-    if (!rawValue) return null;
-    if (rawValue instanceof Date) return rawValue;
-    const value = typeof rawValue === "string"
-      ? (rawValue.includes("T") ? rawValue : rawValue.replace(" ", "T"))
-      : rawValue;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  };
-
-  const extractActivityDate = (data) => {
-    if (!data) return null;
-    return parseActivityDate(data.aktivitaet_am || data.datum || data.erstellt_am || data.created_at || null);
-  };
-
-  // Hilfsfunktion: Gruppiert Activities nach group_id
-  function groupActivities(activities) {
-    const grouped = {};
-    const singles = [];
-    const awards = [];
-
-    activities.forEach((a) => {
-      if (a.typ === "checkin" && a.data.group_id) {
-        const gid = a.data.group_id;
-        if (!grouped[gid]) {
-          grouped[gid] = [];
-        }
-        grouped[gid].push(a);
-      } else if (a.typ === "award") {
-        awards.push(a);
-      } else {
-        singles.push(a); // alles andere normal behalten
-      }
-    });
-
-    // Awards innerhalb von 5min für denselben Nutzer (nach user_name) bündeln
-    const awardBundles = [];
-    const sortedAwards = awards.slice().sort((a, b) => {
-      const da = extractActivityDate(a.data);
-      const db = extractActivityDate(b.data);
-
-      if (!da && !db) return 0;
-      if (!da) return -1;
-      if (!db) return 1;
-      return da - db;
-    });
-    let bundle = [];
-    for (let i = 0; i < sortedAwards.length; i++) {
-      const curr = sortedAwards[i];
-      const currUserId = curr.data?.user_id ?? curr.data?.nutzer_id;
-      const currUserName = curr.data?.user_name;
-      const currDate = extractActivityDate(curr.data);
-      if (bundle.length === 0) {
-        bundle.push(curr);
-        continue;
-      }
-      const last = bundle[bundle.length - 1];
-      const lastUserId = last.data?.user_id ?? last.data?.nutzer_id;
-      const lastUserName = last.data?.user_name;
-      const lastDate = extractActivityDate(last.data);
-      const diffMs = (currDate && lastDate) ? Math.abs(currDate - lastDate) : Number.POSITIVE_INFINITY;
-      if (
-        currUserId === lastUserId &&
-        currUserName === lastUserName &&
-        diffMs <= 5 * 60 * 1000
-      ) {
-        bundle.push(curr);
-      } else {
-        if (bundle.length > 1) {
-          const bundleDate = extractActivityDate(bundle[bundle.length - 1].data);
-          const bundleUserId = lastUserId ?? "unknown";
-          const bundleDateKey = bundleDate ? bundleDate.getTime() : "unknown";
-          awardBundles.push({
-            typ: "award_bundle",
-            id: `awardbundle-${bundleUserId}-${bundleDateKey}`,
-            data: bundle.map((a) => a.data),
-          });
-        } else {
-          awardBundles.push(bundle[0]);
-        }
-        bundle = [curr];
-      }
-    }
-    // Letztes Bundle pushen
-    if (bundle.length > 1) {
-      const lastData = bundle[bundle.length - 1].data;
-      const bundleDate = extractActivityDate(lastData);
-      const bundleUserId = lastData?.user_id ?? lastData?.nutzer_id ?? "unknown";
-      const bundleDateKey = bundleDate ? bundleDate.getTime() : "unknown";
-      awardBundles.push({
-        typ: "award_bundle",
-        id: `awardbundle-${bundleUserId}-${bundleDateKey}`,
-        data: bundle.map((a) => a.data),
-      });
-    } else if (bundle.length === 1) {
-      awardBundles.push(bundle[0]);
-    }
-
-    const result = [
-      ...singles,
-      ...Object.keys(grouped).flatMap((gid) => {
-        const items = grouped[gid];
-        if (items.length === 1) {
-          // nur ein Checkin -> wieder als normaler Checkin behandeln
-          return items;
-        } else {
-          // mehrere -> Gruppierung
-          return {
-            typ: "group_checkin",
-            id: `group-${gid}`,
-            data: items.map((i) => i.data),
-          };
-        }
-      }),
-      ...awardBundles,
-    ];
-
-    function getItemDate(item) {
-      if (!item) return null;
-
-      if (item.typ === "group_checkin") {
-        // Bei Gruppen den neuesten Checkin in der Gruppe verwenden
-        const latestCheckin = item.data?.reduce((latest, current) => {
-          const currentDate = extractActivityDate(current);
-          if (!currentDate) return latest;
-          if (!latest) return current;
-          const latestDate = extractActivityDate(latest);
-          return (!latestDate || currentDate > latestDate) ? current : latest;
-        }, null);
-        return extractActivityDate(latestCheckin);
-      }
-
-      if (item.typ === "award_bundle") {
-        const lastAward = Array.isArray(item.data) ? item.data[item.data.length - 1] : null;
-        return extractActivityDate(lastAward);
-      }
-
-      return extractActivityDate(item.data);
-    }
-
-    // Sortierung nach Datum absteigend
-    const sorted = result.sort((a, b) => {
-      const da = getItemDate(a);
-      const db = getItemDate(b);
-
-      if (!db && !da) return 0;
-      if (!db) return -1;
-      if (!da) return 1;
-      return db - da;
-    });
-    return sorted;
-  }
-
-
-
-
   // Initial laden
   useEffect(() => {
+    const cachedFeed = readActivityFeedCache(userId);
+    if (cachedFeed?.activities?.length) {
+      setActivities(cachedFeed.activities);
+      setOffset(Number.isFinite(cachedFeed.nextOffset) ? cachedFeed.nextOffset : 0);
+      setHasMore(Boolean(cachedFeed.hasMore));
+      markDashboardSeen(cachedFeed.activities);
+    }
+
     fetchActivities(false, 0);
-  }, []);
+  }, [userId]);
 
 
   const reload = () => {
