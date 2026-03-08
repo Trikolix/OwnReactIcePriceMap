@@ -203,12 +203,12 @@ function Statistics() {
 
   const formatPriceDisplay = (node) => {
     if (!node) {
-      return '-';
+      return { euroText: '-', localText: '' };
     }
     const euroValue = node.kugel_preis_eur ?? node.durchschnittlicher_kugelpreis_eur;
     const euroText = formatCurrencyValue(euroValue, '€');
     if (!euroText) {
-      return '-';
+      return { euroText: '-', localText: '' };
     }
 
     const localValue = node.kugel_preis ?? node.durchschnittlicher_kugelpreis;
@@ -217,11 +217,21 @@ function Statistics() {
     const isEuroCurrency = (localCurrencyCode && localCurrencyCode === 'EUR') || (!localCurrencyCode && (!localSymbol || localSymbol === '€'));
 
     if (isEuroCurrency || localValue === null || localValue === undefined) {
-      return euroText;
+      return { euroText, localText: '' };
     }
 
     const localText = formatCurrencyValue(localValue, localSymbol || localCurrencyCode || '');
-    return localText ? `${euroText} (${localText})` : euroText;
+    return { euroText, localText: localText || '' };
+  };
+
+  const getHierarchyLabel = (level) => {
+    if (level === 'land') {
+      return 'Land';
+    }
+    if (level === 'bundesland') {
+      return 'Bundesland';
+    }
+    return 'Landkreis';
   };
 
   const getLandKey = (id) => `land-${id}`;
@@ -311,7 +321,7 @@ function Statistics() {
                 {searchActive && <MetaPill $accent>Filter aktiv: „{priceSearch.trim()}“</MetaPill>}
               </PriceOverviewMeta>
               <TableScrollArea>
-              <Table>
+              <Table $prioritizeFirstColumn>
                 <thead>
                   <tr>
                     <Th>Region</Th>
@@ -331,6 +341,7 @@ function Statistics() {
                       const bundeslaender = land.bundeslaender || [];
                       const landHasChildren = bundeslaender.length > 0;
 
+                      const landPrice = formatPriceDisplay(land);
                       return (
                         <React.Fragment key={landKey}>
                           <PriceTableRow
@@ -344,11 +355,18 @@ function Statistics() {
                                 {landHasChildren ? (
                                   <ExpandIndicator $expanded={landExpanded}>{landExpanded ? '▾' : '▸'}</ExpandIndicator>
                                 ) : <LeafSpacer />}
-                                <LevelBadge>Land</LevelBadge>
-                                <RegionName>{land.name}</RegionName>
+                                <RegionTextGroup>
+                                  <RegionName>{land.name}</RegionName>
+                                  <RegionMeta>{getHierarchyLabel('land')}</RegionMeta>
+                                </RegionTextGroup>
                               </NameWrapper>
                             </PriceNameCell>
-                            <PriceValueCell><PriceValuePill>{formatPriceDisplay(land)}</PriceValuePill></PriceValueCell>
+                            <PriceValueCell>
+                              <PriceValuePill>
+                                <PriceMain>{landPrice.euroText}</PriceMain>
+                                {landPrice.localText && <PriceSecondary>{landPrice.localText}</PriceSecondary>}
+                              </PriceValuePill>
+                            </PriceValueCell>
                             <Td><CountPill>{land.anzahl_eisdielen}</CountPill></Td>
                           </PriceTableRow>
 
@@ -357,6 +375,7 @@ function Statistics() {
                             const bundeslandExpanded = isExpanded(bundeslandKey);
                             const landkreise = bundesland.landkreise || [];
                             const bundeslandHasChildren = landkreise.length > 0;
+                            const bundeslandPrice = formatPriceDisplay(bundesland);
 
                             return (
                               <React.Fragment key={bundeslandKey}>
@@ -376,28 +395,45 @@ function Statistics() {
                                       {bundeslandHasChildren ? (
                                         <ExpandIndicator $expanded={bundeslandExpanded}>{bundeslandExpanded ? '▾' : '▸'}</ExpandIndicator>
                                       ) : <LeafSpacer />}
-                                      <LevelBadge>Bundesland</LevelBadge>
-                                      <RegionName>{bundesland.name}</RegionName>
+                                      <RegionTextGroup>
+                                        <RegionName>{bundesland.name}</RegionName>
+                                        <RegionMeta>{getHierarchyLabel('bundesland')}</RegionMeta>
+                                      </RegionTextGroup>
                                     </NameWrapper>
                                   </PriceNameCell>
-                                  <PriceValueCell><PriceValuePill>{formatPriceDisplay(bundesland)}</PriceValuePill></PriceValueCell>
+                                  <PriceValueCell>
+                                    <PriceValuePill>
+                                      <PriceMain>{bundeslandPrice.euroText}</PriceMain>
+                                      {bundeslandPrice.localText && <PriceSecondary>{bundeslandPrice.localText}</PriceSecondary>}
+                                    </PriceValuePill>
+                                  </PriceValueCell>
                                   <Td><CountPill>{bundesland.anzahl_eisdielen}</CountPill></Td>
                                 </PriceTableRow>
 
-                                {bundeslandExpanded && landkreise.map((landkreis) => (
-                                  <PriceTableRow key={`landkreis-${landkreis.id}`} level="landkreis">
-                                    <PriceNameCell>
-                                      <NameWrapper>
-                                        <Indent level={2} />
-                                        <LeafSpacer />
-                                        <LevelBadge>Landkreis</LevelBadge>
-                                        <RegionName>{landkreis.name}</RegionName>
-                                      </NameWrapper>
-                                    </PriceNameCell>
-                                    <PriceValueCell><PriceValuePill>{formatPriceDisplay(landkreis)}</PriceValuePill></PriceValueCell>
-                                    <Td><CountPill>{landkreis.anzahl_eisdielen}</CountPill></Td>
-                                  </PriceTableRow>
-                                ))}
+                                {bundeslandExpanded && landkreise.map((landkreis) => {
+                                  const landkreisPrice = formatPriceDisplay(landkreis);
+                                  return (
+                                    <PriceTableRow key={`landkreis-${landkreis.id}`} level="landkreis">
+                                      <PriceNameCell>
+                                        <NameWrapper>
+                                          <Indent level={2} />
+                                          <LeafSpacer />
+                                          <RegionTextGroup>
+                                            <RegionName>{landkreis.name}</RegionName>
+                                            <RegionMeta>{getHierarchyLabel('landkreis')}</RegionMeta>
+                                          </RegionTextGroup>
+                                        </NameWrapper>
+                                      </PriceNameCell>
+                                      <PriceValueCell>
+                                        <PriceValuePill>
+                                          <PriceMain>{landkreisPrice.euroText}</PriceMain>
+                                          {landkreisPrice.localText && <PriceSecondary>{landkreisPrice.localText}</PriceSecondary>}
+                                        </PriceValuePill>
+                                      </PriceValueCell>
+                                      <Td><CountPill>{landkreis.anzahl_eisdielen}</CountPill></Td>
+                                    </PriceTableRow>
+                                  );
+                                })}
                               </React.Fragment>
                             );
                           })}
@@ -529,7 +565,7 @@ const Container = styled.div`
   width: min(96%, 1480px);
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 1rem;
+  padding-top: 0.5rem;
 `;
 
 const Title = styled.h2`
@@ -561,7 +597,7 @@ const SectionCard = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem;
+  padding: 1rem 0rem 0rem 0rem;
   min-width: 0;
 `;
 
@@ -578,6 +614,7 @@ const PriceOverviewToolbar = styled.div`
   grid-template-columns: 1fr;
   gap: 0.65rem;
   margin-bottom: 0.55rem;
+  padding: 0 1rem;
 
   @media (min-width: 900px) {
     grid-template-columns: 1fr auto;
@@ -598,6 +635,7 @@ const PriceOverviewMeta = styled.div`
   flex-wrap: wrap;
   gap: 0.45rem;
   margin: 0 0 0.85rem;
+  padding: 0 1rem;
 `;
 
 const MetaPill = styled.span`
@@ -653,12 +691,61 @@ const Table = styled.table`
       table-layout: fixed;
     `}
 
+    ${({ $prioritizeFirstColumn }) =>
+      $prioritizeFirstColumn &&
+      `
+      min-width: 100%;
+      table-layout: fixed;
+
+      th,
+      td {
+        padding: 0.55rem 0.45rem;
+      }
+
+      th {
+        white-space: normal;
+        line-height: 1.2;
+      }
+
+      th:first-child,
+      td:first-child {
+        width: 58%;
+        min-width: 58%;
+        max-width: 58%;
+      }
+
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 24%;
+        min-width: 24%;
+        max-width: 24%;
+      }
+
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 18%;
+        min-width: 18%;
+        max-width: 18%;
+      }
+    `}
+
     th:first-child,
     td:first-child {
       width: 120px;
       min-width: 120px;
       max-width: 120px;
     }
+
+    ${({ $prioritizeFirstColumn }) =>
+      $prioritizeFirstColumn &&
+      `
+      th:first-child,
+      td:first-child {
+        width: 58%;
+        min-width: 58%;
+        max-width: 58%;
+      }
+    `}
 
     ${({ $compactColumns }) =>
       $compactColumns &&
@@ -889,30 +976,34 @@ const NameWrapper = styled.div`
   gap: 0.5rem;
   font-weight: 500;
   min-height: 28px;
+  min-width: 0;
 `;
 
 const RegionName = styled.span`
   font-weight: 700;
   color: #2f2100;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const RegionTextGroup = styled.span`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+`;
+
+const RegionMeta = styled.span`
+  font-size: 0.72rem;
+  color: rgba(95, 63, 0, 0.75);
+  line-height: 1.1;
 `;
 
 const Indent = styled.span`
   display: inline-block;
   width: ${(props) => (props.level || 0) * 1.5}rem;
   flex-shrink: 0;
-`;
-
-const LevelBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.1rem 0.6rem;
-  border-radius: 999px;
-  background-color: rgba(255, 181, 34, 0.18);
-  color: #8a5700;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  border: 1px solid rgba(255, 181, 34, 0.3);
 `;
 
 const ExpandIndicator = styled.span`
@@ -935,20 +1026,34 @@ const LeafSpacer = styled.span`
 `;
 
 const PriceValueCell = styled(Td)`
-  white-space: nowrap;
+  white-space: normal;
 `;
 
 const PriceValuePill = styled.span`
   display: inline-flex;
-  align-items: center;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 14px;
   background: rgba(255, 181, 34, 0.12);
   border: 1px solid rgba(255, 181, 34, 0.22);
   color: #7a4a00;
-  font-weight: 700;
   min-width: 72px;
-  justify-content: center;
+  max-width: 100%;
+`;
+
+const PriceMain = styled.span`
+  font-weight: 800;
+  line-height: 1.15;
+`;
+
+const PriceSecondary = styled.span`
+  font-size: 0.74rem;
+  line-height: 1.1;
+  color: rgba(122, 74, 0, 0.78);
+  white-space: normal;
+  overflow-wrap: anywhere;
 `;
 
 const CountPill = styled.span`
