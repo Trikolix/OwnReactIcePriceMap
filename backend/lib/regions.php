@@ -2,6 +2,18 @@
 
 require_once __DIR__ . '/leaderboard_periods.php';
 
+function getRegionShopIds(PDO $pdo, string $level, int $id): array
+{
+    if ($level === 'bundesland') {
+        $stmt = $pdo->prepare("SELECT id FROM eisdielen WHERE bundesland_id = :id");
+    } else {
+        $stmt = $pdo->prepare("SELECT id FROM eisdielen WHERE landkreis_id = :id");
+    }
+
+    $stmt->execute(['id' => $id]);
+    return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+}
+
 function getRegionMeta(PDO $pdo, string $level, int $id): ?array
 {
     if ($level === 'bundesland') {
@@ -183,40 +195,60 @@ function getRegionPriceSummary(PDO $pdo, string $level, int $id): array
 
 function getRegionPriceTrend(PDO $pdo, string $level, int $id): array
 {
-    $scopeWhere = buildShopScopeWhere($level, $id, 'e');
-    $stmt = $pdo->query(
-        "SELECT DATE_FORMAT(p.gemeldet_am, '%Y-%m') AS month_key,
-                ROUND(AVG(p.preis), 2) AS average_price,
-                COUNT(*) AS reports
-         FROM preise p
-         JOIN eisdielen e ON e.id = p.eisdiele_id
-         WHERE p.typ = 'kugel'
-           AND p.gemeldet_am >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 11 MONTH), '%Y-%m-01')
-           AND $scopeWhere
-         GROUP BY DATE_FORMAT(p.gemeldet_am, '%Y-%m')
-         ORDER BY month_key ASC"
-    );
-
-    $byMonth = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $byMonth[$row['month_key']] = [
-            'month_key' => $row['month_key'],
-            'label' => $row['month_key'],
-            'average_price' => isset($row['average_price']) ? (float)$row['average_price'] : null,
-            'reports' => (int)$row['reports'],
-        ];
-    }
-
+    $shopIds = getRegionShopIds($pdo, $level, $id);
     $points = [];
     $cursor = new DateTimeImmutable('first day of this month', new DateTimeZone('Europe/Berlin'));
     $cursor = $cursor->modify('-11 months');
+
+    if (empty($shopIds)) {
+        for ($i = 0; $i < 12; $i += 1) {
+            $monthKey = $cursor->format('Y-m');
+            $points[] = [
+                'month_key' => $monthKey,
+                'label' => $cursor->format('m/Y'),
+                'average_price' => null,
+                'reports' => 0,
+            ];
+            $cursor = $cursor->modify('+1 month');
+        }
+
+        return $points;
+    }
+
+    $placeholders = implode(', ', array_fill(0, count($shopIds), '?'));
+    $trendStmt = $pdo->prepare(
+        "SELECT latest_prices.eisdiele_id,
+                latest_prices.preis
+         FROM (
+             SELECT p1.eisdiele_id, p1.preis
+             FROM preise p1
+             JOIN (
+                 SELECT eisdiele_id, MAX(gemeldet_am) AS max_reported_at
+                 FROM preise
+                 WHERE typ = 'kugel'
+                   AND gemeldet_am <= ?
+                   AND eisdiele_id IN ($placeholders)
+                 GROUP BY eisdiele_id
+             ) latest
+               ON latest.eisdiele_id = p1.eisdiele_id
+              AND latest.max_reported_at = p1.gemeldet_am
+             WHERE p1.typ = 'kugel'
+         ) latest_prices"
+    );
+
     for ($i = 0; $i < 12; $i += 1) {
         $monthKey = $cursor->format('Y-m');
-        $points[] = $byMonth[$monthKey] ?? [
+        $monthEnd = $cursor->modify('last day of this month')->setTime(23, 59, 59);
+        $params = array_merge([$monthEnd->format('Y-m-d H:i:s')], $shopIds);
+        $trendStmt->execute($params);
+        $rows = $trendStmt->fetchAll(PDO::FETCH_ASSOC);
+        $prices = array_map(static fn(array $row): float => (float)$row['preis'], $rows);
+
+        $points[] = [
             'month_key' => $monthKey,
             'label' => $cursor->format('m/Y'),
-            'average_price' => null,
-            'reports' => 0,
+            'average_price' => !empty($prices) ? round(array_sum($prices) / count($prices), 2) : null,
+            'reports' => count($rows),
         ];
         $cursor = $cursor->modify('+1 month');
     }
