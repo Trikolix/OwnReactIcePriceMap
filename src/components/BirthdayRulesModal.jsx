@@ -68,6 +68,8 @@ const ACTION_DISPLAY_ORDER = [
   'photo_challenge_vote_ep',
 ];
 
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
 const MANDATORY_KEYS = [
   'checkin_with_photo',
   'group_checkin_with_other',
@@ -109,6 +111,72 @@ const getDefaultEP = (key) => {
   return defaults[key] || 5;
 };
 
+const buildActionEntries = (breakdown = {}) => (
+  ACTION_DISPLAY_ORDER.map((key) => {
+    if (GROUPED_ACTIONS[key]) {
+      const group = GROUPED_ACTIONS[key];
+      const earnedPoints = group.sourceKeys.reduce((sum, sourceKey) => {
+        const value = Number.isFinite(breakdown[sourceKey]) ? breakdown[sourceKey] : 0;
+        return sum + value;
+      }, 0);
+
+      return {
+        key,
+        label: group.label,
+        points: earnedPoints > 0 ? earnedPoints : group.defaultEP,
+        earned: earnedPoints > 0,
+        hover: group.hover,
+      };
+    }
+
+    const earnedPoints = Number.isFinite(breakdown[key]) ? breakdown[key] : 0;
+    return {
+      key,
+      label: POINT_LABELS[key] || key,
+      points: earnedPoints > 0 ? earnedPoints : getDefaultEP(key),
+      earned: earnedPoints > 0,
+      hover: null,
+    };
+  })
+);
+
+const getDetailLabel = (entry, counts = {}) => {
+  switch (entry.key) {
+    case 'checkins_total_ep':
+      return `${counts.checkins_total || 0} Check-ins, ${counts.checkins_with_photo || 0} mit Bild, ${counts.checkins_on_site || 0} vor Ort`;
+    case 'price_reported_ep':
+      return 'Preis im Aktionszeitraum gemeldet';
+    case 'favorite_shop_added_ep':
+      return counts.favorite_shops_added_count ? `${counts.favorite_shops_added_count} Favoriten vorhanden` : 'Einmalige Aktion';
+    case 'invited_users_total_ep':
+      return `${counts.invited_users_count || 0} Einladungen, ${counts.invited_users_with_checkin_count || 0} mit Check-in`;
+    case 'login_days_ep':
+      return `${counts.login_days || 0} Login-Tage gesammelt`;
+    case 'profile_image_ep':
+      return 'Profilbild im Zeitraum vorhanden';
+    case 'comment_ep':
+      return `${counts.comments_unique_targets || 0} kommentierte Einträge`;
+    case 'rad_event_page_ep':
+      return 'Ice-Tour-Seite besucht';
+    case 'easter_eggs_ep':
+      return `${counts.easter_eggs_found || 0} Geschenke entdeckt`;
+    case 'new_shop_ep':
+      return `${counts.new_shops_count || 0} neue Eisdielen eingetragen`;
+    case 'challenge_completed_ep':
+      return `${counts.challenges_completed || 0} Challenges abgeschlossen`;
+    case 'ice_shop_reviewed_ep':
+      return `${counts.reviews_count || 0} Eisdielen bewertet`;
+    case 'route_submitted_ep':
+      return `${counts.routes_count || 0} Routen eingetragen`;
+    case 'photo_challenge_submission_ep':
+      return `${counts.photo_challenge_submissions_count || 0} Bilder eingereicht`;
+    case 'photo_challenge_vote_ep':
+      return `${counts.photo_challenge_votes_count || 0} Votes abgegeben`;
+    default:
+      return null;
+  }
+};
+
 const BirthdayRulesModal = ({
   open,
   onClose,
@@ -137,6 +205,14 @@ const BirthdayRulesModal = ({
   forceLocalUnlock = false,
   awardConfig = null,
 }) => {
+  const [showAllActions, setShowAllActions] = useState(false);
+  const [activeLeaderboardEntry, setActiveLeaderboardEntry] = useState(null);
+  const [leaderboardDetailState, setLeaderboardDetailState] = useState({
+    loading: false,
+    error: null,
+    data: null,
+  });
+
   if (!open) {
     return null;
   }
@@ -178,41 +254,61 @@ const BirthdayRulesModal = ({
     : defaultUnlockDate;
   const eventUnlocked = forceLocalUnlock || now >= unlockDate;
   const tourRegistrationUnlocked = forceLocalUnlock || (eventUnlocked && Boolean(iceTourRegistrationOpen));
-  const actionEntries = ACTION_DISPLAY_ORDER
-    .filter((key) => key !== 'rad_event_page_ep' || eventUnlocked)
-    .map((key) => {
-    if (GROUPED_ACTIONS[key]) {
-      const group = GROUPED_ACTIONS[key];
-      const earnedPoints = group.sourceKeys.reduce((sum, sourceKey) => {
-        const value = Number.isFinite(breakdown[sourceKey]) ? breakdown[sourceKey] : 0;
-        return sum + value;
-      }, 0);
-
-      return {
-        key,
-        label: group.label,
-        points: earnedPoints > 0 ? earnedPoints : group.defaultEP,
-        earned: earnedPoints > 0,
-        hover: group.hover,
-      };
-    }
-
-    const earnedPoints = Number.isFinite(breakdown[key]) ? breakdown[key] : 0;
-    return {
-      key,
-      label: POINT_LABELS[key] || key,
-      points: earnedPoints > 0 ? earnedPoints : getDefaultEP(key),
-      earned: earnedPoints > 0,
-      hover: null,
-    };
-    });
-  const [showAllActions, setShowAllActions] = useState(false);
+  const actionEntries = buildActionEntries(breakdown)
+    .filter((key) => key.key !== 'rad_event_page_ep' || eventUnlocked);
   const earnedActionEntries = useMemo(
     () => actionEntries.filter((entry) => entry.earned),
     [actionEntries]
   );
   const displayedActionEntries = showAllActions ? actionEntries : earnedActionEntries;
   const hasHiddenActions = actionEntries.length > earnedActionEntries.length;
+  const leaderboardDetailEntries = useMemo(() => {
+    const detailBreakdown = leaderboardDetailState.data?.points?.breakdown || {};
+    const entries = buildActionEntries(detailBreakdown).filter((entry) => entry.earned);
+    return entries.map((entry) => ({
+      ...entry,
+      detailLabel: getDetailLabel(entry, leaderboardDetailState.data?.counts || {}),
+    }));
+  }, [leaderboardDetailState.data]);
+
+  const loadLeaderboardDetails = async (entry) => {
+    setActiveLeaderboardEntry(entry);
+    setLeaderboardDetailState({
+      loading: true,
+      error: null,
+      data: null,
+    });
+
+    try {
+      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entry.user_id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      setLeaderboardDetailState({
+        loading: false,
+        error: data?.error || null,
+        data: data?.error ? null : data,
+      });
+    } catch (error) {
+      console.error('Fehler beim Laden der Birthday-Details:', error);
+      setLeaderboardDetailState({
+        loading: false,
+        error: 'Details konnten nicht geladen werden.',
+        data: null,
+      });
+    }
+  };
+
+  const closeLeaderboardDetails = () => {
+    setActiveLeaderboardEntry(null);
+    setLeaderboardDetailState({
+      loading: false,
+      error: null,
+      data: null,
+    });
+  };
 
   return (
     <OverlayBackground>
@@ -262,10 +358,30 @@ const BirthdayRulesModal = ({
                   {activeLeaderboard.map((entry) => (
                     <LeaderboardRow
                       key={`${entry.user_id}-${entry.rank}`}
+                      role="button"
+                      tabIndex={0}
                       $highlight={currentUserId && Number(entry.user_id) === Number(currentUserId)}
+                      onClick={() => loadLeaderboardDetails(entry)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          loadLeaderboardDetails(entry);
+                        }
+                      }}
+                      aria-label={`Punkteaufschlüsselung von ${entry.username} anzeigen`}
                     >
-                      <span>#{entry.rank}</span>
-                      <span><UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink></span>
+                      <LeaderboardRank>#{entry.rank}</LeaderboardRank>
+                      <LeaderboardUserCell>
+                        <span>
+                          <UserLink
+                            to={`/user/${entry.user_id}`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {entry.username}
+                          </UserLink>
+                        </span>
+                        <LeaderboardRowHint>Details anzeigen</LeaderboardRowHint>
+                      </LeaderboardUserCell>
                       <strong>{entry.total_xp} XP</strong>
                     </LeaderboardRow>
                   ))}
@@ -364,6 +480,67 @@ const BirthdayRulesModal = ({
             <LoginButton type="button" onClick={onLogin}>Login / Registrieren</LoginButton>
           </div>
         )}
+
+        {activeLeaderboardEntry && (
+          <LeaderboardDetailBackdrop onClick={closeLeaderboardDetails}>
+            <LeaderboardDetailCard onClick={(event) => event.stopPropagation()}>
+              <LeaderboardDetailClose type="button" onClick={closeLeaderboardDetails} aria-label="Detailansicht schließen">
+                &times;
+              </LeaderboardDetailClose>
+              <LeaderboardDetailEyebrow>Punkteaufschlüsselung</LeaderboardDetailEyebrow>
+              <LeaderboardDetailTitle>
+                {activeLeaderboardEntry.username}
+              </LeaderboardDetailTitle>
+              <LeaderboardDetailSummary>
+                <span>Rang #{activeLeaderboardEntry.rank}</span>
+                <strong>{activeLeaderboardEntry.total_xp} XP</strong>
+              </LeaderboardDetailSummary>
+
+              {leaderboardDetailState.loading && (
+                <LeaderboardHint>Lade Detaildaten…</LeaderboardHint>
+              )}
+
+              {!leaderboardDetailState.loading && leaderboardDetailState.error && (
+                <LeaderboardHint>{leaderboardDetailState.error}</LeaderboardHint>
+              )}
+
+              {!leaderboardDetailState.loading && !leaderboardDetailState.error && leaderboardDetailState.data && (
+                <>
+                  <LeaderboardDetailStats>
+                    <LeaderboardDetailStat>
+                      <span>Pflichtaktionen</span>
+                      <strong>{leaderboardDetailState.data?.mandatory?.completed ?? 0}</strong>
+                    </LeaderboardDetailStat>
+                    <LeaderboardDetailStat>
+                      <span>Bonusaktionen</span>
+                      <strong>{activeLeaderboardEntry.bonus_completed ?? 0}</strong>
+                    </LeaderboardDetailStat>
+                    <LeaderboardDetailStat>
+                      <span>Verdiente Kategorien</span>
+                      <strong>{leaderboardDetailEntries.length}</strong>
+                    </LeaderboardDetailStat>
+                  </LeaderboardDetailStats>
+
+                  <LeaderboardDetailList>
+                    {leaderboardDetailEntries.map((entry) => (
+                      <LeaderboardDetailItem key={`${activeLeaderboardEntry.user_id}-${entry.key}`}>
+                        <div>
+                          <strong>{entry.label}</strong>
+                          {entry.detailLabel && <LeaderboardDetailMeta>{entry.detailLabel}</LeaderboardDetailMeta>}
+                        </div>
+                        <LeaderboardDetailPoints>+{entry.points} EP</LeaderboardDetailPoints>
+                      </LeaderboardDetailItem>
+                    ))}
+                  </LeaderboardDetailList>
+
+                  {leaderboardDetailEntries.length === 0 && (
+                    <LeaderboardHint>Noch keine verdienten EP-Aktionen.</LeaderboardHint>
+                  )}
+                </>
+              )}
+            </LeaderboardDetailCard>
+          </LeaderboardDetailBackdrop>
+        )}
       </Overlay>
     </OverlayBackground>
   );
@@ -384,7 +561,7 @@ const OverlayBackground = styled.div`
 const Overlay = styled.div`
   position: relative;
   background: white;
-  padding: 2rem 2.5rem;
+  padding: 1.5rem;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   text-align: center;
@@ -506,7 +683,7 @@ const LeaderboardSection = styled.div`
   text-align: center;
   background: #f8f1e6;
   border-radius: 12px;
-  padding: 12px;
+  padding: 12px 2px;
 `;
 
 const LeaderboardTitle = styled.p`
@@ -529,12 +706,43 @@ const LeaderboardRow = styled.li`
   grid-template-columns: 48px 1fr auto;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
   background: ${(props) => (props.$highlight ? '#ffd27a' : '#ffffff')};
   color: #3a2a00;
   font-size: 0.9rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid ${(props) => (props.$highlight ? 'rgba(255, 149, 0, 0.35)' : 'rgba(112, 72, 24, 0.10)')};
+  box-shadow: 0 8px 18px rgba(88, 56, 16, 0.08);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(88, 56, 16, 0.16);
+    border-color: rgba(255, 149, 0, 0.42);
+    background: ${(props) => (props.$highlight ? '#ffd27a' : '#fff8ed')};
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.45);
+    outline-offset: 2px;
+  }
+`;
+
+const LeaderboardRank = styled.span`
+  font-weight: 800;
+`;
+
+const LeaderboardUserCell = styled.span`
+  display: grid;
+  gap: 2px;
+`;
+
+const LeaderboardRowHint = styled.small`
+  color: #8a6a2e;
+  font-size: 0.72rem;
 `;
 
 const LeaderboardOwn = styled.div`
@@ -605,4 +813,127 @@ const LoginButton = styled.button`
 const UserLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const LeaderboardDetailBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(21, 13, 3, 0.58);
+  border: none;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+`;
+
+const LeaderboardDetailCard = styled.div`
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  overflow-y: auto;
+  border: none;
+  border-radius: 20px;
+  padding: 22px 18px 18px;
+  text-align: left;
+  background: linear-gradient(180deg, #fff9ef 0%, #ffffff 100%);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.28);
+  color: #2b1b00;
+`;
+
+const LeaderboardDetailClose = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: #8a6a2e;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+`;
+
+const LeaderboardDetailEyebrow = styled.div`
+  color: #8a6a2e;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+`;
+
+const LeaderboardDetailTitle = styled.h3`
+  margin: 0.25rem 0 0;
+  font-size: 1.45rem;
+`;
+
+const LeaderboardDetailSummary = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 0.8rem;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff0cb;
+  font-weight: 700;
+`;
+
+const LeaderboardDetailStats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 1rem;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const LeaderboardDetailStat = styled.div`
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(112, 72, 24, 0.12);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+
+  span {
+    color: #7a6336;
+    font-size: 0.8rem;
+  }
+
+  strong {
+    font-size: 1.15rem;
+  }
+`;
+
+const LeaderboardDetailList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 10px;
+`;
+
+const LeaderboardDetailItem = styled.li`
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(112, 72, 24, 0.12);
+`;
+
+const LeaderboardDetailMeta = styled.div`
+  margin-top: 4px;
+  color: #7a6336;
+  font-size: 0.82rem;
+`;
+
+const LeaderboardDetailPoints = styled.strong`
+  white-space: nowrap;
+  color: #a24f00;
+  font-size: 0.95rem;
 `;
