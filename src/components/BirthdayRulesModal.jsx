@@ -68,8 +68,6 @@ const ACTION_DISPLAY_ORDER = [
   'photo_challenge_vote_ep',
 ];
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL;
-
 const MANDATORY_KEYS = [
   'checkin_with_photo',
   'group_checkin_with_other',
@@ -206,16 +204,6 @@ const BirthdayRulesModal = ({
   awardConfig = null,
 }) => {
   const [showAllActions, setShowAllActions] = useState(false);
-  const [activeLeaderboardEntry, setActiveLeaderboardEntry] = useState(null);
-  const [leaderboardDetailState, setLeaderboardDetailState] = useState({
-    loading: false,
-    error: null,
-    data: null,
-  });
-
-  if (!open) {
-    return null;
-  }
 
   const safeCompleted = Math.max(0, Math.min(mandatoryCompleted, mandatoryTotal));
   const progressPercent = mandatoryTotal > 0 ? Math.round((safeCompleted / mandatoryTotal) * 100) : 0;
@@ -262,53 +250,17 @@ const BirthdayRulesModal = ({
   );
   const displayedActionEntries = showAllActions ? actionEntries : earnedActionEntries;
   const hasHiddenActions = actionEntries.length > earnedActionEntries.length;
-  const leaderboardDetailEntries = useMemo(() => {
-    const detailBreakdown = leaderboardDetailState.data?.points?.breakdown || {};
-    const entries = buildActionEntries(detailBreakdown).filter((entry) => entry.earned);
-    return entries.map((entry) => ({
+  const personalBreakdownEntries = useMemo(
+    () => earnedActionEntries.map((entry) => ({
       ...entry,
-      detailLabel: getDetailLabel(entry, leaderboardDetailState.data?.counts || {}),
-    }));
-  }, [leaderboardDetailState.data]);
+      detailLabel: getDetailLabel(entry, counts),
+    })),
+    [counts, earnedActionEntries]
+  );
 
-  const loadLeaderboardDetails = async (entry) => {
-    setActiveLeaderboardEntry(entry);
-    setLeaderboardDetailState({
-      loading: true,
-      error: null,
-      data: null,
-    });
-
-    try {
-      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entry.user_id}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      setLeaderboardDetailState({
-        loading: false,
-        error: data?.error || null,
-        data: data?.error ? null : data,
-      });
-    } catch (error) {
-      console.error('Fehler beim Laden der Birthday-Details:', error);
-      setLeaderboardDetailState({
-        loading: false,
-        error: 'Details konnten nicht geladen werden.',
-        data: null,
-      });
-    }
-  };
-
-  const closeLeaderboardDetails = () => {
-    setActiveLeaderboardEntry(null);
-    setLeaderboardDetailState({
-      loading: false,
-      error: null,
-      data: null,
-    });
-  };
+  if (!open) {
+    return null;
+  }
 
   return (
     <OverlayBackground>
@@ -358,29 +310,15 @@ const BirthdayRulesModal = ({
                   {activeLeaderboard.map((entry) => (
                     <LeaderboardRow
                       key={`${entry.user_id}-${entry.rank}`}
-                      role="button"
-                      tabIndex={0}
                       $highlight={currentUserId && Number(entry.user_id) === Number(currentUserId)}
-                      onClick={() => loadLeaderboardDetails(entry)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          loadLeaderboardDetails(entry);
-                        }
-                      }}
-                      aria-label={`Punkteaufschlüsselung von ${entry.username} anzeigen`}
                     >
                       <LeaderboardRank>#{entry.rank}</LeaderboardRank>
                       <LeaderboardUserCell>
                         <span>
-                          <UserLink
-                            to={`/user/${entry.user_id}`}
-                            onClick={(event) => event.stopPropagation()}
-                          >
+                          <UserLink to={`/user/${entry.user_id}`}>
                             {entry.username}
                           </UserLink>
                         </span>
-                        <LeaderboardRowHint>Details anzeigen</LeaderboardRowHint>
                       </LeaderboardUserCell>
                       <strong>{entry.total_xp} XP</strong>
                     </LeaderboardRow>
@@ -396,6 +334,44 @@ const BirthdayRulesModal = ({
               >
                 {isLeaderboardExpanded ? 'Leaderboard einklappen' : 'Gesamtes Leaderboard anzeigen'}
               </LeaderboardToggle>
+
+              {isLoggedIn && (
+                <PersonalSummaryCard>
+                  <PersonalSummaryHeader>
+                    <div>
+                      <PersonalSummaryEyebrow>Deine Aufschlüsselung</PersonalSummaryEyebrow>
+                      <PersonalSummaryTitle>So hast du deine EP gesammelt</PersonalSummaryTitle>
+                    </div>
+                    <PersonalSummaryTotal>{safePoints} EP</PersonalSummaryTotal>
+                  </PersonalSummaryHeader>
+
+                  <PersonalSummaryStats>
+                    <PersonalSummaryStat>
+                      <span>Pflichtaktionen</span>
+                      <strong>{safeCompleted}/{mandatoryTotal}</strong>
+                    </PersonalSummaryStat>
+                    <PersonalSummaryStat>
+                      <span>Verdiente Kategorien</span>
+                      <strong>{personalBreakdownEntries.length}</strong>
+                    </PersonalSummaryStat>
+                  </PersonalSummaryStats>
+
+                  <PersonalSummaryList>
+                    {personalBreakdownEntries.map((entry) => (
+                      <PersonalSummaryItem key={entry.key}>
+                        <div>
+                          <strong>{entry.label}</strong>
+                          {entry.detailLabel && <PersonalSummaryMeta>{entry.detailLabel}</PersonalSummaryMeta>}
+                        </div>
+                        <PersonalSummaryPoints>+{entry.points} EP</PersonalSummaryPoints>
+                      </PersonalSummaryItem>
+                    ))}
+                    {personalBreakdownEntries.length === 0 && (
+                      <LeaderboardHint>Noch keine verdienten EP-Aktionen.</LeaderboardHint>
+                    )}
+                  </PersonalSummaryList>
+                </PersonalSummaryCard>
+              )}
             </>
           )}
         </LeaderboardSection>
@@ -479,67 +455,6 @@ const BirthdayRulesModal = ({
             <p>Bitte logge dich ein oder registriere dich, um teilzunehmen.</p>
             <LoginButton type="button" onClick={onLogin}>Login / Registrieren</LoginButton>
           </div>
-        )}
-
-        {activeLeaderboardEntry && (
-          <LeaderboardDetailBackdrop onClick={closeLeaderboardDetails}>
-            <LeaderboardDetailCard onClick={(event) => event.stopPropagation()}>
-              <LeaderboardDetailClose type="button" onClick={closeLeaderboardDetails} aria-label="Detailansicht schließen">
-                &times;
-              </LeaderboardDetailClose>
-              <LeaderboardDetailEyebrow>Punkteaufschlüsselung</LeaderboardDetailEyebrow>
-              <LeaderboardDetailTitle>
-                {activeLeaderboardEntry.username}
-              </LeaderboardDetailTitle>
-              <LeaderboardDetailSummary>
-                <span>Rang #{activeLeaderboardEntry.rank}</span>
-                <strong>{activeLeaderboardEntry.total_xp} XP</strong>
-              </LeaderboardDetailSummary>
-
-              {leaderboardDetailState.loading && (
-                <LeaderboardHint>Lade Detaildaten…</LeaderboardHint>
-              )}
-
-              {!leaderboardDetailState.loading && leaderboardDetailState.error && (
-                <LeaderboardHint>{leaderboardDetailState.error}</LeaderboardHint>
-              )}
-
-              {!leaderboardDetailState.loading && !leaderboardDetailState.error && leaderboardDetailState.data && (
-                <>
-                  <LeaderboardDetailStats>
-                    <LeaderboardDetailStat>
-                      <span>Pflichtaktionen</span>
-                      <strong>{leaderboardDetailState.data?.mandatory?.completed ?? 0}</strong>
-                    </LeaderboardDetailStat>
-                    <LeaderboardDetailStat>
-                      <span>Bonusaktionen</span>
-                      <strong>{activeLeaderboardEntry.bonus_completed ?? 0}</strong>
-                    </LeaderboardDetailStat>
-                    <LeaderboardDetailStat>
-                      <span>Verdiente Kategorien</span>
-                      <strong>{leaderboardDetailEntries.length}</strong>
-                    </LeaderboardDetailStat>
-                  </LeaderboardDetailStats>
-
-                  <LeaderboardDetailList>
-                    {leaderboardDetailEntries.map((entry) => (
-                      <LeaderboardDetailItem key={`${activeLeaderboardEntry.user_id}-${entry.key}`}>
-                        <div>
-                          <strong>{entry.label}</strong>
-                          {entry.detailLabel && <LeaderboardDetailMeta>{entry.detailLabel}</LeaderboardDetailMeta>}
-                        </div>
-                        <LeaderboardDetailPoints>+{entry.points} EP</LeaderboardDetailPoints>
-                      </LeaderboardDetailItem>
-                    ))}
-                  </LeaderboardDetailList>
-
-                  {leaderboardDetailEntries.length === 0 && (
-                    <LeaderboardHint>Noch keine verdienten EP-Aktionen.</LeaderboardHint>
-                  )}
-                </>
-              )}
-            </LeaderboardDetailCard>
-          </LeaderboardDetailBackdrop>
         )}
       </Overlay>
     </OverlayBackground>
@@ -707,27 +622,20 @@ const LeaderboardRow = styled.li`
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 7px 10px;
+  border-radius: 10px;
   background: ${(props) => (props.$highlight ? '#ffd27a' : '#ffffff')};
   color: #3a2a00;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   border: 1px solid ${(props) => (props.$highlight ? 'rgba(255, 149, 0, 0.35)' : 'rgba(112, 72, 24, 0.10)')};
-  box-shadow: 0 8px 18px rgba(88, 56, 16, 0.08);
-  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(88, 56, 16, 0.08);
   text-align: left;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 28px rgba(88, 56, 16, 0.16);
-    border-color: rgba(255, 149, 0, 0.42);
-    background: ${(props) => (props.$highlight ? '#ffd27a' : '#fff8ed')};
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(255, 181, 34, 0.45);
-    outline-offset: 2px;
+    box-shadow: 0 6px 16px rgba(88, 56, 16, 0.10);
+    border-color: rgba(255, 149, 0, 0.28);
+    background: ${(props) => (props.$highlight ? '#ffd27a' : '#fffaf1')};
   }
 `;
 
@@ -737,12 +645,7 @@ const LeaderboardRank = styled.span`
 
 const LeaderboardUserCell = styled.span`
   display: grid;
-  gap: 2px;
-`;
-
-const LeaderboardRowHint = styled.small`
-  color: #8a6a2e;
-  font-size: 0.72rem;
+  gap: 1px;
 `;
 
 const LeaderboardOwn = styled.div`
@@ -815,45 +718,23 @@ const UserLink = styled(Link)`
   color: inherit;
 `;
 
-const LeaderboardDetailBackdrop = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(21, 13, 3, 0.58);
-  border: none;
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-`;
-
-const LeaderboardDetailCard = styled.div`
-  position: relative;
-  width: min(560px, 100%);
-  max-height: min(78vh, 720px);
-  overflow-y: auto;
-  border: none;
-  border-radius: 20px;
-  padding: 22px 18px 18px;
+const PersonalSummaryCard = styled.div`
+  margin-top: 0.9rem;
+  padding: 14px 12px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff8eb 0%, #ffffff 100%);
+  border: 1px solid rgba(112, 72, 24, 0.12);
   text-align: left;
-  background: linear-gradient(180deg, #fff9ef 0%, #ffffff 100%);
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.28);
-  color: #2b1b00;
 `;
 
-const LeaderboardDetailClose = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  border: none;
-  background: transparent;
-  color: #8a6a2e;
-  font-size: 1.7rem;
-  line-height: 1;
-  cursor: pointer;
+const PersonalSummaryHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
 `;
 
-const LeaderboardDetailEyebrow = styled.div`
+const PersonalSummaryEyebrow = styled.div`
   color: #8a6a2e;
   font-weight: 700;
   text-transform: uppercase;
@@ -861,39 +742,33 @@ const LeaderboardDetailEyebrow = styled.div`
   font-size: 0.72rem;
 `;
 
-const LeaderboardDetailTitle = styled.h3`
+const PersonalSummaryTitle = styled.h3`
   margin: 0.25rem 0 0;
-  font-size: 1.45rem;
+  font-size: 1.05rem;
 `;
 
-const LeaderboardDetailSummary = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-top: 0.8rem;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #fff0cb;
-  font-weight: 700;
+const PersonalSummaryTotal = styled.div`
+  white-space: nowrap;
+  font-weight: 800;
+  color: #a24f00;
 `;
 
-const LeaderboardDetailStats = styled.div`
+const PersonalSummaryStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 1rem;
+  margin-top: 0.9rem;
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
   }
 `;
 
-const LeaderboardDetailStat = styled.div`
-  border-radius: 14px;
+const PersonalSummaryStat = styled.div`
+  border-radius: 12px;
   background: #fff;
   border: 1px solid rgba(112, 72, 24, 0.12);
-  padding: 12px;
+  padding: 10px 12px;
   display: grid;
   gap: 4px;
 
@@ -907,32 +782,32 @@ const LeaderboardDetailStat = styled.div`
   }
 `;
 
-const LeaderboardDetailList = styled.ul`
+const PersonalSummaryList = styled.ul`
   list-style: none;
   padding: 0;
-  margin: 1rem 0 0;
+  margin: 0.9rem 0 0;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 `;
 
-const LeaderboardDetailItem = styled.li`
+const PersonalSummaryItem = styled.li`
   display: flex;
   justify-content: space-between;
   gap: 14px;
   align-items: flex-start;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
   background: #fff;
   border: 1px solid rgba(112, 72, 24, 0.12);
 `;
 
-const LeaderboardDetailMeta = styled.div`
+const PersonalSummaryMeta = styled.div`
   margin-top: 4px;
   color: #7a6336;
   font-size: 0.82rem;
 `;
 
-const LeaderboardDetailPoints = styled.strong`
+const PersonalSummaryPoints = styled.strong`
   white-space: nowrap;
   color: #a24f00;
   font-size: 0.95rem;
