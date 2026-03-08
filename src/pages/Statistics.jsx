@@ -675,6 +675,9 @@ function Statistics() {
                               <Th>Preise</Th>
                               <Th>Routen</Th>
                               <Th>Eisdielen</Th>
+                            <Th>Awards</Th>
+                            <Th>Einladungen</Th>
+                          </tr>
                             </tr>
                           </thead>
                           <tbody>
@@ -693,11 +696,34 @@ function Statistics() {
                                   </UserInfo>
                                 </Td>
                                 <Td><strong>{entry.total_ep}</strong></Td>
-                                <Td>{(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}</Td>
-                                <Td>{entry.counts.reviews || 0}</Td>
-                                <Td>{entry.counts.price_reports || 0}</Td>
-                                <Td>{entry.counts.routes || 0}</Td>
-                                <Td>{entry.counts.shops || 0}</Td>
+                                <Td>
+                                  {(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}
+                                  <CellSubline>{entry.points.checkins || 0} EP</CellSubline>
+                                </Td>
+                                <Td>
+                                  {entry.counts.reviews || 0}
+                                  <CellSubline>{entry.points.reviews || 0} EP</CellSubline>
+                                </Td>
+                                <Td>
+                                  {entry.counts.price_reports || 0}
+                                  <CellSubline>{entry.points.price_reports || 0} EP</CellSubline>
+                                </Td>
+                                <Td>
+                                  {entry.counts.routes || 0}
+                                  <CellSubline>{entry.points.routes || 0} EP</CellSubline>
+                                </Td>
+                                <Td>
+                                  {entry.counts.shops || 0}
+                                  <CellSubline>{entry.points.shops || 0} EP</CellSubline>
+                                </Td>
+                                <Td>
+                                  {entry.points.awards || 0}
+                                  <CellSubline>{entry.counts.awards_ep || 0} EP</CellSubline>
+                                </Td>
+                                <Td>
+                                  {entry.points.invites || 0}
+                                  <CellSubline>{entry.counts.invites_ep || 0} EP</CellSubline>
+                                </Td>
                               </tr>
                             ))}
                           </tbody>
@@ -835,6 +861,13 @@ const RankingHeroMeta = styled.div`
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.8rem;
+`;
+
+const CellSubline = styled.div`
+  margin-top: 0.15rem;
+  color: rgba(47, 33, 0, 0.62);
+  font-size: 0.74rem;
+  line-height: 1.2;
 `;
 
 const SectionCard = styled.div`
