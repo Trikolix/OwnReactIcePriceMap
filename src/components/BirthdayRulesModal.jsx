@@ -68,6 +68,8 @@ const ACTION_DISPLAY_ORDER = [
   'photo_challenge_vote_ep',
 ];
 
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
 const MANDATORY_KEYS = [
   'checkin_with_photo',
   'group_checkin_with_other',
@@ -204,6 +206,12 @@ const BirthdayRulesModal = ({
   awardConfig = null,
 }) => {
   const [showAllActions, setShowAllActions] = useState(false);
+  const [activeLeaderboardEntry, setActiveLeaderboardEntry] = useState(null);
+  const [leaderboardDetailState, setLeaderboardDetailState] = useState({
+    loading: false,
+    error: null,
+    data: null,
+  });
 
   const safeCompleted = Math.max(0, Math.min(mandatoryCompleted, mandatoryTotal));
   const progressPercent = mandatoryTotal > 0 ? Math.round((safeCompleted / mandatoryTotal) * 100) : 0;
@@ -250,13 +258,60 @@ const BirthdayRulesModal = ({
   );
   const displayedActionEntries = showAllActions ? actionEntries : earnedActionEntries;
   const hasHiddenActions = actionEntries.length > earnedActionEntries.length;
-  const personalBreakdownEntries = useMemo(
-    () => earnedActionEntries.map((entry) => ({
+  const detailedActionEntries = useMemo(
+    () => displayedActionEntries.map((entry) => ({
       ...entry,
-      detailLabel: getDetailLabel(entry, counts),
+      detailLabel: getDetailLabel(entry, counts) || entry.hover || (entry.earned ? 'EP im Aktionszeitraum gesammelt' : 'Noch nicht erreicht'),
     })),
-    [counts, earnedActionEntries]
+    [counts, displayedActionEntries]
   );
+  const leaderboardDetailEntries = useMemo(() => {
+    const detailBreakdown = leaderboardDetailState.data?.points?.breakdown || {};
+    const entries = buildActionEntries(detailBreakdown).filter((entry) => entry.earned);
+    return entries.map((entry) => ({
+      ...entry,
+      detailLabel: getDetailLabel(entry, leaderboardDetailState.data?.counts || {}),
+    }));
+  }, [leaderboardDetailState.data]);
+
+  const loadLeaderboardDetails = async (entry) => {
+    setActiveLeaderboardEntry(entry);
+    setLeaderboardDetailState({
+      loading: true,
+      error: null,
+      data: null,
+    });
+
+    try {
+      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entry.user_id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      setLeaderboardDetailState({
+        loading: false,
+        error: data?.error || null,
+        data: data?.error ? null : data,
+      });
+    } catch (error) {
+      console.error('Fehler beim Laden der Birthday-Details:', error);
+      setLeaderboardDetailState({
+        loading: false,
+        error: 'Details konnten nicht geladen werden.',
+        data: null,
+      });
+    }
+  };
+
+  const closeLeaderboardDetails = () => {
+    setActiveLeaderboardEntry(null);
+    setLeaderboardDetailState({
+      loading: false,
+      error: null,
+      data: null,
+    });
+  };
 
   if (!open) {
     return null;
@@ -310,15 +365,29 @@ const BirthdayRulesModal = ({
                   {activeLeaderboard.map((entry) => (
                     <LeaderboardRow
                       key={`${entry.user_id}-${entry.rank}`}
+                      role="button"
+                      tabIndex={0}
                       $highlight={currentUserId && Number(entry.user_id) === Number(currentUserId)}
+                      onClick={() => loadLeaderboardDetails(entry)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          loadLeaderboardDetails(entry);
+                        }
+                      }}
+                      aria-label={`Punkteaufschlüsselung von ${entry.username} anzeigen`}
                     >
                       <LeaderboardRank>#{entry.rank}</LeaderboardRank>
                       <LeaderboardUserCell>
                         <span>
-                          <UserLink to={`/user/${entry.user_id}`}>
+                          <UserLink
+                            to={`/user/${entry.user_id}`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
                             {entry.username}
                           </UserLink>
                         </span>
+                        <LeaderboardRowHint>Details anzeigen</LeaderboardRowHint>
                       </LeaderboardUserCell>
                       <strong>{entry.total_xp} XP</strong>
                     </LeaderboardRow>
@@ -334,44 +403,6 @@ const BirthdayRulesModal = ({
               >
                 {isLeaderboardExpanded ? 'Leaderboard einklappen' : 'Gesamtes Leaderboard anzeigen'}
               </LeaderboardToggle>
-
-              {isLoggedIn && (
-                <PersonalSummaryCard>
-                  <PersonalSummaryHeader>
-                    <div>
-                      <PersonalSummaryEyebrow>Deine Aufschlüsselung</PersonalSummaryEyebrow>
-                      <PersonalSummaryTitle>So hast du deine EP gesammelt</PersonalSummaryTitle>
-                    </div>
-                    <PersonalSummaryTotal>{safePoints} EP</PersonalSummaryTotal>
-                  </PersonalSummaryHeader>
-
-                  <PersonalSummaryStats>
-                    <PersonalSummaryStat>
-                      <span>Pflichtaktionen</span>
-                      <strong>{safeCompleted}/{mandatoryTotal}</strong>
-                    </PersonalSummaryStat>
-                    <PersonalSummaryStat>
-                      <span>Verdiente Kategorien</span>
-                      <strong>{personalBreakdownEntries.length}</strong>
-                    </PersonalSummaryStat>
-                  </PersonalSummaryStats>
-
-                  <PersonalSummaryList>
-                    {personalBreakdownEntries.map((entry) => (
-                      <PersonalSummaryItem key={entry.key}>
-                        <div>
-                          <strong>{entry.label}</strong>
-                          {entry.detailLabel && <PersonalSummaryMeta>{entry.detailLabel}</PersonalSummaryMeta>}
-                        </div>
-                        <PersonalSummaryPoints>+{entry.points} EP</PersonalSummaryPoints>
-                      </PersonalSummaryItem>
-                    ))}
-                    {personalBreakdownEntries.length === 0 && (
-                      <LeaderboardHint>Noch keine verdienten EP-Aktionen.</LeaderboardHint>
-                    )}
-                  </PersonalSummaryList>
-                </PersonalSummaryCard>
-              )}
             </>
           )}
         </LeaderboardSection>
@@ -379,23 +410,26 @@ const BirthdayRulesModal = ({
         {/* EP-Aktionen & Aufschlüsselung vereinigt */}
         <ActionSummary>
           <ActionSummaryTitle>EP-Aktionen</ActionSummaryTitle>
-          <p style={{margin: '0 0 0.5rem', color: '#444', fontSize: '0.98rem'}}>Für diese Aktionen erhältst du EP. Fahre mit der Maus oder tippe auf eine Aktion für Details/Limits.</p>
+          <ActionSummaryIntro>
+            Für diese Aktionen erhältst du EP. Jede Karte zeigt dir direkt, wofür du Punkte bekommst oder was noch offen ist.
+          </ActionSummaryIntro>
           {hasHiddenActions && (
             <ActionToggleButton type="button" onClick={() => setShowAllActions((prev) => !prev)}>
               {showAllActions ? 'Nur bereits erhaltene EP-Aktionen' : 'Weitere mögliche EP-Aktionen anzeigen'}
             </ActionToggleButton>
           )}
           <ActionList>
-            {displayedActionEntries.map((entry) => {
+            {detailedActionEntries.map((entry) => {
               return (
                 <ActionItem
                   key={entry.key}
                   $done={entry.earned}
-                  {...(entry.hover ? { title: entry.hover || 'Siehe Aktionsbeschreibung' } : {})}
-                  style={!entry.earned ? { color: '#aaa', background: '#f5f5f5' } : {}}
                 >
-                  <span>{entry.label}</span>
-                  <ActionState>+{entry.points} EP</ActionState>
+                  <ActionTextBlock>
+                    <strong>{entry.label}</strong>
+                    {entry.detailLabel && <ActionMeta>{entry.detailLabel}</ActionMeta>}
+                  </ActionTextBlock>
+                  <ActionState $done={entry.earned}>+{entry.points} EP</ActionState>
                 </ActionItem>
               );
             })}
@@ -455,6 +489,67 @@ const BirthdayRulesModal = ({
             <p>Bitte logge dich ein oder registriere dich, um teilzunehmen.</p>
             <LoginButton type="button" onClick={onLogin}>Login / Registrieren</LoginButton>
           </div>
+        )}
+
+        {activeLeaderboardEntry && (
+          <LeaderboardDetailBackdrop onClick={closeLeaderboardDetails}>
+            <LeaderboardDetailCard onClick={(event) => event.stopPropagation()}>
+              <LeaderboardDetailClose type="button" onClick={closeLeaderboardDetails} aria-label="Detailansicht schließen">
+                &times;
+              </LeaderboardDetailClose>
+              <LeaderboardDetailEyebrow>Punkteaufschlüsselung</LeaderboardDetailEyebrow>
+              <LeaderboardDetailTitle>
+                {activeLeaderboardEntry.username}
+              </LeaderboardDetailTitle>
+              <LeaderboardDetailSummary>
+                <span>Rang #{activeLeaderboardEntry.rank}</span>
+                <strong>{activeLeaderboardEntry.total_xp} XP</strong>
+              </LeaderboardDetailSummary>
+
+              {leaderboardDetailState.loading && (
+                <LeaderboardHint>Lade Detaildaten…</LeaderboardHint>
+              )}
+
+              {!leaderboardDetailState.loading && leaderboardDetailState.error && (
+                <LeaderboardHint>{leaderboardDetailState.error}</LeaderboardHint>
+              )}
+
+              {!leaderboardDetailState.loading && !leaderboardDetailState.error && leaderboardDetailState.data && (
+                <>
+                  <LeaderboardDetailStats>
+                    <LeaderboardDetailStat>
+                      <span>Pflichtaktionen</span>
+                      <strong>{leaderboardDetailState.data?.mandatory?.completed ?? 0}</strong>
+                    </LeaderboardDetailStat>
+                    <LeaderboardDetailStat>
+                      <span>Bonusaktionen</span>
+                      <strong>{activeLeaderboardEntry.bonus_completed ?? 0}</strong>
+                    </LeaderboardDetailStat>
+                    <LeaderboardDetailStat>
+                      <span>Verdiente Kategorien</span>
+                      <strong>{leaderboardDetailEntries.length}</strong>
+                    </LeaderboardDetailStat>
+                  </LeaderboardDetailStats>
+
+                  <LeaderboardDetailList>
+                    {leaderboardDetailEntries.map((entry) => (
+                      <LeaderboardDetailItem key={`${activeLeaderboardEntry.user_id}-${entry.key}`}>
+                        <div>
+                          <strong>{entry.label}</strong>
+                          {entry.detailLabel && <LeaderboardDetailMeta>{entry.detailLabel}</LeaderboardDetailMeta>}
+                        </div>
+                        <LeaderboardDetailPoints>+{entry.points} EP</LeaderboardDetailPoints>
+                      </LeaderboardDetailItem>
+                    ))}
+                  </LeaderboardDetailList>
+
+                  {leaderboardDetailEntries.length === 0 && (
+                    <LeaderboardHint>Noch keine verdienten EP-Aktionen.</LeaderboardHint>
+                  )}
+                </>
+              )}
+            </LeaderboardDetailCard>
+          </LeaderboardDetailBackdrop>
         )}
       </Overlay>
     </OverlayBackground>
@@ -557,6 +652,13 @@ const ActionSummaryTitle = styled.p`
   font-weight: 700;
 `;
 
+const ActionSummaryIntro = styled.p`
+  margin: 0 0 0.7rem;
+  color: #5d4a24;
+  font-size: 0.92rem;
+  line-height: 1.4;
+`;
+
 const ActionToggleButton = styled.button`
   margin-bottom: 0.6rem;
   background: #ffffff;
@@ -574,23 +676,42 @@ const ActionList = styled.ul`
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 `;
 
 const ActionItem = styled.li`
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: ${(props) => (props.$done ? '#fff4db' : '#f5f5f5')};
-  color: ${(props) => (props.$done ? '#3a2a00' : '#777')};
-  font-size: 0.9rem;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: ${(props) => (props.$done ? '#fff8eb' : '#f6f6f6')};
+  border: 1px solid ${(props) => (props.$done ? 'rgba(224, 196, 138, 0.75)' : 'rgba(0, 0, 0, 0.06)')};
+  color: ${(props) => (props.$done ? '#3a2a00' : '#7a7a7a')};
+  text-align: left;
+`;
+
+const ActionTextBlock = styled.div`
+  display: grid;
+  gap: 4px;
+
+  strong {
+    font-size: 0.92rem;
+  }
+`;
+
+const ActionMeta = styled.div`
+  color: #7a6336;
+  font-size: 0.82rem;
+  line-height: 1.35;
 `;
 
 const ActionState = styled.strong`
-  font-size: 0.82rem;
+  white-space: nowrap;
+  color: ${(props) => (props.$done ? '#a24f00' : '#8a8a8a')};
+  font-size: 0.86rem;
+  padding-top: 1px;
 `;
 
 const LeaderboardSection = styled.div`
@@ -620,22 +741,29 @@ const LeaderboardRow = styled.li`
   display: grid;
   grid-template-columns: 48px 1fr auto;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 10px;
-  border-radius: 10px;
+  gap: 4px;
+  width: 94%;
+  padding: 2px 12px;
+  border-radius: 12px;
   background: ${(props) => (props.$highlight ? '#ffd27a' : '#ffffff')};
   color: #3a2a00;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   border: 1px solid ${(props) => (props.$highlight ? 'rgba(255, 149, 0, 0.35)' : 'rgba(112, 72, 24, 0.10)')};
-  box-shadow: 0 1px 4px rgba(88, 56, 16, 0.08);
+  box-shadow: 0 8px 18px rgba(88, 56, 16, 0.08);
+  cursor: pointer;
   text-align: left;
-  transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 
   &:hover {
-    box-shadow: 0 6px 16px rgba(88, 56, 16, 0.10);
-    border-color: rgba(255, 149, 0, 0.28);
-    background: ${(props) => (props.$highlight ? '#ffd27a' : '#fffaf1')};
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(88, 56, 16, 0.16);
+    border-color: rgba(255, 149, 0, 0.42);
+    background: ${(props) => (props.$highlight ? '#ffd27a' : '#fff8ed')};
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.45);
+    outline-offset: 2px;
   }
 `;
 
@@ -645,7 +773,12 @@ const LeaderboardRank = styled.span`
 
 const LeaderboardUserCell = styled.span`
   display: grid;
-  gap: 1px;
+  gap: 2px;
+`;
+
+const LeaderboardRowHint = styled.small`
+  color: #8a6a2e;
+  font-size: 0.72rem;
 `;
 
 const LeaderboardOwn = styled.div`
@@ -718,23 +851,45 @@ const UserLink = styled(Link)`
   color: inherit;
 `;
 
-const PersonalSummaryCard = styled.div`
-  margin-top: 0.9rem;
-  padding: 14px 12px 12px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fff8eb 0%, #ffffff 100%);
-  border: 1px solid rgba(112, 72, 24, 0.12);
-  text-align: left;
-`;
-
-const PersonalSummaryHeader = styled.div`
+const LeaderboardDetailBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(21, 13, 3, 0.58);
+  border: none;
+  padding: 18px;
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
 `;
 
-const PersonalSummaryEyebrow = styled.div`
+const LeaderboardDetailCard = styled.div`
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  overflow-y: auto;
+  border: none;
+  border-radius: 20px;
+  padding: 22px 18px 18px;
+  text-align: left;
+  background: linear-gradient(180deg, #fff9ef 0%, #ffffff 100%);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.28);
+  color: #2b1b00;
+`;
+
+const LeaderboardDetailClose = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: #8a6a2e;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+`;
+
+const LeaderboardDetailEyebrow = styled.div`
   color: #8a6a2e;
   font-weight: 700;
   text-transform: uppercase;
@@ -742,33 +897,39 @@ const PersonalSummaryEyebrow = styled.div`
   font-size: 0.72rem;
 `;
 
-const PersonalSummaryTitle = styled.h3`
+const LeaderboardDetailTitle = styled.h3`
   margin: 0.25rem 0 0;
-  font-size: 1.05rem;
+  font-size: 1.45rem;
 `;
 
-const PersonalSummaryTotal = styled.div`
-  white-space: nowrap;
-  font-weight: 800;
-  color: #a24f00;
+const LeaderboardDetailSummary = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 0.8rem;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff0cb;
+  font-weight: 700;
 `;
 
-const PersonalSummaryStats = styled.div`
+const LeaderboardDetailStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 0.9rem;
+  margin-top: 1rem;
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
   }
 `;
 
-const PersonalSummaryStat = styled.div`
-  border-radius: 12px;
+const LeaderboardDetailStat = styled.div`
+  border-radius: 14px;
   background: #fff;
   border: 1px solid rgba(112, 72, 24, 0.12);
-  padding: 10px 12px;
+  padding: 12px;
   display: grid;
   gap: 4px;
 
@@ -782,32 +943,32 @@ const PersonalSummaryStat = styled.div`
   }
 `;
 
-const PersonalSummaryList = styled.ul`
+const LeaderboardDetailList = styled.ul`
   list-style: none;
   padding: 0;
-  margin: 0.9rem 0 0;
+  margin: 1rem 0 0;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 `;
 
-const PersonalSummaryItem = styled.li`
+const LeaderboardDetailItem = styled.li`
   display: flex;
   justify-content: space-between;
   gap: 14px;
   align-items: flex-start;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: #fff;
   border: 1px solid rgba(112, 72, 24, 0.12);
 `;
 
-const PersonalSummaryMeta = styled.div`
+const LeaderboardDetailMeta = styled.div`
   margin-top: 4px;
   color: #7a6336;
   font-size: 0.82rem;
 `;
 
-const PersonalSummaryPoints = styled.strong`
+const LeaderboardDetailPoints = styled.strong`
   white-space: nowrap;
   color: #a24f00;
   font-size: 0.95rem;
