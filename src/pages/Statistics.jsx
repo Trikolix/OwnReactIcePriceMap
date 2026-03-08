@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { Link, useSearchParams } from 'react-router-dom';
 import UserAvatar from '../components/UserAvatar';
+import { useUser } from '../context/UserContext';
 
 const getNumericPrice = (node) => {
   if (!node) {
@@ -50,6 +51,7 @@ const sortLaender = (laender = []) =>
 
 
 function Statistics() {
+  const { userId } = useUser();
 
   const [data, setData] = useState({
     pricePerLandkreis: [],
@@ -70,6 +72,9 @@ function Statistics() {
 
   const [expandedFlavour, setExpandedFlavour] = useState(null);
   const [flavourDetails, setFlavourDetails] = useState({});
+  const [rankingPeriod, setRankingPeriod] = useState('week');
+  const [rankingsData, setRankingsData] = useState(null);
+  const [rankingsLoading, setRankingsLoading] = useState(false);
 
   // Tab wechseln und URL aktualisieren
   const changeTab = (tab) => {
@@ -110,6 +115,43 @@ function Statistics() {
   useEffect(() => {
     fetchDashboard();
   }, [apiUrl]);
+
+  useEffect(() => {
+    if (activeTab !== 'rankings') {
+      return;
+    }
+
+    let isCancelled = false;
+    const userParam = userId ? `&user_id=${userId}` : '';
+
+    const loadRankings = async () => {
+      setRankingsLoading(true);
+      try {
+        const response = await fetch(`${apiUrl}/api/period_leaderboard.php?period=${rankingPeriod}${userParam}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const json = await response.json();
+        if (!isCancelled) {
+          setRankingsData(json);
+        }
+      } catch (err) {
+        console.error('Fehler beim Laden der Zeitraum-Rankings:', err);
+        if (!isCancelled) {
+          setRankingsData(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setRankingsLoading(false);
+        }
+      }
+    };
+
+    loadRankings();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTab, apiUrl, rankingPeriod, userId]);
 
   const loadFlavourDetails = async (sortenname, iceType) => {
     const key = `${sortenname}__${iceType}`;
@@ -246,6 +288,13 @@ function Statistics() {
     }));
   };
 
+  const formatCountdown = (countdown) => {
+    const seconds = Number(countdown?.seconds_until_end || 0);
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    return `${days} Tage ${hours} Std.`;
+  };
+
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -291,6 +340,12 @@ function Statistics() {
               onClick={() => changeTab('priceHierarchy')}
             >
               Preisübersicht
+            </TabButton>
+            <TabButton
+              $active={activeTab === 'rankings'}
+              onClick={() => changeTab('rankings')}
+            >
+              Rankings
             </TabButton>
           </TabContainer>
 
@@ -355,10 +410,10 @@ function Statistics() {
                                 {landHasChildren ? (
                                   <ExpandIndicator $expanded={landExpanded}>{landExpanded ? '▾' : '▸'}</ExpandIndicator>
                                 ) : <LeafSpacer />}
-                                <RegionTextGroup>
-                                  <RegionName>{land.name}</RegionName>
-                                  <RegionMeta>{getHierarchyLabel('land')}</RegionMeta>
-                                </RegionTextGroup>
+                                  <RegionTextGroup>
+                                    <RegionName>{land.name}</RegionName>
+                                    <RegionMeta>{getHierarchyLabel('land')}</RegionMeta>
+                                  </RegionTextGroup>
                               </NameWrapper>
                             </PriceNameCell>
                             <PriceValueCell>
@@ -396,7 +451,9 @@ function Statistics() {
                                         <ExpandIndicator $expanded={bundeslandExpanded}>{bundeslandExpanded ? '▾' : '▸'}</ExpandIndicator>
                                       ) : <LeafSpacer />}
                                       <RegionTextGroup>
-                                        <RegionName>{bundesland.name}</RegionName>
+                                        <RegionName as={Link} to={`/region/bundesland/${bundesland.id}`} onClick={(event) => event.stopPropagation()}>
+                                          {bundesland.name}
+                                        </RegionName>
                                         <RegionMeta>{getHierarchyLabel('bundesland')}</RegionMeta>
                                       </RegionTextGroup>
                                     </NameWrapper>
@@ -419,7 +476,9 @@ function Statistics() {
                                           <Indent level={2} />
                                           <LeafSpacer />
                                           <RegionTextGroup>
-                                            <RegionName>{landkreis.name}</RegionName>
+                                            <RegionName as={Link} to={`/region/landkreis/${landkreis.id}`}>
+                                              {landkreis.name}
+                                            </RegionName>
                                             <RegionMeta>{getHierarchyLabel('landkreis')}</RegionMeta>
                                           </RegionTextGroup>
                                         </NameWrapper>
@@ -547,6 +606,95 @@ function Statistics() {
               </TableScrollArea>
             </SectionCard>
             )}
+
+            {activeTab === 'rankings' && (
+              <SectionCard>
+                <SectionHeaderRow>
+                  <SectionTitle style={{ marginBottom: 0 }}>Wochen- und Monatsranglisten</SectionTitle>
+                  <PeriodToggle>
+                    <ToggleButton
+                      type="button"
+                      $active={rankingPeriod === 'week'}
+                      onClick={() => setRankingPeriod('week')}
+                    >
+                      Woche
+                    </ToggleButton>
+                    <ToggleButton
+                      type="button"
+                      $active={rankingPeriod === 'month'}
+                      onClick={() => setRankingPeriod('month')}
+                    >
+                      Monat
+                    </ToggleButton>
+                  </PeriodToggle>
+                </SectionHeaderRow>
+
+                {rankingsLoading ? (
+                  <EmptyText>Lade Rankings…</EmptyText>
+                ) : (
+                  <>
+                    {rankingsData?.current_user && (
+                      <RankingHeroCard>
+                        <RankingHeroMain>
+                          <span>Dein aktueller Rang</span>
+                          <strong>#{rankingsData.current_user.rank}</strong>
+                          <small>{rankingsData.current_user.total_ep} EP im Zeitraum</small>
+                        </RankingHeroMain>
+                        <RankingHeroMeta>
+                          <MetaPill>Restzeit: {formatCountdown(rankingsData.countdown)}</MetaPill>
+                          {rankingsData.progress_to_next_rank && (
+                            <MetaPill $accent>
+                              Noch {rankingsData.progress_to_next_rank.missing_ep} EP bis Rang #{rankingsData.progress_to_next_rank.target_rank}
+                            </MetaPill>
+                          )}
+                        </RankingHeroMeta>
+                      </RankingHeroCard>
+                    )}
+
+                    <TableScrollArea>
+                      <Table $stickyFirstColumn>
+                        <thead>
+                          <tr>
+                            <Th>Rang</Th>
+                            <Th>Nutzer</Th>
+                            <Th>EP</Th>
+                            <Th>Check-ins</Th>
+                            <Th>Bewertungen</Th>
+                            <Th>Preise</Th>
+                            <Th>Routen</Th>
+                            <Th>Eisdielen</Th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(rankingsData?.leaderboard || []).map((entry) => (
+                            <tr key={`period-${entry.user_id}`}>
+                              <Td><strong>#{entry.rank}</strong></Td>
+                              <Td>
+                                <UserInfo>
+                                  <UserAvatar
+                                    size={34}
+                                    userId={entry.user_id}
+                                    name={entry.username}
+                                    avatarUrl={entry.avatar_url}
+                                  />
+                                  <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
+                                </UserInfo>
+                              </Td>
+                              <Td><strong>{entry.total_ep}</strong></Td>
+                              <Td>{(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}</Td>
+                              <Td>{entry.counts.reviews || 0}</Td>
+                              <Td>{entry.counts.price_reports || 0}</Td>
+                              <Td>{entry.counts.routes || 0}</Td>
+                              <Td>{entry.counts.shops || 0}</Td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </TableScrollArea>
+                  </>
+                )}
+              </SectionCard>
+            )}
           </TabContent>
         </Container>
       </div>
@@ -590,6 +738,66 @@ const HeroSubtitle = styled.p`
   text-align: center;
   color: rgba(47, 33, 0, 0.68);
   font-size: 0.95rem;
+`;
+
+const SectionHeaderRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0 1rem 0.9rem;
+  flex-wrap: wrap;
+`;
+
+const PeriodToggle = styled.div`
+  display: inline-flex;
+  background: rgba(47, 33, 0, 0.05);
+  border-radius: 999px;
+  padding: 4px;
+`;
+
+const ToggleButton = styled.button`
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  background: ${({ $active }) => ($active ? '#ffb522' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#2f2100' : '#6b5327')};
+  font-weight: 800;
+  cursor: pointer;
+`;
+
+const RankingHeroCard = styled.div`
+  margin: 0 1rem 1rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,181,34,0.16), rgba(255,122,24,0.10));
+  border: 1px solid rgba(255, 181, 34, 0.25);
+`;
+
+const RankingHeroMain = styled.div`
+  display: grid;
+  gap: 0.2rem;
+
+  span {
+    color: #6b5327;
+    font-weight: 700;
+  }
+
+  strong {
+    font-size: 1.8rem;
+    color: #2f2100;
+  }
+
+  small {
+    color: #6b5327;
+  }
+`;
+
+const RankingHeroMeta = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
 `;
 
 const SectionCard = styled.div`
@@ -985,6 +1193,7 @@ const RegionName = styled.span`
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-decoration: none;
 `;
 
 const RegionTextGroup = styled.span`

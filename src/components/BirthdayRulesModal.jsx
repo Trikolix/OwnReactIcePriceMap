@@ -177,6 +177,22 @@ const getDetailLabel = (entry, counts = {}) => {
   }
 };
 
+const getTrendDisplay = (rankChange, rankDelta) => {
+  if (rankChange === 'up') {
+    return { symbol: '↑', label: `${rankDelta || 1}`, tone: 'up' };
+  }
+  if (rankChange === 'down') {
+    return { symbol: '↓', label: `${rankDelta || 1}`, tone: 'down' };
+  }
+  if (rankChange === 'same') {
+    return { symbol: '•', label: '', tone: 'same' };
+  }
+  if (rankChange === 'new') {
+    return { symbol: 'Neu', label: '', tone: 'new' };
+  }
+  return null;
+};
+
 const BirthdayRulesModal = ({
   open,
   onClose,
@@ -389,7 +405,17 @@ const BirthdayRulesModal = ({
                         </span>
                         <LeaderboardRowHint>Details anzeigen</LeaderboardRowHint>
                       </LeaderboardUserCell>
-                      <strong>{entry.total_xp} XP</strong>
+                      <LeaderboardRowMeta>
+                        {getTrendDisplay(entry.rank_change, entry.rank_delta) && (
+                          <RankTrendBadge $tone={getTrendDisplay(entry.rank_change, entry.rank_delta).tone}>
+                            <span>{getTrendDisplay(entry.rank_change, entry.rank_delta).symbol}</span>
+                            {getTrendDisplay(entry.rank_change, entry.rank_delta).label && (
+                              <small>{getTrendDisplay(entry.rank_change, entry.rank_delta).label}</small>
+                            )}
+                          </RankTrendBadge>
+                        )}
+                        <strong>{entry.total_xp} XP</strong>
+                      </LeaderboardRowMeta>
                     </LeaderboardRow>
                   ))}
                 </LeaderboardList>
@@ -516,21 +542,6 @@ const BirthdayRulesModal = ({
 
               {!leaderboardDetailState.loading && !leaderboardDetailState.error && leaderboardDetailState.data && (
                 <>
-                  <LeaderboardDetailStats>
-                    <LeaderboardDetailStat>
-                      <span>Pflichtaktionen</span>
-                      <strong>{leaderboardDetailState.data?.mandatory?.completed ?? 0}</strong>
-                    </LeaderboardDetailStat>
-                    <LeaderboardDetailStat>
-                      <span>Bonusaktionen</span>
-                      <strong>{activeLeaderboardEntry.bonus_completed ?? 0}</strong>
-                    </LeaderboardDetailStat>
-                    <LeaderboardDetailStat>
-                      <span>Verdiente Kategorien</span>
-                      <strong>{leaderboardDetailEntries.length}</strong>
-                    </LeaderboardDetailStat>
-                  </LeaderboardDetailStats>
-
                   <LeaderboardDetailList>
                     {leaderboardDetailEntries.map((entry) => (
                       <LeaderboardDetailItem key={`${activeLeaderboardEntry.user_id}-${entry.key}`}>
@@ -776,9 +787,44 @@ const LeaderboardUserCell = styled.span`
   gap: 2px;
 `;
 
+const LeaderboardRowMeta = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
 const LeaderboardRowHint = styled.small`
   color: #8a6a2e;
   font-size: 0.72rem;
+`;
+
+const RankTrendBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 34px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  background: ${({ $tone }) => {
+    if ($tone === 'up') return 'rgba(15, 124, 47, 0.12)';
+    if ($tone === 'down') return 'rgba(191, 38, 0, 0.12)';
+    if ($tone === 'new') return 'rgba(255, 181, 34, 0.18)';
+    return 'rgba(47, 33, 0, 0.08)';
+  }};
+  color: ${({ $tone }) => {
+    if ($tone === 'up') return '#0f7c2f';
+    if ($tone === 'down') return '#bf2600';
+    if ($tone === 'new') return '#8a5a00';
+    return '#6f5b3a';
+  }};
+
+  small {
+    font-size: 0.7rem;
+  }
 `;
 
 const LeaderboardOwn = styled.div`
@@ -912,35 +958,6 @@ const LeaderboardDetailSummary = styled.div`
   border-radius: 14px;
   background: #fff0cb;
   font-weight: 700;
-`;
-
-const LeaderboardDetailStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 1rem;
-
-  @media (max-width: 560px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const LeaderboardDetailStat = styled.div`
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid rgba(112, 72, 24, 0.12);
-  padding: 12px;
-  display: grid;
-  gap: 4px;
-
-  span {
-    color: #7a6336;
-    font-size: 0.8rem;
-  }
-
-  strong {
-    font-size: 1.15rem;
-  }
 `;
 
 const LeaderboardDetailList = styled.ul`
