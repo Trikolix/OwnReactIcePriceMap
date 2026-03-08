@@ -4,7 +4,7 @@ import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
 import { X } from 'lucide-react';
 import { SubmitButton as SharedSubmitButton } from './styles/SharedStyles';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Rating from './components/Rating';
 import { useUser } from './context/UserContext';
 import ReviewCard from './components/ReviewCard';
@@ -146,8 +146,20 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
             <HeaderSubline>{shopData.eisdiele.adresse || 'Adresse nicht hinterlegt'}</HeaderSubline>
             <HeaderMeta>
               {shopData.eisdiele.land && <MetaPill>{shopData.eisdiele.land}</MetaPill>}
-              {shopData.eisdiele.bundesland && <MetaPill>{shopData.eisdiele.bundesland}</MetaPill>}
-              {shopData.eisdiele.landkreis && <MetaPill>{shopData.eisdiele.landkreis}</MetaPill>}
+              {shopData.eisdiele.bundesland && shopData.eisdiele.bundesland_id ? (
+                <MetaPill as={Link} to={`/region/bundesland/${shopData.eisdiele.bundesland_id}`}>
+                  {shopData.eisdiele.bundesland}
+                </MetaPill>
+              ) : (
+                shopData.eisdiele.bundesland && <MetaPill>{shopData.eisdiele.bundesland}</MetaPill>
+              )}
+              {shopData.eisdiele.landkreis && shopData.eisdiele.landkreis_id ? (
+                <MetaPill as={Link} to={`/region/landkreis/${shopData.eisdiele.landkreis_id}`}>
+                  {shopData.eisdiele.landkreis}
+                </MetaPill>
+              ) : (
+                shopData.eisdiele.landkreis && <MetaPill>{shopData.eisdiele.landkreis}</MetaPill>
+              )}
             </HeaderMeta>
 
           </HeaderMain>
@@ -785,6 +797,12 @@ const MetaPill = styled.span`
   color: #5b4520;
   font-size: 0.78rem;
   font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.14);
+    color: #2f2100;
+  }
 `;
 
 const IceShopHeader = styled.h2`
