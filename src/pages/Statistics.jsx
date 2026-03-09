@@ -675,14 +675,13 @@ function Statistics() {
                               <Th>Preise</Th>
                               <Th>Routen</Th>
                               <Th>Eisdielen</Th>
-                            <Th>Awards</Th>
-                            <Th>Einladungen</Th>
-                          </tr>
+                              <Th>Awards</Th>
+                              <Th>Einladungen</Th>
                             </tr>
                           </thead>
                           <tbody>
                             {(rankingsData?.leaderboard || []).map((entry) => (
-                              <tr key={`period-${entry.user_id}`}>
+                              <RankingTableRow key={`period-${entry.user_id}`} $highlighted={Number(userId) === Number(entry.user_id)}>
                                 <Td><strong>#{entry.rank}</strong></Td>
                                 <Td>
                                   <UserInfo>
@@ -724,7 +723,7 @@ function Statistics() {
                                   {entry.points.invites || 0}
                                   <CellSubline>{entry.counts.invites_ep || 0} EP</CellSubline>
                                 </Td>
-                              </tr>
+                              </RankingTableRow>
                             ))}
                           </tbody>
                         </Table>
@@ -1097,6 +1096,28 @@ const Td = styled.td`
   color: #2f2100;
   font-size: 0.92rem;
   vertical-align: top;
+`;
+
+const RankingTableRow = styled.tr`
+  td {
+    background: ${({ $highlighted }) => ($highlighted ? 'rgba(255, 181, 34, 0.18)' : 'rgba(255, 255, 255, 0.97)')};
+    transition: background-color 0.18s ease;
+  }
+
+  td:first-child {
+    background: ${({ $highlighted }) => ($highlighted ? 'rgba(255, 181, 34, 0.24)' : 'rgba(255, 255, 255, 0.97)')};
+  }
+
+  &:hover td {
+    background: ${({ $highlighted }) => ($highlighted ? 'rgba(255, 181, 34, 0.24)' : 'rgba(255, 248, 230, 0.82)')};
+  }
+
+  ${({ $highlighted }) => $highlighted && `
+    td {
+      color: #6f3c00;
+      font-weight: 700;
+    }
+  `}
 `;
 
 const EmptyStateCell = styled(Td)`
