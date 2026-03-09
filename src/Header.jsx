@@ -512,7 +512,7 @@ const Header = ({ refreshShops }) => {
 
   return (
     <>
-      <HeaderContainer>
+      <HeaderContainer $menuOpen={menuOpen}>
         <PromoIconsContainer>
           <GewinnspielIcon onClick={() => {
             if (specialTime === 'birthday') {
@@ -834,7 +834,7 @@ const HeaderContainer = styled.header`
   padding: 10px 16px;
   background-color: #ffb522;
   position: relative;
-  z-index: 1600;
+  z-index: ${({ $menuOpen }) => ($menuOpen ? 1600 : 1200)};
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 
   > * {
@@ -1085,7 +1085,7 @@ const BurgerMenu = styled.button`
 
 const MenuTriggerWrap = styled.div`
   position: relative;
-  z-index: 1602;
+  z-index: 2;
 `;
 
 const Menu = styled.nav`
@@ -1103,7 +1103,7 @@ const Menu = styled.nav`
   border-radius: 16px;
   border: 1px solid rgba(47, 33, 0, 0.12);
   box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
-  z-index: 1601;
+  z-index: 3;
   color: #2f2100;
 
   @media (max-width: 480px) {
