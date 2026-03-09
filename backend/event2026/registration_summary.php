@@ -58,12 +58,15 @@ try {
     $slotsStmt = $pdo->prepare("SELECT
             s.id,
             s.full_name,
+            s.route_key,
             s.distance_km,
             s.license_status,
             s.pace_group,
             s.public_name_consent,
             s.jersey_interest,
+            s.clothing_interest,
             s.jersey_size,
+            s.bib_size,
             l.version AS legal_version
         FROM event2026_participant_slots s
         INNER JOIN event2026_legal_versions l ON l.id = s.legal_version_id
@@ -93,12 +96,17 @@ try {
             return [
                 'id' => (int) $row['id'],
                 'full_name' => (string) $row['full_name'],
+                'route_key' => event2026_normalize_route_key($row['route_key'] ?? ''),
+                'route_name' => event2026_route_label($row['route_key'] ?? ''),
                 'distance_km' => (int) $row['distance_km'],
                 'license_status' => (string) $row['license_status'],
                 'pace_group' => (string) $row['pace_group'],
                 'public_name_consent' => (int) $row['public_name_consent'],
                 'jersey_interest' => (int) $row['jersey_interest'],
+                'clothing_interest' => event2026_normalize_clothing_interest($row['clothing_interest'] ?? ''),
+                'clothing_interest_label' => event2026_clothing_interest_label($row['clothing_interest'] ?? ''),
                 'jersey_size' => $row['jersey_size'],
+                'bib_size' => $row['bib_size'],
                 'legal_version' => (string) $row['legal_version'],
             ];
         }, $slots),

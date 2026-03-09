@@ -31,12 +31,15 @@ try {
             s.user_id,
             s.full_name,
             s.email,
+            s.route_key,
             s.distance_km,
             s.pace_group,
             s.women_wave_opt_in,
             s.public_name_consent,
             s.jersey_interest,
+            s.clothing_interest,
             s.jersey_size,
+            s.bib_size,
             s.license_status,
             s.legal_accepted_at,
             l.version AS legal_version,
@@ -72,8 +75,8 @@ try {
     if (!$ownSlot && !empty($slots)) {
         $ownSlot = $slots[0];
     }
-    $selectedDistance = (int) ($ownSlot['distance_km'] ?? 140);
-    $selectedDistance = max(140, $selectedDistance);
+    $selectedRouteKey = event2026_normalize_route_key($ownSlot['route_key'] ?? '');
+    $selectedDistance = (int) ($ownSlot['distance_km'] ?? event2026_route_distance($selectedRouteKey));
 
     $checkpointStatsStmt = $pdo->prepare("SELECT
             c.id,
@@ -82,24 +85,26 @@ try {
             c.order_index,
             c.is_mandatory,
             c.min_distance_km,
+            c.route_keys_csv,
             CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS passed,
             p.passed_at,
             p.source,
-            p.slot_id
+            p.slot_id,
+            p.checkin_id
         FROM event2026_checkpoints c
         LEFT JOIN event2026_checkpoint_passages p
             ON p.checkpoint_id = c.id
             AND p.event_id = c.event_id
             AND p.user_id = :user_id
         WHERE c.event_id = :event_id
-          AND c.min_distance_km <= :selected_distance
         ORDER BY c.order_index ASC, c.id ASC");
     $checkpointStatsStmt->execute([
         ':event_id' => $eventId,
         ':user_id' => $auth['user_id'],
-        ':selected_distance' => $selectedDistance,
     ]);
-    $checkpoints = $checkpointStatsStmt->fetchAll(PDO::FETCH_ASSOC);
+    $checkpoints = array_values(array_filter($checkpointStatsStmt->fetchAll(PDO::FETCH_ASSOC), static function (array $checkpoint) use ($selectedRouteKey): bool {
+        return event2026_route_applies_to_checkpoint($selectedRouteKey, (string) ($checkpoint['route_keys_csv'] ?? ''));
+    }));
 
     $mandatoryCount = 0;
     $mandatoryPassed = 0;
@@ -137,6 +142,7 @@ try {
             'event_date' => $event['event_date'],
             'status' => $event['status'],
         ],
+        'route_catalog' => array_values(event2026_route_catalog()),
         'registration' => $registration ?: null,
         'payment' => $registration ? [
             'method' => $registration['payment_method'] ?: null,
@@ -147,14 +153,41 @@ try {
         'payment_instruction' => $registration
             ? 'Bitte per PayPal Freunde oder Überweisung zahlen und den Referenzcode im Verwendungszweck angeben. Nach Zahlung wird dein Status manuell bestätigt.'
             : null,
-        'slots' => $slots,
+        'slots' => array_map(static function (array $slot): array {
+            $routeKey = event2026_normalize_route_key($slot['route_key'] ?? '');
+            $slot['route_key'] = $routeKey;
+            $slot['route_name'] = event2026_route_label($routeKey);
+            $slot['route_type'] = event2026_route_definition($routeKey)['route_type'];
+            $slot['clothing_interest'] = event2026_normalize_clothing_interest($slot['clothing_interest'] ?? '');
+            $slot['clothing_interest_label'] = event2026_clothing_interest_label($slot['clothing_interest']);
+            return $slot;
+        }, $slots),
         'invites' => $inviteStatus,
-        'checkpoints' => $checkpoints,
+        'checkpoints' => array_map(static function (array $checkpoint): array {
+            $routeKeys = event2026_checkpoint_route_keys((string) ($checkpoint['route_keys_csv'] ?? ''));
+            return [
+                'id' => (int) $checkpoint['id'],
+                'name' => (string) $checkpoint['name'],
+                'shop_id' => $checkpoint['shop_id'] !== null ? (int) $checkpoint['shop_id'] : null,
+                'order_index' => (int) $checkpoint['order_index'],
+                'is_mandatory' => (int) $checkpoint['is_mandatory'],
+                'min_distance_km' => (int) $checkpoint['min_distance_km'],
+                'route_keys' => $routeKeys,
+                'route_labels' => array_map('event2026_route_label', $routeKeys),
+                'passed' => (int) $checkpoint['passed'],
+                'passed_at' => $checkpoint['passed_at'],
+                'source' => $checkpoint['source'],
+                'slot_id' => $checkpoint['slot_id'] !== null ? (int) $checkpoint['slot_id'] : null,
+                'checkin_id' => $checkpoint['checkin_id'] !== null ? (int) $checkpoint['checkin_id'] : null,
+            ];
+        }, $checkpoints),
         'progress' => [
             'mandatory_total' => $mandatoryCount,
             'mandatory_passed' => $mandatoryPassed,
             'is_finisher' => $mandatoryCount > 0 && $mandatoryCount === $mandatoryPassed,
         ],
+        'starter_guide_assets' => event2026_starter_guide_assets(),
+        'change_request_contact' => event2026_starter_guide_assets()['route_change_contact'],
     ]);
 } catch (Throwable $e) {
     if (http_response_code() < 400) {

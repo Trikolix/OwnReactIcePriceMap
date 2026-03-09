@@ -34,9 +34,11 @@ try {
 
     $stmt = $pdo->prepare("SELECT
             s.full_name AS user_display_name,
+            s.route_key,
             p.passed_at AS checkin_time,
             p.source,
-            s.distance_km AS distance
+            s.distance_km AS distance,
+            p.checkin_id
         FROM event2026_checkpoint_passages p
         INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
@@ -54,7 +56,18 @@ try {
 
     echo json_encode([
         'status' => 'success',
-        'items' => $rows,
+        'items' => array_map(static function (array $row): array {
+            $routeKey = event2026_normalize_route_key($row['route_key'] ?? '');
+            return [
+                'user_display_name' => $row['user_display_name'],
+                'route_key' => $routeKey,
+                'route_label' => event2026_route_label($routeKey),
+                'checkin_time' => $row['checkin_time'],
+                'source' => $row['source'],
+                'distance' => (int) $row['distance'],
+                'checkin_id' => $row['checkin_id'] !== null ? (int) $row['checkin_id'] : null,
+            ];
+        }, $rows),
         'pagination' => [
             'page' => $page,
             'page_size' => $pageSize,

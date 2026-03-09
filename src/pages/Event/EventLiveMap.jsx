@@ -6,6 +6,7 @@ import L from "leaflet";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
+import { getRouteLabel } from "./eventConfig";
 
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -51,6 +52,18 @@ const Modal = styled.div`
   background: #fffdfa;
   border-radius: 12px;
   padding: 1rem;
+`;
+
+const RouteBadge = styled.span`
+  display: inline-block;
+  margin-right: 0.4rem;
+  margin-bottom: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #fff3c2;
+  color: #8a5700;
+  font-weight: 700;
+  font-size: 0.8rem;
 `;
 
 export default function EventLiveMap() {
@@ -127,7 +140,7 @@ export default function EventLiveMap() {
         <Card>
           <h1 style={{ marginTop: 0 }}>Live-Checkpoint-Karte</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
-            Öffentliche Übersicht der Checkpoints mit Teilnehmerzahlen und Check-in-Zeiten.
+            Öffentliche Übersicht der Checkpoints mit Teilnehmerzahlen und Check-in-Zeiten. Nicht jeder Checkpoint gehört zu jeder Route.
           </p>
         </Card>
 
@@ -143,6 +156,11 @@ export default function EventLiveMap() {
                   <Popup>
                     <strong>{item.name}</strong>
                     <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
+                    <div style={{ marginTop: 6 }}>
+                      {(item.route_labels || []).map((label) => (
+                        <RouteBadge key={label}>{label}</RouteBadge>
+                      ))}
+                    </div>
                     <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
                   </Popup>
                 </Marker>
@@ -156,6 +174,11 @@ export default function EventLiveMap() {
         <ModalOverlay onClick={() => setSelected(null)}>
           <Modal onClick={(e) => e.stopPropagation()}>
             <h2 style={{ marginTop: 0 }}>{selected.name}</h2>
+            <div style={{ marginBottom: 10 }}>
+              {(selected.route_labels || []).map((label) => (
+                <RouteBadge key={label}>{label}</RouteBadge>
+              ))}
+            </div>
             {detailsLoading ? (
               <p>Lade Details…</p>
             ) : (
@@ -164,6 +187,7 @@ export default function EventLiveMap() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Name</th>
+                      <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Route</th>
                       <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Zeit</th>
                       <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Quelle</th>
                       <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Distanz</th>
@@ -173,6 +197,7 @@ export default function EventLiveMap() {
                     {details.map((row, idx) => (
                       <tr key={`${row.user_display_name}-${row.checkin_time}-${idx}`}>
                         <td style={{ padding: 6 }}>{row.user_display_name}</td>
+                        <td style={{ padding: 6 }}>{row.route_label || getRouteLabel(row.route_key)}</td>
                         <td style={{ padding: 6 }}>{row.checkin_time ? new Date(row.checkin_time).toLocaleString("de-DE") : "-"}</td>
                         <td style={{ padding: 6 }}>{row.source}</td>
                         <td style={{ padding: 6 }}>{row.distance} km</td>

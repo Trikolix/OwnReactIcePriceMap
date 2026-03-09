@@ -55,12 +55,15 @@ function event2026_ensure_schema(PDO $pdo): void
             user_id INT DEFAULT NULL,
             full_name VARCHAR(255) NOT NULL,
             email VARCHAR(255) NOT NULL,
+            route_key VARCHAR(32) NOT NULL DEFAULT 'classic_3',
             distance_km INT NOT NULL,
             pace_group VARCHAR(32) NOT NULL,
             women_wave_opt_in TINYINT(1) NOT NULL DEFAULT 0,
             public_name_consent TINYINT(1) NOT NULL DEFAULT 1,
             jersey_interest TINYINT(1) NOT NULL DEFAULT 0,
+            clothing_interest VARCHAR(32) NOT NULL DEFAULT 'none',
             jersey_size VARCHAR(10) DEFAULT NULL,
+            bib_size VARCHAR(10) DEFAULT NULL,
             license_status ENUM('pending_payment','licensed','cancelled') NOT NULL DEFAULT 'pending_payment',
             legal_version_id INT NOT NULL,
             legal_accepted_at DATETIME NOT NULL,
@@ -183,6 +186,7 @@ function event2026_ensure_schema(PDO $pdo): void
             order_index INT NOT NULL DEFAULT 0,
             is_mandatory TINYINT(1) NOT NULL DEFAULT 1,
             min_distance_km INT NOT NULL DEFAULT 0,
+            route_keys_csv VARCHAR(255) NOT NULL DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             CONSTRAINT fk_event2026_checkpoint_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
@@ -238,6 +242,42 @@ function event2026_ensure_schema(PDO $pdo): void
         $pdo->exec("ALTER TABLE event2026_participant_slots ADD COLUMN public_name_consent TINYINT(1) NOT NULL DEFAULT 1 AFTER women_wave_opt_in");
     }
 
+    $routeKeyColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_participant_slots'
+          AND COLUMN_NAME = 'route_key'
+    ");
+    $routeKeyColStmt->execute();
+    if ((int) $routeKeyColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_participant_slots ADD COLUMN route_key VARCHAR(32) NOT NULL DEFAULT 'classic_3' AFTER email");
+    }
+
+    $clothingInterestColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_participant_slots'
+          AND COLUMN_NAME = 'clothing_interest'
+    ");
+    $clothingInterestColStmt->execute();
+    if ((int) $clothingInterestColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_participant_slots ADD COLUMN clothing_interest VARCHAR(32) NOT NULL DEFAULT 'none' AFTER jersey_interest");
+    }
+
+    $bibSizeColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_participant_slots'
+          AND COLUMN_NAME = 'bib_size'
+    ");
+    $bibSizeColStmt->execute();
+    if ((int) $bibSizeColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_participant_slots ADD COLUMN bib_size VARCHAR(10) DEFAULT NULL AFTER jersey_size");
+    }
+
     $checkpointMinDistanceColStmt = $pdo->prepare("
         SELECT COUNT(*)
         FROM INFORMATION_SCHEMA.COLUMNS
@@ -249,6 +289,38 @@ function event2026_ensure_schema(PDO $pdo): void
     if ((int) $checkpointMinDistanceColStmt->fetchColumn() === 0) {
         $pdo->exec("ALTER TABLE event2026_checkpoints ADD COLUMN min_distance_km INT NOT NULL DEFAULT 0 AFTER is_mandatory");
     }
+
+    $checkpointRouteKeysStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_checkpoints'
+          AND COLUMN_NAME = 'route_keys_csv'
+    ");
+    $checkpointRouteKeysStmt->execute();
+    if ((int) $checkpointRouteKeysStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_checkpoints ADD COLUMN route_keys_csv VARCHAR(255) NOT NULL DEFAULT '' AFTER min_distance_km");
+    }
+
+    $pdo->exec("UPDATE event2026_participant_slots
+        SET route_key = CASE
+            WHEN route_key IS NULL OR route_key = '' THEN
+                CASE
+                    WHEN distance_km >= 175 THEN 'epic_4'
+                    ELSE 'classic_3'
+                END
+            ELSE route_key
+        END");
+
+    $pdo->exec("UPDATE event2026_participant_slots
+        SET clothing_interest = CASE
+            WHEN clothing_interest IS NULL OR clothing_interest = '' THEN
+                CASE
+                    WHEN jersey_interest = 1 THEN 'jersey_interest'
+                    ELSE 'none'
+                END
+            ELSE clothing_interest
+        END");
 
     $pdo->exec("INSERT INTO event2026_seasons (slug, name, event_date, status, max_participants, min_participants_for_go, cancellation_deadline)
         SELECT 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
@@ -281,8 +353,8 @@ function event2026_ensure_schema(PDO $pdo): void
             ->execute([':event_id' => $eventId]);
 
         $shopStmt = $pdo->prepare("SELECT id, name, latitude, longitude FROM eisdielen WHERE id = :id LIMIT 1");
-        $checkpointStmt = $pdo->prepare("INSERT INTO event2026_checkpoints (event_id, shop_id, name, lat, lng, order_index, is_mandatory, min_distance_km)
-            SELECT :event_id, :shop_id, :name, :lat, :lng, :order_index, 1, :min_distance_km
+        $checkpointStmt = $pdo->prepare("INSERT INTO event2026_checkpoints (event_id, shop_id, name, lat, lng, order_index, is_mandatory, min_distance_km, route_keys_csv)
+            SELECT :event_id, :shop_id, :name, :lat, :lng, :order_index, 1, :min_distance_km, :route_keys_csv
             WHERE NOT EXISTS (
                 SELECT 1 FROM event2026_checkpoints WHERE event_id = :event_id2 AND shop_id = :shop_id2
             )");
@@ -292,7 +364,8 @@ function event2026_ensure_schema(PDO $pdo): void
                 lng = :lng,
                 order_index = :order_index,
                 is_mandatory = 1,
-                min_distance_km = :min_distance_km
+                min_distance_km = :min_distance_km,
+                route_keys_csv = :route_keys_csv
             WHERE event_id = :event_id AND shop_id = :shop_id");
 
         foreach ($targetCheckpointShops as $shopId => $config) {
@@ -303,6 +376,7 @@ function event2026_ensure_schema(PDO $pdo): void
             }
             $order = (int) ($config['order'] ?? 0);
             $minDistanceKm = (int) ($config['min_distance_km'] ?? 0);
+            $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
             $checkpointStmt->execute([
                 ':event_id' => $eventId,
                 ':event_id2' => $eventId,
@@ -313,6 +387,7 @@ function event2026_ensure_schema(PDO $pdo): void
                 ':lng' => (float) $shop['longitude'],
                 ':order_index' => $order,
                 ':min_distance_km' => $minDistanceKm,
+                ':route_keys_csv' => $routeKeysCsv,
             ]);
             $checkpointUpdateStmt->execute([
                 ':event_id' => $eventId,
@@ -322,6 +397,7 @@ function event2026_ensure_schema(PDO $pdo): void
                 ':lng' => (float) $shop['longitude'],
                 ':order_index' => $order,
                 ':min_distance_km' => $minDistanceKm,
+                ':route_keys_csv' => $routeKeysCsv,
             ]);
         }
     }
@@ -344,10 +420,164 @@ function event2026_current_event(PDO $pdo, bool $forUpdate = false): array
 function event2026_checkpoint_shop_config(): array
 {
     return [
-        314 => ['order' => 1, 'min_distance_km' => 140], // Bäckerei Bräunig
-        145 => ['order' => 2, 'min_distance_km' => 140], // Eisdiele Schöne
-        111 => ['order' => 3, 'min_distance_km' => 140], // Klatt-Eismanufaktur
-        22  => ['order' => 4, 'min_distance_km' => 175], // Eiscafé Elisenhof
+        314 => ['order' => 1, 'min_distance_km' => 140, 'route_keys' => ['classic_3', 'epic_4']], // Bäckerei Bräunig
+        145 => ['order' => 2, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Eisdiele Schöne
+        111 => ['order' => 3, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Klatt-Eismanufaktur
+        22  => ['order' => 4, 'min_distance_km' => 175, 'route_keys' => ['epic_4']], // Eiscafé Elisenhof
+    ];
+}
+
+function event2026_route_catalog(): array
+{
+    return [
+        'epic_4' => [
+            'key' => 'epic_4',
+            'label' => '4 Eis-Stopps',
+            'short_label' => '4 Stopps',
+            'distance_km' => 175,
+            'elevation_m' => 1950,
+            'stops' => 4,
+            'route_type' => 'sport',
+            'pace_group' => '24_27',
+            'pace_enabled' => true,
+            'start_mode' => 'grouped',
+        ],
+        'classic_3' => [
+            'key' => 'classic_3',
+            'label' => '3 Eis-Stopps',
+            'short_label' => '3 Stopps',
+            'distance_km' => 140,
+            'elevation_m' => 1600,
+            'stops' => 3,
+            'route_type' => 'sport',
+            'pace_group' => '24_27',
+            'pace_enabled' => true,
+            'start_mode' => 'grouped',
+        ],
+        'family_2' => [
+            'key' => 'family_2',
+            'label' => 'Einsteiger-/Familientour',
+            'short_label' => 'Familientour',
+            'distance_km' => 75,
+            'elevation_m' => 550,
+            'stops' => 2,
+            'route_type' => 'family',
+            'pace_group' => 'family',
+            'pace_enabled' => false,
+            'start_mode' => 'open_window',
+        ],
+    ];
+}
+
+function event2026_default_route_key(): string
+{
+    return 'classic_3';
+}
+
+function event2026_normalize_route_key(?string $routeKey): string
+{
+    $catalog = event2026_route_catalog();
+    $routeKey = trim((string) $routeKey);
+    if ($routeKey !== '' && isset($catalog[$routeKey])) {
+        return $routeKey;
+    }
+    return event2026_default_route_key();
+}
+
+function event2026_route_definition(?string $routeKey): array
+{
+    $catalog = event2026_route_catalog();
+    $normalized = event2026_normalize_route_key($routeKey);
+    return $catalog[$normalized];
+}
+
+function event2026_route_label(?string $routeKey): string
+{
+    $route = event2026_route_definition($routeKey);
+    return (string) $route['label'];
+}
+
+function event2026_route_distance(?string $routeKey): int
+{
+    $route = event2026_route_definition($routeKey);
+    return (int) $route['distance_km'];
+}
+
+function event2026_route_supports_pace(?string $routeKey): bool
+{
+    $route = event2026_route_definition($routeKey);
+    return !empty($route['pace_enabled']);
+}
+
+function event2026_allowed_pace_groups(?string $routeKey): array
+{
+    if (!event2026_route_supports_pace($routeKey)) {
+        return ['family'];
+    }
+    return ['unter_24', '24_27', '27_30', 'ueber_30'];
+}
+
+function event2026_normalize_pace_group(?string $routeKey, ?string $paceGroup): string
+{
+    $route = event2026_route_definition($routeKey);
+    $paceGroup = trim((string) $paceGroup);
+    $allowed = event2026_allowed_pace_groups($route['key']);
+    if ($paceGroup !== '' && in_array($paceGroup, $allowed, true)) {
+        return $paceGroup;
+    }
+    return (string) $route['pace_group'];
+}
+
+function event2026_clothing_interest_options(): array
+{
+    return ['none', 'jersey_interest', 'kit_interest'];
+}
+
+function event2026_normalize_clothing_interest(?string $value): string
+{
+    $value = trim((string) $value);
+    if (in_array($value, event2026_clothing_interest_options(), true)) {
+        return $value;
+    }
+    return 'none';
+}
+
+function event2026_clothing_interest_label(?string $value): string
+{
+    switch (event2026_normalize_clothing_interest($value)) {
+        case 'jersey_interest':
+            return 'Trikot-Interesse';
+        case 'kit_interest':
+            return 'Set-Interesse';
+        default:
+            return 'Kein Bekleidungsinteresse';
+    }
+}
+
+function event2026_checkpoint_route_keys(string $routeKeysCsv): array
+{
+    return array_values(array_filter(array_map('trim', explode(',', $routeKeysCsv))));
+}
+
+function event2026_route_applies_to_checkpoint(string $routeKey, string $routeKeysCsv): bool
+{
+    $routeKeys = event2026_checkpoint_route_keys($routeKeysCsv);
+    return in_array(event2026_normalize_route_key($routeKey), $routeKeys, true);
+}
+
+function event2026_starter_guide_assets(): array
+{
+    return [
+        'roadbook_status' => 'placeholder',
+        'gpx_status' => 'placeholder',
+        'contact_email' => 'event@ice-app.de',
+        'route_change_contact' => 'Nutze bitte das Kontaktformular bzw. schreibe an event@ice-app.de, wenn du die Route wechseln möchtest.',
+        'checklist' => [
+            'Navi-Radcomputer mit GPX oder Smartphone mit Navigation',
+            'Smartphone mit Internet und eingeloggter Ice-App',
+            'Digitale Stempelkarte im Event-Portal bereithalten',
+            'Helm, Licht und Trinkflaschen mitbringen',
+        ],
     ];
 }
 
@@ -523,10 +753,10 @@ function event2026_log_action(PDO $pdo, int $eventId, ?int $actorUserId, string 
 
 function event2026_recompute_waves(PDO $pdo, int $eventId, int $capacity = 20, int $womenWaveMinSize = 10): array
 {
-    $slotsStmt = $pdo->prepare("SELECT id, distance_km, pace_group, women_wave_opt_in
+    $slotsStmt = $pdo->prepare("SELECT id, route_key, distance_km, pace_group, women_wave_opt_in
         FROM event2026_participant_slots
         WHERE event_id = :event_id AND license_status = 'licensed'
-        ORDER BY distance_km ASC, pace_group ASC, id ASC");
+        ORDER BY distance_km ASC, route_key ASC, pace_group ASC, id ASC");
     $slotsStmt->execute([':event_id' => $eventId]);
     $slots = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -542,12 +772,14 @@ function event2026_recompute_waves(PDO $pdo, int $eventId, int $capacity = 20, i
 
     $groups = [];
     foreach ($slots as $slot) {
+        $routeKey = event2026_normalize_route_key($slot['route_key'] ?? '');
         $distance = (int) $slot['distance_km'];
-        $pace = (string) $slot['pace_group'];
-        $optIn = (int) $slot['women_wave_opt_in'] === 1;
-        $key = $distance . '|' . $pace;
+        $pace = event2026_normalize_pace_group($routeKey, (string) $slot['pace_group']);
+        $supportsPace = event2026_route_supports_pace($routeKey);
+        $optIn = $supportsPace && (int) $slot['women_wave_opt_in'] === 1;
+        $key = $routeKey . '|' . $pace;
         if (!isset($groups[$key])) {
-            $groups[$key] = ['distance' => $distance, 'pace' => $pace, 'women' => [], 'normal' => []];
+            $groups[$key] = ['route_key' => $routeKey, 'distance' => $distance, 'pace' => $pace, 'women' => [], 'normal' => []];
         }
         if ($optIn) {
             $groups[$key]['women'][] = $slot;
@@ -564,6 +796,7 @@ function event2026_recompute_waves(PDO $pdo, int $eventId, int $capacity = 20, i
     $assignmentCount = 0;
 
     foreach ($groups as $group) {
+        $routeKey = $group['route_key'];
         $distance = $group['distance'];
         $pace = $group['pace'];
 
@@ -587,8 +820,8 @@ function event2026_recompute_waves(PDO $pdo, int $eventId, int $capacity = 20, i
             $chunks = array_chunk($bucket['slots'], $capacity);
             foreach ($chunks as $index => $chunk) {
                 $waveCode = sprintf(
-                    '%d-%s-%s-%02d',
-                    $distance,
+                    '%s-%s-%s-%02d',
+                    strtoupper($routeKey),
                     $pace,
                     $bucket['is_women'] ? 'W' : 'M',
                     $index + 1

@@ -17,6 +17,7 @@ try {
             c.name,
             c.lat,
             c.lng,
+            c.route_keys_csv,
             COUNT(DISTINCT p.slot_id) AS checked_in_count,
             (
                 SELECT COUNT(*)
@@ -28,7 +29,7 @@ try {
             ON p.checkpoint_id = c.id
             AND p.event_id = c.event_id
         WHERE c.event_id = :event_id
-        GROUP BY c.id, c.name, c.lat, c.lng
+        GROUP BY c.id, c.name, c.lat, c.lng, c.route_keys_csv
         ORDER BY c.order_index ASC, c.id ASC");
     $stmt->execute([':event_id' => $eventId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -41,6 +42,8 @@ try {
                 'name' => $row['name'],
                 'lat' => (float) $row['lat'],
                 'lng' => (float) $row['lng'],
+                'route_keys' => event2026_checkpoint_route_keys((string) ($row['route_keys_csv'] ?? '')),
+                'route_labels' => array_map('event2026_route_label', event2026_checkpoint_route_keys((string) ($row['route_keys_csv'] ?? ''))),
                 'checked_in_count' => (int) $row['checked_in_count'],
                 'licensed_count' => (int) $row['licensed_count'],
             ];

@@ -126,6 +126,24 @@ try {
                 'min_participants_for_go' => (int) $event['min_participants_for_go'],
                 'cancellation_deadline' => $event['cancellation_deadline'],
             ],
+            'routes' => array_values(array_map(static function (array $route): array {
+                return [
+                    'key' => $route['key'],
+                    'label' => $route['label'],
+                    'short_label' => $route['short_label'],
+                    'distance_km' => $route['distance_km'],
+                    'elevation_m' => $route['elevation_m'],
+                    'stops' => $route['stops'],
+                    'route_type' => $route['route_type'],
+                    'pace_enabled' => $route['pace_enabled'],
+                    'start_mode' => $route['start_mode'],
+                ];
+            }, event2026_route_catalog())),
+            'clothing_options' => [
+                ['value' => 'none', 'label' => 'Kein Interesse'],
+                ['value' => 'jersey_interest', 'label' => 'Trikot-Interesse', 'display_price' => 75],
+                ['value' => 'kit_interest', 'label' => 'Set-Interesse', 'display_price' => 175],
+            ],
             'legal' => [
                 'id' => (int) $legal['id'],
                 'version' => $legal['version'],
@@ -257,12 +275,15 @@ try {
         user_id,
         full_name,
         email,
+        route_key,
         distance_km,
         pace_group,
         women_wave_opt_in,
         public_name_consent,
         jersey_interest,
+        clothing_interest,
         jersey_size,
+        bib_size,
         license_status,
         legal_version_id,
         legal_accepted_at,
@@ -274,12 +295,15 @@ try {
         :user_id,
         :full_name,
         :email,
+        :route_key,
         :distance_km,
         :pace_group,
         :women_wave_opt_in,
         :public_name_consent,
         :jersey_interest,
+        :clothing_interest,
         :jersey_size,
+        :bib_size,
         'pending_payment',
         :legal_version_id,
         NOW(),
@@ -316,12 +340,16 @@ try {
         if ($index === 0 && $accountEmail) {
             $email = $accountEmail;
         }
-        $distance = (int) ($participant['distance'] ?? 140);
-        $paceGroup = trim((string) ($participant['paceGroup'] ?? '24_27'));
-        $womenWaveOptIn = !empty($participant['womenWaveOptIn']) ? 1 : 0;
+        $routeKey = event2026_normalize_route_key((string) ($participant['routeKey'] ?? ''));
+        $routeDefinition = event2026_route_definition($routeKey);
+        $distance = event2026_route_distance($routeKey);
+        $paceGroup = event2026_normalize_pace_group($routeKey, (string) ($participant['paceGroup'] ?? ''));
+        $womenWaveOptIn = event2026_route_supports_pace($routeKey) && !empty($participant['womenWaveOptIn']) ? 1 : 0;
         $publicNameConsent = array_key_exists('publicNameConsent', $participant) ? (!empty($participant['publicNameConsent']) ? 1 : 0) : 1;
-        $jerseyInterest = !empty($participant['jerseyInterest']) ? 1 : 0;
+        $clothingInterest = event2026_normalize_clothing_interest((string) ($participant['clothingInterest'] ?? ''));
+        $jerseyInterest = $clothingInterest !== 'none' ? 1 : 0;
         $jerseySize = trim((string) ($participant['jerseySize'] ?? ''));
+        $bibSize = trim((string) ($participant['bibSize'] ?? ''));
 
         if ($fullName === '' || $email === '') {
             throw new InvalidArgumentException('Für alle Teilnehmer sind Name und E-Mail erforderlich.');
@@ -331,17 +359,16 @@ try {
             throw new InvalidArgumentException('Mindestens eine E-Mail-Adresse ist ungültig.');
         }
 
-        if (!in_array($distance, [140, 175], true)) {
-            throw new InvalidArgumentException('Ungültige Distanz gewählt.');
-        }
-
-        $allowedPaceGroups = ['unter_24', '24_27', '27_30', 'ueber_30'];
+        $allowedPaceGroups = event2026_allowed_pace_groups($routeKey);
         if (!in_array($paceGroup, $allowedPaceGroups, true)) {
             throw new InvalidArgumentException('Ungültige Selbsteinschätzung der Geschwindigkeit.');
         }
 
         if ($jerseyInterest && $jerseySize === '') {
             throw new InvalidArgumentException('Bitte gib eine Trikotgröße an, wenn Interesse besteht.');
+        }
+        if ($clothingInterest === 'kit_interest' && $bibSize === '') {
+            throw new InvalidArgumentException('Bitte gib eine Hosengröße an, wenn Set-Interesse besteht.');
         }
 
         $slotStmt->execute([
@@ -350,12 +377,15 @@ try {
             ':user_id' => $index === 0 ? $auth['user_id'] : null,
             ':full_name' => $fullName,
             ':email' => $email,
+            ':route_key' => $routeKey,
             ':distance_km' => $distance,
             ':pace_group' => $paceGroup,
             ':women_wave_opt_in' => $womenWaveOptIn,
             ':public_name_consent' => $publicNameConsent,
             ':jersey_interest' => $jerseyInterest,
+            ':clothing_interest' => $clothingInterest,
             ':jersey_size' => $jerseyInterest ? $jerseySize : null,
+            ':bib_size' => $clothingInterest === 'kit_interest' ? $bibSize : null,
             ':legal_version_id' => $legalVersionId,
             ':legal_ip_hash' => $ipHash,
             ':legal_user_agent_hash' => $uaHash,
@@ -387,6 +417,13 @@ try {
             'slot_id' => $slotId,
             'full_name' => $fullName,
             'email' => $email,
+            'route_key' => $routeKey,
+            'route_label' => $routeDefinition['label'],
+            'distance_km' => $distance,
+            'clothing_interest' => $clothingInterest,
+            'clothing_interest_label' => event2026_clothing_interest_label($clothingInterest),
+            'jersey_size' => $jerseyInterest ? $jerseySize : null,
+            'bib_size' => $clothingInterest === 'kit_interest' ? $bibSize : null,
             'claim_token_status' => $invitePayload,
         ];
     }

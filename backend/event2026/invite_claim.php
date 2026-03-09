@@ -11,6 +11,7 @@ function event2026_invite_claim_load_token(PDO $pdo, string $rawToken, bool $for
             t.revoked_at,
             s.user_id,
             s.full_name,
+            s.route_key,
             s.distance_km,
             s.registration_id,
             r.event_id,
@@ -79,6 +80,8 @@ try {
             'slot_preview' => [
                 'slot_id' => (int) $tokenRow['slot_id'],
                 'full_name' => (string) $tokenRow['full_name'],
+                'route_key' => event2026_normalize_route_key($tokenRow['route_key'] ?? ''),
+                'route_name' => event2026_route_label($tokenRow['route_key'] ?? ''),
                 'distance_km' => (int) $tokenRow['distance_km'],
                 'payment_status' => (string) $tokenRow['payment_status'],
             ],

@@ -5,6 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
+import { getRouteLabel } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -159,6 +160,9 @@ export default function EventInviteClaim() {
           <Card>
             <p>
               Teilnehmer: <strong>{data.slot_preview?.full_name}</strong>
+            </p>
+            <p>
+              Route: <strong>{data.slot_preview?.route_name || getRouteLabel(data.slot_preview?.route_key)}</strong>
             </p>
             <p>
               Distanz: <strong>{data.slot_preview?.distance_km} km</strong>

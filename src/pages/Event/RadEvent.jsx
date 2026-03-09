@@ -1,378 +1,460 @@
-
 import React, { useEffect } from "react";
 import styled from "styled-components";
-import {
-    Calendar,
-    Clock,
-    MapPin,
-    ListChecks,
-    ShieldCheck,
-    Euro,
-    IceCream,
-    Heart,
-    Route,
-    Flag,
-    Mountain,
-} from "lucide-react";
+import { Calendar, CheckCircle2, Euro, Flag, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
+import { EVENT_ENTRY_FEE, ROUTE_OPTIONS } from "./eventConfig";
 
-const Images = {
-    "eisstopp-klatt": "https://scontent-dus1-1.xx.fbcdn.net/v/t39.30808-6/474190233_922200500070659_4489896847841982265_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=f2Jieo4NxeIQ7kNvwEymZdf&_nc_oc=Admmhur-SjlFyrrcmgYgxasGpKasH8oB-82NyxGJyndSrwTLkbccPRYGosnixStGvCE&_nc_zt=23&_nc_ht=scontent-dus1-1.xx&_nc_gid=T4To4o42xMMITD_mnihQdA&oh=00_AfpOUAG0Cm3Bi6Z-1FlKDwVpc2Tf3-fRWD3e_O6qPVaITw&oe=6963F59E",
-    "eisstopp-braeunig": "https://www.baeckerei-braeunig.de/wp-content/uploads/baeckerei-braeunig-logo-1.png",
-    "eisstopp-schoene": "https://lh3.googleusercontent.com/p/AF1QipMaZZ6abii-iQVOXLTq0AEQ-T7wqFuHJKhIWTg3=s680-w680-h510-rw",
-    "eisstopp-elisenhof": "https://images.unsplash.com/photo-1570197788417-0e82375c9371?auto=format&fit=crop&w=1200&q=80",
-    "charity": "https://www.ekk-chemnitz.de/wp-content/uploads/2020/09/ekk-logo-300.png"
-};
+const EVENT_DATE = "Samstag, 16. Mai 2026";
+const EVENT_REGION = "Chemnitz und Umland";
+const PARTNER_ICE_CREAM_PARLORS = [
+  {
+    name: "Bäckerei Bräunig",
+    role: "Checkpoint auf den sportlichen Routen",
+    image: "https://www.baeckerei-braeunig.de/wp-content/uploads/baeckerei-braeunig-logo-1.png",
+    description: "Hier wartet eine offizielle Gratis-Kugel für alle Starter der langen Strecken. Perfekt für Nachschub und eine kurze Pause.",
+  },
+  {
+    name: "Eisdiele Schöne",
+    role: "Checkpoint auf allen passenden Routen",
+    image: "https://lh3.googleusercontent.com/p/AF1QipMaZZ6abii-iQVOXLTq0AEQ-T7wqFuHJKhIWTg3=s680-w680-h510-rw",
+    description: "Ein fester Partnereis-Stopp für Familientour und Sportstrecken. Ideal für Kugel, Wasser und gute Laune unterwegs.",
+  },
+  {
+    name: "Klatt Eis",
+    role: "Checkpoint auf allen passenden Routen",
+    image: "https://scontent-dus1-1.xx.fbcdn.net/v/t39.30808-6/474190233_922200500070659_4489896847841982265_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=f2Jieo4NxeIQ7kNvwEymZdf&_nc_oc=Admmhur-SjlFyrrcmgYgxasGpKasH8oB-82NyxGJyndSrwTLkbccPRYGosnixStGvCE&_nc_zt=23&_nc_ht=scontent-dus1-1.xx&_nc_gid=T4To4o42xMMITD_mnihQdA&oh=00_AfpOUAG0Cm3Bi6Z-1FlKDwVpc2Tf3-fRWD3e_O6qPVaITw&oe=6963F59E",
+    description: "Zum Durchatmen, Eis essen und Flaschen auffüllen. Einer der zentralen Partnerstopps des Events.",
+  },
+  {
+    name: "Eiscafé Elisenhof",
+    role: "Zusätzlicher Stopp auf der 4-Eis-Stopps-Route",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?auto=format&fit=crop&w=1200&q=80",
+    description: "Der Extrapunkt für alle, die die volle Runde fahren und auch den vierten offiziellen Eisstopp mitnehmen.",
+  },
+];
 
-// Constants
-const EVENT_DATE = "Samstag, 16. Mai 2026 (voraussichtlich)";
-const EVENT_TIME = "Startfenster 7:00-9:00 Uhr, Zielschluss voraussichtlich gegen 18:00 Uhr.";
-const ENTRY_FEE = 15;
-
-// Styled Components
 const PageWrapper = styled.div`
-    background:
-        radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 40%),
-        linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
-    min-height: 100vh;
-    color: #2f2100;
+  background:
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 40%),
+    linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
+  min-height: 100vh;
+  color: #2f2100;
 `;
 
 const Section = styled.section`
-    padding: 1.2rem 0;
+  padding: 1.2rem 0;
 `;
 
 const Container = styled.div`
-    width: min(96%, 1040px);
-    margin: 0 auto;
-`;
-
-const SectionTitle = styled.h2`
-    font-size: clamp(1.3rem, 2vw, 1.9rem);
-    font-weight: 800;
-    text-align: center;
-    margin: 0;
-`;
-
-const SectionDesc = styled.p`
-    text-align: center;
-    color: rgba(47, 33, 0, 0.7);
-    font-size: 0.95rem;
-    margin: 0.45rem auto 0;
-    max-width: 780px;
-`;
-
-// Card Components
-const CardGrid = styled.div`
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 1fr;
-    margin-top: 1rem;
-    @media (min-width: 760px) {
-        grid-template-columns: 1fr 1fr;
-    }
-`;
-
-const Card = styled.div`
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid rgba(47, 33, 0, 0.08);
-    box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-`;
-
-const CardHeader = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1rem 0.5rem 1rem;
-`;
-
-const CardTitle = styled.div`
-    font-size: 1rem;
-    font-weight: 700;
-    color: #2f2100;
-`;
-
-const CardContent = styled.div`
-    padding: 0 1rem 1rem 1rem;
-    color: #2f2100;
-`;
-
-const CardDescription = styled.div`
-    color: rgba(47, 33, 0, 0.72);
-    font-size: 0.95rem;
-    line-height: 1.45;
-`;
-
-// Hero
-const HeroSection = styled(Section)`
-    padding-top: 1rem;
+  width: min(96%, 1080px);
+  margin: 0 auto;
 `;
 
 const HeroCard = styled.div`
-    background: rgba(255, 252, 243, 0.96);
-    border: 1px solid rgba(47, 33, 0, 0.08);
-    border-radius: 18px;
-    box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-    padding: 1rem 1rem 1.1rem;
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1.4rem;
 `;
 
 const HeroTitle = styled.h1`
-    font-size: clamp(1.5rem, 2.8vw, 2.2rem);
-    font-weight: 800;
-    text-align: center;
-    margin: 0;
-    color: #2f2100;
+  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  font-weight: 900;
+  text-align: center;
+  margin: 0;
 `;
 
 const HeroSubtitle = styled.p`
-    text-align: center;
-    margin: 0.45rem 0 0;
-    font-size: 1rem;
-    color: rgba(47, 33, 0, 0.72);
+  text-align: center;
+  margin: 0.7rem auto 0;
+  font-size: 1.05rem;
+  color: rgba(47, 33, 0, 0.72);
+  max-width: 740px;
 `;
 
-const KeyFacts = styled.div`
-    margin-top: 0.9rem;
-    display: grid;
-    gap: 0.7rem;
-    grid-template-columns: 1fr;
-    @media (min-width: 760px) {
-        grid-template-columns: repeat(3, 1fr);
-    }
+const HeroActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-top: 1.2rem;
+`;
+
+const FactGrid = styled.div`
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 `;
 
 const Fact = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    justify-content: center;
-    border: 1px solid rgba(47, 33, 0, 0.08);
-    background: rgba(255, 247, 226, 0.75);
-    border-radius: 12px;
-    padding: 0.55rem 0.75rem;
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: #5f4200;
-`;
-
-const IntroSection = styled(Section)`
-    padding-top: 1rem;
-`;
-
-const IntroCard = styled(HeroCard)`
-    padding: 1.1rem;
-`;
-
-const IntroText = styled.p`
-    margin: 0;
-    text-align: center;
-    color: rgba(47, 33, 0, 0.75);
-    line-height: 1.5;
-`;
-
-// Event Details
-const details = [
-    { icon: Calendar, title: "Datum", content: EVENT_DATE },
-    { icon: Clock, title: "Uhrzeit", content: EVENT_TIME },
-    { icon: Flag, title: "Start & Ziel", content: "Start und Zielort wird noch bekannt gegeben." },
-    { icon: MapPin, title: "Strecken", content: "Zur Auswahl: 140 km / ca. 1.600 hm (3 Eis-Stopps) oder 175 km / ca. 1.950 hm (4 Eis-Stopps)." },
-    { icon: ListChecks, title: "Ablauf", content: "Freier Start, Eis-Stopps anfahren, die Runde schließen und Am Ende noch gemütlich ausklingen lassen." },
-    { icon: ShieldCheck, title: "Teilnahmebedingungen", content: "Jeder ist willkommen! Helmpflicht für alle Teilnehmer. Teilnahme auf eigene Gefahr und Kosten. Es gilt die StVO, es ist kein Rennen/keine Zeitfahrveranstaltung. Maximal 150 Teilnehmer. Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor." },
-    { icon: Euro, title: "Startgebühren", content: `${ENTRY_FEE}€ pro Person. Inklusive einer Kugel Eis an jeder Checkpoint-Eisdiele.` },
-];
-
-// Ice Cream Parlors
-const parlors = [
-    { id: "eisstopp-braeunig", name: "Bäckerei Bräunig", description: "Handwerksbäckerei mit eigener Eisproduktion und regionalem Charakter." },
-    { id: "eisstopp-schoene", name: "Eisdiele Schöne", description: "In der Nähe des Schloss Lichtenwalde lockt die Eisdiele Schöne mit selbst hergestelltem Eis, exotische Sorten und freundlichem Service." },
-    { id: "eisstopp-klatt", name: "Klatt-Eismanufaktur", description: "Ein sehr gemütlicher Eis-Garten mitten im Grünen mit leckeren, kreativen, hausgemachten Eissorten." },
-    { id: "eisstopp-elisenhof", name: "Eiscafé Elisenhof", description: "Zusätzlicher Pflicht-Checkpoint auf der langen 175-km-Strecke." },
-];
-
-const CharityGrid = styled.div`
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: 1fr;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 247, 226, 0.75);
+  border-radius: 14px;
+  padding: 0.85rem;
+  font-weight: 700;
+  color: #5f4200;
+  display: flex;
   align-items: center;
-  .charity-image { order: 0; }
-  .charity-text { order: 1; }
-  @media (min-width: 700px) {
-    grid-template-columns: 1fr 1fr;
-    .charity-image { order: 1; }
-    .charity-text { order: 0; }
+  gap: 0.55rem;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  font-weight: 800;
+  margin: 0;
+  text-align: center;
+`;
+
+const SectionDesc = styled.p`
+  text-align: center;
+  color: rgba(47, 33, 0, 0.7);
+  font-size: 0.98rem;
+  margin: 0.45rem auto 0;
+  max-width: 840px;
+  line-height: 1.5;
+`;
+
+const CardGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 1.1rem;
+  @media (min-width: 840px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 `;
 
+const Card = styled.div`
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
+  padding: 1.1rem;
+`;
 
+const RouteBadge = styled.span`
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #fff3c2;
+  color: #8a5700;
+  font-weight: 700;
+  font-size: 0.82rem;
+`;
+
+const Timeline = styled.div`
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+`;
+
+const TimelineItem = styled.div`
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 0.9rem;
+  align-items: start;
+  background: #fffdf7;
+  border: 1px solid #f0d79a;
+  border-radius: 16px;
+  padding: 1rem;
+`;
+
+const Step = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #ffb522;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+`;
+
+const SplitGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 1rem;
+  @media (min-width: 840px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const RequirementList = styled.ul`
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+  color: #7c4f00;
+  line-height: 1.55;
+`;
+
+const FaqGrid = styled.div`
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+`;
 
 function Hero() {
-    return (
-        <HeroSection>
-            <Container>
-                <HeroCard>
-                    <HeroTitle>Ice-Tour 2026</HeroTitle>
-                    <HeroSubtitle>Dicke Gänge, große Kugeln, starke Beine.</HeroSubtitle>
-                    <KeyFacts>
-                        <Fact><Route size={16} color="#ffb522" /> 140 km / 175 km</Fact>
-                        <Fact><Mountain size={16} color="#ffb522" /> 1.600 hm / 1.950 hm</Fact>
-                        <Fact><MapPin size={16} color="#ffb522" /> Start & Ziel in Chemnitz</Fact>
-                    </KeyFacts>
-                </HeroCard>
-            </Container>
-        </HeroSection>
-    );
+  return (
+    <Section style={{ paddingTop: "1rem" }}>
+      <Container>
+        <HeroCard>
+          <HeroTitle>Ice-Tour 2026</HeroTitle>
+          <HeroSubtitle>
+            Drei Routen, digitale Stempelkarte, Gruppenstarts und eine Kugel Eis an jedem offiziellen Checkpoint.
+          </HeroSubtitle>
+          <HeroActions>
+            <Button href="/#/event-registration">Jetzt anmelden</Button>
+            <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Meine Anmeldung
+            </Button>
+          </HeroActions>
+          <FactGrid>
+            <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
+            <Fact><MapPin size={18} color="#ffb522" /> {EVENT_REGION}</Fact>
+            <Fact><Euro size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} EUR Startgebühr für alle Routen</Fact>
+            <Fact><Flag size={18} color="#ffb522" /> Gruppenstart bzw. eigenes Startfenster</Fact>
+          </FactGrid>
+        </HeroCard>
+      </Container>
+    </Section>
+  );
 }
 
-function Intro() {
-    return (
-        <IntroSection>
-            <Container>
-                <IntroCard>
-                    <IntroText>
-                        Wenn Asphalt auf Abenteuer trifft und der Sommer nach Vanille riecht, beginnt unsere
-                        <strong> Ice-Tour 2026</strong>: eine sportliche Rennrad-Herausforderung mit rund
-                        <strong> 140 Kilometern / 1.600 Höhenmetern</strong> oder
-                        <strong> 175 Kilometern / 1.950 Höhenmetern</strong>, die Tempo, Teamgeist
-                        und pure Ausdauer fordert. Start und Ziel wird noch bekannt gegeben. Auf beiden Strecken warten drei legendäre Eis-Stopps:
-                        <strong> Bäckerei Bräunig</strong>, <strong>Eisdiele Schöne</strong> und
-                        <strong> Klatt-Eismanufaktur</strong>. Auf der langen Strecke kommt
-                        <strong> Eiscafé Elisenhof </strong> als vierter Pflicht-Stopp dazu.
-                        Hier geht es nicht nur um Watt und Bestzeiten,
-                        sondern um das perfekte Zusammenspiel aus dicken Gängen, großen Kugeln und starken Beinen..
-                        Gefahren wird unter Einhaltung der <strong>StVO</strong>, ausdrücklich <strong>nicht als Rennen</strong>.
-                        Die Teilnehmerzahl ist auf <strong>150 Starter</strong> begrenzt; bei zu geringer Teilnehmerzahl
-                        behalten wir uns eine Absage vor.
-                    </IntroText>
-                </IntroCard>
-            </Container>
-        </IntroSection>
-    );
+function RouteOverview() {
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>Die 3 Routen</SectionTitle>
+        <SectionDesc>Jede Route führt über unterstützende Eisdielen. Die lange Strecke hat vier Stopps, die Familientour konzentriert sich auf Schöne und Klatt Eis.</SectionDesc>
+        <CardGrid>
+          {ROUTE_OPTIONS.map((route) => (
+            <Card key={route.key}>
+              <RouteBadge>{route.label}</RouteBadge>
+              <h3 style={{ marginBottom: "0.4rem" }}>{route.teaser}</h3>
+              <p style={{ color: "#7c4f00", marginTop: 0, lineHeight: 1.5 }}>{route.description}</p>
+              <RequirementList>
+                <li>{route.stops} offizielle Eis-Stopps</li>
+                <li>{route.routeType === "family" ? "Eigenes Startfenster ohne Tempogruppe" : "Startgruppe nach Strecke und Selbsteinschätzung"}</li>
+                <li>{route.routeType === "family" ? "Ideal für Einsteiger und gemeinsame Familienrunde" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
+              </RequirementList>
+            </Card>
+          ))}
+        </CardGrid>
+      </Container>
+    </Section>
+  );
 }
 
-function EventDetails() {
-    return (
-        <Section>
-            <Container>
-                <SectionTitle>Ausschreibung & Details</SectionTitle>
-                <SectionDesc>Alle wichtigen Informationen auf einen Blick.</SectionDesc>
-                <CardGrid>
-                    {details.map((item) => (
-                        <Card key={item.title}>
-                            <CardHeader>
-                                <item.icon size={32} color="#ffb522" />
-                                <CardTitle>{item.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <CardDescription>{item.content}</CardDescription>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </CardGrid>
-            </Container>
-        </Section>
-    );
+function Workflow() {
+  const steps = [
+    "Registrierung mit bestehendem Ice-App Account oder mit neuem Account im Event-Flow, anschließend Zahlung der Startgebühr.",
+    "Nach erfolgreicher Registrierung und Zahlung erscheinen Route, Invite-Links für weitere Startplätze und später Startgruppe plus Startzeit in deinem persönlichen Portal.",
+    "Einige Tage vor dem Event folgt eine Erinnerungsmail. Roadbook, GPX, Anreise- und Event-Hinweise stehen im geschützten Starter-Bereich.",
+    "Am Eventtag reist du an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.",
+    "An jedem Checkpoint isst du natürlich Eis: digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
+    "Im Ziel wird die Runde per QR oder Check-in abgeschlossen, danach gemeinsamer Ausklang und optional kleine Siegerehrung.",
+  ];
+
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>So läuft das Event ab</SectionTitle>
+        <Timeline>
+          {steps.map((text, idx) => (
+            <TimelineItem key={idx}>
+              <Step>{idx + 1}</Step>
+              <div style={{ color: "#7c4f00", lineHeight: 1.5 }}>{text}</div>
+            </TimelineItem>
+          ))}
+        </Timeline>
+      </Container>
+    </Section>
+  );
 }
 
-function IceCreamParlors() {
-    return (
-        <Section>
-            <Container>
-                <SectionTitle>Unsere Eisdielen-Checkpoints</SectionTitle>
-                <SectionDesc>140 km: Bräunig, Schöne, Klatt. 175 km: zusätzlich Eiscafé Elisenhof (Shop ID 22).</SectionDesc>
-                <CardGrid>
-                    {parlors.map((parlor) => (
-                        <Card key={parlor.name}>
-                            <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden" }}>
-                                <img
-                                    src={Images[parlor.id]}
-                                    alt={parlor.name}
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                />
-                            </div>
-                            <CardHeader>
-                                <IceCream size={24} color="#ffb522" />
-                                <CardTitle>{parlor.name}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <CardDescription>{parlor.description}</CardDescription>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </CardGrid>
-            </Container>
-        </Section>
-    );
+function PartnerParlors() {
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>Unsere Partnereisdielen</SectionTitle>
+        <SectionDesc>
+          Die unterstützenden Eisdielen sind nicht nur Kulisse, sondern ein zentraler Teil des Events: Hier gibt es die Gratis-Kugeln, Wasser, Iso und natürlich die Gelegenheit, noch mehr Eis zu essen.
+        </SectionDesc>
+        <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+          {PARTNER_ICE_CREAM_PARLORS.map((parlor) => (
+            <Card key={parlor.name}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", marginBottom: "0.9rem", overflow: "hidden", borderRadius: 12 }}>
+                <img src={parlor.image} alt={parlor.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <RouteBadge>{parlor.role}</RouteBadge>
+              <h3 style={{ marginBottom: "0.45rem" }}>{parlor.name}</h3>
+              <p style={{ color: "#7c4f00", margin: 0, lineHeight: 1.55 }}>{parlor.description}</p>
+            </Card>
+          ))}
+        </CardGrid>
+      </Container>
+    </Section>
+  );
 }
 
-function CharityInfo() {
-    return (
-        <Section>
-            <Container>
-                <CharityGrid>
-                    <div className="charity-image">
-                        <img
-                            src={Images["charity"]}
-                            alt="Charity"
-                            style={{ width: "100%", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
-                        />
-                    </div>
-                    <div className="charity-text">
-                        <SectionTitle>Radeln für den guten Zweck</SectionTitle>
-                        <SectionDesc>
-                            Ein Teil der Einnahmen und alle zusätzlichen Spenden gehen direkt an den <strong>Elternverein krebskranker Kinder e.V. Chemnitz</strong>
-                        </SectionDesc>
-                        <p style={{ color: "rgba(47, 33, 0, 0.72)", marginBottom: "1.5em", textAlign: "center" }}>
-                            Mit Ihrer Teilnahme unterstützen Sie nicht nur ein tolles Event, sondern helfen auch Familien in schwierigen Zeiten. Der Verein bietet psychosoziale Betreuung, finanzielle Unterstützung und organisiert Freizeitaktivitäten, um den Kindern und ihren Familien Momente der Freude zu schenken.
-                            <br /><br />
-                            <Button href="/#/event-registration" style={{ border: "1px solid #ffb522", background: "#fff", color: "#b57600" }}>
-                                <Heart size={18} style={{ marginRight: 8 }} /> Spenden & Teilnehmen
-                            </Button>
-                        </p>
-
-                    </div>
-                </CharityGrid>
-            </Container>
-        </Section>
-    );
+function RequirementsAndServices() {
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>Was du brauchst und was inklusive ist</SectionTitle>
+        <SplitGrid>
+          <Card>
+            <h3 style={{ marginTop: 0 }}>Was du brauchst</h3>
+            <RequirementList>
+              <li>Navi-Radcomputer mit GPX oder Smartphone mit Navigation</li>
+              <li>Smartphone mit Internet und installierter Ice-App</li>
+              <li>Digitale Stempelkarte im persönlichen Event-Portal</li>
+              <li>Bereitschaft, QR-Codes zu scannen oder Check-ins anzulegen</li>
+              <li>Helm, Trinkflaschen und eigenverantwortliche Ausrüstung</li>
+            </RequirementList>
+          </Card>
+          <Card>
+            <h3 style={{ marginTop: 0 }}>Leistungen inklusive / selbst zahlen</h3>
+            <RequirementList>
+              <li>Inklusive: eine Kugel Eis pro offiziellem Checkpoint</li>
+              <li>Inklusive: Iso-Pulver und Leitungswasser zum Auffüllen</li>
+              <li>Optional: Kaffee oder kleine Notfall-Snacks am Start, je nach Setup</li>
+              <li>Selbst zahlen: weitere Speisen und Getränke an den Eisdielen</li>
+              <li>Wer mehr Hunger hat, darf die Eisdielen gern zusätzlich unterstützen</li>
+            </RequirementList>
+          </Card>
+        </SplitGrid>
+      </Container>
+    </Section>
+  );
 }
 
+function EventTech() {
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>Digitale Stempelkarte & Check-ins</SectionTitle>
+        <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+          <Card>
+            <QrCode size={28} color="#ffb522" />
+            <h3>QR am Checkpoint</h3>
+            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
+              An jeder Station liegen QR-Codes aus. Scan oder Vor-Ort-Check-in haken denselben Stopp auf deiner Stempelkarte ab.
+            </p>
+          </Card>
+          <Card>
+            <Smartphone size={28} color="#ffb522" />
+            <h3>Ice-App Check-in</h3>
+            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
+              Wenn es schnell gehen muss, kannst du unterwegs schon einchecken und das Eisfoto später im Ziel fertig bearbeiten.
+            </p>
+          </Card>
+          <Card>
+            <CheckCircle2 size={28} color="#ffb522" />
+            <h3>Zielabschluss</h3>
+            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
+              Im Ziel wird die Runde nochmals per QR oder Check-in abgeschlossen. Danach lässt sich dein Finisher-Status sauber auswerten.
+            </p>
+          </Card>
+        </CardGrid>
+        <Card style={{ marginTop: "1rem" }}>
+          <h3 style={{ marginTop: 0 }}>Tipps für schnelle Checkpoints</h3>
+          <RequirementList>
+            <li>Tipp: Wenn du Zeit sparen willst, lege vor Ort direkt einen leeren Check-in an, mach ein Foto von deinem Eis und ergänze die Details später entspannt im Ziel.</li>
+            <li>Fun-Hinweis: Wer am Eventtag die meisten Eisportionen mit Beweisbild eincheckt, gewinnt ein kleines Präsent. Vernunft bleibt trotzdem Teamsache.</li>
+          </RequirementList>
+        </Card>
+      </Container>
+    </Section>
+  );
+}
 
+function Faq() {
+  const items = [
+    {
+      q: "Kann ich später die Route wechseln?",
+      a: "Im ersten Release nur per Kontaktformular bzw. über das Orga-Team, damit Startgruppen und Checkpoint-Logik konsistent bleiben.",
+    },
+    {
+      q: "Wo finde ich GPX, Roadbook und finale Hinweise?",
+      a: "Nur im geschützten Starter-Bereich unter `Meine Anmeldung`. Die Erinnerungsmail verlinkt direkt dorthin.",
+    },
+    {
+      q: "Muss ich zwingend die Ice-App nutzen?",
+      a: "Ja. Für digitale Stempelkarte, QR-Scans und Event-Check-ins ist ein Ice-App Account erforderlich.",
+    },
+    {
+      q: "Wer sieht die Live-Karte?",
+      a: "Die Live-Karte ist öffentlich. Je Checkpoint werden aktuelle Zahlen und Detaildaten der bereits eingecheckten Starter angezeigt.",
+    },
+  ];
+
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>FAQ</SectionTitle>
+        <FaqGrid>
+          {items.map((item) => (
+            <Card key={item.q}>
+              <h3 style={{ marginTop: 0 }}>{item.q}</h3>
+              <p style={{ marginBottom: 0, color: "#7c4f00", lineHeight: 1.55 }}>{item.a}</p>
+            </Card>
+          ))}
+        </FaqGrid>
+      </Container>
+    </Section>
+  );
+}
 
 export default function RadEvent() {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const { userId, isLoggedIn } = useUser();
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const { userId, isLoggedIn } = useUser();
 
-    useEffect(() => {
-        if (!isLoggedIn || !userId || !apiUrl) {
-            return;
-        }
+  useEffect(() => {
+    if (!isLoggedIn || !userId || !apiUrl) return;
 
-        fetch(`${apiUrl}/api/birthday_track_event_page.php`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ user_id: userId }),
-        }).catch((error) => {
-            console.error("Fehler beim Tracking der Event-Seite:", error);
-        });
-    }, [apiUrl, isLoggedIn, userId]);
+    fetch(`${apiUrl}/api/birthday_track_event_page.php`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_id: userId }),
+    }).catch(() => {});
+  }, [apiUrl, isLoggedIn, userId]);
 
-    return (
-        <PageWrapper>
-            <Header />
-            <Hero />
-            <Intro />
-            <EventDetails />
-            <IceCreamParlors />
-            <CharityInfo />
-            <Footer />
-        </PageWrapper>
-    );
+  return (
+    <PageWrapper>
+      <Header />
+      <Hero />
+      <RouteOverview />
+      <PartnerParlors />
+      <Workflow />
+      <RequirementsAndServices />
+      <EventTech />
+      <Faq />
+      <Section>
+        <Container>
+          <Card style={{ textAlign: "center" }}>
+            <h2 style={{ marginTop: 0 }}>Bereit für die Ice-Tour?</h2>
+            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
+              Wenn du bereits angemeldet bist, findest du alle persönlichen Infos in `Meine Anmeldung`. Wenn nicht, kannst du jetzt deinen Startplatz sichern.
+            </p>
+            <div style={{ display: "flex", gap: "0.8rem", justifyContent: "center", flexWrap: "wrap" }}>
+              <Button href="/#/event-registration">Zur Anmeldung</Button>
+              <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+                Mein Starter-Bereich
+              </Button>
+            </div>
+          </Card>
+        </Container>
+      </Section>
+      <Footer />
+    </PageWrapper>
+  );
 }

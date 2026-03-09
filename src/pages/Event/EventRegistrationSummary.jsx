@@ -5,6 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
+import { getClothingLabel, getRouteLabel } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -131,7 +132,12 @@ export default function EventRegistrationSummary() {
               <h2 style={{ marginTop: 0 }}>Teilnehmer</h2>
               {summary.slots.map((slot) => (
                 <div key={slot.id} style={{ padding: "0.45rem 0", borderBottom: "1px solid #f3e5bd" }}>
-                  <strong>{slot.full_name}</strong> ({slot.distance_km} km) - <Badge>{slot.license_status}</Badge>
+                  <strong>{slot.full_name}</strong> ({slot.route_name || getRouteLabel(slot.route_key)} / {slot.distance_km} km) - <Badge>{slot.license_status}</Badge>
+                  <div style={{ color: "#7c4f00", fontSize: 14, marginTop: 4 }}>
+                    Bekleidung: {slot.clothing_interest_label || getClothingLabel(slot.clothing_interest)}
+                    {slot.jersey_size ? `, Trikot ${slot.jersey_size}` : ""}
+                    {slot.bib_size ? `, Hose ${slot.bib_size}` : ""}
+                  </div>
                 </div>
               ))}
             </Card>
