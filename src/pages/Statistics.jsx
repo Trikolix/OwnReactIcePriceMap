@@ -634,6 +634,12 @@ function Statistics() {
                   </PeriodToggle>
                 </SectionHeaderRow>
 
+                {rankingPeriod === 'month' && (
+                  <RankingDisclaimer>
+                    Diese Monatsrangliste entspricht nicht automatisch der Wertung fuer den User of the Month.
+                  </RankingDisclaimer>
+                )}
+
                 {rankingsLoading ? (
                   <EmptyText>Lade Rankings…</EmptyText>
                 ) : (
@@ -810,6 +816,17 @@ const EmptyRankingNotice = styled.div`
   border: 1px solid rgba(217, 119, 6, 0.16);
   color: #7c4a03;
   font-weight: 700;
+  line-height: 1.45;
+`;
+
+const RankingDisclaimer = styled.div`
+  margin: 0 1rem 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 251, 235, 0.95);
+  border: 1px solid rgba(180, 83, 9, 0.16);
+  color: #8a4b04;
+  font-size: 0.92rem;
   line-height: 1.45;
 `;
 
