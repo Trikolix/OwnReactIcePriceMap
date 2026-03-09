@@ -31,6 +31,7 @@ import GewinnspielImage from './birthday_action.png';
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const menuTriggerRef = useRef(null);
   const { userId, username, isLoggedIn, userPosition, login, logout } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
@@ -69,14 +70,16 @@ const Header = ({ refreshShops }) => {
   const showEisTourNavLink = now >= new Date(2026, 2, 14, 0, 0, 0);
 
   const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
+    setMenuOpen((isOpen) => !isOpen);
   };
   const closeMenu = () => setMenuOpen(false);
   const isAdmin = Number(userId) === 1;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      const clickedInsideMenu = menuRef.current?.contains(event.target);
+      const clickedMenuTrigger = menuTriggerRef.current?.contains(event.target);
+      if (!clickedInsideMenu && !clickedMenuTrigger) {
         setMenuOpen(false);
       }
     };
@@ -574,16 +577,18 @@ const Header = ({ refreshShops }) => {
               Einloggen
             </LoginHeaderButton>
           )}
-          <BurgerMenu
-            type="button"
-            aria-label={menuOpen ? 'MenÃ¼ schlieÃŸen' : 'MenÃ¼ Ã¶ffnen'}
-            aria-expanded={menuOpen}
-            onClick={toggleMenu}
-          >
-            <span />
-            <span />
-            <span />
-          </BurgerMenu>
+          <MenuTriggerWrap ref={menuTriggerRef}>
+            <BurgerMenu
+              type="button"
+              aria-label={menuOpen ? 'MenÃ¼ schlieÃŸen' : 'MenÃ¼ Ã¶ffnen'}
+              aria-expanded={menuOpen}
+              onClick={toggleMenu}
+            >
+              <span />
+              <span />
+              <span />
+            </BurgerMenu>
+          </MenuTriggerWrap>
         </HeaderRight>
         {menuOpen && (
           <Menu ref={menuRef}>
@@ -829,6 +834,7 @@ const HeaderContainer = styled.header`
   padding: 10px 16px;
   background-color: #ffb522;
   position: relative;
+  z-index: 1600;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 
   > * {
@@ -1077,6 +1083,11 @@ const BurgerMenu = styled.button`
   }
 `;
 
+const MenuTriggerWrap = styled.div`
+  position: relative;
+  z-index: 1602;
+`;
+
 const Menu = styled.nav`
   position: absolute;
   top: calc(100% + 8px);
@@ -1092,7 +1103,7 @@ const Menu = styled.nav`
   border-radius: 16px;
   border: 1px solid rgba(47, 33, 0, 0.12);
   box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
-  z-index: 1002;
+  z-index: 1601;
   color: #2f2100;
 
   @media (max-width: 480px) {
