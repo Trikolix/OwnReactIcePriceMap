@@ -295,6 +295,11 @@ function Statistics() {
     return `${days} Tage ${hours} Std.`;
   };
 
+  const hasRankingEntries = (rankingsData?.leaderboard || []).length > 0;
+  const emptyRankingMessage = rankingPeriod === 'month'
+    ? 'Noch keine Einträge diesen Monat. Verdiene durch eine Aktion EP und sei der erste in der Rangliste.'
+    : 'Noch keine Einträge diese Woche. Verdiene durch eine Aktion EP und sei der erste in der Rangliste.';
+
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
@@ -651,46 +656,50 @@ function Statistics() {
                       </RankingHeroCard>
                     )}
 
-                    <TableScrollArea>
-                      <Table $stickyFirstColumn>
-                        <thead>
-                          <tr>
-                            <Th>Rang</Th>
-                            <Th>Nutzer</Th>
-                            <Th>EP</Th>
-                            <Th>Check-ins</Th>
-                            <Th>Bewertungen</Th>
-                            <Th>Preise</Th>
-                            <Th>Routen</Th>
-                            <Th>Eisdielen</Th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(rankingsData?.leaderboard || []).map((entry) => (
-                            <tr key={`period-${entry.user_id}`}>
-                              <Td><strong>#{entry.rank}</strong></Td>
-                              <Td>
-                                <UserInfo>
-                                  <UserAvatar
-                                    size={34}
-                                    userId={entry.user_id}
-                                    name={entry.username}
-                                    avatarUrl={entry.avatar_url}
-                                  />
-                                  <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
-                                </UserInfo>
-                              </Td>
-                              <Td><strong>{entry.total_ep}</strong></Td>
-                              <Td>{(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}</Td>
-                              <Td>{entry.counts.reviews || 0}</Td>
-                              <Td>{entry.counts.price_reports || 0}</Td>
-                              <Td>{entry.counts.routes || 0}</Td>
-                              <Td>{entry.counts.shops || 0}</Td>
+                    {hasRankingEntries ? (
+                      <TableScrollArea>
+                        <Table $stickyFirstColumn>
+                          <thead>
+                            <tr>
+                              <Th>Rang</Th>
+                              <Th>Nutzer</Th>
+                              <Th>EP</Th>
+                              <Th>Check-ins</Th>
+                              <Th>Bewertungen</Th>
+                              <Th>Preise</Th>
+                              <Th>Routen</Th>
+                              <Th>Eisdielen</Th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </Table>
-                    </TableScrollArea>
+                          </thead>
+                          <tbody>
+                            {(rankingsData?.leaderboard || []).map((entry) => (
+                              <tr key={`period-${entry.user_id}`}>
+                                <Td><strong>#{entry.rank}</strong></Td>
+                                <Td>
+                                  <UserInfo>
+                                    <UserAvatar
+                                      size={34}
+                                      userId={entry.user_id}
+                                      name={entry.username}
+                                      avatarUrl={entry.avatar_url}
+                                    />
+                                    <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
+                                  </UserInfo>
+                                </Td>
+                                <Td><strong>{entry.total_ep}</strong></Td>
+                                <Td>{(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}</Td>
+                                <Td>{entry.counts.reviews || 0}</Td>
+                                <Td>{entry.counts.price_reports || 0}</Td>
+                                <Td>{entry.counts.routes || 0}</Td>
+                                <Td>{entry.counts.shops || 0}</Td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      </TableScrollArea>
+                    ) : (
+                      <EmptyRankingNotice>{emptyRankingMessage}</EmptyRankingNotice>
+                    )}
                   </>
                 )}
               </SectionCard>
@@ -791,6 +800,17 @@ const RankingHeroMain = styled.div`
   small {
     color: #6b5327;
   }
+`;
+
+const EmptyRankingNotice = styled.div`
+  margin: 0 1rem 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(255, 248, 230, 0.9);
+  border: 1px solid rgba(217, 119, 6, 0.16);
+  color: #7c4a03;
+  font-weight: 700;
+  line-height: 1.45;
 `;
 
 const RankingHeroMeta = styled.div`
