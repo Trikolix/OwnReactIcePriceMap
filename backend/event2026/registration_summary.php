@@ -19,6 +19,7 @@ try {
             r.event_id,
             r.registered_by_user_id,
             r.payment_reference_code,
+            r.donation_amount,
             r.payment_status,
             r.team_name,
             r.created_at,
@@ -82,6 +83,7 @@ try {
         'registration' => [
             'id' => (int) $registration['id'],
             'payment_reference_code' => (string) $registration['payment_reference_code'],
+            'donation_amount' => (float) ($registration['donation_amount'] ?? 0),
             'payment_status' => (string) $registration['payment_status'],
             'team_name' => $registration['team_name'],
             'created_at' => $registration['created_at'],

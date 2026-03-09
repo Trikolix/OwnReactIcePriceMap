@@ -40,6 +40,7 @@ function event2026_ensure_schema(PDO $pdo): void
             registered_by_user_id INT DEFAULT NULL,
             team_name VARCHAR(255) DEFAULT NULL,
             payment_reference_code VARCHAR(64) NOT NULL,
+            donation_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             payment_status ENUM('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
             notes VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -252,6 +253,18 @@ function event2026_ensure_schema(PDO $pdo): void
     $routeKeyColStmt->execute();
     if ((int) $routeKeyColStmt->fetchColumn() === 0) {
         $pdo->exec("ALTER TABLE event2026_participant_slots ADD COLUMN route_key VARCHAR(32) NOT NULL DEFAULT 'classic_3' AFTER email");
+    }
+
+    $donationAmountColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_registrations'
+          AND COLUMN_NAME = 'donation_amount'
+    ");
+    $donationAmountColStmt->execute();
+    if ((int) $donationAmountColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_registrations ADD COLUMN donation_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER payment_reference_code");
     }
 
     $clothingInterestColStmt = $pdo->prepare("

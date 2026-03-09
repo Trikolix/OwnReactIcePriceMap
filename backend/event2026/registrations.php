@@ -186,6 +186,7 @@ try {
 
     $newsletterOptIn = !empty($data['newsletter']);
     $registrationNote = trim((string) ($data['registrationNote'] ?? ''));
+    $donationAmount = max(0, round((float) ($data['donationAmount'] ?? 0), 2));
     if (strlen($registrationNote) > 220) {
         throw new InvalidArgumentException('Bemerkung ist zu lang (max. 220 Zeichen).');
     }
@@ -252,9 +253,10 @@ try {
         registered_by_user_id,
         team_name,
         payment_reference_code,
+        donation_amount,
         payment_status,
         notes
-    ) VALUES (:event_id, :registered_by_user_id, :team_name, :payment_reference_code, 'pending', :notes)");
+    ) VALUES (:event_id, :registered_by_user_id, :team_name, :payment_reference_code, :donation_amount, 'pending', :notes)");
 
     $paymentRef = sprintf('ICE26-R%s', strtoupper(bin2hex(random_bytes(4))));
 
@@ -263,6 +265,7 @@ try {
         ':registered_by_user_id' => $auth['user_id'],
         ':team_name' => trim((string) ($data['teamName'] ?? '')) ?: null,
         ':payment_reference_code' => $paymentRef,
+        ':donation_amount' => $donationAmount,
         ':notes' => $registrationNote !== '' ? $registrationNote : null,
     ]);
 
@@ -428,7 +431,7 @@ try {
         ];
     }
 
-    $expectedAmount = count($participants) * EVENT2026_ENTRY_FEE;
+    $expectedAmount = count($participants) * EVENT2026_ENTRY_FEE + $donationAmount;
     $paymentStmt->execute([
         ':registration_id' => $registrationId,
         ':method' => $paymentMethod,
@@ -439,6 +442,7 @@ try {
         'participants' => count($participants),
         'payment_method' => $paymentMethod,
         'expected_amount' => $expectedAmount,
+        'donation_amount' => $donationAmount,
         'account_created_in_flow' => $accountCreationInfo !== null,
     ]);
 
@@ -453,6 +457,9 @@ try {
         $mailBody .= "Registrierung: #{$registrationId}\n";
         $mailBody .= "Referenzcode: {$paymentRef}\n";
         $mailBody .= "Erwarteter Betrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n";
+        if ($donationAmount > 0) {
+            $mailBody .= "Davon Spende: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
+        }
         $mailBody .= "Zahlungsmethode: {$paymentMethod}\n\n";
         $mailBody .= "Bitte zahle mit dem Referenzcode im Betreff/Verwendungszweck.\n";
         $mailBody .= "Die Freigabe erfolgt nach Prüfung.\n\n";
@@ -479,6 +486,7 @@ try {
     $adminMailBody .= "Team: " . (trim((string) ($data['teamName'] ?? '')) ?: '-') . "\n";
     $adminMailBody .= "Teilnehmer (" . count($participants) . "): {$participantNames}\n";
     $adminMailBody .= "Erwarteter Betrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Spende: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
     $adminMailBody .= "Zahlungsmethode: {$paymentMethod}\n";
     $adminMailBody .= "Newsletter: " . ($newsletterOptIn ? 'Ja' : 'Nein') . "\n";
     $adminMailBody .= "Bemerkung: " . ($registrationNote !== '' ? $registrationNote : '-') . "\n";
@@ -494,6 +502,7 @@ try {
         'payment_reference_code' => $paymentRef,
         'payment_instruction' => 'Bitte per PayPal Freunde oder Überweisung mit dem Referenzcode zahlen. Finale Freigabe erfolgt nach Prüfung.',
         'payment_expected_amount' => $expectedAmount,
+        'donation_amount' => $donationAmount,
         'notification_mail_sent' => $mailSent,
         'account_created_in_flow' => $accountCreationInfo !== null,
         'account_verification_mail_sent' => $accountCreationInfo['verification_mail_sent'] ?? null,

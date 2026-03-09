@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS event2026_registrations (
     registered_by_user_id INT DEFAULT NULL,
     team_name VARCHAR(255) DEFAULT NULL,
     payment_reference_code VARCHAR(64) NOT NULL,
+    donation_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
     payment_status ENUM('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
     notes VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

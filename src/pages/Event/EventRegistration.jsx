@@ -221,6 +221,7 @@ export default function EventRegistration() {
   const [participants, setParticipants] = useState([createParticipant()]);
   const [teamName, setTeamName] = useState("");
   const [registrationNote, setRegistrationNote] = useState("");
+  const [donationAmount, setDonationAmount] = useState(0);
   const [newsletter, setNewsletter] = useState(false);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
   const [acceptEventLegal, setAcceptEventLegal] = useState(false);
@@ -318,7 +319,7 @@ export default function EventRegistration() {
   const addParticipant = () => setParticipants((prev) => [...prev, createParticipant()]);
   const removeParticipant = (idx) => setParticipants((prev) => prev.filter((_, participantIdx) => participantIdx !== idx));
 
-  const totalCost = useMemo(() => participants.length * EVENT_ENTRY_FEE, [participants.length]);
+  const totalCost = useMemo(() => participants.length * EVENT_ENTRY_FEE + Number(donationAmount || 0), [participants.length, donationAmount]);
 
   const availableSlots = eventMeta?.available_slots ?? 0;
   const isSoldOut = eventMeta?.event_status === "cancelled" || availableSlots <= 0;
@@ -335,6 +336,7 @@ export default function EventRegistration() {
     const payload = {
       participants,
       teamName,
+      donationAmount,
       newsletter,
       paymentMethodPreference: "paypal_friends",
       registrationNote,
@@ -680,7 +682,25 @@ export default function EventRegistration() {
                   <JerseyInfoDialog linkOnly={true} />
                 </div>
               </div>
+            </Card>
 
+            <Card>
+              <CardTitle>
+                <HeartHandshake /> Spenden für den Elternverein krebskranker Kinder e.V.
+              </CardTitle>
+              <Muted style={{ marginBottom: "0.8rem" }}>
+                Wenn du magst, kannst du bei der Anmeldung direkt einen zusätzlichen Spendenbetrag für den Elternverein krebskranker Kinder e.V. Chemnitz mitgeben.
+              </Muted>
+              <Label>Zusätzliche Spende (optional)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                value={donationAmount}
+                onChange={(e) => setDonationAmount(Number(e.target.value) || 0)}
+                placeholder="0"
+              />
+              <Muted>Der Zusatzbetrag wird zur Startgebühr addiert und als Spende ausgewiesen.</Muted>
             </Card>
 
             <Card>
@@ -730,6 +750,12 @@ export default function EventRegistration() {
                 <span>Teilnehmer ({participants.length})</span>
                 <span>{participants.length * EVENT_ENTRY_FEE} EUR</span>
               </Flex>
+              {Number(donationAmount) > 0 && (
+                <Flex>
+                  <span>Zusätzliche Spende</span>
+                  <span>{Number(donationAmount).toFixed(2)} EUR</span>
+                </Flex>
+              )}
               <Separator />
               <Flex style={{ fontWeight: 700, fontSize: 18 }}>
                 <span>Startgebühr gesamt</span>

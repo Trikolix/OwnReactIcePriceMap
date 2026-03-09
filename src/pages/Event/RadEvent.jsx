@@ -303,6 +303,27 @@ function PartnerParlors() {
   );
 }
 
+function CharitySection() {
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>Radeln und Gutes tun</SectionTitle>
+        <SectionDesc>
+          Mit der Ice-Tour unterstützen wir auch den Elternverein krebskranker Kinder e.V. Chemnitz. Wer möchte, kann bei der Anmeldung zusätzlich spenden.
+        </SectionDesc>
+        <Card style={{ maxWidth: 860, margin: "1rem auto 0" }}>
+          <p style={{ color: "#7c4f00", lineHeight: 1.6, marginTop: 0 }}>
+            Die Veranstaltung soll nicht nur Spaß machen, sondern auch etwas Sinnvolles mitnehmen. Zusätzliche Spenden gehen an den Elternverein krebskranker Kinder e.V. Chemnitz.
+          </p>
+          <p style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0 }}>
+            Den Spendenbetrag kannst du direkt bei der Registrierung ergänzen. So wird aus jeder Tour optional auch noch ein kleiner Beitrag für Familien in schwierigen Situationen.
+          </p>
+        </Card>
+      </Container>
+    </Section>
+  );
+}
+
 function RequirementsAndServices() {
   return (
     <Section>
@@ -434,6 +455,7 @@ export default function RadEvent() {
       <Hero />
       <RouteOverview />
       <PartnerParlors />
+      <CharitySection />
       <Workflow />
       <RequirementsAndServices />
       <EventTech />

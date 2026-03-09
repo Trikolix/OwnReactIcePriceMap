@@ -123,6 +123,11 @@ export default function EventRegistrationSummary() {
               <p>
                 Betrag: <strong>{Number(summary.payment?.expected_amount || 0).toFixed(2)} EUR</strong>
               </p>
+              {Number(summary.registration?.donation_amount || 0) > 0 && (
+                <p>
+                  Davon Spende: <strong>{Number(summary.registration.donation_amount).toFixed(2)} EUR</strong>
+                </p>
+              )}
               <p style={{ marginBottom: 0 }}>
                 Methode: <strong>{summary.payment?.method || "-"}</strong>
               </p>

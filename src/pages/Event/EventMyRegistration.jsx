@@ -279,6 +279,11 @@ export default function EventMyRegistration() {
             <p style={{ margin: "0.5rem 0 0.2rem" }}>
               Betrag: <strong>{formatEuro(data?.payment?.expected_amount)}</strong>
             </p>
+            {Number(data?.registration?.donation_amount || 0) > 0 && (
+              <p style={{ margin: "0.2rem 0" }}>
+                Davon Spende: <strong>{formatEuro(data.registration.donation_amount)}</strong>
+              </p>
+            )}
             <p style={{ margin: "0.2rem 0" }}>
               Methode: <strong>{paymentMethodLabel(data?.payment?.method)}</strong>
             </p>
