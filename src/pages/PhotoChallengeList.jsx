@@ -19,6 +19,32 @@ const statusOrder = (status) => {
   return 1;
 };
 
+const formatDate = (value) => {
+  if (!value) {
+    return 'n. a.';
+  }
+
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value));
+};
+
+const getChallengeMetaItems = (challenge) => {
+  if (challenge.status === 'submission_open') {
+    return [
+      `Gestartet am: ${formatDate(challenge.start_at)}`,
+      `Einreichung bis: ${formatDate(challenge.submission_deadline)}`,
+    ];
+  }
+
+  return [
+    `Start: ${formatDate(challenge.start_at)}`,
+    `Bilder: ${challenge.image_count ?? 0}`,
+  ];
+};
+
 function PhotoChallengeList() {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [challenges, setChallenges] = useState([]);
@@ -82,8 +108,9 @@ function PhotoChallengeList() {
             </CardHeader>
             {challenge.description && <p>{challenge.description}</p>}
             <CardMeta>
-              <span>Start: {challenge.start_at ? new Date(challenge.start_at).toLocaleDateString('de-DE') : 'n. a.'}</span>
-              <span>Bilder: {challenge.image_count ?? 0}</span>
+              {getChallengeMetaItems(challenge).map((item) => (
+                <span key={item}>{item}</span>
+              ))}
             </CardMeta>
           </ChallengeCard>
         ))}

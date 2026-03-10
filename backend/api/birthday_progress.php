@@ -15,7 +15,8 @@ $periodEnd = '2026-03-22 23:59:59';
 $photoChallengeStart = '2026-03-06 00:00:00';
 $anniversaryUnlockAt = '2026-03-14 12:00:00';
 $eggCooldownHours = 3;
-$easterEggEpSchedule = [12, 10, 8, 6, 4];
+$easterEggEpSchedule = [12, 10, 8, 6, 4, 3];
+$easterEggRecurringEp = 2;
 $photoChallengeSubmissionEp = 25;
 $photoChallengeVoteEp = 5;
 
@@ -354,6 +355,9 @@ try {
     for ($i = 0; $i < $eggCountForPoints; $i++) {
         $easterEggEp += $easterEggEpSchedule[$i];
     }
+    if ($counts['easter_eggs_found'] > count($easterEggEpSchedule)) {
+        $easterEggEp += ($counts['easter_eggs_found'] - count($easterEggEpSchedule)) * $easterEggRecurringEp;
+    }
 
     $breakdown = [
         'checkins_base_ep' => $counts['checkins_total'] * 15,
@@ -454,6 +458,7 @@ try {
         'easter_egg_model' => [
             'cooldown_hours' => $eggCooldownHours,
             'ep_schedule_first_finds' => $easterEggEpSchedule,
+            'recurring_ep_after_schedule' => $easterEggRecurringEp,
             'next_available_at' => $nextEggAvailableAt,
         ],
         'photo_challenge_model' => [

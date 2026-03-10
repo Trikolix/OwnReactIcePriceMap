@@ -100,8 +100,14 @@ function getRegionTopShops(PDO $pdo, string $level, int $id): array
                 ks.finaler_kugel_score AS kugel_score,
                 ss.finaler_softeis_score AS softeis_score,
                 es.finaler_eisbecher_score AS eisbecher_score,
-                latest_price.preis AS kugel_preis,
-                latest_price.gemeldet_am AS price_reported_at,
+                latest_kugel_price.preis AS kugel_preis,
+                latest_kugel_price.gemeldet_am AS kugel_price_reported_at,
+                latest_softeis_price.preis AS softeis_preis,
+                latest_softeis_price.gemeldet_am AS softeis_price_reported_at,
+                type_counts.kugel_checkins,
+                type_counts.softeis_checkins,
+                type_counts.eisbecher_checkins,
+                type_counts.total_checkins,
                 (
                     COALESCE(ks.finaler_kugel_score, 0) +
                     COALESCE(ss.finaler_softeis_score, 0) +
@@ -130,11 +136,32 @@ function getRegionTopShops(PDO $pdo, string $level, int $id): array
               ON latest.eisdiele_id = p1.eisdiele_id
              AND latest.max_reported_at = p1.gemeldet_am
             WHERE p1.typ = 'kugel'
-         ) latest_price ON latest_price.eisdiele_id = e.id
+         ) latest_kugel_price ON latest_kugel_price.eisdiele_id = e.id
+         LEFT JOIN (
+            SELECT p1.eisdiele_id, p1.preis, p1.gemeldet_am
+            FROM preise p1
+            JOIN (
+              SELECT eisdiele_id, MAX(gemeldet_am) AS max_reported_at
+              FROM preise
+              WHERE typ = 'softeis'
+              GROUP BY eisdiele_id
+            ) latest
+              ON latest.eisdiele_id = p1.eisdiele_id
+             AND latest.max_reported_at = p1.gemeldet_am
+            WHERE p1.typ = 'softeis'
+         ) latest_softeis_price ON latest_softeis_price.eisdiele_id = e.id
+         LEFT JOIN (
+            SELECT c.eisdiele_id,
+                   SUM(CASE WHEN c.typ = 'Kugel' THEN 1 ELSE 0 END) AS kugel_checkins,
+                   SUM(CASE WHEN c.typ = 'Softeis' THEN 1 ELSE 0 END) AS softeis_checkins,
+                   SUM(CASE WHEN c.typ = 'Eisbecher' THEN 1 ELSE 0 END) AS eisbecher_checkins,
+                   COUNT(*) AS total_checkins
+            FROM checkins c
+            GROUP BY c.eisdiele_id
+         ) type_counts ON type_counts.eisdiele_id = e.id
          WHERE $scopeWhere
          HAVING overall_score IS NOT NULL
-         ORDER BY overall_score DESC, latest_price.preis ASC, e.name ASC
-         LIMIT 10"
+         ORDER BY overall_score DESC, COALESCE(type_counts.total_checkins, 0) DESC, e.name ASC"
     );
 
     return array_map(static function (array $row): array {
@@ -149,7 +176,15 @@ function getRegionTopShops(PDO $pdo, string $level, int $id): array
             'eisbecher_score' => isset($row['eisbecher_score']) ? round((float)$row['eisbecher_score'], 2) : null,
             'overall_score' => isset($row['overall_score']) ? round((float)$row['overall_score'], 2) : null,
             'kugel_preis' => isset($row['kugel_preis']) ? (float)$row['kugel_preis'] : null,
-            'price_reported_at' => $row['price_reported_at'] ?? null,
+            'softeis_preis' => isset($row['softeis_preis']) ? (float)$row['softeis_preis'] : null,
+            'kugel_price_reported_at' => $row['kugel_price_reported_at'] ?? null,
+            'softeis_price_reported_at' => $row['softeis_price_reported_at'] ?? null,
+            'checkin_counts' => [
+                'kugel' => isset($row['kugel_checkins']) ? (int)$row['kugel_checkins'] : 0,
+                'softeis' => isset($row['softeis_checkins']) ? (int)$row['softeis_checkins'] : 0,
+                'eisbecher' => isset($row['eisbecher_checkins']) ? (int)$row['eisbecher_checkins'] : 0,
+                'total' => isset($row['total_checkins']) ? (int)$row['total_checkins'] : 0,
+            ],
         ];
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
@@ -191,12 +226,31 @@ function getRegionPriceSummary(PDO $pdo, string $level, int $id): array
             'name' => $row['name'],
             'preis' => (float)$row['preis'],
         ], array_slice($rows, 0, 3)),
-        'expensive_shops' => array_map(static fn(array $row): array => [
-            'id' => (int)$row['eisdiele_id'],
-            'name' => $row['name'],
-            'preis' => (float)$row['preis'],
-        ], array_slice(array_reverse($rows), 0, 3)),
+        'popular_shops' => getRegionPopularShops($pdo, $level, $id),
     ];
+}
+
+function getRegionPopularShops(PDO $pdo, string $level, int $id): array
+{
+    $scopeWhere = buildShopScopeWhere($level, $id, 'e');
+    $stmt = $pdo->query(
+        "SELECT e.id,
+                e.name,
+                COUNT(c.id) AS checkin_count
+         FROM eisdielen e
+         LEFT JOIN checkins c ON c.eisdiele_id = e.id
+         WHERE $scopeWhere
+         GROUP BY e.id, e.name
+         HAVING checkin_count > 0
+         ORDER BY checkin_count DESC, e.name ASC
+         LIMIT 3"
+    );
+
+    return array_map(static fn(array $row): array => [
+        'id' => (int)$row['id'],
+        'name' => $row['name'],
+        'checkin_count' => (int)$row['checkin_count'],
+    ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function getRegionPriceTrend(PDO $pdo, string $level, int $id): array

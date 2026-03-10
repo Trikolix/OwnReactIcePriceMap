@@ -13,6 +13,8 @@ import {
 import Header from '../Header';
 import UserAvatar from '../components/UserAvatar';
 
+const formatPrice = (value) => (value != null ? `${Number(value).toFixed(2)} €` : 'kein Preis');
+
 const RegionOverview = () => {
   const { level, regionId } = useParams();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -65,12 +67,27 @@ const RegionOverview = () => {
 
   const scoreConfig = useMemo(() => {
     if (shopScoreType === 'softeis') {
-      return { key: 'softeis_score', label: 'Softeis' };
+      return {
+        key: 'softeis_score',
+        label: 'Softeis',
+        getPrice: (shop) => shop.softeis_preis,
+        getCheckins: (shop) => shop.checkin_counts?.softeis ?? 0,
+      };
     }
     if (shopScoreType === 'eisbecher') {
-      return { key: 'eisbecher_score', label: 'Eisbecher' };
+      return {
+        key: 'eisbecher_score',
+        label: 'Eisbecher',
+        getPrice: () => null,
+        getCheckins: (shop) => shop.checkin_counts?.eisbecher ?? 0,
+      };
     }
-    return { key: 'kugel_score', label: 'Kugeleis' };
+    return {
+      key: 'kugel_score',
+      label: 'Kugeleis',
+      getPrice: (shop) => shop.kugel_preis,
+      getCheckins: (shop) => shop.checkin_counts?.kugel ?? 0,
+    };
   }, [shopScoreType]);
 
   const priceSummary = data?.price_summary || {};
@@ -86,16 +103,15 @@ const RegionOverview = () => {
           return scoreDiff;
         }
 
-        const leftPrice = left.kugel_preis ?? Number.POSITIVE_INFINITY;
-        const rightPrice = right.kugel_preis ?? Number.POSITIVE_INFINITY;
-        if (leftPrice !== rightPrice) {
-          return leftPrice - rightPrice;
+        const checkinDiff = scoreConfig.getCheckins(right) - scoreConfig.getCheckins(left);
+        if (checkinDiff !== 0) {
+          return checkinDiff;
         }
 
         return left.name.localeCompare(right.name, 'de');
       })
       .slice(0, 10)
-  ), [scoreConfig.key, topShops]);
+  ), [scoreConfig, topShops]);
 
   if (loading) {
     return (
@@ -159,12 +175,12 @@ const RegionOverview = () => {
                 </SimpleList>
               </MiniColumn>
               <MiniColumn>
-                <h4>Teuerste</h4>
+                <h4>Populärste</h4>
                 <SimpleList>
-                  {(priceSummary.expensive_shops || []).map((shop) => (
-                    <li key={`exp-${shop.id}`}>
+                  {(priceSummary.popular_shops || []).map((shop) => (
+                    <li key={`popular-${shop.id}`}>
                       <Link to={`/map/activeShop/${shop.id}`}>{shop.name}</Link>
-                      <strong>{Number(shop.preis).toFixed(2)} €</strong>
+                      <strong>{shop.checkin_count} Check-ins</strong>
                     </li>
                   ))}
                 </SimpleList>
@@ -211,7 +227,8 @@ const RegionOverview = () => {
                   <RankAside>
                     <strong>{shop[scoreConfig.key] != null ? Number(shop[scoreConfig.key]).toFixed(2) : '-'}</strong>
                     <small>{scoreConfig.label}</small>
-                    <small>{shop.kugel_preis != null ? `${Number(shop.kugel_preis).toFixed(2)} €` : 'kein Preis'}</small>
+                    <small>{formatPrice(scoreConfig.getPrice(shop))}</small>
+                    <small>{scoreConfig.getCheckins(shop)} Check-ins</small>
                   </RankAside>
                 </RankItem>
               ))}
