@@ -185,12 +185,15 @@ function event2026_ensure_schema(PDO $pdo): void
             lat DECIMAL(10,7) NOT NULL,
             lng DECIMAL(10,7) NOT NULL,
             order_index INT NOT NULL DEFAULT 0,
+            stamp_card_mode VARCHAR(16) NOT NULL DEFAULT 'live',
             is_mandatory TINYINT(1) NOT NULL DEFAULT 1,
             min_distance_km INT NOT NULL DEFAULT 0,
             route_keys_csv VARCHAR(255) NOT NULL DEFAULT '',
+            qr_code_id INT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             CONSTRAINT fk_event2026_checkpoint_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            UNIQUE KEY uniq_event2026_checkpoint_shop_mode (event_id, shop_id, stamp_card_mode),
             KEY idx_event2026_checkpoint_order (event_id, order_index)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
@@ -201,7 +204,7 @@ function event2026_ensure_schema(PDO $pdo): void
             slot_id INT NOT NULL,
             user_id INT NOT NULL,
             passed_at DATETIME NOT NULL,
-            source ENUM('qr','onsite_form') NOT NULL,
+            source ENUM('qr','onsite_form','gps_click','qr_scan') NOT NULL,
             checkin_id INT DEFAULT NULL,
             qr_payload VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -315,6 +318,44 @@ function event2026_ensure_schema(PDO $pdo): void
         $pdo->exec("ALTER TABLE event2026_checkpoints ADD COLUMN route_keys_csv VARCHAR(255) NOT NULL DEFAULT '' AFTER min_distance_km");
     }
 
+    $checkpointModeStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_checkpoints'
+          AND COLUMN_NAME = 'stamp_card_mode'
+    ");
+    $checkpointModeStmt->execute();
+    if ((int) $checkpointModeStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_checkpoints ADD COLUMN stamp_card_mode VARCHAR(16) NOT NULL DEFAULT 'live' AFTER order_index");
+    }
+
+    $checkpointQrStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_checkpoints'
+          AND COLUMN_NAME = 'qr_code_id'
+    ");
+    $checkpointQrStmt->execute();
+    if ((int) $checkpointQrStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_checkpoints ADD COLUMN qr_code_id INT DEFAULT NULL AFTER route_keys_csv");
+    }
+
+    $passageSourceStmt = $pdo->prepare("
+        SELECT COLUMN_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_checkpoint_passages'
+          AND COLUMN_NAME = 'source'
+        LIMIT 1
+    ");
+    $passageSourceStmt->execute();
+    $passageSourceType = (string) ($passageSourceStmt->fetchColumn() ?: '');
+    if (strpos($passageSourceType, 'gps_click') === false || strpos($passageSourceType, 'qr_scan') === false) {
+        $pdo->exec("ALTER TABLE event2026_checkpoint_passages MODIFY COLUMN source ENUM('qr','onsite_form','gps_click','qr_scan') NOT NULL");
+    }
+
     $pdo->exec("UPDATE event2026_participant_slots
         SET route_key = CASE
             WHEN route_key IS NULL OR route_key = '' THEN
@@ -334,6 +375,10 @@ function event2026_ensure_schema(PDO $pdo): void
                 END
             ELSE clothing_interest
         END");
+
+    $pdo->exec("UPDATE event2026_checkpoints
+        SET stamp_card_mode = 'live'
+        WHERE stamp_card_mode IS NULL OR stamp_card_mode = ''");
 
     $pdo->exec("INSERT INTO event2026_seasons (slug, name, event_date, status, max_participants, min_participants_for_go, cancellation_deadline)
         SELECT 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
@@ -357,61 +402,73 @@ function event2026_ensure_schema(PDO $pdo): void
             ':content_md' => $defaultLegal,
         ]);
 
-        $targetCheckpointShops = event2026_checkpoint_shop_config();
-        $shopIds = array_keys($targetCheckpointShops);
-        $shopIdsSql = implode(',', array_map('intval', $shopIds));
-
-        // Keep checkpoint scope aligned with requested event checkpoints.
-        $pdo->prepare("DELETE FROM event2026_checkpoints WHERE event_id = :event_id AND (shop_id IS NULL OR shop_id NOT IN ({$shopIdsSql}))")
-            ->execute([':event_id' => $eventId]);
-
         $shopStmt = $pdo->prepare("SELECT id, name, latitude, longitude FROM eisdielen WHERE id = :id LIMIT 1");
-        $checkpointStmt = $pdo->prepare("INSERT INTO event2026_checkpoints (event_id, shop_id, name, lat, lng, order_index, is_mandatory, min_distance_km, route_keys_csv)
-            SELECT :event_id, :shop_id, :name, :lat, :lng, :order_index, 1, :min_distance_km, :route_keys_csv
+        $checkpointStmt = $pdo->prepare("INSERT INTO event2026_checkpoints (event_id, shop_id, name, lat, lng, order_index, stamp_card_mode, is_mandatory, min_distance_km, route_keys_csv, qr_code_id)
+            SELECT :event_id, :shop_id, :name, :lat, :lng, :order_index, :stamp_card_mode, 1, :min_distance_km, :route_keys_csv, :qr_code_id
             WHERE NOT EXISTS (
-                SELECT 1 FROM event2026_checkpoints WHERE event_id = :event_id2 AND shop_id = :shop_id2
+                SELECT 1 FROM event2026_checkpoints WHERE event_id = :event_id2 AND shop_id = :shop_id2 AND stamp_card_mode = :stamp_card_mode2
             )");
         $checkpointUpdateStmt = $pdo->prepare("UPDATE event2026_checkpoints
             SET name = :name,
                 lat = :lat,
                 lng = :lng,
                 order_index = :order_index,
+                stamp_card_mode = :stamp_card_mode,
                 is_mandatory = 1,
                 min_distance_km = :min_distance_km,
-                route_keys_csv = :route_keys_csv
-            WHERE event_id = :event_id AND shop_id = :shop_id");
+                route_keys_csv = :route_keys_csv,
+                qr_code_id = :qr_code_id
+            WHERE event_id = :event_id AND shop_id = :shop_id AND stamp_card_mode = :stamp_card_mode");
 
-        foreach ($targetCheckpointShops as $shopId => $config) {
-            $shopStmt->execute([':id' => $shopId]);
-            $shop = $shopStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$shop) {
-                continue;
+        foreach (event2026_stamp_card_configs($pdo) as $stampCardMode => $targetCheckpointShops) {
+            $shopIds = array_keys($targetCheckpointShops);
+            if (!empty($shopIds)) {
+                $shopIdsSql = implode(',', array_map('intval', $shopIds));
+                $pdo->prepare("DELETE FROM event2026_checkpoints WHERE event_id = :event_id AND stamp_card_mode = :stamp_card_mode AND (shop_id IS NULL OR shop_id NOT IN ({$shopIdsSql}))")
+                    ->execute([
+                        ':event_id' => $eventId,
+                        ':stamp_card_mode' => $stampCardMode,
+                    ]);
             }
-            $order = (int) ($config['order'] ?? 0);
-            $minDistanceKm = (int) ($config['min_distance_km'] ?? 0);
-            $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
-            $checkpointStmt->execute([
-                ':event_id' => $eventId,
-                ':event_id2' => $eventId,
-                ':shop_id' => $shopId,
-                ':shop_id2' => $shopId,
-                ':name' => (string) $shop['name'],
-                ':lat' => (float) $shop['latitude'],
-                ':lng' => (float) $shop['longitude'],
-                ':order_index' => $order,
-                ':min_distance_km' => $minDistanceKm,
-                ':route_keys_csv' => $routeKeysCsv,
-            ]);
-            $checkpointUpdateStmt->execute([
-                ':event_id' => $eventId,
-                ':shop_id' => $shopId,
-                ':name' => (string) $shop['name'],
-                ':lat' => (float) $shop['latitude'],
-                ':lng' => (float) $shop['longitude'],
-                ':order_index' => $order,
-                ':min_distance_km' => $minDistanceKm,
-                ':route_keys_csv' => $routeKeysCsv,
-            ]);
+
+            foreach ($targetCheckpointShops as $shopId => $config) {
+                $shopStmt->execute([':id' => $shopId]);
+                $shop = $shopStmt->fetch(PDO::FETCH_ASSOC);
+                if (!$shop) {
+                    continue;
+                }
+                $order = (int) ($config['order'] ?? 0);
+                $minDistanceKm = (int) ($config['min_distance_km'] ?? 0);
+                $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
+                $qrCodeId = event2026_ensure_checkpoint_qr_code($pdo, $eventId, $stampCardMode, (int) $shop['id'], (string) $shop['name']);
+                $checkpointStmt->execute([
+                    ':event_id' => $eventId,
+                    ':event_id2' => $eventId,
+                    ':shop_id' => $shopId,
+                    ':shop_id2' => $shopId,
+                    ':name' => (string) $shop['name'],
+                    ':lat' => (float) $shop['latitude'],
+                    ':lng' => (float) $shop['longitude'],
+                    ':order_index' => $order,
+                    ':stamp_card_mode' => $stampCardMode,
+                    ':stamp_card_mode2' => $stampCardMode,
+                    ':min_distance_km' => $minDistanceKm,
+                    ':route_keys_csv' => $routeKeysCsv,
+                    ':qr_code_id' => $qrCodeId,
+                ]);
+                $checkpointUpdateStmt->execute([
+                    ':event_id' => $eventId,
+                    ':shop_id' => $shopId,
+                    ':name' => (string) $shop['name'],
+                    ':lat' => (float) $shop['latitude'],
+                    ':lng' => (float) $shop['longitude'],
+                    ':order_index' => $order,
+                    ':stamp_card_mode' => $stampCardMode,
+                    ':min_distance_km' => $minDistanceKm,
+                    ':route_keys_csv' => $routeKeysCsv,
+                    ':qr_code_id' => $qrCodeId,
+                ]);
+            }
         }
     }
 
@@ -432,12 +489,135 @@ function event2026_current_event(PDO $pdo, bool $forUpdate = false): array
 
 function event2026_checkpoint_shop_config(): array
 {
+    return event2026_live_checkpoint_shop_config();
+}
+
+function event2026_live_checkpoint_shop_config(): array
+{
     return [
         314 => ['order' => 1, 'min_distance_km' => 140, 'route_keys' => ['classic_3', 'epic_4']], // Bäckerei Bräunig
         145 => ['order' => 2, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Eisdiele Schöne
         111 => ['order' => 3, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Klatt-Eismanufaktur
         22  => ['order' => 4, 'min_distance_km' => 175, 'route_keys' => ['epic_4']], // Eiscafé Elisenhof
     ];
+}
+
+function event2026_test_checkpoint_shop_config(PDO $pdo): array
+{
+    $preferred = [];
+    $config = [];
+
+    foreach ($preferred as $index => $shopId) {
+        $config[(int) $shopId] = [
+            'order' => $index + 1,
+            'min_distance_km' => 0,
+            'route_keys' => ['family_2', 'classic_3', 'epic_4'],
+        ];
+    }
+
+    if (count($config) >= 2) {
+        return $config;
+    }
+
+    $excludedIds = array_keys(event2026_live_checkpoint_shop_config());
+    $excludedSql = implode(',', array_map('intval', $excludedIds));
+    $stmt = $pdo->query("SELECT id
+        FROM eisdielen
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          AND id NOT IN ({$excludedSql})
+        ORDER BY id ASC
+        LIMIT 2");
+    $fallbackIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+
+    foreach ($fallbackIds as $shopId) {
+        if (isset($config[$shopId])) {
+            continue;
+        }
+        $config[$shopId] = [
+            'order' => count($config) + 1,
+            'min_distance_km' => 0,
+            'route_keys' => ['family_2', 'classic_3', 'epic_4'],
+        ];
+        if (count($config) >= 2) {
+            break;
+        }
+    }
+
+    return $config;
+}
+
+function event2026_stamp_card_configs(PDO $pdo): array
+{
+    return [
+        'live' => event2026_live_checkpoint_shop_config(),
+        'test' => event2026_test_checkpoint_shop_config($pdo),
+    ];
+}
+
+function event2026_normalize_stamp_card_mode(?string $mode): string
+{
+    return trim((string) $mode) === 'test' ? 'test' : 'live';
+}
+
+function event2026_ensure_checkpoint_qr_code(PDO $pdo, int $eventId, string $stampCardMode, int $shopId, string $shopName): int
+{
+    $stampCardMode = event2026_normalize_stamp_card_mode($stampCardMode);
+    $code = sprintf('event2026-%s-shop-%d', $stampCardMode, $shopId);
+    $name = sprintf('Ice-Tour 2026 %s: %s', $stampCardMode === 'test' ? 'Test' : 'Checkpoint', $shopName);
+    $description = sprintf(
+        '%s QR-Code für die Event-Stempelkarte %s.',
+        $stampCardMode === 'test' ? 'Test-' : '',
+        $shopName
+    );
+
+    $selectStmt = $pdo->prepare("SELECT id FROM qr_codes WHERE code = :code LIMIT 1");
+    $selectStmt->execute([':code' => $code]);
+    $existingId = (int) ($selectStmt->fetchColumn() ?: 0);
+
+    if ($existingId <= 0) {
+        $insertStmt = $pdo->prepare("INSERT INTO qr_codes (name, code, description, award_type, eisdiele_id, created_at)
+            VALUES (:name, :code, :description, :award_type, :eisdiele_id, NOW())");
+        $insertStmt->execute([
+            ':name' => $name,
+            ':code' => $code,
+            ':description' => $description,
+            ':award_type' => 'event_stamp_card',
+            ':eisdiele_id' => $shopId,
+        ]);
+        $existingId = (int) $pdo->lastInsertId();
+    } else {
+        $updateStmt = $pdo->prepare("UPDATE qr_codes
+            SET name = :name,
+                description = :description,
+                award_type = :award_type,
+                eisdiele_id = :eisdiele_id
+            WHERE id = :id");
+        $updateStmt->execute([
+            ':id' => $existingId,
+            ':name' => $name,
+            ':description' => $description,
+            ':award_type' => 'event_stamp_card',
+            ':eisdiele_id' => $shopId,
+        ]);
+    }
+
+    return $existingId;
+}
+
+function event2026_haversine_distance_m(float $lat1, float $lng1, float $lat2, float $lng2): float
+{
+    $earthRadius = 6371000.0;
+    $lat1Rad = deg2rad($lat1);
+    $lat2Rad = deg2rad($lat2);
+    $deltaLat = deg2rad($lat2 - $lat1);
+    $deltaLng = deg2rad($lng2 - $lng1);
+
+    $a = sin($deltaLat / 2) ** 2
+        + cos($lat1Rad) * cos($lat2Rad) * sin($deltaLng / 2) ** 2;
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+    return $earthRadius * $c;
 }
 
 function event2026_route_catalog(): array

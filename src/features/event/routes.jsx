@@ -6,6 +6,7 @@ import EventLiveMap from "../../pages/Event/EventLiveMap";
 import EventMyRegistration from "../../pages/Event/EventMyRegistration";
 import EventInviteClaim from "../../pages/Event/EventInviteClaim";
 import EventRegistrationSummary from "../../pages/Event/EventRegistrationSummary";
+import EventStampCard from "../../pages/Event/EventStampCard";
 
 export const eventRoutes = [
   { path: "/ice-tour", element: <RadEvent /> },
@@ -14,6 +15,7 @@ export const eventRoutes = [
   { path: "/event-registration", element: <EventRegistration /> },
   { path: "/event-live", element: <EventLiveMap /> },
   { path: "/event-me", element: <EventMyRegistration /> },
+  { path: "/event-stamp-card", element: <EventStampCard /> },
   { path: "/event-invite/:token", element: <EventInviteClaim /> },
   { path: "/event-registration-summary", element: <EventRegistrationSummary /> },
 ];

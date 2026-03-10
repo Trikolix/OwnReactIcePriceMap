@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { Bike, CalendarDays, CheckCircle2, CreditCard, MapPinned, QrCode, Route, Shirt, TimerReset, UserRound } from "lucide-react";
+import { Bike, CalendarDays, CreditCard, MapPinned, QrCode, Route, TimerReset, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -84,22 +84,6 @@ const List = styled.ul`
   margin: 0.6rem 0 0;
   padding-left: 1.2rem;
   color: #7c4f00;
-`;
-
-const CheckpointGrid = styled.div`
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: 1fr;
-  @media (min-width: 760px) {
-    grid-template-columns: 1fr 1fr;
-  }
-`;
-
-const CheckpointCard = styled.div`
-  border-radius: 10px;
-  border: 1px solid ${({ passed }) => (passed ? "#86efac" : "#f0d79a")};
-  background: ${({ passed }) => (passed ? "#f0fdf4" : "#fffdf7")};
-  padding: 0.9rem;
 `;
 
 function paymentStatusLabel(value) {
@@ -363,26 +347,15 @@ export default function EventMyRegistration() {
               <QrCode size={20} /> Digitale Stempelkarte
             </h2>
             <Subtle>
-              Zeige an jedem Checkpoint deine digitale Stempelkarte, scanne den QR-Code oder führe einen Vor-Ort-Check-in in der Ice-App aus. Wenn es schnell gehen muss, kannst du den Check-in anlegen und das Foto später im Ziel nachpflegen.
+              Die Stempelkarte hat jetzt eine eigene Seite mit GPS-Stempel, QR-Fallback und direktem Eis-Check-in, ohne dass du das Event-Portal verlassen musst.
             </Subtle>
             <p style={{ margin: "0.8rem 0 0.4rem" }}>
               Pflicht-Checkpoints: <strong>{data.progress?.mandatory_passed} / {data.progress?.mandatory_total}</strong>{" "}
               <Badge>{data.progress?.is_finisher ? "Finisher" : "noch offen"}</Badge>
             </p>
-            <CheckpointGrid>
-              {data.checkpoints.map((checkpoint) => (
-                <CheckpointCard key={checkpoint.id} passed={checkpoint.passed === 1}>
-                  <strong>{checkpoint.name}</strong>
-                  <div style={{ marginTop: 6, color: "#7c4f00" }}>
-                    {checkpoint.passed ? "Abgehakt" : "Noch offen"}
-                    {checkpoint.passed_at ? ` • ${new Date(checkpoint.passed_at).toLocaleString("de-DE")}` : ""}
-                  </div>
-                  <div style={{ marginTop: 6, color: "#7c4f00", fontSize: 14 }}>
-                    Quelle: {checkpoint.source || "Noch kein QR-Scan / Check-in"}
-                  </div>
-                </CheckpointCard>
-              ))}
-            </CheckpointGrid>
+            <button style={{ marginTop: 10 }} onClick={() => navigate("/event-stamp-card")}>
+              Zur Stempelkarte
+            </button>
           </Card>
         )}
 

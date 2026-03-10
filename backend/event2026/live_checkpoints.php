@@ -29,6 +29,7 @@ try {
             ON p.checkpoint_id = c.id
             AND p.event_id = c.event_id
         WHERE c.event_id = :event_id
+          AND c.stamp_card_mode = 'live'
         GROUP BY c.id, c.name, c.lat, c.lng, c.route_keys_csv
         ORDER BY c.order_index ASC, c.id ASC");
     $stmt->execute([':event_id' => $eventId]);

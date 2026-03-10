@@ -97,6 +97,7 @@ try {
             AND p.event_id = c.event_id
             AND p.user_id = :user_id
         WHERE c.event_id = :event_id
+          AND c.stamp_card_mode = 'live'
         ORDER BY c.order_index ASC, c.id ASC");
     $checkpointStatsStmt->execute([
         ':event_id' => $eventId,

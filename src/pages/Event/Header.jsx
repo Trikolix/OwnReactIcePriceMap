@@ -122,7 +122,10 @@ export default function Header() {
                 <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>
               )}
               {isLoggedIn && (
-                <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                <>
+                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                  <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
+                </>
               )}
             </MenuSection>
 
@@ -138,6 +141,7 @@ export default function Header() {
               {isLoggedIn ? (
                 <>
                   <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                  <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                   <MenuActionButton
                     type="button"
                     $danger

@@ -25,7 +25,7 @@ try {
         FROM event2026_checkpoint_passages p
         INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
-        WHERE p.event_id = :event_id AND p.checkpoint_id = :checkpoint_id AND s.public_name_consent = 1");
+        WHERE p.event_id = :event_id AND p.checkpoint_id = :checkpoint_id AND c.stamp_card_mode = 'live' AND s.public_name_consent = 1");
     $countStmt->execute([
         ':event_id' => $eventId,
         ':checkpoint_id' => $checkpointId,
@@ -44,6 +44,7 @@ try {
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
         WHERE p.event_id = :event_id
           AND p.checkpoint_id = :checkpoint_id
+          AND c.stamp_card_mode = 'live'
           AND s.public_name_consent = 1
         ORDER BY p.passed_at DESC
         LIMIT :limit OFFSET :offset");

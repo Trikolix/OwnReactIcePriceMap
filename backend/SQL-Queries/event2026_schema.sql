@@ -147,12 +147,15 @@ CREATE TABLE IF NOT EXISTS event2026_checkpoints (
     lat DECIMAL(10,7) NOT NULL,
     lng DECIMAL(10,7) NOT NULL,
     order_index INT NOT NULL DEFAULT 0,
+    stamp_card_mode VARCHAR(16) NOT NULL DEFAULT 'live',
     is_mandatory TINYINT(1) NOT NULL DEFAULT 1,
     min_distance_km INT NOT NULL DEFAULT 0,
     route_keys_csv VARCHAR(255) NOT NULL DEFAULT '',
+    qr_code_id INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_event2026_checkpoint_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE
+    CONSTRAINT fk_event2026_checkpoint_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+    UNIQUE KEY uniq_event2026_checkpoint_shop_mode (event_id, shop_id, stamp_card_mode)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS event2026_checkpoint_passages (
@@ -162,7 +165,7 @@ CREATE TABLE IF NOT EXISTS event2026_checkpoint_passages (
     slot_id INT NOT NULL,
     user_id INT NOT NULL,
     passed_at DATETIME NOT NULL,
-    source ENUM('qr','onsite_form') NOT NULL,
+    source ENUM('qr','onsite_form','gps_click','qr_scan') NOT NULL,
     checkin_id INT DEFAULT NULL,
     qr_payload VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
