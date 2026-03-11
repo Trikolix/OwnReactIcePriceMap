@@ -258,9 +258,9 @@ function Workflow() {
   const steps = [
     "Registrierung mit bestehendem Ice-App Account oder mit neuem Account im Event-Flow, anschließend Zahlung der Startgebühr.",
     "Nach erfolgreicher Registrierung und Zahlung erscheinen Route, gekaufte Gutschein-Codes für weitere Startplätze und später Startgruppe plus Startzeit in deinem persönlichen Portal.",
-    `Einige Tage vor dem Event folgt eine Erinnerungsmail. Roadbook, GPX, Anreise zum Treffpunkt ${EVENT_START_FINISH.name} und Event-Hinweise stehen im geschützten Starter-Bereich.`,
-    `Am Eventtag reist du zu ${EVENT_START_FINISH.name} in der ${EVENT_START_FINISH.fullAddress} an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.`,
-    "An jedem Checkpoint isst du natürlich Eis: digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
+    `Einige Tage vor dem Event erhälst du noch eine Erinnerungsmail mit allen wichtigen Informationen zur Anreise, Ablauf und zur Strecke.`,
+    `Am Eventtag reist du selbstständig an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.`,
+    "An jedem Checkpoint bekommst du eine Kugel Eis: digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
     `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR oder Check-in abgeschlossen, danach gemeinsamer Ausklang und optional kleine Siegerehrung.`,
   ];
 
@@ -403,16 +403,16 @@ function EventTech() {
 function Faq() {
   const items = [
     {
-      q: "Kann ich später die Route wechseln?",
-      a: "Im ersten Release nur per Kontaktformular bzw. über das Orga-Team, damit Startgruppen und Checkpoint-Logik konsistent bleiben.",
+      q: "Kann ich die Route wechseln?",
+      a: "Momentan ist es nicht möglich auf eine andere Route als die, bei der Registrierung gewählte zu wechseln.",
     },
     {
-              q: "Wo finde ich GPX, Roadbook und finale Hinweise?",
-      a: `Nur im geschützten Starter-Bereich unter \`Meine Anmeldung\`. Dort stehen auch Start und Ziel bei ${EVENT_START_FINISH.name}. Die Erinnerungsmail verlinkt direkt dorthin.`,
+      q: "Wo finde ich die konkrete Route?",
+      a: `Die GPX-Datei mit der Route wird einige Tage vor dem Event im persönlichen Starter-Bereich zum Download bereitgestellt. So hast du genug Zeit, die Route auf deinen Radcomputer oder dein Smartphone zu laden und dich mit der Navigation vertraut zu machen.`,
     },
     {
       q: "Muss ich zwingend die Ice-App nutzen?",
-      a: "Ja. Für digitale Stempelkarte, QR-Scans und Event-Check-ins ist ein Ice-App Account erforderlich.",
+      a: "Ja die Ice-App dient als eure digitale Stempelkarte und als Nachweis das ihr Teilnehmer bei dem Event seid. Außerdem könnt ihr damit die Check-ins an den Eis-Stopps vornehmen und habt alle wichtigen Infos zum Event jederzeit griffbereit.",
     },
     {
       q: "Wer sieht die Live-Karte?",

@@ -58,6 +58,14 @@ try {
     $expectedAmount = $giftVoucherQuantity * EVENT2026_GIFT_ENTRY_FEE;
 
     $pdo->beginTransaction();
+    $event = event2026_current_event($pdo, true);
+    $reservedCount = event2026_reserved_count($pdo, $eventId);
+    if (($reservedCount + $giftVoucherQuantity) > (int) $event['max_participants']) {
+        $pdo->rollBack();
+        http_response_code(409);
+        throw new RuntimeException('Nicht genügend freie Starterplätze für diese Gutschein-Bestellung verfügbar.');
+    }
+
     $insertStmt = $pdo->prepare("INSERT INTO event2026_addon_purchases (
         event_id,
         registration_id,

@@ -957,19 +957,70 @@ function event2026_active_legal(PDO $pdo, int $eventId): array
 
 function event2026_reserved_count(PDO $pdo, int $eventId): int
 {
-    $sql = "SELECT COUNT(*)
-        FROM event2026_participant_slots
-        WHERE event_id = :event_id
-          AND (
-            license_status = 'licensed'
-            OR (
-              license_status = 'pending_payment'
-              AND created_at >= (NOW() - INTERVAL 72 HOUR)
-            )
-          )";
+    $sql = "SELECT
+            COALESCE((
+                SELECT COUNT(*)
+                FROM event2026_participant_slots s
+                WHERE s.event_id = :event_id_slots
+                  AND (
+                    s.license_status = 'licensed'
+                    OR (
+                      s.license_status = 'pending_payment'
+                      AND s.created_at >= (NOW() - INTERVAL 72 HOUR)
+                    )
+                  )
+            ), 0)
+            +
+            COALESCE((
+                SELECT SUM(GREATEST(r.gift_voucher_quantity - COALESCE(v.redeemed_count, 0), 0))
+                FROM event2026_registrations r
+                LEFT JOIN (
+                    SELECT purchased_by_registration_id AS registration_id, COUNT(*) AS redeemed_count
+                    FROM event2026_gift_vouchers
+                    WHERE event_id = :event_id_reg_voucher
+                      AND status = 'redeemed'
+                      AND purchased_by_registration_id IS NOT NULL
+                    GROUP BY purchased_by_registration_id
+                ) v ON v.registration_id = r.id
+                WHERE r.event_id = :event_id_reg
+                  AND (
+                    r.payment_status = 'paid'
+                    OR (
+                      r.payment_status IN ('pending', 'partially_paid')
+                      AND r.created_at >= (NOW() - INTERVAL 72 HOUR)
+                    )
+                  )
+            ), 0)
+            +
+            COALESCE((
+                SELECT SUM(GREATEST(ap.gift_voucher_quantity - COALESCE(v.redeemed_count, 0), 0))
+                FROM event2026_addon_purchases ap
+                LEFT JOIN (
+                    SELECT purchased_by_addon_purchase_id AS addon_purchase_id, COUNT(*) AS redeemed_count
+                    FROM event2026_gift_vouchers
+                    WHERE event_id = :event_id_addon_voucher
+                      AND status = 'redeemed'
+                      AND purchased_by_addon_purchase_id IS NOT NULL
+                    GROUP BY purchased_by_addon_purchase_id
+                ) v ON v.addon_purchase_id = ap.id
+                WHERE ap.event_id = :event_id_addon
+                  AND (
+                    ap.status = 'paid'
+                    OR (
+                      ap.status IN ('pending', 'partially_paid')
+                      AND ap.created_at >= (NOW() - INTERVAL 72 HOUR)
+                    )
+                  )
+            ), 0) AS reserved_total";
 
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([':event_id' => $eventId]);
+    $stmt->execute([
+        ':event_id_slots' => $eventId,
+        ':event_id_reg_voucher' => $eventId,
+        ':event_id_reg' => $eventId,
+        ':event_id_addon_voucher' => $eventId,
+        ':event_id_addon' => $eventId,
+    ]);
     return (int) $stmt->fetchColumn();
 }
 

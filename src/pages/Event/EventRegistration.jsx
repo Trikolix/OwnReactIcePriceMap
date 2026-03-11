@@ -159,6 +159,39 @@ const StatusBanner = styled.div`
   border: 1px solid ${({ tone }) => (tone === "danger" ? "#fecaca" : tone === "success" ? "#86efac" : "#ffd77a")};
   color: ${({ tone }) => (tone === "danger" ? "#9f1239" : tone === "success" ? "#166534" : "#8a5700")};
 `;
+const ErrorOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(39, 21, 0, 0.44);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 1200;
+`;
+const ErrorDialog = styled.div`
+  width: min(100%, 32rem);
+  background: #fffdfa;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(39, 21, 0, 0.22);
+  padding: 1.25rem 1.25rem 1rem;
+`;
+const ErrorTitle = styled.h2`
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  color: #9f1239;
+`;
+const ErrorText = styled.p`
+  margin: 0;
+  color: #6b102f;
+  line-height: 1.5;
+`;
+const ErrorActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+`;
 const RouteGrid = styled.div`
   display: grid;
   gap: 0.85rem;
@@ -431,12 +464,24 @@ export default function EventRegistration() {
 
   return (
     <PageWrapper>
+      {error && (
+        <ErrorOverlay role="presentation" onClick={() => setError(null)}>
+          <ErrorDialog role="alertdialog" aria-modal="true" aria-labelledby="event-registration-error-title" onClick={(event) => event.stopPropagation()}>
+            <ErrorTitle id="event-registration-error-title">Registrierung nicht möglich</ErrorTitle>
+            <ErrorText>{error}</ErrorText>
+            <ErrorActions>
+              <Button type="button" onClick={() => setError(null)} style={{ marginTop: 0 }}>
+                Schließen
+              </Button>
+            </ErrorActions>
+          </ErrorDialog>
+        </ErrorOverlay>
+      )}
       <Header />
       <form onSubmit={handleSubmit}>
         <MainGrid>
           <div>
             {loadingMeta && <StatusBanner>Eventdaten werden geladen...</StatusBanner>}
-            {error && <StatusBanner tone="danger">{error}</StatusBanner>}
             {success && <StatusBanner tone="success">{success}</StatusBanner>}
 
             {eventMeta && (

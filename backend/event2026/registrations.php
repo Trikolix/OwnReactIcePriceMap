@@ -309,20 +309,6 @@ try {
         throw new InvalidArgumentException('Die Teilnahmebedingungen wurden aktualisiert. Bitte Seite neu laden.');
     }
 
-    $reservedCount = event2026_reserved_count($pdo, $eventId);
-    if (($reservedCount + 1) > (int) $event['max_participants']) {
-        $pdo->rollBack();
-        http_response_code(409);
-        echo json_encode([
-            'status' => 'sold_out',
-            'message' => 'Nicht genügend freie Startplätze verfügbar.',
-            'reserved_slots' => $reservedCount,
-            'max_participants' => (int) $event['max_participants'],
-            'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
-        ]);
-        exit;
-    }
-
     $fullName = trim((string) ($participant['name'] ?? ''));
     $email = trim((string) ($participant['email'] ?? $accountEmail ?? ''));
     $routeKey = event2026_normalize_route_key((string) ($participant['routeKey'] ?? ''));
@@ -361,7 +347,26 @@ try {
         }
     }
 
+    $reservedCount = event2026_reserved_count($pdo, $eventId);
+    $additionalReservedSlots = 1 + $giftVoucherQuantity - ($voucherRow !== null ? 1 : 0);
+    if (($reservedCount + $additionalReservedSlots) > (int) $event['max_participants']) {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode([
+            'status' => 'sold_out',
+            'message' => 'Nicht genügend freie Startplätze verfügbar.',
+            'reserved_slots' => $reservedCount,
+            'max_participants' => (int) $event['max_participants'],
+            'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
+        ]);
+        exit;
+    }
+
     $breakdown = event2026_amount_breakdown($donationAmount, $giftVoucherQuantity, $voucherRow !== null);
+    $isAutoPaid = ((float) $breakdown['expected_amount']) <= 0.0;
+    $registrationPaymentStatus = $isAutoPaid ? 'paid' : 'pending';
+    $slotLicenseStatus = $isAutoPaid ? 'licensed' : 'pending_payment';
+    $paymentStatus = $isAutoPaid ? 'paid' : 'pending';
 
     $registrationStmt = $pdo->prepare("INSERT INTO event2026_registrations (
         event_id,
@@ -385,7 +390,7 @@ try {
         :gift_voucher_purchase_amount,
         :donation_amount,
         :voucher_discount_amount,
-        'pending',
+        :payment_status,
         :notes
     )");
 
@@ -400,6 +405,7 @@ try {
         ':gift_voucher_purchase_amount' => $breakdown['gift_voucher_purchase_amount'],
         ':donation_amount' => $breakdown['donation_amount'],
         ':voucher_discount_amount' => $breakdown['voucher_discount_amount'],
+        ':payment_status' => $registrationPaymentStatus,
         ':notes' => $registrationNote !== '' ? $registrationNote : null,
     ]);
     $registrationId = (int) $pdo->lastInsertId();
@@ -440,7 +446,7 @@ try {
         :clothing_interest,
         :jersey_size,
         :bib_size,
-        'pending_payment',
+        :license_status,
         :legal_version_id,
         NOW(),
         :legal_ip_hash,
@@ -460,8 +466,9 @@ try {
         method,
         expected_amount,
         paid_amount,
-        status
-    ) VALUES (:registration_id, :method, :expected_amount, 0, 'pending')");
+        status,
+        confirmed_at
+    ) VALUES (:registration_id, :method, :expected_amount, :paid_amount, :status, :confirmed_at)");
 
     $ipHash = event2026_hash_nullable($_SERVER['REMOTE_ADDR'] ?? null);
     $uaHash = event2026_hash_nullable($_SERVER['HTTP_USER_AGENT'] ?? null);
@@ -481,6 +488,7 @@ try {
         ':clothing_interest' => $clothingInterest,
         ':jersey_size' => $jerseyInterest ? $jerseySize : null,
         ':bib_size' => $clothingInterest === 'kit_interest' ? $bibSize : null,
+        ':license_status' => $slotLicenseStatus,
         ':legal_version_id' => $legalVersionId,
         ':legal_ip_hash' => $ipHash,
         ':legal_user_agent_hash' => $uaHash,
@@ -498,6 +506,9 @@ try {
         ':registration_id' => $registrationId,
         ':method' => $paymentMethod,
         ':expected_amount' => $breakdown['expected_amount'],
+        ':paid_amount' => 0,
+        ':status' => $paymentStatus,
+        ':confirmed_at' => $isAutoPaid ? date('Y-m-d H:i:s') : null,
     ]);
 
     if ($voucherRow) {
@@ -550,11 +561,15 @@ try {
         }
         $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n";
         $mailBody .= "Zahlungsmethode: {$paymentMethod}\n\n";
-        $mailBody .= "Bitte sende das Geld wenn möglich per PayPal Freunde an " . EVENT2026_PAYMENT_PAYPAL . ".\n";
-        $mailBody .= "Direkter PayPal-Link: " . EVENT2026_PAYMENT_PAYPAL_LINK . "\n";
-        $mailBody .= "Die Veranstaltung ist privat organisiert und kann nicht als Spende ausgewiesen werden.\n";
-        $mailBody .= "Bitte gib den Referenzcode {$paymentRef} im Betreff oder Verwendungszweck an.\n";
-        $mailBody .= "Wenn du kein PayPal hast, melde dich bitte an " . EVENT2026_PAYMENT_CONTACT . ".\n\n";
+        if ($isAutoPaid) {
+            $mailBody .= "Für diese Anmeldung ist keine Zahlung mehr erforderlich. Dein Gutschein deckt den Gesamtbetrag vollständig ab.\n\n";
+        } else {
+            $mailBody .= "Bitte sende das Geld wenn möglich per PayPal Freunde an " . EVENT2026_PAYMENT_PAYPAL . ".\n";
+            $mailBody .= "Direkter PayPal-Link: " . EVENT2026_PAYMENT_PAYPAL_LINK . "\n";
+            $mailBody .= "Die Veranstaltung ist privat organisiert und kann nicht als Spende ausgewiesen werden.\n";
+            $mailBody .= "Bitte gib den Referenzcode {$paymentRef} im Betreff oder Verwendungszweck an.\n";
+            $mailBody .= "Wenn du kein PayPal hast, melde dich bitte an " . EVENT2026_PAYMENT_CONTACT . ".\n\n";
+        }
         if ($voucherRow) {
             $mailBody .= "Der Gutschein-Code {$voucherCode} wurde für diese Anmeldung erfolgreich eingelöst.\n\n";
         }
@@ -585,12 +600,16 @@ try {
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'Anmeldung erfolgreich gespeichert. Bitte Zahlung manuell abschließen.',
+        'message' => $isAutoPaid
+            ? 'Anmeldung erfolgreich gespeichert. Dein Gutschein deckt den Gesamtbetrag ab.'
+            : 'Anmeldung erfolgreich gespeichert. Bitte Zahlung manuell abschließen.',
         'registration_id' => $registrationId,
         'registration_summary_access_token' => $registrationAccessToken['token'],
         'registration_summary_access_token_expires_at' => $registrationAccessToken['expires_at'],
         'payment_reference_code' => $paymentRef,
-        'payment_instruction' => event2026_payment_instruction_text(),
+        'payment_instruction' => $isAutoPaid
+            ? 'Keine Zahlung erforderlich. Dein Gutschein deckt den Gesamtbetrag vollständig ab.'
+            : event2026_payment_instruction_text(),
         'payment_expected_amount' => $breakdown['expected_amount'],
         'payment_breakdown' => $breakdown,
         'gift_voucher_quantity' => $giftVoucherQuantity,
