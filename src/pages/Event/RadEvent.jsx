@@ -257,7 +257,7 @@ function RouteOverview() {
 function Workflow() {
   const steps = [
     "Registrierung mit bestehendem Ice-App Account oder mit neuem Account im Event-Flow, anschließend Zahlung der Startgebühr.",
-    "Nach erfolgreicher Registrierung und Zahlung erscheinen Route, Invite-Links für weitere Startplätze und später Startgruppe plus Startzeit in deinem persönlichen Portal.",
+    "Nach erfolgreicher Registrierung und Zahlung erscheinen Route, gekaufte Gutschein-Codes für weitere Startplätze und später Startgruppe plus Startzeit in deinem persönlichen Portal.",
     `Einige Tage vor dem Event folgt eine Erinnerungsmail. Roadbook, GPX, Anreise zum Treffpunkt ${EVENT_START_FINISH.name} und Event-Hinweise stehen im geschützten Starter-Bereich.`,
     `Am Eventtag reist du zu ${EVENT_START_FINISH.name} in der ${EVENT_START_FINISH.fullAddress} an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.`,
     "An jedem Checkpoint isst du natürlich Eis: digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",

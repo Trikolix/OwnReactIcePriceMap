@@ -1,5 +1,5 @@
 export const EVENT_DATE = "Samstag, 16. Mai 2026";
-export const EVENT_ENTRY_FEE = 10;
+export const EVENT_ENTRY_FEE = 15;
 export const JERSEY_DISPLAY_PRICE = 75;
 export const KIT_DISPLAY_PRICE = 175;
 export const EVENT_START_FINISH = {
@@ -14,6 +14,9 @@ export const EVENT_START_FINISH = {
   lng: 12.923957,
   routeKeys: ["family_2", "classic_3", "epic_4"],
 };
+export const EVENT_PAYMENT_PAYPAL_ADDRESS = "ch_helbig@mail.de";
+export const EVENT_PAYMENT_PAYPAL_URL = "https://paypal.me/ChristianHelbig451";
+export const EVENT_PAYMENT_CONTACT_EMAIL = "admin@ice-app.de";
 
 export const ROUTE_OPTIONS = [
   {

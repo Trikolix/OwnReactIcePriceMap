@@ -11,8 +11,10 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem("avatarUrl"));
+  const [hasEventRegistration, setHasEventRegistration] = useState(() => localStorage.getItem("event2026_has_registration") === "1");
   const menuRef = useRef(null);
   const { userId, username, isLoggedIn, login, logout } = useUser();
+  const isAdmin = Number(userId) === 1;
   const apiUrl = getApiBaseUrl();
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
@@ -48,6 +50,24 @@ export default function Header() {
   }, [isLoggedIn, userId, username]);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      setHasEventRegistration(false);
+      return;
+    }
+
+    const syncRegistrationState = () => {
+      setHasEventRegistration(localStorage.getItem("event2026_has_registration") === "1");
+    };
+
+    syncRegistrationState();
+    window.addEventListener("storage", syncRegistrationState);
+
+    return () => {
+      window.removeEventListener("storage", syncRegistrationState);
+    };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
     if (!isLoggedIn || !userId || !apiUrl || headerAvatarUrl) return;
 
     let isCancelled = false;
@@ -78,7 +98,7 @@ export default function Header() {
         <HeaderRight>
           {isLoggedIn ? (
             <AccountCluster>
-              <UserStatusLink to="/event-me" onClick={() => setMenuOpen(false)}>
+              <UserStatusLink to={hasEventRegistration ? "/event-me" : "/event-registration"} onClick={() => setMenuOpen(false)}>
                 <UserStatusAvatar aria-hidden="true">
                   {headerAvatarSrc ? <img src={headerAvatarSrc} alt="" /> : (username || "?").slice(0, 1).toUpperCase()}
                 </UserStatusAvatar>
@@ -117,11 +137,17 @@ export default function Header() {
             <MenuSection>
               <MenuSectionTitle>Ice-Tour</MenuSectionTitle>
               <MenuItemLink to="/ice-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
-              <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>
+              <MenuItemLink to="/event-gifts" onClick={() => setMenuOpen(false)}>Gutscheine schenken</MenuItemLink>
+              {!hasEventRegistration && (
+                <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>
+              )}
               {shouldShowLiveMap && (
                 <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>
               )}
-              {isLoggedIn && (
+              {isAdmin && (
+                <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+              )}
+              {isLoggedIn && hasEventRegistration && (
                 <>
                   <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
                   <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
@@ -140,8 +166,15 @@ export default function Header() {
               <MenuSectionTitle>Konto</MenuSectionTitle>
               {isLoggedIn ? (
                 <>
-                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
-                  <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
+                  {hasEventRegistration && (
+                    <>
+                      <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                      <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                  )}
                   <MenuActionButton
                     type="button"
                     $danger

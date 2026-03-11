@@ -25,6 +25,11 @@ try {
     ]);
     $registration = $registrationStmt->fetch(PDO::FETCH_ASSOC);
 
+    if (!$registration) {
+        http_response_code(403);
+        throw new RuntimeException('Keine Event-Anmeldung für diesen Account gefunden.');
+    }
+
     $slotStmt = $pdo->prepare("SELECT
             s.id,
             s.registration_id,
@@ -50,34 +55,45 @@ try {
         INNER JOIN event2026_legal_versions l ON l.id = s.legal_version_id
         LEFT JOIN event2026_wave_assignments wa ON wa.slot_id = s.id
         LEFT JOIN event2026_waves w ON w.id = wa.wave_id
-        WHERE s.event_id = :event_id AND (s.user_id = :user_id OR s.registration_id = :registration_id)
+        WHERE s.registration_id = :registration_id
         ORDER BY s.id ASC");
-
     $slotStmt->execute([
-        ':event_id' => $eventId,
-        ':user_id' => $auth['user_id'],
-        ':registration_id' => $registration['id'] ?? 0,
+        ':registration_id' => (int) $registration['id'],
     ]);
-
     $slots = $slotStmt->fetchAll(PDO::FETCH_ASSOC);
-    if (!$registration && !$slots) {
-        http_response_code(403);
-        throw new RuntimeException('Keine Event-Anmeldung für diesen Account gefunden.');
-    }
+    $ownSlot = $slots[0] ?? null;
 
-    $ownSlot = null;
-    foreach ($slots as $slotRow) {
-        if ((int) ($slotRow['user_id'] ?? 0) === (int) $auth['user_id']) {
-            $ownSlot = $slotRow;
-            break;
-        }
-    }
-    if (!$ownSlot && !empty($slots)) {
-        $ownSlot = $slots[0];
-    }
+    $voucherStmt = $pdo->prepare("SELECT
+            id,
+            code_value,
+            purchased_by_addon_purchase_id,
+            status,
+            redeemed_by_registration_id,
+            redeemed_at,
+            created_at
+        FROM event2026_gift_vouchers
+        WHERE purchased_by_registration_id = :registration_id
+        ORDER BY id ASC");
+    $voucherStmt->execute([':registration_id' => (int) $registration['id']]);
+    $giftVouchers = $voucherStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $addonPurchaseStmt = $pdo->prepare("SELECT
+            id,
+            payment_reference_code,
+            gift_voucher_quantity,
+            expected_amount,
+            paid_amount,
+            status,
+            payment_method,
+            confirmed_at,
+            created_at
+        FROM event2026_addon_purchases
+        WHERE registration_id = :registration_id
+        ORDER BY created_at DESC, id DESC");
+    $addonPurchaseStmt->execute([':registration_id' => (int) $registration['id']]);
+    $addonPurchases = $addonPurchaseStmt->fetchAll(PDO::FETCH_ASSOC);
+
     $selectedRouteKey = event2026_normalize_route_key($ownSlot['route_key'] ?? '');
-    $selectedDistance = (int) ($ownSlot['distance_km'] ?? event2026_route_distance($selectedRouteKey));
-
     $checkpointStatsStmt = $pdo->prepare("SELECT
             c.id,
             c.name,
@@ -118,23 +134,6 @@ try {
         }
     }
 
-    $inviteStatus = [];
-    if ($registration) {
-        $inviteStmt = $pdo->prepare("SELECT
-                s.id AS slot_id,
-                s.full_name,
-                s.user_id,
-                MAX(CASE WHEN t.revoked_at IS NULL THEN t.expires_at END) AS latest_expires_at,
-                MAX(CASE WHEN t.revoked_at IS NULL AND t.claimed_at IS NOT NULL THEN 1 ELSE 0 END) AS claimed
-            FROM event2026_participant_slots s
-            LEFT JOIN event2026_invite_tokens t ON t.slot_id = s.id
-            WHERE s.registration_id = :registration_id
-            GROUP BY s.id, s.full_name, s.user_id
-            ORDER BY s.id ASC");
-        $inviteStmt->execute([':registration_id' => (int) $registration['id']]);
-        $inviteStatus = $inviteStmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
     echo json_encode([
         'status' => 'success',
         'event' => [
@@ -144,16 +143,25 @@ try {
             'status' => $event['status'],
         ],
         'route_catalog' => array_values(event2026_route_catalog()),
-        'registration' => $registration ?: null,
-        'payment' => $registration ? [
+        'registration' => [
+            'id' => (int) $registration['id'],
+            'payment_reference_code' => (string) $registration['payment_reference_code'],
+            'team_name' => $registration['team_name'],
+            'payment_status' => (string) $registration['payment_status'],
+            'entry_fee_amount' => (float) ($registration['entry_fee_amount'] ?? 0),
+            'gift_voucher_quantity' => (int) ($registration['gift_voucher_quantity'] ?? 0),
+            'gift_voucher_purchase_amount' => (float) ($registration['gift_voucher_purchase_amount'] ?? 0),
+            'donation_amount' => (float) ($registration['donation_amount'] ?? 0),
+            'voucher_discount_amount' => (float) ($registration['voucher_discount_amount'] ?? 0),
+            'created_at' => $registration['created_at'],
+        ],
+        'payment' => [
             'method' => $registration['payment_method'] ?: null,
             'expected_amount' => $registration['expected_amount'] !== null ? (float) $registration['expected_amount'] : null,
             'paid_amount' => $registration['paid_amount'] !== null ? (float) $registration['paid_amount'] : null,
             'status' => $registration['payment_status_detail'] ?: null,
-        ] : null,
-        'payment_instruction' => $registration
-            ? 'Bitte per PayPal Freunde oder Überweisung zahlen und den Referenzcode im Verwendungszweck angeben. Nach Zahlung wird dein Status manuell bestätigt.'
-            : null,
+        ],
+        'payment_instruction' => 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ch_helbig@mail.de oder direkt über https://paypal.me/ChristianHelbig451. Diese privat organisierte Veranstaltung kann nicht als Spende ausgewiesen werden. Wenn du kein PayPal hast, melde dich bitte an admin@ice-app.de.',
         'slots' => array_map(static function (array $slot): array {
             $routeKey = event2026_normalize_route_key($slot['route_key'] ?? '');
             $slot['route_key'] = $routeKey;
@@ -163,7 +171,30 @@ try {
             $slot['clothing_interest_label'] = event2026_clothing_interest_label($slot['clothing_interest']);
             return $slot;
         }, $slots),
-        'invites' => $inviteStatus,
+        'gift_vouchers' => array_map(static function (array $voucher): array {
+            return [
+                'id' => (int) $voucher['id'],
+                'code' => (string) ($voucher['code_value'] ?? ''),
+                'addon_purchase_id' => $voucher['purchased_by_addon_purchase_id'] !== null ? (int) $voucher['purchased_by_addon_purchase_id'] : null,
+                'status' => (string) $voucher['status'],
+                'redeemed_by_registration_id' => $voucher['redeemed_by_registration_id'] !== null ? (int) $voucher['redeemed_by_registration_id'] : null,
+                'redeemed_at' => $voucher['redeemed_at'],
+                'created_at' => $voucher['created_at'],
+            ];
+        }, $giftVouchers),
+        'addon_purchases' => array_map(static function (array $purchase): array {
+            return [
+                'id' => (int) $purchase['id'],
+                'payment_reference_code' => (string) $purchase['payment_reference_code'],
+                'gift_voucher_quantity' => (int) $purchase['gift_voucher_quantity'],
+                'expected_amount' => (float) $purchase['expected_amount'],
+                'paid_amount' => (float) $purchase['paid_amount'],
+                'status' => (string) $purchase['status'],
+                'payment_method' => (string) $purchase['payment_method'],
+                'confirmed_at' => $purchase['confirmed_at'],
+                'created_at' => $purchase['created_at'],
+            ];
+        }, $addonPurchases),
         'checkpoints' => array_map(static function (array $checkpoint): array {
             $routeKeys = event2026_checkpoint_route_keys((string) ($checkpoint['route_keys_csv'] ?? ''));
             return [

@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
+const EVENT2026_PAYMENT_PAYPAL = 'ch_helbig@mail.de';
+const EVENT2026_PAYMENT_PAYPAL_LINK = 'https://paypal.me/ChristianHelbig451';
+const EVENT2026_PAYMENT_CONTACT = 'admin@ice-app.de';
 const EVENT2026_ENTRY_FEE = 15.0;
 const EVENT2026_ADMIN_NOTIFY_EMAIL = 'admin@ice-app.de';
 
@@ -88,7 +91,29 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
         'user_id' => $userId,
         'username' => $username,
         'email' => $email,
+        'verification_url' => $verifyUrl,
         'verification_mail_sent' => $mailSent,
+    ];
+}
+
+function event2026_payment_instruction_text(): string
+{
+    return 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ' . EVENT2026_PAYMENT_PAYPAL . ' oder direkt über ' . EVENT2026_PAYMENT_PAYPAL_LINK . '. Diese privat organisierte Veranstaltung kann nicht als Spende ausgewiesen werden. Wenn du kein PayPal hast, melde dich bitte an ' . EVENT2026_PAYMENT_CONTACT . '. Finale Freigabe erfolgt nach Prüfung.';
+}
+
+function event2026_amount_breakdown(float $donationAmount, int $giftVoucherQuantity, bool $voucherRedeemed): array
+{
+    $entryFeeAmount = EVENT2026_ENTRY_FEE;
+    $giftVoucherPurchaseAmount = $giftVoucherQuantity * EVENT2026_ENTRY_FEE;
+    $voucherDiscountAmount = $voucherRedeemed ? EVENT2026_ENTRY_FEE : 0.0;
+    $expectedAmount = max(0, $entryFeeAmount + $giftVoucherPurchaseAmount + $donationAmount - $voucherDiscountAmount);
+
+    return [
+        'entry_fee_amount' => $entryFeeAmount,
+        'gift_voucher_purchase_amount' => $giftVoucherPurchaseAmount,
+        'voucher_discount_amount' => $voucherDiscountAmount,
+        'donation_amount' => $donationAmount,
+        'expected_amount' => $expectedAmount,
     ];
 }
 
@@ -102,14 +127,54 @@ try {
         $auth = authenticateRequest($pdo);
         $accountEmail = null;
         $hasRegistration = false;
+        $existingRegistration = null;
         if ($auth) {
             $accountEmail = event2026_fetch_user_email($pdo, (int) $auth['user_id']);
-            $regStmt = $pdo->prepare("SELECT COUNT(*) FROM event2026_registrations WHERE event_id = :event_id AND registered_by_user_id = :user_id");
+            $regStmt = $pdo->prepare("SELECT
+                    r.id,
+                    r.payment_reference_code,
+                    r.payment_status,
+                    r.entry_fee_amount,
+                    r.gift_voucher_quantity,
+                    r.gift_voucher_purchase_amount,
+                    r.donation_amount,
+                    r.voucher_discount_amount,
+                    p.expected_amount,
+                    p.paid_amount,
+                    p.status AS payment_status_detail,
+                    s.clothing_interest,
+                    s.jersey_size,
+                    s.bib_size
+                FROM event2026_registrations r
+                LEFT JOIN event2026_payments p ON p.registration_id = r.id
+                LEFT JOIN event2026_participant_slots s ON s.registration_id = r.id
+                WHERE r.event_id = :event_id AND r.registered_by_user_id = :user_id
+                ORDER BY r.created_at DESC
+                LIMIT 1");
             $regStmt->execute([
                 ':event_id' => (int) $event['id'],
                 ':user_id' => (int) $auth['user_id'],
             ]);
-            $hasRegistration = (int) $regStmt->fetchColumn() > 0;
+            $registrationRow = $regStmt->fetch(PDO::FETCH_ASSOC);
+            $hasRegistration = $registrationRow !== false;
+            if ($registrationRow) {
+                $existingRegistration = [
+                    'id' => (int) $registrationRow['id'],
+                    'payment_reference_code' => (string) $registrationRow['payment_reference_code'],
+                    'payment_status' => (string) ($registrationRow['payment_status_detail'] ?: $registrationRow['payment_status']),
+                    'entry_fee_amount' => (float) ($registrationRow['entry_fee_amount'] ?? 0),
+                    'gift_voucher_quantity' => (int) ($registrationRow['gift_voucher_quantity'] ?? 0),
+                    'gift_voucher_purchase_amount' => (float) ($registrationRow['gift_voucher_purchase_amount'] ?? 0),
+                    'donation_amount' => (float) ($registrationRow['donation_amount'] ?? 0),
+                    'voucher_discount_amount' => (float) ($registrationRow['voucher_discount_amount'] ?? 0),
+                    'expected_amount' => $registrationRow['expected_amount'] !== null ? (float) $registrationRow['expected_amount'] : null,
+                    'paid_amount' => $registrationRow['paid_amount'] !== null ? (float) $registrationRow['paid_amount'] : null,
+                    'clothing_interest' => event2026_normalize_clothing_interest($registrationRow['clothing_interest'] ?? ''),
+                    'clothing_interest_label' => event2026_clothing_interest_label($registrationRow['clothing_interest'] ?? ''),
+                    'jersey_size' => $registrationRow['jersey_size'] ?: null,
+                    'bib_size' => $registrationRow['bib_size'] ?: null,
+                ];
+            }
         }
 
         echo json_encode([
@@ -126,6 +191,8 @@ try {
                 'min_participants_for_go' => (int) $event['min_participants_for_go'],
                 'cancellation_deadline' => $event['cancellation_deadline'],
             ],
+            'voucher_value' => EVENT2026_ENTRY_FEE,
+            'payment_instruction' => event2026_payment_instruction_text(),
             'routes' => array_values(array_map(static function (array $route): array {
                 return [
                     'key' => $route['key'],
@@ -154,6 +221,7 @@ try {
                 'email' => $accountEmail,
                 'has_registration' => $hasRegistration,
             ],
+            'existing_registration' => $existingRegistration,
         ]);
         exit;
     }
@@ -165,14 +233,9 @@ try {
     }
 
     $data = event2026_json_input();
-    $participants = $data['participants'] ?? null;
-
-    if (!is_array($participants) || count($participants) < 1) {
-        throw new InvalidArgumentException('Mindestens ein Teilnehmer ist erforderlich.');
-    }
-
-    if (count($participants) > 20) {
-        throw new InvalidArgumentException('Pro Registrierung sind maximal 20 Teilnehmer erlaubt.');
+    $participant = is_array($data['participant'] ?? null) ? $data['participant'] : null;
+    if (!$participant) {
+        throw new InvalidArgumentException('Teilnehmerdaten fehlen.');
     }
 
     if (empty($data['acceptLegal'])) {
@@ -187,6 +250,8 @@ try {
     $newsletterOptIn = !empty($data['newsletter']);
     $registrationNote = trim((string) ($data['registrationNote'] ?? ''));
     $donationAmount = max(0, round((float) ($data['donationAmount'] ?? 0), 2));
+    $giftVoucherQuantity = max(0, min(20, (int) ($data['giftVoucherQuantity'] ?? 0)));
+    $voucherCode = strtoupper(trim((string) ($data['voucherCode'] ?? '')));
     if (strlen($registrationNote) > 220) {
         throw new InvalidArgumentException('Bemerkung ist zu lang (max. 220 Zeichen).');
     }
@@ -216,7 +281,6 @@ try {
     }
 
     $accountEmail = event2026_fetch_user_email($pdo, $auth['user_id']);
-
     $event = event2026_current_event($pdo, true);
     $eventId = (int) $event['id'];
 
@@ -225,17 +289,28 @@ try {
         throw new RuntimeException('Die Registrierung ist aktuell nicht geöffnet.');
     }
 
+    $alreadyRegisteredStmt = $pdo->prepare("SELECT COUNT(*) FROM event2026_registrations WHERE event_id = :event_id AND registered_by_user_id = :user_id");
+    $alreadyRegisteredStmt->execute([
+        ':event_id' => $eventId,
+        ':user_id' => $auth['user_id'],
+    ]);
+    if ((int) $alreadyRegisteredStmt->fetchColumn() > 0) {
+        throw new InvalidArgumentException('Dieser Account ist bereits für das Event registriert.');
+    }
+
+    $slotForUser = event2026_get_slot_for_user($pdo, $eventId, $auth['user_id']);
+    if ($slotForUser) {
+        throw new InvalidArgumentException('Dieser Account besitzt bereits einen Starterplatz für das Event.');
+    }
+
     $legal = event2026_active_legal($pdo, $eventId);
     $legalVersionId = (int) $legal['id'];
-
     if (!empty($data['legalVersion']) && $data['legalVersion'] !== $legal['version']) {
         throw new InvalidArgumentException('Die Teilnahmebedingungen wurden aktualisiert. Bitte Seite neu laden.');
     }
 
     $reservedCount = event2026_reserved_count($pdo, $eventId);
-    $requestedSlots = count($participants);
-
-    if (($reservedCount + $requestedSlots) > (int) $event['max_participants']) {
+    if (($reservedCount + 1) > (int) $event['max_participants']) {
         $pdo->rollBack();
         http_response_code(409);
         echo json_encode([
@@ -248,27 +323,85 @@ try {
         exit;
     }
 
+    $fullName = trim((string) ($participant['name'] ?? ''));
+    $email = trim((string) ($participant['email'] ?? $accountEmail ?? ''));
+    $routeKey = event2026_normalize_route_key((string) ($participant['routeKey'] ?? ''));
+    $distance = event2026_route_distance($routeKey);
+    $routeDefinition = event2026_route_definition($routeKey);
+    $paceGroup = event2026_normalize_pace_group($routeKey, (string) ($participant['paceGroup'] ?? ''));
+    $womenWaveOptIn = event2026_route_supports_pace($routeKey) && !empty($participant['womenWaveOptIn']) ? 1 : 0;
+    $publicNameConsent = array_key_exists('publicNameConsent', $participant) ? (!empty($participant['publicNameConsent']) ? 1 : 0) : 1;
+    $clothingInterest = event2026_normalize_clothing_interest((string) ($data['clothingInterest'] ?? ''));
+    $jerseyInterest = $clothingInterest !== 'none' ? 1 : 0;
+    $jerseySize = trim((string) ($data['jerseySize'] ?? ''));
+    $bibSize = trim((string) ($data['bibSize'] ?? ''));
+
+    if ($fullName === '' || $email === '') {
+        throw new InvalidArgumentException('Name und E-Mail sind erforderlich.');
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new InvalidArgumentException('Die E-Mail-Adresse ist ungültig.');
+    }
+    if (!in_array($paceGroup, event2026_allowed_pace_groups($routeKey), true)) {
+        throw new InvalidArgumentException('Ungültige Selbsteinschätzung der Geschwindigkeit.');
+    }
+    if ($jerseyInterest && $jerseySize === '') {
+        throw new InvalidArgumentException('Bitte gib eine Trikotgröße an, wenn Interesse besteht.');
+    }
+    if ($clothingInterest === 'kit_interest' && $bibSize === '') {
+        throw new InvalidArgumentException('Bitte gib eine Hosengröße an, wenn Set-Interesse besteht.');
+    }
+
+    $voucherRow = null;
+    if ($voucherCode !== '') {
+        $voucherRow = event2026_load_gift_voucher($pdo, $eventId, $voucherCode, true);
+        $voucherState = event2026_gift_voucher_status($voucherRow);
+        if ($voucherState['state'] !== 'valid') {
+            throw new InvalidArgumentException($voucherState['message']);
+        }
+    }
+
+    $breakdown = event2026_amount_breakdown($donationAmount, $giftVoucherQuantity, $voucherRow !== null);
+
     $registrationStmt = $pdo->prepare("INSERT INTO event2026_registrations (
         event_id,
         registered_by_user_id,
         team_name,
         payment_reference_code,
+        entry_fee_amount,
+        gift_voucher_quantity,
+        gift_voucher_purchase_amount,
         donation_amount,
+        voucher_discount_amount,
         payment_status,
         notes
-    ) VALUES (:event_id, :registered_by_user_id, :team_name, :payment_reference_code, :donation_amount, 'pending', :notes)");
+    ) VALUES (
+        :event_id,
+        :registered_by_user_id,
+        :team_name,
+        :payment_reference_code,
+        :entry_fee_amount,
+        :gift_voucher_quantity,
+        :gift_voucher_purchase_amount,
+        :donation_amount,
+        :voucher_discount_amount,
+        'pending',
+        :notes
+    )");
 
     $paymentRef = sprintf('ICE26-R%s', strtoupper(bin2hex(random_bytes(4))));
-
     $registrationStmt->execute([
         ':event_id' => $eventId,
         ':registered_by_user_id' => $auth['user_id'],
         ':team_name' => trim((string) ($data['teamName'] ?? '')) ?: null,
         ':payment_reference_code' => $paymentRef,
-        ':donation_amount' => $donationAmount,
+        ':entry_fee_amount' => $breakdown['entry_fee_amount'],
+        ':gift_voucher_quantity' => $giftVoucherQuantity,
+        ':gift_voucher_purchase_amount' => $breakdown['gift_voucher_purchase_amount'],
+        ':donation_amount' => $breakdown['donation_amount'],
+        ':voucher_discount_amount' => $breakdown['voucher_discount_amount'],
         ':notes' => $registrationNote !== '' ? $registrationNote : null,
     ]);
-
     $registrationId = (int) $pdo->lastInsertId();
     $registrationAccessToken = event2026_create_registration_access_token($pdo, $registrationId);
 
@@ -333,90 +466,139 @@ try {
     $ipHash = event2026_hash_nullable($_SERVER['REMOTE_ADDR'] ?? null);
     $uaHash = event2026_hash_nullable($_SERVER['HTTP_USER_AGENT'] ?? null);
 
-    $slotResults = [];
-    $appBaseUrl = 'https://ice-app.de/#';
-    $mailInviteLinks = [];
+    $slotStmt->execute([
+        ':registration_id' => $registrationId,
+        ':event_id' => $eventId,
+        ':user_id' => $auth['user_id'],
+        ':full_name' => $fullName,
+        ':email' => $email,
+        ':route_key' => $routeKey,
+        ':distance_km' => $distance,
+        ':pace_group' => $paceGroup,
+        ':women_wave_opt_in' => $womenWaveOptIn,
+        ':public_name_consent' => $publicNameConsent,
+        ':jersey_interest' => $jerseyInterest,
+        ':clothing_interest' => $clothingInterest,
+        ':jersey_size' => $jerseyInterest ? $jerseySize : null,
+        ':bib_size' => $clothingInterest === 'kit_interest' ? $bibSize : null,
+        ':legal_version_id' => $legalVersionId,
+        ':legal_ip_hash' => $ipHash,
+        ':legal_user_agent_hash' => $uaHash,
+    ]);
+    $slotId = (int) $pdo->lastInsertId();
 
-    foreach ($participants as $index => $participant) {
-        $fullName = trim((string) ($participant['name'] ?? ''));
-        $email = trim((string) ($participant['email'] ?? ''));
-        if ($index === 0 && $accountEmail) {
-            $email = $accountEmail;
-        }
-        $routeKey = event2026_normalize_route_key((string) ($participant['routeKey'] ?? ''));
-        $routeDefinition = event2026_route_definition($routeKey);
-        $distance = event2026_route_distance($routeKey);
-        $paceGroup = event2026_normalize_pace_group($routeKey, (string) ($participant['paceGroup'] ?? ''));
-        $womenWaveOptIn = event2026_route_supports_pace($routeKey) && !empty($participant['womenWaveOptIn']) ? 1 : 0;
-        $publicNameConsent = array_key_exists('publicNameConsent', $participant) ? (!empty($participant['publicNameConsent']) ? 1 : 0) : 1;
-        $clothingInterest = event2026_normalize_clothing_interest((string) ($participant['clothingInterest'] ?? ''));
-        $jerseyInterest = $clothingInterest !== 'none' ? 1 : 0;
-        $jerseySize = trim((string) ($participant['jerseySize'] ?? ''));
-        $bibSize = trim((string) ($participant['bibSize'] ?? ''));
+    $legalAuditStmt->execute([
+        ':slot_id' => $slotId,
+        ':legal_version_id' => $legalVersionId,
+        ':ip_hash' => $ipHash,
+        ':user_agent_hash' => $uaHash,
+    ]);
 
-        if ($fullName === '' || $email === '') {
-            throw new InvalidArgumentException('Für alle Teilnehmer sind Name und E-Mail erforderlich.');
-        }
+    $paymentStmt->execute([
+        ':registration_id' => $registrationId,
+        ':method' => $paymentMethod,
+        ':expected_amount' => $breakdown['expected_amount'],
+    ]);
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException('Mindestens eine E-Mail-Adresse ist ungültig.');
-        }
-
-        $allowedPaceGroups = event2026_allowed_pace_groups($routeKey);
-        if (!in_array($paceGroup, $allowedPaceGroups, true)) {
-            throw new InvalidArgumentException('Ungültige Selbsteinschätzung der Geschwindigkeit.');
-        }
-
-        if ($jerseyInterest && $jerseySize === '') {
-            throw new InvalidArgumentException('Bitte gib eine Trikotgröße an, wenn Interesse besteht.');
-        }
-        if ($clothingInterest === 'kit_interest' && $bibSize === '') {
-            throw new InvalidArgumentException('Bitte gib eine Hosengröße an, wenn Set-Interesse besteht.');
-        }
-
-        $slotStmt->execute([
+    if ($voucherRow) {
+        $redeemStmt = $pdo->prepare("UPDATE event2026_gift_vouchers
+            SET redeemed_by_registration_id = :registration_id,
+                redeemed_by_slot_id = :slot_id,
+                status = 'redeemed',
+                redeemed_at = NOW()
+            WHERE id = :id
+              AND status = 'open'");
+        $redeemStmt->execute([
             ':registration_id' => $registrationId,
-            ':event_id' => $eventId,
-            ':user_id' => $index === 0 ? $auth['user_id'] : null,
-            ':full_name' => $fullName,
-            ':email' => $email,
-            ':route_key' => $routeKey,
-            ':distance_km' => $distance,
-            ':pace_group' => $paceGroup,
-            ':women_wave_opt_in' => $womenWaveOptIn,
-            ':public_name_consent' => $publicNameConsent,
-            ':jersey_interest' => $jerseyInterest,
-            ':clothing_interest' => $clothingInterest,
-            ':jersey_size' => $jerseyInterest ? $jerseySize : null,
-            ':bib_size' => $clothingInterest === 'kit_interest' ? $bibSize : null,
-            ':legal_version_id' => $legalVersionId,
-            ':legal_ip_hash' => $ipHash,
-            ':legal_user_agent_hash' => $uaHash,
-        ]);
-
-        $slotId = (int) $pdo->lastInsertId();
-        $legalAuditStmt->execute([
             ':slot_id' => $slotId,
-            ':legal_version_id' => $legalVersionId,
-            ':ip_hash' => $ipHash,
-            ':user_agent_hash' => $uaHash,
+            ':id' => (int) $voucherRow['id'],
         ]);
-
-        $invitePayload = null;
-        if ($index > 0) {
-            $invite = event2026_create_invite_token($pdo, $slotId);
-            $invitePayload = [
-                'status' => 'created',
-                'token' => $invite['token'],
-                'expires_at' => $invite['expires_at'],
-            ];
-            $mailInviteLinks[] = [
-                'full_name' => $fullName,
-                'link' => $appBaseUrl . '/event-invite/' . $invite['token'],
-            ];
+        if ($redeemStmt->rowCount() !== 1) {
+            throw new RuntimeException('Der Gutschein konnte nicht mehr eingelöst werden. Bitte erneut versuchen.');
         }
+    }
 
-        $slotResults[] = [
+    event2026_log_action($pdo, $eventId, $auth['user_id'], 'registration_create', 'registration', $registrationId, [
+        'gift_voucher_quantity' => $giftVoucherQuantity,
+        'voucher_redeemed' => $voucherRow !== null,
+        'payment_method' => $paymentMethod,
+        'expected_amount' => $breakdown['expected_amount'],
+        'donation_amount' => $breakdown['donation_amount'],
+        'account_created_in_flow' => $accountCreationInfo !== null,
+    ]);
+
+    $pdo->commit();
+
+    $reservedAfter = event2026_reserved_count($pdo, $eventId);
+    $mailSent = false;
+    if ($accountEmail) {
+        $appBaseUrl = 'https://ice-app.de/#';
+        $mailBody = "Hallo {$auth['username']},\n\n";
+        $mailBody .= "deine Anmeldung zur Ice-Tour 2026 wurde gespeichert.\n\n";
+        $mailBody .= "Registrierung: #{$registrationId}\n";
+        $mailBody .= "Referenzcode: {$paymentRef}\n";
+        $mailBody .= "Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
+        if ($giftVoucherQuantity > 0) {
+            $mailBody .= "Zusätzliche Geschenk-Startplätze: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
+            $mailBody .= "Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang freigeschaltet.\n";
+        }
+        if ($voucherRow) {
+            $mailBody .= "Eingelöster Gutschein: -" . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . " EUR\n";
+        }
+        if ($donationAmount > 0) {
+            $mailBody .= "Zusätzlicher Betrag: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
+        }
+        $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n";
+        $mailBody .= "Zahlungsmethode: {$paymentMethod}\n\n";
+        $mailBody .= "Bitte sende das Geld wenn möglich per PayPal Freunde an " . EVENT2026_PAYMENT_PAYPAL . ".\n";
+        $mailBody .= "Direkter PayPal-Link: " . EVENT2026_PAYMENT_PAYPAL_LINK . "\n";
+        $mailBody .= "Die Veranstaltung ist privat organisiert und kann nicht als Spende ausgewiesen werden.\n";
+        $mailBody .= "Bitte gib den Referenzcode {$paymentRef} im Betreff oder Verwendungszweck an.\n";
+        $mailBody .= "Wenn du kein PayPal hast, melde dich bitte an " . EVENT2026_PAYMENT_CONTACT . ".\n\n";
+        if ($voucherRow) {
+            $mailBody .= "Der Gutschein-Code {$voucherCode} wurde für diese Anmeldung erfolgreich eingelöst.\n\n";
+        }
+        if ($accountCreationInfo !== null && !empty($accountCreationInfo['verification_url'])) {
+            $mailBody .= "Wichtig: Dein Ice-App Account wurde gerade neu erstellt. Bitte bestätige ihn über diesen Link, um die Account-Erstellung abzuschließen:\n";
+            $mailBody .= $accountCreationInfo['verification_url'] . "\n\n";
+        }
+        $mailBody .= "Dein Dashboard: {$appBaseUrl}/event-me\n\n";
+        $mailBody .= "Viele Grüße\nIce-App Team";
+        $mailSent = event2026_send_utf8_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
+    }
+
+    $adminMailBody = "Neue Event-Registrierung eingegangen.\n\n";
+    $adminMailBody .= "Registrierung: #{$registrationId}\n";
+    $adminMailBody .= "Referenzcode: {$paymentRef}\n";
+    $adminMailBody .= "Angelegt von User: {$auth['username']} (#{$auth['user_id']})\n";
+    $adminMailBody .= "Teilnehmer: {$fullName}\n";
+    $adminMailBody .= "Route: {$routeDefinition['label']}\n";
+    $adminMailBody .= "Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Gutschein-Käufe: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Gutschein-Abzug: -" . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Zusätzlicher Betrag: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Gesamt: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n";
+    $adminMailBody .= "Zahlungsmethode: {$paymentMethod}\n";
+    $adminMailBody .= "Newsletter: " . ($newsletterOptIn ? 'Ja' : 'Nein') . "\n";
+    $adminMailBody .= "Bemerkung: " . ($registrationNote !== '' ? $registrationNote : '-') . "\n";
+    event2026_send_utf8_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Ice-Tour Registrierung #' . $registrationId, $adminMailBody);
+
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Anmeldung erfolgreich gespeichert. Bitte Zahlung manuell abschließen.',
+        'registration_id' => $registrationId,
+        'registration_summary_access_token' => $registrationAccessToken['token'],
+        'registration_summary_access_token_expires_at' => $registrationAccessToken['expires_at'],
+        'payment_reference_code' => $paymentRef,
+        'payment_instruction' => event2026_payment_instruction_text(),
+        'payment_expected_amount' => $breakdown['expected_amount'],
+        'payment_breakdown' => $breakdown,
+        'gift_voucher_quantity' => $giftVoucherQuantity,
+        'gift_vouchers_pending_activation' => $giftVoucherQuantity > 0,
+        'notification_mail_sent' => $mailSent,
+        'account_created_in_flow' => $accountCreationInfo !== null,
+        'account_verification_mail_sent' => $accountCreationInfo['verification_mail_sent'] ?? null,
+        'participant_slot' => [
             'slot_id' => $slotId,
             'full_name' => $fullName,
             'email' => $email,
@@ -427,86 +609,11 @@ try {
             'clothing_interest_label' => event2026_clothing_interest_label($clothingInterest),
             'jersey_size' => $jerseyInterest ? $jerseySize : null,
             'bib_size' => $clothingInterest === 'kit_interest' ? $bibSize : null,
-            'claim_token_status' => $invitePayload,
-        ];
-    }
-
-    $expectedAmount = count($participants) * EVENT2026_ENTRY_FEE + $donationAmount;
-    $paymentStmt->execute([
-        ':registration_id' => $registrationId,
-        ':method' => $paymentMethod,
-        ':expected_amount' => $expectedAmount,
-    ]);
-
-    event2026_log_action($pdo, $eventId, $auth['user_id'], 'registration_create', 'registration', $registrationId, [
-        'participants' => count($participants),
-        'payment_method' => $paymentMethod,
-        'expected_amount' => $expectedAmount,
-        'donation_amount' => $donationAmount,
-        'account_created_in_flow' => $accountCreationInfo !== null,
-    ]);
-
-    $pdo->commit();
-
-    $reservedAfter = event2026_reserved_count($pdo, $eventId);
-
-    $mailSent = false;
-    if ($accountEmail) {
-        $mailBody = "Hallo {$auth['username']},\n\n";
-        $mailBody .= "deine Anmeldung zur Ice-Tour 2026 wurde gespeichert.\n\n";
-        $mailBody .= "Registrierung: #{$registrationId}\n";
-        $mailBody .= "Referenzcode: {$paymentRef}\n";
-        $mailBody .= "Erwarteter Betrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n";
-        if ($donationAmount > 0) {
-            $mailBody .= "Davon Spende: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
-        }
-        $mailBody .= "Zahlungsmethode: {$paymentMethod}\n\n";
-        $mailBody .= "Bitte zahle mit dem Referenzcode im Betreff/Verwendungszweck.\n";
-        $mailBody .= "Die Freigabe erfolgt nach Prüfung.\n\n";
-        if ($mailInviteLinks) {
-            $mailBody .= "Invite-Links für weitere Starterplätze:\n";
-            foreach ($mailInviteLinks as $inviteRow) {
-                $mailBody .= "- {$inviteRow['full_name']}: {$inviteRow['link']}\n";
-            }
-            $mailBody .= "\n";
-        }
-        $mailBody .= "Dein Dashboard: {$appBaseUrl}/event-me\n\n";
-        $mailBody .= "Viele Grüße\nIce-App Team";
-        $mailSent = event2026_send_utf8_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
-    }
-
-    $participantNames = implode(', ', array_map(static function (array $slot): string {
-        return (string) ($slot['full_name'] ?? '');
-    }, $slotResults));
-
-    $adminMailBody = "Neue Event-Registrierung eingegangen.\n\n";
-    $adminMailBody .= "Registrierung: #{$registrationId}\n";
-    $adminMailBody .= "Referenzcode: {$paymentRef}\n";
-    $adminMailBody .= "Angelegt von User: {$auth['username']} (#{$auth['user_id']})\n";
-    $adminMailBody .= "Team: " . (trim((string) ($data['teamName'] ?? '')) ?: '-') . "\n";
-    $adminMailBody .= "Teilnehmer (" . count($participants) . "): {$participantNames}\n";
-    $adminMailBody .= "Erwarteter Betrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n";
-    $adminMailBody .= "Spende: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
-    $adminMailBody .= "Zahlungsmethode: {$paymentMethod}\n";
-    $adminMailBody .= "Newsletter: " . ($newsletterOptIn ? 'Ja' : 'Nein') . "\n";
-    $adminMailBody .= "Bemerkung: " . ($registrationNote !== '' ? $registrationNote : '-') . "\n";
-    $adminMailBody .= "\nZeit: " . (new DateTimeImmutable('now'))->format('Y-m-d H:i:s') . "\n";
-    event2026_send_utf8_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Ice-Tour Registrierung #' . $registrationId, $adminMailBody);
-
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Anmeldung erfolgreich gespeichert. Bitte Zahlung manuell abschließen.',
-        'registration_id' => $registrationId,
-        'registration_summary_access_token' => $registrationAccessToken['token'],
-        'registration_summary_access_token_expires_at' => $registrationAccessToken['expires_at'],
-        'payment_reference_code' => $paymentRef,
-        'payment_instruction' => 'Bitte per PayPal Freunde oder Überweisung mit dem Referenzcode zahlen. Finale Freigabe erfolgt nach Prüfung.',
-        'payment_expected_amount' => $expectedAmount,
-        'donation_amount' => $donationAmount,
-        'notification_mail_sent' => $mailSent,
-        'account_created_in_flow' => $accountCreationInfo !== null,
-        'account_verification_mail_sent' => $accountCreationInfo['verification_mail_sent'] ?? null,
-        'participant_slots' => $slotResults,
+        ],
+        'voucher_redemption' => $voucherRow ? [
+            'code' => $voucherCode,
+            'discount_amount' => $breakdown['voucher_discount_amount'],
+        ] : null,
         'event' => [
             'reserved_slots' => $reservedAfter,
             'max_participants' => (int) $event['max_participants'],

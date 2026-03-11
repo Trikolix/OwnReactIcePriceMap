@@ -40,13 +40,42 @@ function event2026_ensure_schema(PDO $pdo): void
             registered_by_user_id INT DEFAULT NULL,
             team_name VARCHAR(255) DEFAULT NULL,
             payment_reference_code VARCHAR(64) NOT NULL,
+            entry_fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            gift_voucher_quantity INT NOT NULL DEFAULT 0,
+            gift_voucher_purchase_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             donation_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            voucher_discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             payment_status ENUM('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
             notes VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             CONSTRAINT fk_event2026_reg_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
             UNIQUE KEY uniq_event2026_payment_ref (payment_reference_code)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS event2026_addon_purchases (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            registration_id INT DEFAULT NULL,
+            buyer_user_id INT DEFAULT NULL,
+            buyer_name VARCHAR(255) DEFAULT NULL,
+            buyer_email VARCHAR(255) DEFAULT NULL,
+            payment_reference_code VARCHAR(64) NOT NULL,
+            gift_voucher_quantity INT NOT NULL DEFAULT 0,
+            expected_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            paid_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            status ENUM('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
+            payment_method ENUM('paypal_friends','bank_transfer') NOT NULL DEFAULT 'paypal_friends',
+            confirmed_by_admin INT DEFAULT NULL,
+            confirmed_at DATETIME DEFAULT NULL,
+            notes VARCHAR(255) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_addon_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            CONSTRAINT fk_event2026_addon_registration FOREIGN KEY (registration_id) REFERENCES event2026_registrations(id) ON DELETE CASCADE,
+            UNIQUE KEY uniq_event2026_addon_payment_ref (payment_reference_code),
+            KEY idx_event2026_addon_buyer (buyer_user_id, status),
+            KEY idx_event2026_addon_registration (registration_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
         "CREATE TABLE IF NOT EXISTS event2026_participant_slots (
@@ -91,17 +120,29 @@ function event2026_ensure_schema(PDO $pdo): void
             CONSTRAINT fk_event2026_accept_legal FOREIGN KEY (legal_version_id) REFERENCES event2026_legal_versions(id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
-        "CREATE TABLE IF NOT EXISTS event2026_invite_tokens (
+        "CREATE TABLE IF NOT EXISTS event2026_gift_vouchers (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            slot_id INT NOT NULL,
-            token_hash VARCHAR(128) NOT NULL,
-            expires_at DATETIME NOT NULL,
-            claimed_at DATETIME DEFAULT NULL,
-            revoked_at DATETIME DEFAULT NULL,
+            event_id INT NOT NULL,
+            purchased_by_registration_id INT DEFAULT NULL,
+            purchased_by_addon_purchase_id INT DEFAULT NULL,
+            redeemed_by_registration_id INT DEFAULT NULL,
+            redeemed_by_slot_id INT DEFAULT NULL,
+            code_value VARCHAR(64) NOT NULL,
+            code_hash VARCHAR(128) NOT NULL,
+            status ENUM('open','redeemed','cancelled') NOT NULL DEFAULT 'open',
+            redeemed_at DATETIME DEFAULT NULL,
+            cancelled_at DATETIME DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_event2026_invite_slot FOREIGN KEY (slot_id) REFERENCES event2026_participant_slots(id) ON DELETE CASCADE,
-            UNIQUE KEY uniq_event2026_invite_hash (token_hash),
-            KEY idx_event2026_invite_slot (slot_id)
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_voucher_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            CONSTRAINT fk_event2026_voucher_purchase_reg FOREIGN KEY (purchased_by_registration_id) REFERENCES event2026_registrations(id) ON DELETE CASCADE,
+            CONSTRAINT fk_event2026_voucher_purchase_addon FOREIGN KEY (purchased_by_addon_purchase_id) REFERENCES event2026_addon_purchases(id) ON DELETE SET NULL,
+            CONSTRAINT fk_event2026_voucher_redeem_reg FOREIGN KEY (redeemed_by_registration_id) REFERENCES event2026_registrations(id) ON DELETE SET NULL,
+            CONSTRAINT fk_event2026_voucher_redeem_slot FOREIGN KEY (redeemed_by_slot_id) REFERENCES event2026_participant_slots(id) ON DELETE SET NULL,
+            UNIQUE KEY uniq_event2026_voucher_hash (code_hash),
+            KEY idx_event2026_voucher_purchase_reg (purchased_by_registration_id),
+            KEY idx_event2026_voucher_redeem_reg (redeemed_by_registration_id),
+            KEY idx_event2026_voucher_status (event_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
         "CREATE TABLE IF NOT EXISTS event2026_payments (
@@ -270,6 +311,106 @@ function event2026_ensure_schema(PDO $pdo): void
         $pdo->exec("ALTER TABLE event2026_registrations ADD COLUMN donation_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER payment_reference_code");
     }
 
+    $entryFeeAmountColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_registrations'
+          AND COLUMN_NAME = 'entry_fee_amount'
+    ");
+    $entryFeeAmountColStmt->execute();
+    if ((int) $entryFeeAmountColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_registrations ADD COLUMN entry_fee_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER payment_reference_code");
+    }
+
+    $giftVoucherAmountColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_registrations'
+          AND COLUMN_NAME = 'gift_voucher_purchase_amount'
+    ");
+    $giftVoucherAmountColStmt->execute();
+    if ((int) $giftVoucherAmountColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_registrations ADD COLUMN gift_voucher_purchase_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER entry_fee_amount");
+    }
+
+    $giftVoucherQuantityColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_registrations'
+          AND COLUMN_NAME = 'gift_voucher_quantity'
+    ");
+    $giftVoucherQuantityColStmt->execute();
+    if ((int) $giftVoucherQuantityColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_registrations ADD COLUMN gift_voucher_quantity INT NOT NULL DEFAULT 0 AFTER entry_fee_amount");
+    }
+
+    $voucherDiscountColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_registrations'
+          AND COLUMN_NAME = 'voucher_discount_amount'
+    ");
+    $voucherDiscountColStmt->execute();
+    if ((int) $voucherDiscountColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_registrations ADD COLUMN voucher_discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER donation_amount");
+    }
+
+    $voucherCodeValueColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_gift_vouchers'
+          AND COLUMN_NAME = 'code_value'
+    ");
+    $voucherCodeValueColStmt->execute();
+    if ((int) $voucherCodeValueColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_gift_vouchers ADD COLUMN code_value VARCHAR(64) DEFAULT NULL AFTER redeemed_by_slot_id");
+    }
+
+    $voucherAddonPurchaseColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_gift_vouchers'
+          AND COLUMN_NAME = 'purchased_by_addon_purchase_id'
+    ");
+    $voucherAddonPurchaseColStmt->execute();
+    if ((int) $voucherAddonPurchaseColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_gift_vouchers ADD COLUMN purchased_by_addon_purchase_id INT DEFAULT NULL AFTER purchased_by_registration_id");
+    }
+
+    $addonBuyerNameColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_addon_purchases'
+          AND COLUMN_NAME = 'buyer_name'
+    ");
+    $addonBuyerNameColStmt->execute();
+    if ((int) $addonBuyerNameColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_addon_purchases ADD COLUMN buyer_name VARCHAR(255) DEFAULT NULL AFTER buyer_user_id");
+    }
+
+    $addonBuyerEmailColStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'event2026_addon_purchases'
+          AND COLUMN_NAME = 'buyer_email'
+    ");
+    $addonBuyerEmailColStmt->execute();
+    if ((int) $addonBuyerEmailColStmt->fetchColumn() === 0) {
+        $pdo->exec("ALTER TABLE event2026_addon_purchases ADD COLUMN buyer_email VARCHAR(255) DEFAULT NULL AFTER buyer_name");
+    }
+
+    $pdo->exec("ALTER TABLE event2026_addon_purchases MODIFY COLUMN registration_id INT DEFAULT NULL");
+    $pdo->exec("ALTER TABLE event2026_addon_purchases MODIFY COLUMN buyer_user_id INT DEFAULT NULL");
+    $pdo->exec("ALTER TABLE event2026_gift_vouchers MODIFY COLUMN purchased_by_registration_id INT DEFAULT NULL");
+
     $clothingInterestColStmt = $pdo->prepare("
         SELECT COUNT(*)
         FROM INFORMATION_SCHEMA.COLUMNS
@@ -375,6 +516,30 @@ function event2026_ensure_schema(PDO $pdo): void
                 END
             ELSE clothing_interest
         END");
+
+    $pdo->exec("UPDATE event2026_registrations r
+        LEFT JOIN (
+            SELECT registration_id, COUNT(*) AS slot_count
+            FROM event2026_participant_slots
+            GROUP BY registration_id
+        ) slots ON slots.registration_id = r.id
+        SET r.entry_fee_amount = CASE
+            WHEN r.entry_fee_amount > 0 THEN r.entry_fee_amount
+            ELSE COALESCE(slots.slot_count, 0) * 15
+        END
+        WHERE r.entry_fee_amount = 0");
+
+    $pdo->exec("UPDATE event2026_registrations
+        SET gift_voucher_purchase_amount = 0
+        WHERE gift_voucher_purchase_amount IS NULL");
+
+    $pdo->exec("UPDATE event2026_registrations
+        SET gift_voucher_quantity = ROUND(COALESCE(gift_voucher_purchase_amount, 0) / 15)
+        WHERE gift_voucher_quantity = 0 AND COALESCE(gift_voucher_purchase_amount, 0) > 0");
+
+    $pdo->exec("UPDATE event2026_registrations
+        SET voucher_discount_amount = 0
+        WHERE voucher_discount_amount IS NULL");
 
     $pdo->exec("UPDATE event2026_checkpoints
         SET stamp_card_mode = 'live'
@@ -856,23 +1021,192 @@ function event2026_require_admin(PDO $pdo): array
     return $auth;
 }
 
-function event2026_create_invite_token(PDO $pdo, int $slotId, int $days = 30): array
+function event2026_generate_gift_voucher_code(): string
 {
-    $raw = bin2hex(random_bytes(24));
-    $hash = hash('sha256', $raw);
-    $expiresAt = (new DateTimeImmutable('now'))->modify('+' . $days . ' days')->format('Y-m-d H:i:s');
+    return strtoupper(implode('-', [
+        substr(bin2hex(random_bytes(2)), 0, 4),
+        substr(bin2hex(random_bytes(2)), 0, 4),
+        substr(bin2hex(random_bytes(2)), 0, 4),
+    ]));
+}
 
-    $stmt = $pdo->prepare("INSERT INTO event2026_invite_tokens (slot_id, token_hash, expires_at) VALUES (:slot_id, :token_hash, :expires_at)");
+function event2026_create_gift_voucher(PDO $pdo, int $eventId, ?int $registrationId, ?int $addonPurchaseId = null): array
+{
+    $code = event2026_generate_gift_voucher_code();
+    $stmt = $pdo->prepare("INSERT INTO event2026_gift_vouchers (
+        event_id,
+        purchased_by_registration_id,
+        purchased_by_addon_purchase_id,
+        code_value,
+        code_hash,
+        status
+    ) VALUES (
+        :event_id,
+        :registration_id,
+        :addon_purchase_id,
+        :code_value,
+        :code_hash,
+        'open'
+    )");
     $stmt->execute([
-        ':slot_id' => $slotId,
-        ':token_hash' => $hash,
-        ':expires_at' => $expiresAt,
+        ':event_id' => $eventId,
+        ':registration_id' => $registrationId,
+        ':addon_purchase_id' => $addonPurchaseId,
+        ':code_value' => $code,
+        ':code_hash' => hash('sha256', $code),
     ]);
 
     return [
-        'token' => $raw,
-        'expires_at' => $expiresAt,
+        'id' => (int) $pdo->lastInsertId(),
+        'code' => $code,
+        'status' => 'open',
     ];
+}
+
+function event2026_generate_missing_registration_vouchers(PDO $pdo, int $eventId, int $registrationId, int $targetQuantity): array
+{
+    if ($targetQuantity <= 0) {
+        return [];
+    }
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*)
+        FROM event2026_gift_vouchers
+        WHERE event_id = :event_id
+          AND purchased_by_registration_id = :registration_id
+          AND purchased_by_addon_purchase_id IS NULL");
+    $countStmt->execute([
+        ':event_id' => $eventId,
+        ':registration_id' => $registrationId,
+    ]);
+    $existingCount = (int) $countStmt->fetchColumn();
+    $missing = max(0, $targetQuantity - $existingCount);
+    $created = [];
+    for ($i = 0; $i < $missing; $i++) {
+        $created[] = event2026_create_gift_voucher($pdo, $eventId, $registrationId);
+    }
+    return $created;
+}
+
+function event2026_generate_missing_addon_purchase_vouchers(PDO $pdo, int $eventId, ?int $registrationId, int $addonPurchaseId, int $targetQuantity): array
+{
+    if ($targetQuantity <= 0) {
+        return [];
+    }
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*)
+        FROM event2026_gift_vouchers
+        WHERE event_id = :event_id
+          AND purchased_by_registration_id = :registration_id
+          AND purchased_by_addon_purchase_id = :addon_purchase_id");
+    $countStmt->execute([
+        ':event_id' => $eventId,
+        ':registration_id' => $registrationId,
+        ':addon_purchase_id' => $addonPurchaseId,
+    ]);
+    $existingCount = (int) $countStmt->fetchColumn();
+    $missing = max(0, $targetQuantity - $existingCount);
+    $created = [];
+    for ($i = 0; $i < $missing; $i++) {
+        $created[] = event2026_create_gift_voucher($pdo, $eventId, $registrationId, $addonPurchaseId);
+    }
+    return $created;
+}
+
+function event2026_fetch_registration_owner(PDO $pdo, int $registrationId): ?array
+{
+    $stmt = $pdo->prepare("SELECT
+            r.id,
+            r.registered_by_user_id,
+            r.payment_reference_code,
+            n.username,
+            n.email
+        FROM event2026_registrations r
+        LEFT JOIN nutzer n ON n.id = r.registered_by_user_id
+        WHERE r.id = :registration_id
+        LIMIT 1");
+    $stmt->execute([':registration_id' => $registrationId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function event2026_fetch_addon_purchase_contact(PDO $pdo, int $addonPurchaseId): ?array
+{
+    $stmt = $pdo->prepare("SELECT
+            id,
+            buyer_name,
+            buyer_email,
+            buyer_user_id
+        FROM event2026_addon_purchases
+        WHERE id = :id
+        LIMIT 1");
+    $stmt->execute([':id' => $addonPurchaseId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+
+    $name = trim((string) ($row['buyer_name'] ?? ''));
+    $email = trim((string) ($row['buyer_email'] ?? ''));
+    if ($email !== '') {
+        return [
+            'name' => $name !== '' ? $name : 'Ice-Tour Teilnehmer',
+            'email' => $email,
+            'user_id' => $row['buyer_user_id'] !== null ? (int) $row['buyer_user_id'] : null,
+        ];
+    }
+
+    if ($row['buyer_user_id'] !== null) {
+        $userStmt = $pdo->prepare("SELECT username, email FROM nutzer WHERE id = :id LIMIT 1");
+        $userStmt->execute([':id' => (int) $row['buyer_user_id']]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if ($user && !empty($user['email'])) {
+            return [
+                'name' => (string) ($user['username'] ?? 'Ice-Tour Teilnehmer'),
+                'email' => (string) $user['email'],
+                'user_id' => (int) $row['buyer_user_id'],
+            ];
+        }
+    }
+
+    return null;
+}
+
+function event2026_load_gift_voucher(PDO $pdo, int $eventId, string $rawCode, bool $forUpdate = false): ?array
+{
+    $code = strtoupper(trim($rawCode));
+    if ($code === '') {
+        return null;
+    }
+
+    $lockClause = $forUpdate ? ' FOR UPDATE' : '';
+    $stmt = $pdo->prepare("SELECT *
+        FROM event2026_gift_vouchers
+        WHERE event_id = :event_id
+          AND code_hash = :code_hash
+        LIMIT 1{$lockClause}");
+    $stmt->execute([
+        ':event_id' => $eventId,
+        ':code_hash' => hash('sha256', $code),
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function event2026_gift_voucher_status(?array $voucher): array
+{
+    if (!$voucher) {
+        return ['state' => 'invalid', 'message' => 'Gutschein-Code wurde nicht gefunden.'];
+    }
+
+    $status = (string) ($voucher['status'] ?? '');
+    if ($status === 'redeemed') {
+        return ['state' => 'redeemed', 'message' => 'Dieser Gutschein wurde bereits eingelöst.'];
+    }
+    if ($status === 'cancelled') {
+        return ['state' => 'cancelled', 'message' => 'Dieser Gutschein ist nicht mehr gültig.'];
+    }
+
+    return ['state' => 'valid', 'message' => 'Gutschein ist gültig.'];
 }
 
 function event2026_create_registration_access_token(PDO $pdo, int $registrationId, int $days = 14): array

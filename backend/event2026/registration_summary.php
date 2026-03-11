@@ -19,7 +19,10 @@ try {
             r.event_id,
             r.registered_by_user_id,
             r.payment_reference_code,
+            r.entry_fee_amount,
+            r.gift_voucher_purchase_amount,
             r.donation_amount,
+            r.voucher_discount_amount,
             r.payment_status,
             r.team_name,
             r.created_at,
@@ -43,14 +46,12 @@ try {
 
     $auth = authenticateRequest($pdo);
     $summaryToken = trim((string) ($_GET['summary_token'] ?? ''));
-
     $isAllowedByAuth = false;
     if ($auth) {
         $isAllowedByAuth = (int) $auth['user_id'] === 1
             || (int) $registration['registered_by_user_id'] === (int) $auth['user_id'];
     }
     $isAllowedByToken = event2026_validate_registration_access_token($pdo, $registrationId, $summaryToken);
-
     if (!$isAllowedByAuth && !$isAllowedByToken) {
         http_response_code(403);
         throw new RuntimeException('Keine Berechtigung für diese Registrierung.');
@@ -78,12 +79,23 @@ try {
     ]);
     $slots = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $voucherStmt = $pdo->prepare("SELECT id, code_value, status, created_at
+        FROM event2026_gift_vouchers
+        WHERE purchased_by_registration_id = :registration_id
+        ORDER BY id ASC");
+    $voucherStmt->execute([':registration_id' => $registrationId]);
+    $giftVouchers = $voucherStmt->fetchAll(PDO::FETCH_ASSOC);
+
     echo json_encode([
         'status' => 'success',
         'registration' => [
             'id' => (int) $registration['id'],
             'payment_reference_code' => (string) $registration['payment_reference_code'],
+            'entry_fee_amount' => (float) ($registration['entry_fee_amount'] ?? 0),
+            'gift_voucher_quantity' => (int) ($registration['gift_voucher_quantity'] ?? 0),
+            'gift_voucher_purchase_amount' => (float) ($registration['gift_voucher_purchase_amount'] ?? 0),
             'donation_amount' => (float) ($registration['donation_amount'] ?? 0),
+            'voucher_discount_amount' => (float) ($registration['voucher_discount_amount'] ?? 0),
             'payment_status' => (string) $registration['payment_status'],
             'team_name' => $registration['team_name'],
             'created_at' => $registration['created_at'],
@@ -94,6 +106,14 @@ try {
             'paid_amount' => $registration['paid_amount'] !== null ? (float) $registration['paid_amount'] : null,
             'status' => $registration['payment_status_detail'] ?: null,
         ],
+        'gift_vouchers' => array_map(static function (array $voucher): array {
+            return [
+                'id' => (int) $voucher['id'],
+                'code' => (string) ($voucher['code_value'] ?? ''),
+                'status' => (string) $voucher['status'],
+                'created_at' => $voucher['created_at'],
+            ];
+        }, $giftVouchers),
         'slots' => array_map(static function (array $row): array {
             return [
                 'id' => (int) $row['id'],
