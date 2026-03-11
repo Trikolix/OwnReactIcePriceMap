@@ -24,7 +24,7 @@ import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
 import headerWideChristmas from './header_wide_christmas.png';
 import headerWideEaster from './header_wide_easter.png';
-import headerWideBirthday from './header_wide_1st_birthday.png';
+import headerWideBirthday from './header_wide_1st_birthday_new.png';
 import headerWide from './header_wide.png';
 import GewinnspielImage from './birthday_action.png';
 

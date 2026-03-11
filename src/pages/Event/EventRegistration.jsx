@@ -34,11 +34,6 @@ const createParticipant = () => ({
   bibSize: "",
 });
 
-const formatLegalContent = (content) =>
-  (content || "")
-    .replace(/^##\s*/gm, "")
-    .replace(/^- /gm, "• ");
-
 const PageWrapper = styled.div`
   font-family: Arial, sans-serif;
   background: var(--event-bg);
@@ -224,7 +219,6 @@ export default function EventRegistration() {
   const [donationAmount, setDonationAmount] = useState(0);
   const [newsletter, setNewsletter] = useState(false);
   const [acceptWaiver, setAcceptWaiver] = useState(false);
-  const [acceptEventLegal, setAcceptEventLegal] = useState(false);
   const [acceptAccountTerms, setAcceptAccountTerms] = useState(false);
   const [newAccount, setNewAccount] = useState({
     username: "",
@@ -341,7 +335,7 @@ export default function EventRegistration() {
       paymentMethodPreference: "paypal_friends",
       registrationNote,
       acceptWaiver,
-      acceptLegal: acceptEventLegal,
+      acceptLegal: acceptWaiver,
       legalVersion: legal?.version ?? null,
       account: !isLoggedIn
         ? {
@@ -715,23 +709,11 @@ export default function EventRegistration() {
                 </div>
               </StatusBanner>
 
-              {legal && (
-                <div style={{ background: "#fffdf7", border: "1px solid #ffe3a2", borderRadius: 8, padding: "0.8rem", marginBottom: "0.9rem" }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Rechtstextversion {legal.version}</div>
-                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.45 }}>{formatLegalContent(legal.content_md)}</div>
-                </div>
-              )}
-
               <CheckboxLabel>
                 <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} required />
                 <span>
-                  Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Bedingungen.
+                  Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Teilnahmebedingungen in der aktuellen Version.
                 </span>
-              </CheckboxLabel>
-
-              <CheckboxLabel>
-                <input type="checkbox" checked={acceptEventLegal} onChange={(e) => setAcceptEventLegal(e.target.checked)} required />
-                <span>Ich akzeptiere die oben angezeigten Teilnahmebedingungen in der aktuellen Version.</span>
               </CheckboxLabel>
 
               <CheckboxLabel>

@@ -77,7 +77,7 @@ export default function LiabilityWaiver() {
                         <ModalContent>
                             <p>
                                 Ich, der/die Teilnehmer/in, bestätige hiermit, dass ich an der
-                                Eisdielen Tour auf eigene Gefahr, eigene Rechnung und eigenes Risiko
+                                Ice-Tour auf eigene Gefahr, eigene Rechnung und eigenes Risiko
                                 teilnehme.
                             </p>
                             <h4 style={{ fontWeight: 600, marginTop: 18 }}>1. Haftungsausschluss</h4>
@@ -101,7 +101,7 @@ export default function LiabilityWaiver() {
                             </p>
                             <h4 style={{ fontWeight: 600, marginTop: 18 }}>3. Kein Renncharakter</h4>
                             <p>
-                                Die Eisdielen Tour ist ausdrücklich kein Rennen, sondern eine
+                                Die Ice-Tour ist ausdrücklich kein Rennen, sondern eine
                                 Radtouristikfahrt (RTF). Es geht um den gemeinsamen Spaß am Radfahren
                                 und nicht um das Erreichen von Höchstgeschwindigkeiten. Ich verpflichte
                                 mich, auf Wettkampfverhalten zu verzichten.

@@ -1,6 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import jerseyImage from "./jersey.png";
+import jerseyFrontImage from "./jersey_front.png";
+import jerseySideImage from "./jersey_side.png";
+import jerseyBackImage from "./jersey_back.png";
+import bibFrontImage from "./bib_front.png";
+import bibSideImage from "./bib_side.png";
+import bibBackImage from "./bib_back.png";
 
 const Overlay = styled.div`
   position: fixed;
@@ -95,36 +100,130 @@ const PreviewGrid = styled.div`
   }
 `;
 
-const JerseyImage = styled.img`
-  width: 100%;
-  max-width: 520px;
-  border-radius: 10px;
-  display: block;
-`;
-
 const BibGrid = styled.div`
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 `;
 
-const Placeholder = styled.div`
+const PreviewImage = styled.img`
+  width: 100%;
   min-height: 140px;
-  border: 1px dashed #d5b870;
+  border: 1px solid #d5b870;
   border-radius: 10px;
   background: linear-gradient(135deg, #fff8e7 0%, #fff2c7 100%);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0.8rem;
-  font-weight: 700;
-  color: #8a5700;
-  text-align: center;
+  display: block;
+  object-fit: cover;
+  cursor: pointer;
 `;
 
 const SectionTitle = styled.h3`
   margin: 0 0 0.7rem;
 `;
+
+const LightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`;
+
+const LightboxContent = styled.div`
+  width: min(1100px, 96vw);
+  max-height: 92vh;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-rows: minmax(0, 1fr) auto;
+`;
+
+const LightboxMain = styled.div`
+  position: relative;
+  min-height: 280px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1f1f1f;
+`;
+
+const LightboxImage = styled.img`
+  width: 100%;
+  height: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  display: block;
+`;
+
+const NavButton = styled.button`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.62);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+`;
+
+const PrevButton = styled(NavButton)`
+  left: 0.8rem;
+`;
+
+const NextButton = styled(NavButton)`
+  right: 0.8rem;
+`;
+
+const LightboxCaption = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.7rem 1rem;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.72) 100%);
+  font-weight: 600;
+`;
+
+const ThumbRow = styled.div`
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  @media (max-width: 860px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+`;
+
+const ThumbButton = styled.button`
+  border: 2px solid ${(props) => (props.$active ? "#ffb522" : "#4c4c4c")};
+  border-radius: 8px;
+  background: #222;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 72px;
+`;
+
+const ThumbImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`;
+
+const previewImages = [
+  { index: 0, src: jerseyFrontImage, alt: "Radtrikot Vorderseite", label: "Trikot vorne", type: "jersey" },
+  { index: 1, src: jerseySideImage, alt: "Radtrikot Seitenansicht", label: "Trikot Seite", type: "jersey" },
+  { index: 2, src: jerseyBackImage, alt: "Radtrikot Rückseite", label: "Trikot Rückseite", type: "jersey" },
+  { index: 3, src: bibFrontImage, alt: "Bib-Shorts Vorderseite", label: "Hose vorne", type: "bib" },
+  { index: 4, src: bibSideImage, alt: "Bib-Shorts Seitenansicht", label: "Hose Seite", type: "bib" },
+  { index: 5, src: bibBackImage, alt: "Bib-Shorts Rückseite", label: "Hose Rückseite", type: "bib" },
+];
 
 const jerseySizeChart = [
   { size: 2, intl: "XS", men: 42, women: 36, chest: "82-86" },
@@ -156,6 +255,73 @@ const bibSizeChart = [
 ];
 
 function KitInfoModal({ onClose }) {
+  const [activeImageIndex, setActiveImageIndex] = useState(null);
+  const [touchStartX, setTouchStartX] = useState(null);
+
+  const showPrevImage = () => {
+    setActiveImageIndex((currentIndex) => {
+      if (currentIndex === null) {
+        return null;
+      }
+      return (currentIndex - 1 + previewImages.length) % previewImages.length;
+    });
+  };
+
+  const showNextImage = () => {
+    setActiveImageIndex((currentIndex) => {
+      if (currentIndex === null) {
+        return null;
+      }
+      return (currentIndex + 1) % previewImages.length;
+    });
+  };
+
+  useEffect(() => {
+    if (activeImageIndex === null) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setActiveImageIndex(null);
+      }
+      if (event.key === "ArrowLeft") {
+        showPrevImage();
+      }
+      if (event.key === "ArrowRight") {
+        showNextImage();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeImageIndex]);
+
+  const activeImage = activeImageIndex !== null ? previewImages[activeImageIndex] : null;
+
+  const handleTouchStart = (event) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+  };
+
+  const handleTouchEnd = (event) => {
+    if (touchStartX === null) {
+      return;
+    }
+    const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+    const deltaX = touchEndX - touchStartX;
+    if (Math.abs(deltaX) > 45) {
+      if (deltaX > 0) {
+        showPrevImage();
+      } else {
+        showNextImage();
+      }
+    }
+    setTouchStartX(null);
+  };
+
+  const jerseyImages = previewImages.filter((image) => image.type === "jersey");
+  const bibImages = previewImages.filter((image) => image.type === "bib");
+
   return (
     <Overlay onClick={onClose}>
       <Modal onClick={(event) => event.stopPropagation()}>
@@ -164,14 +330,28 @@ function KitInfoModal({ onClose }) {
           <PreviewGrid>
             <div>
               <SectionTitle>Trikot</SectionTitle>
-              <JerseyImage src={jerseyImage} alt="Radtrikot" />
+              <BibGrid>
+                {jerseyImages.map((image) => (
+                  <PreviewImage
+                    key={image.alt}
+                    src={image.src}
+                    alt={image.alt}
+                    onClick={() => setActiveImageIndex(image.index)}
+                  />
+                ))}
+              </BibGrid>
             </div>
             <div>
               <SectionTitle>Hose / Bib-Shorts</SectionTitle>
               <BibGrid>
-                <Placeholder>Hose vorne</Placeholder>
-                <Placeholder>Hose Seite</Placeholder>
-                <Placeholder>Hose Rückseite</Placeholder>
+                {bibImages.map((image) => (
+                  <PreviewImage
+                    key={image.alt}
+                    src={image.src}
+                    alt={image.alt}
+                    onClick={() => setActiveImageIndex(image.index)}
+                  />
+                ))}
               </BibGrid>
             </div>
           </PreviewGrid>
@@ -234,6 +414,35 @@ function KitInfoModal({ onClose }) {
           </CloseButton>
         </ModalFooter>
       </Modal>
+      {activeImage && (
+        <LightboxOverlay onClick={() => setActiveImageIndex(null)}>
+          <LightboxContent onClick={(event) => event.stopPropagation()}>
+            <LightboxMain onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+              <LightboxImage src={activeImage.src} alt={activeImage.alt} />
+              <PrevButton type="button" onClick={showPrevImage} aria-label="Vorheriges Bild">
+                &lt;
+              </PrevButton>
+              <NextButton type="button" onClick={showNextImage} aria-label="Nächstes Bild">
+                &gt;
+              </NextButton>
+              <LightboxCaption>{activeImage.label}</LightboxCaption>
+            </LightboxMain>
+            <ThumbRow>
+              {previewImages.map((image, index) => (
+                <ThumbButton
+                  key={`thumb-${image.alt}`}
+                  type="button"
+                  onClick={() => setActiveImageIndex(index)}
+                  $active={index === activeImageIndex}
+                  aria-label={image.label}
+                >
+                  <ThumbImage src={image.src} alt={image.alt} />
+                </ThumbButton>
+              ))}
+            </ThumbRow>
+          </LightboxContent>
+        </LightboxOverlay>
+      )}
     </Overlay>
   );
 }
