@@ -7,6 +7,7 @@ import Footer from "./Footer";
 import CheckinForm from "../../CheckinForm";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
+import { EVENT_START_FINISH } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -695,6 +696,9 @@ export default function EventStampCard() {
   }, [mode, pendingActions, syncing]);
 
   const pendingCount = pendingActions.filter((item) => item.mode === mode).length;
+  const startFinishDistance = locationState.coords
+    ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, EVENT_START_FINISH.lat, EVENT_START_FINISH.lng)
+    : null;
 
   return (
     <Page>
@@ -739,6 +743,11 @@ export default function EventStampCard() {
               <div style={{ color: "#8a5700", fontSize: 13 }}>Standort</div>
               <strong>{locationState.coords ? `${locationState.coords.accuracy?.toFixed?.(0) || "?"} m Genauigkeit` : "Noch nicht erfasst"}</strong>
             </StatCard>
+            <StatCard>
+              <div style={{ color: "#8a5700", fontSize: 13 }}>Start & Ziel</div>
+              <strong>{EVENT_START_FINISH.name}</strong>
+              <div style={{ marginTop: 4, fontSize: 13, color: "#8a5700" }}>{EVENT_START_FINISH.address}</div>
+            </StatCard>
           </Grid>
 
           <ActionRow>
@@ -766,6 +775,29 @@ export default function EventStampCard() {
             </MessageBox>
           )}
         </Card>
+
+        {mode === "live" && (
+          <Card>
+            <h2 style={{ marginTop: 0 }}>Start & Ziel</h2>
+            <Subtle>
+              Treffpunkt fuer Start und Ziel ist <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
+            </Subtle>
+            <Small style={{ marginTop: "0.7rem" }}>
+              {startFinishDistance !== null
+                ? `Entfernung zum Start-/Zielbereich: ${Math.round(startFinishDistance)} m`
+                : "Sobald dein Standort verfuegbar ist, siehst du hier auch die Entfernung zum Start-/Zielbereich."}
+            </Small>
+            <ActionRow>
+              <ActionButton
+                type="button"
+                $secondary
+                onClick={() => openCheckin({ shop_id: EVENT_START_FINISH.shopId, shop_name: EVENT_START_FINISH.name, name: EVENT_START_FINISH.name })}
+              >
+                Eis bei {EVENT_START_FINISH.name} einchecken
+              </ActionButton>
+            </ActionRow>
+          </Card>
+        )}
 
         {!isLoggedIn && (
           <Card>

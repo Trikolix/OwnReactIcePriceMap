@@ -5,7 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { getRouteLabel } from "./eventConfig";
+import { EVENT_START_FINISH, getRouteLabel } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -141,6 +141,9 @@ export default function EventInviteClaim() {
           <h1 style={{ marginTop: 0 }}>Starterplatz übernehmen</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
             Über diesen Link kannst du einen Event-Starterplatz mit deinem Account verknüpfen.
+          </p>
+          <p style={{ margin: "0.55rem 0 0", color: "#7c4f00" }}>
+            Start und Ziel: <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
           </p>
         </Card>
 

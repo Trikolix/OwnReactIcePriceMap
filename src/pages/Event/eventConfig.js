@@ -1,6 +1,19 @@
-export const EVENT_ENTRY_FEE = 15;
+export const EVENT_DATE = "Samstag, 16. Mai 2026";
+export const EVENT_ENTRY_FEE = 10;
 export const JERSEY_DISPLAY_PRICE = 75;
 export const KIT_DISPLAY_PRICE = 175;
+export const EVENT_START_FINISH = {
+  shopId: 293,
+  name: "Karl mag's süß",
+  address: "Untere Aktienstraße 12",
+  postalCode: "09111",
+  city: "Chemnitz",
+  fullAddress: "Untere Aktienstraße 12, 09111 Chemnitz",
+  logoUrl: "https://karlmagssuess.de/wp-content/uploads/2024/12/Logo1.png",
+  lat: 50.841892,
+  lng: 12.923957,
+  routeKeys: ["family_2", "classic_3", "epic_4"],
+};
 
 export const ROUTE_OPTIONS = [
   {

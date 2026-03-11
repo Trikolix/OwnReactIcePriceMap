@@ -6,7 +6,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { getClothingLabel, getPaceLabel, getRouteLabel } from "./eventConfig";
+import { EVENT_START_FINISH, getClothingLabel, getPaceLabel, getRouteLabel } from "./eventConfig";
 
 const PageWrapper = styled.div`
   font-family: Arial, sans-serif;
@@ -247,6 +247,11 @@ export default function EventMyRegistration() {
                 <div style={{ fontSize: 13, color: "#8a5700" }}>Bekleidungsinteresse</div>
                 <strong>{ownSlot.clothing_interest_label || getClothingLabel(ownSlot.clothing_interest)}</strong>
               </StatCard>
+              <StatCard>
+                <div style={{ fontSize: 13, color: "#8a5700" }}>Start & Ziel</div>
+                <strong>{EVENT_START_FINISH.name}</strong>
+                <div style={{ marginTop: 4, fontSize: 13, color: "#8a5700" }}>{EVENT_START_FINISH.fullAddress}</div>
+              </StatCard>
             </StatGrid>
           </Card>
         )}
@@ -334,7 +339,7 @@ export default function EventMyRegistration() {
             <List>
               <li>Roadbook: <strong>{starterGuide.roadbook_status === "placeholder" ? "folgt" : starterGuide.roadbook_status}</strong></li>
               <li>GPX-Datei: <strong>{starterGuide.gpx_status === "placeholder" ? "folgt" : starterGuide.gpx_status}</strong></li>
-              <li>Anreise / Abreise: Treffpunkt und finale Hinweise kommen mit der Erinnerungsmail und stehen dann hier.</li>
+              <li>Anreise / Abreise: Start und Ziel sind bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}. Finale Hinweise kommen zusätzlich mit der Erinnerungsmail.</li>
               <li>Packliste: {(starterGuide.checklist || []).join(", ")}</li>
               <li>Kontakt für Rückfragen: <strong>{starterGuide.contact_email || "event@ice-app.de"}</strong></li>
             </List>
@@ -364,10 +369,10 @@ export default function EventMyRegistration() {
             <TimerReset size={20} /> Am Eventtag
           </h2>
           <List>
-            <li>Ankommen, Startunterlagen bereithalten, ggf. Kaffee oder Notfall-Snack mitnehmen.</li>
+            <li>Ankommen bei <strong>{EVENT_START_FINISH.name}</strong>, Startunterlagen bereithalten, ggf. Kaffee oder Notfall-Snack mitnehmen.</li>
             <li>Mit deiner Gruppe oder im Startfenster losfahren und die GPX-Navigation nutzen.</li>
             <li>An jedem Checkpoint Stempelkarte zeigen, QR-Code scannen oder Check-in erfassen.</li>
-            <li>Im Ziel erneut QR-Code scannen oder finalen Check-in machen, damit die Runde abgeschlossen ist.</li>
+            <li>Im Ziel bei <strong>{EVENT_START_FINISH.name}</strong> erneut QR-Code scannen oder finalen Check-in machen, damit die Runde abgeschlossen ist.</li>
           </List>
         </Card>
 

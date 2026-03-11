@@ -5,7 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
-import { getClothingLabel, getRouteLabel } from "./eventConfig";
+import { EVENT_START_FINISH, getClothingLabel, getRouteLabel } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -104,6 +104,9 @@ export default function EventRegistrationSummary() {
           <h1 style={{ marginTop: 0 }}>Anmeldung erfolgreich</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
             Du erhältst eine E-Mail mit allen weiteren Anweisungen zur Zahlung und den Invite-Links.
+          </p>
+          <p style={{ margin: "0.55rem 0 0", color: "#7c4f00" }}>
+            Start und Ziel sind bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
           </p>
         </Card>
 

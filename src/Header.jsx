@@ -836,9 +836,16 @@ const HeaderContainer = styled.header`
   position: relative;
   z-index: ${({ $menuOpen }) => ($menuOpen ? 1600 : 1200)};
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  width: 100%;
 
   > * {
     position: relative;
+  }
+
+  @media (max-width: 420px) {
+    gap: 8px;
+    padding: 8px;
   }
 `;
 
@@ -848,6 +855,12 @@ const LogoContainer = styled.div`
   margin: 0 auto;
   color: black;
 
+  @media (max-width: 768px) {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+  }
+
   @media (min-width: 769px) {
     position: absolute;
     left: 50%;
@@ -856,12 +869,33 @@ const LogoContainer = styled.div`
     margin: 0;
     z-index: 0;
   }
+
+  @media (min-width: 1450px) and (max-width: 1625px) {
+    left: calc(50% + 24px);
+  }
+
+  @media (min-width: 1300px) and (max-width: 1449px) {
+    left: calc(50% + 44px);
+  }
+
+  @media (min-width: 1200px) and (max-width: 1299px) {
+    left: calc(50% + 68px);
+  }
+
+  @media (min-width: 1100px) and (max-width: 1199px) {
+    left: calc(50% + 92px);
+  }
 `;
 
 const Logo = styled.img`
   height: 100px;
   @media (max-width: 768px) {
     height: 60px;
+  }
+
+  @media (max-width: 420px) {
+    height: 48px;
+    max-width: 100%;
   }
 `;
 
@@ -873,6 +907,10 @@ const DesktopNav = styled.nav`
 
   @media (min-width: 1100px) {
     display: flex;
+  }
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    gap: 2px;
   }
 `;
 
@@ -898,6 +936,13 @@ const DesktopNavLink = styled(NavLink)`
     color: #2b1d00;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    gap: 5px;
+    font-size: 0.92rem;
+    padding: 7px ${({ $compact }) => ($compact ? '0px' : '7px')} 7px 7px;
+    margin-right: ${({ $compact }) => ($compact ? '-2px' : '0')};
+  }
 `;
 
 const DesktopNavBadge = styled.span`
@@ -915,6 +960,10 @@ const DesktopNavBadge = styled.span`
   transform: translate(-10px, -12px) rotate(12deg);
   transform-origin: center;
   box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    transform: translate(-8px, -10px) rotate(12deg);
+  }
 `;
 
 const ActivityBadge = styled.span`
@@ -938,6 +987,19 @@ const HeaderRight = styled.div`
   align-items: center;
   gap: 8px;
   margin-left: auto;
+
+  @media (max-width: 768px) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  @media (max-width: 420px) {
+    gap: 6px;
+  }
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    gap: 6px;
+  }
 `;
 
 const AccountCluster = styled.div`
@@ -950,7 +1012,11 @@ const AccountCluster = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   @media (max-width: 768px) {
-    max-width: calc(100vw - 150px);
+    min-height: 42px;
+    height: 42px;
+    min-width: 0;
+    max-width: none;
+    flex: 0 1 auto;
   }
 `;
 
@@ -968,6 +1034,11 @@ const NotificationBellWrap = styled.div`
   min-height: 40px;
   color: #2f2100;
   padding: 0 2px 0 4px;
+
+  @media (max-width: 768px) {
+    min-height: 42px;
+    height: 42px;
+  }
 `;
 
 const UserStatusLink = styled(Link)`
@@ -987,7 +1058,9 @@ const UserStatusLink = styled(Link)`
   }
 
   @media (max-width: 768px) {
-    padding-right: 8px;
+    min-height: 42px;
+    height: 42px;
+    padding: 0 8px 0 6px;
   }
 `;
 
@@ -1287,11 +1360,24 @@ const GewinnspielIcon = styled.div`
       height: 50px;
     }
   }
+
+  @media (max-width: 420px) {
+    margin-right: 0;
+
+    img {
+      width: 42px;
+      height: 42px;
+    }
+  }
 `;
 
 const PromoIconsContainer = styled.div`
   display: flex;
   align-items: center;
+
+  @media (max-width: 420px) {
+    flex: 0 0 auto;
+  }
 `;
 
 const UserLink = styled(Link)`

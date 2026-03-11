@@ -18,6 +18,7 @@ import {
   PACE_OPTIONS,
   ROUTE_OPTIONS,
   TSHIRT_SIZES,
+  EVENT_START_FINISH,
   getRouteByKey,
   routeSupportsPace,
 } from "./eventConfig";
@@ -413,6 +414,9 @@ export default function EventRegistration() {
                 <Muted>
                   Alle drei Routen kosten gleich viel. Startgruppen und Startzeiten werden nach Zahlung und finaler Gruppeneinteilung vergeben.
                 </Muted>
+                <Muted style={{ marginTop: 8 }}>
+                  Start und Ziel liegen bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
+                </Muted>
                 {eventMeta.event_status === "cancelled" && (
                   <StatusBanner tone="danger" style={{ marginTop: 12, marginBottom: 0 }}>
                     Das Event wurde abgesagt.
@@ -762,7 +766,7 @@ export default function EventRegistration() {
                 <br />
                 3. Persönliches Portal mit Route, Startgruppe und Stempelkarte
                 <br />
-                4. Vor dem Event: Erinnerungsmail und finale Unterlagen
+                4. Vor dem Event: Erinnerungsmail, finale Unterlagen und Treffpunkt bei {EVENT_START_FINISH.name}
               </Muted>
             </Card>
           </Summary>

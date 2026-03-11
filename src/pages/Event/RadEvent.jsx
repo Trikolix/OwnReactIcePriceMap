@@ -4,11 +4,14 @@ import { Calendar, CheckCircle2, Euro, Flag, MapPin, QrCode, Route, ShieldCheck,
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
-import { EVENT_ENTRY_FEE, ROUTE_OPTIONS } from "./eventConfig";
-
-const EVENT_DATE = "Samstag, 16. Mai 2026";
-const EVENT_REGION = "Chemnitz und Umland";
+import { EVENT_DATE, EVENT_ENTRY_FEE, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
 const PARTNER_ICE_CREAM_PARLORS = [
+  {
+    name: EVENT_START_FINISH.name,
+    role: "Start und Ziel aller Routen",
+    image: EVENT_START_FINISH.logoUrl,
+    description: `Hier treffen sich alle Starter zum Ankommen, Losfahren und gemeinsamen Ausklang im Ziel.`,
+  },
   {
     name: "Bäckerei Bräunig",
     role: "Checkpoint auf den sportlichen Routen",
@@ -24,13 +27,13 @@ const PARTNER_ICE_CREAM_PARLORS = [
   {
     name: "Klatt Eis",
     role: "Checkpoint auf allen passenden Routen",
-    image: "https://scontent-dus1-1.xx.fbcdn.net/v/t39.30808-6/474190233_922200500070659_4489896847841982265_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=f2Jieo4NxeIQ7kNvwEymZdf&_nc_oc=Admmhur-SjlFyrrcmgYgxasGpKasH8oB-82NyxGJyndSrwTLkbccPRYGosnixStGvCE&_nc_zt=23&_nc_ht=scontent-dus1-1.xx&_nc_gid=T4To4o42xMMITD_mnihQdA&oh=00_AfpOUAG0Cm3Bi6Z-1FlKDwVpc2Tf3-fRWD3e_O6qPVaITw&oe=6963F59E",
+    image: "https://scontent-fra3-1.xx.fbcdn.net/v/t39.30808-6/309439806_410674307889950_1629544177299528238_n.png?_nc_cat=108&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Wlta0QZof7EQ7kNvwFNBC2t&_nc_oc=AdkxeIbOQlznLYTmF3hiNxtBZMlVpZ6Y2kf61_TfEJdYdMecSZ2vrfOB2VzaAa8tJDyitLRPR5DEck5bKKw44A0O&_nc_zt=23&_nc_ht=scontent-fra3-1.xx&_nc_gid=7_v78JiyRM6zyeTNpVjb_Q&_nc_ss=8&oh=00_Afyxd4iCg12hPfU65FtC603zhX6PKRTudCQTnukXTdTTeg&oe=69B769F8",
     description: "Zum Durchatmen, Eis essen und Flaschen auffüllen. Einer der zentralen Partnerstopps des Events.",
   },
   {
     name: "Eiscafé Elisenhof",
     role: "Zusätzlicher Stopp auf der 4-Eis-Stopps-Route",
-    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?auto=format&fit=crop&w=1200&q=80",
+    image: "https://scontent-fra5-1.xx.fbcdn.net/v/t39.30808-6/302786919_538249798098822_3578997221769686943_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=xSfaI3j1UpoQ7kNvwGkkFy9&_nc_oc=AdlPNxci0ZYcjlIma5GSHD_ZG8YrBhqbVxol02dwmRurboXWKyMskvh3kz8TYTTtherx_NnaZAZPnwYWckqm2P8d&_nc_zt=23&_nc_ht=scontent-fra5-1.xx&_nc_gid=UgHLc03gM1EXLG1CBPmTLw&_nc_ss=8&oh=00_AfwePhh-mZw5e_h85MMlNbdVjDv9xg6r_yKwTPKVj4DPtA&oe=69B75BF9",
     description: "Der Extrapunkt für alle, die die volle Runde fahren und auch den vierten offiziellen Eisstopp mitnehmen.",
   },
 ];
@@ -216,9 +219,9 @@ function Hero() {
           </HeroActions>
           <FactGrid>
             <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
-            <Fact><MapPin size={18} color="#ffb522" /> {EVENT_REGION}</Fact>
-            <Fact><Euro size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} EUR Startgebühr für alle Routen</Fact>
-            <Fact><Flag size={18} color="#ffb522" /> Gruppenstart bzw. eigenes Startfenster</Fact>
+            <Fact><MapPin size={18} color="#ffb522" />{EVENT_START_FINISH.name}, {EVENT_START_FINISH.city}</Fact>
+            <Fact><Euro size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} € Startgebühr</Fact>
+            <Fact><Flag size={18} color="#ffb522" /> Start in kleinen Gruppen oder individuell</Fact>
           </FactGrid>
         </HeroCard>
       </Container>
@@ -231,7 +234,7 @@ function RouteOverview() {
     <Section>
       <Container>
         <SectionTitle>Die 3 Routen</SectionTitle>
-        <SectionDesc>Jede Route führt über unterstützende Eisdielen. Die lange Strecke hat vier Stopps, die Familientour konzentriert sich auf Schöne und Klatt Eis.</SectionDesc>
+        <SectionDesc>Es stehen für euch 3 Routen zur Auswahl, wer die meisten Kilometer und Eis möchte, fährt die vollen 175 km mit 4 Eis-Stopps. Die klassische Tour hat 3 Eis-Stopps und die Einsteiger- / Familientour hat 2 Stopps.</SectionDesc>
         <CardGrid>
           {ROUTE_OPTIONS.map((route) => (
             <Card key={route.key}>
@@ -255,10 +258,10 @@ function Workflow() {
   const steps = [
     "Registrierung mit bestehendem Ice-App Account oder mit neuem Account im Event-Flow, anschließend Zahlung der Startgebühr.",
     "Nach erfolgreicher Registrierung und Zahlung erscheinen Route, Invite-Links für weitere Startplätze und später Startgruppe plus Startzeit in deinem persönlichen Portal.",
-    "Einige Tage vor dem Event folgt eine Erinnerungsmail. Roadbook, GPX, Anreise- und Event-Hinweise stehen im geschützten Starter-Bereich.",
-    "Am Eventtag reist du an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.",
+    `Einige Tage vor dem Event folgt eine Erinnerungsmail. Roadbook, GPX, Anreise zum Treffpunkt ${EVENT_START_FINISH.name} und Event-Hinweise stehen im geschützten Starter-Bereich.`,
+    `Am Eventtag reist du zu ${EVENT_START_FINISH.name} in der ${EVENT_START_FINISH.fullAddress} an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.`,
     "An jedem Checkpoint isst du natürlich Eis: digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
-    "Im Ziel wird die Runde per QR oder Check-in abgeschlossen, danach gemeinsamer Ausklang und optional kleine Siegerehrung.",
+    `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR oder Check-in abgeschlossen, danach gemeinsamer Ausklang und optional kleine Siegerehrung.`,
   ];
 
   return (
@@ -284,7 +287,7 @@ function PartnerParlors() {
       <Container>
         <SectionTitle>Unsere Partnereisdielen</SectionTitle>
         <SectionDesc>
-          Die unterstützenden Eisdielen sind nicht nur Kulisse, sondern ein zentraler Teil des Events: Hier gibt es die Gratis-Kugeln, Wasser, Iso und natürlich die Gelegenheit, noch mehr Eis zu essen.
+          Bei unseren tollen Partnern gibt es für jeden Starter eine Kugel Eis nach vorzeigen des Starterpass gratis. Ansonsten wird es die Möglichkeit eure Trinkflaschen mit Wasser und ISO-Pulver aufzufüllen. Dies ist eine tolle Gelegenheit, die Eisdielen zu unterstützen in dem ihr eine 2. / 3. Kugel Eis oder auch einen Kaffee, Kuchen euch kauft und optimal gestärkt zurück auf die Strecke geht.
         </SectionDesc>
         <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
           {PARTNER_ICE_CREAM_PARLORS.map((parlor) => (
@@ -338,6 +341,7 @@ function RequirementsAndServices() {
               <li>Digitale Stempelkarte im persönlichen Event-Portal</li>
               <li>Bereitschaft, QR-Codes zu scannen oder Check-ins anzulegen</li>
               <li>Helm, Trinkflaschen und eigenverantwortliche Ausrüstung</li>
+              <li>Anreise zum Start- und Zielpunkt bei {EVENT_START_FINISH.name}</li>
             </RequirementList>
           </Card>
           <Card>
@@ -345,7 +349,7 @@ function RequirementsAndServices() {
             <RequirementList>
               <li>Inklusive: eine Kugel Eis pro offiziellem Checkpoint</li>
               <li>Inklusive: Iso-Pulver und Leitungswasser zum Auffüllen</li>
-              <li>Optional: Kaffee oder kleine Notfall-Snacks am Start, je nach Setup</li>
+              <li>Optional: Kaffee oder kleine Notfall-Snacks am Start bei {EVENT_START_FINISH.name}, je nach Setup</li>
               <li>Selbst zahlen: weitere Speisen und Getränke an den Eisdielen</li>
               <li>Wer mehr Hunger hat, darf die Eisdielen gern zusätzlich unterstützen</li>
             </RequirementList>
@@ -403,8 +407,8 @@ function Faq() {
       a: "Im ersten Release nur per Kontaktformular bzw. über das Orga-Team, damit Startgruppen und Checkpoint-Logik konsistent bleiben.",
     },
     {
-      q: "Wo finde ich GPX, Roadbook und finale Hinweise?",
-      a: "Nur im geschützten Starter-Bereich unter `Meine Anmeldung`. Die Erinnerungsmail verlinkt direkt dorthin.",
+              q: "Wo finde ich GPX, Roadbook und finale Hinweise?",
+      a: `Nur im geschützten Starter-Bereich unter \`Meine Anmeldung\`. Dort stehen auch Start und Ziel bei ${EVENT_START_FINISH.name}. Die Erinnerungsmail verlinkt direkt dorthin.`,
     },
     {
       q: "Muss ich zwingend die Ice-App nutzen?",

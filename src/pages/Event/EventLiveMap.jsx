@@ -6,7 +6,7 @@ import L from "leaflet";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { getRouteLabel } from "./eventConfig";
+import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteLabel } from "./eventConfig";
 
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -109,11 +109,33 @@ export default function EventLiveMap() {
   }, [API_BASE]);
 
   const center = useMemo(() => {
-    if (!items.length) return [50.83, 12.92];
-    const lat = items.reduce((acc, item) => acc + item.lat, 0) / items.length;
-    const lng = items.reduce((acc, item) => acc + item.lng, 0) / items.length;
+    const allItems = [
+      ...items,
+      {
+        lat: EVENT_START_FINISH.lat,
+        lng: EVENT_START_FINISH.lng,
+      },
+    ];
+    if (!allItems.length) return [50.83, 12.92];
+    const lat = allItems.reduce((acc, item) => acc + item.lat, 0) / allItems.length;
+    const lng = allItems.reduce((acc, item) => acc + item.lng, 0) / allItems.length;
     return [lat, lng];
   }, [items]);
+
+  const mapItems = useMemo(() => ([
+    {
+      checkpoint_id: `start-finish-${EVENT_START_FINISH.shopId}`,
+      name: `${EVENT_START_FINISH.name} (Start & Ziel)`,
+      lat: EVENT_START_FINISH.lat,
+      lng: EVENT_START_FINISH.lng,
+      route_labels: ROUTE_OPTIONS.map((route) => route.label),
+      checked_in_count: null,
+      licensed_count: null,
+      isStartFinishHub: true,
+      shop_id: EVENT_START_FINISH.shopId,
+    },
+    ...items,
+  ]), [items]);
 
   const openDetails = async (item) => {
     setSelected(item);
@@ -142,6 +164,9 @@ export default function EventLiveMap() {
           <p style={{ margin: 0, color: "#7c4f00" }}>
             Öffentliche Übersicht der Checkpoints mit Teilnehmerzahlen und Check-in-Zeiten. Nicht jeder Checkpoint gehört zu jeder Route.
           </p>
+          <p style={{ margin: "0.55rem 0 0", color: "#7c4f00" }}>
+            Start und Ziel aller Routen liegen bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
+          </p>
         </Card>
 
         {loading && <Card>Karte wird geladen…</Card>}
@@ -151,17 +176,25 @@ export default function EventLiveMap() {
           <Card style={{ padding: 0, overflow: "hidden" }}>
             <MapContainer center={center} zoom={10} style={{ width: "100%", height: "70vh" }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
-              {items.map((item) => (
+              {mapItems.map((item) => (
                 <Marker key={item.checkpoint_id} position={[item.lat, item.lng]} icon={defaultIcon}>
                   <Popup>
                     <strong>{item.name}</strong>
-                    <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
+                    {item.isStartFinishHub ? (
+                      <div>Start- und Zielbereich fuer alle Routen</div>
+                    ) : (
+                      <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
+                    )}
                     <div style={{ marginTop: 6 }}>
                       {(item.route_labels || []).map((label) => (
                         <RouteBadge key={label}>{label}</RouteBadge>
                       ))}
                     </div>
-                    <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
+                    {item.isStartFinishHub ? (
+                      <div style={{ marginTop: 6, color: "#7c4f00" }}>{EVENT_START_FINISH.fullAddress}</div>
+                    ) : (
+                      <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
+                    )}
                   </Popup>
                 </Marker>
               ))}
