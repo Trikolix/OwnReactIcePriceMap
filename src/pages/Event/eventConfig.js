@@ -17,6 +17,9 @@ export const EVENT_START_FINISH = {
 export const EVENT_PAYMENT_PAYPAL_ADDRESS = "ch_helbig@mail.de";
 export const EVENT_PAYMENT_PAYPAL_URL = "https://paypal.me/ChristianHelbig451";
 export const EVENT_PAYMENT_CONTACT_EMAIL = "admin@ice-app.de";
+export const EVENT_PAYMENT_PROVIDER_NAME = "Stripe";
+export const EVENT_PAYMENT_METHOD_PREFERENCE = "stripe_checkout";
+export const EVENT_PAYMENT_CHECKOUT_URL = import.meta.env.VITE_EVENT_STRIPE_CHECKOUT_URL || "";
 
 export const ROUTE_OPTIONS = [
   {

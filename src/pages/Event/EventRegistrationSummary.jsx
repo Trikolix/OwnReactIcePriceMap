@@ -1,11 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
-import { EVENT_PAYMENT_CONTACT_EMAIL, EVENT_PAYMENT_PAYPAL_ADDRESS, EVENT_PAYMENT_PAYPAL_URL, EVENT_START_FINISH, getClothingLabel, getRouteLabel } from "./eventConfig";
+import {
+  EVENT_PAYMENT_CONTACT_EMAIL,
+  EVENT_PAYMENT_PROVIDER_NAME,
+  EVENT_START_FINISH,
+  getClothingLabel,
+  getRouteLabel,
+} from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -32,18 +38,19 @@ const Badge = styled.span`
   font-weight: 700;
   font-size: 0.85rem;
 `;
-const PayPalLinkButton = styled.a`
+const PaymentLinkButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #0070ba;
   color: #fff;
+  border: none;
   border-radius: 6px;
   padding: 0.7em 1.1em;
   font-size: 0.98rem;
   font-weight: 600;
-  text-decoration: none;
   margin-top: 0.7rem;
+  cursor: pointer;
 `;
 
 function formatEuro(value) {
@@ -59,6 +66,7 @@ export default function EventRegistrationSummary() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const stateData = useMemo(() => location.state?.registrationResult || null, [location.state]);
   const registrationId = Number(searchParams.get("registrationId") || stateData?.registration_id || 0);
@@ -100,6 +108,33 @@ export default function EventRegistrationSummary() {
   const verificationMailSent = stateData?.account_verification_mail_sent;
   const purchasedVouchers = summary?.gift_vouchers || [];
   const voucherRedemption = stateData?.voucher_redemption || null;
+
+  const startStripeCheckout = async () => {
+    if (!API_BASE || !registrationId) return;
+    setCheckoutLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE}/event2026/stripe_checkout_session.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          registration_id: registrationId,
+          ...(summaryToken ? { summary_token: summaryToken } : {}),
+        }),
+      });
+      const json = await response.json();
+      if (!response.ok || json.status !== "success" || !json.checkout_url) {
+        throw new Error(json.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      }
+      window.location.href = json.checkout_url;
+    } catch (err) {
+      setError(err.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <Page>
@@ -145,13 +180,11 @@ export default function EventRegistrationSummary() {
               )}
               <p>Betrag gesamt: <strong>{formatEuro(summary.payment?.expected_amount)}</strong></p>
               <p style={{ marginBottom: 0 }}>
-                Bitte wenn möglich per PayPal Freunde an <strong><a href={EVENT_PAYMENT_PAYPAL_URL} target="_blank" rel="noreferrer">
-                  {EVENT_PAYMENT_PAYPAL_ADDRESS}
-                </a></strong> senden. Falls du kein PayPal hast, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a> und wir finden eine andere Lösung.
+                Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Falls es Probleme gibt, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
               </p>
-              <PayPalLinkButton href={EVENT_PAYMENT_PAYPAL_URL} target="_blank" rel="noreferrer">
-                Direkt per PayPal zahlen
-              </PayPalLinkButton>
+              <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
+                {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
+              </PaymentLinkButton>
             </Card>
 
             <Card>
@@ -207,3 +240,5 @@ export default function EventRegistrationSummary() {
     </Page>
   );
 }
+
+

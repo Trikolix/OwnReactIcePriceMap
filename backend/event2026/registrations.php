@@ -1,8 +1,6 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/bootstrap.php';
 
-const EVENT2026_PAYMENT_PAYPAL = 'ch_helbig@mail.de';
-const EVENT2026_PAYMENT_PAYPAL_LINK = 'https://paypal.me/ChristianHelbig451';
 const EVENT2026_PAYMENT_CONTACT = 'admin@ice-app.de';
 const EVENT2026_ENTRY_FEE = 15.0;
 const EVENT2026_ADMIN_NOTIFY_EMAIL = 'admin@ice-app.de';
@@ -98,7 +96,7 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
 
 function event2026_payment_instruction_text(): string
 {
-    return 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ' . EVENT2026_PAYMENT_PAYPAL . ' oder direkt über ' . EVENT2026_PAYMENT_PAYPAL_LINK . '. Diese privat organisierte Veranstaltung kann nicht als Spende ausgewiesen werden. Wenn du kein PayPal hast, melde dich bitte an ' . EVENT2026_PAYMENT_CONTACT . '. Finale Freigabe erfolgt nach Prüfung.';
+    return 'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Bei Fragen melde dich bitte an ' . EVENT2026_PAYMENT_CONTACT . '.';
 }
 
 function event2026_amount_breakdown(float $donationAmount, int $giftVoucherQuantity, bool $voucherRedeemed): array
@@ -242,8 +240,8 @@ try {
         throw new InvalidArgumentException('Die Teilnahmebedingungen müssen akzeptiert werden.');
     }
 
-    $paymentMethod = (string) ($data['paymentMethodPreference'] ?? 'paypal_friends');
-    if (!in_array($paymentMethod, ['paypal_friends', 'bank_transfer'], true)) {
+    $paymentMethod = (string) ($data['paymentMethodPreference'] ?? 'stripe_checkout');
+    if (!in_array($paymentMethod, ['paypal_friends', 'bank_transfer', 'stripe_checkout'], true)) {
         throw new InvalidArgumentException('Ungültige Zahlungsmethode.');
     }
 
@@ -564,11 +562,9 @@ try {
         if ($isAutoPaid) {
             $mailBody .= "Für diese Anmeldung ist keine Zahlung mehr erforderlich. Dein Gutschein deckt den Gesamtbetrag vollständig ab.\n\n";
         } else {
-            $mailBody .= "Bitte sende das Geld wenn möglich per PayPal Freunde an " . EVENT2026_PAYMENT_PAYPAL . ".\n";
-            $mailBody .= "Direkter PayPal-Link: " . EVENT2026_PAYMENT_PAYPAL_LINK . "\n";
-            $mailBody .= "Die Veranstaltung ist privat organisiert und kann nicht als Spende ausgewiesen werden.\n";
+            $mailBody .= "Bitte schliesse die Zahlung ueber Stripe im Event-Portal ab.\n";
             $mailBody .= "Bitte gib den Referenzcode {$paymentRef} im Betreff oder Verwendungszweck an.\n";
-            $mailBody .= "Wenn du kein PayPal hast, melde dich bitte an " . EVENT2026_PAYMENT_CONTACT . ".\n\n";
+            $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_PAYMENT_CONTACT . ".\n\n";
         }
         if ($voucherRow) {
             $mailBody .= "Der Gutschein-Code {$voucherCode} wurde für diese Anmeldung erfolgreich eingelöst.\n\n";
@@ -653,3 +649,4 @@ try {
         'message' => $e->getMessage(),
     ]);
 }
+

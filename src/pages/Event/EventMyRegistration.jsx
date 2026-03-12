@@ -1,10 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
-import { EVENT_PAYMENT_CONTACT_EMAIL, EVENT_PAYMENT_PAYPAL_ADDRESS, EVENT_PAYMENT_PAYPAL_URL, EVENT_START_FINISH, getClothingLabel, getPaceLabel, getRouteLabel } from "./eventConfig";
+import {
+  EVENT_PAYMENT_CONTACT_EMAIL,
+  EVENT_PAYMENT_PROVIDER_NAME,
+  EVENT_START_FINISH,
+  getClothingLabel,
+  getPaceLabel,
+  getRouteLabel,
+} from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -31,18 +38,19 @@ const Badge = styled.span`
   font-weight: 700;
   font-size: 0.85rem;
 `;
-const PayPalLinkButton = styled.a`
+const PaymentLinkButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #0070ba;
   color: #fff;
+  border: none;
   border-radius: 6px;
   padding: 0.7em 1.1em;
   font-size: 0.98rem;
   font-weight: 600;
-  text-decoration: none;
   margin-top: 0.7rem;
+  cursor: pointer;
 `;
 
 function formatEuro(value) {
@@ -55,6 +63,7 @@ export default function EventMyRegistration() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +101,30 @@ export default function EventMyRegistration() {
   const ownSlot = useMemo(() => data?.slots?.[0] || null, [data]);
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
   const isPaid = paymentStatus === "paid";
+
+  const startStripeCheckout = async () => {
+    if (!apiUrl || !data?.registration?.id) return;
+    setCheckoutLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${apiUrl}/event2026/stripe_checkout_session.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ registration_id: data.registration.id }),
+      });
+      const json = await response.json();
+      if (!response.ok || json.status !== "success" || !json.checkout_url) {
+        throw new Error(json.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      }
+      window.location.href = json.checkout_url;
+    } catch (err) {
+      setError(err.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <Page>
@@ -137,11 +170,11 @@ export default function EventMyRegistration() {
               {!isPaid && (
                 <>
                   <p style={{ marginBottom: 0, color: "#7c4f00" }}>
-                    Bitte das Geld wenn möglich per PayPal Freunde an <strong>{EVENT_PAYMENT_PAYPAL_ADDRESS}</strong> senden. Privat organisiert, nicht als Spende ausweisbar. Falls kein PayPal vorhanden ist, bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
+                    Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Bei Fragen zur Zahlung bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
                   </p>
-                  <PayPalLinkButton href={EVENT_PAYMENT_PAYPAL_URL} target="_blank" rel="noreferrer">
-                    Direkt per PayPal zahlen
-                  </PayPalLinkButton>
+                  <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
+                    {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
+                  </PaymentLinkButton>
                 </>
               )}
             </Card>
@@ -210,3 +243,5 @@ export default function EventMyRegistration() {
     </Page>
   );
 }
+
+

@@ -1,10 +1,14 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { Gift, HeartHandshake } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { EVENT_ENTRY_FEE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_PAYMENT_PAYPAL_ADDRESS, EVENT_PAYMENT_PAYPAL_URL } from "./eventConfig";
+import {
+  EVENT_ENTRY_FEE,
+  EVENT_PAYMENT_CONTACT_EMAIL,
+  EVENT_PAYMENT_PROVIDER_NAME,
+} from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -55,17 +59,18 @@ const Button = styled.button`
   padding: 0.7rem 1.15rem;
   cursor: pointer;
 `;
-const LinkButton = styled.a`
+const LinkButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #0070ba;
+  background: #635bff;
   color: #fff;
+  border: none;
   border-radius: 6px;
   padding: 0.7rem 1.15rem;
-  text-decoration: none;
   font-weight: 600;
   margin-top: 0.75rem;
+  cursor: pointer;
 `;
 const Banner = styled.div`
   border-radius: 8px;
@@ -89,6 +94,7 @@ export default function EventGiftPurchase() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const total = useMemo(() => giftVoucherQuantity * EVENT_ENTRY_FEE, [giftVoucherQuantity]);
 
@@ -116,6 +122,32 @@ export default function EventGiftPurchase() {
     }
   };
 
+  const startStripeCheckout = async () => {
+    const purchase = success?.gift_purchase;
+    if (!apiUrl || !purchase?.id) return;
+    setCheckoutLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${apiUrl}/event2026/stripe_checkout_session.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          addon_purchase_id: purchase.id,
+          buyer_email: purchase.buyer_email || buyerEmail,
+          payment_reference_code: purchase.payment_reference_code,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.status !== "success" || !result.checkout_url) {
+        throw new Error(result.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      }
+      window.location.href = result.checkout_url;
+    } catch (err) {
+      setError(err.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      setCheckoutLoading(false);
+    }
+  };
+
   return (
     <Page>
       <Header />
@@ -137,7 +169,9 @@ export default function EventGiftPurchase() {
             <p style={{ marginBottom: 0, color: "#7c4f00" }}>
               Die Codes werden erst nach bestätigter Zahlung per E-Mail freigeschaltet.
             </p>
-            <LinkButton href={EVENT_PAYMENT_PAYPAL_URL} target="_blank" rel="noreferrer">Direkt per PayPal zahlen</LinkButton>
+            <LinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
+              {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
+            </LinkButton>
           </Card>
         )}
 
@@ -160,7 +194,7 @@ export default function EventGiftPurchase() {
             <p>Preis pro Gutschein-Code: <strong>{formatEuro(EVENT_ENTRY_FEE)}</strong></p>
             <p>Gesamt: <strong>{formatEuro(total)}</strong></p>
             <p style={{ marginBottom: 0, color: "#7c4f00" }}>
-              Zahlung bitte wenn möglich per PayPal Freunde an <strong>{EVENT_PAYMENT_PAYPAL_ADDRESS}</strong>. Wenn kein PayPal vorhanden ist, bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
+              Zahlung bitte über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit Referenzcode abschließen. Bei Rückfragen bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
             </p>
           </Card>
         </form>
@@ -169,3 +203,5 @@ export default function EventGiftPurchase() {
     </Page>
   );
 }
+
+

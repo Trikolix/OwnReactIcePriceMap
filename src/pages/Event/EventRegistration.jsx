@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Bike, Flag, Gift, HeartHandshake, ShieldAlert, Shirt, Ticket, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -13,6 +13,8 @@ import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
   EVENT_ENTRY_FEE,
+  EVENT_PAYMENT_METHOD_PREFERENCE,
+  EVENT_PAYMENT_PROVIDER_NAME,
   KIT_DISPLAY_PRICE,
   PACE_OPTIONS,
   routeSupportsPace,
@@ -380,7 +382,7 @@ export default function EventRegistration() {
       jerseySize,
       bibSize,
       newsletter,
-      paymentMethodPreference: "paypal_friends",
+      paymentMethodPreference: EVENT_PAYMENT_METHOD_PREFERENCE,
       acceptLegal: acceptWaiver,
       legalVersion: legal?.version ?? null,
       account: !isLoggedIn
@@ -440,7 +442,7 @@ export default function EventRegistration() {
       const response = await fetch(`${API_BASE}/event2026/post_registration_purchase.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
-        body: JSON.stringify({ giftVoucherQuantity: addonVoucherQuantity, paymentMethodPreference: "paypal_friends", notes: addonNote }),
+        body: JSON.stringify({ giftVoucherQuantity: addonVoucherQuantity, paymentMethodPreference: EVENT_PAYMENT_METHOD_PREFERENCE, notes: addonNote }),
       });
       const result = await response.json();
       if (!response.ok || result.status !== "success") throw new Error(result.message || "Zusatzbestellung konnte nicht gespeichert werden.");
@@ -735,7 +737,7 @@ export default function EventRegistration() {
                   <>
                     1. Deine Anmeldung wird gespeichert.
                     <br />
-                    2. Zahlung bitte wenn möglich per PayPal Freunde senden.
+                    2. Zahlung bitte über {EVENT_PAYMENT_PROVIDER_NAME} ausführen.
                     <br />
                     3. Gekaufte Gutschein-Codes werden erst nach Zahlung freigeschaltet.
                     <br />
@@ -759,3 +761,6 @@ export default function EventRegistration() {
     </PageWrapper>
   );
 }
+
+
+

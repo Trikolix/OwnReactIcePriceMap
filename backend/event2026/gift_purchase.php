@@ -1,8 +1,6 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/bootstrap.php';
 
-const EVENT2026_GIFT_PAYMENT_PAYPAL = 'ch_helbig@mail.de';
-const EVENT2026_GIFT_PAYMENT_PAYPAL_LINK = 'https://paypal.me/ChristianHelbig451';
 const EVENT2026_GIFT_PAYMENT_CONTACT = 'admin@ice-app.de';
 const EVENT2026_GIFT_ENTRY_FEE = 15.0;
 
@@ -31,7 +29,7 @@ try {
                 'status' => (string) $event['status'],
             ],
             'voucher_value' => EVENT2026_GIFT_ENTRY_FEE,
-            'payment_instruction' => 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ' . EVENT2026_GIFT_PAYMENT_PAYPAL . ' oder direkt über ' . EVENT2026_GIFT_PAYMENT_PAYPAL_LINK . '. Wenn du kein PayPal hast, melde dich bitte an ' . EVENT2026_GIFT_PAYMENT_CONTACT . '.',
+            'payment_instruction' => 'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Bei Fragen melde dich bitte an ' . EVENT2026_GIFT_PAYMENT_CONTACT . '.',
         ]);
         exit;
     }
@@ -90,7 +88,7 @@ try {
         :expected_amount,
         0,
         'pending',
-        'paypal_friends',
+        'stripe_checkout',
         :notes
     )");
     $insertStmt->execute([
@@ -116,10 +114,9 @@ try {
     $mailBody .= "Referenzcode: {$paymentRef}\n";
     $mailBody .= "Gutschein-Codes: {$giftVoucherQuantity}\n";
     $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n\n";
-    $mailBody .= "Bitte sende das Geld wenn moeglich per PayPal Freunde an " . EVENT2026_GIFT_PAYMENT_PAYPAL . ".\n";
-    $mailBody .= "Direkter PayPal-Link: " . EVENT2026_GIFT_PAYMENT_PAYPAL_LINK . "\n";
+    $mailBody .= "Bitte schliesse die Zahlung ueber Stripe im Event-Portal ab.\n";
     $mailBody .= "Die Gutschein-Codes werden erst nach bestaetigtem Zahlungseingang per Mail freigeschaltet.\n";
-    $mailBody .= "Wenn du kein PayPal hast, melde dich bitte an " . EVENT2026_GIFT_PAYMENT_CONTACT . ".\n";
+    $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_GIFT_PAYMENT_CONTACT . ".\n";
     event2026_gift_send_utf8_mail($buyerEmail, 'Ice-Tour 2026: Deine Gutschein-Bestellung', $mailBody);
 
     echo json_encode([
@@ -131,8 +128,9 @@ try {
             'gift_voucher_quantity' => $giftVoucherQuantity,
             'expected_amount' => $expectedAmount,
             'status' => 'pending',
+            'buyer_email' => $buyerEmail,
         ],
-        'payment_instruction' => 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ' . EVENT2026_GIFT_PAYMENT_PAYPAL . ' oder direkt über ' . EVENT2026_GIFT_PAYMENT_PAYPAL_LINK . '.',
+        'payment_instruction' => 'Bitte schließe die Zahlung über Stripe im Event-Portal ab.',
     ]);
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {

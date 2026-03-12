@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/bootstrap.php';
 
 try {
@@ -161,7 +161,7 @@ try {
             'paid_amount' => $registration['paid_amount'] !== null ? (float) $registration['paid_amount'] : null,
             'status' => $registration['payment_status_detail'] ?: null,
         ],
-        'payment_instruction' => 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ch_helbig@mail.de oder direkt über https://paypal.me/ChristianHelbig451. Diese privat organisierte Veranstaltung kann nicht als Spende ausgewiesen werden. Wenn du kein PayPal hast, melde dich bitte an admin@ice-app.de.',
+        'payment_instruction' => 'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Bei Fragen melde dich bitte an admin@ice-app.de.',
         'slots' => array_map(static function (array $slot): array {
             $routeKey = event2026_normalize_route_key($slot['route_key'] ?? '');
             $slot['route_key'] = $routeKey;
@@ -230,3 +230,4 @@ try {
         'message' => $e->getMessage(),
     ]);
 }
+

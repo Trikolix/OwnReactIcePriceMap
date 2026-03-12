@@ -1,9 +1,7 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/bootstrap.php';
 
 const EVENT2026_ADDON_ENTRY_FEE = 15.0;
-const EVENT2026_ADDON_PAYMENT_PAYPAL = 'ch_helbig@mail.de';
-const EVENT2026_ADDON_PAYMENT_PAYPAL_LINK = 'https://paypal.me/ChristianHelbig451';
 const EVENT2026_ADDON_PAYMENT_CONTACT = 'admin@ice-app.de';
 
 function event2026_addon_send_utf8_mail(string $to, string $subjectText, string $body): bool
@@ -20,7 +18,7 @@ function event2026_addon_send_utf8_mail(string $to, string $subjectText, string 
 
 function event2026_addon_payment_instruction_text(): string
 {
-    return 'Bitte sende den Betrag wenn möglich per PayPal Freunde an ' . EVENT2026_ADDON_PAYMENT_PAYPAL . ' oder direkt über ' . EVENT2026_ADDON_PAYMENT_PAYPAL_LINK . '. Wenn du kein PayPal hast, melde dich bitte an ' . EVENT2026_ADDON_PAYMENT_CONTACT . '.';
+    return 'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Bei Fragen melde dich bitte an ' . EVENT2026_ADDON_PAYMENT_CONTACT . '.';
 }
 
 try {
@@ -88,13 +86,13 @@ try {
 
     $data = event2026_json_input();
     $giftVoucherQuantity = max(0, min(20, (int) ($data['giftVoucherQuantity'] ?? 0)));
-    $paymentMethod = (string) ($data['paymentMethodPreference'] ?? 'paypal_friends');
+    $paymentMethod = (string) ($data['paymentMethodPreference'] ?? 'stripe_checkout');
     $notes = trim((string) ($data['notes'] ?? ''));
 
     if ($giftVoucherQuantity < 1) {
         throw new InvalidArgumentException('Bitte mindestens einen Gutschein-Code auswählen.');
     }
-    if (!in_array($paymentMethod, ['paypal_friends', 'bank_transfer'], true)) {
+    if (!in_array($paymentMethod, ['paypal_friends', 'bank_transfer', 'stripe_checkout'], true)) {
         throw new InvalidArgumentException('Ungültige Zahlungsmethode.');
     }
 
@@ -161,11 +159,10 @@ try {
         $mailBody .= "Referenzcode: {$paymentRef}\n";
         $mailBody .= "Gutschein-Codes: {$giftVoucherQuantity}\n";
         $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n\n";
-        $mailBody .= "Bitte sende das Geld wenn moeglich per PayPal Freunde an " . EVENT2026_ADDON_PAYMENT_PAYPAL . ".\n";
-        $mailBody .= "Direkter PayPal-Link: " . EVENT2026_ADDON_PAYMENT_PAYPAL_LINK . "\n";
+        $mailBody .= "Bitte schliesse die Zahlung ueber Stripe im Event-Portal ab.\n";
         $mailBody .= "Die Gutschein-Codes werden erst nach bestaetigtem Zahlungseingang freigeschaltet.\n";
         $mailBody .= "Bitte gib den Referenzcode {$paymentRef} an.\n";
-        $mailBody .= "Wenn du kein PayPal hast, melde dich bitte an " . EVENT2026_ADDON_PAYMENT_CONTACT . ".\n";
+        $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_ADDON_PAYMENT_CONTACT . ".\n";
         $mailSent = event2026_addon_send_utf8_mail($owner['email'], 'Ice-Tour 2026: Deine Zusatzbestellung', $mailBody);
     }
 
@@ -179,6 +176,7 @@ try {
             'expected_amount' => $expectedAmount,
             'status' => 'pending',
             'payment_method' => $paymentMethod,
+            'buyer_email' => $owner['email'] ?? null,
         ],
         'payment_instruction' => event2026_addon_payment_instruction_text(),
         'notification_mail_sent' => $mailSent,

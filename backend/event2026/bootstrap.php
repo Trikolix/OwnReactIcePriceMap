@@ -65,7 +65,7 @@ function event2026_ensure_schema(PDO $pdo): void
             expected_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             paid_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             status ENUM('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
-            payment_method ENUM('paypal_friends','bank_transfer') NOT NULL DEFAULT 'paypal_friends',
+            payment_method ENUM('paypal_friends','bank_transfer','stripe_checkout') NOT NULL DEFAULT 'paypal_friends',
             confirmed_by_admin INT DEFAULT NULL,
             confirmed_at DATETIME DEFAULT NULL,
             notes VARCHAR(255) DEFAULT NULL,
@@ -148,7 +148,7 @@ function event2026_ensure_schema(PDO $pdo): void
         "CREATE TABLE IF NOT EXISTS event2026_payments (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             registration_id INT NOT NULL,
-            method ENUM('paypal_friends','bank_transfer') NOT NULL DEFAULT 'paypal_friends',
+            method ENUM('paypal_friends','bank_transfer','stripe_checkout') NOT NULL DEFAULT 'paypal_friends',
             expected_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             paid_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
             status ENUM('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
@@ -409,6 +409,8 @@ function event2026_ensure_schema(PDO $pdo): void
 
     $pdo->exec("ALTER TABLE event2026_addon_purchases MODIFY COLUMN registration_id INT DEFAULT NULL");
     $pdo->exec("ALTER TABLE event2026_addon_purchases MODIFY COLUMN buyer_user_id INT DEFAULT NULL");
+    $pdo->exec("ALTER TABLE event2026_addon_purchases MODIFY COLUMN payment_method ENUM('paypal_friends','bank_transfer','stripe_checkout') NOT NULL DEFAULT 'paypal_friends'");
+    $pdo->exec("ALTER TABLE event2026_payments MODIFY COLUMN method ENUM('paypal_friends','bank_transfer','stripe_checkout') NOT NULL DEFAULT 'paypal_friends'");
     $pdo->exec("ALTER TABLE event2026_gift_vouchers MODIFY COLUMN purchased_by_registration_id INT DEFAULT NULL");
 
     $clothingInterestColStmt = $pdo->prepare("
