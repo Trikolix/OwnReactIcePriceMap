@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { buildAssetUrl } from '../utils/assets.jsx';
@@ -7,7 +7,7 @@ const POINT_LABELS = {
   checkin_with_photo: 'Check-in mit Bild',
   group_checkin_with_other: 'Check-in mit weiterer Person',
   price_reported: 'Preis gemeldet',
-  favorite_shop_added: 'Eisdiele zu Favoriten hinzugefuegt',
+  favorite_shop_added: 'Eisdiele zu Favoriten hinzugefügt',
   invited_user_with_checkin: 'Nutzer eingeladen (mit Check-in)',
   login_days_7: 'An 7 Tagen eingeloggt',
   profile_image: 'Profilbild vorhanden',
@@ -19,7 +19,7 @@ const POINT_LABELS = {
   checkins_photo_ep: 'Check-ins mit Bild (+5 EP je Check-in)',
   checkins_on_site_ep: 'Vor-Ort-Check-ins (+5 EP je Check-in)',
   price_reported_ep: 'Preis gemeldet (einmalig)',
-  favorite_shop_added_ep: 'Eisdiele zu Favoriten hinzugefuegt (einmalig)',
+  favorite_shop_added_ep: 'Eisdiele zu Favoriten hinzugefügt (einmalig)',
   invite_registered_ep: 'Nutzer eingeladen (20 EP je Nutzer)',
   invite_checkin_ep: 'Eingeladener Nutzer mit Check-in (60 EP)',
   login_days_ep: 'Login-Tage (5 EP je Tag)',
@@ -179,18 +179,38 @@ const getDetailLabel = (entry, counts = {}) => {
 
 const getTrendDisplay = (rankChange, rankDelta) => {
   if (rankChange === 'up') {
-    return { symbol: '↑', label: `${rankDelta || 1}`, tone: 'up' };
+    return { symbol: '\u2191', label: `${rankDelta || 1}`, tone: 'up' };
   }
   if (rankChange === 'down') {
-    return { symbol: '↓', label: `${rankDelta || 1}`, tone: 'down' };
+    return { symbol: '\u2193', label: `${rankDelta || 1}`, tone: 'down' };
   }
   if (rankChange === 'same') {
-    return { symbol: '•', label: '', tone: 'same' };
+    return { symbol: '=', label: '', tone: 'same' };
   }
   if (rankChange === 'new') {
     return { symbol: 'Neu', label: '', tone: 'new' };
   }
   return null;
+};
+
+const formatCountdown = (targetDate) => {
+  const diffMs = targetDate.getTime() - Date.now();
+  if (diffMs <= 0) {
+    return null;
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    days: String(days),
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0'),
+    seconds: String(seconds).padStart(2, '0'),
+  };
 };
 
 const BirthdayRulesModal = ({
@@ -217,7 +237,7 @@ const BirthdayRulesModal = ({
   extraIceReward = false,
   campaignPhase = 'live',
   anniversaryUnlockedAt = null,
-  iceTourRegistrationOpen = false,
+  iceTourRegistrationOpen = true,
   forceLocalUnlock = false,
   awardConfig = null,
 }) => {
@@ -259,13 +279,15 @@ const BirthdayRulesModal = ({
     const rawPercent = (threshold / progressMaxPoints) * 100;
     return Math.min(92, Math.max(8, rawPercent));
   };
-  const defaultUnlockDate = new Date('2026-03-14T12:00:00+01:00');
+  const defaultUnlockDate = new Date('2026-03-15T18:00:00+01:00');
   const parsedUnlockDate = anniversaryUnlockedAt ? new Date(anniversaryUnlockedAt) : null;
   const unlockDate = parsedUnlockDate && !Number.isNaN(parsedUnlockDate.getTime())
     ? parsedUnlockDate
     : defaultUnlockDate;
   const eventUnlocked = forceLocalUnlock || now >= unlockDate;
+  const isCountdownFinished = now >= unlockDate;
   const tourRegistrationUnlocked = forceLocalUnlock || (eventUnlocked && Boolean(iceTourRegistrationOpen));
+  const [countdownValue, setCountdownValue] = useState(() => formatCountdown(unlockDate));
   const actionEntries = buildActionEntries(breakdown)
     .filter((key) => key.key !== 'rad_event_page_ep' || eventUnlocked);
   const earnedActionEntries = useMemo(
@@ -289,6 +311,24 @@ const BirthdayRulesModal = ({
       detailLabel: getDetailLabel(entry, leaderboardDetailState.data?.counts || {}),
     }));
   }, [leaderboardDetailState.data]);
+
+  useEffect(() => {
+    if (isCountdownFinished) {
+      setCountdownValue(null);
+      return undefined;
+    }
+
+    const updateCountdown = () => {
+      setCountdownValue(formatCountdown(unlockDate));
+    };
+
+    updateCountdown();
+    const timerId = window.setInterval(updateCountdown, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [isCountdownFinished, unlockDate.getTime()]);
 
   const loadLeaderboardDetails = async (entry) => {
     setActiveLeaderboardEntry(entry);
@@ -341,10 +381,41 @@ const BirthdayRulesModal = ({
         <p>
           Die Ice-App wird am <strong>14. März</strong> ein Jahr alt, deshalb gibt es im Aktionszeitraum vom <strong>6.–22. März</strong> eine Reihe toller Aktionen, um das zu feiern.
         </p>
-        {!eventUnlocked && (
-          <p style={{ color: '#8a5a00', fontWeight: 700 }}>
-            Am 14. März wird es eine Zusatzüberraschung geben.
-          </p>
+        {!isCountdownFinished && (
+          <CountdownBox>
+            <p style={{ textAlign: 'center' }}>Am 15. März um 18 Uhr wird es eine große Veröffentlichung geben, seid gespannt!</p>
+            {countdownValue ? (
+              <CountdownGrid>
+                <CountdownTile>
+                  <strong>{countdownValue.days}</strong>
+                  <span>Tage</span>
+                </CountdownTile>
+                <CountdownTile>
+                  <strong>{countdownValue.hours}</strong>
+                  <span>Stunden</span>
+                </CountdownTile>
+                <CountdownTile>
+                  <strong>{countdownValue.minutes}</strong>
+                  <span>Minuten</span>
+                </CountdownTile>
+                <CountdownTile>
+                  <strong>{countdownValue.seconds}</strong>
+                  <span>Sekunden</span>
+                </CountdownTile>
+              </CountdownGrid>
+            ) : (
+              <CountdownDone>Es ist so weit!</CountdownDone>
+            )}
+          </CountdownBox>
+        )}
+        {isCountdownFinished && (
+          <CountdownBox>
+            <h3>Ice-Tour</h3>
+            <p style={{ textAlign: 'center' }}>
+              Am 16. Mai findet die <a href="/ice-tour" style={{ color: '#ffb522', fontWeight: 900, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Ice-Tour</a> statt: ein gemeinsames Rad-Event mit einer tollen Strecke
+              und vielen großartigen Eisdielen entlang der Route.
+            </p>
+          </CountdownBox>
         )}
         <ProgressLabel>EP-Fortschritt</ProgressLabel>
         <ProgressBar style={{ marginBottom: '3rem', height: '18px', background: '#eaf2fa', marginTop: '2.5rem' }}>
@@ -467,7 +538,7 @@ const BirthdayRulesModal = ({
         </ActionSummary>
 
         {eventUnlocked && (
-          <div style={{ marginTop: '2rem', background: '#eeeeee', borderRadius: '12px', padding: '18px 12px' }}>
+          <CountdownBox style={{ marginTop: '1.5rem' }}>
             <h3 style={{ margin: '0 0 0.5rem', color: '#2b1b00' }}>Sonderaktion: Ice-Tour</h3>
             <p>
               Es ist öffentlich: Es wird eine <a href="/ice-tour" style={{ color: '#ffb522', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Ice-Tour</a> geben! Alle, die bis zum Ende des Aktionszeitraum alle Pflichtaktionen erledigt haben, erhalten ein kostenloses Eis
@@ -486,28 +557,20 @@ const BirthdayRulesModal = ({
               ))}
             </ActionList>
             <div style={{ marginTop: '10px' }}>
-              {rewardUnlocked ? (
-                <RewardOk>Alle Pflichtaktionen geschafft. Eis freigeschaltet.</RewardOk>
-              ) : (
-                <RewardPending>Noch nicht alle Pflichtaktionen abgeschlossen.</RewardPending>
-              )}
-              {extraIceReward && (
-                <div style={{ marginTop: '10px', color: '#0f7c2f', fontWeight: 700 }}>
-                  🎉 Zusatzaktion: Du hast alle Aktionen abgeschlossen und erhältst ein Eis!
-                </div>
+              {!extraIceReward && (
+                <RewardOk>
+                  Zusatzaktion: Du hast alle Aufgaben abgeschlossen und kannst dir am 16. Mai bei Karl mag's süß, dem Start / Ziel Ort der Ice-Tour, ein Eis abholen.
+                </RewardOk>
               )}
               <TourGateBox>
                 {tourRegistrationUnlocked ? (
-                  <>
-                    <TourGateText>Jetzt anmelden.</TourGateText>
-                    <TourCtaLink to="/event-registration">Zur Ice-Tour-Anmeldung</TourCtaLink>
-                  </>
+                    <TourCtaLink to="/ice-tour">Zur Ice-Tour</TourCtaLink>
                 ) : (
                   <TourGateText>Anmeldung folgt in Kürze.</TourGateText>
                 )}
               </TourGateBox>
             </div>
-          </div>
+          </CountdownBox>
         )}
 
         {!isLoggedIn && (
@@ -601,6 +664,94 @@ const CloseButton = styled.button`
   font-size: 1.5rem;
   cursor: pointer;
   color: #888;
+`;
+
+const CountdownBox = styled.div`
+  margin: 0.25rem 0 0.85rem;
+  padding: 12px;
+  border-radius: 16px;
+  background: radial-gradient(circle at top, #fff7de 0%, #ffe6ad 100%);
+  border: 1px solid #ffc86b;
+  box-shadow: 0 10px 22px rgba(255, 170, 35, 0.22);
+  color: #6b3f00;
+
+  p {
+    margin: 0 0 0.6rem;
+    font-weight: 700;
+    text-align: left;
+  }
+`;
+
+const CountdownGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const CountdownTile = styled.div`
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #ffd58f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+  strong {
+    font-size: 1.25rem;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: #ab4f00;
+  }
+
+  span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7f5a28;
+  }
+`;
+
+const CountdownDone = styled.strong`
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #ffd58f;
+  color: #ab4f00;
+  font-size: 1rem;
+`;
+
+const AnnouncementBox = styled.div`
+  margin: 0.25rem 0 0.85rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff2c2, #ffd98f);
+  border: 1px solid #ffb74d;
+  color: #3a2200;
+  text-align: left;
+
+  h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    color: #7a4200;
+  }
+
+  p {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.35;
+  }
 `;
 
 const ProgressLabel = styled.p`
@@ -802,25 +953,28 @@ const LeaderboardRowHint = styled.small`
 const RankTrendBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  min-width: 34px;
+  gap: 4px;
+  min-width: 40px;
   justify-content: center;
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 3px 9px;
   font-size: 0.76rem;
   font-weight: 800;
   background: ${({ $tone }) => {
     if ($tone === 'up') return 'rgba(15, 124, 47, 0.12)';
     if ($tone === 'down') return 'rgba(191, 38, 0, 0.12)';
     if ($tone === 'new') return 'rgba(255, 181, 34, 0.18)';
+    if ($tone === 'same') return 'rgba(30, 64, 175, 0.14)';
     return 'rgba(47, 33, 0, 0.08)';
   }};
   color: ${({ $tone }) => {
     if ($tone === 'up') return '#0f7c2f';
     if ($tone === 'down') return '#bf2600';
     if ($tone === 'new') return '#8a5a00';
+    if ($tone === 'same') return '#1d4ed8';
     return '#6f5b3a';
   }};
+  border: 1px solid ${({ $tone }) => ($tone === 'same' ? 'rgba(37, 99, 235, 0.32)' : 'transparent')};
 
   small {
     font-size: 0.7rem;

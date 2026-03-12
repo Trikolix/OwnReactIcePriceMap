@@ -4,35 +4,60 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import Header from "./Header";
-import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteLabel } from "./eventConfig";
 
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+const makeSvgIcon = (svgMarkup) =>
+  L.divIcon({
+    className: "",
+    html: `<div style="filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));">${svgMarkup}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 34],
+    popupAnchor: [0, -32],
+  });
+
+const startFinishIcon = makeSvgIcon(`
+  <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Start Ziel">
+    <circle cx="17" cy="17" r="16" fill="#fff3c2" stroke="#8a5700" stroke-width="2"/>
+    <path d="M11 8v18" stroke="#3b2f1a" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M12.5 9.5h11v7h-11z" fill="#ffffff" stroke="#3b2f1a" stroke-width="1"/>
+    <rect x="12.5" y="9.5" width="5.5" height="3.5" fill="#1f2937"/>
+    <rect x="18" y="13" width="5.5" height="3.5" fill="#1f2937"/>
+  </svg>
+`);
+const checkpointIcon = makeSvgIcon(`
+  <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Checkpoint">
+    <circle cx="17" cy="17" r="16" fill="#e8f7ff" stroke="#0f5f9c" stroke-width="2"/>
+    <circle cx="17" cy="12.5" r="4.2" fill="#fffdf7" stroke="#0f5f9c" stroke-width="1"/>
+    <path d="M12.7 15.8h8.6l-3.4 9.2c-.2.5-.9.5-1.1 0l-4.1-9.2z" fill="#d0822f" stroke="#8f4f13" stroke-width="1"/>
+  </svg>
+`);
 
 const Page = styled.div`
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--event-bg);
+  display: flex;
+  flex-direction: column;
 `;
 
-const Container = styled.div`
-  width: min(96%, 1100px);
-  margin: 0 auto;
-  padding: 1rem;
+const MapShell = styled.div`
+  position: relative;
+  flex: 1;
+  min-height: 0;
 `;
 
-const Card = styled.div`
-  background: #fffdfa;
+const MapInfo = styled.div`
+  position: absolute;
+  top: 12px;
+  left: 50px;
+  z-index: 900;
+  max-width: min(92vw, 540px);
+  background: rgba(255, 253, 250, 0.95);
+  border: 1px solid rgba(138, 87, 0, 0.2);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(255, 181, 34, 0.08);
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 `;
 
 const ModalOverlay = styled.div`
@@ -52,6 +77,20 @@ const Modal = styled.div`
   background: #fffdfa;
   border-radius: 12px;
   padding: 1rem;
+`;
+
+const Message = styled.div`
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 900;
+  background: rgba(255, 253, 250, 0.96);
+  border: 1px solid rgba(138, 87, 0, 0.22);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  color: ${({ $error }) => ($error ? "#9f1239" : "#7c4f00")};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 `;
 
 const RouteBadge = styled.span`
@@ -75,6 +114,17 @@ export default function EventLiveMap() {
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
+
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     if (!API_BASE) return;
@@ -108,34 +158,25 @@ export default function EventLiveMap() {
     };
   }, [API_BASE]);
 
-  const center = useMemo(() => {
-    const allItems = [
-      ...items,
+  const mapItems = useMemo(
+    () => [
       {
+        checkpoint_id: `start-finish-${EVENT_START_FINISH.shopId}`,
+        name: `${EVENT_START_FINISH.name} (Start & Ziel)`,
         lat: EVENT_START_FINISH.lat,
         lng: EVENT_START_FINISH.lng,
+        route_labels: ROUTE_OPTIONS.map((route) => route.label),
+        checked_in_count: null,
+        licensed_count: null,
+        isStartFinishHub: true,
+        shop_id: EVENT_START_FINISH.shopId,
       },
-    ];
-    if (!allItems.length) return [50.83, 12.92];
-    const lat = allItems.reduce((acc, item) => acc + item.lat, 0) / allItems.length;
-    const lng = allItems.reduce((acc, item) => acc + item.lng, 0) / allItems.length;
-    return [lat, lng];
-  }, [items]);
+      ...items,
+    ],
+    [items]
+  );
 
-  const mapItems = useMemo(() => ([
-    {
-      checkpoint_id: `start-finish-${EVENT_START_FINISH.shopId}`,
-      name: `${EVENT_START_FINISH.name} (Start & Ziel)`,
-      lat: EVENT_START_FINISH.lat,
-      lng: EVENT_START_FINISH.lng,
-      route_labels: ROUTE_OPTIONS.map((route) => route.label),
-      checked_in_count: null,
-      licensed_count: null,
-      isStartFinishHub: true,
-      shop_id: EVENT_START_FINISH.shopId,
-    },
-    ...items,
-  ]), [items]);
+  const bounds = useMemo(() => mapItems.map((item) => [item.lat, item.lng]), [mapItems]);
 
   const openDetails = async (item) => {
     setSelected(item);
@@ -158,50 +199,58 @@ export default function EventLiveMap() {
   return (
     <Page>
       <Header />
-      <Container>
-        <Card>
-          <h1 style={{ marginTop: 0 }}>Live-Checkpoint-Karte</h1>
-          <p style={{ margin: 0, color: "#7c4f00" }}>
-            Öffentliche Übersicht der Checkpoints mit Teilnehmerzahlen und Check-in-Zeiten. Nicht jeder Checkpoint gehört zu jeder Route.
+      <MapShell>
+        <MapInfo>
+          <h1 style={{ margin: 0, fontSize: "1.05rem" }}>Live-Checkpoint-Karte</h1>
+          <p style={{ margin: "0.35rem 0 0", color: "#7c4f00", lineHeight: 1.35 }}>
+            Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Klicke auf die Marker, um weitere Informationen zu erhalten oder die Check-in-Details einzusehen.
           </p>
-          <p style={{ margin: "0.55rem 0 0", color: "#7c4f00" }}>
-            Start und Ziel aller Routen liegen bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
-          </p>
-        </Card>
+        </MapInfo>
 
-        {loading && <Card>Karte wird geladen…</Card>}
-        {error && <Card style={{ color: "#9f1239" }}>{error}</Card>}
-
-        {!loading && !error && (
-          <Card style={{ padding: 0, overflow: "hidden" }}>
-            <MapContainer center={center} zoom={10} style={{ width: "100%", height: "70vh" }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
-              {mapItems.map((item) => (
-                <Marker key={item.checkpoint_id} position={[item.lat, item.lng]} icon={defaultIcon}>
-                  <Popup>
-                    <strong>{item.name}</strong>
-                    {item.isStartFinishHub ? (
-                      <div>Start- und Zielbereich fuer alle Routen</div>
-                    ) : (
-                      <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
-                    )}
-                    <div style={{ marginTop: 6 }}>
-                      {(item.route_labels || []).map((label) => (
-                        <RouteBadge key={label}>{label}</RouteBadge>
-                      ))}
-                    </div>
-                    {item.isStartFinishHub ? (
-                      <div style={{ marginTop: 6, color: "#7c4f00" }}>{EVENT_START_FINISH.fullAddress}</div>
-                    ) : (
-                      <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
-                    )}
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </Card>
+        {!error && (
+          <MapContainer
+            center={[EVENT_START_FINISH.lat, EVENT_START_FINISH.lng]}
+            zoom={11}
+            bounds={bounds}
+            boundsOptions={{ padding: [50, 50] }}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            {mapItems.map((item) => (
+              <Marker
+                key={item.checkpoint_id}
+                position={[item.lat, item.lng]}
+                icon={item.isStartFinishHub ? startFinishIcon : checkpointIcon}
+              >
+                <Popup>
+                  <strong>{item.name}</strong>
+                  {item.isStartFinishHub ? (
+                    <div>Start- und Zielbereich für alle Routen</div>
+                  ) : (
+                    <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
+                  )}
+                  <div style={{ marginTop: 6 }}>
+                    {(item.route_labels || []).map((label) => (
+                      <RouteBadge key={label}>{label}</RouteBadge>
+                    ))}
+                  </div>
+                  {item.isStartFinishHub ? (
+                    <div style={{ marginTop: 6, color: "#7c4f00" }}>{EVENT_START_FINISH.fullAddress}</div>
+                  ) : (
+                    <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
+                  )}
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         )}
-      </Container>
+
+        {loading && <Message>Karte wird geladen...</Message>}
+        {error && <Message $error>{error}</Message>}
+      </MapShell>
 
       {selected && (
         <ModalOverlay onClick={() => setSelected(null)}>
@@ -213,7 +262,7 @@ export default function EventLiveMap() {
               ))}
             </div>
             {detailsLoading ? (
-              <p>Lade Details…</p>
+              <p>Lade Details...</p>
             ) : (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -240,12 +289,10 @@ export default function EventLiveMap() {
                 </table>
               </div>
             )}
-            <button style={{ marginTop: 10 }} onClick={() => setSelected(null)}>Schließen</button>
+            <button style={{ marginTop: 10 }} onClick={() => setSelected(null)}>Schliessen</button>
           </Modal>
         </ModalOverlay>
       )}
-
-      <Footer />
     </Page>
   );
 }

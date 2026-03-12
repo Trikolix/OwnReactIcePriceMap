@@ -29,7 +29,7 @@ export const ROUTE_OPTIONS = [
     routeType: "sport",
     paceEnabled: true,
     startMode: "grouped",
-    description: "Die volle Runde mit vier Pflicht-Stopps für alle, die einen langen Eventtag wollen.",
+    description: "Die volle Runde mit vier Eis-Stopps für alle, die die extra Kilometer und einen langen Eventtag wollen.",
   },
   {
     key: "classic_3",
@@ -53,7 +53,7 @@ export const ROUTE_OPTIONS = [
     routeType: "family",
     paceEnabled: false,
     startMode: "open_window",
-    description: "Die entspannte Variante mit Schöne und Klatt Eis, ohne sportliche Tempogruppe.",
+    description: "Die kurze, flachere Runde mit zwei Eisdielen-Checkpoints und ohne sportliche Tempogruppe.",
   },
 ];
 

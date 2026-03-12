@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Calendar, CheckCircle2, Euro, Flag, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
 import Header, { Button } from "./Header";
@@ -20,13 +20,13 @@ const PARTNER_ICE_CREAM_PARLORS = [
   },
   {
     name: "Eisdiele Schöne",
-    role: "Checkpoint auf allen passenden Routen",
+    role: "Checkpoint auf allen Routen",
     image: "https://lh3.googleusercontent.com/p/AF1QipMaZZ6abii-iQVOXLTq0AEQ-T7wqFuHJKhIWTg3=s680-w680-h510-rw",
     description: "Ein fester Partnereis-Stopp für Familientour und Sportstrecken. Ideal für Kugel, Wasser und gute Laune unterwegs.",
   },
   {
     name: "Klatt Eis",
-    role: "Checkpoint auf allen passenden Routen",
+    role: "Checkpoint auf allen Routen",
     image: "https://scontent-fra3-1.xx.fbcdn.net/v/t39.30808-6/309439806_410674307889950_1629544177299528238_n.png?_nc_cat=108&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Wlta0QZof7EQ7kNvwFNBC2t&_nc_oc=AdkxeIbOQlznLYTmF3hiNxtBZMlVpZ6Y2kf61_TfEJdYdMecSZ2vrfOB2VzaAa8tJDyitLRPR5DEck5bKKw44A0O&_nc_zt=23&_nc_ht=scontent-fra3-1.xx&_nc_gid=7_v78JiyRM6zyeTNpVjb_Q&_nc_ss=8&oh=00_Afyxd4iCg12hPfU65FtC603zhX6PKRTudCQTnukXTdTTeg&oe=69B769F8",
     description: "Zum Durchatmen, Eis essen und Flaschen auffüllen. Einer der zentralen Partnerstopps des Events.",
   },
@@ -202,20 +202,27 @@ const FaqGrid = styled.div`
   margin-top: 1rem;
 `;
 
-function Hero() {
+function Hero({ hasEventRegistration }) {
   return (
     <Section style={{ paddingTop: "1rem" }}>
       <Container>
         <HeroCard>
           <HeroTitle>Ice-Tour 2026</HeroTitle>
           <HeroSubtitle>
-            Drei Routen, digitale Stempelkarte, Gruppenstarts und eine Kugel Eis an jedem offiziellen Checkpoint.
+            Die Ice-Tour ist kein klassisches Radrennen, sondern eine genussvolle Radtour mit besonderen Stopps:
+            Entlang der Strecke warten mehrere Checkpoints bei ausgewählten Eisdielen auf dich.<br /><br />
+
+            Dort bekommst du eine Kugel Eis gratis, sammelst digitale Stempel und triffst andere Teilnehmer.
+            Am Ende zählt nicht nur die Strecke – sondern auch der gemeinsame Spaß auf dem Rad.
           </HeroSubtitle>
           <HeroActions>
-            <Button href="/#/event-registration">Jetzt anmelden</Button>
-            <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-              Meine Anmeldung
-            </Button>
+            {hasEventRegistration ? (
+              <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+                Meine Anmeldung
+              </Button>
+            ) : (
+              <Button href="/#/event-registration">Jetzt anmelden</Button>
+            )}
           </HeroActions>
           <FactGrid>
             <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
@@ -243,7 +250,7 @@ function RouteOverview() {
               <p style={{ color: "#7c4f00", marginTop: 0, lineHeight: 1.5 }}>{route.description}</p>
               <RequirementList>
                 <li>{route.stops} offizielle Eis-Stopps</li>
-                <li>{route.routeType === "family" ? "Eigenes Startfenster ohne Tempogruppe" : "Startgruppe nach Strecke und Selbsteinschätzung"}</li>
+                <li>{route.routeType === "family" ? "Eigenes Startfenster ohne Tempogruppe" : "Anhand der gewählten Route und Selbsteinschätzung wirst du in eine Startgruppe eingeteilt"}</li>
                 <li>{route.routeType === "family" ? "Ideal für Einsteiger und gemeinsame Familienrunde" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
               </RequirementList>
             </Card>
@@ -256,12 +263,12 @@ function RouteOverview() {
 
 function Workflow() {
   const steps = [
-    "Registrierung mit bestehendem Ice-App Account oder mit neuem Account im Event-Flow, anschließend Zahlung der Startgebühr.",
-    "Nach erfolgreicher Registrierung und Zahlung erscheinen Route, gekaufte Gutschein-Codes für weitere Startplätze und später Startgruppe plus Startzeit in deinem persönlichen Portal.",
-    `Einige Tage vor dem Event erhälst du noch eine Erinnerungsmail mit allen wichtigen Informationen zur Anreise, Ablauf und zur Strecke.`,
-    `Am Eventtag reist du selbstständig an, startest mit deiner Gruppe oder im Startfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.`,
-    "An jedem Checkpoint bekommst du eine Kugel Eis: digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
-    `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR oder Check-in abgeschlossen, danach gemeinsamer Ausklang und optional kleine Siegerehrung.`,
+    "Entweder hast du bereits einen Ice-App-Account oder du erstellst bei der Registrierung einen Account. Anschließend bezahlst du die Startgebühr.",
+    "Nach erfolgreicher Registrierung und Zahlung erhältst du Zugang zu deiner Anmeldung. Dort siehst du noch einmal deine Daten, eventuell gekaufte Gutschein-Codes für weitere Startplätze und später auch deine Startgruppe, deine Startzeit sowie die konkrete Strecke.",
+    "Einige Tage vor dem Event erhältst du noch eine Erinnerungsmail mit allen wichtigen Informationen zur Anreise, zum Ablauf und zur Strecke.",
+    "Am Eventtag reist du selbstständig an, startest mit deiner zugeteilten Gruppe bzw. deinem Startzeitfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.",
+    "An jedem Checkpoint bekommst du eine Kugel Eis: Digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
+    `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR-Code oder Check-in abgeschlossen. Danach gibt es einen gemeinsamen Ausklang und optional eine kleine Siegerehrung.`,
   ];
 
   return (
@@ -287,7 +294,8 @@ function PartnerParlors() {
       <Container>
         <SectionTitle>Unsere Partnereisdielen</SectionTitle>
         <SectionDesc>
-          Bei unseren tollen Partnern gibt es für jeden Starter eine Kugel Eis nach vorzeigen des Starterpass gratis. Ansonsten wird es die Möglichkeit eure Trinkflaschen mit Wasser und ISO-Pulver aufzufüllen. Dies ist eine tolle Gelegenheit, die Eisdielen zu unterstützen in dem ihr eine 2. / 3. Kugel Eis oder auch einen Kaffee, Kuchen euch kauft und optimal gestärkt zurück auf die Strecke geht.
+          Bei unseren tollen Partnern erhält jeder Starter nach Vorzeigen des Starterpasses eine Kugel Eis gratis. Außerdem besteht die Möglichkeit, eure Trinkflaschen mit Wasser und ISO-Pulver aufzufüllen.<br /><br />
+          Nutzt die Gelegenheit gerne, die Eisdielen zu unterstützen – zum Beispiel mit einer zweiten oder dritten Kugel Eis oder auch einem Kaffee oder Stück Kuchen – und geht anschließend optimal gestärkt zurück auf die Strecke.
         </SectionDesc>
         <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
           {PARTNER_ICE_CREAM_PARLORS.map((parlor) => (
@@ -310,13 +318,10 @@ function CharitySection() {
   return (
     <Section>
       <Container>
-        <SectionTitle>Radeln und Gutes tun</SectionTitle>
-        <SectionDesc>
-          Mit der Ice-Tour unterstützen wir auch den Elternverein krebskranker Kinder e.V. Chemnitz. Wer möchte, kann bei der Anmeldung zusätzlich spenden.
-        </SectionDesc>
         <Card style={{ maxWidth: 860, margin: "1rem auto 0" }}>
-          <p style={{ color: "#7c4f00", lineHeight: 1.6, marginTop: 0 }}>
-            Die Veranstaltung soll nicht nur Spaß machen, sondern auch etwas Sinnvolles mitnehmen. Zusätzliche Spenden gehen an den Elternverein krebskranker Kinder e.V. Chemnitz.
+          <SectionTitle>Radeln und Gutes tun</SectionTitle>
+          <p style={{ color: "#7c4f00", lineHeight: 1.6, marginTop: "1rem" }}>
+            Die Veranstaltung soll nicht nur Spaß machen, sondern auch etwas Sinnvolles mitnehmen. Ein Teil der Startgebühren sowie alle Spenden gehen an den <a href="https://www.ekk-chemnitz.de/" target="_blank" rel="noopener noreferrer" style={{ color: "#8a5700", textDecoration: "none", fontWeight: 700 }}>Elternverein krebskranker Kinder e.V. Chemnitz</a>.
           </p>
           <p style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0 }}>
             Den Spendenbetrag kannst du direkt bei der Registrierung ergänzen. So wird aus jeder Tour optional auch noch ein kleiner Beitrag für Familien in schwierigen Situationen.
@@ -337,21 +342,19 @@ function RequirementsAndServices() {
             <h3 style={{ marginTop: 0 }}>Was du brauchst</h3>
             <RequirementList>
               <li>Navi-Radcomputer mit GPX oder Smartphone mit Navigation</li>
-              <li>Smartphone mit Internet und installierter Ice-App</li>
+              <li>Smartphone mit Internet und installierter Ice-App / Ice-App im Browser geöffnet</li>
               <li>Digitale Stempelkarte im persönlichen Event-Portal</li>
-              <li>Bereitschaft, QR-Codes zu scannen oder Check-ins anzulegen</li>
-              <li>Helm, Trinkflaschen und eigenverantwortliche Ausrüstung</li>
-              <li>Anreise zum Start- und Zielpunkt bei {EVENT_START_FINISH.name}</li>
+              <li>Bereitschaft einen coolen Tag auf dem Rad mit leckerem Eis und coolen Leuten zu verbringen</li>
+              <li>Helm, Trinkflaschen, wettergerechte Kleidung und eigenverantwortliche Ausrüstung</li>
             </RequirementList>
           </Card>
           <Card>
             <h3 style={{ marginTop: 0 }}>Leistungen inklusive / selbst zahlen</h3>
             <RequirementList>
               <li>Inklusive: eine Kugel Eis pro offiziellem Checkpoint</li>
-              <li>Inklusive: Iso-Pulver und Leitungswasser zum Auffüllen</li>
-              <li>Optional: Kaffee oder kleine Notfall-Snacks am Start bei {EVENT_START_FINISH.name}, je nach Setup</li>
-              <li>Selbst zahlen: weitere Speisen und Getränke an den Eisdielen</li>
-              <li>Wer mehr Hunger hat, darf die Eisdielen gern zusätzlich unterstützen</li>
+              <li>Inklusive: Iso-Pulver und Leitungswasser zum Auffüllen an den Checkpunkten</li>
+              <li>Wer mehr Eis oder etwas anderes essen / trinken möchte, muss das selber zahlen</li>
+              <li>Es wird am Start / Ziel die Möglichkeit geben Kleinigkeiten zu Essen / Trinken kaufen zu geben.</li>
             </RequirementList>
           </Card>
         </SplitGrid>
@@ -368,31 +371,33 @@ function EventTech() {
         <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
           <Card>
             <QrCode size={28} color="#ffb522" />
-            <h3>QR am Checkpoint</h3>
+            <h3>Checkpoint abhaken</h3>
             <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              An jeder Station liegen QR-Codes aus. Scan oder Vor-Ort-Check-in haken denselben Stopp auf deiner Stempelkarte ab.
+              Wenn du GPS aktiviert hast, kannst du vor Ort einfach den Checkpoint abhaken. Sollte das nicht funktionieren, liegt ein QR-Code aus, der beim Scannen ebenfalls den Checkpoint einlöst.
             </p>
           </Card>
           <Card>
             <Smartphone size={28} color="#ffb522" />
             <h3>Ice-App Check-in</h3>
             <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              Wenn es schnell gehen muss, kannst du unterwegs schon einchecken und das Eisfoto später im Ziel fertig bearbeiten.
+              Es wäre natürlich toll, wenn du deine Kugel(n) Eis in der Ice-App eincheckst.<br /><br />
+              Wenn es schnell gehen muss, mache einfach ein Foto vom Eis, lege einen leeren Check-in an und füge die Beschreibung später hinzu.
             </p>
           </Card>
           <Card>
             <CheckCircle2 size={28} color="#ffb522" />
             <h3>Zielabschluss</h3>
             <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              Im Ziel wird die Runde nochmals per QR oder Check-in abgeschlossen. Danach lässt sich dein Finisher-Status sauber auswerten.
+              Im Ziel wird die Runde noch einmal per QR-Code oder Check-in abgeschlossen. Danach lässt sich dein Finisher-Status sauber auswerten.
             </p>
           </Card>
         </CardGrid>
+
         <Card style={{ marginTop: "1rem" }}>
           <h3 style={{ marginTop: 0 }}>Tipps für schnelle Checkpoints</h3>
           <RequirementList>
-            <li>Tipp: Wenn du Zeit sparen willst, lege vor Ort direkt einen leeren Check-in an, mach ein Foto von deinem Eis und ergänze die Details später entspannt im Ziel.</li>
-            <li>Fun-Hinweis: Wer am Eventtag die meisten Eisportionen mit Beweisbild eincheckt, gewinnt ein kleines Präsent. Vernunft bleibt trotzdem Teamsache.</li>
+            <li>Tipp: Wenn du Zeit sparen willst, lege vor Ort direkt einen leeren Check-in an, mache ein Foto von deinem Eis und ergänze die Details später entspannt im Ziel.</li>
+            <li><strong>Zusatz-Ice-Challenge:</strong> Wer am Eventtag die meisten Eisportionen mit Beweisbild eincheckt, gewinnt ein kleines Präsent.</li>
           </RequirementList>
         </Card>
       </Container>
@@ -403,20 +408,28 @@ function EventTech() {
 function Faq() {
   const items = [
     {
-      q: "Kann ich die Route wechseln?",
-      a: "Momentan ist es nicht möglich auf eine andere Route als die, bei der Registrierung gewählte zu wechseln.",
+      q: "Wo finde ich die konkreten Routen?",
+      a: `Die GPX-Datei mit der Route wird einige Tage vor dem Event im persönlichen Starterbereich zum Download bereitgestellt. So hast du genug Zeit, die Route auf deinen Radcomputer oder dein Smartphone zu laden und dich mit der Navigation vertraut zu machen.`,
     },
     {
-      q: "Wo finde ich die konkrete Route?",
-      a: `Die GPX-Datei mit der Route wird einige Tage vor dem Event im persönlichen Starter-Bereich zum Download bereitgestellt. So hast du genug Zeit, die Route auf deinen Radcomputer oder dein Smartphone zu laden und dich mit der Navigation vertraut zu machen.`,
+      q: "Wie wird der genaue zeitliche Ablauf sein?",
+      a: "Der genaue Zeitplan wird noch bekannt gegeben, aber grundsätzlich starten die Gruppen im Laufe des Vormittags im Abstand von einigen Minuten. Die Starter der längsten Strecke werden als erstes auf die Reise geschickt. Ziel ist dass alle Gruppen im Laufe des Nachmittags im Ziel eintreffen.",
+    },
+    {
+      q: "Gibt es Verpflegung auf der Strecke?",
+      a: "Es gibt keine offizielle Verpflegungsstation mit All-you-can-eat, aber an jedem offiziellen Checkpoint erhältst du eine Kugel Eis deiner Wahl gratis. Außerdem kannst du deine Trinkflaschen mit Leitungswasser und Iso-Pulver auffüllen. Es ist empfehlenswert, zusätzlich eigene Snacks und Getränke mitzunehmen, um unterwegs gut versorgt zu sein. Alternativ könnt ihr die Checkpoints nutzen, um euch dort zusätzlich mit Verpflegung einzudecken. Packt am besten etwas Bargeld ein, falls ihr noch ein Stück Kuchen oder eine zweite oder dritte Kugel Eis kaufen möchtet.",
+    },
+    {
+      q: "Kann ich die Route wechseln?",
+      a: "Momentan ist es nicht möglich, auf eine andere Route als die bei der Registrierung gewählte zu wechseln.",
     },
     {
       q: "Muss ich zwingend die Ice-App nutzen?",
-      a: "Ja die Ice-App dient als eure digitale Stempelkarte und als Nachweis das ihr Teilnehmer bei dem Event seid. Außerdem könnt ihr damit die Check-ins an den Eis-Stopps vornehmen und habt alle wichtigen Infos zum Event jederzeit griffbereit.",
+      a: "Ja, die Ice-App dient als eure digitale Stempelkarte und als Nachweis, dass ihr Teilnehmer des Events seid. Außerdem könnt ihr damit die Check-ins an den Eis-Stopps vornehmen und habt alle wichtigen Infos zum Event jederzeit griffbereit.",
     },
     {
       q: "Wer sieht die Live-Karte?",
-      a: "Die Live-Karte ist öffentlich. Je Checkpoint werden aktuelle Zahlen und Detaildaten der bereits eingecheckten Starter angezeigt.",
+      a: "Die Live-Karte ist öffentlich. Pro Checkpoint werden aktuelle Zahlen und Detaildaten der bereits eingecheckten Starter angezeigt.",
     },
   ];
 
@@ -440,6 +453,26 @@ function Faq() {
 export default function RadEvent() {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const { userId, isLoggedIn } = useUser();
+  const [hasEventRegistration, setHasEventRegistration] = useState(
+    () => localStorage.getItem("event2026_has_registration") === "1"
+  );
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setHasEventRegistration(false);
+      return;
+    }
+
+    const syncRegistrationState = () => {
+      setHasEventRegistration(localStorage.getItem("event2026_has_registration") === "1");
+    };
+
+    syncRegistrationState();
+    window.addEventListener("storage", syncRegistrationState);
+    return () => {
+      window.removeEventListener("storage", syncRegistrationState);
+    };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId || !apiUrl) return;
@@ -450,13 +483,13 @@ export default function RadEvent() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ user_id: userId }),
-    }).catch(() => {});
+    }).catch(() => { });
   }, [apiUrl, isLoggedIn, userId]);
 
   return (
     <PageWrapper>
       <Header />
-      <Hero />
+      <Hero hasEventRegistration={hasEventRegistration} />
       <RouteOverview />
       <PartnerParlors />
       <CharitySection />
@@ -472,10 +505,13 @@ export default function RadEvent() {
               Wenn du bereits angemeldet bist, findest du alle persönlichen Infos in `Meine Anmeldung`. Wenn nicht, kannst du jetzt deinen Startplatz sichern.
             </p>
             <div style={{ display: "flex", gap: "0.8rem", justifyContent: "center", flexWrap: "wrap" }}>
-              <Button href="/#/event-registration">Zur Anmeldung</Button>
-              <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-                Mein Starter-Bereich
-              </Button>
+              {hasEventRegistration ? (
+                <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+                  Mein Starter-Bereich
+                </Button>
+              ) : (
+                <Button href="/#/event-registration">Zur Anmeldung</Button>
+              )}
             </div>
           </Card>
         </Container>

@@ -1,4 +1,4 @@
-﻿import userOfTheMonthImg from './user_of_the_month.png';
+import userOfTheMonthImg from './user_of_the_month.png';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -50,6 +50,7 @@ const Header = ({ refreshShops }) => {
   const [birthdayMandatoryCompleted, setBirthdayMandatoryCompleted] = useState(0);
   const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(11);
   const [birthdayRewardUnlocked, setBirthdayRewardUnlocked] = useState(false);
+  const [isBirthdayProgressLoaded, setIsBirthdayProgressLoaded] = useState(false);
   const [birthdayCampaignPhase, setBirthdayCampaignPhase] = useState('live');
   const [birthdayAnniversaryUnlockedAt, setBirthdayAnniversaryUnlockedAt] = useState(null);
   const [birthdayEisTourRegistrationOpen, setBirthdayEisTourRegistrationOpen] = useState(false);
@@ -65,9 +66,17 @@ const Header = ({ refreshShops }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const LEADERBOARD_COLLAPSED_COUNT = 3;
+  const specialTime = isSpecialTime();
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
-  const showEisTourNavLink = now >= new Date(2026, 2, 14, 0, 0, 0);
+  const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
+  const defaultIceTourNavDate = new Date('2026-03-12T08:00:00+01:00');
+  const parsedIceTourNavDate = birthdayAnniversaryUnlockedAt ? new Date(birthdayAnniversaryUnlockedAt) : null;
+  const iceTourNavDate = parsedIceTourNavDate && !Number.isNaN(parsedIceTourNavDate.getTime())
+    ? parsedIceTourNavDate
+    : defaultIceTourNavDate;
+  const shouldWaitForIceTourDate = specialTime === 'birthday' && Boolean(userId) && !isBirthdayProgressLoaded;
+  const showEisTourNavLink = !shouldWaitForIceTourDate && now >= iceTourNavDate;
 
   const toggleMenu = () => {
     setMenuOpen((isOpen) => !isOpen);
@@ -192,7 +201,7 @@ const Header = ({ refreshShops }) => {
       checkForLevelUp();
     }, 5 * 60 * 1000); // alle 5 Minuten
 
-    // sofort einmal ausfÃ¼hren (optional)
+    // sofort einmal ausführen (optional)
     checkForLevelUp();
 
     return () => clearInterval(checkLevelInterval);
@@ -225,7 +234,7 @@ const Header = ({ refreshShops }) => {
     }
 
     if (scanCode) {
-      // âœ… QR-Code erkannt â€“ weiterverarbeiten
+      // ✅ QR-Code erkannt – weiterverarbeiten
       console.log("Scan-Code erkannt:", scanCode);
 
       // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
@@ -249,7 +258,7 @@ const Header = ({ refreshShops }) => {
               return;
             }
 
-            // ðŸ§  Wenn nicht eingeloggt â†’ lokal speichern
+            // 🧠 Wenn nicht eingeloggt → lokal speichern
             if (!userId) {
               const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
               if (stored.includes(scanCode)) {
@@ -262,7 +271,7 @@ const Header = ({ refreshShops }) => {
               }
             }
 
-            // âœ… Modal anzeigen
+            // ✅ Modal anzeigen
             console.log("setModalData", {
               icon: data.icon,
               name: data.name,
@@ -284,7 +293,7 @@ const Header = ({ refreshShops }) => {
           console.error("Fehler beim Senden des QR-Codes:", err);
         })
         .finally(() => {
-          // âœ… Parameter aus URL entfernen, ohne Reload
+          // ✅ Parameter aus URL entfernen, ohne Reload
           params.delete("scan");
           const newSearch = params.toString();
           navigate(
@@ -333,7 +342,7 @@ const Header = ({ refreshShops }) => {
             body: JSON.stringify({ code, nutzer_id: userId }),
           });
           const data = await res.json();
-          console.log("QR-Scan nach Login Ã¼bertragen:", data);
+          console.log("QR-Scan nach Login übertragen:", data);
 
           if (data?.status !== "success") {
             failedCodes.push(code);
@@ -407,7 +416,7 @@ const Header = ({ refreshShops }) => {
       return headerWideChristmas;
     }
     if (specialTime === 'easter') {
-        return headerWideEaster;
+      return headerWideEaster;
     }
     if (specialTime === 'birthday') {
       return headerWideBirthday;
@@ -415,7 +424,6 @@ const Header = ({ refreshShops }) => {
     return headerWide;
   };
 
-  const specialTime = isSpecialTime();
   const forceLocalBirthdayUnlock =
     typeof window !== 'undefined'
     && (window.location.hostname === 'localhost'
@@ -425,6 +433,7 @@ const Header = ({ refreshShops }) => {
 
   useEffect(() => {
     if (specialTime !== 'birthday' || !userId) {
+      setIsBirthdayProgressLoaded(true);
       setBirthdayPoints(null);
       setBirthdayMaxPoints(null);
       setBirthdayBreakdown({});
@@ -440,6 +449,7 @@ const Header = ({ refreshShops }) => {
       return;
     }
 
+    setIsBirthdayProgressLoaded(false);
     fetch(`${apiUrl}/api/birthday_progress.php?user_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
@@ -462,6 +472,7 @@ const Header = ({ refreshShops }) => {
           setNewAwards(data.new_awards);
           setShowOverlay(true);
         }
+        setIsBirthdayProgressLoaded(true);
       })
       .catch((err) => {
         console.error('Fehler beim Laden der Geburtstags-Punkte:', err);
@@ -477,6 +488,7 @@ const Header = ({ refreshShops }) => {
         setBirthdayAnniversaryUnlockedAt(null);
         setBirthdayEisTourRegistrationOpen(false);
         setBirthdayAwardConfig(null);
+        setIsBirthdayProgressLoaded(true);
       });
   }, [apiUrl, specialTime, userId]);
 
@@ -534,16 +546,25 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
+          {showEisTourNavLink && (
+            <DesktopNavLink to="/ice-tour" $compact>
+              Ice-Tour
+              {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
+            </DesktopNavLink>
+          )}
           <DesktopNavLink to="/photo-challenge" $compact>
             Foto-Challenge
-            <DesktopNavBadge>NEU</DesktopNavBadge>
+            {showPhotoChallengeNewBadge && <DesktopNavBadge>NEU</DesktopNavBadge>}
           </DesktopNavLink>
           <DesktopNavLink to="/dashboard">
             Aktivitäten
             {dashboardNewCount > 0 && <ActivityBadge>{dashboardNewCount}</ActivityBadge>}
           </DesktopNavLink>
-          <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
-          <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
+          {!showEisTourNavLink && (<>
+            <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
+            <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
+          </>
+          )}
         </DesktopNav>
         <HeaderRight>
           {isLoggedIn ? (
@@ -580,7 +601,7 @@ const Header = ({ refreshShops }) => {
           <MenuTriggerWrap ref={menuTriggerRef}>
             <BurgerMenu
               type="button"
-              aria-label={menuOpen ? 'MenÃ¼ schlieÃŸen' : 'MenÃ¼ Ã¶ffnen'}
+              aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
               aria-expanded={menuOpen}
               onClick={toggleMenu}
             >
@@ -609,6 +630,12 @@ const Header = ({ refreshShops }) => {
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
               <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
+              {showEisTourNavLink && (
+                <MenuItemLink to="/ice-tour" onClick={closeMenu}>
+                  Zur Ice-Tour
+                  {showIceTourNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+                </MenuItemLink>
+              )}
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
                 Foto-Challenges
                 {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
@@ -620,12 +647,6 @@ const Header = ({ refreshShops }) => {
               <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
               <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
               <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
-              {showEisTourNavLink && (
-                <MenuItemLink to="/ice-tour" onClick={closeMenu}>
-                  Zur Ice-Tour
-                  <MenuItemBadge>NEU</MenuItemBadge>
-                </MenuItemLink>
-              )}
             </MenuSection>
 
             <MenuDivider />
@@ -720,7 +741,7 @@ const Header = ({ refreshShops }) => {
 
             {levelUpInfo && (
               <>
-                <h2>ðŸŽ‰ Level-Up!</h2>
+                <h2>🎉 Level-Up!</h2>
                 <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
                 <p><em>{levelUpInfo.level_name}</em></p>
               </>
@@ -778,7 +799,7 @@ const Header = ({ refreshShops }) => {
         <OverlayBackground>
           <Overlay>
             <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
-            <h2>ðŸ… Nutzer/in des Monats ðŸ…</h2>
+            <h2>🏆 Nutzer/in des Monats 🏆</h2>
             <CurrentUserWrapper>
               <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
                 <UserCard>
@@ -794,7 +815,7 @@ const Header = ({ refreshShops }) => {
               </UserLink>
             </CurrentUserWrapper>
             <hr></hr>
-            <h3>ðŸ… Vorherige Nutzer/innen des Monats ðŸ…</h3>
+            <h3>🏆 Vorherige Nutzer/innen des Monats 🏆</h3>
             <PastUsersGrid>
               {pastUsers.map((user) => (
                 <UserLink to={`/user/${user.id}`} key={`${user.month}-${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>

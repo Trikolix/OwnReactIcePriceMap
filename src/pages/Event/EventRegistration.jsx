@@ -13,9 +13,6 @@ import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
   EVENT_ENTRY_FEE,
-  EVENT_PAYMENT_CONTACT_EMAIL,
-  EVENT_PAYMENT_PAYPAL_ADDRESS,
-  EVENT_START_FINISH,
   KIT_DISPLAY_PRICE,
   PACE_OPTIONS,
   routeSupportsPace,
@@ -53,7 +50,7 @@ const Card = styled.div`
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(255, 181, 34, 0.08);
   padding: 2rem;
-  margin-bottom: 1.5rem;
+  margin: 1rem 0rem;
 `;
 const CardTitle = styled.h2`
   font-size: 1.3rem;
@@ -491,7 +488,6 @@ export default function EventRegistration() {
                   <span>Verfügbare Startplätze</span>
                   <span>noch <strong>{eventMeta.available_slots} / {eventMeta.max_participants}</strong></span>
                 </Flex>
-                <Muted>Start und Ziel liegen bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.</Muted>
                 {existingRegistration && (
                   <StatusBanner style={{ marginTop: 12, marginBottom: 0 }}>
                     <strong>Du bist bereits registriert.</strong>
@@ -679,7 +675,7 @@ export default function EventRegistration() {
             {registrationMode && (
               <>
                 <Card>
-                  <CardTitle><HeartHandshake /> Zusätzlicher Betrag</CardTitle>
+                  <CardTitle><HeartHandshake /> Zusätzliche Spende</CardTitle>
                   <Muted style={{ marginBottom: "0.8rem" }}>
                     Dieser Betrag geht zu 100% an den Elternverein krebskranker Kinder e.V.
                   </Muted>
@@ -687,13 +683,13 @@ export default function EventRegistration() {
                   <Input type="number" min="0" step="0.5" value={donationAmount} onChange={(e) => setDonationAmount(Number(e.target.value) || 0)} />
                 </Card>
                 <Card>
-                  <CardTitle><ShieldAlert /> Haftung, Regeln & Zahlung</CardTitle>
-                  <StatusBanner>
+                  <CardTitle><ShieldAlert /> Haftung, Regeln & Newsletter</CardTitle>
+                  {/* <StatusBanner>
                     <strong>Zahlung:</strong>
                     <div style={{ marginTop: 6, lineHeight: 1.45 }}>
                       Bitte das Geld wenn möglich per PayPal Freunde an <strong>{EVENT_PAYMENT_PAYPAL_ADDRESS}</strong> senden. Privat organisiert, nicht als Spende ausweisbar. Wenn kein PayPal vorhanden ist, bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
                     </div>
-                  </StatusBanner>
+                  </StatusBanner> */}
                   <CheckboxLabel>
                     <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} required />
                     <span>Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Teilnahmebedingungen in der aktuellen Version.</span>

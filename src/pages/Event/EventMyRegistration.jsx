@@ -99,9 +99,6 @@ export default function EventMyRegistration() {
       <Container>
         <Card>
           <h1 style={{ marginTop: 0 }}>Meine Anmeldung</h1>
-          <p style={{ margin: 0, color: "#7c4f00" }}>
-            Start und Ziel: <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
-          </p>
         </Card>
 
         {loading && <Card>Daten werden geladen…</Card>}
@@ -151,8 +148,8 @@ export default function EventMyRegistration() {
 
             <Card>
               <h2 style={{ marginTop: 0 }}>Eventtag</h2>
-              <p>Ankommen: <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}</p>
-              <p>Route bestätigt: <strong>{ownSlot.route_name || getRouteLabel(ownSlot.route_key)}</strong></p>
+              <p>Treff bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}. Die genaue Uhrzeit wird noch bekannt gegeben.</p>
+              <p>Deine gewählte Route: <strong>{ownSlot.route_name || getRouteLabel(ownSlot.route_key)}</strong></p>
               <p>Startgruppe: <strong>{ownSlot.wave_code || "folgt"}</strong></p>
               <p style={{ marginBottom: 0 }}>Im Ziel kommst du wieder bei <strong>{EVENT_START_FINISH.name}</strong> an.</p>
             </Card>

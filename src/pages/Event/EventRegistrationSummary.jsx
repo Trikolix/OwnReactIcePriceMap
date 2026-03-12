@@ -110,9 +110,6 @@ export default function EventRegistrationSummary() {
           <p style={{ margin: 0, color: "#7c4f00" }}>
             Du erhältst eine E-Mail mit Zahlungsanleitung und Referenzcode. Gekaufte Gutschein-Codes werden erst nach bestätigter Zahlung freigeschaltet.
           </p>
-          <p style={{ margin: "0.55rem 0 0", color: "#7c4f00" }}>
-            Start und Ziel sind bei <strong>{EVENT_START_FINISH.name}</strong>, {EVENT_START_FINISH.fullAddress}.
-          </p>
         </Card>
 
         {accountCreatedInFlow && (
