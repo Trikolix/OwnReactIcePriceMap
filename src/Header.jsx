@@ -1,4 +1,4 @@
-import userOfTheMonthImg from './user_of_the_month.png';
+﻿import userOfTheMonthImg from './user_of_the_month.png';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -70,7 +70,7 @@ const Header = ({ refreshShops }) => {
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
-  const defaultIceTourNavDate = new Date('2026-03-12T08:00:00+01:00');
+  const defaultIceTourNavDate = new Date('2026-03-15T18:00:00+01:00');
   const parsedIceTourNavDate = birthdayAnniversaryUnlockedAt ? new Date(birthdayAnniversaryUnlockedAt) : null;
   const iceTourNavDate = parsedIceTourNavDate && !Number.isNaN(parsedIceTourNavDate.getTime())
     ? parsedIceTourNavDate

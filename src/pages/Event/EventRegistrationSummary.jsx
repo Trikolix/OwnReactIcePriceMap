@@ -6,9 +6,13 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import {
+  EVENT_ORGANIZER_COUNTRY,
+  EVENT_ORGANIZER_FULL_ADDRESS,
+  EVENT_ORGANIZER_NAME,
   EVENT_PAYMENT_CONTACT_EMAIL,
   EVENT_PAYMENT_PROVIDER_NAME,
   EVENT_START_FINISH,
+  EVENT_WITHDRAWAL_NOTICE,
   getClothingLabel,
   getRouteLabel,
 } from "./eventConfig";
@@ -141,9 +145,9 @@ export default function EventRegistrationSummary() {
       <Header />
       <Container>
         <Card>
-          <h1 style={{ marginTop: 0 }}>Anmeldung erfolgreich</h1>
+          <h1 style={{ marginTop: 0 }}>Verbindliche Bestellung erfolgreich gespeichert</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
-            Du erhältst eine E-Mail mit Zahlungsanleitung und Referenzcode. Gekaufte Gutschein-Codes werden erst nach bestätigter Zahlung freigeschaltet.
+            Deine Bestellung wurde verbindlich erfasst. Du erhältst eine E-Mail mit Referenzcode, Preisübersicht und Hinweisen zur Zahlung über {EVENT_PAYMENT_PROVIDER_NAME}.
           </p>
         </Card>
 
@@ -170,7 +174,7 @@ export default function EventRegistrationSummary() {
               <p>Zahlungsstatus: <Badge>{summary.registration.payment_status}</Badge></p>
               <p>Eigene Startgebühr: <strong>{formatEuro(summary.registration.entry_fee_amount)}</strong></p>
               {Number(summary.registration.gift_voucher_purchase_amount || 0) > 0 && (
-                <p>Geschenk-Codes: <strong>{formatEuro(summary.registration.gift_voucher_purchase_amount)}</strong></p>
+                <p>Zusätzliche Gutschein-Codes: <strong>{formatEuro(summary.registration.gift_voucher_purchase_amount)}</strong></p>
               )}
               {Number(summary.registration.voucher_discount_amount || 0) > 0 && (
                 <p>Gutschein-Abzug: <strong>-{formatEuro(summary.registration.voucher_discount_amount)}</strong></p>
@@ -179,8 +183,11 @@ export default function EventRegistrationSummary() {
                 <p>Zusätzlicher Betrag: <strong>{formatEuro(summary.registration.donation_amount)}</strong></p>
               )}
               <p>Betrag gesamt: <strong>{formatEuro(summary.payment?.expected_amount)}</strong></p>
-              <p style={{ marginBottom: 0 }}>
+              <p>
                 Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Falls es Probleme gibt, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
+              </p>
+              <p style={{ marginBottom: 0, color: "#7c4f00" }}>
+                Anbieter: <strong>{EVENT_ORGANIZER_NAME}</strong>, {EVENT_ORGANIZER_FULL_ADDRESS}, {EVENT_ORGANIZER_COUNTRY}. {EVENT_WITHDRAWAL_NOTICE}
               </p>
               <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
                 {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
@@ -212,9 +219,9 @@ export default function EventRegistrationSummary() {
 
             {Number(summary.registration.gift_voucher_quantity || 0) > 0 && purchasedVouchers.length === 0 && (
               <Card>
-                <h2 style={{ marginTop: 0 }}>Geschenk-Codes</h2>
+                <h2 style={{ marginTop: 0 }}>Zusätzliche Gutschein-Codes</h2>
                 <p style={{ marginBottom: 0 }}>
-                  Du hast <strong>{summary.registration.gift_voucher_quantity}</strong> Geschenk-Code{Number(summary.registration.gift_voucher_quantity) === 1 ? "" : "s"} gekauft. Die konkreten Codes werden nach bestätigter Zahlung freigeschaltet und erscheinen dann in `Meine Anmeldung`.
+                  Du hast <strong>{summary.registration.gift_voucher_quantity}</strong> zusätzliche Gutschein-Code{Number(summary.registration.gift_voucher_quantity) === 1 ? "" : "s"} mitbestellt. Die konkreten Codes werden nach bestätigter Zahlung freigeschaltet und erscheinen dann in `Meine Anmeldung`.
                 </p>
               </Card>
             )}
@@ -240,5 +247,3 @@ export default function EventRegistrationSummary() {
     </Page>
   );
 }
-
-

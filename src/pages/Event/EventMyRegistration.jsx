@@ -340,7 +340,7 @@ export default function EventMyRegistration() {
                 </FieldRow>
                 {Number(data.registration.gift_voucher_purchase_amount || 0) > 0 && (
                   <FieldRow>
-                    <Label>Geschenk-Codes</Label>
+                    <Label>Zusätzliche Gutschein-Codes</Label>
                     <Value>{formatEuro(data.registration.gift_voucher_purchase_amount)}</Value>
                   </FieldRow>
                 )}
@@ -365,7 +365,7 @@ export default function EventMyRegistration() {
               {!isPaid && (
                 <>
                   <Notice>
-                    Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Bei Fragen zur Zahlung bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
+                    Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Bei Fragen zur Zahlung oder zu zusätzlichen Gutschein-Codes bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
                   </Notice>
                   <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
                     {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
