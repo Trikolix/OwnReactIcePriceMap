@@ -16,6 +16,10 @@ try {
 
     $checkpointId = (int) ($data['checkpoint_id'] ?? 0);
     $mode = event2026_normalize_stamp_card_mode($data['mode'] ?? 'live');
+    if ($mode === 'test' && (int) $auth['user_id'] !== 1) {
+        http_response_code(403);
+        throw new RuntimeException('Test-Stempelkarte ist nur für Admin verfügbar.');
+    }
     $source = trim((string) ($data['source'] ?? 'gps_click'));
     $lat = isset($data['lat']) ? (float) $data['lat'] : null;
     $lng = isset($data['lng']) ? (float) $data['lng'] : null;

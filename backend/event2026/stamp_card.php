@@ -13,6 +13,10 @@ try {
     $event = event2026_current_event($pdo);
     $eventId = (int) $event['id'];
     $mode = event2026_normalize_stamp_card_mode($_GET['mode'] ?? 'live');
+    if ($mode === 'test' && (int) $auth['user_id'] !== 1) {
+        http_response_code(403);
+        throw new RuntimeException('Test-Stempelkarte ist nur für Admin verfügbar.');
+    }
 
     $slot = event2026_get_slot_for_user($pdo, $eventId, $auth['user_id']);
     if (!$slot) {
@@ -51,10 +55,59 @@ try {
         ':stamp_card_mode' => $mode,
     ]);
 
+    $rawRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $checkpointShopIds = [];
+    foreach ($rawRows as $row) {
+        if ($row['shop_id'] !== null) {
+            $checkpointShopIds[(int) $row['shop_id']] = true;
+        }
+    }
+
+    $eventDate = $mode === 'test'
+        ? gmdate('Y-m-d')
+        : (!empty($event['event_date']) ? (string) $event['event_date'] : gmdate('Y-m-d'));
+    $eventDayCheckinsByShop = [];
+    if (!empty($checkpointShopIds)) {
+        $shopIdList = array_keys($checkpointShopIds);
+        $placeholders = implode(',', array_fill(0, count($shopIdList), '?'));
+        $checkinSql = "SELECT
+                c.id,
+                c.eisdiele_id,
+                c.datum,
+                c.typ,
+                c.kommentar,
+                GROUP_CONCAT(cs.sortenname ORDER BY cs.id SEPARATOR ', ') AS sorten_preview
+            FROM checkins c
+            LEFT JOIN checkin_sorten cs ON cs.checkin_id = c.id
+            WHERE c.nutzer_id = ?
+              AND DATE(c.datum) = ?
+              AND c.eisdiele_id IN ({$placeholders})
+            GROUP BY c.id, c.eisdiele_id, c.datum, c.typ, c.kommentar
+            ORDER BY c.datum DESC, c.id DESC";
+        $checkinStmt = $pdo->prepare($checkinSql);
+        $params = array_merge([(int) $auth['user_id'], $eventDate], $shopIdList);
+        $checkinStmt->execute($params);
+        foreach ($checkinStmt->fetchAll(PDO::FETCH_ASSOC) as $checkinRow) {
+            $shopId = (int) $checkinRow['eisdiele_id'];
+            if (!isset($eventDayCheckinsByShop[$shopId])) {
+                $eventDayCheckinsByShop[$shopId] = [];
+            }
+            $eventDayCheckinsByShop[$shopId][] = [
+                'id' => (int) $checkinRow['id'],
+                'datum' => (string) $checkinRow['datum'],
+                'typ' => (string) $checkinRow['typ'],
+                'sorten_preview' => $checkinRow['sorten_preview'] !== null ? (string) $checkinRow['sorten_preview'] : '',
+                'kommentar_preview' => $checkinRow['kommentar'] !== null
+                    ? mb_substr(trim((string) $checkinRow['kommentar']), 0, 120)
+                    : '',
+            ];
+        }
+    }
+
     $checkpoints = [];
     $mandatoryTotal = 0;
     $mandatoryPassed = 0;
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    foreach ($rawRows as $row) {
         if ($mode === 'live' && !event2026_route_applies_to_checkpoint($routeKey, (string) ($row['route_keys_csv'] ?? ''))) {
             continue;
         }
@@ -68,9 +121,11 @@ try {
         }
 
         $routeKeys = event2026_checkpoint_route_keys((string) ($row['route_keys_csv'] ?? ''));
+        $shopId = $row['shop_id'] !== null ? (int) $row['shop_id'] : null;
+        $eventDayCheckins = $shopId !== null ? ($eventDayCheckinsByShop[$shopId] ?? []) : [];
         $checkpoints[] = [
             'id' => (int) $row['id'],
-            'shop_id' => $row['shop_id'] !== null ? (int) $row['shop_id'] : null,
+            'shop_id' => $shopId,
             'shop_name' => $row['shop_name'] ?: $row['name'],
             'name' => (string) $row['name'],
             'lat' => (float) $row['lat'],
@@ -85,6 +140,7 @@ try {
             'passed_at' => $row['passed_at'],
             'source' => $row['source'],
             'checkin_id' => $row['checkin_id'] !== null ? (int) $row['checkin_id'] : null,
+            'event_day_checkins' => $eventDayCheckins,
         ];
     }
 

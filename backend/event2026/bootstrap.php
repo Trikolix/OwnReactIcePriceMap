@@ -666,12 +666,13 @@ function event2026_live_checkpoint_shop_config(): array
         145 => ['order' => 2, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Eisdiele Schöne
         111 => ['order' => 3, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Klatt-Eismanufaktur
         22  => ['order' => 4, 'min_distance_km' => 175, 'route_keys' => ['epic_4']], // Eiscafé Elisenhof
+        293 => ['order' => 5, 'min_distance_km' => 70, 'route_keys' => ['family_2', 'classic_3', 'epic_4']], // Karl mag's süß
     ];
 }
 
 function event2026_test_checkpoint_shop_config(PDO $pdo): array
 {
-    $preferred = [];
+    $preferred = [565];
     $config = [];
 
     foreach ($preferred as $index => $shopId) {

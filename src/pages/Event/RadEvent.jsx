@@ -502,7 +502,13 @@ export default function RadEvent() {
           <Card style={{ textAlign: "center" }}>
             <h2 style={{ marginTop: 0 }}>Bereit für die Ice-Tour?</h2>
             <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              Wenn du bereits angemeldet bist, findest du alle persönlichen Infos in `Meine Anmeldung`. Wenn nicht, kannst du jetzt deinen Startplatz sichern.
+              {hasEventRegistration ? (
+                <>
+                  Sehr cool, du bist bereits angemeldet! Gehe zu deinem <strong>Starter-Bereich</strong>.
+                </>
+              ) : (
+                <>Bist du bereit für einen unvergesslichen Tag auf dem Rad mit leckeren Eis und coolen Leuten und gleichzeitig etwas Gutes zu tun? Dann melde dich jetzt an!</>
+              )}
             </p>
             <div style={{ display: "flex", gap: "0.8rem", justifyContent: "center", flexWrap: "wrap" }}>
               {hasEventRegistration ? (

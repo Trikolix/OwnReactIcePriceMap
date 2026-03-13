@@ -46,7 +46,7 @@ const ARRIVAL_OPTIONS = [
 
 const ARRIVAL_ICON_MAP = Object.fromEntries(ARRIVAL_OPTIONS.map((option) => [option.value, option.icon]));
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId }) => {
+const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId, initialLocation = null }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
@@ -68,7 +68,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [mentionedUsers, setMentionedUsers] = useState([]);
     const [referencedCheckin, setReferencedCheckin] = useState(null);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const [location, setLocation] = useState(null);
+    const [location, setLocation] = useState(initialLocation);
     const cameraInputRef = useRef(null);
     const galleryInputRef = useRef(null);
 
@@ -80,6 +80,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [groupLinkLoading, setGroupLinkLoading] = useState(false);
 
     // Läuft beim Laden der Seite automatisch
+    useEffect(() => {
+        if (initialLocation?.lat && initialLocation?.lon) {
+            setLocation(initialLocation);
+        }
+    }, [initialLocation]);
+
     useEffect(() => {
         let watchId;
 
