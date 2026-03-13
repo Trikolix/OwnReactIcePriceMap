@@ -20,6 +20,12 @@ export const EVENT_PAYMENT_CONTACT_EMAIL = "admin@ice-app.de";
 export const EVENT_PAYMENT_PROVIDER_NAME = "Stripe";
 export const EVENT_PAYMENT_METHOD_PREFERENCE = "stripe_checkout";
 export const EVENT_PAYMENT_CHECKOUT_URL = import.meta.env.VITE_EVENT_STRIPE_CHECKOUT_URL || "";
+export const EVENT_ORGANIZER_NAME = "Christian Helbig";
+export const EVENT_ORGANIZER_STREET = "Henriettenstraße 45";
+export const EVENT_ORGANIZER_POSTAL_CITY = "09112 Chemnitz";
+export const EVENT_ORGANIZER_COUNTRY = "Deutschland";
+export const EVENT_ORGANIZER_FULL_ADDRESS = `${EVENT_ORGANIZER_STREET}, ${EVENT_ORGANIZER_POSTAL_CITY}`;
+export const EVENT_WITHDRAWAL_NOTICE = "Kein Widerrufsrecht bei dieser Anmeldung, da es sich um eine Freizeitveranstaltung mit festem Termin handelt.";
 
 export const ROUTE_OPTIONS = [
   {

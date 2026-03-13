@@ -543,12 +543,14 @@ try {
     if ($accountEmail) {
         $appBaseUrl = 'https://ice-app.de/#';
         $mailBody = "Hallo {$auth['username']},\n\n";
-        $mailBody .= "deine Anmeldung zur Ice-Tour 2026 wurde gespeichert.\n\n";
+        $mailBody .= "deine verbindliche Bestellung zur Ice-Tour 2026 wurde gespeichert.\n\n";
         $mailBody .= "Registrierung: #{$registrationId}\n";
         $mailBody .= "Referenzcode: {$paymentRef}\n";
+        $mailBody .= "Veranstaltung: Ice-Tour 2026\n";
+        $mailBody .= "Start und Ziel: Karl mag's süß, Untere Aktienstraße 12, 09111 Chemnitz\n";
         $mailBody .= "Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
         if ($giftVoucherQuantity > 0) {
-            $mailBody .= "Zusätzliche Geschenk-Startplätze: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
+            $mailBody .= "Zusätzliche Gutschein-Codes: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
             $mailBody .= "Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang freigeschaltet.\n";
         }
         if ($voucherRow) {
@@ -559,6 +561,9 @@ try {
         }
         $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n";
         $mailBody .= "Zahlungsmethode: {$paymentMethod}\n\n";
+        $mailBody .= "Anbieter: Christian Helbig, Henriettenstraße 45, 09112 Chemnitz, Deutschland\n";
+        $mailBody .= "Kontakt: admin@ice-app.de\n";
+        $mailBody .= "Kein Widerrufsrecht bei dieser Anmeldung, da es sich um eine Freizeitveranstaltung mit festem Termin handelt.\n\n";
         if ($isAutoPaid) {
             $mailBody .= "Für diese Anmeldung ist keine Zahlung mehr erforderlich. Dein Gutschein deckt den Gesamtbetrag vollständig ab.\n\n";
         } else {
@@ -649,4 +654,3 @@ try {
         'message' => $e->getMessage(),
     ]);
 }
-

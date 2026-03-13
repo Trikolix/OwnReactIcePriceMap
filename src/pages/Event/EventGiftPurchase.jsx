@@ -153,9 +153,9 @@ export default function EventGiftPurchase() {
       <Header />
       <Container>
         <Card>
-          <h1 style={{ marginTop: 0 }}>Gutschein-Codes verschenken</h1>
+          <h1 style={{ marginTop: 0 }}>Geschenk-Startplätze kaufen</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
-            Hier kaufst du nur Geschenk-Codes für Startplätze der Ice-Tour. Du meldest dich damit nicht selbst als Teilnehmer an.
+            Hier kaufst du Startplätze zum Verschenken für die Ice-Tour. Du meldest dich damit nicht selbst als Teilnehmer an.
           </p>
         </Card>
 
@@ -164,10 +164,10 @@ export default function EventGiftPurchase() {
           <Card>
             <h2 style={{ marginTop: 0 }}>Bestellung gespeichert</h2>
             <p>Referenzcode: <strong>{success.gift_purchase.payment_reference_code}</strong></p>
-            <p>Gutschein-Codes: <strong>{success.gift_purchase.gift_voucher_quantity}</strong></p>
+            <p>Geschenk-Codes: <strong>{success.gift_purchase.gift_voucher_quantity}</strong></p>
             <p>Gesamtbetrag: <strong>{formatEuro(success.gift_purchase.expected_amount)}</strong></p>
             <p style={{ marginBottom: 0, color: "#7c4f00" }}>
-              Die Codes werden erst nach bestätigter Zahlung per E-Mail freigeschaltet.
+              Die Geschenk-Codes werden erst nach bestätigter Zahlung per E-Mail freigeschaltet.
             </p>
             <LinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
               {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
@@ -182,19 +182,19 @@ export default function EventGiftPurchase() {
             <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} required />
             <Label>E-Mail</Label>
             <Input type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} required />
-            <Label>Anzahl Gutschein-Codes</Label>
+            <Label>Anzahl Geschenk-Startplätze</Label>
             <Input type="number" min="1" max="20" value={giftVoucherQuantity} onChange={(e) => setGiftVoucherQuantity(Math.max(1, Number(e.target.value) || 1))} required />
-            <Label>Notiz (optional)</Label>
+            <Label>Notiz für den Empfänger oder das Orga-Team (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-            <Button type="submit" disabled={submitting}>{submitting ? "Speichern..." : "Gutschein-Bestellung anlegen"}</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? "Speichern..." : "Geschenk-Startplätze reservieren"}</Button>
           </Card>
 
           <Card>
             <h2 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}><HeartHandshake size={20} /> Übersicht</h2>
-            <p>Preis pro Gutschein-Code: <strong>{formatEuro(EVENT_ENTRY_FEE)}</strong></p>
+            <p>Preis pro Geschenk-Startplatz: <strong>{formatEuro(EVENT_ENTRY_FEE)}</strong></p>
             <p>Gesamt: <strong>{formatEuro(total)}</strong></p>
             <p style={{ marginBottom: 0, color: "#7c4f00" }}>
-              Zahlung bitte über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit Referenzcode abschließen. Bei Rückfragen bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
+              Nach der Zahlung werden dir die Geschenk-Codes per E-Mail freigeschaltet. Bei Rückfragen zu Geschenk-Startplätzen schreibe bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong>.
             </p>
           </Card>
         </form>
@@ -203,5 +203,4 @@ export default function EventGiftPurchase() {
     </Page>
   );
 }
-
 

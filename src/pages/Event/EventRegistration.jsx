@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Bike, Flag, Gift, HeartHandshake, ShieldAlert, Shirt, Ticket, Users } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
@@ -13,8 +13,16 @@ import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
   EVENT_ENTRY_FEE,
+  EVENT_DATE,
+  EVENT_ORGANIZER_COUNTRY,
+  EVENT_ORGANIZER_NAME,
+  EVENT_ORGANIZER_POSTAL_CITY,
+  EVENT_ORGANIZER_STREET,
+  EVENT_PAYMENT_CONTACT_EMAIL,
   EVENT_PAYMENT_METHOD_PREFERENCE,
   EVENT_PAYMENT_PROVIDER_NAME,
+  EVENT_START_FINISH,
+  EVENT_WITHDRAWAL_NOTICE,
   KIT_DISPLAY_PRICE,
   PACE_OPTIONS,
   routeSupportsPace,
@@ -117,10 +125,6 @@ const Button = styled.button`
     cursor: not-allowed;
   }
 `;
-const InlineLink = styled(Link)`
-  color: #8a5700;
-  font-weight: 700;
-`;
 const Summary = styled.div`
   max-height: fit-content;
   @media (min-width: 1000px) {
@@ -209,9 +213,40 @@ const Muted = styled.div`
   font-size: 0.92rem;
   line-height: 1.45;
 `;
+const SummaryDivider = styled.div`
+  border-top: 1px solid #ffd77a;
+  margin: 1rem 0;
+`;
+const LegalPanel = styled.div`
+  border: 1px solid #f0d79a;
+  background: #fff7e5;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  color: #7c4f00;
+  line-height: 1.5;
+`;
+const LegalHeadline = styled.div`
+  font-weight: 800;
+  color: #5d3d00;
+  margin-bottom: 0.45rem;
+`;
+const LegalList = styled.ul`
+  margin: 0.55rem 0;
+  padding-left: 1.1rem;
+`;
+const LegalSmall = styled.p`
+  margin: 0.5rem 0 0;
+  color: #7c4f00;
+  font-size: 0.9rem;
+  line-height: 1.45;
+`;
 
 function formatEuro(value) {
   return `${Number(value || 0).toFixed(2)} EUR`;
+}
+
+function getRouteSummary(routeKey) {
+  return ROUTE_OPTIONS.find((route) => route.key === routeKey) || ROUTE_OPTIONS[0];
 }
 
 export default function EventRegistration() {
@@ -460,6 +495,9 @@ export default function EventRegistration() {
   const availableSlots = eventMeta?.available_slots ?? 0;
   const isSoldOut = eventMeta?.event_status === "cancelled" || availableSlots <= 0;
   const registrationMode = !existingRegistration;
+  const selectedRoute = getRouteSummary(participant.routeKey);
+  const registrationSubmitLabel = isSubmitting ? "Speichern..." : "Zahlungspflichtig anmelden";
+  const addonSubmitLabel = isSubmittingAddon ? "Speichern..." : "Zahlungspflichtig Gutschein-Codes kaufen";
 
   return (
     <PageWrapper>
@@ -579,17 +617,17 @@ export default function EventRegistration() {
                 </Card>
 
                 <Card>
-                  <CardTitle><Gift /> Geschenk-Startplätze</CardTitle>
+                  <CardTitle><Gift /> Zusätzliche Gutschein-Codes</CardTitle>
                   <Muted style={{ marginBottom: 10 }}>
-                    <strong>Gutschein-Plätze kaufen:</strong> Du meldest dich selbst an und kaufst zusätzlich Startplätze zum Verschenken.
+                    Hier kannst du zusammen mit deiner Anmeldung zusätzliche Gutschein-Codes für weitere Startplätze mitkaufen.
                   </Muted>
                   <Muted style={{ marginBottom: 10 }}>
-                    <strong>Gutschein einlösen:</strong> Du hast schon einen Code bekommen und nutzt ihn hier, damit deine eigene Startgebühr entfällt.
+                    Diese Zusatzposition gehört zu derselben zahlungspflichtigen Bestellung wie dein eigener Startplatz.
                   </Muted>
                   <Muted style={{ marginBottom: 10 }}>
-                    Wenn du nur Geschenk-Codes kaufen möchtest, ohne selbst mitzufahren, nutze <InlineLink to="/event-gifts">diese Geschenk-Seite</InlineLink>.
+                    Wenn du bereits einen Gutschein-Code erhalten hast, kannst du ihn hier einlösen, damit deine eigene Startgebühr reduziert wird.
                   </Muted>
-                  <Label>Anzahl zusätzlicher Gutschein-Codes kaufen</Label>
+                  <Label>Anzahl zusätzlicher Gutschein-Codes</Label>
                   <Input type="number" min="0" max="20" value={giftVoucherQuantity} onChange={(e) => setGiftVoucherQuantity(Math.max(0, Number(e.target.value) || 0))} />
                   <Label>Gutschein-Code einlösen (optional)</Label>
                   <Input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} onBlur={lookupVoucher} placeholder="AB12-CD34-EF56" />
@@ -610,16 +648,30 @@ export default function EventRegistration() {
 
                 <Card>
                   <CardTitle><Gift /> Gutschein-Codes nachkaufen</CardTitle>
-                  <Muted style={{ marginBottom: 10 }}>Neue Codes werden erst nach bestätigter Zahlung freigeschaltet und anschließend in `Meine Anmeldung` sichtbar.</Muted>
+                  <Muted style={{ marginBottom: 10 }}>Hier bestellst du zusätzliche Gutschein-Codes für weitere Startplätze nach.</Muted>
                   <Muted style={{ marginBottom: 10 }}>
-                    Wenn du Codes unabhängig von deiner eigenen Teilnahme verschenken willst, nutze <InlineLink to="/event-gifts">die separate Geschenk-Seite</InlineLink>.
+                    Die Zusatzbestellung ist zahlungspflichtig. Neue Gutschein-Codes werden nach bestätigter Zahlung in `Meine Anmeldung` sichtbar.
                   </Muted>
                   <Label>Anzahl zusätzlicher Gutschein-Codes</Label>
                   <Input type="number" min="0" max="20" value={addonVoucherQuantity} onChange={(e) => setAddonVoucherQuantity(Math.max(0, Number(e.target.value) || 0))} />
                   <Label>Notiz (optional)</Label>
                   <Textarea value={addonNote} onChange={(e) => setAddonNote(e.target.value)} maxLength={220} />
+                  <LegalPanel style={{ marginTop: "0.5rem" }}>
+                    <LegalHeadline>Pflichtinformationen zur Zusatzbestellung</LegalHeadline>
+                    <LegalList>
+                      <li>Leistung: zusätzliche Gutschein-Codes für weitere Startplätze der Ice-Tour 2026</li>
+                      <li>Preis pro Gutschein-Code: {formatEuro(EVENT_ENTRY_FEE)}</li>
+                      <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
+                    </LegalList>
+                    <LegalSmall>
+                      Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
+                    </LegalSmall>
+                    <LegalSmall>
+                      Mit Klick auf den Button gibst du eine verbindliche, zahlungspflichtige Zusatzbestellung ab.
+                    </LegalSmall>
+                  </LegalPanel>
                   <Button type="button" onClick={handleAddonPurchase} disabled={isSubmittingAddon || addonVoucherQuantity < 1}>
-                    {isSubmittingAddon ? "Speichern..." : "Zusatzbestellung anlegen"}
+                    {addonSubmitLabel}
                   </Button>
                   {addonPurchases.length > 0 && (
                     <div style={{ marginTop: 14 }}>
@@ -685,13 +737,7 @@ export default function EventRegistration() {
                   <Input type="number" min="0" step="0.5" value={donationAmount} onChange={(e) => setDonationAmount(Number(e.target.value) || 0)} />
                 </Card>
                 <Card>
-                  <CardTitle><ShieldAlert /> Haftung, Regeln & Newsletter</CardTitle>
-                  {/* <StatusBanner>
-                    <strong>Zahlung:</strong>
-                    <div style={{ marginTop: 6, lineHeight: 1.45 }}>
-                      Bitte das Geld wenn möglich per PayPal Freunde an <strong>{EVENT_PAYMENT_PAYPAL_ADDRESS}</strong> senden. Privat organisiert, nicht als Spende ausweisbar. Wenn kein PayPal vorhanden ist, bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
-                    </div>
-                  </StatusBanner> */}
+                  <CardTitle><ShieldAlert /> Teilnahmebedingungen & Newsletter</CardTitle>
                   <CheckboxLabel>
                     <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} required />
                     <span>Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Teilnahmebedingungen in der aktuellen Version.</span>
@@ -707,26 +753,69 @@ export default function EventRegistration() {
 
           <Summary>
             <Card>
-              <CardTitle><Bike /> Zusammenfassung</CardTitle>
+              <CardTitle><Bike /> Preisübersicht</CardTitle>
               {registrationMode ? (
                 <>
                   <Flex><span>Eigene Startgebühr</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
-                  {giftVoucherQuantity > 0 && <Flex><span>Geschenk-Codes ({giftVoucherQuantity})</span><span>{formatEuro(giftVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
+                  {giftVoucherQuantity > 0 && <Flex><span>Zusätzliche Gutschein-Codes ({giftVoucherQuantity})</span><span>{formatEuro(giftVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
                   {voucherLookup?.valid && <Flex><span>Gutschein-Abzug</span><span>-{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>}
-                  {Number(donationAmount) > 0 && <Flex><span>Zusätzlicher Betrag</span><span>{formatEuro(donationAmount)}</span></Flex>}
-                  <div style={{ borderTop: "1px solid #ffd77a", margin: "1rem 0" }} />
+                  {Number(donationAmount) > 0 && <Flex><span>Zusätzliche Spende</span><span>{formatEuro(donationAmount)}</span></Flex>}
+                  <SummaryDivider />
                   <Flex style={{ fontWeight: 700, fontSize: 18 }}><span>Gesamtbetrag</span><span>{formatEuro(totalCost)}</span></Flex>
-                  {giftVoucherQuantity > 0 && (
-                    <Muted style={{ marginTop: 8 }}>Gutschein-Codes werden bei Kauf erst nach bestätigter Zahlung freigeschaltet.</Muted>
-                  )}
-                  <Button type="submit" disabled={isSubmitting || isSoldOut}>{isSubmitting ? "Speichern..." : "Kostenpflichtig anmelden"}</Button>
                 </>
               ) : (
                 <>
                   <Flex><span>Status deiner Anmeldung</span><span>{existingRegistration?.payment_status || "-"}</span></Flex>
-                  <Flex><span>Zusatzkauf pro Code</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
-                  <Muted style={{ marginTop: 8 }}>Du kannst hier weitere Gutschein-Codes kaufen und dein Bekleidungsinteresse pflegen, aber keinen zweiten Starterplatz anlegen.</Muted>
+                  <Flex><span>Preis pro zusätzlichem Gutschein-Code</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
+                  {addonVoucherQuantity > 0 && <Flex><span>Zusatzbestellung ({addonVoucherQuantity})</span><span>{formatEuro(addonVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
+                  <SummaryDivider />
+                  <Flex style={{ fontWeight: 700, fontSize: 18 }}><span>Zusatzbestellung gesamt</span><span>{formatEuro(addonVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>
                 </>
+              )}
+            </Card>
+
+            <Card>
+              <CardTitle><Ticket /> Pflichtinformationen vor Abgabe</CardTitle>
+              {registrationMode ? (
+                <LegalPanel>
+                  <LegalHeadline>Deine Bestellung</LegalHeadline>
+                  <LegalList>
+                    <li>Leistung: Teilnahme an der Ice-Tour 2026 auf der Route {selectedRoute.label} ({selectedRoute.teaser})</li>
+                    <li>Termin: {EVENT_DATE}</li>
+                    <li>Start und Ziel: {EVENT_START_FINISH.name}, {EVENT_START_FINISH.fullAddress}</li>
+                    <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
+                    {giftVoucherQuantity > 0 && <li>Zusatzposition: {giftVoucherQuantity} zusätzliche Gutschein-Code{giftVoucherQuantity === 1 ? "" : "s"} für weitere Startplätze</li>}
+                    {voucherLookup?.valid && <li>Eingelöster Gutschein-Code reduziert deine Startgebühr um {formatEuro(EVENT_ENTRY_FEE)}</li>}
+                  </LegalList>
+                  <LegalSmall>
+                    Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
+                  </LegalSmall>
+                  <LegalSmall>
+                    Weitere Informationen: <a href="/#/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
+                  </LegalSmall>
+                  <LegalSmall>{EVENT_WITHDRAWAL_NOTICE}</LegalSmall>
+                  <LegalSmall>
+                    Mit Klick auf „Zahlungspflichtig anmelden“ gibst du eine verbindliche, zahlungspflichtige Bestellung ab.
+                  </LegalSmall>
+                </LegalPanel>
+              ) : (
+                <LegalPanel>
+                  <LegalHeadline>Deine Zusatzbestellung</LegalHeadline>
+                  <LegalList>
+                    <li>Leistung: zusätzliche Gutschein-Codes für weitere Startplätze der Ice-Tour 2026</li>
+                    <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
+                    <li>Preis pro Gutschein-Code: {formatEuro(EVENT_ENTRY_FEE)}</li>
+                  </LegalList>
+                  <LegalSmall>
+                    Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
+                  </LegalSmall>
+                  <LegalSmall>
+                    Weitere Informationen: <a href="/#/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
+                  </LegalSmall>
+                  <LegalSmall>
+                    Mit Klick auf „Zahlungspflichtig Gutschein-Codes kaufen“ gibst du eine verbindliche, zahlungspflichtige Zusatzbestellung ab.
+                  </LegalSmall>
+                </LegalPanel>
               )}
             </Card>
 
@@ -735,17 +824,17 @@ export default function EventRegistration() {
               <Muted>
                 {registrationMode ? (
                   <>
-                    1. Deine Anmeldung wird gespeichert.
+                    1. Deine verbindliche Bestellung wird gespeichert.
                     <br />
-                    2. Zahlung bitte über {EVENT_PAYMENT_PROVIDER_NAME} ausführen.
+                    2. Danach leitest du die Zahlung über {EVENT_PAYMENT_PROVIDER_NAME} ein oder schließt sie später mit deinem Referenzcode ab.
                     <br />
-                    3. Gekaufte Gutschein-Codes werden erst nach Zahlung freigeschaltet.
+                    3. Gekaufte Gutschein-Codes werden erst nach bestätigter Zahlung freigeschaltet.
                     <br />
-                    4. Danach erscheinen Startgruppe, Portal und ggf. Gutschein-Codes.
+                    4. Anschließend findest du alle Details in `Meine Anmeldung`.
                   </>
                 ) : (
                   <>
-                    1. Zusatzbestellung wird mit eigenem Referenzcode angelegt.
+                    1. Die Zusatzbestellung wird mit eigenem Referenzcode angelegt.
                     <br />
                     2. Nach bestätigter Zahlung werden die Gutschein-Codes freigeschaltet.
                     <br />
@@ -753,6 +842,9 @@ export default function EventRegistration() {
                   </>
                 )}
               </Muted>
+              {registrationMode && (
+                <Button type="submit" disabled={isSubmitting || isSoldOut}>{registrationSubmitLabel}</Button>
+              )}
             </Card>
           </Summary>
         </MainGrid>
@@ -761,6 +853,3 @@ export default function EventRegistration() {
     </PageWrapper>
   );
 }
-
-
-

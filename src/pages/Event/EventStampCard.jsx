@@ -1133,7 +1133,7 @@ export default function EventStampCard() {
         <Card>
           <SectionTitle>Hinweise</SectionTitle>
           <ul style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0, paddingLeft: "1.2rem" }}>
-            <li>Im Zweifel zuerst den Stempel holen und danach direkt das Eis einchecken.</li>
+            <li>Im Zweifel zuerst den Stempel holen und danach direkt über den Button "Eis einchecken" weitermachen.</li>
             <li>Wenn du offline bist, wird der Stempel lokal vorgemerkt und später synchronisiert.</li>
             <li>Bei QR-Problemen kannst du den Code im Scanner-Dialog auch manuell eingeben.</li>
           </ul>

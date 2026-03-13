@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Calendar, CheckCircle2, Euro, Flag, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
+import { Calendar, CheckCircle2, Euro, Flag, Mail, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
-import { EVENT_DATE, EVENT_ENTRY_FEE, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
+import { EVENT_DATE, EVENT_ENTRY_FEE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
 const PARTNER_ICE_CREAM_PARLORS = [
   {
     name: EVENT_START_FINISH.name,
@@ -264,7 +264,7 @@ function RouteOverview() {
 function Workflow() {
   const steps = [
     "Entweder hast du bereits einen Ice-App-Account oder du erstellst bei der Registrierung einen Account. Anschließend bezahlst du die Startgebühr.",
-    "Nach erfolgreicher Registrierung und Zahlung erhältst du Zugang zu deiner Anmeldung. Dort siehst du noch einmal deine Daten, eventuell gekaufte Gutschein-Codes für weitere Startplätze und später auch deine Startgruppe, deine Startzeit sowie die konkrete Strecke.",
+    "Nach erfolgreicher Registrierung und Zahlung erhältst du Zugang zu deiner Anmeldung. Dort siehst du noch einmal deine Daten, eventuell gekaufte Geschenk-Startplätze und später auch deine Startgruppe, deine Startzeit sowie die konkrete Strecke.",
     "Einige Tage vor dem Event erhältst du noch eine Erinnerungsmail mit allen wichtigen Informationen zur Anreise, zum Ablauf und zur Strecke.",
     "Am Eventtag reist du selbstständig an, startest mit deiner zugeteilten Gruppe bzw. deinem Startzeitfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.",
     "An jedem Checkpoint bekommst du eine Kugel Eis: Digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
@@ -405,6 +405,72 @@ function EventTech() {
   );
 }
 
+function EventMapSection() {
+  return (
+    <Section>
+      <Container>
+        <SectionTitle>Event-Karte am Veranstaltungstag</SectionTitle>
+        <SectionDesc>
+          Am Eventtag gibt es eine öffentliche Event-Karte. Dort können Interessierte, Freunde und Familie live verfolgen, an welchen offiziellen Eis-Stopps bereits Starter eingecheckt haben.
+        </SectionDesc>
+        <SplitGrid>
+          <Card>
+            <h3 style={{ marginTop: 0 }}>Was die Karte zeigt</h3>
+            <RequirementList>
+              <li>welche offiziellen Checkpoints bereits erreicht wurden</li>
+              <li>wie viele Starter an einem Stopp schon eingecheckt haben</li>
+              <li>welche Eis-Stopps auf den jeweiligen Routen liegen</li>
+            </RequirementList>
+          </Card>
+          <Card>
+            <h3 style={{ marginTop: 0 }}>Wichtig zu wissen</h3>
+            <RequirementList>
+              <li>Die Karte wird erst am Eventtag freigeschaltet.</li>
+              <li>Sie ist öffentlich sichtbar und kann auch von Nicht-Teilnehmern geöffnet werden.</li>
+              <li>In der Anmeldung kannst du zustimmen, dass dein Name und deine Check-in-Zeiten dort sichtbar sind.</li>
+            </RequirementList>
+          </Card>
+        </SplitGrid>
+      </Container>
+    </Section>
+  );
+}
+
+function ContactSection() {
+  return (
+    <Section>
+      <Container>
+        <Card style={{ maxWidth: 860, margin: "0 auto" }}>
+          <SectionTitle>Fragen zum Event?</SectionTitle>
+          <SectionDesc>
+            Wenn du Fragen zur Anmeldung, zu Geschenk-Startplätzen, zur Route oder zum Ablauf am Eventtag hast, schreibe uns einfach eine Mail.
+          </SectionDesc>
+          <div style={{ marginTop: "1rem", textAlign: "center" }}>
+            <a
+              href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}?subject=Frage%20zur%20Ice-Tour%202026`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.55rem",
+                padding: "0.8rem 1rem",
+                borderRadius: 12,
+                background: "#fff7e5",
+                border: "1px solid #f0d79a",
+                color: "#8a5700",
+                textDecoration: "none",
+                fontWeight: 700,
+              }}
+            >
+              <Mail size={18} />
+              {EVENT_PAYMENT_CONTACT_EMAIL}
+            </a>
+          </div>
+        </Card>
+      </Container>
+    </Section>
+  );
+}
+
 function Faq() {
   const items = [
     {
@@ -428,8 +494,8 @@ function Faq() {
       a: "Ja, die Ice-App dient als eure digitale Stempelkarte und als Nachweis, dass ihr Teilnehmer des Events seid. Außerdem könnt ihr damit die Check-ins an den Eis-Stopps vornehmen und habt alle wichtigen Infos zum Event jederzeit griffbereit.",
     },
     {
-      q: "Wer sieht die Live-Karte?",
-      a: "Die Live-Karte ist öffentlich. Pro Checkpoint werden aktuelle Zahlen und Detaildaten der bereits eingecheckten Starter angezeigt.",
+      q: "Gibt es am Eventtag eine öffentliche Event-Karte?",
+      a: "Ja. Die Event-Karte wird am Veranstaltungstag freigeschaltet und ist öffentlich sichtbar. Dort sieht man, welche Starter an welchen offiziellen Checkpoints bereits eingecheckt haben.",
     },
   ];
 
@@ -496,7 +562,9 @@ export default function RadEvent() {
       <Workflow />
       <RequirementsAndServices />
       <EventTech />
+      <EventMapSection />
       <Faq />
+      <ContactSection />
       <Section>
         <Container>
           <Card style={{ textAlign: "center" }}>
@@ -516,7 +584,12 @@ export default function RadEvent() {
                   Mein Starter-Bereich
                 </Button>
               ) : (
-                <Button href="/#/event-registration">Zur Anmeldung</Button>
+                <>
+                  <Button href="/#/event-registration">Startplatz buchen</Button>
+                  {/* <Button href="/#/event-gifts" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+                    Startplatz verschenken
+                  </Button> */}
+                </>
               )}
             </div>
           </Card>
