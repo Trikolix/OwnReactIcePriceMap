@@ -6,6 +6,8 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import {
+  EVENT_COMMUNITY_RIDE_CLAIM,
+  EVENT_ENTRY_FEE_NOTICE,
   EVENT_ORGANIZER_COUNTRY,
   EVENT_ORGANIZER_FULL_ADDRESS,
   EVENT_ORGANIZER_NAME,
@@ -15,6 +17,7 @@ import {
   EVENT_WITHDRAWAL_NOTICE,
   getClothingLabel,
   getRouteLabel,
+  getRouteTheme,
 } from "./eventConfig";
 
 const Page = styled.div`
@@ -55,6 +58,18 @@ const PaymentLinkButton = styled.button`
   font-weight: 600;
   margin-top: 0.7rem;
   cursor: pointer;
+`;
+const RoutePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $border }) => $border};
+  background: ${({ $bg }) => $bg};
+  color: ${({ $color }) => $color};
+  font-weight: 800;
+  font-size: 0.8rem;
+  margin-right: 0.45rem;
 `;
 
 function formatEuro(value) {
@@ -145,9 +160,9 @@ export default function EventRegistrationSummary() {
       <Header />
       <Container>
         <Card>
-          <h1 style={{ marginTop: 0 }}>Verbindliche Bestellung erfolgreich gespeichert</h1>
+          <h1 style={{ marginTop: 0 }}>Verbindliche Anmeldung erfolgreich gespeichert</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
-            Deine Bestellung wurde verbindlich erfasst. Du erhältst eine E-Mail mit Referenzcode, Preisübersicht und Hinweisen zur Zahlung über {EVENT_PAYMENT_PROVIDER_NAME}.
+            Deine Anmeldung wurde verbindlich erfasst. Du erhältst eine E-Mail mit Referenzcode, Übersicht zum Teilnahmebeitrag und Hinweisen zur Zahlung über {EVENT_PAYMENT_PROVIDER_NAME}.
           </p>
         </Card>
 
@@ -172,7 +187,7 @@ export default function EventRegistrationSummary() {
               <h2 style={{ marginTop: 0 }}>Zahlungsübersicht</h2>
               <p>Referenzcode: <strong>{summary.registration.payment_reference_code}</strong></p>
               <p>Zahlungsstatus: <Badge>{summary.registration.payment_status}</Badge></p>
-              <p>Eigene Startgebühr: <strong>{formatEuro(summary.registration.entry_fee_amount)}</strong></p>
+              <p>Eigener Teilnahmebeitrag: <strong>{formatEuro(summary.registration.entry_fee_amount)}</strong></p>
               {Number(summary.registration.gift_voucher_purchase_amount || 0) > 0 && (
                 <p>Zusätzliche Gutschein-Codes: <strong>{formatEuro(summary.registration.gift_voucher_purchase_amount)}</strong></p>
               )}
@@ -184,8 +199,9 @@ export default function EventRegistrationSummary() {
               )}
               <p>Betrag gesamt: <strong>{formatEuro(summary.payment?.expected_amount)}</strong></p>
               <p>
-                Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Falls es Probleme gibt, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
+                Bitte den Teilnahmebeitrag über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode zahlen. Falls es Probleme gibt, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
               </p>
+              <p style={{ color: "#7c4f00" }}>{EVENT_COMMUNITY_RIDE_CLAIM} {EVENT_ENTRY_FEE_NOTICE}</p>
               <p style={{ marginBottom: 0, color: "#7c4f00" }}>
                 Anbieter: <strong>{EVENT_ORGANIZER_NAME}</strong>, {EVENT_ORGANIZER_FULL_ADDRESS}, {EVENT_ORGANIZER_COUNTRY}. {EVENT_WITHDRAWAL_NOTICE}
               </p>
@@ -195,10 +211,18 @@ export default function EventRegistrationSummary() {
             </Card>
 
             <Card>
-              <h2 style={{ marginTop: 0 }}>Starterplatz</h2>
+              <h2 style={{ marginTop: 0 }}>Teilnahmeplatz</h2>
               {summary.slots.map((slot) => (
                 <div key={slot.id} style={{ padding: "0.45rem 0", borderBottom: "1px solid #f3e5bd" }}>
-                  <strong>{slot.full_name}</strong> ({slot.route_name || getRouteLabel(slot.route_key)} / {slot.distance_km} km) - <Badge>{slot.license_status}</Badge>
+                  <strong>{slot.full_name}</strong>{" "}
+                  <RoutePill
+                    $bg={getRouteTheme(slot.route_key).background}
+                    $border={getRouteTheme(slot.route_key).border}
+                    $color={getRouteTheme(slot.route_key).text}
+                  >
+                    {slot.route_name || getRouteLabel(slot.route_key)}
+                  </RoutePill>
+                  ({slot.distance_km} km) - <Badge>{slot.license_status}</Badge>
                   <div style={{ color: "#7c4f00", fontSize: 14, marginTop: 4 }}>
                     Bekleidung: {slot.clothing_interest_label || getClothingLabel(slot.clothing_interest)}
                     {slot.jersey_size ? `, Trikot ${slot.jersey_size}` : ""}
@@ -212,7 +236,7 @@ export default function EventRegistrationSummary() {
               <Card>
                 <h2 style={{ marginTop: 0 }}>Eingelöster Gutschein</h2>
                 <p style={{ marginBottom: 0 }}>
-                  Der Gutschein-Code <strong>{voucherRedemption.code}</strong> wurde erfolgreich eingelöst und hat <strong>{formatEuro(voucherRedemption.discount_amount)}</strong> Startgebühr abgedeckt.
+                  Der Gutschein-Code <strong>{voucherRedemption.code}</strong> wurde erfolgreich eingelöst und hat <strong>{formatEuro(voucherRedemption.discount_amount)}</strong> Teilnahmebeitrag abgedeckt.
                 </p>
               </Card>
             )}

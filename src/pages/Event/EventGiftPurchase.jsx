@@ -5,7 +5,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import {
+  EVENT_COMMUNITY_RIDE_CLAIM,
   EVENT_ENTRY_FEE,
+  EVENT_ENTRY_FEE_NOTICE,
   EVENT_PAYMENT_CONTACT_EMAIL,
   EVENT_PAYMENT_PROVIDER_NAME,
 } from "./eventConfig";
@@ -112,11 +114,11 @@ export default function EventGiftPurchase() {
       });
       const result = await response.json();
       if (!response.ok || result.status !== "success") {
-        throw new Error(result.message || "Gutschein-Bestellung konnte nicht gespeichert werden.");
+        throw new Error(result.message || "Gutschein-Reservierung konnte nicht gespeichert werden.");
       }
       setSuccess(result);
     } catch (err) {
-      setError(err.message || "Gutschein-Bestellung konnte nicht gespeichert werden.");
+      setError(err.message || "Gutschein-Reservierung konnte nicht gespeichert werden.");
     } finally {
       setSubmitting(false);
     }
@@ -153,16 +155,16 @@ export default function EventGiftPurchase() {
       <Header />
       <Container>
         <Card>
-          <h1 style={{ marginTop: 0 }}>Geschenk-Startplätze kaufen</h1>
+          <h1 style={{ marginTop: 0 }}>Geschenk-Teilnahmeplätze reservieren</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
-            Hier kaufst du Startplätze zum Verschenken für die Ice-Tour. Du meldest dich damit nicht selbst als Teilnehmer an.
+            Hier kannst du Teilnahmeplätze zum Verschenken für die Ice-Tour reservieren. Du meldest dich damit nicht selbst als Teilnehmer an. {EVENT_COMMUNITY_RIDE_CLAIM}
           </p>
         </Card>
 
         {error && <Banner tone="danger">{error}</Banner>}
         {success && (
           <Card>
-            <h2 style={{ marginTop: 0 }}>Bestellung gespeichert</h2>
+            <h2 style={{ marginTop: 0 }}>Reservierung gespeichert</h2>
             <p>Referenzcode: <strong>{success.gift_purchase.payment_reference_code}</strong></p>
             <p>Geschenk-Codes: <strong>{success.gift_purchase.gift_voucher_quantity}</strong></p>
             <p>Gesamtbetrag: <strong>{formatEuro(success.gift_purchase.expected_amount)}</strong></p>
@@ -177,24 +179,25 @@ export default function EventGiftPurchase() {
 
         <form onSubmit={handleSubmit}>
           <Card>
-            <h2 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}><Gift size={20} /> Bestellung</h2>
+            <h2 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}><Gift size={20} /> Reservierung</h2>
             <Label>Name</Label>
             <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} required />
             <Label>E-Mail</Label>
             <Input type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} required />
-            <Label>Anzahl Geschenk-Startplätze</Label>
+            <Label>Anzahl Geschenk-Teilnahmeplätze</Label>
             <Input type="number" min="1" max="20" value={giftVoucherQuantity} onChange={(e) => setGiftVoucherQuantity(Math.max(1, Number(e.target.value) || 1))} required />
             <Label>Notiz für den Empfänger oder das Orga-Team (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-            <Button type="submit" disabled={submitting}>{submitting ? "Speichern..." : "Geschenk-Startplätze reservieren"}</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? "Speichern..." : "Geschenk-Teilnahmeplätze reservieren"}</Button>
           </Card>
 
           <Card>
             <h2 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}><HeartHandshake size={20} /> Übersicht</h2>
-            <p>Preis pro Geschenk-Startplatz: <strong>{formatEuro(EVENT_ENTRY_FEE)}</strong></p>
+            <p>Teilnahmebeitrag pro Geschenk-Code: <strong>{formatEuro(EVENT_ENTRY_FEE)}</strong></p>
             <p>Gesamt: <strong>{formatEuro(total)}</strong></p>
+            <p style={{ color: "#7c4f00" }}>{EVENT_ENTRY_FEE_NOTICE}</p>
             <p style={{ marginBottom: 0, color: "#7c4f00" }}>
-              Nach der Zahlung werden dir die Geschenk-Codes per E-Mail freigeschaltet. Bei Rückfragen zu Geschenk-Startplätzen schreibe bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong>.
+              Nach der Zahlung werden dir die Geschenk-Codes per E-Mail freigeschaltet. Bei Rückfragen zu Geschenk-Teilnahmeplätzen schreibe bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong>.
             </p>
           </Card>
         </form>
@@ -203,4 +206,3 @@ export default function EventGiftPurchase() {
     </Page>
   );
 }
-

@@ -26,11 +26,20 @@ export const EVENT_ORGANIZER_POSTAL_CITY = "09112 Chemnitz";
 export const EVENT_ORGANIZER_COUNTRY = "Deutschland";
 export const EVENT_ORGANIZER_FULL_ADDRESS = `${EVENT_ORGANIZER_STREET}, ${EVENT_ORGANIZER_POSTAL_CITY}`;
 export const EVENT_WITHDRAWAL_NOTICE = "Kein Widerrufsrecht bei dieser Anmeldung, da es sich um eine Freizeitveranstaltung mit festem Termin handelt.";
+export const EVENT_COMMUNITY_RIDE_CLAIM = "Die Ice-Tour ist eine privat organisierte, nicht-kommerzielle Community-Ausfahrt und ausdrücklich kein Rennen.";
+export const EVENT_ENTRY_FEE_NOTICE = "Der Teilnahmebeitrag dient ausschließlich zur Deckung der Organisationskosten. Überschüsse werden gespendet.";
 
 export const ROUTE_OPTIONS = [
   {
     key: "epic_4",
     label: "4 Eis-Stopps",
+    shortLabel: "4 Stopps",
+    badgeTone: {
+      background: "#ffe4e6",
+      border: "#fda4af",
+      text: "#9f1239",
+      glow: "rgba(244, 63, 94, 0.18)",
+    },
     teaser: "175 km / 1.950 hm",
     distanceKm: 175,
     elevationM: 1950,
@@ -38,11 +47,18 @@ export const ROUTE_OPTIONS = [
     routeType: "sport",
     paceEnabled: true,
     startMode: "grouped",
-    description: "Die volle Runde mit vier Eis-Stopps für alle, die die extra Kilometer und einen langen Eventtag wollen.",
+    description: "Die volle Runde mit vier Eis-Stopps für alle, die viele Kilometer, viel Eis und einen langen Community-Ride wollen.",
   },
   {
     key: "classic_3",
     label: "3 Eis-Stopps",
+    shortLabel: "3 Stopps",
+    badgeTone: {
+      background: "#fff3c4",
+      border: "#f7c948",
+      text: "#8a5700",
+      glow: "rgba(247, 201, 72, 0.2)",
+    },
     teaser: "140 km / 1.600 hm",
     distanceKm: 140,
     elevationM: 1600,
@@ -50,11 +66,18 @@ export const ROUTE_OPTIONS = [
     routeType: "sport",
     paceEnabled: true,
     startMode: "grouped",
-    description: "Die klassische Ice-Tour mit drei Eisdielen-Checkpoints und sportlichem Gruppenstart.",
+    description: "Die klassische Ice-Tour mit drei Eisdielen-Checkpoints und gemeinsamer Ausfahrt in kleinen Gruppen.",
   },
   {
     key: "family_2",
     label: "Einsteiger-/Familientour",
+    shortLabel: "Familie",
+    badgeTone: {
+      background: "#dcfce7",
+      border: "#86efac",
+      text: "#166534",
+      glow: "rgba(34, 197, 94, 0.18)",
+    },
     teaser: "ca. 75 km / 550 hm",
     distanceKm: 75,
     elevationM: 550,
@@ -62,7 +85,7 @@ export const ROUTE_OPTIONS = [
     routeType: "family",
     paceEnabled: false,
     startMode: "open_window",
-    description: "Die kurze, flachere Runde mit zwei Eisdielen-Checkpoints und ohne sportliche Tempogruppe.",
+    description: "Die kurze, flachere Runde mit zwei Eisdielen-Checkpoints und entspanntem Startfenster ohne Leistungsdruck.",
   },
 ];
 
@@ -93,8 +116,20 @@ export function getRouteByKey(routeKey) {
   return ROUTE_MAP[routeKey] || ROUTE_MAP.classic_3;
 }
 
+export function getRouteByLabel(routeLabel) {
+  return ROUTE_OPTIONS.find((route) => route.label === routeLabel) || ROUTE_MAP.classic_3;
+}
+
 export function getRouteLabel(routeKey) {
   return getRouteByKey(routeKey).label;
+}
+
+export function getRouteTheme(routeKey) {
+  return getRouteByKey(routeKey).badgeTone;
+}
+
+export function getRouteThemeByLabel(routeLabel) {
+  return getRouteByLabel(routeLabel).badgeTone;
 }
 
 export function routeSupportsPace(routeKey) {

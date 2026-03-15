@@ -13,7 +13,7 @@ date_default_timezone_set('Europe/Berlin');
 $periodStart = '2026-03-06 00:00:00';
 $periodEnd = '2026-03-22 23:59:59';
 $photoChallengeStart = '2026-03-06 00:00:00';
-$anniversaryUnlockAt = '2026-03-14 12:00:00';
+$anniversaryUnlockAt = '2026-03-15 18:00:00';
 $eggCooldownHours = 3;
 $easterEggEpSchedule = [12, 10, 8, 6, 4, 3];
 $easterEggRecurringEp = 2;

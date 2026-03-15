@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Calendar, CheckCircle2, Euro, Flag, Mail, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
+import { Bike, Calendar, CheckCircle2, Euro, Flag, HeartHandshake, Mail, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
-import { EVENT_DATE, EVENT_ENTRY_FEE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
+import { EVENT_COMMUNITY_RIDE_CLAIM, EVENT_DATE, EVENT_ENTRY_FEE, EVENT_ENTRY_FEE_NOTICE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
 const PARTNER_ICE_CREAM_PARLORS = [
   {
     name: EVENT_START_FINISH.name,
@@ -140,13 +140,27 @@ const Card = styled.div`
 `;
 
 const RouteBadge = styled.span`
-  display: inline-block;
-  padding: 0.2rem 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
   border-radius: 999px;
-  background: #fff3c2;
-  color: #8a5700;
+  background: ${({ $bg }) => $bg || "#fff3c2"};
+  color: ${({ $color }) => $color || "#8a5700"};
+  border: 1px solid ${({ $border }) => $border || "#f0d79a"};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
   font-weight: 700;
   font-size: 0.82rem;
+`;
+
+const RouteBadgeIcon = styled.span`
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
 `;
 
 const Timeline = styled.div`
@@ -209,11 +223,11 @@ function Hero({ hasEventRegistration }) {
         <HeroCard>
           <HeroTitle>Ice-Tour 2026</HeroTitle>
           <HeroSubtitle>
-            Die Ice-Tour ist kein klassisches Radrennen, sondern eine genussvolle Radtour mit besonderen Stopps:
-            Entlang der Strecke warten mehrere Checkpoints bei ausgewählten Eisdielen auf dich.<br /><br />
+            Ein Tag auf dem Rad, mehrere Eisdielen-Stopps, gute Leute und am Ende auch noch etwas Gutes tun:
+            Die Ice-Tour verbindet gemeinsames Radfahren, Gratis-Eis an offiziellen Checkpoints und freiwillige Spenden für einen guten Zweck.<br /><br />
 
-            Dort bekommst du eine Kugel Eis gratis, sammelst digitale Stempel und triffst andere Teilnehmer.
-            Am Ende zählt nicht nur die Strecke – sondern auch der gemeinsame Spaß auf dem Rad.
+            Du sammelst digitale Stempel, triffst andere Teilnehmer und genießt eine besondere Runde durch die Region.
+            {` ${EVENT_COMMUNITY_RIDE_CLAIM}`}
           </HeroSubtitle>
           <HeroActions>
             {hasEventRegistration ? (
@@ -227,7 +241,7 @@ function Hero({ hasEventRegistration }) {
           <FactGrid>
             <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
             <Fact><MapPin size={18} color="#ffb522" />{EVENT_START_FINISH.name}, {EVENT_START_FINISH.city}</Fact>
-            <Fact><Euro size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} € Startgebühr</Fact>
+            <Fact><Euro size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} € Teilnahmebeitrag</Fact>
             <Fact><Flag size={18} color="#ffb522" /> Start in kleinen Gruppen oder individuell</Fact>
           </FactGrid>
         </HeroCard>
@@ -237,6 +251,12 @@ function Hero({ hasEventRegistration }) {
 }
 
 function RouteOverview() {
+  const getBadgeIcon = (routeKey) => {
+    if (routeKey === "epic_4") return <Flag size={14} />;
+    if (routeKey === "classic_3") return <Bike size={14} />;
+    return <HeartHandshake size={14} />;
+  };
+
   return (
     <Section>
       <Container>
@@ -245,7 +265,10 @@ function RouteOverview() {
         <CardGrid>
           {ROUTE_OPTIONS.map((route) => (
             <Card key={route.key}>
-              <RouteBadge>{route.label}</RouteBadge>
+              <RouteBadge $bg={route.badgeTone.background} $border={route.badgeTone.border} $color={route.badgeTone.text}>
+                <RouteBadgeIcon>{getBadgeIcon(route.key)}</RouteBadgeIcon>
+                {route.label}
+              </RouteBadge>
               <h3 style={{ marginBottom: "0.4rem" }}>{route.teaser}</h3>
               <p style={{ color: "#7c4f00", marginTop: 0, lineHeight: 1.5 }}>{route.description}</p>
               <RequirementList>
@@ -263,12 +286,12 @@ function RouteOverview() {
 
 function Workflow() {
   const steps = [
-    "Entweder hast du bereits einen Ice-App-Account oder du erstellst bei der Registrierung einen Account. Anschließend bezahlst du die Startgebühr.",
-    "Nach erfolgreicher Registrierung und Zahlung erhältst du Zugang zu deiner Anmeldung. Dort siehst du noch einmal deine Daten, eventuell gekaufte Geschenk-Startplätze und später auch deine Startgruppe, deine Startzeit sowie die konkrete Strecke.",
+    "Entweder hast du bereits einen Ice-App-Account oder du erstellst bei der Registrierung einen Account. Anschließend zahlst du den Teilnahmebeitrag.",
+    "Nach erfolgreicher Anmeldung und Zahlung erhältst du Zugang zu deiner Anmeldung. Dort siehst du noch einmal deine Daten, eventuell ergänzte Geschenk-Startplätze und später auch deine Startgruppe, deine Startzeit sowie die konkrete Strecke.",
     "Einige Tage vor dem Event erhältst du noch eine Erinnerungsmail mit allen wichtigen Informationen zur Anreise, zum Ablauf und zur Strecke.",
     "Am Eventtag reist du selbstständig an, startest mit deiner zugeteilten Gruppe bzw. deinem Startzeitfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.",
     "An jedem Checkpoint bekommst du eine Kugel Eis: Digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
-    `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR-Code oder Check-in abgeschlossen. Danach gibt es einen gemeinsamen Ausklang und optional eine kleine Siegerehrung.`,
+    `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR-Code oder Check-in abgeschlossen. Danach gibt es einen gemeinsamen Ausklang in der Community.`,
   ];
 
   return (
@@ -321,10 +344,10 @@ function CharitySection() {
         <Card style={{ maxWidth: 860, margin: "1rem auto 0" }}>
           <SectionTitle>Radeln und Gutes tun</SectionTitle>
           <p style={{ color: "#7c4f00", lineHeight: 1.6, marginTop: "1rem" }}>
-            Die Veranstaltung soll nicht nur Spaß machen, sondern auch etwas Sinnvolles mitnehmen. Ein Teil der Startgebühren sowie alle Spenden gehen an den <a href="https://www.ekk-chemnitz.de/" target="_blank" rel="noopener noreferrer" style={{ color: "#8a5700", textDecoration: "none", fontWeight: 700 }}>Elternverein krebskranker Kinder e.V. Chemnitz</a>.
+            {EVENT_ENTRY_FEE_NOTICE} Zusätzliche freiwillige Spenden gehen an den <a href="https://www.ekk-chemnitz.de/" target="_blank" rel="noopener noreferrer" style={{ color: "#8a5700", textDecoration: "none", fontWeight: 700 }}>Elternverein krebskranker Kinder e.V. Chemnitz</a>.
           </p>
           <p style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0 }}>
-            Den Spendenbetrag kannst du direkt bei der Registrierung ergänzen. So wird aus jeder Tour optional auch noch ein kleiner Beitrag für Familien in schwierigen Situationen.
+            Den freiwilligen Spendenbetrag kannst du direkt bei der Anmeldung ergänzen. So unterstützt die Ausfahrt optional auch noch Familien in schwierigen Situationen.
           </p>
         </Card>
       </Container>
@@ -354,7 +377,7 @@ function RequirementsAndServices() {
               <li>Inklusive: eine Kugel Eis pro offiziellem Checkpoint</li>
               <li>Inklusive: Iso-Pulver und Leitungswasser zum Auffüllen an den Checkpunkten</li>
               <li>Wer mehr Eis oder etwas anderes essen / trinken möchte, muss das selber zahlen</li>
-              <li>Es wird am Start / Ziel die Möglichkeit geben Kleinigkeiten zu Essen / Trinken kaufen zu geben.</li>
+              <li>Am Start und im Ziel wird es die Möglichkeit geben, Kleinigkeiten zu essen und zu trinken zu kaufen.</li>
             </RequirementList>
           </Card>
         </SplitGrid>
@@ -443,7 +466,7 @@ function ContactSection() {
         <Card style={{ maxWidth: 860, margin: "0 auto" }}>
           <SectionTitle>Fragen zum Event?</SectionTitle>
           <SectionDesc>
-            Wenn du Fragen zur Anmeldung, zu Geschenk-Startplätzen, zur Route oder zum Ablauf am Eventtag hast, schreibe uns einfach eine Mail.
+            Wenn du Fragen zur Anmeldung, zu Geschenk-Startplätzen, zur Route oder zum Ablauf der Community-Ausfahrt hast, schreibe uns einfach eine Mail.
           </SectionDesc>
           <div style={{ marginTop: "1rem", textAlign: "center" }}>
             <a
@@ -479,7 +502,7 @@ function Faq() {
     },
     {
       q: "Wie wird der genaue zeitliche Ablauf sein?",
-      a: "Der genaue Zeitplan wird noch bekannt gegeben, aber grundsätzlich starten die Gruppen im Laufe des Vormittags im Abstand von einigen Minuten. Die Starter der längsten Strecke werden als erstes auf die Reise geschickt. Ziel ist dass alle Gruppen im Laufe des Nachmittags im Ziel eintreffen.",
+      a: "Der genaue Zeitplan wird noch bekannt gegeben, aber grundsätzlich starten die Gruppen im Laufe des Vormittags im Abstand von einigen Minuten. Die Teilnehmer der längsten Strecke gehen zuerst auf die Runde. Ziel ist, dass alle Gruppen im Laufe des Nachmittags wieder im Ziel eintreffen.",
     },
     {
       q: "Gibt es Verpflegung auf der Strecke?",
@@ -572,20 +595,20 @@ export default function RadEvent() {
             <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
               {hasEventRegistration ? (
                 <>
-                  Sehr cool, du bist bereits angemeldet! Gehe zu deinem <strong>Starter-Bereich</strong>.
+                  Sehr cool, du bist bereits angemeldet. Gehe zu deinem <strong>Teilnehmer-Bereich</strong>.
                 </>
               ) : (
-                <>Bist du bereit für einen unvergesslichen Tag auf dem Rad mit leckeren Eis und coolen Leuten und gleichzeitig etwas Gutes zu tun? Dann melde dich jetzt an!</>
+                <>Bist du bereit für einen unvergesslichen Tag auf dem Rad mit leckerem Eis, guten Leuten und einer privat organisierten Community-Ausfahrt? Dann melde dich jetzt an.</>
               )}
             </p>
             <div style={{ display: "flex", gap: "0.8rem", justifyContent: "center", flexWrap: "wrap" }}>
               {hasEventRegistration ? (
                 <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-                  Mein Starter-Bereich
+                  Mein Teilnehmer-Bereich
                 </Button>
               ) : (
                 <>
-                  <Button href="/#/event-registration">Startplatz buchen</Button>
+                  <Button href="/#/event-registration">Zur Anmeldung</Button>
                   {/* <Button href="/#/event-gifts" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
                     Startplatz verschenken
                   </Button> */}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { EVENT_COMMUNITY_RIDE_CLAIM, EVENT_ORGANIZER_NAME } from "./eventConfig";
 
 const Overlay = styled.div`
   position: fixed;
@@ -101,10 +102,11 @@ export default function LiabilityWaiver() {
                             </p>
                             <h4 style={{ fontWeight: 600, marginTop: 18 }}>3. Kein Renncharakter</h4>
                             <p>
-                                Die Ice-Tour ist ausdrücklich kein Rennen, sondern eine
-                                Radtouristikfahrt (RTF). Es geht um den gemeinsamen Spaß am Radfahren
-                                und nicht um das Erreichen von Höchstgeschwindigkeiten. Ich verpflichte
-                                mich, auf Wettkampfverhalten zu verzichten.
+                                {EVENT_COMMUNITY_RIDE_CLAIM} Die Ausfahrt findet im öffentlichen
+                                Straßenverkehr statt. Es geht um gemeinsames, rücksichtsvolles
+                                Radfahren und nicht um Höchstgeschwindigkeiten oder
+                                Wettkampfverhalten. Ich verpflichte mich, auf jedes Rennen- oder
+                                Konkurrenzverhalten zu verzichten.
                             </p>
                             <h4 style={{ fontWeight: 600, marginTop: 18 }}>4. Fairer und respektvoller Umgang</h4>
                             <p>
@@ -127,10 +129,10 @@ export default function LiabilityWaiver() {
                             <p>
                                 Ich erkläre mich damit einverstanden, dass während der Veranstaltung Fotos und
                                 Videoaufnahmen von mir angefertigt werden dürfen. Diese Aufnahmen dürfen vom
-                                Veranstalter für die Berichterstattung, Öffentlichkeitsarbeit und zu Werbezwecken
+                                Veranstalter für die Berichterstattung, Öffentlichkeitsarbeit und zur Bewerbung
                                 (z.B. Website, Social Media, Presse) unentgeltlich verwendet und veröffentlicht werden.
                                 Sollte ich nach der Veranstaltung mit der Veröffentlichung bestimmter Bilder nicht
-                                einverstanden sein, kann ich mich jederzeit an den Veranstalter wenden, um eine Löschung
+                                einverstanden sein, kann ich mich jederzeit an den Veranstalter {EVENT_ORGANIZER_NAME} wenden, um eine Löschung
                                 oder Unkenntlichmachung der betreffenden Aufnahmen zu veranlassen.
                             </p>
                             <p>

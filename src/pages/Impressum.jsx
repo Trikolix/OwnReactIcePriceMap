@@ -2,6 +2,15 @@ import Header from '../Header';
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import {
+  EVENT_COMMUNITY_RIDE_CLAIM,
+  EVENT_ENTRY_FEE_NOTICE,
+  EVENT_ORGANIZER_COUNTRY,
+  EVENT_ORGANIZER_NAME,
+  EVENT_ORGANIZER_POSTAL_CITY,
+  EVENT_ORGANIZER_STREET,
+  EVENT_PAYMENT_CONTACT_EMAIL,
+} from './Event/eventConfig';
 
 function Impressum() {
   return (
@@ -123,6 +132,23 @@ function Impressum() {
 
             <SubHeading>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</SubHeading>
             <p>Christian Helbig, Adresse wie oben.</p>
+
+            <SubHeading>Ice-Tour / Community-Ausfahrt</SubHeading>
+            <p>
+              Veranstalter und Anbieter der Ice-Tour ist {EVENT_ORGANIZER_NAME}
+              <br />
+              {EVENT_ORGANIZER_STREET}
+              <br />
+              {EVENT_ORGANIZER_POSTAL_CITY}
+              <br />
+              {EVENT_ORGANIZER_COUNTRY}
+            </p>
+            <p>
+              Kontakt zur Ice-Tour: {EVENT_PAYMENT_CONTACT_EMAIL}
+              <br />
+              {EVENT_COMMUNITY_RIDE_CLAIM}
+            </p>
+            <p>{EVENT_ENTRY_FEE_NOTICE}</p>
           </LegalBox>
           <SubHeading>Hinweis auf nutzergenerierte Inhalte</SubHeading>
           <p>

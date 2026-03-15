@@ -6,12 +6,15 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import {
+  EVENT_COMMUNITY_RIDE_CLAIM,
+  EVENT_ENTRY_FEE_NOTICE,
   EVENT_PAYMENT_CONTACT_EMAIL,
   EVENT_PAYMENT_PROVIDER_NAME,
   EVENT_START_FINISH,
   getClothingLabel,
   getPaceLabel,
   getRouteLabel,
+  getRouteTheme,
 } from "./eventConfig";
 
 const Page = styled.div`
@@ -180,6 +183,18 @@ const SubText = styled.div`
 const StateCard = styled(Card)`
   color: ${({ $error }) => ($error ? "#9f1239" : "#7a5200")};
 `;
+const RoutePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $border }) => $border};
+  background: ${({ $bg }) => $bg};
+  color: ${({ $color }) => $color};
+  font-weight: 800;
+  font-size: 0.8rem;
+`;
 
 function formatEuro(value) {
   return `${Number(value || 0).toFixed(2)} EUR`;
@@ -276,7 +291,7 @@ export default function EventMyRegistration() {
         <HeroCard>
           <HeroTitle>Meine Anmeldung</HeroTitle>
           <HeroSubtitle>
-            Hier findest du deinen Starterplatz, Zahlungsstatus, Geschenk-Codes und deine Event-Infos auf einen Blick.
+            Hier findest du deinen Teilnahmeplatz, Zahlungsstatus, Geschenk-Codes und deine Event-Infos auf einen Blick. {EVENT_COMMUNITY_RIDE_CLAIM}
           </HeroSubtitle>
         </HeroCard>
 
@@ -286,7 +301,7 @@ export default function EventMyRegistration() {
         {data && ownSlot && (
           <CardGrid>
             <Card>
-              <CardTitle>Starterplatz</CardTitle>
+              <CardTitle>Teilnahmeplatz</CardTitle>
               <FieldList>
                 <FieldRow>
                   <Label>Name</Label>
@@ -298,7 +313,15 @@ export default function EventMyRegistration() {
                 </FieldRow>
                 <FieldRow>
                   <Label>Route</Label>
-                  <Value>{ownSlot.route_name || getRouteLabel(ownSlot.route_key)}</Value>
+                  <Value as="span">
+                    <RoutePill
+                      $bg={getRouteTheme(ownSlot.route_key).background}
+                      $border={getRouteTheme(ownSlot.route_key).border}
+                      $color={getRouteTheme(ownSlot.route_key).text}
+                    >
+                      {ownSlot.route_name || getRouteLabel(ownSlot.route_key)}
+                    </RoutePill>
+                  </Value>
                 </FieldRow>
                 <FieldRow>
                   <Label>Tempo</Label>
@@ -335,7 +358,7 @@ export default function EventMyRegistration() {
                   </Value>
                 </FieldRow>
                 <FieldRow>
-                  <Label>Eigene Startgebühr</Label>
+                  <Label>Eigener Teilnahmebeitrag</Label>
                   <Value>{formatEuro(data.registration.entry_fee_amount)}</Value>
                 </FieldRow>
                 {Number(data.registration.gift_voucher_purchase_amount || 0) > 0 && (
@@ -361,11 +384,12 @@ export default function EventMyRegistration() {
                   <Value>{formatEuro(data.payment?.expected_amount)}</Value>
                 </FieldRow>
               </FieldList>
+              <Notice>{EVENT_ENTRY_FEE_NOTICE}</Notice>
 
               {!isPaid && (
                 <>
                   <Notice>
-                    Bitte die Zahlung über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode ausführen. Bei Fragen zur Zahlung oder zu zusätzlichen Gutschein-Codes bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
+                    Bitte den Teilnahmebeitrag über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode zahlen. Bei Fragen zur Zahlung oder zu zusätzlichen Gutschein-Codes bitte an <strong>{EVENT_PAYMENT_CONTACT_EMAIL}</strong> schreiben.
                   </Notice>
                   <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
                     {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
@@ -387,11 +411,23 @@ export default function EventMyRegistration() {
                 </FieldRow>
                 <FieldRow>
                   <Label>Route</Label>
-                  <Value>{ownSlot.route_name || getRouteLabel(ownSlot.route_key)}</Value>
+                  <Value as="span">
+                    <RoutePill
+                      $bg={getRouteTheme(ownSlot.route_key).background}
+                      $border={getRouteTheme(ownSlot.route_key).border}
+                      $color={getRouteTheme(ownSlot.route_key).text}
+                    >
+                      {ownSlot.route_name || getRouteLabel(ownSlot.route_key)}
+                    </RoutePill>
+                  </Value>
                 </FieldRow>
                 <FieldRow>
                   <Label>Startgruppe</Label>
                   <Value>{ownSlot.wave_code || "folgt"}</Value>
+                </FieldRow>
+                <FieldRow>
+                  <Label>Uhrzeit</Label>
+                  <Value>folgt</Value>
                 </FieldRow>
               </FieldList>
             </Card>

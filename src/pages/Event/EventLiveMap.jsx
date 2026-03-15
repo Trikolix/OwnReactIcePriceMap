@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import Header from "./Header";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteLabel } from "./eventConfig";
+import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteByLabel, getRouteLabel, getRouteThemeByLabel } from "./eventConfig";
 
 const makeSvgIcon = (svgMarkup) =>
   L.divIcon({
@@ -94,13 +94,15 @@ const Message = styled.div`
 `;
 
 const RouteBadge = styled.span`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   margin-right: 0.4rem;
   margin-bottom: 0.35rem;
-  padding: 0.2rem 0.55rem;
+  padding: 0.22rem 0.6rem;
   border-radius: 999px;
-  background: #fff3c2;
-  color: #8a5700;
+  background: ${({ $bg }) => $bg || "#fff3c2"};
+  color: ${({ $color }) => $color || "#8a5700"};
+  border: 1px solid ${({ $border }) => $border || "#f0d79a"};
   font-weight: 700;
   font-size: 0.8rem;
 `;
@@ -234,7 +236,14 @@ export default function EventLiveMap() {
                   )}
                   <div style={{ marginTop: 6 }}>
                     {(item.route_labels || []).map((label) => (
-                      <RouteBadge key={label}>{label}</RouteBadge>
+                      <RouteBadge
+                        key={label}
+                        $bg={getRouteThemeByLabel(label).background}
+                        $border={getRouteThemeByLabel(label).border}
+                        $color={getRouteThemeByLabel(label).text}
+                      >
+                        {getRouteByLabel(label).shortLabel}
+                      </RouteBadge>
                     ))}
                   </div>
                   {item.isStartFinishHub ? (
@@ -258,7 +267,14 @@ export default function EventLiveMap() {
             <h2 style={{ marginTop: 0 }}>{selected.name}</h2>
             <div style={{ marginBottom: 10 }}>
               {(selected.route_labels || []).map((label) => (
-                <RouteBadge key={label}>{label}</RouteBadge>
+                <RouteBadge
+                  key={label}
+                  $bg={getRouteThemeByLabel(label).background}
+                  $border={getRouteThemeByLabel(label).border}
+                  $color={getRouteThemeByLabel(label).text}
+                >
+                  {getRouteByLabel(label).shortLabel}
+                </RouteBadge>
               ))}
             </div>
             {detailsLoading ? (
