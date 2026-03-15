@@ -412,7 +412,7 @@ const BirthdayRulesModal = ({
           <CountdownBox>
             <h3>Ice-Tour</h3>
             <p style={{ textAlign: 'center' }}>
-              Am 16. Mai findet die <a href="/ice-tour" style={{ color: '#ffb522', fontWeight: 900, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Ice-Tour</a> statt: ein gemeinsames Rad-Event mit einer tollen Strecke
+              Am 16. Mai findet die <a href="/#/ice-tour" style={{ color: '#ffb522', fontWeight: 900, textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>Ice-Tour</a> statt: ein gemeinsames Rad-Event mit einer tollen Strecke
               und vielen großartigen Eisdielen entlang der Route.
             </p>
           </CountdownBox>

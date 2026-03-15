@@ -78,18 +78,21 @@ try {
 
         $successTemplate = event2026_stripe_env(
             'EVENT2026_STRIPE_SUCCESS_URL',
-            'https://ice-app.de/#/event-registration-summary?registrationId={registration_id}&checkout=success&session_id={CHECKOUT_SESSION_ID}'
+            'https://ice-app.de/#/event-registration-summary?registrationId={registration_id}&checkout=success&session_id={CHECKOUT_SESSION_ID}{summary_token_suffix}'
         );
         $cancelTemplate = event2026_stripe_env(
             'EVENT2026_STRIPE_CANCEL_URL',
-            'https://ice-app.de/#/event-registration-summary?registrationId={registration_id}&checkout=cancel'
+            'https://ice-app.de/#/event-registration-summary?registrationId={registration_id}{summary_token_suffix}&checkout=cancel'
         );
+        $summaryTokenSuffix = $summaryToken !== '' ? '&summaryToken=' . $summaryToken : '';
         $successUrl = event2026_checkout_url_from_template($successTemplate, [
             'registration_id' => $registrationId,
             'CHECKOUT_SESSION_ID' => '{CHECKOUT_SESSION_ID}',
+            'summary_token_suffix' => $summaryTokenSuffix,
         ]);
         $cancelUrl = event2026_checkout_url_from_template($cancelTemplate, [
             'registration_id' => $registrationId,
+            'summary_token_suffix' => $summaryTokenSuffix,
         ]);
 
         $session = event2026_stripe_create_checkout_session([

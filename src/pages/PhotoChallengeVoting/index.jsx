@@ -180,6 +180,10 @@ function PhotoChallengeVoting() {
       return;
     }
     if (!apiUrl) return;
+    if (matchId !== undefined && options.currentChoice === imageId) {
+      setActionMessage('Das ist bereits deine aktuelle Stimme.');
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('match_id', matchId);
@@ -191,8 +195,10 @@ function PhotoChallengeVoting() {
       });
       const data = await res.json();
       if (data.status === 'success') {
-        setActionMessage('Stimme gespeichert – danke!');
-        if (typeof options.onSuccess === 'function') {
+        setActionMessage(data.message || 'Stimme gespeichert – danke!');
+        if (data.vote_action === 'updated' && typeof options.onUpdate === 'function') {
+          options.onUpdate(data);
+        } else if (data.vote_action !== 'unchanged' && typeof options.onSuccess === 'function') {
           options.onSuccess();
         }
         setRefreshKey((val) => val + 1);
@@ -200,11 +206,7 @@ function PhotoChallengeVoting() {
         throw new Error(data.message || 'Voting fehlgeschlagen.');
       }
     } catch (err) {
-      const message = err.message || 'Voting fehlgeschlagen.';
-      setActionMessage(message);
-      if (options?.onDuplicate && /schon.*abgestimmt|bereits abgestimmt|Duplicate entry/i.test(message)) {
-        options.onDuplicate();
-      }
+      setActionMessage(err.message || 'Voting fehlgeschlagen.');
     }
   };
 
@@ -372,15 +374,17 @@ function PhotoChallengeVoting() {
 
   const handleModalVote = (match, imageId) => {
     handleVote(match.id, imageId, {
+      currentChoice: match.user_choice,
       onSuccess: () => advanceModalMatch(true),
-      onDuplicate: () => advanceModalMatch(true),
+      onUpdate: () => undefined,
     });
   };
 
   const handleKoModalVote = (match, imageId) => {
     handleVote(match.id, imageId, {
+      currentChoice: match.user_choice,
       onSuccess: () => advanceKoModalMatch(true),
-      onDuplicate: () => advanceKoModalMatch(true),
+      onUpdate: () => undefined,
     });
   };
 
@@ -477,11 +481,13 @@ function PhotoChallengeVoting() {
     const baseSides = [
       {
         id: activeModalMatch.image_a_id,
+        title: activeModalMatch.image_a_title,
         url: activeModalMatch.image_a_url,
         votes: activeModalMatch.votes_a,
       },
       {
         id: activeModalMatch.image_b_id,
+        title: activeModalMatch.image_b_title,
         url: activeModalMatch.image_b_url,
         votes: activeModalMatch.votes_b,
       },

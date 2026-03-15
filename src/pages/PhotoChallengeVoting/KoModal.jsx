@@ -51,7 +51,7 @@ const KoModal = ({
                 key={side.id}
                 type="button"
                 onClick={() => handleKoModalVote(activeKoModalMatch, side.id)}
-                disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn || activeKoModalMatch.has_voted}
+                disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn}
                 $selected={activeKoModalMatch.user_choice === side.id}
               >
                 <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
@@ -59,8 +59,10 @@ const KoModal = ({
                   <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
                   {!isLoggedIn ? (
                     <span style={{ color: 'red', fontWeight: 'bold' }}>Zum Abstimmen bitte anmelden oder registrieren</span>
+                  ) : activeKoModalMatch.user_choice === side.id ? (
+                    <span>Deine aktuelle Stimme</span>
                   ) : activeKoModalMatch.has_voted ? (
-                    <span>Du hast in diesem Duell bereits abgestimmt</span>
+                    <span>Tippe hier, um deine Stimme zu ändern</span>
                   ) : (
                     <span>Tippe zum Abstimmen</span>
                   )}

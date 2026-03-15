@@ -147,6 +147,7 @@ try {
             'id' => (int) $registration['id'],
             'payment_reference_code' => (string) $registration['payment_reference_code'],
             'team_name' => $registration['team_name'],
+            'notes' => $registration['notes'],
             'payment_status' => (string) $registration['payment_status'],
             'entry_fee_amount' => (float) ($registration['entry_fee_amount'] ?? 0),
             'gift_voucher_quantity' => (int) ($registration['gift_voucher_quantity'] ?? 0),
@@ -230,4 +231,3 @@ try {
         'message' => $e->getMessage(),
     ]);
 }
-

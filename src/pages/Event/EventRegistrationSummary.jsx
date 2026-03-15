@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -80,48 +80,77 @@ export default function EventRegistrationSummary() {
   const API_BASE = getApiBaseUrl();
   const { authToken } = useUser();
   const location = useLocation();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [paymentSyncing, setPaymentSyncing] = useState(false);
 
   const stateData = useMemo(() => location.state?.registrationResult || null, [location.state]);
   const registrationId = Number(searchParams.get("registrationId") || stateData?.registration_id || 0);
   const summaryToken = searchParams.get("summaryToken") || stateData?.registration_summary_access_token || "";
+  const checkoutState = searchParams.get("checkout") || "";
+  const checkoutSessionId = searchParams.get("session_id") || "";
+  const shouldFinalizeStripeCheckout = checkoutState === "success" && checkoutSessionId !== "" && registrationId > 0;
 
   useEffect(() => {
     if (!registrationId || !API_BASE) return;
     let cancelled = false;
-    setLoading(true);
-    setError("");
-    const query = new URLSearchParams({
-      registration_id: String(registrationId),
-      ...(summaryToken ? { summary_token: summaryToken } : {}),
-    });
-    fetch(`${API_BASE}/event2026/registration_summary.php?${query.toString()}`, {
-      headers: {
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      },
-    })
-      .then(async (res) => {
+    const loadSummary = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        if (shouldFinalizeStripeCheckout) {
+          setPaymentSyncing(true);
+          const finalizeResponse = await fetch(`${API_BASE}/event2026/stripe_checkout_finalize.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
+            body: JSON.stringify({
+              registration_id: registrationId,
+              session_id: checkoutSessionId,
+              ...(summaryToken ? { summary_token: summaryToken } : {}),
+            }),
+          });
+          const finalizeJson = await finalizeResponse.json();
+          if (!finalizeResponse.ok || finalizeJson.status !== "success") {
+            throw new Error(finalizeJson.message || "Stripe-Zahlung konnte nicht bestätigt werden.");
+          }
+        }
+
+        const query = new URLSearchParams({
+          registration_id: String(registrationId),
+          ...(summaryToken ? { summary_token: summaryToken } : {}),
+        });
+        const res = await fetch(`${API_BASE}/event2026/registration_summary.php?${query.toString()}`, {
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+        });
         const json = await res.json();
         if (!res.ok || json.status !== "success") {
           throw new Error(json.message || "Zusammenfassung konnte nicht geladen werden.");
         }
         if (!cancelled) setSummary(json);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!cancelled) setError(err.message || "Unbekannter Fehler");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      } finally {
+        if (!cancelled) {
+          setPaymentSyncing(false);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadSummary();
     return () => {
       cancelled = true;
     };
-  }, [API_BASE, authToken, registrationId, summaryToken]);
+  }, [API_BASE, authToken, checkoutSessionId, registrationId, shouldFinalizeStripeCheckout, summaryToken]);
 
   const accountCreatedInFlow = Boolean(stateData?.account_created_in_flow);
   const verificationMailSent = stateData?.account_verification_mail_sent;
@@ -178,7 +207,7 @@ export default function EventRegistrationSummary() {
           </Card>
         )}
 
-        {loading && <Card>Daten werden geladen…</Card>}
+        {loading && <Card>{paymentSyncing ? "Zahlung wird mit Stripe abgeglichen…" : "Daten werden geladen…"}</Card>}
         {error && <Card style={{ color: "#9f1239" }}>{error}</Card>}
 
         {summary && (
@@ -212,6 +241,11 @@ export default function EventRegistrationSummary() {
 
             <Card>
               <h2 style={{ marginTop: 0 }}>Teilnahmeplatz</h2>
+              {summary.registration.team_name && (
+                <p style={{ color: "#7c4f00", marginTop: 0 }}>
+                  Team / Verein: <strong>{summary.registration.team_name}</strong>
+                </p>
+              )}
               {summary.slots.map((slot) => (
                 <div key={slot.id} style={{ padding: "0.45rem 0", borderBottom: "1px solid #f3e5bd" }}>
                   <strong>{slot.full_name}</strong>{" "}
@@ -231,6 +265,15 @@ export default function EventRegistrationSummary() {
                 </div>
               ))}
             </Card>
+
+            {summary.registration.notes && (
+              <Card>
+                <h2 style={{ marginTop: 0 }}>Bemerkung an das Orga-Team</h2>
+                <p style={{ marginBottom: 0, color: "#7c4f00", lineHeight: 1.5 }}>
+                  {summary.registration.notes}
+                </p>
+              </Card>
+            )}
 
             {voucherRedemption && (
               <Card>

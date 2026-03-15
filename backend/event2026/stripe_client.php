@@ -63,24 +63,44 @@ function event2026_stripe_webhook_secret(): string
 
 function event2026_stripe_api_post(string $path, array $params): array
 {
+    return event2026_stripe_api_request('POST', $path, $params);
+}
+
+function event2026_stripe_api_get(string $path, array $params = []): array
+{
+    return event2026_stripe_api_request('GET', $path, $params);
+}
+
+function event2026_stripe_api_request(string $method, string $path, array $params = []): array
+{
     $secret = event2026_stripe_secret_key();
+    $normalizedMethod = strtoupper($method);
     $url = 'https://api.stripe.com/v1/' . ltrim($path, '/');
+
+    if ($normalizedMethod === 'GET' && !empty($params)) {
+        $url .= '?' . http_build_query($params);
+    }
 
     $ch = curl_init($url);
     if (!$ch) {
         throw new RuntimeException('Stripe cURL konnte nicht initialisiert werden.');
     }
 
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
+    $curlOptions = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             'Authorization: Bearer ' . $secret,
             'Content-Type: application/x-www-form-urlencoded',
         ],
-        CURLOPT_POSTFIELDS => http_build_query($params),
         CURLOPT_TIMEOUT => 20,
-    ]);
+    ];
+
+    if ($normalizedMethod === 'POST') {
+        $curlOptions[CURLOPT_POST] = true;
+        $curlOptions[CURLOPT_POSTFIELDS] = http_build_query($params);
+    }
+
+    curl_setopt_array($ch, $curlOptions);
 
     $responseBody = curl_exec($ch);
     $statusCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);

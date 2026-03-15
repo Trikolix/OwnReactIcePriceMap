@@ -491,7 +491,7 @@ export const ModalOverlay = styled.div`
   justify-content: center;
   align-items: center;
   padding: 0rem;
-  z-index: 999;
+  z-index: 1201;
 `;
 
 export const ModalCard = styled.div`
@@ -503,6 +503,7 @@ export const ModalCard = styled.div`
   flex-direction: column;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  z-index: 1002;
 `;
 
 export const LightboxOverlay = styled(ModalOverlay)`

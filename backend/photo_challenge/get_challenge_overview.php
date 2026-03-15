@@ -41,12 +41,13 @@ try {
                b.beschreibung,
                b.nutzer_id,
                n.username,
-               pci.title AS title
+               COALESCE(pci.title, s.title, b.beschreibung) AS title
         FROM photo_challenge_group_entries ge
         JOIN photo_challenge_groups g ON g.id = ge.group_id
         JOIN bilder b ON b.id = ge.image_id
         LEFT JOIN nutzer n ON n.id = b.nutzer_id
         LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ge.challenge_id AND pci.image_id = ge.image_id
+        LEFT JOIN photo_challenge_submissions s ON s.challenge_id = ge.challenge_id AND s.image_id = ge.image_id
         WHERE ge.challenge_id = :challenge_id
         ORDER BY g.position ASC, ge.seed ASC
     ");

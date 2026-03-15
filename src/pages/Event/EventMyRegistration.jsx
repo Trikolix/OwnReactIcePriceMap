@@ -331,6 +331,12 @@ export default function EventMyRegistration() {
                   <Label>Bekleidung</Label>
                   <Value>{ownSlot.clothing_interest_label || getClothingLabel(ownSlot.clothing_interest)}</Value>
                 </FieldRow>
+                {data.registration.team_name && (
+                  <FieldRow>
+                    <Label>Team / Verein</Label>
+                    <Value>{data.registration.team_name}</Value>
+                  </FieldRow>
+                )}
                 {(ownSlot.jersey_size || ownSlot.bib_size) && (
                   <FieldRow>
                     <Label>Größen</Label>
@@ -343,6 +349,13 @@ export default function EventMyRegistration() {
                 )}
               </FieldList>
             </Card>
+
+            {data.registration.notes && (
+              <Card>
+                <CardTitle>Bemerkung an das Orga-Team</CardTitle>
+                <Notice style={{ marginTop: 0 }}>{data.registration.notes}</Notice>
+              </Card>
+            )}
 
             <Card>
               <CardTitle>Zahlung</CardTitle>

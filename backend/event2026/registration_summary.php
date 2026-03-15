@@ -25,6 +25,7 @@ try {
             r.voucher_discount_amount,
             r.payment_status,
             r.team_name,
+            r.notes,
             r.created_at,
             p.method AS payment_method,
             p.expected_amount,
@@ -98,6 +99,7 @@ try {
             'voucher_discount_amount' => (float) ($registration['voucher_discount_amount'] ?? 0),
             'payment_status' => (string) $registration['payment_status'],
             'team_name' => $registration['team_name'],
+            'notes' => $registration['notes'],
             'created_at' => $registration['created_at'],
         ],
         'payment' => [
