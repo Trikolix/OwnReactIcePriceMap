@@ -70,13 +70,6 @@ const Header = ({ refreshShops }) => {
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
-  const defaultIceTourNavDate = new Date('2026-03-15T18:00:00+01:00');
-  const parsedIceTourNavDate = birthdayAnniversaryUnlockedAt ? new Date(birthdayAnniversaryUnlockedAt) : null;
-  const iceTourNavDate = parsedIceTourNavDate && !Number.isNaN(parsedIceTourNavDate.getTime())
-    ? parsedIceTourNavDate
-    : defaultIceTourNavDate;
-  const shouldWaitForIceTourDate = specialTime === 'birthday' && Boolean(userId) && !isBirthdayProgressLoaded;
-  const showEisTourNavLink = !shouldWaitForIceTourDate && now >= iceTourNavDate;
 
   const toggleMenu = () => {
     setMenuOpen((isOpen) => !isOpen);
@@ -546,12 +539,10 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
-          {showEisTourNavLink && (
-            <DesktopNavLink to="/ice-tour" $compact>
-              Ice-Tour
-              {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
-            </DesktopNavLink>
-          )}
+          <DesktopNavLink to="/ice-tour" $compact>
+            Ice-Tour
+            {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
+          </DesktopNavLink>
           <DesktopNavLink to="/photo-challenge" $compact>
             Foto-Challenge
             {showPhotoChallengeNewBadge && <DesktopNavBadge>NEU</DesktopNavBadge>}
@@ -560,11 +551,6 @@ const Header = ({ refreshShops }) => {
             Aktivitäten
             {dashboardNewCount > 0 && <ActivityBadge>{dashboardNewCount}</ActivityBadge>}
           </DesktopNavLink>
-          {!showEisTourNavLink && (<>
-            <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
-            <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
-          </>
-          )}
         </DesktopNav>
         <HeaderRight>
           {isLoggedIn ? (
@@ -630,12 +616,10 @@ const Header = ({ refreshShops }) => {
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
               <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
-              {showEisTourNavLink && (
-                <MenuItemLink to="/ice-tour" onClick={closeMenu}>
-                  Zur Ice-Tour
-                  {showIceTourNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
-                </MenuItemLink>
-              )}
+              <MenuItemLink to="/ice-tour" onClick={closeMenu}>
+                Zur Ice-Tour
+                {showIceTourNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+              </MenuItemLink>
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
                 Foto-Challenges
                 {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}

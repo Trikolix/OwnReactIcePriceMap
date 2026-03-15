@@ -115,6 +115,29 @@ function event2026_amount_breakdown(float $donationAmount, int $giftVoucherQuant
     ];
 }
 
+function event2026_team_name_suggestions(PDO $pdo, int $eventId, int $limit = 8): array
+{
+    $stmt = $pdo->prepare("SELECT
+            TRIM(team_name) AS team_name,
+            COUNT(*) AS registrations_count,
+            MAX(created_at) AS last_registered_at
+        FROM event2026_registrations
+        WHERE event_id = :event_id
+          AND team_name IS NOT NULL
+          AND TRIM(team_name) <> ''
+        GROUP BY TRIM(team_name)
+        ORDER BY registrations_count DESC, last_registered_at DESC, team_name ASC
+        LIMIT {$limit}");
+    $stmt->execute([
+        ':event_id' => $eventId,
+    ]);
+
+    return array_values(array_filter(array_map(static function (array $row): ?string {
+        $teamName = trim((string) ($row['team_name'] ?? ''));
+        return $teamName !== '' ? $teamName : null;
+    }, $stmt->fetchAll(PDO::FETCH_ASSOC))));
+}
+
 try {
     event2026_ensure_schema($pdo);
 
@@ -220,6 +243,7 @@ try {
                 'has_registration' => $hasRegistration,
             ],
             'existing_registration' => $existingRegistration,
+            'team_name_suggestions' => event2026_team_name_suggestions($pdo, (int) $event['id']),
         ]);
         exit;
     }

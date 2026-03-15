@@ -84,7 +84,7 @@ const Banner = styled.div`
 `;
 
 function formatEuro(value) {
-  return `${Number(value || 0).toFixed(2)} EUR`;
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
 
 export default function EventGiftPurchase() {

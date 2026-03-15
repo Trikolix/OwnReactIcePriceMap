@@ -402,8 +402,8 @@ function KitInfoModal({ onClose }) {
 
           <SectionTitle>Bestell- und Lieferinfos</SectionTitle>
           <ul style={{ margin: "0.5em 0 0 1.2em", color: "#6b5b2b", fontSize: "0.98em" }}>
-            <li>Das Trikot hat einen Richtpreis von ca. 75 EUR.</li>
-            <li>Das Set aus Trikot und Hose hat einen Richtpreis von ca. 175 EUR.</li>
+            <li>Das Trikot hat einen Richtpreis von ca. 75,00 €.</li>
+            <li>Das Set aus Trikot und Hose hat einen Richtpreis von ca. 175,00 €.</li>
             <li>Der finale Preis ist etwas davon abhängig, wie viele Bestellungen zustande kommen.</li>
             <li>Es gibt auch die Möglichkeit, Aero-, Langarm- oder Kindertrikots zu unterschiedlichen Preisen zu bestellen. Frag einfach an.</li>
             <li>In der Registrierung wird zunächst nur Interesse erfasst, keine verbindliche Bestellung.</li>

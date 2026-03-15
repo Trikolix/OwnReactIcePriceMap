@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Bike, Flag, Gift, HeartHandshake, ShieldAlert, Shirt, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
@@ -156,6 +156,26 @@ const GridRow = styled.div`
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 `;
+const CompactInputRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`;
+const InlineFieldLabel = styled.label`
+  color: #5d3d00;
+  font-weight: 700;
+  white-space: nowrap;
+`;
+const SmallNumberInput = styled(Input)`
+  width: 5.5rem;
+  margin-bottom: 0;
+`;
+const PriceHint = styled.div`
+  color: #7c4f00;
+  font-size: 0.95rem;
+  font-weight: 700;
+`;
 const StatusBanner = styled.div`
   border-radius: 8px;
   padding: 0.85rem 1rem;
@@ -257,7 +277,7 @@ const LegalSmall = styled.p`
 `;
 
 function formatEuro(value) {
-  return `${Number(value || 0).toFixed(2)} EUR`;
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
 
 function parseNumberInput(value, { min = 0, max = Number.POSITIVE_INFINITY } = {}) {
@@ -274,10 +294,16 @@ function getRouteSummary(routeKey) {
 export default function EventRegistration() {
   const { username, isLoggedIn, logout, authToken } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const API_BASE = getApiBaseUrl();
+  const invitedTeamName = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return (params.get("team") || "").trim();
+  }, [location.search]);
 
   const [participant, setParticipant] = useState(createParticipant());
   const [teamName, setTeamName] = useState("");
+  const [teamNameSuggestions, setTeamNameSuggestions] = useState([]);
   const [registrationNote, setRegistrationNote] = useState("");
   const [donationAmount, setDonationAmount] = useState("0");
   const [giftVoucherQuantity, setGiftVoucherQuantity] = useState("0");
@@ -302,6 +328,7 @@ export default function EventRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingClothing, setIsSavingClothing] = useState(false);
   const [isSubmittingAddon, setIsSubmittingAddon] = useState(false);
+  const [activeAddonCheckoutId, setActiveAddonCheckoutId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -325,6 +352,7 @@ export default function EventRegistration() {
         setLegal(data.legal);
         setAccountEmail(data.account?.email || "");
         setExistingRegistration(data.existing_registration || null);
+        setTeamNameSuggestions(Array.isArray(data.team_name_suggestions) ? data.team_name_suggestions : []);
         if (data.existing_registration) {
           setClothingInterest(data.existing_registration.clothing_interest || "none");
           setJerseySize(data.existing_registration.jersey_size || "");
@@ -371,6 +399,11 @@ export default function EventRegistration() {
       localStorage.setItem("event2026_has_registration", "1");
     }
   }, [existingRegistration]);
+
+  useEffect(() => {
+    if (!invitedTeamName || existingRegistration) return;
+    setTeamName((prev) => (prev.trim() ? prev : invitedTeamName));
+  }, [existingRegistration, invitedTeamName]);
 
   useEffect(() => {
     if (isLoggedIn || !newAccount.email || existingRegistration) return;
@@ -518,12 +551,34 @@ export default function EventRegistration() {
     }
   };
 
+  const startAddonStripeCheckout = async (addonPurchaseId) => {
+    if (!API_BASE || !authToken || !addonPurchaseId) return;
+    setActiveAddonCheckoutId(addonPurchaseId);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetch(`${API_BASE}/event2026/stripe_checkout_session.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ addon_purchase_id: addonPurchaseId }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.status !== "success" || !result.checkout_url) {
+        throw new Error(result.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      }
+      window.location.href = result.checkout_url;
+    } catch (err) {
+      setError(err.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      setActiveAddonCheckoutId(null);
+    }
+  };
+
   const availableSlots = eventMeta?.available_slots ?? 0;
   const isSoldOut = eventMeta?.event_status === "cancelled" || availableSlots <= 0;
   const registrationMode = !existingRegistration;
   const selectedRoute = getRouteSummary(participant.routeKey);
   const registrationSubmitLabel = isSubmitting ? "Speichern..." : "Verbindlich anmelden und Teilnahmebeitrag zahlen";
-  const addonSubmitLabel = isSubmittingAddon ? "Speichern..." : "Zusätzliche Gutschein-Codes verbindlich reservieren";
+  const addonSubmitLabel = isSubmittingAddon ? "Speichern..." : "Zusätzliche Startplätze verbindlich reservieren";
 
   return (
     <PageWrapper>
@@ -647,40 +702,66 @@ export default function EventRegistration() {
                     <span>Ich stimme zu, dass Name und Checkpoint-Zeiten auf der öffentlichen Live-Karte sichtbar sind.</span>
                   </CheckboxLabel>
                   <Label>Verein / Team (optional)</Label>
-                  <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} />
+                  <Input
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    list={teamNameSuggestions.length > 0 ? "event-team-name-suggestions" : undefined}
+                    placeholder="z. B. Ice Riders Chemnitz"
+                  />
+                  {teamNameSuggestions.length > 0 && (
+                    <datalist id="event-team-name-suggestions">
+                      {teamNameSuggestions.map((suggestion) => (
+                        <option key={suggestion} value={suggestion} />
+                      ))}
+                    </datalist>
+                  )}
+                  {(invitedTeamName || teamNameSuggestions.length > 0) && (
+                    <Muted style={{ marginBottom: "0.55rem" }}>
+                      {invitedTeamName
+                        ? `Dieser Link hat dein Team bereits vorbelegt: ${invitedTeamName}.`
+                        : "Beim Ausfüllen werden passende Teamnamen aus bisherigen Registrierungen vorgeschlagen."}
+                    </Muted>
+                  )}
                   <Label>Bemerkung an das Orga-Team (optional)</Label>
                   <Textarea value={registrationNote} onChange={(e) => setRegistrationNote(e.target.value)} maxLength={220} />
                 </Card>
 
                 <Card>
-                  <CardTitle><Gift /> Zusätzliche Gutschein-Codes</CardTitle>
+                  <CardTitle><Gift /> Startplätze für Freunde / Sammelanmeldung</CardTitle>
                   <Muted style={{ marginBottom: 10 }}>
-                    Hier kannst du zusammen mit deiner Anmeldung zusätzliche Gutschein-Codes für weitere Teilnahmeplätze reservieren.
+                    Hier kannst du zusammen mit deiner Anmeldung zusätzliche Startplätze für Freunde, Bekannte oder Vereinskollegen mitkaufen.
                   </Muted>
                   <Muted style={{ marginBottom: 10 }}>
-                    Diese Zusatzposition gehört zur selben verbindlichen Anmeldung wie dein eigener Teilnahmeplatz.
+                    Nach bestätigter Zahlung werden dafür Geschenk-Codes freigeschaltet. Diese kannst du danach verteilen, damit sich jede Person selbst mit ihrem Code anmeldet.
                   </Muted>
-                  <Label>Anzahl zusätzlicher Gutschein-Codes</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={giftVoucherQuantity}
-                    onFocus={(e) => {
-                      if (e.target.value === "0") setGiftVoucherQuantity("");
-                    }}
-                    onBlur={() => {
-                      if (giftVoucherQuantity === "") setGiftVoucherQuantity("0");
-                    }}
-                    onChange={(e) => setGiftVoucherQuantity(e.target.value)}
-                  />
+                  <Muted style={{ marginBottom: 10 }}>
+                    Das eignet sich auch für Sammelanmeldungen: Eine Person bezahlt gesammelt, verteilt anschließend die Codes und jeder Teilnehmer registriert sich später selbst.
+                  </Muted>
+                  <CompactInputRow>
+                    <InlineFieldLabel htmlFor="gift-voucher-quantity">Anzahl zusätzlicher Startplätze</InlineFieldLabel>
+                    <SmallNumberInput
+                      id="gift-voucher-quantity"
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={giftVoucherQuantity}
+                      onFocus={(e) => {
+                        if (e.target.value === "0") setGiftVoucherQuantity("");
+                      }}
+                      onBlur={() => {
+                        if (giftVoucherQuantity === "") setGiftVoucherQuantity("0");
+                      }}
+                      onChange={(e) => setGiftVoucherQuantity(e.target.value)}
+                    />
+                    <PriceHint>je {formatEuro(EVENT_ENTRY_FEE)}</PriceHint>
+                  </CompactInputRow>
                 </Card>
               </>
             ) : (
               <>
                 <Card>
                   <CardTitle><Users /> Bereits registriert</CardTitle>
-                  <Muted>Du kannst hier keine zweite Event-Anmeldung anlegen. Zusätzliche Gutschein-Codes und Bekleidungsinteresse sind aber weiterhin möglich.</Muted>
+                  <Muted>Du kannst hier keine zweite Event-Anmeldung anlegen. Zusätzliche Startplätze zum Verschenken oder für Sammelanmeldungen sowie Bekleidungsinteresse sind aber weiterhin möglich.</Muted>
                   <div style={{ marginTop: 12 }}>
                     <div>Status: <strong>{existingRegistration.payment_status}</strong></div>
                     <div>Referenzcode: <strong>{existingRegistration.payment_reference_code}</strong></div>
@@ -689,32 +770,39 @@ export default function EventRegistration() {
                 </Card>
 
                 <Card>
-                  <CardTitle><Gift /> Zusätzliche Gutschein-Codes</CardTitle>
-                  <Muted style={{ marginBottom: 10 }}>Hier kannst du zusätzliche Gutschein-Codes für weitere Teilnahmeplätze nachträglich reservieren.</Muted>
+                  <CardTitle><Gift /> Zusätzliche Startplätze für Freunde / Sammelanmeldung</CardTitle>
+                  <Muted style={{ marginBottom: 10 }}>Hier kannst du nachträglich weitere Startplätze für Freunde, Bekannte oder eine Sammelanmeldung reservieren.</Muted>
                   <Muted style={{ marginBottom: 10 }}>
-                    Die Zusatzreservierung wird erst nach bestätigter Zahlung wirksam. Neue Gutschein-Codes werden danach in `Meine Anmeldung` sichtbar.
+                    Die Zusatzreservierung wird erst nach bestätigter Zahlung wirksam. Danach erscheinen die Geschenk-Codes in `Meine Anmeldung` und können einzeln verteilt werden.
                   </Muted>
-                  <Label>Anzahl zusätzlicher Gutschein-Codes</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={addonVoucherQuantity}
-                    onFocus={(e) => {
-                      if (e.target.value === "0") setAddonVoucherQuantity("");
-                    }}
-                    onBlur={() => {
-                      if (addonVoucherQuantity === "") setAddonVoucherQuantity("0");
-                    }}
-                    onChange={(e) => setAddonVoucherQuantity(e.target.value)}
-                  />
+                  <Muted style={{ marginBottom: 10 }}>
+                    So kann eine Person gesammelt bezahlen und die Teilnehmer melden sich später jeweils selbst mit ihrem Code an.
+                  </Muted>
+                  <CompactInputRow>
+                    <InlineFieldLabel htmlFor="addon-voucher-quantity">Anzahl zusätzlicher Startplätze</InlineFieldLabel>
+                    <SmallNumberInput
+                      id="addon-voucher-quantity"
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={addonVoucherQuantity}
+                      onFocus={(e) => {
+                        if (e.target.value === "0") setAddonVoucherQuantity("");
+                      }}
+                      onBlur={() => {
+                        if (addonVoucherQuantity === "") setAddonVoucherQuantity("0");
+                      }}
+                      onChange={(e) => setAddonVoucherQuantity(e.target.value)}
+                    />
+                    <PriceHint>je {formatEuro(EVENT_ENTRY_FEE)}</PriceHint>
+                  </CompactInputRow>
                   <Label>Notiz (optional)</Label>
                   <Textarea value={addonNote} onChange={(e) => setAddonNote(e.target.value)} maxLength={220} />
                   <LegalPanel style={{ marginTop: "0.5rem" }}>
                     <LegalHeadline>Pflichtinformationen zur Zusatzreservierung</LegalHeadline>
                     <LegalList>
-                      <li>Leistung: zusätzliche Gutschein-Codes für weitere Teilnahmeplätze der Ice-Tour 2026</li>
-                      <li>Teilnahmebeitrag pro Gutschein-Code: {formatEuro(EVENT_ENTRY_FEE)}</li>
+                      <li>Leistung: zusätzliche Startplätze der Ice-Tour 2026 inklusive später verteilbarer Geschenk-Codes</li>
+                      <li>Teilnahmebeitrag pro zusätzlichem Startplatz: {formatEuro(EVENT_ENTRY_FEE)}</li>
                       <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
                     </LegalList>
                     <LegalSmall>
@@ -735,6 +823,17 @@ export default function EventRegistration() {
                       {addonPurchases.map((purchase) => (
                         <div key={purchase.id} style={{ padding: "0.55rem 0", borderBottom: "1px solid #f3e5bd" }}>
                           <strong>{purchase.payment_reference_code}</strong> - {purchase.gift_voucher_quantity} Codes - <strong>{purchase.status}</strong>
+                          {purchase.status !== "paid" && (
+                            <div style={{ marginTop: 8 }}>
+                              <Button
+                                type="button"
+                                onClick={() => startAddonStripeCheckout(purchase.id)}
+                                disabled={activeAddonCheckoutId === purchase.id}
+                              >
+                                {activeAddonCheckoutId === purchase.id ? "Weiterleitung..." : `Mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -751,10 +850,10 @@ export default function EventRegistration() {
                 <Label>Bekleidungsinteresse</Label>
                 <Select value={clothingInterest} onChange={(e) => setClothingInterest(e.target.value)}>
                   {CLOTHING_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}{option.displayPrice ? ` (Richtpreis ${option.displayPrice} EUR)` : ""}</option>
+                    <option key={option.value} value={option.value}>{option.label}{option.displayPrice ? ` (Richtpreis ${formatEuro(option.displayPrice)})` : ""}</option>
                   ))}
                 </Select>
-                <Muted>Trikot ca. {JERSEY_DISPLAY_PRICE} EUR, Set aus Trikot + Hose ca. {KIT_DISPLAY_PRICE} EUR.</Muted>
+                <Muted>Trikot ca. {formatEuro(JERSEY_DISPLAY_PRICE)}, Set aus Trikot + Hose ca. {formatEuro(KIT_DISPLAY_PRICE)}.</Muted>
                 {clothingInterest !== "none" && (
                   <GridRow style={{ marginTop: 12 }}>
                     <div>
@@ -840,7 +939,7 @@ export default function EventRegistration() {
               {registrationMode ? (
                 <>
                   <Flex><span>Eigener Teilnahmebeitrag</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
-                  {normalizedGiftVoucherQuantity > 0 && <Flex><span>Zusätzliche Gutschein-Codes ({normalizedGiftVoucherQuantity})</span><span>{formatEuro(normalizedGiftVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
+                    {normalizedGiftVoucherQuantity > 0 && <Flex><span>Zusätzliche Startplätze ({normalizedGiftVoucherQuantity})</span><span>{formatEuro(normalizedGiftVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
                   {voucherLookup?.valid && <Flex><span>Gutschein-Abzug</span><span>-{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>}
                   {normalizedDonationAmount > 0 && <Flex><span>Zusätzliche Spende</span><span>{formatEuro(normalizedDonationAmount)}</span></Flex>}
                   <SummaryDivider />
@@ -849,7 +948,7 @@ export default function EventRegistration() {
               ) : (
                 <>
                   <Flex><span>Status deiner Anmeldung</span><span>{existingRegistration?.payment_status || "-"}</span></Flex>
-                  <Flex><span>Teilnahmebeitrag pro zusätzlichem Gutschein-Code</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
+                  <Flex><span>Teilnahmebeitrag pro zusätzlichem Startplatz</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
                   {normalizedAddonVoucherQuantity > 0 && <Flex><span>Zusatzreservierung ({normalizedAddonVoucherQuantity})</span><span>{formatEuro(normalizedAddonVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
                   <SummaryDivider />
                   <Flex style={{ fontWeight: 700, fontSize: 18 }}><span>Zusatzreservierung gesamt</span><span>{formatEuro(normalizedAddonVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>
@@ -869,7 +968,7 @@ export default function EventRegistration() {
                     <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
                     <li>{EVENT_COMMUNITY_RIDE_CLAIM}</li>
                     <li>{EVENT_ENTRY_FEE_NOTICE}</li>
-                    {normalizedGiftVoucherQuantity > 0 && <li>Zusatzposition: {normalizedGiftVoucherQuantity} zusätzliche Gutschein-Code{normalizedGiftVoucherQuantity === 1 ? "" : "s"} für weitere Teilnahmeplätze</li>}
+                    {normalizedGiftVoucherQuantity > 0 && <li>Zusatzposition: {normalizedGiftVoucherQuantity} zusätzliche Startplatz{normalizedGiftVoucherQuantity === 1 ? "" : "e"} zum späteren Verschenken oder Verteilen per Code</li>}
                     {voucherLookup?.valid && <li>Eingelöster Gutschein-Code reduziert deinen Teilnahmebeitrag um {formatEuro(EVENT_ENTRY_FEE)}</li>}
                   </LegalList>
                   <LegalSmall>
@@ -887,9 +986,9 @@ export default function EventRegistration() {
                 <LegalPanel>
                   <LegalHeadline>Deine Zusatzreservierung</LegalHeadline>
                   <LegalList>
-                    <li>Leistung: zusätzliche Gutschein-Codes für weitere Teilnahmeplätze der Ice-Tour 2026</li>
+                    <li>Leistung: zusätzliche Startplätze der Ice-Tour 2026 inklusive später verteilbarer Geschenk-Codes</li>
                     <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
-                    <li>Teilnahmebeitrag pro Gutschein-Code: {formatEuro(EVENT_ENTRY_FEE)}</li>
+                    <li>Teilnahmebeitrag pro zusätzlichem Startplatz: {formatEuro(EVENT_ENTRY_FEE)}</li>
                     <li>{EVENT_ENTRY_FEE_NOTICE}</li>
                   </LegalList>
                   <LegalSmall>
@@ -899,7 +998,7 @@ export default function EventRegistration() {
                     Weitere Informationen: <a href="/#/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
                   </LegalSmall>
                   <LegalSmall>
-                    Mit Klick auf „Zusätzliche Gutschein-Codes verbindlich reservieren“ gibst du eine verbindliche, zahlungspflichtige Zusatzreservierung ab.
+                    Mit Klick auf „Zusätzliche Startplätze verbindlich reservieren“ gibst du eine verbindliche, zahlungspflichtige Zusatzreservierung ab.
                   </LegalSmall>
                 </LegalPanel>
               )}
@@ -914,7 +1013,7 @@ export default function EventRegistration() {
                     <br />
                     2. Danach zahlst du den Teilnahmebeitrag über {EVENT_PAYMENT_PROVIDER_NAME} oder später mit deinem Referenzcode.
                     <br />
-                    3. Reservierte Gutschein-Codes werden erst nach bestätigter Zahlung freigeschaltet.
+                    3. Reservierte Zusatz-Startplätze werden nach bestätigter Zahlung als Geschenk-Codes freigeschaltet.
                     <br />
                     4. Anschließend findest du alle Details in `Meine Anmeldung`.
                   </>
@@ -922,7 +1021,7 @@ export default function EventRegistration() {
                   <>
                     1. Die Zusatzreservierung wird mit eigenem Referenzcode angelegt.
                     <br />
-                    2. Nach bestätigter Zahlung werden die Gutschein-Codes freigeschaltet.
+                    2. Nach bestätigter Zahlung werden die Geschenk-Codes für die zusätzlichen Startplätze freigeschaltet.
                     <br />
                     3. Bekleidungsinteresse wird unabhängig davon direkt an deiner Anmeldung aktualisiert.
                   </>

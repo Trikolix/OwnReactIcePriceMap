@@ -5,12 +5,18 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
+import JerseyInfoDialog from "./JerseyInfoDialog";
 import {
+  BIB_SIZES,
+  CLOTHING_OPTIONS,
   EVENT_COMMUNITY_RIDE_CLAIM,
   EVENT_ENTRY_FEE_NOTICE,
   EVENT_PAYMENT_CONTACT_EMAIL,
   EVENT_PAYMENT_PROVIDER_NAME,
   EVENT_START_FINISH,
+  KIT_DISPLAY_PRICE,
+  TSHIRT_SIZES,
+  JERSEY_DISPLAY_PRICE,
   getClothingLabel,
   getPaceLabel,
   getRouteLabel,
@@ -95,6 +101,11 @@ const FieldList = styled.div`
   gap: 0.55rem;
 `;
 
+const SectionStack = styled.div`
+  display: grid;
+  gap: 0.8rem;
+`;
+
 const FieldRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -106,6 +117,14 @@ const FieldRow = styled.div`
     border-bottom: none;
     padding-bottom: 0;
   }
+`;
+
+const ValueCluster = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 `;
 
 const Label = styled.span`
@@ -146,6 +165,36 @@ const PaymentLinkButton = styled.button`
   }
 `;
 
+const SecondaryButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff6de;
+  color: #6a4300;
+  border: 1px solid #efcf84;
+  border-radius: 10px;
+  padding: 0.62rem 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.75;
+    cursor: wait;
+  }
+`;
+
+const InlineLinkButton = styled.button`
+  background: none;
+  border: none;
+  color: #8a5700;
+  text-decoration: underline;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+`;
+
 const NavLinkButton = styled(Link)`
   display: inline-flex;
   align-items: center;
@@ -180,6 +229,58 @@ const SubText = styled.div`
   line-height: 1.35;
 `;
 
+const FormLabel = styled.label`
+  display: block;
+  color: #7a5200;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+`;
+
+const SelectField = styled.select`
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(138, 87, 0, 0.2);
+  background: #fff;
+  color: #2d1d00;
+  box-sizing: border-box;
+`;
+
+const GridRow = styled.div`
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 720px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const LinkField = styled.input`
+  width: 100%;
+  border: 1px solid rgba(138, 87, 0, 0.18);
+  border-radius: 10px;
+  padding: 0.68rem 0.8rem;
+  background: #fff;
+  color: #2d1d00;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+`;
+
+const CopyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff3c2;
+  color: #7a5200;
+  border: 1px solid #efcf84;
+  border-radius: 10px;
+  padding: 0.62rem 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
 const StateCard = styled(Card)`
   color: ${({ $error }) => ($error ? "#9f1239" : "#7a5200")};
 `;
@@ -197,7 +298,7 @@ const RoutePill = styled.span`
 `;
 
 function formatEuro(value) {
-  return `${Number(value || 0).toFixed(2)} EUR`;
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
 
 function formatPaymentStatus(status) {
@@ -214,7 +315,15 @@ export default function EventMyRegistration() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
+  const [isSavingClothing, setIsSavingClothing] = useState(false);
+  const [activeAddonCheckoutId, setActiveAddonCheckoutId] = useState(null);
+  const [showClothingEditor, setShowClothingEditor] = useState(false);
+  const [clothingInterest, setClothingInterest] = useState("none");
+  const [jerseySize, setJerseySize] = useState("");
+  const [bibSize, setBibSize] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -259,6 +368,52 @@ export default function EventMyRegistration() {
     const host = window.location.hostname;
     return host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
   }, []);
+  const teamInviteLink = useMemo(() => {
+    const teamName = (data?.registration?.team_name || "").trim();
+    if (!teamName) return "";
+    if (typeof window === "undefined") {
+      return `https://ice-app.de/#/event-registration?team=${encodeURIComponent(teamName)}`;
+    }
+    return `${window.location.origin}/#/event-registration?team=${encodeURIComponent(teamName)}`;
+  }, [data?.registration?.team_name]);
+
+  const copyTeamInviteLink = async () => {
+    if (!teamInviteLink) return;
+    try {
+      await navigator.clipboard.writeText(teamInviteLink);
+      setCopyStatus("Link kopiert.");
+    } catch (err) {
+      setCopyStatus("Kopieren fehlgeschlagen.");
+    }
+  };
+
+  useEffect(() => {
+    if (!copyStatus) return undefined;
+    const timeoutId = window.setTimeout(() => setCopyStatus(""), 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [copyStatus]);
+
+  useEffect(() => {
+    if (!success) return undefined;
+    const timeoutId = window.setTimeout(() => setSuccess(""), 2600);
+    return () => window.clearTimeout(timeoutId);
+  }, [success]);
+
+  useEffect(() => {
+    if (!ownSlot) return;
+    setClothingInterest(ownSlot.clothing_interest || "none");
+    setJerseySize(ownSlot.jersey_size || "");
+    setBibSize(ownSlot.bib_size || "");
+  }, [ownSlot]);
+
+  useEffect(() => {
+    if (clothingInterest === "none") {
+      setJerseySize("");
+      setBibSize("");
+    } else if (clothingInterest === "jersey_interest") {
+      setBibSize("");
+    }
+  }, [clothingInterest]);
 
   const startStripeCheckout = async () => {
     if (!apiUrl || !data?.registration?.id) return;
@@ -284,6 +439,64 @@ export default function EventMyRegistration() {
     }
   };
 
+  const startAddonStripeCheckout = async (addonPurchaseId) => {
+    if (!apiUrl || !addonPurchaseId) return;
+    setActiveAddonCheckoutId(addonPurchaseId);
+    setError("");
+    try {
+      const response = await fetch(`${apiUrl}/event2026/stripe_checkout_session.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ addon_purchase_id: addonPurchaseId }),
+      });
+      const json = await response.json();
+      if (!response.ok || json.status !== "success" || !json.checkout_url) {
+        throw new Error(json.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      }
+      window.location.href = json.checkout_url;
+    } catch (err) {
+      setError(err.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      setActiveAddonCheckoutId(null);
+    }
+  };
+
+  const handleUpdateClothing = async () => {
+    if (!apiUrl || !authToken || !ownSlot) return;
+    setIsSavingClothing(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${apiUrl}/event2026/update_clothing_interest.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ clothingInterest, jerseySize, bibSize }),
+      });
+      const json = await response.json();
+      if (!response.ok || json.status !== "success") {
+        throw new Error(json.message || "Bekleidungsinteresse konnte nicht gespeichert werden.");
+      }
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          slots: (prev.slots || []).map((slot, index) => (index === 0 ? { ...slot, ...json.clothing } : slot)),
+        };
+      });
+      setShowClothingEditor(false);
+      setSuccess(json.message || "Bekleidungsinteresse aktualisiert.");
+    } catch (err) {
+      setError(err.message || "Bekleidungsinteresse konnte nicht gespeichert werden.");
+    } finally {
+      setIsSavingClothing(false);
+    }
+  };
+
   return (
     <Page>
       <Header />
@@ -297,63 +510,141 @@ export default function EventMyRegistration() {
 
         {loading && <StateCard>Daten werden geladen…</StateCard>}
         {error && <StateCard $error>{error}</StateCard>}
+        {success && <StateCard>{success}</StateCard>}
 
         {data && ownSlot && (
           <CardGrid>
             <Card>
-              <CardTitle>Teilnahmeplatz</CardTitle>
-              <FieldList>
-                <FieldRow>
-                  <Label>Name</Label>
-                  <Value>{ownSlot.full_name}</Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Zahlung</Label>
-                  <Value><Badge>{ownSlot.license_status}</Badge></Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Route</Label>
-                  <Value as="span">
-                    <RoutePill
-                      $bg={getRouteTheme(ownSlot.route_key).background}
-                      $border={getRouteTheme(ownSlot.route_key).border}
-                      $color={getRouteTheme(ownSlot.route_key).text}
-                    >
-                      {ownSlot.route_name || getRouteLabel(ownSlot.route_key)}
-                    </RoutePill>
-                  </Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Tempo</Label>
-                  <Value>{getPaceLabel(ownSlot.pace_group)}</Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Bekleidung</Label>
-                  <Value>{ownSlot.clothing_interest_label || getClothingLabel(ownSlot.clothing_interest)}</Value>
-                </FieldRow>
-                {data.registration.team_name && (
+              <CardTitle>Mein Startplatz</CardTitle>
+              <SectionStack>
+                <FieldList>
+                  <FieldRow>
+                    <Label>Name</Label>
+                    <Value>{ownSlot.full_name}</Value>
+                  </FieldRow>
+                  <FieldRow>
+                    <Label>Zahlung</Label>
+                    <Value><Badge>{ownSlot.license_status}</Badge></Value>
+                  </FieldRow>
+                  <FieldRow>
+                    <Label>Route</Label>
+                    <Value as="span">
+                      <RoutePill
+                        $bg={getRouteTheme(ownSlot.route_key).background}
+                        $border={getRouteTheme(ownSlot.route_key).border}
+                        $color={getRouteTheme(ownSlot.route_key).text}
+                      >
+                        {ownSlot.route_name || getRouteLabel(ownSlot.route_key)}
+                      </RoutePill>
+                    </Value>
+                  </FieldRow>
+                  <FieldRow>
+                    <Label>Tempo</Label>
+                    <Value>{getPaceLabel(ownSlot.pace_group)}</Value>
+                  </FieldRow>
                   <FieldRow>
                     <Label>Team / Verein</Label>
-                    <Value>{data.registration.team_name}</Value>
+                    <Value>{data.registration.team_name || "-"}</Value>
                   </FieldRow>
-                )}
-                {(ownSlot.jersey_size || ownSlot.bib_size) && (
+                  <FieldRow>
+                    <Label>Bekleidung</Label>
+                    <Value as="div">
+                      <ValueCluster>
+                        <span>{ownSlot.clothing_interest_label || getClothingLabel(ownSlot.clothing_interest)}</span>
+                        <InlineLinkButton type="button" onClick={() => setShowClothingEditor((prev) => !prev)}>
+                          {showClothingEditor ? "Schließen" : "Ändern"}
+                        </InlineLinkButton>
+                      </ValueCluster>
+                    </Value>
+                  </FieldRow>
                   <FieldRow>
                     <Label>Größen</Label>
                     <Value>
                       {ownSlot.jersey_size ? `Trikot ${ownSlot.jersey_size}` : ""}
                       {ownSlot.jersey_size && ownSlot.bib_size ? ", " : ""}
                       {ownSlot.bib_size ? `Hose ${ownSlot.bib_size}` : ""}
+                      {!ownSlot.jersey_size && !ownSlot.bib_size ? "-" : ""}
                     </Value>
                   </FieldRow>
+                </FieldList>
+
+                {showClothingEditor && (
+                  <div style={{ border: "1px solid rgba(138, 87, 0, 0.15)", borderRadius: 12, padding: "0.9rem" }}>
+                    <CardTitle style={{ marginBottom: "0.7rem" }}>Bekleidungsinteresse bearbeiten</CardTitle>
+                    <JerseyInfoDialog linkOnly={true} />
+                    <div style={{ marginTop: "0.8rem" }}>
+                      <FormLabel htmlFor="event-me-clothing-interest">Bekleidungsinteresse</FormLabel>
+                      <SelectField id="event-me-clothing-interest" value={clothingInterest} onChange={(event) => setClothingInterest(event.target.value)}>
+                        {CLOTHING_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}{option.displayPrice ? ` (Richtpreis ${formatEuro(option.displayPrice)})` : ""}
+                          </option>
+                        ))}
+                      </SelectField>
+                      <SubText>Trikot ca. {formatEuro(JERSEY_DISPLAY_PRICE)}, Set aus Trikot + Hose ca. {formatEuro(KIT_DISPLAY_PRICE)}.</SubText>
+                    </div>
+                    {clothingInterest !== "none" && (
+                      <GridRow style={{ marginTop: "0.8rem" }}>
+                        <div>
+                          <FormLabel htmlFor="event-me-jersey-size">Trikotgröße</FormLabel>
+                          <SelectField id="event-me-jersey-size" value={jerseySize} onChange={(event) => setJerseySize(event.target.value)}>
+                            <option value="">Bitte wählen</option>
+                            {TSHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+                          </SelectField>
+                        </div>
+                        {clothingInterest === "kit_interest" && (
+                          <div>
+                            <FormLabel htmlFor="event-me-bib-size">Hosengröße</FormLabel>
+                            <SelectField id="event-me-bib-size" value={bibSize} onChange={(event) => setBibSize(event.target.value)}>
+                              <option value="">Bitte wählen</option>
+                              {BIB_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+                            </SelectField>
+                          </div>
+                        )}
+                      </GridRow>
+                    )}
+                    <div style={{ marginTop: "0.8rem", display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
+                      <SecondaryButton type="button" onClick={handleUpdateClothing} disabled={isSavingClothing}>
+                        {isSavingClothing ? "Speichern..." : "Speichern"}
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          setShowClothingEditor(false);
+                          setClothingInterest(ownSlot.clothing_interest || "none");
+                          setJerseySize(ownSlot.jersey_size || "");
+                          setBibSize(ownSlot.bib_size || "");
+                        }}
+                        disabled={isSavingClothing}
+                      >
+                        Abbrechen
+                      </SecondaryButton>
+                    </div>
+                  </div>
                 )}
-              </FieldList>
+              </SectionStack>
             </Card>
 
             {data.registration.notes && (
               <Card>
                 <CardTitle>Bemerkung an das Orga-Team</CardTitle>
                 <Notice style={{ marginTop: 0 }}>{data.registration.notes}</Notice>
+              </Card>
+            )}
+
+            {teamInviteLink && (
+              <Card>
+                <CardTitle>Team-Einladung</CardTitle>
+                <Notice style={{ marginTop: 0 }}>
+                  Teile diesen Link mit weiteren Fahrern. Auf der Registrierungsseite ist das Feld Team / Verein dann bereits mit <strong>{data.registration.team_name}</strong> ausgefüllt.
+                </Notice>
+                <div style={{ display: "grid", gap: "0.7rem", marginTop: "0.8rem" }}>
+                  <LinkField value={teamInviteLink} readOnly />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem", alignItems: "center" }}>
+                    <CopyButton type="button" onClick={copyTeamInviteLink}>Link kopieren</CopyButton>
+                    {copyStatus && <SubText style={{ marginTop: 0 }}>{copyStatus}</SubText>}
+                  </div>
+                </div>
               </Card>
             )}
 
@@ -508,6 +799,17 @@ export default function EventMyRegistration() {
                         <SubText>
                           {purchase.status === "paid" ? "Bezahlt und freigeschaltet." : "Noch nicht bezahlt, Codes daher noch nicht sichtbar."}
                         </SubText>
+                        {purchase.status !== "paid" && (
+                          <div style={{ marginTop: "0.7rem" }}>
+                            <PaymentLinkButton
+                              type="button"
+                              onClick={() => startAddonStripeCheckout(purchase.id)}
+                              disabled={activeAddonCheckoutId === purchase.id}
+                            >
+                              {activeAddonCheckoutId === purchase.id ? "Weiterleitung..." : `Zusatzbestellung mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
+                            </PaymentLinkButton>
+                          </div>
+                        )}
                       </InlineItem>
                     ))}
                   </InlineList>
