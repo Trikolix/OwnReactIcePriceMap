@@ -210,7 +210,7 @@ export default function EventLiveMap() {
         {!error && (
           <MapContainer
             center={[EVENT_START_FINISH.lat, EVENT_START_FINISH.lng]}
-            zoom={11}
+            zoom={10}
             bounds={bounds}
             boundsOptions={{ padding: [50, 50] }}
             style={{ width: "100%", height: "100%" }}
