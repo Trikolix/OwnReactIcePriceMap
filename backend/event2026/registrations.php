@@ -566,34 +566,32 @@ try {
     $mailSent = false;
     if ($accountEmail) {
         $appBaseUrl = 'https://ice-app.de/#';
-        $mailBody = "Hallo {$auth['username']},\n\n";
-        $mailBody .= "deine verbindliche Bestellung zur Ice-Tour 2026 wurde gespeichert.\n\n";
-        $mailBody .= "Registrierung: #{$registrationId}\n";
-        $mailBody .= "Referenzcode: {$paymentRef}\n";
-        $mailBody .= "Veranstaltung: Ice-Tour 2026\n";
-        $mailBody .= "Start und Ziel: Karl mag's süß, Untere Aktienstraße 12, 09111 Chemnitz\n";
-        $mailBody .= "Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
+        $salutationName = $fullName !== '' ? $fullName : $auth['username'];
+        $mailBody = "Hallo {$salutationName},\n\n";
+        $mailBody .= "vielen Dank für deine Anmeldung zur Ice-Tour 2026.\n";
+        $mailBody .= "Wir freuen uns sehr, dich am 16. Mai 2026 als Starterin bzw. Starter begrüßen zu dürfen.\n\n";
+        $mailBody .= "Kaufzusammenfassung:\n";
+        $mailBody .= "- Gewählte Strecke: {$routeDefinition['label']}\n";
+        if (trim((string) ($data['teamName'] ?? '')) !== '') {
+            $mailBody .= "- Team / Verein: " . trim((string) ($data['teamName'] ?? '')) . "\n";
+        }
+        $mailBody .= "- Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
         if ($giftVoucherQuantity > 0) {
-            $mailBody .= "Zusätzliche Gutschein-Codes: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
-            $mailBody .= "Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang freigeschaltet.\n";
+            $mailBody .= "- Zusätzliche Gutschein-Codes: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
         }
         if ($voucherRow) {
-            $mailBody .= "Eingelöster Gutschein: -" . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . " EUR\n";
+            $mailBody .= "- Eingelöster Gutschein: -" . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . " EUR\n";
         }
         if ($donationAmount > 0) {
-            $mailBody .= "Zusätzlicher Betrag: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
+            $mailBody .= "- Zusätzlicher Betrag: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
         }
-        $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n";
-        $mailBody .= "Zahlungsmethode: {$paymentMethod}\n\n";
-        $mailBody .= "Anbieter: Christian Helbig, Henriettenstraße 45, 09112 Chemnitz, Deutschland\n";
-        $mailBody .= "Kontakt: admin@ice-app.de\n";
-        $mailBody .= "Kein Widerrufsrecht bei dieser Anmeldung, da es sich um eine Freizeitveranstaltung mit festem Termin handelt.\n\n";
+        $mailBody .= "- Gesamtbetrag: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n\n";
         if ($isAutoPaid) {
-            $mailBody .= "Für diese Anmeldung ist keine Zahlung mehr erforderlich. Dein Gutschein deckt den Gesamtbetrag vollständig ab.\n\n";
+            $mailBody .= "Deine Zahlung ist bereits vollständig erledigt.\n\n";
+            $mailBody .= "Deine Anmeldung und Zahlungsbestätigung findest du jederzeit hier:\n";
+            $mailBody .= "{$appBaseUrl}/event-me\n\n";
         } else {
-            $mailBody .= "Bitte schliesse die Zahlung ueber Stripe im Event-Portal ab.\n";
-            $mailBody .= "Bitte gib den Referenzcode {$paymentRef} im Betreff oder Verwendungszweck an.\n";
-            $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_PAYMENT_CONTACT . ".\n\n";
+            $mailBody .= "Deine Anmeldung und eine eventuell noch ausstehende Zahlung findest du jederzeit hier:\n{$appBaseUrl}/event-me\n\n";
         }
         if ($voucherRow) {
             $mailBody .= "Der Gutschein-Code {$voucherCode} wurde für diese Anmeldung erfolgreich eingelöst.\n\n";
@@ -602,7 +600,12 @@ try {
             $mailBody .= "Wichtig: Dein Ice-App Account wurde gerade neu erstellt. Bitte bestätige ihn über diesen Link, um die Account-Erstellung abzuschließen:\n";
             $mailBody .= $accountCreationInfo['verification_url'] . "\n\n";
         }
-        $mailBody .= "Dein Dashboard: {$appBaseUrl}/event-me\n\n";
+        
+        $mailBody .= "Wir freuen uns schon darauf, dich bei der Ice-Tour begrüßen zu dürfen. Bis dahin kannst du in der {$appBaseUrl} schon aktiv werden:\n";
+        $mailBody .= "- Profilbild hochladen\n";
+        $mailBody .= "- Ein Probe-Eis einchecken\n";
+        $mailBody .= "- Bei der aktuellen Geburtstagsaktion mitmachen\n";
+        $mailBody .= "- Bei der laufenden Foto-Challenge abstimmen und tolle Preise gewinnen\n\n";
         $mailBody .= "Viele Grüße\nIce-App Team";
         $mailSent = event2026_send_utf8_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
     }

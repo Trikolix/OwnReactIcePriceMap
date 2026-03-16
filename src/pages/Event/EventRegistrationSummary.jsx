@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -22,42 +22,74 @@ import {
 
 const Page = styled.div`
   min-height: 100vh;
-  background: var(--event-bg);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 214, 133, 0.35), transparent 34%),
+    linear-gradient(180deg, #fffaf0 0%, #fff3da 100%);
 `;
 const Container = styled.div`
   width: min(96%, 980px);
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 0 1.4rem;
 `;
-const Card = styled.div`
-  background: #fffdfa;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(255, 181, 34, 0.08);
+const Card = styled.section`
+  background: rgba(255, 253, 247, 0.96);
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(72, 45, 0, 0.08);
   padding: 1.1rem;
   margin-bottom: 1rem;
 `;
+const HeroCard = styled(Card)`
+  box-shadow: 0 10px 28px rgba(63, 42, 0, 0.1);
+`;
+const CardTitle = styled.h2`
+  margin: 0 0 0.7rem;
+  color: #3a2600;
+  font-size: 1.02rem;
+`;
 const Badge = styled.span`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
-  padding: 0.2rem 0.6rem;
-  background: #fff3c2;
-  color: #8a5700;
-  font-weight: 700;
-  font-size: 0.85rem;
+  padding: 0.24rem 0.62rem;
+  background: ${({ $tone }) => ($tone === "success" ? "#dcfce7" : "#fff3c2")};
+  color: ${({ $tone }) => ($tone === "success" ? "#166534" : "#8a5700")};
+  font-weight: 800;
+  font-size: 0.8rem;
 `;
 const PaymentLinkButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #0070ba;
+  background: linear-gradient(135deg, #2f7cc6 0%, #0b5da0 100%);
   color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 0.7em 1.1em;
-  font-size: 0.98rem;
-  font-weight: 600;
-  margin-top: 0.7rem;
+  border-radius: 10px;
+  padding: 0.72rem 1.1rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
   cursor: pointer;
+  box-shadow: 0 6px 18px rgba(11, 93, 160, 0.28);
+
+  &:disabled {
+    opacity: 0.75;
+    cursor: wait;
+    box-shadow: none;
+  }
+`;
+const NavLinkButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff6de;
+  color: #6a4300;
+  border: 1px solid #efcf84;
+  border-radius: 10px;
+  padding: 0.72rem 1rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+  text-decoration: none;
 `;
 const RoutePill = styled.span`
   display: inline-flex;
@@ -71,9 +103,62 @@ const RoutePill = styled.span`
   font-size: 0.8rem;
   margin-right: 0.45rem;
 `;
+const FieldList = styled.div`
+  display: grid;
+  gap: 0.55rem;
+`;
+const FieldRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-bottom: 1px dashed rgba(138, 87, 0, 0.2);
+  padding-bottom: 0.45rem;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+`;
+const Label = styled.span`
+  color: #7a5200;
+`;
+const Value = styled.span`
+  color: #2d1d00;
+  font-weight: 700;
+  text-align: right;
+`;
+const Notice = styled.p`
+  margin: 0.75rem 0 0;
+  color: #7a5200;
+  line-height: 1.5;
+`;
+const SuccessPanel = styled.div`
+  margin-top: 0.85rem;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #14532d;
+`;
+const SuccessTitle = styled.p`
+  margin: 0;
+  font-weight: 800;
+`;
+const SuccessText = styled.p`
+  margin: 0.35rem 0 0;
+  line-height: 1.5;
+`;
 
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+}
+
+function formatPaymentStatus(status) {
+  if (status === "paid") return "Bezahlt";
+  if (status === "pending") return "Offen";
+  if (status === "partially_paid") return "Teilweise bezahlt";
+  if (status === "cancelled") return "Storniert";
+  return status || "-";
 }
 
 export default function EventRegistrationSummary() {
@@ -156,6 +241,8 @@ export default function EventRegistrationSummary() {
   const verificationMailSent = stateData?.account_verification_mail_sent;
   const purchasedVouchers = summary?.gift_vouchers || [];
   const voucherRedemption = stateData?.voucher_redemption || null;
+  const paymentStatus = summary?.payment?.status || summary?.registration?.payment_status || "";
+  const isPaid = paymentStatus === "paid";
 
   const startStripeCheckout = async () => {
     if (!API_BASE || !registrationId) return;
@@ -188,12 +275,12 @@ export default function EventRegistrationSummary() {
     <Page>
       <Header />
       <Container>
-        <Card>
+        <HeroCard>
           <h1 style={{ marginTop: 0 }}>Verbindliche Anmeldung erfolgreich gespeichert</h1>
           <p style={{ margin: 0, color: "#7c4f00" }}>
             Deine Anmeldung wurde verbindlich erfasst. Du erhältst eine E-Mail mit Referenzcode, Übersicht zum Teilnahmebeitrag und Hinweisen zur Zahlung über {EVENT_PAYMENT_PROVIDER_NAME}.
           </p>
-        </Card>
+        </HeroCard>
 
         {accountCreatedInFlow && (
           <Card>
@@ -213,30 +300,68 @@ export default function EventRegistrationSummary() {
         {summary && (
           <>
             <Card>
-              <h2 style={{ marginTop: 0 }}>Zahlungsübersicht</h2>
-              <p>Referenzcode: <strong>{summary.registration.payment_reference_code}</strong></p>
-              <p>Zahlungsstatus: <Badge>{summary.registration.payment_status}</Badge></p>
-              <p>Eigener Teilnahmebeitrag: <strong>{formatEuro(summary.registration.entry_fee_amount)}</strong></p>
-              {Number(summary.registration.gift_voucher_purchase_amount || 0) > 0 && (
-                <p>Zusätzliche Gutschein-Codes: <strong>{formatEuro(summary.registration.gift_voucher_purchase_amount)}</strong></p>
+              <CardTitle>Zahlungsübersicht</CardTitle>
+              <FieldList>
+                <FieldRow>
+                  <Label>Referenzcode</Label>
+                  <Value>{summary.registration.payment_reference_code}</Value>
+                </FieldRow>
+                <FieldRow>
+                  <Label>Zahlungsstatus</Label>
+                  <Value><Badge $tone={isPaid ? "success" : undefined}>{formatPaymentStatus(paymentStatus)}</Badge></Value>
+                </FieldRow>
+                <FieldRow>
+                  <Label>Eigener Teilnahmebeitrag</Label>
+                  <Value>{formatEuro(summary.registration.entry_fee_amount)}</Value>
+                </FieldRow>
+                {Number(summary.registration.gift_voucher_purchase_amount || 0) > 0 && (
+                  <FieldRow>
+                    <Label>Zusätzliche Gutschein-Codes</Label>
+                    <Value>{formatEuro(summary.registration.gift_voucher_purchase_amount)}</Value>
+                  </FieldRow>
+                )}
+                {Number(summary.registration.voucher_discount_amount || 0) > 0 && (
+                  <FieldRow>
+                    <Label>Gutschein-Abzug</Label>
+                    <Value>-{formatEuro(summary.registration.voucher_discount_amount)}</Value>
+                  </FieldRow>
+                )}
+                {Number(summary.registration.donation_amount || 0) > 0 && (
+                  <FieldRow>
+                    <Label>Zusätzlicher Betrag</Label>
+                    <Value>{formatEuro(summary.registration.donation_amount)}</Value>
+                  </FieldRow>
+                )}
+                <FieldRow>
+                  <Label>Betrag gesamt</Label>
+                  <Value>{formatEuro(summary.payment?.expected_amount)}</Value>
+                </FieldRow>
+              </FieldList>
+
+              {isPaid ? (
+                <SuccessPanel>
+                  <SuccessTitle>Zahlung erfolgreich bestätigt.</SuccessTitle>
+                  <SuccessText>
+                    Dein Teilnahmebeitrag wurde verbucht. Deine Anmeldung ist damit vollständig abgeschlossen.
+                  </SuccessText>
+                  <SuccessText>
+                    Falls du zusätzliche Gutschein-Codes mitbestellt hast, werden sie unten angezeigt beziehungsweise in deiner Anmeldung freigeschaltet.
+                  </SuccessText>
+                </SuccessPanel>
+              ) : (
+                <>
+                  <Notice>
+                    Bitte den Teilnahmebeitrag über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode zahlen. Falls es Probleme gibt, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
+                  </Notice>
+                  <Notice>{EVENT_COMMUNITY_RIDE_CLAIM} {EVENT_ENTRY_FEE_NOTICE}</Notice>
+                  <Notice style={{ marginBottom: 0 }}>
+                    Anbieter: <strong>{EVENT_ORGANIZER_NAME}</strong>, {EVENT_ORGANIZER_FULL_ADDRESS}, {EVENT_ORGANIZER_COUNTRY}. {EVENT_WITHDRAWAL_NOTICE}
+                  </Notice>
+                  <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
+                    {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
+                  </PaymentLinkButton>
+                </>
               )}
-              {Number(summary.registration.voucher_discount_amount || 0) > 0 && (
-                <p>Gutschein-Abzug: <strong>-{formatEuro(summary.registration.voucher_discount_amount)}</strong></p>
-              )}
-              {Number(summary.registration.donation_amount || 0) > 0 && (
-                <p>Zusätzlicher Betrag: <strong>{formatEuro(summary.registration.donation_amount)}</strong></p>
-              )}
-              <p>Betrag gesamt: <strong>{formatEuro(summary.payment?.expected_amount)}</strong></p>
-              <p>
-                Bitte den Teilnahmebeitrag über <strong>{EVENT_PAYMENT_PROVIDER_NAME}</strong> mit deinem Referenzcode zahlen. Falls es Probleme gibt, sende eine Mail an <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}`}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
-              </p>
-              <p style={{ color: "#7c4f00" }}>{EVENT_COMMUNITY_RIDE_CLAIM} {EVENT_ENTRY_FEE_NOTICE}</p>
-              <p style={{ marginBottom: 0, color: "#7c4f00" }}>
-                Anbieter: <strong>{EVENT_ORGANIZER_NAME}</strong>, {EVENT_ORGANIZER_FULL_ADDRESS}, {EVENT_ORGANIZER_COUNTRY}. {EVENT_WITHDRAWAL_NOTICE}
-              </p>
-              <PaymentLinkButton type="button" onClick={startStripeCheckout} disabled={checkoutLoading}>
-                {checkoutLoading ? "Weiterleitung..." : `Direkt mit ${EVENT_PAYMENT_PROVIDER_NAME} zahlen`}
-              </PaymentLinkButton>
             </Card>
 
             <Card>
@@ -307,7 +432,7 @@ export default function EventRegistrationSummary() {
         )}
 
         <Card>
-          <button onClick={() => navigate("/event-me")}>Zu meiner Event-Übersicht</button>
+          <NavLinkButton to="/event-me">Zu meiner Anmeldung</NavLinkButton>
         </Card>
       </Container>
       <Footer />
