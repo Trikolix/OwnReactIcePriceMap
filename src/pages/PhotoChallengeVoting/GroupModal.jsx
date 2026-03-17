@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import * as S from './PhotoChallengeVoting.styles';
 import { buildAssetUrl } from './utils';
 
@@ -14,9 +14,30 @@ const GroupModal = ({
   setImagePreview,
   isLoggedIn,
 }) => {
+  useEffect(() => {
+    if (!groupModal || !activeModalGroup) {
+      return undefined;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [groupModal, activeModalGroup]);
+
   if (!groupModal || !activeModalGroup) {
     return null;
   }
+
+  const openPreview = (url, label) => {
+    setImagePreview({ url, label });
+  };
 
   return (
     <S.ModalOverlay>
@@ -64,19 +85,23 @@ const GroupModal = ({
             </S.NavButton>
           </S.ModalNavRow>
         )}
-        <S.ModalBody>
+        <S.ModalBody $lockScroll={groupModal.mode === 'active'}>
           {groupModal.mode === 'active' && activeModalMatch && (
             <S.ModalVoteWrapper>
               {modalSides.map((side) => (
-                <S.ModalVoteOption
+                <S.ModalVoteCard
                   key={side.id}
-                  type="button"
-                  onClick={() => handleModalVote(activeModalMatch, side.id)}
-                  disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
+                  $disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
                   $selected={activeModalMatch.user_choice === side.id}
                 >
-                  <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
-                  <S.VoteMeta>
+                  <S.ModalVotePreviewButton
+                    type="button"
+                    onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
+                    aria-label={`Bild ${side.id} in Vollbild ansehen`}
+                  >
+                    <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                  </S.ModalVotePreviewButton>
+                  <S.ModalVoteMeta>
                     <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
                     {!isLoggedIn ? (
                       <span style={{ color: 'red', fontWeight: 'bold' }}>Zum Abstimmen bitte anmelden oder registrieren</span>
@@ -87,8 +112,20 @@ const GroupModal = ({
                     ) : (
                       <span>Tippe zum Abstimmen</span>
                     )}
-                  </S.VoteMeta>
-                </S.ModalVoteOption>
+                  </S.ModalVoteMeta>
+                  <S.ModalVoteActionButton
+                    type="button"
+                    onClick={() => handleModalVote(activeModalMatch, side.id)}
+                    disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
+                    $selected={activeModalMatch.user_choice === side.id}
+                  >
+                    {activeModalMatch.user_choice === side.id
+                      ? 'Stimme aktuell gesetzt'
+                      : activeModalMatch.has_voted
+                      ? 'Stimme auf dieses Bild ändern'
+                      : 'Für dieses Bild abstimmen'}
+                  </S.ModalVoteActionButton>
+                </S.ModalVoteCard>
               ))}
             </S.ModalVoteWrapper>
           )}
@@ -96,7 +133,13 @@ const GroupModal = ({
             <S.PreviewGrid>
               {activeModalGroup.entries.map((entry) => (
                 <S.PreviewCard key={entry.image_id}>
-                  <S.PreviewImage src={buildAssetUrl(entry.url)} alt={entry.beschreibung || `Bild ${entry.image_id}`} />
+                  <S.PreviewImageButton
+                    type="button"
+                    onClick={() => openPreview(entry.url, entry.title || `Bild #${entry.image_id}`)}
+                    aria-label={`Bild ${entry.image_id} in Vollbild ansehen`}
+                  >
+                    <S.PreviewImage src={buildAssetUrl(entry.url)} alt={entry.beschreibung || `Bild ${entry.image_id}`} />
+                  </S.PreviewImageButton>
                   <S.PreviewMeta>
                     <strong>{entry.title || `Bild #${entry.image_id}`}</strong>
                   </S.PreviewMeta>
@@ -121,12 +164,7 @@ const GroupModal = ({
                     <S.ResultInfo>
                       <S.ResultImageButton
                         type="button"
-                        onClick={() =>
-                          setImagePreview({
-                            url: result.url,
-                            label: result.title || `Bild #${result.image_id}`,
-                          })
-                        }
+                        onClick={() => openPreview(result.url, result.title || `Bild #${result.image_id}`)}
                       >
                         <S.ResultImage src={buildAssetUrl(result.url)} alt={result.title || `Bild ${result.image_id}`} />
                       </S.ResultImageButton>

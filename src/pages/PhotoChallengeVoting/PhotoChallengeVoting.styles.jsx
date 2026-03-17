@@ -206,7 +206,8 @@ export const VoteImage = styled.img`
   width: 64px;
   height: 64px;
   border-radius: 12px;
-  object-fit: cover;
+  object-fit: contain;
+  background: #f7f7fa;
 `;
 
 export const VoteMeta = styled.div`
@@ -464,6 +465,10 @@ export const ModalNavRow = styled.div`
   gap: 0.75rem;
   padding: 0 1.5rem;
   margin-bottom: 0.5rem;
+
+  @media (max-width: 720px) {
+    padding: 0 0.75rem;
+  }
 `;
 
 export const NavButton = styled.button`
@@ -490,24 +495,43 @@ export const ModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0rem;
+  padding: 0.75rem;
   z-index: 1201;
+
+  @media (max-width: 720px) {
+    padding: 0.5rem;
+    align-items: center;
+  }
 `;
 
 export const ModalCard = styled.div`
   background: #fff;
   border-radius: 24px;
-  width: min(1100px, calc(100vw));
-  max-height: calc(100vh - 1rem);
+  width: min(1100px, 100vw);
+  max-height: calc(100vh - 1.5rem);
+  max-height: calc(100dvh - 1.5rem);
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   z-index: 1002;
+
+  @media (max-width: 720px) {
+    width: min(100vw - 1rem, 100vw);
+    height: calc(100vh - 1rem);
+    height: calc(100dvh - 1rem);
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 20px;
+  }
 `;
 
 export const LightboxOverlay = styled(ModalOverlay)`
   padding: 2rem;
+
+  @media (max-width: 720px) {
+    padding: 0.5rem;
+  }
 `;
 
 export const LightboxCard = styled.div`
@@ -519,27 +543,62 @@ export const LightboxCard = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  max-width: min(90vw, 720px);
+  width: min(96vw, 1200px);
+  max-width: min(96vw, 1200px);
   max-height: calc(100vh - 3rem);
+  max-height: calc(100dvh - 3rem);
+
+  @media (max-width: 720px) {
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+    height: calc(100vh - 1rem);
+    height: calc(100dvh - 1rem);
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 20px;
+    padding: 0.75rem 0.75rem 1rem;
+    background: #0f1220;
+  }
 `;
 
 export const LightboxCloseRow = styled.div`
   width: 100%;
   display: flex;
   justify-content: flex-end;
+
+  @media (max-width: 720px) {
+    button {
+      color: #f3f4fb;
+    }
+  }
 `;
 
 export const LightboxImage = styled.img`
   max-width: 100%;
   max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
   border-radius: 16px;
   object-fit: contain;
   background: #f8f8fb;
+
+  @media (max-width: 720px) {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    max-height: calc(100vh - 112px);
+    max-height: calc(100dvh - 112px);
+    background: #0f1220;
+  }
 `;
 
 export const LightboxCaption = styled.span`
   font-weight: 600;
   color: #5a5673;
+
+  @media (max-width: 720px) {
+    color: #f3f4fb;
+    text-align: center;
+  }
 `;
 
 export const ModalHeader = styled.div`
@@ -556,6 +615,10 @@ export const ModalHeader = styled.div`
   small {
     color: #7a7a90;
   }
+
+  @media (max-width: 720px) {
+    padding: 0.9rem 0.9rem 0.35rem;
+  }
 `;
 
 export const ModalBody = styled.div`
@@ -564,9 +627,12 @@ export const ModalBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow: auto;
+  min-height: 0;
+  overflow: ${({ $lockScroll }) => ($lockScroll ? 'hidden' : 'auto')};
+
   @media (max-width: 720px) {
-    padding: 1rem 0rem 1.5rem;
+    padding: 0.75rem;
+    overflow: ${({ $lockScroll }) => ($lockScroll ? 'hidden' : 'auto')};
   }
 `;
 
@@ -575,43 +641,83 @@ export const ModalVoteWrapper = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+  min-height: 0;
   height: calc(100vh - 320px);
+  height: calc(100dvh - 320px);
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
-    grid-auto-rows: calc((100vh - 320px) / 2);
+    grid-auto-rows: minmax(0, 1fr);
+    height: auto;
+    gap: 0.75rem;
   }
 `;
 
-export const ModalVoteOption = styled(VoteOption)`
+export const ModalVoteCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: stretch;
   padding: 0.75rem;
   min-height: 0;
   height: 100%;
-  ${({ disabled }) =>
-    disabled
+  border-radius: 18px;
+  border: 2px solid ${({ $selected }) => ($selected ? '#2ecc40' : 'transparent')};
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  ${({ $disabled }) =>
+    $disabled
       ? `
-    cursor: default;
-    pointer-events: none;
+    opacity: 0.8;
   `
       : ''}
-  ${({ $selected }) =>
-    $selected
-      ? `
-    border-color: #2ecc40;
-  `
-      : ''}
+
+  @media (max-width: 720px) {
+    padding: 0.65rem;
+  }
+`;
+
+export const ModalVotePreviewButton = styled.button`
+  border: none;
+  background: #f8f8fb;
+  padding: 0;
+  border-radius: 16px;
+  cursor: zoom-in;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 `;
 
 export const ModalVoteImage = styled.img`
   width: 100%;
+  height: 100%;
   border-radius: 16px;
   object-fit: contain;
   background: white;
   flex: 1;
-  margin-bottom: 0.5rem;
-  max-height: calc(100% - 48px);
+  min-height: 0;
+`;
+
+export const ModalVoteMeta = styled(VoteMeta)`
+  margin-top: 0.6rem;
+  min-height: 0;
+
+  strong {
+    word-break: break-word;
+  }
+`;
+
+export const ModalVoteActionButton = styled.button`
+  margin-top: 0.75rem;
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid ${({ disabled }) => (disabled ? '#e4e5ee' : '#ffcf73')};
+  background: ${({ disabled, $selected }) => ($selected ? '#e8f8ec' : disabled ? '#f4f5f9' : '#fff7e6')};
+  color: ${({ disabled, $selected }) => ($selected ? '#1d7a33' : disabled ? '#8b8aa0' : '#9a5a00')};
+  padding: 0.7rem 0.9rem;
+  font-weight: 700;
+  cursor: ${({ disabled }) => (disabled ? 'default' : 'pointer')};
 `;
 
 export const CloseModalButton = styled.button`
@@ -623,17 +729,14 @@ export const CloseModalButton = styled.button`
 `;
 
 export const PreviewGrid = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
   height: 100%;
-  overflow-x: auto;
+  overflow: visible;
   padding-bottom: 0.5rem;
-  scroll-snap-type: x mandatory;
   @media (min-width: 720px) {
-    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    overflow: visible;
     padding-bottom: 0;
   }
 `;
@@ -646,8 +749,20 @@ export const PreviewCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-width: 240px;
-  scroll-snap-align: start;
+  min-width: 0;
+`;
+
+export const PreviewImageButton = styled.button`
+  border: none;
+  padding: 0;
+  cursor: zoom-in;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f8f8fb;
+  overflow: hidden;
 `;
 
 export const PreviewImage = styled.img`
@@ -655,7 +770,7 @@ export const PreviewImage = styled.img`
   border-radius: 12px;
   object-fit: contain;
   background: #f8f8fb;
-  aspect-ratio: 4 / 3;
+  max-height: min(52vh, 420px);
   flex: 1;
 `;
 

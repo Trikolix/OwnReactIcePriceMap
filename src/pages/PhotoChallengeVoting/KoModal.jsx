@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import * as S from './PhotoChallengeVoting.styles';
 import { buildAssetUrl } from './utils';
 
@@ -14,9 +14,30 @@ const KoModal = ({
   setImagePreview,
   isLoggedIn,
 }) => {
+  useEffect(() => {
+    if (!koModal || !activeKoModalMatch) {
+      return undefined;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [koModal, activeKoModalMatch]);
+
   if (!koModal || !activeKoModalMatch) {
     return null;
   }
+
+  const openPreview = (url, label) => {
+    setImagePreview({ url, label });
+  };
 
   return (
     <S.ModalOverlay>
@@ -44,18 +65,22 @@ const KoModal = ({
             Weiter
           </S.NavButton>
         </S.ModalNavRow>
-        <S.ModalBody>
+        <S.ModalBody $lockScroll={activeKoModalMatch.status === 'open'}>
           <S.ModalVoteWrapper>
             {koModalSides.map((side) => (
-              <S.ModalVoteOption
+              <S.ModalVoteCard
                 key={side.id}
-                type="button"
-                onClick={() => handleKoModalVote(activeKoModalMatch, side.id)}
-                disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn}
+                $disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn}
                 $selected={activeKoModalMatch.user_choice === side.id}
               >
-                <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
-                <S.VoteMeta>
+                <S.ModalVotePreviewButton
+                  type="button"
+                  onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
+                  aria-label={`Bild ${side.id} in Vollbild ansehen`}
+                >
+                  <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
+                </S.ModalVotePreviewButton>
+                <S.ModalVoteMeta>
                   <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
                   {!isLoggedIn ? (
                     <span style={{ color: 'red', fontWeight: 'bold' }}>Zum Abstimmen bitte anmelden oder registrieren</span>
@@ -66,8 +91,20 @@ const KoModal = ({
                   ) : (
                     <span>Tippe zum Abstimmen</span>
                   )}
-                </S.VoteMeta>
-              </S.ModalVoteOption>
+                </S.ModalVoteMeta>
+                <S.ModalVoteActionButton
+                  type="button"
+                  onClick={() => handleKoModalVote(activeKoModalMatch, side.id)}
+                  disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn}
+                  $selected={activeKoModalMatch.user_choice === side.id}
+                >
+                  {activeKoModalMatch.user_choice === side.id
+                    ? 'Stimme aktuell gesetzt'
+                    : activeKoModalMatch.has_voted
+                    ? 'Stimme auf dieses Bild ändern'
+                    : 'Für dieses Bild abstimmen'}
+                </S.ModalVoteActionButton>
+              </S.ModalVoteCard>
             ))}
           </S.ModalVoteWrapper>
           {activeKoModalMatch.status !== 'open' && (
@@ -77,12 +114,7 @@ const KoModal = ({
                   <S.ResultInfo>
                     <S.ResultImageButton
                       type="button"
-                      onClick={() =>
-                        setImagePreview({
-                          url: side.url,
-                          label: side.title || `Bild #${side.id}`,
-                        })
-                      }
+                      onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
                     >
                       <S.ResultImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
                     </S.ResultImageButton>
