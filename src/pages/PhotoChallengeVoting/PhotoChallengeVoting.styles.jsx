@@ -462,9 +462,9 @@ export const PlaceholderText = styled.p`
 
 export const ModalNavRow = styled.div`
   display: flex;
-  gap: 0.75rem;
-  padding: 0 1.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.6rem;
+  padding: 0 1.25rem;
+  margin-bottom: 0.2rem;
 
   @media (max-width: 720px) {
     padding: 0 0.75rem;
@@ -476,7 +476,7 @@ export const NavButton = styled.button`
   min-width: 0;
   border-radius: 999px;
   border: 1px solid #d7d7e6;
-  padding: 0.55rem 1.2rem;
+  padding: 0.45rem 1rem;
   background: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -605,8 +605,8 @@ export const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.5rem 0.5rem;
-  gap: 1rem;
+  padding: 1rem 1.25rem 0.35rem;
+  gap: 0.75rem;
 
   h3 {
     margin: 0;
@@ -617,21 +617,34 @@ export const ModalHeader = styled.div`
   }
 
   @media (max-width: 720px) {
-    padding: 0.9rem 0.9rem 0.35rem;
+    padding: 0.8rem 0.85rem 0.25rem;
+  }
+`;
+
+export const ModalHeaderMain = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex-wrap: wrap;
+
+  h3,
+  small {
+    margin: 0;
   }
 `;
 
 export const ModalBody = styled.div`
-  padding: 1rem 1rem 1.5rem;
+  padding: 0.75rem 1rem 1.1rem;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   min-height: 0;
   overflow: ${({ $lockScroll }) => ($lockScroll ? 'hidden' : 'auto')};
 
   @media (max-width: 720px) {
-    padding: 0.75rem;
+    padding: 0.65rem 0.75rem 0.85rem;
     overflow: ${({ $lockScroll }) => ($lockScroll ? 'hidden' : 'auto')};
   }
 `;
@@ -640,14 +653,17 @@ export const ModalVoteWrapper = styled.div`
   flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.85rem;
   min-height: 0;
-  height: calc(100vh - 320px);
-  height: calc(100dvh - 320px);
+  height: 100%;
+  align-items: stretch;
+  padding-bottom: 0.35rem;
+  box-sizing: border-box;
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
-    grid-auto-rows: minmax(0, 1fr);
-    height: auto;
+    grid-template-rows: repeat(2, minmax(0, calc((100% - 0.75rem - 0.35rem) / 2)));
+    grid-auto-rows: unset;
+    height: 100%;
     gap: 0.75rem;
   }
 `;
@@ -656,13 +672,14 @@ export const ModalVoteCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 0.75rem;
+  padding: 0.65rem;
   min-height: 0;
   height: 100%;
   border-radius: 18px;
   border: 2px solid ${({ $selected }) => ($selected ? '#2ecc40' : 'transparent')};
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   background: #fff;
+  overflow: hidden;
   ${({ $disabled }) =>
     $disabled
       ? `
@@ -671,8 +688,15 @@ export const ModalVoteCard = styled.div`
       : ''}
 
   @media (max-width: 720px) {
-    padding: 0.65rem;
+    padding: 0.35rem;
   }
+`;
+
+export const ModalVoteMedia = styled.div`
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
 `;
 
 export const ModalVotePreviewButton = styled.button`
@@ -680,13 +704,14 @@ export const ModalVotePreviewButton = styled.button`
   background: #f8f8fb;
   padding: 0;
   border-radius: 16px;
-  cursor: zoom-in;
+  cursor: ${({ disabled }) => (disabled ? 'default' : 'pointer')};
   flex: 1;
   min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  width: 100%;
 `;
 
 export const ModalVoteImage = styled.img`
@@ -700,24 +725,61 @@ export const ModalVoteImage = styled.img`
 `;
 
 export const ModalVoteMeta = styled(VoteMeta)`
-  margin-top: 0.6rem;
+  margin-top: 0.45rem;
   min-height: 0;
 
   strong {
     word-break: break-word;
   }
+
+  span {
+    line-height: 1.25;
+  }
+
+  @media (max-width: 720px) {
+    margin-top: 0.35rem;
+
+    strong {
+      font-size: 0.88rem;
+    }
+
+    span {
+      font-size: 0.78rem;
+    }
+  }
 `;
 
-export const ModalVoteActionButton = styled.button`
-  margin-top: 0.75rem;
-  width: 100%;
-  border-radius: 14px;
-  border: 1px solid ${({ disabled }) => (disabled ? '#e4e5ee' : '#ffcf73')};
-  background: ${({ disabled, $selected }) => ($selected ? '#e8f8ec' : disabled ? '#f4f5f9' : '#fff7e6')};
-  color: ${({ disabled, $selected }) => ($selected ? '#1d7a33' : disabled ? '#8b8aa0' : '#9a5a00')};
-  padding: 0.7rem 0.9rem;
-  font-weight: 700;
-  cursor: ${({ disabled }) => (disabled ? 'default' : 'pointer')};
+export const ModalZoomButton = styled.button`
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 18, 32, 0.72);
+  color: #fff;
+  cursor: zoom-in;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    transform: scale(1.04);
+    background: rgba(15, 18, 32, 0.82);
+  }
+
+  svg {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  @media (max-width: 720px) {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
 `;
 
 export const CloseModalButton = styled.button`

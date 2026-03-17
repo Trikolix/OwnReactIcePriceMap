@@ -2,6 +2,15 @@ import React, { useEffect } from 'react';
 import * as S from './PhotoChallengeVoting.styles';
 import { buildAssetUrl } from './utils';
 
+const ZoomIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="2" />
+    <path d="M15.5 15.5L20 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M11 8.5V13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M8.5 11H13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
 const GroupModal = ({
   groupModal,
   activeModalGroup,
@@ -43,7 +52,7 @@ const GroupModal = ({
     <S.ModalOverlay>
       <S.ModalCard>
         <S.ModalHeader>
-          <div>
+          <S.ModalHeaderMain>
             <h3>{activeModalGroup.name}</h3>
             <S.StatusChip
               $variant={
@@ -64,7 +73,7 @@ const GroupModal = ({
                   }`
                 : 'Voting beendet'}
             </S.StatusChip>
-          </div>
+          </S.ModalHeaderMain>
           <S.CloseModalButton type="button" onClick={closeGroupModal}>
             ×
           </S.CloseModalButton>
@@ -94,13 +103,23 @@ const GroupModal = ({
                   $disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
                   $selected={activeModalMatch.user_choice === side.id}
                 >
-                  <S.ModalVotePreviewButton
-                    type="button"
-                    onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
-                    aria-label={`Bild ${side.id} in Vollbild ansehen`}
-                  >
-                    <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
-                  </S.ModalVotePreviewButton>
+                  <S.ModalVoteMedia>
+                    <S.ModalVotePreviewButton
+                      type="button"
+                      onClick={() => handleModalVote(activeModalMatch, side.id)}
+                      disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
+                      aria-label={`Für Bild ${side.id} abstimmen`}
+                    >
+                      <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                    </S.ModalVotePreviewButton>
+                    <S.ModalZoomButton
+                      type="button"
+                      onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
+                      aria-label={`Bild ${side.id} in Vollbild ansehen`}
+                    >
+                      <ZoomIcon />
+                    </S.ModalZoomButton>
+                  </S.ModalVoteMedia>
                   <S.ModalVoteMeta>
                     <strong>{side.title ? `"${side.title}"` : `Bild #${side.id}`}</strong>
                     {!isLoggedIn ? (
@@ -113,18 +132,6 @@ const GroupModal = ({
                       <span>Tippe zum Abstimmen</span>
                     )}
                   </S.ModalVoteMeta>
-                  <S.ModalVoteActionButton
-                    type="button"
-                    onClick={() => handleModalVote(activeModalMatch, side.id)}
-                    disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
-                    $selected={activeModalMatch.user_choice === side.id}
-                  >
-                    {activeModalMatch.user_choice === side.id
-                      ? 'Stimme aktuell gesetzt'
-                      : activeModalMatch.has_voted
-                      ? 'Stimme auf dieses Bild ändern'
-                      : 'Für dieses Bild abstimmen'}
-                  </S.ModalVoteActionButton>
                 </S.ModalVoteCard>
               ))}
             </S.ModalVoteWrapper>

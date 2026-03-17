@@ -557,7 +557,7 @@ const BirthdayRulesModal = ({
               ))}
             </ActionList>
             <div style={{ marginTop: '10px' }}>
-              {!extraIceReward && (
+              {extraIceReward && (
                 <RewardOk>
                   Zusatzaktion: Du hast alle Aufgaben abgeschlossen und kannst dir am 16. Mai bei Karl mag's süß, dem Start / Ziel Ort der Ice-Tour, ein Eis abholen.
                 </RewardOk>
