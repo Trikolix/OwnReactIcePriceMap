@@ -1,11 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import Header from "./Header";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteByLabel, getRouteLabel, getRouteThemeByLabel } from "./eventConfig";
+import route175Gpx from "./Ice-Tour_175km.gpx?raw";
+import route140Gpx from "./Ice-Tour_140km.gpx?raw";
+import route70Gpx from "./Ice-Tour_70km.gpx?raw";
 
 const makeSvgIcon = (svgMarkup) =>
   L.divIcon({
@@ -107,10 +110,221 @@ const RouteBadge = styled.span`
   font-size: 0.8rem;
 `;
 
+const RouteLegend = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 900;
+  min-width: 180px;
+  background: rgba(255, 253, 250, 0.95);
+  border: 1px solid rgba(138, 87, 0, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #5b3a00;
+  font-size: 0.92rem;
+
+  & + & {
+    margin-top: 0.45rem;
+  }
+`;
+
+const LegendSwatch = styled.span`
+  width: 20px;
+  height: 0;
+  border-top: 4px solid ${({ $color }) => $color};
+  border-radius: 999px;
+  flex: 0 0 auto;
+`;
+
+const ROUTE_OVERLAYS = [
+  {
+    id: "route-175",
+    label: "175 km",
+    color: "#dc2626",
+    offsetPx: -7,
+    gpx: route175Gpx,
+  },
+  {
+    id: "route-140",
+    label: "140 km",
+    color: "#facc15",
+    offsetPx: 0,
+    gpx: route140Gpx,
+  },
+  {
+    id: "route-70",
+    label: "70 km",
+    color: "#16a34a",
+    offsetPx: 7,
+    gpx: route70Gpx,
+  },
+];
+
+const OFFSET_ZOOM_THRESHOLD = 12;
+
+const parseGpxTrack = (gpxContent) => {
+  if (!gpxContent) return [];
+
+  const xml = new DOMParser().parseFromString(gpxContent, "application/xml");
+  const parserError = xml.querySelector("parsererror");
+  if (parserError) {
+    throw new Error("GPX-Datei konnte nicht gelesen werden.");
+  }
+
+  return Array.from(xml.getElementsByTagName("trkpt"))
+    .map((point) => {
+      const lat = Number.parseFloat(point.getAttribute("lat"));
+      const lng = Number.parseFloat(point.getAttribute("lon"));
+      return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+    })
+    .filter(Boolean);
+};
+
+const offsetLatLngs = (map, positions, offsetPx) => {
+  if (!map || !offsetPx || positions.length < 2) {
+    return positions;
+  }
+
+  const zoom = map.getZoom();
+  const projected = positions.map(([lat, lng]) => map.project(L.latLng(lat, lng), zoom));
+
+  return projected.map((point, index) => {
+    const prev = projected[index - 1] || point;
+    const next = projected[index + 1] || point;
+    const dx = next.x - prev.x;
+    const dy = next.y - prev.y;
+    const length = Math.hypot(dx, dy);
+
+    if (!length) {
+      return positions[index];
+    }
+
+    const offsetX = (-dy / length) * offsetPx;
+    const offsetY = (dx / length) * offsetPx;
+    const shifted = L.point(point.x + offsetX, point.y + offsetY);
+    const latLng = map.unproject(shifted, zoom);
+
+    return [latLng.lat, latLng.lng];
+  });
+};
+
+const smoothLatLngs = (positions, iterations = 1) => {
+  if (positions.length < 3 || iterations < 1) {
+    return positions;
+  }
+
+  let smoothed = positions;
+
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    if (smoothed.length < 3) {
+      break;
+    }
+
+    const next = [smoothed[0]];
+
+    for (let index = 0; index < smoothed.length - 1; index += 1) {
+      const [lat1, lng1] = smoothed[index];
+      const [lat2, lng2] = smoothed[index + 1];
+
+      const q = [lat1 * 0.75 + lat2 * 0.25, lng1 * 0.75 + lng2 * 0.25];
+      const r = [lat1 * 0.25 + lat2 * 0.75, lng1 * 0.25 + lng2 * 0.75];
+
+      next.push(q, r);
+    }
+
+    next.push(smoothed[smoothed.length - 1]);
+    smoothed = next;
+  }
+
+  return smoothed;
+};
+
+function RouteOverlay({ route, isActive, onHoverChange }) {
+  const [zoom, setZoom] = useState(null);
+  const map = useMapEvents({
+    zoomend: () => {
+      const currentZoom = map.getZoom();
+      setZoom(currentZoom);
+      const shouldOffset = currentZoom >= OFFSET_ZOOM_THRESHOLD;
+      const offsetPositions = offsetLatLngs(map, route.positions, shouldOffset ? route.offsetPx : 0);
+      setRenderedPositions(smoothLatLngs(offsetPositions, shouldOffset ? 1 : 0));
+    },
+  });
+  const polylineRef = useRef(null);
+  const [renderedPositions, setRenderedPositions] = useState(() => route.positions);
+
+  useEffect(() => {
+    const currentZoom = map.getZoom();
+    setZoom(currentZoom);
+    const shouldOffset = currentZoom >= OFFSET_ZOOM_THRESHOLD;
+    const offsetPositions = offsetLatLngs(map, route.positions, shouldOffset ? route.offsetPx : 0);
+    setRenderedPositions(smoothLatLngs(offsetPositions, shouldOffset ? 1 : 0));
+  }, [map, route.offsetPx, route.positions]);
+
+  const isOffsetActive = (zoom ?? map.getZoom()) >= OFFSET_ZOOM_THRESHOLD;
+  const baseOpacity = isOffsetActive ? 0.78 : 0.42;
+  const lineOpacity = isOffsetActive ? 0.96 : 0.58;
+
+  const handleMouseOver = () => {
+    onHoverChange(route.id);
+    polylineRef.current?.bringToFront();
+  };
+
+  const handleMouseOut = () => {
+    onHoverChange(null);
+  };
+
+  return (
+    <>
+      <Polyline
+        positions={renderedPositions}
+        pathOptions={{
+          color: isActive ? "#fffdf7" : route.color,
+          weight: isActive ? 12 : 8,
+          opacity: isActive ? 0.95 : baseOpacity,
+          lineCap: "round",
+          lineJoin: "round",
+        }}
+        smoothFactor={1.5}
+        interactive={false}
+      />
+      <Polyline
+        ref={polylineRef}
+        positions={renderedPositions}
+        pathOptions={{
+          color: route.color,
+          weight: isActive ? 7 : 4,
+          opacity: isActive ? 1 : lineOpacity,
+          lineCap: "round",
+          lineJoin: "round",
+        }}
+        smoothFactor={1.5}
+        eventHandlers={{
+          mouseover: handleMouseOver,
+          mouseout: handleMouseOut,
+        }}
+      >
+        <Tooltip sticky direction="top" opacity={0.98}>
+          {route.label} Route
+        </Tooltip>
+      </Polyline>
+    </>
+  );
+}
+
 export default function EventLiveMap() {
   const API_BASE = getApiBaseUrl();
 
   const [items, setItems] = useState([]);
+  const [routeOverlays, setRouteOverlays] = useState([]);
+  const [activeRouteId, setActiveRouteId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
@@ -126,6 +340,19 @@ export default function EventLiveMap() {
       document.body.style.overflow = prevBodyOverflow;
       document.documentElement.style.overflow = prevHtmlOverflow;
     };
+  }, []);
+
+  useEffect(() => {
+    try {
+      setRouteOverlays(
+        ROUTE_OVERLAYS.map((route) => ({
+          ...route,
+          positions: parseGpxTrack(route.gpx),
+        })).filter((route) => route.positions.length > 0)
+      );
+    } catch (err) {
+      setError(err.message || "Routendaten konnten nicht geladen werden.");
+    }
   }, []);
 
   useEffect(() => {
@@ -208,6 +435,15 @@ export default function EventLiveMap() {
             Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Klicke auf die Marker, um weitere Informationen zu erhalten oder die Check-in-Details einzusehen.
           </p>
         </MapInfo>
+        <RouteLegend>
+          <div style={{ fontWeight: 700, color: "#5b3a00", marginBottom: "0.45rem" }}>Routen</div>
+          {routeOverlays.map((route) => (
+            <LegendItem key={route.id} style={{ fontWeight: activeRouteId === route.id ? 700 : 500 }}>
+              <LegendSwatch $color={route.color} />
+              <span>{route.label}</span>
+            </LegendItem>
+          ))}
+        </RouteLegend>
 
         {!error && (
           <MapContainer
@@ -221,6 +457,14 @@ export default function EventLiveMap() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
+            {routeOverlays.map((route) => (
+              <RouteOverlay
+                key={route.id}
+                route={route}
+                isActive={activeRouteId === route.id}
+                onHoverChange={setActiveRouteId}
+              />
+            ))}
             {mapItems.map((item) => (
               <Marker
                 key={item.checkpoint_id}
