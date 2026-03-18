@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   CheckCircle2,
   ChevronDown,
@@ -66,16 +66,71 @@ const CompactRow = styled.div`
   flex-wrap: wrap;
 `;
 
+const badgeShine = keyframes`
+  0% {
+    transform: translateX(-165%) skewX(-24deg);
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 0.28;
+  }
+
+  52% {
+    opacity: 0.72;
+  }
+
+  100% {
+    transform: translateX(205%) skewX(-24deg);
+    opacity: 0;
+  }
+`;
+
 const VerifyBadge = styled.div`
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   padding: 0.38rem 0.72rem;
   border-radius: 999px;
-  background: #2f2100;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(255, 229, 171, 0.28);
+  background: linear-gradient(135deg, #261900 0%, #4d3400 55%, #6d4a00 100%);
   color: #fff8ea;
   font-size: 0.8rem;
   font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 234, 0.16),
+    inset 0 -1px 0 rgba(255, 200, 96, 0.16),
+    0 10px 18px rgba(77, 52, 0, 0.18);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -42% auto -42% -36%;
+    width: 42%;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.14) 18%,
+      rgba(255, 255, 255, 0.7) 48%,
+      rgba(255, 248, 214, 0.24) 62%,
+      rgba(255, 255, 255, 0.12) 82%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-165%) skewX(-24deg);
+    filter: blur(0.5px);
+    pointer-events: none;
+    animation: ${badgeShine} 1.6s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+      opacity: 0;
+    }
+  }
 `;
 
 const Title = styled.h1`
