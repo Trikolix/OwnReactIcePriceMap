@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Header from "./Header";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteByLabel, getRouteLabel, getRouteThemeByLabel } from "./eventConfig";
@@ -80,8 +80,10 @@ const Modal = styled.div`
   max-height: 80vh;
   overflow: auto;
   background: #fffdfa;
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(138, 87, 0, 0.16);
+  box-shadow: 0 18px 48px rgba(47, 33, 0, 0.2);
+  padding: 1.1rem;
 `;
 
 const Message = styled.div`
@@ -110,6 +112,166 @@ const RouteBadge = styled.span`
   border: 1px solid ${({ $border }) => $border || "#f0d79a"};
   font-weight: 700;
   font-size: 0.8rem;
+`;
+
+const PopupButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 181, 34, 0.6);
+  background: linear-gradient(180deg, #ffcf63 0%, #ffb522 100%);
+  color: #2f2100;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.2);
+
+  &:hover {
+    background: linear-gradient(180deg, #ffd879 0%, #ffbf3f 100%);
+    transform: translateY(-1px);
+  }
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+`;
+
+const ModalHeading = styled.h2`
+  margin: 0;
+  color: #2f2100;
+`;
+
+const ModalSubline = styled.p`
+  margin: 0.3rem 0 0;
+  color: #7c4f00;
+  line-height: 1.45;
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 1rem;
+`;
+
+const AppButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.55rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(138, 87, 0, 0.28);
+  background: linear-gradient(180deg, #fffdf7 0%, #fff3d6 100%);
+  color: #5a3900;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(47, 33, 0, 0.08);
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+
+  &:hover {
+    background: linear-gradient(180deg, #fff6e4 0%, #ffe9ba 100%);
+    transform: translateY(-1px);
+  }
+`;
+
+const DetailsList = styled.div`
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+`;
+
+const DetailRow = styled.article`
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 232, 0.96));
+  padding: 0.9rem;
+`;
+
+const DetailGrid = styled.div`
+  display: grid;
+  gap: 0.55rem 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+`;
+
+const DetailField = styled.div`
+  min-width: 0;
+`;
+
+const DetailLabel = styled.div`
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(124, 79, 0, 0.76);
+  margin-bottom: 0.2rem;
+`;
+
+const DetailValue = styled.div`
+  color: #2f2100;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+`;
+
+const UserLink = styled(Link)`
+  color: #8a5700;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const ExpandButton = styled.button`
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #8a5700;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const LinkedCheckinBox = styled.div`
+  margin-top: 0.8rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  background: rgba(255, 255, 255, 0.84);
+`;
+
+const LinkedCheckinMeta = styled.div`
+  display: grid;
+  gap: 0.4rem 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+`;
+
+const LinkedCheckinText = styled.p`
+  margin: 0.7rem 0 0;
+  color: #5b3a00;
+  line-height: 1.5;
+  white-space: pre-wrap;
+`;
+
+const EmptyState = styled.div`
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(255, 249, 235, 0.9);
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  color: #7c4f00;
 `;
 
 const RouteLegend = styled.div`
@@ -317,6 +479,8 @@ export default function EventLiveMap() {
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [expandedCheckins, setExpandedCheckins] = useState({});
+  const [linkedCheckins, setLinkedCheckins] = useState({});
   const [startFinish, setStartFinish] = useState(EVENT_START_FINISH);
 
   useEffect(() => {
@@ -411,6 +575,7 @@ export default function EventLiveMap() {
     setSelected(item);
     setDetailsLoading(true);
     setDetails([]);
+    setExpandedCheckins({});
 
     try {
       const res = await fetch(`${apiBase}/event2026/live_checkpoint_checkins.php?checkpoint_id=${item.checkpoint_id}&page=1&page_size=100&mode=${mode}`, {
@@ -422,11 +587,56 @@ export default function EventLiveMap() {
       if (!res.ok || json.status !== "success") {
         throw new Error(json.message || "Details konnten nicht geladen werden.");
       }
-      setDetails(json.items || []);
+      const sortedItems = [...(json.items || [])].sort((a, b) => {
+        const aTime = a.checkin_time ? new Date(a.checkin_time).getTime() : 0;
+        const bTime = b.checkin_time ? new Date(b.checkin_time).getTime() : 0;
+        return aTime - bTime;
+      });
+      setDetails(sortedItems);
     } catch (err) {
-      setDetails([{ user_display_name: "Fehler", checkin_time: err.message, source: "-", distance: "-" }]);
+      setDetails([{ user_display_name: "Fehler", full_name: err.message, source: "-", distance: "-", route_key: "", route_label: "-", checkin_id: null }]);
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const toggleLinkedCheckin = async (row) => {
+    const checkinId = Number(row?.checkin_id);
+    if (!checkinId) return;
+
+    setExpandedCheckins((prev) => ({
+      ...prev,
+      [checkinId]: !prev[checkinId],
+    }));
+
+    if (linkedCheckins[checkinId]) {
+      return;
+    }
+
+    setLinkedCheckins((prev) => ({
+      ...prev,
+      [checkinId]: { loading: true, error: "", data: null },
+    }));
+
+    try {
+      const res = await fetch(`${apiBase}/checkin/get_checkin.php?checkin_id=${checkinId}`, {
+        headers: {
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+      });
+      const json = await res.json();
+      if (!res.ok || json?.error) {
+        throw new Error(json?.error || "Check-in konnte nicht geladen werden.");
+      }
+      setLinkedCheckins((prev) => ({
+        ...prev,
+        [checkinId]: { loading: false, error: "", data: json },
+      }));
+    } catch (err) {
+      setLinkedCheckins((prev) => ({
+        ...prev,
+        [checkinId]: { loading: false, error: err.message || "Check-in konnte nicht geladen werden.", data: null },
+      }));
     }
   };
 
@@ -509,7 +719,7 @@ export default function EventLiveMap() {
                   {item.isStartFinishHub ? (
                     <div style={{ marginTop: 6, color: "#7c4f00" }}>{startFinishAddress}</div>
                   ) : (
-                    <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
+                    <PopupButton type="button" onClick={() => openDetails(item)}>Details</PopupButton>
                   )}
                 </Popup>
               </Marker>
@@ -524,8 +734,17 @@ export default function EventLiveMap() {
       {selected && (
         <ModalOverlay onClick={() => setSelected(null)}>
           <Modal onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginTop: 0 }}>{selected.name}</h2>
-            <div style={{ marginBottom: 10 }}>
+            <ModalHeader>
+              <div>
+                <ModalHeading>{selected.name}</ModalHeading>
+                <ModalSubline>
+                  {detailsLoading
+                    ? "Lade Checkpoint-Übersicht..."
+                    : `${details.length} Check-ins in chronologischer Reihenfolge`}
+                </ModalSubline>
+              </div>
+            </ModalHeader>
+            <div style={{ marginTop: 10 }}>
               {(selected.route_labels || []).map((label) => (
                 <RouteBadge
                   key={label}
@@ -539,33 +758,86 @@ export default function EventLiveMap() {
             </div>
             {detailsLoading ? (
               <p>Lade Details...</p>
+            ) : details.length === 0 ? (
+              <EmptyState>Noch keine Check-ins an diesem Checkpoint.</EmptyState>
             ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Name</th>
-                      <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Route</th>
-                      <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Zeit</th>
-                      <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Quelle</th>
-                      <th style={{ textAlign: "left", borderBottom: "1px solid #e5e7eb", padding: 6 }}>Distanz</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {details.map((row, idx) => (
-                      <tr key={`${row.user_display_name}-${row.checkin_time}-${idx}`}>
-                        <td style={{ padding: 6 }}>{row.user_display_name}</td>
-                        <td style={{ padding: 6 }}>{row.route_label || getRouteLabel(row.route_key)}</td>
-                        <td style={{ padding: 6 }}>{row.checkin_time ? new Date(row.checkin_time).toLocaleString("de-DE") : "-"}</td>
-                        <td style={{ padding: 6 }}>{row.source}</td>
-                        <td style={{ padding: 6 }}>{row.distance} km</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DetailsList>
+                {details.map((row, idx) => {
+                  const checkinId = Number(row.checkin_id);
+                  const linkedState = checkinId ? linkedCheckins[checkinId] : null;
+                  const isExpanded = checkinId ? Boolean(expandedCheckins[checkinId]) : false;
+                  const routeLabel = row.route_label || getRouteLabel(row.route_key);
+                  const linkedCheckin = linkedState?.data;
+                  const flavourText = linkedCheckin?.eissorten?.length
+                    ? linkedCheckin.eissorten.map((item) => item.sortenname).filter(Boolean).join(", ")
+                    : "";
+
+                  return (
+                    <DetailRow key={`${row.user_id || row.username || row.full_name || row.user_display_name}-${row.checkin_time}-${idx}`}>
+                      <DetailGrid>
+                        <DetailField>
+                          <DetailLabel>Nutzername</DetailLabel>
+                          <DetailValue>
+                            {row.user_id && row.username ? <UserLink to={`/user/${row.user_id}`}>{row.username}</UserLink> : row.username || "-"}
+                          </DetailValue>
+                        </DetailField>
+                        <DetailField>
+                          <DetailLabel>Echter Name</DetailLabel>
+                          <DetailValue>{row.full_name || row.user_display_name || "-"}</DetailValue>
+                        </DetailField>
+                        <DetailField>
+                          <DetailLabel>Check-in</DetailLabel>
+                          <DetailValue>{row.checkin_time ? new Date(row.checkin_time).toLocaleString("de-DE") : "-"}</DetailValue>
+                        </DetailField>
+                        <DetailField>
+                          <DetailLabel>Route</DetailLabel>
+                          <DetailValue>{routeLabel}</DetailValue>
+                        </DetailField>
+                      </DetailGrid>
+                      {checkinId ? (
+                        <>
+                          <ExpandButton type="button" onClick={() => toggleLinkedCheckin(row)}>
+                            {isExpanded ? "Verknüpften Check-in ausblenden" : "Verknüpften Check-in anzeigen"}
+                          </ExpandButton>
+                          {isExpanded && (
+                            <LinkedCheckinBox>
+                              {linkedState?.loading ? (
+                                <div>Lade Check-in...</div>
+                              ) : linkedState?.error ? (
+                                <div style={{ color: "#9f1239" }}>{linkedState.error}</div>
+                              ) : linkedCheckin ? (
+                                <>
+                                  <LinkedCheckinMeta>
+                                    <DetailField>
+                                      <DetailLabel>Eisdiele</DetailLabel>
+                                      <DetailValue>{linkedCheckin.eisdiele_name || "-"}</DetailValue>
+                                    </DetailField>
+                                    <DetailField>
+                                      <DetailLabel>Typ</DetailLabel>
+                                      <DetailValue>{linkedCheckin.typ || "-"}</DetailValue>
+                                    </DetailField>
+                                    <DetailField>
+                                      <DetailLabel>Sorten</DetailLabel>
+                                      <DetailValue>{flavourText || "-"}</DetailValue>
+                                    </DetailField>
+                                  </LinkedCheckinMeta>
+                                  {linkedCheckin.kommentar ? <LinkedCheckinText>{linkedCheckin.kommentar}</LinkedCheckinText> : null}
+                                </>
+                              ) : (
+                                <div>Kein Detail-Check-in vorhanden.</div>
+                              )}
+                            </LinkedCheckinBox>
+                          )}
+                        </>
+                      ) : null}
+                    </DetailRow>
+                  );
+                })}
+              </DetailsList>
             )}
-            <button style={{ marginTop: 10 }} onClick={() => setSelected(null)}>Schliessen</button>
+            <ModalActions>
+              <AppButton type="button" onClick={() => setSelected(null)}>Schließen</AppButton>
+            </ModalActions>
           </Modal>
         </ModalOverlay>
       )}

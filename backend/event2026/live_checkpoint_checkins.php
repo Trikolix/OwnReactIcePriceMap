@@ -45,6 +45,8 @@ try {
     $total = (int) $countStmt->fetchColumn();
 
     $stmt = $pdo->prepare("SELECT
+            s.user_id,
+            n.username,
             s.full_name AS user_display_name,
             s.route_key,
             p.passed_at AS checkin_time,
@@ -54,6 +56,7 @@ try {
         FROM event2026_checkpoint_passages p
         INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
+        LEFT JOIN nutzer n ON n.id = s.user_id
         WHERE p.event_id = :event_id
           AND p.checkpoint_id = :checkpoint_id
           AND c.stamp_card_mode = :stamp_card_mode{$consentSql}
@@ -73,6 +76,9 @@ try {
         'items' => array_map(static function (array $row): array {
             $routeKey = event2026_normalize_route_key($row['route_key'] ?? '');
             return [
+                'user_id' => $row['user_id'] !== null ? (int) $row['user_id'] : null,
+                'username' => $row['username'] ?: null,
+                'full_name' => $row['user_display_name'],
                 'user_display_name' => $row['user_display_name'],
                 'route_key' => $routeKey,
                 'route_label' => event2026_route_label($routeKey),

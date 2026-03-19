@@ -5,36 +5,39 @@ import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
 import { EVENT_COMMUNITY_RIDE_CLAIM, EVENT_DATE, EVENT_ENTRY_FEE, EVENT_ENTRY_FEE_NOTICE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
+import eisdieleSchoeneImage from "./images/eisdiele_schoene.webp";
+import eismanufakturKlattImage from "./images/eismanufaktur_klatt.jpg";
+import eiscafeElisenhofImage from "./images/eiscafe_elisenhof.webp";
 const PARTNER_ICE_CREAM_PARLORS = [
   {
     name: EVENT_START_FINISH.name,
     role: "Start und Ziel aller Routen",
     image: EVENT_START_FINISH.logoUrl,
-    description: `Hier treffen sich alle Starter zum Ankommen, Losfahren und gemeinsamen Ausklang im Ziel.`,
+    description: "Café am Brühl Boulevard, Startpunkt der Tour und perfekter Ort für einen gemütlichen gemeinsamen Ausklang im Ziel.",
   },
   {
     name: "Bäckerei Bräunig",
     role: "Checkpoint auf den sportlichen Routen",
     image: "https://www.baeckerei-braeunig.de/wp-content/uploads/baeckerei-braeunig-logo-1.png",
-    description: "Hier wartet eine offizielle Gratis-Kugel für alle Starter der langen Strecken. Perfekt für Nachschub und eine kurze Pause.",
+    description: "Traditionsbäckerei in 5. Generation mit handwerklichem Anspruch, natürlichen Zutaten und selbstgemachtem Eis.",
   },
   {
     name: "Eisdiele Schöne",
     role: "Checkpoint auf allen Routen",
-    image: "https://lh3.googleusercontent.com/p/AF1QipMaZZ6abii-iQVOXLTq0AEQ-T7wqFuHJKhIWTg3=s680-w680-h510-rw",
-    description: "Ein fester Partnereis-Stopp für Genussrunde und die langen sportlichen Strecken. Ideal für Kugel, Wasser und gute Laune unterwegs.",
+    image: eisdieleSchoeneImage,
+    description: "Familienunternehmen mit regionalen Naturprodukten und viel Erfahrung bei Feiern und Veranstaltungen.",
   },
   {
     name: "Klatt Eis",
     role: "Checkpoint auf allen Routen",
-    image: "https://scontent-fra3-1.xx.fbcdn.net/v/t39.30808-6/309439806_410674307889950_1629544177299528238_n.png?_nc_cat=108&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Wlta0QZof7EQ7kNvwFNBC2t&_nc_oc=AdkxeIbOQlznLYTmF3hiNxtBZMlVpZ6Y2kf61_TfEJdYdMecSZ2vrfOB2VzaAa8tJDyitLRPR5DEck5bKKw44A0O&_nc_zt=23&_nc_ht=scontent-fra3-1.xx&_nc_gid=7_v78JiyRM6zyeTNpVjb_Q&_nc_ss=8&oh=00_Afyxd4iCg12hPfU65FtC603zhX6PKRTudCQTnukXTdTTeg&oe=69B769F8",
-    description: "Zum Durchatmen, Eis essen und Flaschen auffüllen. Einer der zentralen Partnerstopps des Events.",
+    image: eismanufakturKlattImage,
+    description: "Kleine Eismanufaktur aus Frankenau mit wechselnden Sorten aus frischen, saisonalen Zutaten und viel Regionalität.",
   },
   {
     name: "Eiscafé Elisenhof",
     role: "Zusätzlicher Stopp auf der Königsrunde",
-    image: "https://scontent-fra5-1.xx.fbcdn.net/v/t39.30808-6/302786919_538249798098822_3578997221769686943_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=xSfaI3j1UpoQ7kNvwGkkFy9&_nc_oc=AdlPNxci0ZYcjlIma5GSHD_ZG8YrBhqbVxol02dwmRurboXWKyMskvh3kz8TYTTtherx_NnaZAZPnwYWckqm2P8d&_nc_zt=23&_nc_ht=scontent-fra5-1.xx&_nc_gid=UgHLc03gM1EXLG1CBPmTLw&_nc_ss=8&oh=00_AfwePhh-mZw5e_h85MMlNbdVjDv9xg6r_yKwTPKVj4DPtA&oe=69B75BF9",
-    description: "Der Extrapunkt für alle, die die volle Runde fahren und auch den vierten offiziellen Eisstopp mitnehmen.",
+    image: eiscafeElisenhofImage,
+    description: "Wer die Königsrunde dreht, bekommt hier am Töpferbrunnen in Kohren-Sahlis noch einen beliebten zusätzlichen Eisstopp.",
   },
 ];
 
@@ -181,9 +184,7 @@ const PartnerImageWrap = styled.div`
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background:
-    radial-gradient(circle at top right, rgba(255, 196, 82, 0.35), transparent 44%),
-    linear-gradient(135deg, #fff4cf 0%, #ffe5a9 100%);
+  background: #fff;
 `;
 
 const PartnerImage = styled.img`
@@ -220,17 +221,6 @@ const PartnerDescription = styled.p`
   color: #7c4f00;
   margin: 0;
   line-height: 1.6;
-`;
-
-const PartnerHint = styled.div`
-  margin-top: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #8a5700;
-  font-size: 0.88rem;
-  font-weight: 700;
-  opacity: 0.88;
 `;
 
 const RouteBadge = styled.span`
@@ -425,10 +415,6 @@ function PartnerParlors() {
                 <RouteBadge>{parlor.role}</RouteBadge>
                 <PartnerTitle>{parlor.name}</PartnerTitle>
                 <PartnerDescription>{parlor.description}</PartnerDescription>
-                <PartnerHint>
-                  <MapPin size={15} />
-                  Detailansicht folgt
-                </PartnerHint>
               </PartnerBody>
             </PartnerCard>
           ))}
