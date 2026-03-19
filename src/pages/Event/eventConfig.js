@@ -32,8 +32,8 @@ export const EVENT_ENTRY_FEE_NOTICE = "Der Teilnahmebeitrag dient ausschließlic
 export const ROUTE_OPTIONS = [
   {
     key: "epic_4",
-    label: "4 Eis-Stopps",
-    shortLabel: "4 Stopps",
+    label: "Königsrunde",
+    shortLabel: "König",
     badgeTone: {
       background: "#ffe4e6",
       border: "#fda4af",
@@ -47,12 +47,12 @@ export const ROUTE_OPTIONS = [
     routeType: "sport",
     paceEnabled: true,
     startMode: "grouped",
-    description: "Die volle Runde mit vier Eis-Stopps für alle, die viele Kilometer, viel Eis und einen langen Community-Ride wollen.",
+    description: "Die volle Runde für alle, die viele Kilometer, Höhenmeter und den längsten Ice-Tour-Tag wollen.",
   },
   {
     key: "classic_3",
-    label: "3 Eis-Stopps",
-    shortLabel: "3 Stopps",
+    label: "Sportliche Runde",
+    shortLabel: "Sport",
     badgeTone: {
       background: "#fff3c4",
       border: "#f7c948",
@@ -66,12 +66,12 @@ export const ROUTE_OPTIONS = [
     routeType: "sport",
     paceEnabled: true,
     startMode: "grouped",
-    description: "Die klassische Ice-Tour mit drei Eisdielen-Checkpoints und gemeinsamer Ausfahrt in kleinen Gruppen.",
+    description: "Die klassische lange Ice-Tour mit sportlichem Charakter und gemeinsamer Ausfahrt in kleinen Gruppen.",
   },
   {
     key: "family_2",
-    label: "Einsteiger-/Familientour",
-    shortLabel: "Familie",
+    label: "Genussrunde",
+    shortLabel: "Genuss",
     badgeTone: {
       background: "#dcfce7",
       border: "#86efac",
@@ -85,7 +85,7 @@ export const ROUTE_OPTIONS = [
     routeType: "family",
     paceEnabled: false,
     startMode: "open_window",
-    description: "Die kurze, flachere Runde mit zwei Eisdielen-Checkpoints und entspanntem Startfenster ohne Leistungsdruck.",
+    description: "Die kompaktere Runde mit 75 km, zwei offiziellen Checkpoints und freiem Startfenster.",
   },
 ];
 

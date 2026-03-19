@@ -20,8 +20,8 @@ export default function Header() {
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
   const now = new Date();
-  const liveStartDate = new Date(now.getFullYear(), 4, 15, 0, 0, 0, 0);
-  const shouldShowLiveMap = isLocalHost || now >= liveStartDate;
+  const liveStartDate = new Date(2026, 4, 16, 0, 0, 0, 0);
+  const shouldShowLiveMap = isLocalHost || isAdmin || now >= liveStartDate;
 
   useEffect(() => {
     const handleClickOutside = (event) => {

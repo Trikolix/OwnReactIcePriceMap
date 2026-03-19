@@ -350,8 +350,8 @@ function isCheckpointComplete(checkpoint) {
   return Boolean(checkpoint?.passed || checkpoint?.localStatus === "queued");
 }
 
-function isFinishCheckpoint(checkpoint) {
-  return checkpoint?.shop_id === EVENT_START_FINISH.shopId || checkpoint?.name === EVENT_START_FINISH.name;
+function isFinishCheckpoint(checkpoint, startFinish = EVENT_START_FINISH) {
+  return checkpoint?.shop_id === startFinish.shop_id || checkpoint?.shop_id === startFinish.shopId || checkpoint?.name === startFinish.name;
 }
 
 function getPrimaryCheckin(checkpoint) {
@@ -719,6 +719,9 @@ export default function EventStampCard() {
     const relevant = pendingActions.filter((item) => item.mode === mode);
     return new Map(relevant.map((item) => [item.checkpoint_id, item]));
   }, [mode, pendingActions]);
+  const startFinish = data?.start_finish || EVENT_START_FINISH;
+  const stampingEnabled = data?.stamping?.enabled ?? true;
+  const stampingMessage = data?.stamping?.message || "";
 
   const checkpointsWithDistance = useMemo(() => {
     return (data?.checkpoints || []).map((checkpoint) => ({
@@ -731,12 +734,12 @@ export default function EventStampCard() {
   }, [data?.checkpoints, locationState.coords, pendingMap]);
 
   const finishCheckpoint = useMemo(
-    () => checkpointsWithDistance.find((checkpoint) => isFinishCheckpoint(checkpoint)) || null,
-    [checkpointsWithDistance]
+    () => checkpointsWithDistance.find((checkpoint) => isFinishCheckpoint(checkpoint, startFinish)) || null,
+    [checkpointsWithDistance, startFinish]
   );
   const primaryCheckpoints = useMemo(
-    () => checkpointsWithDistance.filter((checkpoint) => !isFinishCheckpoint(checkpoint)),
-    [checkpointsWithDistance]
+    () => checkpointsWithDistance.filter((checkpoint) => !isFinishCheckpoint(checkpoint, startFinish)),
+    [checkpointsWithDistance, startFinish]
   );
   const mandatoryPrimaryCheckpoints = useMemo(
     () => primaryCheckpoints.filter((checkpoint) => Number(checkpoint.is_mandatory) === 1),
@@ -744,13 +747,13 @@ export default function EventStampCard() {
   );
 
   const completedMandatoryCount = mandatoryPrimaryCheckpoints.filter(isCheckpointComplete).length;
-  const finishUnlocked = mode === "test" || mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
+  const finishUnlocked = mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
   const pendingCount = pendingActions.filter((item) => item.mode === mode).length;
   const progressRatio = mandatoryPrimaryCheckpoints.length
     ? Math.round((completedMandatoryCount / mandatoryPrimaryCheckpoints.length) * 100)
     : 0;
   const startFinishDistance = locationState.coords
-    ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, EVENT_START_FINISH.lat, EVENT_START_FINISH.lng)
+    ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, startFinish.lat, startFinish.lng)
     : null;
 
   const updateCheckpointLocally = (checkpointId, nextValues) => {
@@ -878,6 +881,10 @@ export default function EventStampCard() {
   };
 
   const handleGpsStamp = async (checkpoint, locked) => {
+    if (!stampingEnabled) {
+      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+      return;
+    }
     if (locked) {
       setMessage({ tone: "info", text: "Dieser Abschluss-Checkpoint wird erst nach allen Pflichtstopps freigeschaltet." });
       return;
@@ -919,7 +926,11 @@ export default function EventStampCard() {
   };
 
   const handleQrCode = async (checkpoint, qrCode) => {
-    const locked = isFinishCheckpoint(checkpoint) && !finishUnlocked;
+    if (!stampingEnabled) {
+      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+      return;
+    }
+    const locked = isFinishCheckpoint(checkpoint, startFinish) && !finishUnlocked;
     if (locked) {
       setMessage({ tone: "info", text: "Dieser Abschluss-Checkpoint wird erst nach allen Pflichtstopps freigeschaltet." });
       return;
@@ -952,6 +963,10 @@ export default function EventStampCard() {
   };
 
   const syncPending = async () => {
+    if (!stampingEnabled) {
+      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+      return;
+    }
     const queue = readPendingActions().filter((item) => item.mode === mode);
     if (!queue.length) {
       setMessage({ tone: "info", text: "Es sind keine offenen Aktionen zum Synchronisieren vorhanden." });
@@ -1055,20 +1070,24 @@ export default function EventStampCard() {
         <CardActions>
           {!passed && (
             <>
-              <Button type="button" onClick={() => handleGpsStamp(checkpoint, locked)} disabled={!gpsReady || locked}>
+              <Button type="button" onClick={() => handleGpsStamp(checkpoint, locked)} disabled={!gpsReady || locked || !stampingEnabled}>
                 Standort-Stempel
               </Button>
               <Button
                 type="button"
                 $secondary
                 onClick={() => {
+                  if (!stampingEnabled) {
+                    setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+                    return;
+                  }
                   if (locked) {
                     setMessage({ tone: "info", text: options.lockHint || "Dieser Checkpoint ist noch gesperrt." });
                     return;
                   }
                   setShowScannerFor(checkpoint);
                 }}
-                disabled={locked}
+                disabled={locked || !stampingEnabled}
               >
                 <QrCode size={15} />
                 QR-Code
@@ -1097,6 +1116,9 @@ export default function EventStampCard() {
 
         {!gpsReady && !passed && !locked && (
           <MetaText>GPS-Stempel ist erst im 300-m-Umkreis aktiv. Wenn GPS nicht mitspielt, nutze den QR-Code.</MetaText>
+        )}
+        {!passed && !stampingEnabled && (
+          <MetaText>{stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet."}</MetaText>
         )}
       </CheckpointCard>
     );
@@ -1159,6 +1181,7 @@ export default function EventStampCard() {
           </ActionRow>
 
           {locationState.error && <MessageBox $tone="error">{locationState.error}</MessageBox>}
+          {!stampingEnabled && <MessageBox $tone="info">{stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet."}</MessageBox>}
           {message && <MessageBox $tone={message.tone}>{message.text}</MessageBox>}
         </PassCard>
 
@@ -1220,8 +1243,8 @@ export default function EventStampCard() {
 
             <CheckinSummary style={{ marginTop: "0.8rem" }}>
               <SummaryTitle>Start & Ziel</SummaryTitle>
-              <SummaryText>{EVENT_START_FINISH.name}</SummaryText>
-              <SummaryText style={{ color: "#7c4f00", marginTop: "0.2rem" }}>{EVENT_START_FINISH.fullAddress}</SummaryText>
+              <SummaryText>{startFinish.name}</SummaryText>
+              <SummaryText style={{ color: "#7c4f00", marginTop: "0.2rem" }}>{startFinish.full_address || startFinish.fullAddress}</SummaryText>
               <SummaryText style={{ color: "#7c4f00", marginTop: "0.2rem" }}>
                 {startFinishDistance !== null ? `${Math.round(startFinishDistance)} m entfernt` : "Entfernung folgt nach Standortfreigabe"}
               </SummaryText>

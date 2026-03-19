@@ -11,6 +11,14 @@ try {
 
     $event = event2026_current_event($pdo);
     $eventId = (int) $event['id'];
+    $mode = event2026_normalize_stamp_card_mode($_GET['mode'] ?? 'live');
+    if ($mode === 'test') {
+        $auth = event2026_require_auth_user($pdo);
+        if ((int) $auth['user_id'] !== 1) {
+            http_response_code(403);
+            throw new RuntimeException('Test-Live-Map ist nur für Admin verfügbar.');
+        }
+    }
 
     $checkpointId = (int) ($_GET['checkpoint_id'] ?? 0);
     if ($checkpointId <= 0) {
@@ -20,15 +28,19 @@ try {
     $page = max(1, (int) ($_GET['page'] ?? 1));
     $pageSize = min(100, max(1, (int) ($_GET['page_size'] ?? 50)));
     $offset = ($page - 1) * $pageSize;
+    $consentSql = $mode === 'test' ? '' : ' AND s.public_name_consent = 1';
 
     $countStmt = $pdo->prepare("SELECT COUNT(*)
         FROM event2026_checkpoint_passages p
         INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
-        WHERE p.event_id = :event_id AND p.checkpoint_id = :checkpoint_id AND c.stamp_card_mode = 'live' AND s.public_name_consent = 1");
+        WHERE p.event_id = :event_id
+          AND p.checkpoint_id = :checkpoint_id
+          AND c.stamp_card_mode = :stamp_card_mode{$consentSql}");
     $countStmt->execute([
         ':event_id' => $eventId,
         ':checkpoint_id' => $checkpointId,
+        ':stamp_card_mode' => $mode,
     ]);
     $total = (int) $countStmt->fetchColumn();
 
@@ -44,12 +56,12 @@ try {
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
         WHERE p.event_id = :event_id
           AND p.checkpoint_id = :checkpoint_id
-          AND c.stamp_card_mode = 'live'
-          AND s.public_name_consent = 1
+          AND c.stamp_card_mode = :stamp_card_mode{$consentSql}
         ORDER BY p.passed_at DESC
         LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':event_id', $eventId, PDO::PARAM_INT);
     $stmt->bindValue(':checkpoint_id', $checkpointId, PDO::PARAM_INT);
+    $stmt->bindValue(':stamp_card_mode', $mode, PDO::PARAM_STR);
     $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
@@ -57,6 +69,7 @@ try {
 
     echo json_encode([
         'status' => 'success',
+        'mode' => $mode,
         'items' => array_map(static function (array $row): array {
             $routeKey = event2026_normalize_route_key($row['route_key'] ?? '');
             return [

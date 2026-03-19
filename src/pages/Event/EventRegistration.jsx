@@ -296,10 +296,15 @@ export default function EventRegistration() {
   const navigate = useNavigate();
   const location = useLocation();
   const API_BASE = getApiBaseUrl();
-  const invitedTeamName = useMemo(() => {
+  const inviteContext = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return (params.get("team") || "").trim();
+    return {
+      teamName: (params.get("team") || "").trim(),
+      inviteCode: (params.get("inviteCode") || "").trim(),
+    };
   }, [location.search]);
+  const invitedTeamName = inviteContext.teamName;
+  const inviteCode = inviteContext.inviteCode;
 
   const [participant, setParticipant] = useState(createParticipant());
   const [teamName, setTeamName] = useState("");
@@ -468,6 +473,7 @@ export default function EventRegistration() {
     const payload = {
       participant,
       teamName,
+      inviteCode,
       registrationNote,
       donationAmount: normalizedDonationAmount,
       giftVoucherQuantity: normalizedGiftVoucherQuantity,

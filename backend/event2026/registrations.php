@@ -22,12 +22,29 @@ function event2026_generate_invite_code(int $length = 10): string
     return bin2hex(random_bytes((int) max(1, floor($length / 2))));
 }
 
-function event2026_create_account_for_registration(PDO $pdo, array $accountData, bool $newsletterOptIn = false): array
+function event2026_find_inviter_by_code(PDO $pdo, ?string $inviteCode): ?int
+{
+    $normalizedCode = trim((string) $inviteCode);
+    if ($normalizedCode === '') {
+        return null;
+    }
+
+    $stmt = $pdo->prepare("SELECT id FROM nutzer WHERE invite_code = :invite_code LIMIT 1");
+    $stmt->execute([
+        ':invite_code' => $normalizedCode,
+    ]);
+    $inviterId = $stmt->fetchColumn();
+
+    return $inviterId !== false ? (int) $inviterId : null;
+}
+
+function event2026_create_account_for_registration(PDO $pdo, array $accountData, bool $newsletterOptIn = false, ?string $referrerInviteCode = null): array
 {
     $username = trim((string) ($accountData['username'] ?? ''));
     $email = trim((string) ($accountData['email'] ?? ''));
     $password = (string) ($accountData['password'] ?? '');
     $acceptedTerms = !empty($accountData['acceptedTerms']);
+    $invitedById = event2026_find_inviter_by_code($pdo, $referrerInviteCode);
 
     if (!$acceptedTerms) {
         throw new InvalidArgumentException('Bitte AGB/Datenschutz/Community-Richtlinien akzeptieren.');
@@ -57,16 +74,17 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
 
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
     $verifyToken = bin2hex(random_bytes(32));
-    $inviteCode = event2026_generate_invite_code();
+    $generatedInviteCode = event2026_generate_invite_code();
 
-    $insertUser = $pdo->prepare("INSERT INTO nutzer (username, email, password_hash, verification_token, invite_code)
-        VALUES (:username, :email, :password_hash, :verify_token, :invite_code)");
+    $insertUser = $pdo->prepare("INSERT INTO nutzer (username, email, password_hash, verification_token, invited_by, invite_code)
+        VALUES (:username, :email, :password_hash, :verify_token, :invited_by, :invite_code)");
     $insertUser->execute([
         ':username' => $username,
         ':email' => $email,
         ':password_hash' => $passwordHash,
         ':verify_token' => $verifyToken,
-        ':invite_code' => $inviteCode,
+        ':invited_by' => $invitedById,
+        ':invite_code' => $generatedInviteCode,
     ]);
     $userId = (int) $pdo->lastInsertId();
 
@@ -89,6 +107,7 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
         'user_id' => $userId,
         'username' => $username,
         'email' => $email,
+        'invited_by' => $invitedById,
         'verification_url' => $verifyUrl,
         'verification_mail_sent' => $mailSent,
     ];
@@ -270,6 +289,7 @@ try {
     }
 
     $newsletterOptIn = !empty($data['newsletter']);
+    $inviteCode = trim((string) ($data['inviteCode'] ?? ''));
     $registrationNote = trim((string) ($data['registrationNote'] ?? ''));
     $donationAmount = max(0, round((float) ($data['donationAmount'] ?? 0), 2));
     $giftVoucherQuantity = max(0, min(20, (int) ($data['giftVoucherQuantity'] ?? 0)));
@@ -295,7 +315,7 @@ try {
             throw new InvalidArgumentException('Ohne Login muss im Event-Flow zuerst ein Ice-App Account erstellt werden.');
         }
 
-        $accountCreationInfo = event2026_create_account_for_registration($pdo, $accountPayload, $newsletterOptIn);
+        $accountCreationInfo = event2026_create_account_for_registration($pdo, $accountPayload, $newsletterOptIn, $inviteCode);
         $auth = [
             'user_id' => (int) $accountCreationInfo['user_id'],
             'username' => (string) $accountCreationInfo['username'],
@@ -558,6 +578,7 @@ try {
         'expected_amount' => $breakdown['expected_amount'],
         'donation_amount' => $breakdown['donation_amount'],
         'account_created_in_flow' => $accountCreationInfo !== null,
+        'account_invited_by' => $accountCreationInfo['invited_by'] ?? null,
     ]);
 
     $pdo->commit();
@@ -644,6 +665,7 @@ try {
         'gift_vouchers_pending_activation' => $giftVoucherQuantity > 0,
         'notification_mail_sent' => $mailSent,
         'account_created_in_flow' => $accountCreationInfo !== null,
+        'account_invited_by' => $accountCreationInfo['invited_by'] ?? null,
         'account_verification_mail_sent' => $accountCreationInfo['verification_mail_sent'] ?? null,
         'participant_slot' => [
             'slot_id' => $slotId,

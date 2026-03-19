@@ -24,6 +24,9 @@ try {
         ':user_id' => $auth['user_id'],
     ]);
     $registration = $registrationStmt->fetch(PDO::FETCH_ASSOC);
+    $userMetaStmt = $pdo->prepare("SELECT invite_code FROM nutzer WHERE id = :user_id LIMIT 1");
+    $userMetaStmt->execute([':user_id' => $auth['user_id']]);
+    $userMeta = $userMetaStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     if (!$registration) {
         http_response_code(403);
@@ -141,6 +144,9 @@ try {
             'name' => $event['name'],
             'event_date' => $event['event_date'],
             'status' => $event['status'],
+        ],
+        'account' => [
+            'invite_code' => (string) ($userMeta['invite_code'] ?? ''),
         ],
         'route_catalog' => array_values(event2026_route_catalog()),
         'registration' => [

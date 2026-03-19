@@ -3,9 +3,11 @@ import styled from "styled-components";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { useSearchParams } from "react-router-dom";
 import Header from "./Header";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteByLabel, getRouteLabel, getRouteThemeByLabel } from "./eventConfig";
+import { useUser } from "../../context/UserContext";
 import route175Gpx from "./Ice-Tour_175km.gpx?raw";
 import route140Gpx from "./Ice-Tour_140km.gpx?raw";
 import route70Gpx from "./Ice-Tour_70km.gpx?raw";
@@ -22,10 +24,10 @@ const makeSvgIcon = (svgMarkup) =>
 const startFinishIcon = makeSvgIcon(`
   <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Start Ziel">
     <circle cx="17" cy="17" r="16" fill="#fff3c2" stroke="#8a5700" stroke-width="2"/>
-    <path d="M11 8v18" stroke="#3b2f1a" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M12.5 9.5h11v7h-11z" fill="#ffffff" stroke="#3b2f1a" stroke-width="1"/>
-    <rect x="12.5" y="9.5" width="5.5" height="3.5" fill="#1f2937"/>
-    <rect x="18" y="13" width="5.5" height="3.5" fill="#1f2937"/>
+    <path d="M11 7.5v18.5" stroke="#3b2f1a" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M12.5 9.5h10.5l-2.3 2.1 2.3 2.1h-10.5z" fill="#ffffff" stroke="#3b2f1a" stroke-width="1"/>
+    <path d="M12.5 13.7h10.5l-2.3 2.1 2.3 2.1h-10.5z" fill="#1f2937" stroke="#3b2f1a" stroke-width="1"/>
+    <path d="M12.5 17.9h10.5l-2.3 2.1 2.3 2.1h-10.5z" fill="#ffffff" stroke="#3b2f1a" stroke-width="1"/>
   </svg>
 `);
 const checkpointIcon = makeSvgIcon(`
@@ -144,27 +146,9 @@ const LegendSwatch = styled.span`
 `;
 
 const ROUTE_OVERLAYS = [
-  {
-    id: "route-175",
-    label: "175 km",
-    color: "#dc2626",
-    offsetPx: -7,
-    gpx: route175Gpx,
-  },
-  {
-    id: "route-140",
-    label: "140 km",
-    color: "#facc15",
-    offsetPx: 0,
-    gpx: route140Gpx,
-  },
-  {
-    id: "route-70",
-    label: "70 km",
-    color: "#16a34a",
-    offsetPx: 7,
-    gpx: route70Gpx,
-  },
+  { id: "route-175", label: "175 km", color: "#dc2626", offsetPx: -7, gpx: route175Gpx },
+  { id: "route-140", label: "140 km", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
+  { id: "route-70", label: "70 km", color: "#16a34a", offsetPx: 7, gpx: route70Gpx },
 ];
 
 const OFFSET_ZOOM_THRESHOLD = 12;
@@ -232,10 +216,8 @@ const smoothLatLngs = (positions, iterations = 1) => {
     for (let index = 0; index < smoothed.length - 1; index += 1) {
       const [lat1, lng1] = smoothed[index];
       const [lat2, lng2] = smoothed[index + 1];
-
       const q = [lat1 * 0.75 + lat2 * 0.25, lng1 * 0.75 + lng2 * 0.25];
       const r = [lat1 * 0.25 + lat2 * 0.75, lng1 * 0.25 + lng2 * 0.75];
-
       next.push(q, r);
     }
 
@@ -320,7 +302,12 @@ function RouteOverlay({ route, isActive, onHoverChange }) {
 }
 
 export default function EventLiveMap() {
-  const API_BASE = getApiBaseUrl();
+  const apiBase = getApiBaseUrl();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { authToken, userId } = useUser();
+  const requestedMode = searchParams.get("mode") === "test" ? "test" : "live";
+  const isAdmin = Number(userId) === 1;
+  const mode = requestedMode === "test" && isAdmin ? "test" : "live";
 
   const [items, setItems] = useState([]);
   const [routeOverlays, setRouteOverlays] = useState([]);
@@ -330,6 +317,13 @@ export default function EventLiveMap() {
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [startFinish, setStartFinish] = useState(EVENT_START_FINISH);
+
+  useEffect(() => {
+    if (requestedMode === "test" && !isAdmin) {
+      setSearchParams({ mode: "live" }, { replace: true });
+    }
+  }, [isAdmin, requestedMode, setSearchParams]);
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
@@ -356,12 +350,17 @@ export default function EventLiveMap() {
   }, []);
 
   useEffect(() => {
-    if (!API_BASE) return;
+    if (!apiBase) return;
 
     let canceled = false;
     setLoading(true);
+    setError("");
 
-    fetch(`${API_BASE}/event2026/live_checkpoints.php`)
+    fetch(`${apiBase}/event2026/live_checkpoints.php?mode=${mode}`, {
+      headers: {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+    })
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || json.status !== "success") {
@@ -369,6 +368,7 @@ export default function EventLiveMap() {
         }
         if (!canceled) {
           setItems(json.items || []);
+          setStartFinish(json.start_finish || EVENT_START_FINISH);
         }
       })
       .catch((err) => {
@@ -385,24 +385,24 @@ export default function EventLiveMap() {
     return () => {
       canceled = true;
     };
-  }, [API_BASE]);
+  }, [apiBase, authToken, mode]);
 
   const mapItems = useMemo(
     () => [
       {
-        checkpoint_id: `start-finish-${EVENT_START_FINISH.shopId}`,
-        name: `${EVENT_START_FINISH.name} (Start & Ziel)`,
-        lat: EVENT_START_FINISH.lat,
-        lng: EVENT_START_FINISH.lng,
+        checkpoint_id: `start-finish-${startFinish.shop_id || startFinish.shopId}`,
+        name: `${startFinish.name} (Start & Ziel)`,
+        lat: startFinish.lat,
+        lng: startFinish.lng,
         route_labels: ROUTE_OPTIONS.map((route) => route.label),
         checked_in_count: null,
         licensed_count: null,
         isStartFinishHub: true,
-        shop_id: EVENT_START_FINISH.shopId,
+        shop_id: startFinish.shop_id || startFinish.shopId,
       },
       ...items,
     ],
-    [items]
+    [items, startFinish]
   );
 
   const bounds = useMemo(() => mapItems.map((item) => [item.lat, item.lng]), [mapItems]);
@@ -411,8 +411,13 @@ export default function EventLiveMap() {
     setSelected(item);
     setDetailsLoading(true);
     setDetails([]);
+
     try {
-      const res = await fetch(`${API_BASE}/event2026/live_checkpoint_checkins.php?checkpoint_id=${item.checkpoint_id}&page=1&page_size=100`);
+      const res = await fetch(`${apiBase}/event2026/live_checkpoint_checkins.php?checkpoint_id=${item.checkpoint_id}&page=1&page_size=100&mode=${mode}`, {
+        headers: {
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+      });
       const json = await res.json();
       if (!res.ok || json.status !== "success") {
         throw new Error(json.message || "Details konnten nicht geladen werden.");
@@ -425,16 +430,27 @@ export default function EventLiveMap() {
     }
   };
 
+  const startFinishAddress = startFinish.full_address || startFinish.fullAddress || "";
+
   return (
     <Page>
       <Header />
       <MapShell>
         <MapInfo>
-          <h1 style={{ margin: 0, fontSize: "1.05rem" }}>Live-Checkpoint-Karte</h1>
+          <h1 style={{ margin: 0, fontSize: "1.05rem" }}>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</h1>
           <p style={{ margin: "0.35rem 0 0", color: "#7c4f00", lineHeight: 1.35 }}>
-            Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Klicke auf die Marker, um weitere Informationen zu erhalten oder die Check-in-Details einzusehen.
+            {mode === "test"
+              ? "Admin-Testansicht fuer die Stempelkarte. Hier siehst du, wie Check-ins und Checkpoint-Anzeigen auf der Live-Map wirken."
+              : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Klicke auf die Marker, um weitere Informationen zu erhalten oder die Check-in-Details einzusehen."}
           </p>
+          {isAdmin && (
+            <div style={{ display: "flex", gap: "0.45rem", marginTop: "0.7rem", flexWrap: "wrap" }}>
+              <button type="button" onClick={() => setSearchParams({ mode: "live" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "live" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Live</button>
+              <button type="button" onClick={() => setSearchParams({ mode: "test" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "test" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Test</button>
+            </div>
+          )}
         </MapInfo>
+
         <RouteLegend>
           <div style={{ fontWeight: 700, color: "#5b3a00", marginBottom: "0.45rem" }}>Routen</div>
           {routeOverlays.map((route) => (
@@ -447,7 +463,7 @@ export default function EventLiveMap() {
 
         {!error && (
           <MapContainer
-            center={[EVENT_START_FINISH.lat, EVENT_START_FINISH.lng]}
+            center={[startFinish.lat, startFinish.lng]}
             zoom={10}
             bounds={bounds}
             boundsOptions={{ padding: [50, 50] }}
@@ -474,7 +490,7 @@ export default function EventLiveMap() {
                 <Popup>
                   <strong>{item.name}</strong>
                   {item.isStartFinishHub ? (
-                    <div>Start- und Zielbereich für alle Routen</div>
+                    <div>{mode === "test" ? "Test-Start- und Zielbereich" : "Start- und Zielbereich fuer alle Routen"}</div>
                   ) : (
                     <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
                   )}
@@ -491,7 +507,7 @@ export default function EventLiveMap() {
                     ))}
                   </div>
                   {item.isStartFinishHub ? (
-                    <div style={{ marginTop: 6, color: "#7c4f00" }}>{EVENT_START_FINISH.fullAddress}</div>
+                    <div style={{ marginTop: 6, color: "#7c4f00" }}>{startFinishAddress}</div>
                   ) : (
                     <button style={{ marginTop: 6 }} onClick={() => openDetails(item)}>Details</button>
                   )}

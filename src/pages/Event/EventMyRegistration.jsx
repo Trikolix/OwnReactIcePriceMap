@@ -311,7 +311,7 @@ function formatPaymentStatus(status) {
 
 export default function EventMyRegistration() {
   const apiUrl = getApiBaseUrl();
-  const { authToken } = useUser();
+  const { authToken, userId } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -363,19 +363,26 @@ export default function EventMyRegistration() {
   const ownSlot = useMemo(() => data?.slots?.[0] || null, [data]);
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
   const isPaid = paymentStatus === "paid";
+  const isAdmin = Number(userId) === 1;
   const stampCardMode = useMemo(() => {
     if (typeof window === "undefined") return "live";
     const host = window.location.hostname;
-    return host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
-  }, []);
+    return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
+  }, [isAdmin]);
   const teamInviteLink = useMemo(() => {
     const teamName = (data?.registration?.team_name || "").trim();
+    const inviteCode = (data?.account?.invite_code || "").trim();
     if (!teamName) return "";
-    if (typeof window === "undefined") {
-      return `https://ice-app.de/#/event-registration?team=${encodeURIComponent(teamName)}`;
+    const query = new URLSearchParams();
+    query.set("team", teamName);
+    if (inviteCode) {
+      query.set("inviteCode", inviteCode);
     }
-    return `${window.location.origin}/#/event-registration?team=${encodeURIComponent(teamName)}`;
-  }, [data?.registration?.team_name]);
+    if (typeof window === "undefined") {
+      return `https://ice-app.de/#/event-registration?${query.toString()}`;
+    }
+    return `${window.location.origin}/#/event-registration?${query.toString()}`;
+  }, [data?.account?.invite_code, data?.registration?.team_name]);
 
   const copyTeamInviteLink = async () => {
     if (!teamInviteLink) return;
@@ -751,6 +758,11 @@ export default function EventMyRegistration() {
               <NavLinkButton to={`/event-stamp-card?mode=${stampCardMode}`}>
                 Zur {stampCardMode === "test" ? "Test-" : ""}Stempelkarte
               </NavLinkButton>
+              {isAdmin && (
+                <NavLinkButton to="/event-live?mode=test" style={{ marginLeft: "0.65rem" }}>
+                  Zur Test-Live-Map
+                </NavLinkButton>
+              )}
             </Card>
 
             {data.gift_vouchers?.length > 0 && (

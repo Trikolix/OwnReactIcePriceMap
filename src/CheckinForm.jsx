@@ -27,12 +27,12 @@ import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
-import { Bike, Car, Footprints, HelpCircle, IceCream, MapPin } from "lucide-react";
+import { Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin } from "lucide-react";
 
 const TYPE_OPTIONS = [
-    { value: "Kugel", label: "Kugeleis", description: "Einzelne Kugeln, auch im Becher", tone: "kugel", icon: IceCream },
-    { value: "Softeis", label: "Softeis", description: "Gezapftes Softeis", tone: "softeis", icon: IceCream },
-    { value: "Eisbecher", label: "Eisbecher", description: "Komponierter Eisbecher / Sundae", tone: "becher", icon: IceCream },
+    { value: "Kugel", label: "Kugeleis", description: "Einzelne Kugeln, auch im Becher", tone: "kugel", icon: IceCreamCone },
+    { value: "Softeis", label: "Softeis", description: "Gezapftes Softeis", tone: "softeis", icon: IceCreamCone },
+    { value: "Eisbecher", label: "Eisbecher", description: "Komponierter Eisbecher / Sundae", tone: "becher", icon: IceCreamBowl },
 ];
 
 const ARRIVAL_OPTIONS = [
@@ -40,7 +40,7 @@ const ARRIVAL_OPTIONS = [
     { value: "Motorrad", label: "Motorrad", tone: "bike", icon: Bike },
     { value: "Zu Fuß", label: "Zu Fuß", tone: "walk", icon: Footprints },
     { value: "Auto", label: "Auto", tone: "car", icon: Car },
-    { value: "Bus / Bahn", label: "Bus / Bahn", tone: "transit", icon: MapPin },
+    { value: "Bus / Bahn", label: "Bus / Bahn", tone: "transit", icon: Bus },
     { value: "Sonstiges", label: "Sonstiges", tone: "other", icon: HelpCircle },
 ];
 
@@ -1095,12 +1095,15 @@ const OptionButton = styled.button`
 `;
 
 const OptionIconWrap = styled.span`
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     border: 1px solid;
     background: ${({ $active, $tone }) =>
         $active

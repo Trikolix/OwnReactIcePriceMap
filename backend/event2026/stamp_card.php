@@ -13,6 +13,9 @@ try {
     $event = event2026_current_event($pdo);
     $eventId = (int) $event['id'];
     $mode = event2026_normalize_stamp_card_mode($_GET['mode'] ?? 'live');
+    $startFinish = event2026_start_finish_config($pdo, $mode);
+    $stampingEnabled = $mode === 'test' ? true : event2026_is_live_stamping_open($event);
+    $stampingAvailableFrom = event2026_live_stamping_available_from($event);
     if ($mode === 'test' && (int) $auth['user_id'] !== 1) {
         http_response_code(403);
         throw new RuntimeException('Test-Stempelkarte ist nur für Admin verfügbar.');
@@ -165,6 +168,14 @@ try {
             'mandatory_total' => $mandatoryTotal,
             'mandatory_passed' => $mandatoryPassed,
             'is_finisher' => $mandatoryTotal > 0 && $mandatoryPassed >= $mandatoryTotal,
+        ],
+        'start_finish' => $startFinish,
+        'stamping' => [
+            'enabled' => $stampingEnabled,
+            'available_from' => $stampingAvailableFrom,
+            'message' => $stampingEnabled
+                ? null
+                : sprintf('Live-Stempel sind erst ab %s freigeschaltet.', $stampingAvailableFrom),
         ],
         'sync' => [
             'server_time' => gmdate('c'),

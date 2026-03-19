@@ -22,7 +22,7 @@ const PARTNER_ICE_CREAM_PARLORS = [
     name: "Eisdiele Schöne",
     role: "Checkpoint auf allen Routen",
     image: "https://lh3.googleusercontent.com/p/AF1QipMaZZ6abii-iQVOXLTq0AEQ-T7wqFuHJKhIWTg3=s680-w680-h510-rw",
-    description: "Ein fester Partnereis-Stopp für Familientour und Sportstrecken. Ideal für Kugel, Wasser und gute Laune unterwegs.",
+    description: "Ein fester Partnereis-Stopp für Genussrunde und die langen sportlichen Strecken. Ideal für Kugel, Wasser und gute Laune unterwegs.",
   },
   {
     name: "Klatt Eis",
@@ -32,7 +32,7 @@ const PARTNER_ICE_CREAM_PARLORS = [
   },
   {
     name: "Eiscafé Elisenhof",
-    role: "Zusätzlicher Stopp auf der 4-Eis-Stopps-Route",
+    role: "Zusätzlicher Stopp auf der Königsrunde",
     image: "https://scontent-fra5-1.xx.fbcdn.net/v/t39.30808-6/302786919_538249798098822_3578997221769686943_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=xSfaI3j1UpoQ7kNvwGkkFy9&_nc_oc=AdlPNxci0ZYcjlIma5GSHD_ZG8YrBhqbVxol02dwmRurboXWKyMskvh3kz8TYTTtherx_NnaZAZPnwYWckqm2P8d&_nc_zt=23&_nc_ht=scontent-fra5-1.xx&_nc_gid=UgHLc03gM1EXLG1CBPmTLw&_nc_ss=8&oh=00_AfwePhh-mZw5e_h85MMlNbdVjDv9xg6r_yKwTPKVj4DPtA&oe=69B75BF9",
     description: "Der Extrapunkt für alle, die die volle Runde fahren und auch den vierten offiziellen Eisstopp mitnehmen.",
   },
@@ -137,6 +137,100 @@ const Card = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.08);
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
   padding: 1.1rem;
+`;
+
+const PartnerGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 1.1rem;
+`;
+
+const PartnerCard = styled.article`
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 235, 0.98)),
+    #fff;
+  border-radius: 24px;
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  box-shadow: 0 14px 30px rgba(77, 48, 0, 0.09);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+  transform-origin: center center;
+
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-6px) scale(1.03);
+      border-color: rgba(255, 181, 34, 0.5);
+      box-shadow: 0 22px 42px rgba(77, 48, 0, 0.16);
+    }
+  }
+
+  &:active {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(255, 181, 34, 0.5);
+    box-shadow: 0 18px 34px rgba(77, 48, 0, 0.14);
+  }
+`;
+
+const PartnerImageWrap = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(255, 196, 82, 0.35), transparent 44%),
+    linear-gradient(135deg, #fff4cf 0%, #ffe5a9 100%);
+`;
+
+const PartnerImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 220ms ease, filter 220ms ease;
+
+  ${PartnerCard}:hover &,
+  ${PartnerCard}:active & {
+    transform: scale(1.06);
+    filter: saturate(1.06);
+  }
+`;
+
+const PartnerImageShade = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(47, 33, 0, 0.05) 0%, rgba(47, 33, 0, 0.22) 100%);
+  pointer-events: none;
+`;
+
+const PartnerBody = styled.div`
+  padding: 1rem 1rem 1.1rem;
+`;
+
+const PartnerTitle = styled.h3`
+  margin: 0.7rem 0 0.4rem;
+  font-size: 1.12rem;
+`;
+
+const PartnerDescription = styled.p`
+  color: #7c4f00;
+  margin: 0;
+  line-height: 1.6;
+`;
+
+const PartnerHint = styled.div`
+  margin-top: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #8a5700;
+  font-size: 0.88rem;
+  font-weight: 700;
+  opacity: 0.88;
 `;
 
 const RouteBadge = styled.span`
@@ -261,7 +355,7 @@ function RouteOverview() {
     <Section>
       <Container>
         <SectionTitle>Die 3 Routen</SectionTitle>
-        <SectionDesc>Es stehen für euch 3 Routen zur Auswahl, wer die meisten Kilometer und Eis möchte, fährt die vollen 175 km mit 4 Eis-Stopps. Die klassische Tour hat 3 Eis-Stopps und die Einsteiger- / Familientour hat 2 Stopps.</SectionDesc>
+        <SectionDesc>Es stehen für euch 3 Routen zur Auswahl: die Genussrunde über rund 75 km, die Sportliche Runde über 140 km und als längste Option die Königsrunde mit 175 km.</SectionDesc>
         <CardGrid>
           {ROUTE_OPTIONS.map((route) => (
             <Card key={route.key}>
@@ -272,9 +366,9 @@ function RouteOverview() {
               <h3 style={{ marginBottom: "0.4rem" }}>{route.teaser}</h3>
               <p style={{ color: "#7c4f00", marginTop: 0, lineHeight: 1.5 }}>{route.description}</p>
               <RequirementList>
-                <li>{route.stops} offizielle Eis-Stopps</li>
+                <li>{route.stops} offizielle Checkpoints plus Ziel</li>
                 <li>{route.routeType === "family" ? "Eigenes Startfenster ohne Tempogruppe" : "Anhand der gewählten Route und Selbsteinschätzung wirst du in eine Startgruppe eingeteilt"}</li>
-                <li>{route.routeType === "family" ? "Ideal für Einsteiger und gemeinsame Familienrunde" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
+                <li>{route.routeType === "family" ? "Für alle, die 75 km bewusst genießen und ohne Gruppendruck fahren wollen" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
               </RequirementList>
             </Card>
           ))}
@@ -320,18 +414,25 @@ function PartnerParlors() {
           Bei unseren tollen Partnern erhält jeder Starter nach Vorzeigen des Starterpasses eine Kugel Eis gratis. Außerdem besteht die Möglichkeit, eure Trinkflaschen mit Wasser und ISO-Pulver aufzufüllen.<br /><br />
           Nutzt die Gelegenheit gerne, die Eisdielen zu unterstützen – zum Beispiel mit einer zweiten oder dritten Kugel Eis oder auch einem Kaffee oder Stück Kuchen – und geht anschließend optimal gestärkt zurück auf die Strecke.
         </SectionDesc>
-        <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+        <PartnerGrid>
           {PARTNER_ICE_CREAM_PARLORS.map((parlor) => (
-            <Card key={parlor.name}>
-              <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", marginBottom: "0.9rem", overflow: "hidden", borderRadius: 12 }}>
-                <img src={parlor.image} alt={parlor.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-              <RouteBadge>{parlor.role}</RouteBadge>
-              <h3 style={{ marginBottom: "0.45rem" }}>{parlor.name}</h3>
-              <p style={{ color: "#7c4f00", margin: 0, lineHeight: 1.55 }}>{parlor.description}</p>
-            </Card>
+            <PartnerCard key={parlor.name}>
+              <PartnerImageWrap>
+                <PartnerImage src={parlor.image} alt={parlor.name} />
+                <PartnerImageShade />
+              </PartnerImageWrap>
+              <PartnerBody>
+                <RouteBadge>{parlor.role}</RouteBadge>
+                <PartnerTitle>{parlor.name}</PartnerTitle>
+                <PartnerDescription>{parlor.description}</PartnerDescription>
+                <PartnerHint>
+                  <MapPin size={15} />
+                  Detailansicht folgt
+                </PartnerHint>
+              </PartnerBody>
+            </PartnerCard>
           ))}
-        </CardGrid>
+        </PartnerGrid>
       </Container>
     </Section>
   );

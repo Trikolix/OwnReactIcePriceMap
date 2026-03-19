@@ -672,47 +672,11 @@ function event2026_live_checkpoint_shop_config(): array
 
 function event2026_test_checkpoint_shop_config(PDO $pdo): array
 {
-    $preferred = [565];
-    $config = [];
-
-    foreach ($preferred as $index => $shopId) {
-        $config[(int) $shopId] = [
-            'order' => $index + 1,
-            'min_distance_km' => 0,
-            'route_keys' => ['family_2', 'classic_3', 'epic_4'],
-        ];
-    }
-
-    if (count($config) >= 2) {
-        return $config;
-    }
-
-    $excludedIds = array_keys(event2026_live_checkpoint_shop_config());
-    $excludedSql = implode(',', array_map('intval', $excludedIds));
-    $stmt = $pdo->query("SELECT id
-        FROM eisdielen
-        WHERE latitude IS NOT NULL
-          AND longitude IS NOT NULL
-          AND id NOT IN ({$excludedSql})
-        ORDER BY id ASC
-        LIMIT 2");
-    $fallbackIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
-
-    foreach ($fallbackIds as $shopId) {
-        if (isset($config[$shopId])) {
-            continue;
-        }
-        $config[$shopId] = [
-            'order' => count($config) + 1,
-            'min_distance_km' => 0,
-            'route_keys' => ['family_2', 'classic_3', 'epic_4'],
-        ];
-        if (count($config) >= 2) {
-            break;
-        }
-    }
-
-    return $config;
+    return [
+        20 => ['order' => 1, 'min_distance_km' => 0, 'route_keys' => ['family_2', 'classic_3', 'epic_4']],
+        179 => ['order' => 2, 'min_distance_km' => 0, 'route_keys' => ['family_2', 'classic_3', 'epic_4']],
+        565 => ['order' => 3, 'min_distance_km' => 0, 'route_keys' => ['family_2', 'classic_3', 'epic_4']],
+    ];
 }
 
 function event2026_stamp_card_configs(PDO $pdo): array
@@ -726,6 +690,64 @@ function event2026_stamp_card_configs(PDO $pdo): array
 function event2026_normalize_stamp_card_mode(?string $mode): string
 {
     return trim((string) $mode) === 'test' ? 'test' : 'live';
+}
+
+function event2026_start_finish_shop_id(?string $mode = 'live'): int
+{
+    return event2026_normalize_stamp_card_mode($mode) === 'test' ? 565 : 293;
+}
+
+function event2026_start_finish_config(PDO $pdo, ?string $mode = 'live'): array
+{
+    $mode = event2026_normalize_stamp_card_mode($mode);
+    $shopId = event2026_start_finish_shop_id($mode);
+
+    $stmt = $pdo->prepare("SELECT id, name, adresse, latitude, longitude FROM eisdielen WHERE id = :id LIMIT 1");
+    $stmt->execute([':id' => $shopId]);
+    $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$shop) {
+        return [
+            'shop_id' => $shopId,
+            'name' => $mode === 'test' ? 'Test Start & Ziel' : 'Start & Ziel',
+            'address' => '',
+            'postal_code' => '',
+            'city' => '',
+            'full_address' => '',
+            'lat' => 0.0,
+            'lng' => 0.0,
+        ];
+    }
+
+    $address = trim((string) ($shop['adresse'] ?? ''));
+    $postalCode = '';
+    $city = '';
+    $fullAddress = $address;
+
+    return [
+        'shop_id' => (int) $shop['id'],
+        'name' => (string) $shop['name'],
+        'address' => $address,
+        'postal_code' => $postalCode,
+        'city' => $city,
+        'full_address' => $fullAddress,
+        'lat' => (float) $shop['latitude'],
+        'lng' => (float) $shop['longitude'],
+    ];
+}
+
+function event2026_live_stamping_available_from(array $event): string
+{
+    $eventDate = trim((string) ($event['event_date'] ?? ''));
+    return $eventDate !== '' ? $eventDate : '2026-05-16';
+}
+
+function event2026_is_live_stamping_open(array $event): bool
+{
+    $timezone = new DateTimeZone('Europe/Berlin');
+    $availableFrom = new DateTimeImmutable(event2026_live_stamping_available_from($event) . ' 00:00:00', $timezone);
+    $now = new DateTimeImmutable('now', $timezone);
+    return $now >= $availableFrom;
 }
 
 function event2026_ensure_checkpoint_qr_code(PDO $pdo, int $eventId, string $stampCardMode, int $shopId, string $shopName): int
@@ -793,8 +815,8 @@ function event2026_route_catalog(): array
     return [
         'epic_4' => [
             'key' => 'epic_4',
-            'label' => '4 Eis-Stopps',
-            'short_label' => '4 Stopps',
+            'label' => 'Königsrunde',
+            'short_label' => 'König',
             'distance_km' => 175,
             'elevation_m' => 1950,
             'stops' => 4,
@@ -805,8 +827,8 @@ function event2026_route_catalog(): array
         ],
         'classic_3' => [
             'key' => 'classic_3',
-            'label' => '3 Eis-Stopps',
-            'short_label' => '3 Stopps',
+            'label' => 'Sportliche Runde',
+            'short_label' => 'Sport',
             'distance_km' => 140,
             'elevation_m' => 1600,
             'stops' => 3,
@@ -817,8 +839,8 @@ function event2026_route_catalog(): array
         ],
         'family_2' => [
             'key' => 'family_2',
-            'label' => 'Einsteiger-/Familientour',
-            'short_label' => 'Familientour',
+            'label' => 'Genussrunde',
+            'short_label' => 'Genuss',
             'distance_km' => 75,
             'elevation_m' => 550,
             'stops' => 2,
