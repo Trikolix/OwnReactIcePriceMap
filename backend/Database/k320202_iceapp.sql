@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 10.35.233.205:3306
--- Erstellungszeit: 11. Mrz 2026 um 22:35
+-- Erstellungszeit: 19. Mrz 2026 um 11:23
 -- Server-Version: 8.0.44
 -- PHP-Version: 8.4.17
 
@@ -150,7 +150,8 @@ INSERT INTO `awards` (`id`, `code`, `category`, `created_at`) VALUES
 (55, 'ice_olympia_2026', 'Eis-Winterolympiade 2026', '2026-02-04 07:01:37'),
 (56, 'taste_of_chemnitz', 'The Taste of Chemnitz', '2026-03-05 08:49:47'),
 (57, 'first_iceapp_birthday', 'Aktion zum 1. Geburtstag der Ice-App', '2026-03-06 08:18:12'),
-(58, 'multiple_challenges', 'Mehrere Challenges an einem Tag', '2026-03-10 06:06:26');
+(58, 'multiple_challenges', 'Mehrere Challenges an einem Tag', '2026-03-10 06:06:26'),
+(59, 'ice_app_years_membership', 'X Jahre Mitgliedschaft bei der Ice-App', '2026-03-17 18:12:23');
 
 -- --------------------------------------------------------
 
@@ -186,7 +187,7 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (16, 6, 5, 100, 'uploads/award_icons/69a970720961e_100_Bilder_geschossen.png', 'Der Paparazzi des Speiseeises', '100 Fotos? Du bist der Meister der eiskalten Momentaufnahmen. Wenn irgendwo Eis serviert wird, bist du mit der Linse schon da.', 500),
 (22, 9, 1, 1, 'uploads/awards/award_680ae7ac902bf.png', 'Heilige Dreifaltigkeit', 'Du hast das Eis-Universum komplettiert: Kugeleis, Softeis und Eisbecher – alle genossen! Ein wahrer Eis-Gläubiger auf Pilgerreise zum ultimativen Genuss.', 100),
 (23, 10, 1, 1, 'uploads/awards/award_680ae9bb9320f.png', 'Fürst Pückler ', 'Du bist ein echter Klassiker! Mit Vanille, Erdbeer und Schoko hast du die legendäre Fürst-Pückler-Kombination vollendet. Ein Hoch auf deinen traditionellen Geschmack!', 100),
-(24, 11, 1, 1, 'uploads/awards/award_680aee0db3554.png', 'Perfekte Woche ', '7 Tage, 7 Eisdielen, 7 Glücksmomente! Du hast eine ganze Woche lang täglich Eis eingecheckt – wahrlich eine perfekte Woche voller süßer Abenteuer', 400),
+(24, 11, 1, 7, 'uploads/awards/award_680aee0db3554.png', 'Perfekte Woche ', '7 Tage, 7 Eisdielen, 7 Glücksmomente! Du hast eine ganze Woche lang täglich Eis eingecheckt – wahrlich eine perfekte Woche voller süßer Abenteuer', 400),
 (27, 3, 1, 3, 'uploads/award_icons/69a96b48645a9_1000130385.png', 'Kugel-Kenner', '3 Kugeln Eis – du weißt, was schmeckt! Deine Geschmacksknospen haben sich gerade aufgewärmt – das Abenteuer hat gerade erst begonnen.', 10),
 (28, 3, 2, 10, 'uploads/award_icons/69a96c6a8d3cb_10_kugeln_eis.png', 'Triple-Scooper', '10 Kugeln – du jonglierst Sorten wie ein echter Profi! Du bist auf dem besten Weg zur Eis-Elite.', 40),
 (29, 3, 3, 50, 'uploads/award_icons/69a96c8ecd627_50_kugeln_eis.png', 'Eisberg voraus!', '50 Kugeln! (Kein Scherz.) Du bist offiziell eine wandelnde Eisdiele. Deine Lieblingssorte kennt dich beim Namen.', 150),
@@ -522,7 +523,20 @@ INSERT INTO `award_levels` (`id`, `award_id`, `level`, `threshold`, `icon_path`,
 (368, 58, 2, 3, 'uploads/award_icons/69afb5b8953a7_Der Eis-Triumph.png', 'Der Eis-Triumph', 'Drei Challenges an einem einzigen Tag – das ist kein Glück, das ist Legende.\r\nDu hast die Eiswelt erobert und bist in die höchste Liga der Ice-App aufgestiegen.', 600),
 (369, 44, 5, 6, 'uploads/award_icons/69b10496d22a6_5x5Eisdielen.png', '6 × 6 der Eisdielen', '6 Eisdielen jeweils 6-mal besucht – du beherrschst das große Einmaleins der Eisdielen! Deine Eisreise wird zur echten Sammlung.', 600),
 (370, 44, 6, 7, 'uploads/award_icons/69b106506a2e7_7x7Eisdielen.png', '7 × 7 der Eisdielen', '7 Eisdielen jeweils 7-mal besucht – du bist eine echte Eislegende! Das Einmaleins der Eisdielen liegt dir inzwischen im Blut.', 800),
-(371, 19, 38, 57, 'uploads/award_icons/69b1bd54a1199_ChatGPT Image 11. März 2026, 20_06_33.png', 'ICE IN THE BVI', 'Ein Eis im Paradies! Dieser Award würdigt deinen süßen Genussmoment auf den Britischen Jungferninseln – zwischen weißen Sandstränden, türkisblauem Wasser und karibischer Leichtigkeit.', 30);
+(371, 19, 38, 57, 'uploads/award_icons/69b1bd54a1199_ChatGPT Image 11. März 2026, 20_06_33.png', 'ICE IN THE BVI', 'Ein Eis im Paradies! Dieser Award würdigt deinen süßen Genussmoment auf den Britischen Jungferninseln – zwischen weißen Sandstränden, türkisblauem Wasser und karibischer Leichtigkeit.', 30),
+(372, 19, 39, 20, 'uploads/award_icons/69b94efe9cc30_Eis_in_Kasachstan.png', 'БАЛМҰЗДАҚ ҚАЗАҚСТАНДА', 'Ein Eis in den Weiten Zentralasiens – dieser Award feiert deinen Genussmoment zwischen Steppe, Bergen und futuristischer Architektur. Von Almaty bis Astana: ein kühler Genuss im Land der endlosen Horizonte.', 30),
+(373, 19, 40, 58, 'uploads/award_icons/69b94f87d75f0_Eis_in_St_Kitts_nevis.png', 'ICE IN ST. KITTS & NEVIS', 'Ein Eis im karibischen Doppelparadies – dieser Award feiert deinen süßen Genussmoment zwischen Vulkanhügeln, Palmenstränden und türkisblauem Meer auf St. Kitts und Nevis.', 30),
+(374, 11, 2, 10, 'uploads/award_icons/69b997701f461_Eis-Routine.png', 'Eis-Routine – 10 Tage am Stück', '10 Tage, 10 Eis, keine Pause – du hast deine Serie gestartet und ziehst sie durch! 🍦📆', 600),
+(375, 11, 3, 14, 'uploads/award_icons/69b997d1bb5de_Eis_Disziplin.png', 'Eis-Disziplin – 14 Tage am Stück', 'Zwei Wochen täglicher Eisgenuss – du bist im Flow und nicht mehr zu stoppen! 🍦🔥', 800),
+(376, 59, 1, 1, 'uploads/award_icons/69b99ae85736f_Membership_birthday.png', 'Erstes Eisjahr', 'Du bist seit einem Jahr Teil der Ice-App – ein Jahr voller Eis, Rides und unvergesslicher Momente. Der erste Meilenstein ist erreicht!', 100),
+(377, 59, 2, 2, 'uploads/award_icons/69b99b99d35b1_Membership_2nd_birthday.png', 'Eis-Doppelpack', 'Zwei Jahre Ice-App – doppelte Leidenschaft für Eis und Radfahren. Du bist längst ein fester Teil der Community!', 200),
+(378, 59, 3, 3, 'uploads/award_icons/69b99d0059b25_Membership_3rd_birthday.png', '3 Jahre Eisliebe', 'Drei Jahre voller Eis, Rides und unvergesslicher Momente – deine Eisliebe ist längst zur Tradition geworden. Danke, dass du die Ice-App so lange mit Leben füllst!', 300),
+(379, 12, 5, 6, 'uploads/award_icons/69ba589b142d2_6_Bundeslaender.png', '6 Bundesländer erschleckt ', 'Du ziehst durchs Land und hast bereits in 6 Bundesländern Eis geschleckt.', 350),
+(380, 12, 6, 7, 'uploads/award_icons/69ba58d5843e7_7_Bundeslaender.png', 'Eis-Republik-Profi', 'In mehr als der Hälfte aller Bundesländer bereits Eis geschleckt, du gehörst zur Eis-Elite.', 500),
+(381, 12, 7, 8, 'uploads/award_icons/69ba5962bff07_8_Bundeslaender.png', 'Eis-Kartograf', 'In 8 verschiedenen deutschen Bundesländern Eis gegessen, du zeichnest deine eigene Eis-Landkarte.', 700),
+(382, 12, 8, 10, 'uploads/award_icons/69ba59b55c63a_10_Bundeslaender.png', 'Bundesweit vereist', 'Bereits zweistellig Bundesländer besucht – dein Eis-Abdruck ist deutschlandweit sichtbar.', 1000),
+(383, 12, 9, 12, 'uploads/award_icons/69ba59ee67181_12_Bundeslaender.png', 'Eis-Imperator', 'In 12 verschiedenen Bundesländern Eis geschleckt, fast ganz Deutschland liegt hinter dir.', 1400),
+(384, 12, 10, 16, 'uploads/award_icons/69ba5a2be9d7e_16_Bundeslaender.png', 'Eis-Bundeskanzler/in Deutschlands', 'Du hast in jedem deutschen Bundesland Eis geschleckt, mehr geht nicht!', 2000);
 
 -- --------------------------------------------------------
 
@@ -754,7 +768,7 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1166, 52, 'checkin_mention', NULL, 760, 'yannickr.t hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 1, '2026-02-07 17:17:25', '{\"by_user\": \"31\", \"shop_id\": \"589\", \"username\": \"yannickr.t\", \"shop_name\": \"La Luna\", \"checkin_id\": \"760\", \"checkin_mention_id\": \"27\"}'),
 (1167, 149, 'kommentar', NULL, 151, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-02-08 02:37:19', '{\"checkin_id\":762,\"eisdiele_id\":587,\"eisdiele_name\":\"FahrBar\",\"kommentar_id\":\"151\"}'),
 (1168, 1, 'kommentar', NULL, 152, 'Anton hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-02-08 20:53:03', '{\"checkin_id\":755,\"eisdiele_id\":586,\"eisdiele_name\":\"Maspalomas Lopesan Costa Meloneras \",\"kommentar_id\":\"152\"}'),
-(1169, 2, 'kommentar', NULL, 152, 'Anton hat einen Check-in kommentiert, den du auch kommentiert hast.', 0, '2026-02-08 20:53:04', '{\"checkin_id\":755,\"eisdiele_id\":586,\"eisdiele_name\":\"Maspalomas Lopesan Costa Meloneras \",\"kommentar_id\":\"152\"}'),
+(1169, 2, 'kommentar', NULL, 152, 'Anton hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-02-08 20:53:04', '{\"checkin_id\":755,\"eisdiele_id\":586,\"eisdiele_name\":\"Maspalomas Lopesan Costa Meloneras \",\"kommentar_id\":\"152\"}'),
 (1170, 40, '', NULL, 153, 'TheGourmetCyclist hat deine Route \'Vom Hotel zur Eisdiele \' kommentiert.', 1, '2026-02-09 09:51:04', '{\"route_id\":88,\"route_name\":\"Vom Hotel zur Eisdiele \",\"kommentar_id\":\"153\",\"route_autor_id\":40}'),
 (1171, 1, '', NULL, 154, 'Anton hat eine Route kommentiert, die du auch kommentiert hast.', 1, '2026-02-09 14:58:38', '{\"route_id\":88,\"route_name\":\"Vom Hotel zur Eisdiele \",\"kommentar_id\":\"154\",\"route_autor_id\":40}'),
 (1172, 1, 'kommentar_bewertung', NULL, 155, 'yannickr.t hat deine Bewertung kommentiert.', 1, '2026-02-09 20:23:30', '{\"bewertung_id\":513,\"eisdiele_id\":597,\"kommentar_id\":\"155\"}'),
@@ -810,7 +824,7 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1221, 48, 'kommentar', NULL, 180, 'Selina hat deinen Check-in kommentiert.', 1, '2026-02-22 16:37:09', '{\"checkin_id\":807,\"eisdiele_id\":635,\"eisdiele_name\":\"H\\u00e4agen-Dazs\",\"kommentar_id\":\"180\"}'),
 (1222, 1, 'kommentar', NULL, 180, 'Selina hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-02-22 16:37:10', '{\"checkin_id\":807,\"eisdiele_id\":635,\"eisdiele_name\":\"H\\u00e4agen-Dazs\",\"kommentar_id\":\"180\"}'),
 (1223, 1, 'kommentar', NULL, 181, 'Simon hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-02-22 16:38:47', '{\"checkin_id\":807,\"eisdiele_id\":635,\"eisdiele_name\":\"H\\u00e4agen-Dazs\",\"kommentar_id\":\"181\"}'),
-(1224, 51, 'kommentar', NULL, 181, 'Simon hat einen Check-in kommentiert, den du auch kommentiert hast.', 0, '2026-02-22 16:38:47', '{\"checkin_id\":807,\"eisdiele_id\":635,\"eisdiele_name\":\"H\\u00e4agen-Dazs\",\"kommentar_id\":\"181\"}'),
+(1224, 51, 'kommentar', NULL, 181, 'Simon hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-02-22 16:38:47', '{\"checkin_id\":807,\"eisdiele_id\":635,\"eisdiele_name\":\"H\\u00e4agen-Dazs\",\"kommentar_id\":\"181\"}'),
 (1225, 154, 'checkin_mention', NULL, 810, 'Mathilda069 hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 0, '2026-02-23 17:02:33', '{\"by_user\": \"155\", \"shop_id\": \"565\", \"username\": \"Mathilda069\", \"shop_name\": \"nouri.\", \"checkin_id\": \"810\", \"checkin_mention_id\": \"44\"}'),
 (1508, 53, 'kommentar_bewertung', NULL, 182, 'TheGourmetCyclist hat deine Bewertung kommentiert.', 1, '2026-02-25 19:34:23', '{\"bewertung_id\":535,\"eisdiele_id\":165,\"kommentar_id\":\"182\"}'),
 (1509, 98, 'kommentar', NULL, 183, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-02-27 16:48:34', '{\"checkin_id\":815,\"eisdiele_id\":637,\"eisdiele_name\":\"Solo Gelato\",\"kommentar_id\":\"183\"}'),
@@ -836,7 +850,7 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1529, 20, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1530, 21, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1531, 22, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
-(1532, 23, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
+(1532, 23, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1533, 25, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1534, 26, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1535, 27, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
@@ -860,16 +874,16 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1553, 45, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1554, 46, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1555, 47, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
-(1556, 48, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
+(1556, 48, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1557, 49, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1558, 50, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
-(1559, 51, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
+(1559, 51, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1560, 52, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1561, 53, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1562, 54, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1563, 55, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}');
 INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
-(1564, 63, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
+(1564, 63, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1565, 68, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1566, 77, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 1, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
 (1567, 79, 'systemmeldung', NULL, 11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 0, '2026-03-06 11:44:30', '{\"message\":\"Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\\nMehr Funktionen, \\u00fcbersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\\nNat\\u00fcrlich gibt es auch wieder eine neue Challenge:\\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. \\ud83c\\udfc6\\n\\n\\ud83d\\udcf8 Neu: Die Ice-App Fotochallenge\\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. M\\u00e4rz ein.\\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\\n\\nUnd ja\\u2026\\nGewinne. Gewinne. Gewinne. \\ud83c\\udf81\\n\\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. \\ud83c\\udfc6\\n\\nFeiert mit uns 1 Jahr Ice-App! \\ud83c\\udf66\"}'),
@@ -979,7 +993,7 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1670, 81, 'checkin_mention', NULL, 839, 'Enkiboy hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 0, '2026-03-07 15:58:50', '{\"by_user\": \"8\", \"shop_id\": \"316\", \"username\": \"Enkiboy\", \"shop_name\": \"Eismanufaktur Glauchau\", \"checkin_id\": \"839\", \"checkin_mention_id\": \"47\"}'),
 (1671, 8, 'kommentar', NULL, 196, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-07 16:50:45', '{\"checkin_id\":839,\"eisdiele_id\":316,\"eisdiele_name\":\"Eismanufaktur Glauchau\",\"kommentar_id\":\"196\"}'),
 (1672, 1, 'kommentar', NULL, 197, 'Enkiboy hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-03-07 18:39:35', '{\"checkin_id\":839,\"eisdiele_id\":316,\"eisdiele_name\":\"Eismanufaktur Glauchau\",\"kommentar_id\":\"197\"}'),
-(1673, 48, 'kommentar', NULL, 198, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-03-08 05:49:32', '{\"checkin_id\":780,\"eisdiele_id\":611,\"eisdiele_name\":\"Softinis\",\"kommentar_id\":\"198\"}'),
+(1673, 48, 'kommentar', NULL, 198, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-08 05:49:32', '{\"checkin_id\":780,\"eisdiele_id\":611,\"eisdiele_name\":\"Softinis\",\"kommentar_id\":\"198\"}'),
 (1674, 40, 'kommentar', NULL, 199, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-03-08 05:50:49', '{\"checkin_id\":171,\"eisdiele_id\":199,\"eisdiele_name\":\"Eiswerker\",\"kommentar_id\":\"199\"}'),
 (1675, 96, 'kommentar', NULL, 200, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-03-08 05:52:06', '{\"checkin_id\":664,\"eisdiele_id\":293,\"eisdiele_name\":\"Karl mag\'s s\\u00fc\\u00df \",\"kommentar_id\":\"200\"}'),
 (1676, 125, 'kommentar', NULL, 201, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-08 05:53:48', '{\"checkin_id\":761,\"eisdiele_id\":590,\"eisdiele_name\":\"Eiscaf\\u00e9 Mona Lisa\",\"kommentar_id\":\"201\"}'),
@@ -1006,24 +1020,24 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1697, 10, 'kommentar', NULL, 221, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-03-10 20:50:18', '{\"checkin_id\":851,\"eisdiele_id\":277,\"eisdiele_name\":\"Eiscaf\\u00e9 Mario Gelato\",\"kommentar_id\":\"221\"}'),
 (1698, 53, 'kommentar', NULL, 222, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-03-10 21:11:02', '{\"checkin_id\":858,\"eisdiele_id\":20,\"eisdiele_name\":\"Ackermanns Eiscaf\\u00e9\",\"kommentar_id\":\"222\"}'),
 (1699, 1, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:05', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1700, 2, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1701, 3, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}');
+(1700, 2, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1701, 3, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}');
 INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
-(1702, 4, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1702, 4, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1703, 5, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1704, 6, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1705, 7, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1706, 8, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1706, 8, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1707, 9, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1708, 10, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1709, 11, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1710, 12, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1711, 13, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1712, 19, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1712, 19, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1713, 20, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1714, 21, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1715, 22, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1716, 23, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1716, 23, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1717, 25, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1718, 26, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1719, 27, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
@@ -1048,17 +1062,17 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1738, 46, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}');
 INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
 (1739, 47, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1740, 48, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1740, 48, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1741, 49, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1742, 50, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1743, 51, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1743, 51, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1744, 52, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1745, 53, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1746, 54, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1747, 55, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1748, 63, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1748, 63, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1749, 68, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1750, 77, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1750, 77, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1751, 79, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1752, 81, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1753, 86, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
@@ -1086,7 +1100,7 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1775, 122, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}');
 INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
 (1776, 123, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1777, 125, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1777, 125, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1778, 128, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1779, 133, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1780, 134, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
@@ -1102,9 +1116,9 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1790, 149, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1791, 154, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1792, 155, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1793, 156, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1793, 156, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1794, 157, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1795, 158, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
+(1795, 158, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 1, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1796, 159, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1797, 160, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1798, 161, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
@@ -1164,7 +1178,212 @@ INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_i
 (1850, 121, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1851, 115, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
 (1852, 132, 'systemmeldung', NULL, 12, '📸 Ice-App Foto-Challenge – Endspurt!', 0, '2026-03-11 17:35:06', '{\"message\":\"Der Countdown l\\u00e4uft: Noch 3 Tage Zeit!\\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder f\\u00fcr die Ice-App Foto-Challenge einreichen.\\n\\nBereits 29 Bilder wurden eingereicht \\u2013 jetzt fehlt nur noch dein bestes Eis-Motiv! \\u2744\\ufe0f\\ud83d\\udcf7\\nEs warten tolle Preise auf die Gewinner, und zus\\u00e4tzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\\n\\nSo nimmst du teil:\\n\\n\\u00d6ffne in der App den Bereich \\u201eFoto-Challenge\\u201c\\n\\nW\\u00e4hle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\\n\\nVergib optional einen Titel f\\u00fcr dein Bild\\n\\nEinreichen \\u2013 fertig!\\n\\nDu hast noch kein perfektes Bild? Kein Problem!\\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\\n\\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschlie\\u00dfend in die KO-Runde, in der Bild f\\u00fcr Bild bis zum Gewinner abgestimmt wird.\\n\\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! \\ud83e\\uddca\\ud83d\\udcf8\"}'),
-(1853, 52, 'checkin_mention', NULL, 863, 'yannickr.t hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 1, '2026-03-11 18:36:24', '{\"by_user\": \"31\", \"shop_id\": \"649\", \"username\": \"yannickr.t\", \"shop_name\": \"The Baths\", \"checkin_id\": \"863\", \"checkin_mention_id\": \"49\"}');
+(1853, 52, 'checkin_mention', NULL, 863, 'yannickr.t hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 1, '2026-03-11 18:36:24', '{\"by_user\": \"31\", \"shop_id\": \"649\", \"username\": \"yannickr.t\", \"shop_name\": \"The Baths\", \"checkin_id\": \"863\", \"checkin_mention_id\": \"49\"}'),
+(1854, 31, 'kommentar', NULL, 223, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-11 21:49:28', '{\"checkin_id\":866,\"eisdiele_id\":650,\"eisdiele_name\":\"Creamery\",\"kommentar_id\":\"223\"}'),
+(1855, 1, 'kommentar', NULL, 224, 'yannickr.t hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-03-11 21:52:20', '{\"checkin_id\":866,\"eisdiele_id\":650,\"eisdiele_name\":\"Creamery\",\"kommentar_id\":\"224\"}'),
+(1856, 1, 'new_user', NULL, 169, 'trail_surfer_Basti hat sich über deinen Einladungslink registriert.', 1, '2026-03-12 12:20:39', NULL),
+(1857, 169, '', NULL, 225, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-12 12:53:56', '{\"user_registration_id\":169,\"kommentar_id\":225}'),
+(1858, 53, 'kommentar', NULL, 226, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-13 08:08:37', '{\"checkin_id\":869,\"eisdiele_id\":314,\"eisdiele_name\":\"B\\u00e4ckerei Br\\u00e4unig\",\"kommentar_id\":\"226\"}'),
+(1859, 52, 'checkin_mention', NULL, 870, 'yannickr.t hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 0, '2026-03-13 12:14:09', '{\"by_user\": \"31\", \"shop_id\": \"651\", \"username\": \"yannickr.t\", \"shop_name\": \"The Gelato Shop St Kitts\", \"checkin_id\": \"870\", \"checkin_mention_id\": \"50\"}'),
+(1860, 1, 'new_user', NULL, 170, 'oatarrow hat sich über deinen Einladungslink registriert.', 1, '2026-03-13 20:32:15', NULL),
+(1861, 1, 'kommentar', NULL, 227, 'Simon hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-03-13 22:05:34', '{\"checkin_id\":780,\"eisdiele_id\":611,\"eisdiele_name\":\"Softinis\",\"kommentar_id\":\"227\"}'),
+(1862, 170, '', NULL, 228, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-14 08:59:47', '{\"user_registration_id\":170,\"kommentar_id\":228}'),
+(1863, 170, '', NULL, 229, 'IceGoe hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-14 11:48:26', '{\"user_registration_id\":170,\"kommentar_id\":229}'),
+(1864, 1, '', NULL, 229, 'IceGoe hat einen Profil-Feed-Eintrag kommentiert, den du auch kommentiert hast.', 1, '2026-03-14 11:48:26', '{\"user_registration_id\":170,\"kommentar_id\":229}'),
+(1865, 53, 'kommentar', NULL, 230, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-14 11:57:23', '{\"checkin_id\":873,\"eisdiele_id\":570,\"eisdiele_name\":\"Konditorei & Kaffeehaus Rabenstein\",\"kommentar_id\":\"230\"}'),
+(1866, 1, 'kommentar', NULL, 231, 'IceGoe hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-03-14 12:03:24', '{\"checkin_id\":873,\"eisdiele_id\":570,\"eisdiele_name\":\"Konditorei & Kaffeehaus Rabenstein\",\"kommentar_id\":\"231\"}'),
+(1867, 183, '', NULL, 232, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:52:50', '{\"user_registration_id\":183,\"kommentar_id\":232}'),
+(1868, 182, '', NULL, 233, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:53:01', '{\"user_registration_id\":182,\"kommentar_id\":233}'),
+(1869, 181, '', NULL, 234, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:53:11', '{\"user_registration_id\":181,\"kommentar_id\":234}'),
+(1870, 180, '', NULL, 235, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:53:27', '{\"user_registration_id\":180,\"kommentar_id\":235}'),
+(1871, 179, '', NULL, 236, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:53:53', '{\"user_registration_id\":179,\"kommentar_id\":236}'),
+(1872, 178, '', NULL, 237, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:54:26', '{\"user_registration_id\":178,\"kommentar_id\":237}'),
+(1873, 175, '', NULL, 238, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:55:04', '{\"user_registration_id\":175,\"kommentar_id\":238}'),
+(1874, 176, '', NULL, 239, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:55:12', '{\"user_registration_id\":176,\"kommentar_id\":239}'),
+(1875, 177, '', NULL, 240, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:55:38', '{\"user_registration_id\":177,\"kommentar_id\":240}'),
+(1876, 174, '', NULL, 241, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-17 08:56:29', '{\"user_registration_id\":174,\"kommentar_id\":241}'),
+(1877, 158, 'kommentar', NULL, 242, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-17 12:58:24', '{\"checkin_id\":877,\"eisdiele_id\":654,\"eisdiele_name\":\"33 Pengvina\",\"kommentar_id\":\"242\"}'),
+(1878, 1, 'kommentar', NULL, 243, 'ScoopsAroundTheWorld hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-03-17 15:25:49', '{\"checkin_id\":877,\"eisdiele_id\":654,\"eisdiele_name\":\"33 Pengvina\",\"kommentar_id\":\"243\"}'),
+(1880, 19, 'checkin_mention', NULL, 879, 'TheGourmetCyclist hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.', 1, '2026-03-17 15:32:00', '{\"by_user\": \"1\", \"shop_id\": \"11\", \"username\": \"TheGourmetCyclist\", \"shop_name\": \"Corina Heil Eiscafé Fantasy\", \"checkin_id\": \"879\", \"checkin_mention_id\": \"51\"}'),
+(1881, 1, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 1, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1882, 2, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1883, 3, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1884, 4, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1885, 5, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1886, 6, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1887, 7, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1888, 8, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1889, 9, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1890, 10, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1891, 11, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1892, 12, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1893, 13, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1894, 19, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 1, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1895, 20, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1896, 21, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1897, 22, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 1, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1898, 23, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1899, 25, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1900, 26, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1901, 27, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1902, 28, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1903, 29, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1904, 30, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1905, 31, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1906, 32, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}');
+INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
+(1907, 33, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1908, 34, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1909, 35, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1910, 36, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1911, 37, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1912, 38, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1913, 39, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1914, 40, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1915, 41, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1916, 42, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1917, 43, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1918, 44, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1919, 45, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1920, 46, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1921, 47, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1922, 48, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1923, 49, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1924, 50, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1925, 51, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1926, 52, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1927, 53, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 1, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1928, 54, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1929, 55, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1930, 63, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1931, 68, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1932, 77, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1933, 79, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1934, 81, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1935, 86, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1936, 87, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1937, 88, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1938, 89, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}');
+INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
+(1939, 94, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1940, 96, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1941, 98, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1942, 99, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1943, 100, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1944, 102, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1945, 103, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1946, 105, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1947, 107, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1948, 108, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1949, 109, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1950, 110, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1951, 111, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1952, 112, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1953, 116, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1954, 117, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1955, 118, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1956, 120, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1957, 122, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1958, 123, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1959, 125, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 1, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1960, 128, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1961, 133, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1962, 134, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1963, 135, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1964, 136, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1965, 137, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1966, 138, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1967, 144, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1968, 145, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1969, 146, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1970, 147, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}');
+INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
+(1971, 148, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1972, 149, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1973, 154, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1974, 155, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1975, 156, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1976, 157, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1977, 158, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1978, 159, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1979, 160, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1980, 161, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1981, 162, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1982, 163, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1983, 164, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1984, 165, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1985, 167, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1986, 168, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1987, 171, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1988, 172, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1989, 173, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1990, 174, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1991, 175, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1992, 176, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1993, 177, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1994, 178, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1995, 179, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1996, 180, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1997, 181, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1998, 182, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(1999, 183, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2000, 184, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2001, 62, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2002, 75, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}');
+INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
+(2003, 92, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2004, 95, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2005, 101, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2006, 104, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2007, 131, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2008, 169, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2009, 170, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2010, 119, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2011, 129, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2012, 93, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2013, 124, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2014, 139, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2015, 143, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2016, 166, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2017, 90, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2018, 91, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2019, 140, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2020, 141, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2021, 142, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2022, 150, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2023, 106, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2024, 69, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2025, 70, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2026, 74, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2027, 78, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2028, 97, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2029, 126, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2030, 127, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2031, 151, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2032, 152, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2033, 64, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2034, 65, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}');
+INSERT INTO `benachrichtigungen` (`id`, `empfaenger_id`, `typ`, `systemmeldung_id`, `referenz_id`, `text`, `ist_gelesen`, `erstellt_am`, `zusatzdaten`) VALUES
+(2035, 66, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2036, 67, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2037, 71, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2038, 72, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2039, 73, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2040, 76, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2041, 80, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2042, 82, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2043, 83, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2044, 84, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2045, 85, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2046, 130, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2047, 153, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2048, 121, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2049, 115, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2050, 132, 'systemmeldung', NULL, 13, 'Eis-Tour und Foto-Challenge', 0, '2026-03-18 05:57:36', '{\"message\":\"Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\\nDas Ganze wird eine Radtour zum Sammeln von Spenden f\\u00fcr den Elternverein krebskranker Kinder e.V. sein.\\n\\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\\n\\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag\\u2019s s\\u00fc\\u00df einen mega Start- und Zielort auf dem Br\\u00fchl.\\n\\nMeldet euch gerne an und erz\\u00e4hlt anderen von der Tour. Ich w\\u00fcrde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begr\\u00fc\\u00dfen zu d\\u00fcrfen.\\n\\nWeitere Meldungen:\\nAktuell l\\u00e4uft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch \\u2013 das bringt auch viele EP f\\u00fcr die Geburtstagschallenge.\\n\\nDie Geburtstagschallenge l\\u00e4uft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\\n\\nLG\\nTheGourmetCyclist\"}'),
+(2051, 23, 'kommentar', NULL, 245, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 1, '2026-03-18 17:36:28', '{\"checkin_id\":885,\"eisdiele_id\":656,\"eisdiele_name\":\"Spar express\",\"kommentar_id\":\"245\"}'),
+(2052, 53, 'kommentar', NULL, 246, 'TheGourmetCyclist hat deinen Check-in kommentiert.', 0, '2026-03-18 17:36:57', '{\"checkin_id\":884,\"eisdiele_id\":20,\"eisdiele_name\":\"Ackermanns Eiscaf\\u00e9\",\"kommentar_id\":\"246\"}'),
+(2053, 1, 'kommentar', NULL, 247, 'IceGoe hat einen Check-in kommentiert, den du auch kommentiert hast.', 1, '2026-03-18 17:45:31', '{\"checkin_id\":858,\"eisdiele_id\":20,\"eisdiele_name\":\"Ackermanns Eiscaf\\u00e9\",\"kommentar_id\":\"247\"}'),
+(2054, 185, '', NULL, 248, 'TheGourmetCyclist hat deinen Profil-Feed-Eintrag kommentiert.', 0, '2026-03-19 05:08:04', '{\"user_registration_id\":185,\"kommentar_id\":248}');
 
 -- --------------------------------------------------------
 
@@ -1513,11 +1732,13 @@ INSERT INTO `bewertungen` (`id`, `eisdiele_id`, `nutzer_id`, `geschmack`, `kugel
 (546, 167, 167, NULL, NULL, NULL, 22, 'Geheimtipp, alle Mega freundlich und Familien betrieben.\r\n', '2026-03-07 21:34:50', NULL, 0),
 (547, 448, 118, NULL, NULL, NULL, 20, 'Nettes Personal, leckeres Eis und regelmäßig wechselnde Sorten. Perfekte Lage in der Innenstadt – immer einen Besuch wert!', '2026-03-08 15:54:09', NULL, 0),
 (550, 5, 53, NULL, NULL, NULL, 20, 'Ein Traum, abwechslungsreiche Sorten und guter Geschmack. Auch Großpackungen zum Mitnehmen. ', '2026-03-09 13:51:12', NULL, 1),
-(551, 314, 53, NULL, NULL, NULL, 10, 'Mein absoluter Lieblingsbäcker im Erzgebirge. Egal ob Brot, Kuchen oder Stollen, einfach spitze. Der Eistest steht aber noch aus. Die Mitarbeiter sind super nett und ganz besonders die Kinder stehen bei ihnen im Vordergrund 👍🏼', '2026-03-09 19:27:05', NULL, 0),
+(551, 314, 53, NULL, NULL, NULL, 10, 'Mein absoluter Lieblingsbäcker im Erzgebirge. Egal ob Brot, Kuchen oder Stollen, einfach spitze. Der Eistest steht aber noch aus. Die Mitarbeiter sind super nett und ganz besonders die Kinder stehen bei ihnen im Vordergrund 👍🏼', '2026-03-09 19:27:05', '2026-03-13 10:08:46', 0),
 (552, 116, 1, NULL, NULL, NULL, 22, 'Im Innenhof vom Rasthof gelegen gibt es hier einige Sorten Eis und später im Jahr wohl auch Softeis im Angebot.\r\nWie man sieht leider keine Kartenzahlung :(', '2026-03-10 15:08:07', '2026-03-10 20:47:51', 1),
 (553, 273, 53, NULL, NULL, NULL, 14, 'Mit Bubblewaffel sind viele Eisbecher toll wenn man nicht so einen süßen wählt. Das Eis ist okay, also eher Bubblewaffelbecher als Eis', '2026-03-10 17:47:07', NULL, 0),
-(554, 20, 53, NULL, NULL, NULL, 12, 'Kleine tolle Eisdiele mit super nettem Personal', '2026-03-10 17:48:26', NULL, 0),
-(559, 32, 53, NULL, NULL, NULL, 18, 'Schönes kleines Café direkt am Schlossteich. Spaziergang einmal um den Teich und dann ab ins Cafe 🤣', '2026-03-11 11:07:55', NULL, 1);
+(554, 20, 53, NULL, NULL, NULL, 12, 'Kleine tolle Eisdiele mit super nettem Personal', '2026-03-10 17:48:26', '2026-03-18 17:29:16', 0),
+(559, 32, 53, NULL, NULL, NULL, 18, 'Schönes kleines Café direkt am Schlossteich. Spaziergang einmal um den Teich und dann ab ins Cafe 🤣', '2026-03-11 11:07:55', NULL, 1),
+(562, 416, 53, NULL, NULL, NULL, 20, 'Leider nicht mehr die Qualität noch vor Jahren ', '2026-03-16 12:57:13', NULL, 1),
+(563, 654, 158, NULL, NULL, NULL, NULL, '', '2026-03-17 12:39:44', NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -1748,6 +1969,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (535, 3),
 (541, 3),
 (546, 3),
+(554, 3),
 (3, 4),
 (5, 4),
 (8, 4),
@@ -1851,7 +2073,10 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (545, 4),
 (546, 4),
 (550, 4),
+(551, 4),
 (553, 4),
+(554, 4),
+(563, 4),
 (10, 5),
 (31, 5),
 (145, 5),
@@ -1955,6 +2180,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (535, 6),
 (536, 6),
 (546, 6),
+(554, 6),
 (559, 6),
 (76, 7),
 (125, 7),
@@ -1969,6 +2195,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (509, 7),
 (546, 7),
 (547, 7),
+(562, 7),
 (95, 8),
 (130, 8),
 (145, 8),
@@ -2103,6 +2330,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (546, 9),
 (550, 9),
 (552, 9),
+(554, 9),
 (139, 10),
 (184, 10),
 (201, 10),
@@ -2157,6 +2385,7 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (442, 14),
 (546, 14),
 (547, 14),
+(562, 14),
 (11, 15),
 (205, 15),
 (255, 15),
@@ -2280,6 +2509,8 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (537, 25),
 (540, 25),
 (546, 25),
+(551, 25),
+(562, 25),
 (3, 26),
 (28, 26),
 (31, 26),
@@ -2318,6 +2549,9 @@ INSERT INTO `bewertung_attribute` (`bewertung_id`, `attribut_id`) VALUES
 (546, 26),
 (547, 26),
 (550, 26),
+(551, 26),
+(554, 26),
+(562, 26),
 (3, 27),
 (12, 27),
 (421, 27),
@@ -3312,7 +3546,21 @@ INSERT INTO `bilder` (`id`, `nutzer_id`, `url`, `checkin_id`, `shop_id`, `bewert
 (972, 31, 'uploads/checkins/checkin_69b1b6285dc8a3.42971257.jpg', 863, 649, NULL, '', '2026-03-11 18:36:24'),
 (973, 52, 'uploads/checkins/checkin_69b1bb70818ab8.57501404.jpg', 864, 649, NULL, '', '2026-03-11 18:58:56'),
 (974, 53, 'uploads/checkins/checkin_69b1d050cf8704.09156626.jpg', 865, 5, NULL, '', '2026-03-11 20:28:00'),
-(975, 31, 'uploads/checkins/checkin_69b1d7f692e8d9.32966617.jpg', 866, 650, NULL, '', '2026-03-11 21:00:38');
+(975, 31, 'uploads/checkins/checkin_69b1d7f692e8d9.32966617.jpg', 866, 650, NULL, '', '2026-03-11 21:00:38'),
+(976, 53, 'uploads/checkins/checkin_69b26bc8253fc7.25154947.jpg', 794, 620, NULL, '', '2026-03-12 07:31:20'),
+(977, 53, 'uploads/checkins/checkin_69b3e20e9287a4.96704268.jpg', 869, 314, NULL, '', '2026-03-13 10:08:14'),
+(978, 31, 'uploads/checkins/checkin_69b3ff91749574.17383919.jpg', 870, 651, NULL, '', '2026-03-13 12:14:09'),
+(979, 31, 'uploads/checkins/checkin_69b3ff918b29d7.61961811.jpg', 870, 651, NULL, '', '2026-03-13 12:14:09'),
+(980, 156, 'uploads/checkins/checkin_69b4589dd13d65.76628946.jpg', 872, 293, NULL, '', '2026-03-13 18:34:05'),
+(981, 1, 'uploads/checkins/checkin_69b7f23b82d9e9.78576425.jpg', 875, 1, NULL, '', '2026-03-16 12:06:19'),
+(982, 158, 'uploads/checkins/checkin_69b94ae96ee6f1.95953481.jpg', 877, 654, NULL, '', '2026-03-17 12:36:57'),
+(983, 158, 'uploads/bewertungen/bewertung_69b94b9065b9c7.38489594.jpg', NULL, 654, 563, '', '2026-03-17 12:39:44'),
+(984, 1, 'uploads/checkins/checkin_69b976a271fdc3.97835510.jpg', 879, 11, NULL, '', '2026-03-17 15:43:30'),
+(985, 1, 'uploads/checkins/checkin_69b976a2884a78.13674348.jpg', 879, 11, NULL, '', '2026-03-17 15:43:30'),
+(986, 19, 'uploads/checkins/checkin_69b979161f3762.39168606.jpg', 880, 11, NULL, '', '2026-03-17 15:53:58'),
+(987, 119, 'uploads/checkins/checkin_69baae86aaf327.53093842.jpg', 882, 5, NULL, '', '2026-03-18 13:54:14'),
+(988, 53, 'uploads/checkins/checkin_69bab6e8b45115.78707588.jpg', 884, 20, NULL, '', '2026-03-18 14:30:00'),
+(989, 23, 'uploads/checkins/checkin_69bac0f10aa3f7.54384605.jpg', 885, 656, NULL, '', '2026-03-18 15:12:49');
 
 -- --------------------------------------------------------
 
@@ -3364,7 +3612,36 @@ INSERT INTO `birthday_easter_eggs` (`user_id`, `shop_id`, `discovered_at`) VALUE
 (19, 194, '2026-03-11 04:31:15'),
 (1, 193, '2026-03-11 18:26:47'),
 (22, 192, '2026-03-11 19:47:47'),
-(1, 353, '2026-03-11 21:53:18');
+(1, 353, '2026-03-11 21:53:18'),
+(23, 72, '2026-03-11 22:39:10'),
+(1, 213, '2026-03-12 06:35:38'),
+(53, 570, '2026-03-12 12:29:36'),
+(1, 72, '2026-03-13 02:55:03'),
+(19, 162, '2026-03-13 05:22:29'),
+(19, 643, '2026-03-13 14:21:43'),
+(1, 570, '2026-03-13 14:29:42'),
+(53, 636, '2026-03-13 17:50:46'),
+(48, 10, '2026-03-13 23:04:09'),
+(19, 564, '2026-03-14 06:12:13'),
+(22, 643, '2026-03-14 12:57:18'),
+(2, 34, '2026-03-14 15:43:58'),
+(19, 548, '2026-03-15 07:43:30'),
+(173, 589, '2026-03-15 11:34:32'),
+(1, 293, '2026-03-15 16:35:34'),
+(19, 102, '2026-03-15 17:51:51'),
+(1, 88, '2026-03-16 04:02:18'),
+(53, 564, '2026-03-16 06:51:53'),
+(1, 319, '2026-03-16 15:47:52'),
+(1, 126, '2026-03-17 08:52:52'),
+(53, 162, '2026-03-17 10:00:24'),
+(63, 35, '2026-03-17 10:49:48'),
+(1, 115, '2026-03-17 13:59:31'),
+(19, 482, '2026-03-17 14:38:15'),
+(19, 17, '2026-03-18 07:19:11'),
+(1, 117, '2026-03-18 08:17:13'),
+(19, 652, '2026-03-18 12:23:43'),
+(53, 165, '2026-03-18 13:36:24'),
+(1, 170, '2026-03-19 09:37:33');
 
 -- --------------------------------------------------------
 
@@ -3382,7 +3659,28 @@ CREATE TABLE `birthday_event_page_visits` (
 --
 
 INSERT INTO `birthday_event_page_visits` (`user_id`, `first_visited_at`) VALUES
-(1, '2026-03-11 20:11:38');
+(1, '2026-03-11 20:11:38'),
+(2, '2026-03-17 10:26:57'),
+(4, '2026-03-15 18:15:25'),
+(8, '2026-03-14 23:36:56'),
+(13, '2026-03-14 21:30:55'),
+(19, '2026-03-14 13:45:04'),
+(22, '2026-03-18 17:36:46'),
+(23, '2026-03-12 08:14:55'),
+(48, '2026-03-15 18:18:23'),
+(53, '2026-03-14 12:44:42'),
+(62, '2026-03-16 09:09:06'),
+(94, '2026-03-18 19:55:37'),
+(101, '2026-03-18 20:49:50'),
+(108, '2026-03-15 19:33:55'),
+(125, '2026-03-15 11:49:37'),
+(158, '2026-03-17 13:17:34'),
+(174, '2026-03-15 19:54:29'),
+(177, '2026-03-16 08:42:22'),
+(179, '2026-03-16 20:06:01'),
+(180, '2026-03-16 20:25:10'),
+(181, '2026-03-16 20:37:11'),
+(185, '2026-03-18 14:29:24');
 
 -- --------------------------------------------------------
 
@@ -3405,39 +3703,55 @@ CREATE TABLE `birthday_user_progress` (
 --
 
 INSERT INTO `birthday_user_progress` (`user_id`, `total_xp`, `login_days`, `last_login_date`, `mandatory_completed`, `bonus_completed`, `updated_at`) VALUES
-(1, 555, 6, '2026-03-11', 7, 3, '2026-03-11 20:53:30'),
-(2, 25, 2, '2026-03-10', 1, 0, '2026-03-10 03:56:46'),
-(3, 85, 2, '2026-03-09', 1, 0, '2026-03-09 05:49:46'),
-(4, 117, 3, '2026-03-10', 2, 0, '2026-03-10 09:16:59'),
-(8, 150, 5, '2026-03-11', 6, 1, '2026-03-11 03:40:41'),
-(10, 25, 1, '2026-03-10', 1, 0, '2026-03-10 12:50:50'),
-(19, 218, 6, '2026-03-11', 7, 2, '2026-03-11 03:31:29'),
-(22, 150, 6, '2026-03-11', 3, 0, '2026-03-11 18:54:33'),
-(23, 30, 3, '2026-03-10', 1, 0, '2026-03-10 02:22:58'),
-(27, 55, 4, '2026-03-10', 1, 0, '2026-03-10 02:23:22'),
-(31, 135, 4, '2026-03-11', 5, 1, '2026-03-11 21:09:54'),
-(40, 25, 2, '2026-03-10', 1, 0, '2026-03-10 03:56:44'),
+(1, 945, 14, '2026-03-19', 10, 3, '2026-03-19 08:37:36'),
+(2, 267, 6, '2026-03-17', 3, 0, '2026-03-17 12:05:36'),
+(3, 160, 5, '2026-03-19', 1, 0, '2026-03-19 01:27:02'),
+(4, 282, 9, '2026-03-18', 4, 0, '2026-03-18 03:52:36'),
+(8, 315, 11, '2026-03-19', 8, 1, '2026-03-19 03:58:30'),
+(10, 30, 2, '2026-03-15', 1, 0, '2026-03-15 20:55:54'),
+(13, 40, 2, '2026-03-15', 2, 0, '2026-03-14 23:38:44'),
+(19, 429, 14, '2026-03-19', 10, 2, '2026-03-19 05:06:55'),
+(22, 316, 11, '2026-03-18', 5, 0, '2026-03-18 16:37:35'),
+(23, 397, 12, '2026-03-19', 7, 1, '2026-03-19 03:58:37'),
+(27, 60, 5, '2026-03-15', 1, 0, '2026-03-15 09:24:05'),
+(31, 205, 10, '2026-03-19', 7, 1, '2026-03-19 01:27:26'),
+(40, 30, 3, '2026-03-12', 1, 0, '2026-03-12 01:11:59'),
+(48, 277, 6, '2026-03-18', 5, 0, '2026-03-17 23:59:23'),
+(51, 185, 5, '2026-03-18', 2, 0, '2026-03-17 23:59:40'),
 (52, 70, 4, '2026-03-11', 4, 0, '2026-03-11 18:59:14'),
-(53, 355, 4, '2026-03-11', 6, 2, '2026-03-11 20:28:21'),
-(62, 75, 4, '2026-03-10', 2, 1, '2026-03-10 06:13:25'),
-(77, 25, 2, '2026-03-10', 1, 0, '2026-03-10 03:56:38'),
-(86, 60, 2, '2026-03-11', 3, 0, '2026-03-11 03:41:03'),
-(99, 100, 2, '2026-03-11', 2, 0, '2026-03-11 03:40:56'),
-(101, 5, 1, '2026-03-11', 0, 0, '2026-03-11 10:08:14'),
-(118, 175, 6, '2026-03-11', 7, 2, '2026-03-11 18:16:07'),
-(124, 10, 2, '2026-03-10', 0, 0, '2026-03-10 03:56:57'),
-(125, 125, 6, '2026-03-11', 3, 0, '2026-03-11 19:02:56'),
-(133, 35, 3, '2026-03-10', 1, 0, '2026-03-10 02:23:08'),
-(139, 60, 2, '2026-03-10', 1, 0, '2026-03-10 06:11:54'),
-(155, 102, 5, '2026-03-11', 2, 0, '2026-03-11 03:40:45'),
-(156, 90, 4, '2026-03-11', 2, 0, '2026-03-11 15:44:23'),
+(53, 775, 11, '2026-03-18', 9, 3, '2026-03-18 17:28:07'),
+(62, 100, 6, '2026-03-19', 3, 1, '2026-03-19 03:59:13'),
+(63, 192, 4, '2026-03-18', 2, 0, '2026-03-17 23:59:32'),
+(77, 75, 7, '2026-03-18', 3, 0, '2026-03-18 05:46:23'),
+(86, 70, 4, '2026-03-19', 3, 0, '2026-03-19 01:27:08'),
+(94, 35, 3, '2026-03-18', 1, 0, '2026-03-18 01:08:30'),
+(98, 50, 1, '2026-03-18', 1, 1, '2026-03-18 13:46:18'),
+(99, 175, 5, '2026-03-18', 2, 0, '2026-03-17 23:59:43'),
+(101, 20, 4, '2026-03-15', 0, 0, '2026-03-15 17:58:50'),
+(108, 20, 1, '2026-03-15', 1, 0, '2026-03-15 19:02:56'),
+(118, 335, 14, '2026-03-19', 8, 2, '2026-03-19 03:58:53'),
+(119, 45, 1, '2026-03-18', 2, 0, '2026-03-18 14:21:00'),
+(124, 15, 3, '2026-03-15', 0, 0, '2026-03-15 07:25:31'),
+(125, 285, 11, '2026-03-18', 5, 0, '2026-03-17 23:59:18'),
+(133, 40, 4, '2026-03-18', 1, 0, '2026-03-18 05:46:04'),
+(139, 70, 4, '2026-03-18', 1, 0, '2026-03-18 00:00:08'),
+(150, 40, 2, '2026-03-18', 1, 0, '2026-03-18 00:00:21'),
+(155, 132, 11, '2026-03-19', 3, 0, '2026-03-19 03:59:23'),
+(156, 185, 10, '2026-03-18', 5, 0, '2026-03-17 23:59:36'),
 (157, 30, 2, '2026-03-10', 2, 0, '2026-03-10 03:56:35'),
-(158, 95, 3, '2026-03-10', 4, 1, '2026-03-10 02:23:28'),
-(159, 27, 2, '2026-03-10', 1, 0, '2026-03-10 03:56:10'),
+(158, 175, 6, '2026-03-18', 5, 2, '2026-03-18 12:43:31'),
+(159, 32, 3, '2026-03-15', 1, 0, '2026-03-15 20:55:58'),
 (160, 35, 1, '2026-03-06', 0, 1, '2026-03-06 17:19:25'),
 (163, 20, 4, '2026-03-10', 0, 0, '2026-03-10 03:57:03'),
 (165, 75, 1, '2026-03-07', 3, 0, '2026-03-07 07:03:01'),
-(167, 77, 3, '2026-03-09', 3, 1, '2026-03-09 17:49:44');
+(167, 92, 6, '2026-03-18', 3, 1, '2026-03-17 23:59:55'),
+(172, 40, 3, '2026-03-17', 1, 0, '2026-03-17 08:01:49'),
+(173, 27, 3, '2026-03-17', 0, 0, '2026-03-17 08:01:42'),
+(174, 35, 4, '2026-03-18', 1, 0, '2026-03-18 01:08:33'),
+(177, 20, 1, '2026-03-16', 1, 0, '2026-03-16 07:42:41'),
+(178, 5, 1, '2026-03-16', 0, 0, '2026-03-16 14:33:06'),
+(179, 5, 1, '2026-03-16', 0, 0, '2026-03-16 19:05:46'),
+(180, 25, 2, '2026-03-17', 1, 0, '2026-03-17 09:06:36');
 
 -- --------------------------------------------------------
 
@@ -3542,7 +3856,10 @@ INSERT INTO `bundeslaender` (`id`, `name`, `iso_code`, `land_id`) VALUES
 (104, 'Region Attika', 'GR-A2', 17),
 (105, 'Provinz Buchara', 'UZ-BU', 56),
 (106, 'Spanish Town', NULL, 57),
-(107, 'Road Town', NULL, 57);
+(107, 'Road Town', NULL, 57),
+(108, 'Saint George Basseterre', 'KN-03', 58),
+(109, 'Gebiet Qaraghandy', 'KZ-35', 20),
+(110, 'Almaty', 'KZ-75', 20);
 
 -- --------------------------------------------------------
 
@@ -3592,15 +3909,22 @@ INSERT INTO `challenges` (`id`, `nutzer_id`, `eisdiele_id`, `type`, `difficulty`
 (429, 1, 598, 'daily', 'leicht', '2026-02-14 15:48:06', '2026-02-14 23:59:59', 1, '2026-02-14 14:59:25', 0),
 (433, 48, 611, 'daily', 'leicht', '2026-02-15 11:48:15', '2026-02-15 23:59:59', 1, '2026-02-15 13:09:54', 0),
 (458, 1, 177, 'daily', 'schwer', '2026-02-26 02:37:32', '2026-02-26 23:59:59', 1, '2026-02-26 13:35:11', 0),
-(493, 1, 356, 'weekly', 'leicht', '2026-03-09 05:46:09', '2026-03-15 23:59:59', 0, NULL, 0),
 (495, 1, 19, 'weekly', 'mittel', '2026-03-09 05:46:10', '2026-03-15 23:59:59', 1, '2026-03-10 16:10:53', 1),
-(497, 1, 638, 'weekly', 'schwer', '2026-03-09 05:46:10', '2026-03-15 23:59:59', 0, NULL, 1),
-(498, 1, 209, 'daily', 'leicht', '2026-03-10 02:26:51', '2026-03-10 23:59:59', 0, NULL, 1),
 (499, 1, 11, 'daily', 'mittel', '2026-03-10 02:26:51', '2026-03-10 23:59:59', 1, '2026-03-10 14:21:56', 1),
 (500, 1, 116, 'daily', 'schwer', '2026-03-10 02:26:51', '2026-03-10 23:59:59', 1, '2026-03-10 15:03:12', 0),
-(501, 1, 167, 'daily', 'leicht', '2026-03-11 02:58:32', '2026-03-11 23:59:59', 0, NULL, 0),
-(502, 1, 645, 'daily', 'mittel', '2026-03-11 02:58:32', '2026-03-11 23:59:59', 0, NULL, 1),
-(503, 1, 177, 'daily', 'schwer', '2026-03-11 02:58:32', '2026-03-11 23:59:59', 0, NULL, 1);
+(510, 1, 1, 'daily', 'leicht', '2026-03-15 19:59:30', '2026-03-16 23:59:59', 1, '2026-03-16 12:06:19', 0),
+(513, 1, 356, 'weekly', 'leicht', '2026-03-16 04:01:41', '2026-03-22 23:59:59', 0, NULL, 1),
+(514, 1, 20, 'weekly', 'mittel', '2026-03-16 04:01:41', '2026-03-22 23:59:59', 0, NULL, 0),
+(515, 1, 171, 'weekly', 'schwer', '2026-03-16 04:01:41', '2026-03-22 23:59:59', 0, NULL, 1),
+(517, 1, 11, 'daily', 'mittel', '2026-03-17 06:33:55', '2026-03-17 23:59:59', 1, '2026-03-17 15:32:00', 0),
+(519, 1, 32, 'daily', 'leicht', '2026-03-18 00:19:20', '2026-03-18 23:59:59', 0, NULL, 1),
+(520, 1, 92, 'daily', 'mittel', '2026-03-18 00:19:20', '2026-03-18 23:59:59', 0, NULL, 0),
+(521, 1, 68, 'daily', 'schwer', '2026-03-18 00:19:20', '2026-03-18 23:59:59', 0, NULL, 1),
+(522, 53, 202, 'daily', 'mittel', '2026-03-18 13:36:51', '2026-03-18 23:59:59', 0, NULL, 1),
+(523, 53, 353, 'daily', 'leicht', '2026-03-18 13:38:07', '2026-03-18 23:59:59', 1, '2026-03-18 14:07:36', 1),
+(524, 1, 565, 'daily', 'leicht', '2026-03-19 02:26:26', '2026-03-19 23:59:59', 0, NULL, 0),
+(525, 1, 645, 'daily', 'mittel', '2026-03-19 02:26:26', '2026-03-19 23:59:59', 0, NULL, 0),
+(526, 1, 179, 'daily', 'schwer', '2026-03-19 02:26:26', '2026-03-19 23:59:59', 0, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -4403,7 +4727,26 @@ INSERT INTO `checkins` (`id`, `nutzer_id`, `eisdiele_id`, `datum`, `typ`, `gesch
 (863, 31, 649, '2026-03-11 19:36:24', 'Kugel', 4.8, 1.4, NULL, 2.3, '', NULL, 'Auto', 1, 34),
 (864, 52, 649, '2026-03-11 19:36:24', 'Kugel', 5.0, NULL, NULL, 3.7, '', NULL, 'Auto', 0, 34),
 (865, 53, 5, '2026-03-11 21:28:00', 'Kugel', 4.5, NULL, NULL, 4.2, 'Immer wieder lecker das Amarena Kirsch. Viele Früchte drin. Jummi', NULL, 'Zu Fuß', 0, NULL),
-(866, 31, 650, '2026-03-11 22:00:38', 'Kugel', 5.0, NULL, NULL, 3.2, '', NULL, 'Zu Fuß', 1, NULL);
+(866, 31, 650, '2026-03-11 22:00:38', 'Kugel', 5.0, NULL, NULL, 3.2, '', NULL, 'Zu Fuß', 1, NULL),
+(867, 53, 165, '2026-03-12 17:00:03', 'Kugel', 4.7, NULL, NULL, 4.0, '', NULL, 'Zu Fuß', 0, NULL),
+(868, 156, 293, '2026-03-12 19:53:46', 'Kugel', 4.0, 3.5, NULL, 4.0, '', NULL, 'Fahrrad', 0, NULL),
+(869, 53, 314, '2026-03-13 08:45:43', 'Kugel', 5.0, 5.0, NULL, 5.0, 'So, nachdem der Bäckerchef mich extra eingeladen hat auf eine Verkostung der neuen Eis Sorten musste ich in der Früh und Kälte hin, egal. Die 2 Sorten waren mega lecker, bei dem Coffeecrunch auch ganze Kaffeebohnen. Alles sehr cremig, nicht zu süß und auch nicht zu stark vom Aroma. Waffeln auch sehr lecker. Volle Sterne, Danke.', NULL, 'Fahrrad', 1, NULL),
+(870, 31, 651, '2026-03-13 13:14:09', 'Kugel', 4.3, NULL, NULL, 3.4, '', NULL, 'Zu Fuß', 0, 35),
+(871, 53, 60, '2026-03-13 17:52:06', 'Kugel', 3.8, NULL, NULL, 4.0, '', NULL, 'Auto', 0, NULL),
+(872, 156, 293, '2026-03-13 19:34:05', 'Kugel', 5.0, 3.5, NULL, 5.0, 'Besonders geil waren die vielen groben Schokostücke', NULL, 'Zu Fuß', 0, NULL),
+(873, 53, 570, '2026-03-14 12:50:21', 'Kugel', 4.2, NULL, NULL, 4.2, 'Kurzer Mittagstop und schnell ne leckere Kugel Vanille. Mir ein wenig zu süß ', NULL, 'Motorrad', 0, NULL),
+(874, 53, 165, '2026-03-15 19:28:59', 'Kugel', 4.3, NULL, NULL, 3.9, 'Wochenendabschlusseis', NULL, 'Zu Fuß', 0, NULL),
+(875, 1, 1, '2026-03-16 13:06:19', 'Kugel', 4.1, 4.5, NULL, 4.2, 'Das Vanilleeis war ziemlich lecker, schön cremig und gut vom Geschmack.\r\nDie Kugel Ananas war ein Sorbet und auch durchaus lecker, aber leider auch mit dem einen oder anderen Eiskristall.\r\n\r\nDie Größe war okay und die Waffel auch eher knusprig, auch wenn es dort noch größere, bessere Waffeln gibt.', NULL, 'Zu Fuß', 1, NULL),
+(876, 53, 416, '2026-03-16 13:54:46', 'Kugel', 3.5, 2.0, NULL, 3.0, 'Da hätte ich mir wirklich mehr erwartet. Leider nicht süß sauer wie erhofft. Waffel nicht knusprig ', NULL, 'Auto', 1, NULL),
+(877, 158, 654, '2026-03-17 13:36:57', 'Kugel', 4.6, 4.3, NULL, 3.1, 'Wow! Richtig cremig, mit Fruchtstücken in der Schokolade. Das muss man natürlich mögen, aber mit gefiel‘s gut. Zuerst war ich etwas enttäuscht von der Größe der Kugel aber der Geschmack hat’s wettgemacht. Die Waffel war auch sehr lecker. ', NULL, 'Zu Fuß', 0, NULL),
+(878, 53, 11, '2026-03-17 16:29:41', 'Kugel', 5.0, NULL, NULL, 4.9, 'So, heute auch mal Sanddorn probiert. Lecker, fruchtig und cremig, super!', NULL, 'Fahrrad', 0, NULL),
+(879, 1, 11, '2026-03-17 16:32:00', 'Kugel', 4.9, 4.9, NULL, 4.8, 'Butterkeks war super lecker mit vielen Keks-Stückchen. 😍😋\r\nKiwi-Stachelbeere war auch mal was besonderes.\r\nBei 2 Kugeln gab es auch eine knusprige Waffel und große Kugeln 😍', NULL, 'Fahrrad', 1, 36),
+(880, 19, 11, '2026-03-17 16:32:00', 'Kugel', 4.9, 5.0, NULL, 4.8, '', NULL, 'Zu Fuß', 0, 36),
+(881, 98, 655, '2026-03-18 14:35:50', 'Eisbecher', 4.7, NULL, NULL, 3.7, 'Es handelte sich um einen sehr schokoladigen Eisbecher. Man kann toll draußen in der Sonne sein Eis schnabulieren. Es gibt aber auch noch Torten/ Kuchen und Kaffee. Sehr nett am Markt ', NULL, 'Zu Fuß', 0, NULL),
+(882, 119, 5, '2026-03-18 14:54:14', 'Kugel', 4.4, 4.8, NULL, 3.5, '', NULL, 'Auto', 1, NULL),
+(883, 53, 353, '2026-03-18 15:07:36', 'Kugel', 4.2, 4.5, NULL, 3.8, '', NULL, 'Fahrrad', 1, NULL),
+(884, 53, 20, '2026-03-18 15:30:00', 'Kugel', 4.7, 4.4, NULL, 4.7, 'Super leckere große Kugeln für nen kleinen Taler 💪🏽👍🏼 ', NULL, 'Fahrrad', 1, NULL),
+(885, 23, 656, '2026-03-18 16:12:49', 'Kugel', 4.0, 4.0, NULL, 4.0, '', NULL, 'Fahrrad', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -4453,7 +4796,9 @@ INSERT INTO `checkin_groups` (`id`, `created_at`) VALUES
 (31, '2026-03-03 20:03:17'),
 (32, '2026-03-07 15:58:50'),
 (33, '2026-03-08 12:44:15'),
-(34, '2026-03-11 18:36:24');
+(34, '2026-03-11 18:36:24'),
+(35, '2026-03-13 12:14:09'),
+(36, '2026-03-17 15:32:00');
 
 -- --------------------------------------------------------
 
@@ -4521,7 +4866,9 @@ INSERT INTO `checkin_mentions` (`id`, `checkin_id`, `mentioned_user_id`, `status
 (46, 839, 139, 'pending', NULL, '2026-03-07 15:58:50', '2026-03-07 15:58:50'),
 (47, 839, 81, 'pending', NULL, '2026-03-07 15:58:50', '2026-03-07 15:58:50'),
 (48, 842, 157, 'accepted', 844, '2026-03-08 12:44:15', '2026-03-08 15:42:13'),
-(49, 863, 52, 'accepted', 864, '2026-03-11 18:36:24', '2026-03-11 18:58:56');
+(49, 863, 52, 'accepted', 864, '2026-03-11 18:36:24', '2026-03-11 18:58:56'),
+(50, 870, 52, 'pending', NULL, '2026-03-13 12:14:09', '2026-03-13 12:14:09'),
+(51, 879, 19, 'accepted', 880, '2026-03-17 15:32:00', '2026-03-17 15:53:58');
 
 -- --------------------------------------------------------
 
@@ -5638,8 +5985,6 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (1920, 791, 'OmaMarschners', 5.0),
 (1921, 792, 'Spekulatius', 5.0),
 (1922, 793, 'Stracciatella', 5.0),
-(1923, 794, 'Mango', 5.0),
-(1924, 794, 'Salted Caramel', 5.0),
 (1926, 796, 'Pistazie', 4.0),
 (1927, 797, 'Maracuja', 4.5),
 (1928, 795, 'Vanille-Heidelberg', 5.0),
@@ -5747,7 +6092,36 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 (2058, 865, 'Amarena-Kirsch', 4.5),
 (2059, 865, 'Möhre', 4.5),
 (2060, 865, 'Eierpunsch', 4.5),
-(2061, 866, 'Kirche Vanille', 5.0);
+(2061, 866, 'Kirche Vanille', 5.0),
+(2062, 794, 'Mango', 5.0),
+(2063, 794, 'Salted Caramel', 5.0),
+(2064, 867, 'OmaMarschners', 4.7),
+(2065, 868, 'Bakl', 4.0),
+(2068, 869, 'Coffeecrunch', 5.0),
+(2069, 869, 'Mohn Marzipan', 5.0),
+(2070, 870, 'Erdbeere', 4.4),
+(2071, 871, 'Mango', 3.8),
+(2072, 871, 'Vanille', 3.8),
+(2073, 872, 'Stracciatella', 5.0),
+(2074, 873, 'Vanille', 4.2),
+(2075, 874, 'Erdbeere', 4.3),
+(2076, 874, 'Pistazie', 4.3),
+(2081, 875, 'Vanille', 4.2),
+(2082, 875, 'Ananas', 3.9),
+(2083, 876, 'Saure Apfelringe', 3.5),
+(2084, 877, 'Schokolade', 4.6),
+(2086, 878, 'Sanddorn', 5.0),
+(2089, 879, 'Kiwi-Stachelbeere', 4.7),
+(2090, 879, 'Butterkeks', 5.0),
+(2091, 880, 'Milchreis', 5.0),
+(2092, 880, 'Cassis', 4.8),
+(2093, 881, 'Schokolade', 4.7),
+(2094, 882, 'Rhabarber-Vanille', 4.4),
+(2095, 882, 'Nutella', 4.4),
+(2096, 883, 'Vanille', 4.2),
+(2097, 884, 'Minze', 4.7),
+(2098, 884, 'Mascar', 4.7),
+(2100, 885, 'Pistazie', 3.7);
 
 -- --------------------------------------------------------
 
@@ -5756,10 +6130,10 @@ INSERT INTO `checkin_sorten` (`id`, `checkin_id`, `sortenname`, `bewertung`) VAL
 -- (Siehe unten für die tatsächliche Ansicht)
 --
 CREATE TABLE `eisbecher_scores` (
-`avg_geschmack` double
-,`avg_preisleistung` double
-,`eisdiele_id` int
+`eisdiele_id` int
 ,`finaler_eisbecher_score` double
+,`avg_geschmack` double
+,`avg_preisleistung` double
 );
 
 -- --------------------------------------------------------
@@ -5877,9 +6251,9 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (93, 'Eiscafé Amore', 'Bäckerstraße 3, 04720 Döbeln', '', 51.121494, 13.119929, 'Mo-So: 09:00-18:00', NULL, '2025-04-11 10:05:39', 1, 4, 3, 1, 'open', NULL, NULL),
 (97, 'Bäckerei & Cafe Brückner', 'Auer Str. 30, 08344 Grünhain-Beierfeld', '', 50.579590, 12.805849, 'Mo-Fr: 05:30-18:00, 05:30-11:00', NULL, '2025-04-12 09:08:42', 1, 3, 3, 1, 'open', NULL, NULL),
 (98, 'Eisbär Planitz', 'Äußere Zwickauer Str. 46, 08064 Zwickau', 'http://eisbaer-planitz.de/', 50.681068, 12.474918, 'Di-So: 13:00-18:00', NULL, '2025-04-12 15:50:13', 1, 5, 3, 1, 'open', NULL, NULL),
-(99, 'Frollein Sommer', 'Bernsdorfer Str. 57, 09126 Chemnitz', 'https://maps.app.goo.gl/Wez6pdY7A4YMybux8', 50.819443, 12.936491, 'Mo-Sa: 13:00-18:00; So: 12:00-18:00; Hinweis: Bei schönem Wetter', 'Bei schönem Wetter', '2025-04-13 06:45:44', 1, 6, 3, 1, 'seasonal_closed', NULL, NULL),
+(99, 'Frollein Sommer', 'Bernsdorfer Str. 57, 09126 Chemnitz', 'https://maps.app.goo.gl/Wez6pdY7A4YMybux8', 50.819443, 12.936491, 'Mo-Sa: 13:00-18:00; So: 12:00-18:00; Hinweis: Bei schönem Wetter', 'Bei schönem Wetter', '2025-04-13 06:45:44', 1, 6, 3, 1, 'open', NULL, NULL),
 (100, 'Vila Hermes Café do Brasil', 'Kaufunger Str. 4a, 09212 Limbach-Oberfrohna', '', 50.900608, 12.668810, 'Mi-So: 10:00-17:00', NULL, '2025-04-13 11:35:47', 1, 5, 3, 1, 'open', NULL, NULL),
-(101, 'Albrecht Eiseck', 'Dresdner Str. 54, 01683 Nossen', 'https://maps.app.goo.gl/CjYxf3mzD4iuRAQh8', 51.057991, 13.305590, 'Mo-So: 12:00-17:00', NULL, '2025-04-13 13:42:29', 1, 10, 3, 1, 'seasonal_closed', NULL, NULL),
+(101, 'Albrecht Eiseck', 'Dresdner Str. 54, 01683 Nossen', 'https://maps.app.goo.gl/CjYxf3mzD4iuRAQh8', 51.057991, 13.305590, 'Mo-So: 12:00-17:00', NULL, '2025-04-13 13:42:29', 1, 10, 3, 1, 'open', NULL, NULL),
 (102, 'Landbäckerei Dietrich - Schloss Café Rochlitz', 'Markt 4, 09306 Rochlitz', '', 51.045963, 12.799110, 'Di-Sa: 10:00-17:00; So: 13:00-17:00', NULL, '2025-04-15 08:50:30', 1, 4, 3, 1, 'open', NULL, NULL),
 (103, 'Eiscafé Kampanile', 'Sonnenweg 1, 08132 Mülsen', '', 50.767017, 12.548699, 'Fr-So: 14:00-18:00', NULL, '2025-04-15 19:31:19', 1, 5, 3, 1, 'open', NULL, NULL),
 (104, 'Eiscafé Monika Nestler', 'Ratsseite-Dorfstr. 100, 09496 Marienberg', '', 50.633167, 13.210966, 'Mo-Do, Sa-So: 14:00-18:00', NULL, '2025-04-15 19:41:05', 1, 3, 3, 1, 'open', NULL, NULL),
@@ -6387,8 +6761,13 @@ INSERT INTO `eisdielen` (`id`, `name`, `adresse`, `website`, `latitude`, `longit
 (646, 'Mariba', 'Götzingerstraße 12, 01844 Neustadt in Sachsen, Deutschland', 'http://www.mariba.eu/', 51.024414, 14.207204, 'Mo: 14:00-21:00; Di-Do, So: 10:00-21:00; Fr-Sa: 10:00-22:00', NULL, '2026-03-08 13:28:41', 62, 17, 3, 1, 'open', NULL, NULL),
 (647, 'Edeka Vellberg', 'Am Bärenbach, 74541 Vellberg, Deutschland', '', 49.086952, 9.872661, 'Hinweis: Wenn Rialto geschlossen hat! 😆', 'Wenn Rialto geschlossen hat! 😆', '2026-03-09 17:05:53', 118, 111, 17, 1, 'open', NULL, NULL),
 (648, 'Jim Beef Burger & Ice Cream', 'Kappelbachgasse 5, 09116 Chemnitz', '', 50.823792, 12.894977, 'Hinweis: Ab Osterwoche 2026 geöffnet', 'Ab Osterwoche 2026 geöffnet', '2026-03-11 12:21:15', 53, 6, 3, 1, 'open', NULL, NULL),
-(649, 'The Baths', '', '', 18.429482, -64.442558, '', NULL, '2026-03-11 18:33:52', 31, 169, 106, 57, 'open', NULL, NULL),
-(650, 'Creamery', '', '', 18.423162, -64.614960, '', NULL, '2026-03-11 20:58:55', 31, 170, 107, 57, 'open', NULL, NULL);
+(649, 'Top of the Baths', 'Tower Road, VG1150 Spanish Town, Britische Jungferninseln', 'http://topofthebaths.com/', 18.429482, -64.442558, 'Mo-So: 08:00-16:00', NULL, '2026-03-11 18:33:52', 31, 169, 106, 57, 'open', NULL, NULL),
+(650, 'Creamery', 'Administration Drive, VG1110 Road Town, Britische Jungferninseln', '', 18.423162, -64.614960, '', NULL, '2026-03-11 20:58:55', 31, 170, 107, 57, 'open', NULL, NULL),
+(651, 'The Gelato Shop St Kitts', 'Bay Road, Basseterre, St. Kitts und Nevis', '', 17.293343, -62.723358, 'Mo-Sa: 11:00-23:00', NULL, '2026-03-13 12:11:46', 31, 171, 108, 58, 'open', NULL, NULL),
+(652, 'Dolce Blanc Chemnitz ', 'Limbacher Straße 84, Chemnitz ', 'https://www.instagram.com/dolce_blanc_chemnitz?igsh=MWFkcWtrd2k0OHFrNg==', 50.836651, 12.893889, 'Hinweis: Hier öffnet bald ein Eis-Café. Wahrscheinlich zieht das Eisfenster Glößa da jetzt rein.', 'Hier öffnet bald ein Eis-Café. Wahrscheinlich zieht das Eisfenster Glößa da jetzt rein.', '2026-03-13 20:05:34', 1, 6, 3, 1, 'open', NULL, NULL),
+(654, '33 Pengvina', 'Сейфуллин даңғылы 483, Алматы 050000', '', 43.243202, 76.934174, 'Mo-So: 10:00-22:00', NULL, '2026-03-17 12:33:24', 158, 173, 110, 20, 'open', NULL, NULL),
+(655, 'Bäckerei Junghans ', 'Hauptmarkt 42, 99867 Gotha', 'cafe-junghans.de', 50.949703, 10.701304, 'Mo-Fr: 09:00-17:30; Sa: 10:00-17:00; So: 14:00-18:00', NULL, '2026-03-18 13:33:22', 98, 174, 1, 1, 'open', NULL, NULL),
+(656, 'Spar express', 'Calle Miguel Marrero Rodríguez, 35120 Mogán, Spanien', '', 27.759983, -15.682121, '', NULL, '2026-03-18 15:08:40', 23, 175, 97, 44, 'open', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -6829,25 +7208,11 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (2190, 98, 5, '13:00:00', '18:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2191, 98, 6, '13:00:00', '18:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2192, 98, 7, '13:00:00', '18:00:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2193, 99, 1, '13:00:00', '18:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2194, 99, 2, '13:00:00', '18:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2195, 99, 3, '13:00:00', '18:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2196, 99, 4, '13:00:00', '18:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2197, 99, 5, '13:00:00', '18:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2198, 99, 6, '13:00:00', '18:00:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2199, 99, 7, '12:00:00', '18:00:00', 0, 6, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2200, 100, 3, '10:00:00', '17:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2201, 100, 4, '10:00:00', '17:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2202, 100, 5, '10:00:00', '17:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2203, 100, 6, '10:00:00', '17:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2204, 100, 7, '10:00:00', '17:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2205, 101, 1, '12:00:00', '17:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2206, 101, 2, '12:00:00', '17:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2207, 101, 3, '12:00:00', '17:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2208, 101, 4, '12:00:00', '17:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2209, 101, 5, '12:00:00', '17:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2210, 101, 6, '12:00:00', '17:00:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2211, 101, 7, '12:00:00', '17:00:00', 0, 6, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2212, 102, 2, '10:00:00', '17:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2213, 102, 3, '10:00:00', '17:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2214, 102, 4, '10:00:00', '17:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -7003,8 +7368,7 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (2405, 153, 5, '11:00:00', '19:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2406, 153, 6, '11:00:00', '19:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2407, 153, 7, '11:00:00', '19:00:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2408, 154, 1, '12:00:00', '19:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09');
-INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
+(2408, 154, 1, '12:00:00', '19:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2409, 154, 2, '12:00:00', '19:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2410, 154, 3, '12:00:00', '19:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2411, 154, 4, '12:00:00', '19:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -7018,7 +7382,8 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (2419, 155, 5, '14:00:00', '18:30:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2420, 155, 6, '14:00:00', '18:30:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2421, 155, 7, '14:00:00', '18:30:00', 0, 6, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2422, 158, 6, '12:00:00', '19:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
+(2422, 158, 6, '12:00:00', '19:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09');
+INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
 (2423, 158, 7, '12:00:00', '19:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2424, 161, 1, '07:30:00', '19:30:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2425, 161, 2, '07:30:00', '19:30:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -7557,8 +7922,7 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (2964, 356, 7, '13:00:00', '18:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2965, 358, 1, '10:00:00', '19:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2966, 358, 2, '10:00:00', '19:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2967, 358, 3, '10:00:00', '19:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09');
-INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
+(2967, 358, 3, '10:00:00', '19:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2968, 358, 4, '10:00:00', '19:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2969, 358, 5, '10:00:00', '19:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2970, 358, 6, '10:00:00', '19:00:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -7572,7 +7936,8 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (2979, 361, 7, '10:00:00', '22:00:00', 0, 6, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2980, 362, 1, '11:00:00', '19:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2981, 362, 2, '11:00:00', '19:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(2982, 362, 3, '11:00:00', '19:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
+(2982, 362, 3, '11:00:00', '19:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09');
+INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
 (2983, 362, 4, '11:00:00', '19:00:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2984, 362, 5, '11:00:00', '19:00:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (2985, 362, 6, '11:00:00', '23:00:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -8111,8 +8476,7 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (3545, 529, 3, '18:00:00', '00:00:00', 1, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3546, 529, 4, '18:00:00', '00:00:00', 1, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3547, 529, 5, '18:00:00', '00:00:00', 1, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(3548, 529, 6, '18:00:00', '00:00:00', 1, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09');
-INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
+(3548, 529, 6, '18:00:00', '00:00:00', 1, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3549, 529, 7, '18:00:00', '00:00:00', 1, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3550, 530, 1, '10:00:00', '22:30:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3551, 530, 3, '10:00:00', '22:30:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -8126,7 +8490,8 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (3559, 531, 4, '12:00:00', '23:30:00', 0, 3, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3560, 531, 5, '12:00:00', '23:30:00', 0, 4, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3561, 531, 6, '12:00:00', '23:30:00', 0, 5, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
-(3562, 531, 7, '12:00:00', '23:30:00', 0, 6, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
+(3562, 531, 7, '12:00:00', '23:30:00', 0, 6, '2025-11-14 06:26:09', '2025-11-14 06:26:09');
+INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
 (3563, 532, 1, '10:00:00', '23:00:00', 0, 0, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3564, 532, 2, '10:00:00', '23:00:00', 0, 1, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
 (3565, 532, 3, '10:00:00', '23:00:00', 0, 2, '2025-11-14 06:26:09', '2025-11-14 06:26:09'),
@@ -8666,8 +9031,7 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (4214, 620, 2, '09:00:00', '19:00:00', 0, 1, '2026-02-17 10:36:43', '2026-02-17 10:36:43'),
 (4215, 620, 3, '09:00:00', '19:00:00', 0, 2, '2026-02-17 10:36:43', '2026-02-17 10:36:43'),
 (4216, 620, 4, '09:00:00', '19:00:00', 0, 3, '2026-02-17 10:36:43', '2026-02-17 10:36:43'),
-(4217, 620, 5, '09:00:00', '19:00:00', 0, 4, '2026-02-17 10:36:43', '2026-02-17 10:36:43');
-INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
+(4217, 620, 5, '09:00:00', '19:00:00', 0, 4, '2026-02-17 10:36:43', '2026-02-17 10:36:43'),
 (4218, 620, 6, '11:00:00', '19:00:00', 0, 5, '2026-02-17 10:36:43', '2026-02-17 10:36:43'),
 (4219, 620, 7, '11:00:00', '19:00:00', 0, 6, '2026-02-17 10:36:43', '2026-02-17 10:36:43'),
 (4220, 621, 1, '11:00:00', '22:30:00', 0, 0, '2026-02-17 10:40:49', '2026-02-17 10:40:49'),
@@ -8681,7 +9045,8 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (4228, 622, 2, '12:00:00', '22:30:00', 0, 1, '2026-02-17 10:43:09', '2026-02-17 10:43:09'),
 (4229, 622, 3, '12:00:00', '22:30:00', 0, 2, '2026-02-17 10:43:09', '2026-02-17 10:43:09'),
 (4230, 622, 4, '12:00:00', '22:30:00', 0, 3, '2026-02-17 10:43:09', '2026-02-17 10:43:09'),
-(4231, 622, 5, '12:00:00', '22:30:00', 0, 4, '2026-02-17 10:43:09', '2026-02-17 10:43:09'),
+(4231, 622, 5, '12:00:00', '22:30:00', 0, 4, '2026-02-17 10:43:09', '2026-02-17 10:43:09');
+INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`, `closes_at`, `overnight`, `sort_order`, `created_at`, `updated_at`) VALUES
 (4232, 622, 6, '12:00:00', '22:30:00', 0, 5, '2026-02-17 10:43:09', '2026-02-17 10:43:09'),
 (4233, 622, 7, '12:00:00', '22:30:00', 0, 6, '2026-02-17 10:43:09', '2026-02-17 10:43:09'),
 (4234, 623, 1, '10:00:00', '20:00:00', 0, 0, '2026-02-17 10:44:50', '2026-02-17 10:44:50'),
@@ -8869,7 +9234,74 @@ INSERT INTO `eisdiele_opening_hours` (`id`, `eisdiele_id`, `weekday`, `opens_at`
 (4445, 20, 4, '14:00:00', '18:00:00', 0, 2, '2026-03-10 18:18:18', '2026-03-10 18:18:18'),
 (4446, 20, 5, '14:00:00', '18:00:00', 0, 3, '2026-03-10 18:18:18', '2026-03-10 18:18:18'),
 (4447, 20, 6, '14:00:00', '18:00:00', 0, 4, '2026-03-10 18:18:18', '2026-03-10 18:18:18'),
-(4448, 20, 7, '14:00:00', '18:00:00', 0, 5, '2026-03-10 18:18:18', '2026-03-10 18:18:18');
+(4448, 20, 7, '14:00:00', '18:00:00', 0, 5, '2026-03-10 18:18:18', '2026-03-10 18:18:18'),
+(4449, 649, 1, '08:00:00', '16:00:00', 0, 0, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4450, 649, 2, '08:00:00', '16:00:00', 0, 1, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4451, 649, 3, '08:00:00', '16:00:00', 0, 2, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4452, 649, 4, '08:00:00', '16:00:00', 0, 3, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4453, 649, 5, '08:00:00', '16:00:00', 0, 4, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4454, 649, 6, '08:00:00', '16:00:00', 0, 5, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4455, 649, 7, '08:00:00', '16:00:00', 0, 6, '2026-03-12 06:53:01', '2026-03-12 06:53:01'),
+(4456, 99, 1, '13:00:00', '18:00:00', 0, 0, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4457, 99, 2, '13:00:00', '18:00:00', 0, 1, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4458, 99, 3, '13:00:00', '18:00:00', 0, 2, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4459, 99, 4, '13:00:00', '18:00:00', 0, 3, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4460, 99, 5, '13:00:00', '18:00:00', 0, 4, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4461, 99, 6, '13:00:00', '18:00:00', 0, 5, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4462, 99, 7, '12:00:00', '18:00:00', 0, 6, '2026-03-12 12:55:27', '2026-03-12 12:55:27'),
+(4469, 651, 1, '11:00:00', '23:00:00', 0, 0, '2026-03-13 12:17:09', '2026-03-13 12:17:09'),
+(4470, 651, 2, '11:00:00', '23:00:00', 0, 1, '2026-03-13 12:17:09', '2026-03-13 12:17:09'),
+(4471, 651, 3, '11:00:00', '23:00:00', 0, 2, '2026-03-13 12:17:09', '2026-03-13 12:17:09'),
+(4472, 651, 4, '11:00:00', '23:00:00', 0, 3, '2026-03-13 12:17:09', '2026-03-13 12:17:09'),
+(4473, 651, 5, '11:00:00', '23:00:00', 0, 4, '2026-03-13 12:17:09', '2026-03-13 12:17:09'),
+(4474, 651, 6, '11:00:00', '23:00:00', 0, 5, '2026-03-13 12:17:09', '2026-03-13 12:17:09'),
+(4475, 654, 1, '10:00:00', '22:00:00', 0, 0, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4476, 654, 2, '10:00:00', '22:00:00', 0, 1, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4477, 654, 3, '10:00:00', '22:00:00', 0, 2, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4478, 654, 4, '10:00:00', '22:00:00', 0, 3, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4479, 654, 5, '10:00:00', '22:00:00', 0, 4, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4480, 654, 6, '10:00:00', '22:00:00', 0, 5, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4481, 654, 7, '10:00:00', '22:00:00', 0, 6, '2026-03-17 12:33:24', '2026-03-17 12:33:24'),
+(4482, 101, 1, '12:00:00', '17:00:00', 0, 0, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4483, 101, 2, '12:00:00', '17:00:00', 0, 1, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4484, 101, 3, '12:00:00', '17:00:00', 0, 2, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4485, 101, 4, '12:00:00', '17:00:00', 0, 3, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4486, 101, 5, '12:00:00', '17:00:00', 0, 4, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4487, 101, 6, '12:00:00', '17:00:00', 0, 5, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4488, 101, 7, '12:00:00', '17:00:00', 0, 6, '2026-03-18 06:13:48', '2026-03-18 06:13:48'),
+(4489, 655, 1, '09:00:00', '17:30:00', 0, 0, '2026-03-18 13:33:22', '2026-03-18 13:33:22'),
+(4490, 655, 2, '09:00:00', '17:30:00', 0, 1, '2026-03-18 13:33:22', '2026-03-18 13:33:22'),
+(4491, 655, 3, '09:00:00', '17:30:00', 0, 2, '2026-03-18 13:33:22', '2026-03-18 13:33:22'),
+(4492, 655, 4, '09:00:00', '17:30:00', 0, 3, '2026-03-18 13:33:22', '2026-03-18 13:33:22'),
+(4493, 655, 5, '09:00:00', '17:30:00', 0, 4, '2026-03-18 13:33:22', '2026-03-18 13:33:22'),
+(4494, 655, 6, '10:00:00', '17:00:00', 0, 5, '2026-03-18 13:33:22', '2026-03-18 13:33:22'),
+(4495, 655, 7, '14:00:00', '18:00:00', 0, 6, '2026-03-18 13:33:22', '2026-03-18 13:33:22');
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `event2026_addon_purchases`
+--
+
+CREATE TABLE `event2026_addon_purchases` (
+  `id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `registration_id` int DEFAULT NULL,
+  `buyer_user_id` int DEFAULT NULL,
+  `buyer_name` varchar(255) DEFAULT NULL,
+  `buyer_email` varchar(255) DEFAULT NULL,
+  `payment_reference_code` varchar(64) NOT NULL,
+  `gift_voucher_quantity` int NOT NULL DEFAULT '0',
+  `expected_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `paid_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `status` enum('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
+  `payment_method` enum('paypal_friends','bank_transfer','stripe_checkout') NOT NULL DEFAULT 'paypal_friends',
+  `confirmed_by_admin` int DEFAULT NULL,
+  `confirmed_at` datetime DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -8887,6 +9319,43 @@ CREATE TABLE `event2026_audit_log` (
   `meta_json` json DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Daten für Tabelle `event2026_audit_log`
+--
+
+INSERT INTO `event2026_audit_log` (`id`, `event_id`, `actor_user_id`, `action`, `target_type`, `target_id`, `meta_json`, `created_at`) VALUES
+(1, 1, 23, 'registration_create', 'registration', 1, '{\"payment_method\": \"paypal_friends\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": false}', '2026-03-12 18:17:26'),
+(2, 1, 1, 'payment_confirm', 'registration', 1, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-12 18:53:39'),
+(5, 1, 1, 'registration_create', 'registration', 3, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": false}', '2026-03-15 16:04:39'),
+(6, 1, 174, 'registration_create', 'registration', 4, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-15 17:29:06'),
+(7, 1, 1, 'clothing_interest_update', 'slot', 3, '{\"bib_size\": \"5\", \"jersey_size\": \"5\", \"clothing_interest\": \"kit_interest\"}', '2026-03-15 20:44:14'),
+(8, 1, 175, 'registration_create', 'registration', 5, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 10, \"expected_amount\": 25, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-15 22:21:19'),
+(9, 1, 1, 'payment_confirm', 'registration', 5, '{\"paid_amount\": 25, \"created_voucher_count\": 0}', '2026-03-16 02:48:45'),
+(10, 1, 177, 'registration_create', 'registration', 6, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-16 07:28:36'),
+(11, 1, 1, 'payment_confirm', 'registration', 6, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-16 08:07:41'),
+(12, 1, 1, 'payment_confirm', 'registration', 4, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-16 10:02:36'),
+(13, 1, 178, 'registration_create', 'registration', 7, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-16 14:30:45'),
+(14, 1, 1, 'payment_confirm', 'registration', 7, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-16 14:34:54'),
+(15, 1, 179, 'registration_create', 'registration', 8, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-16 19:03:40'),
+(16, 1, 1, 'payment_confirm', 'registration', 8, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-16 19:05:49'),
+(17, 1, 180, 'registration_create', 'registration', 9, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-16 19:23:00'),
+(18, 1, 1, 'payment_confirm', 'registration', 9, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-16 19:30:46'),
+(19, 1, 181, 'registration_create', 'registration', 10, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-16 19:35:02'),
+(20, 1, 1, 'payment_confirm', 'registration', 10, '{\"paid_amount\": 15, \"created_voucher_count\": 0}', '2026-03-16 19:37:13'),
+(21, 1, 182, 'registration_create', 'registration', 11, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-16 20:35:22'),
+(22, 1, NULL, 'payment_confirm_stripe', 'registration', 11, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": false, \"stripe_session_id\": \"cs_live_a1B760pUEyK08mfjnC4QDKIOFazy4MpVOAbCdJCyPTnU6QE1tDt86BrjtI\", \"created_voucher_count\": 0}', '2026-03-16 20:38:20'),
+(23, 1, 183, 'registration_create', 'registration', 12, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-17 08:09:57'),
+(24, 1, NULL, 'payment_confirm_stripe', 'registration', 12, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": false, \"stripe_session_id\": \"cs_live_a1HgXh76X0V4u3OWmigwolvG33L2WAbFnFkqRHHjEN5e9a3trkmpBTGWpE\", \"created_voucher_count\": 0}', '2026-03-17 08:12:02'),
+(25, 1, 184, 'registration_create', 'registration', 13, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 0, \"expected_amount\": 15, \"voucher_redeemed\": false, \"gift_voucher_quantity\": 0, \"account_created_in_flow\": true}', '2026-03-17 08:37:25'),
+(26, 1, NULL, 'payment_confirm_stripe', 'registration', 13, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": false, \"stripe_session_id\": \"cs_live_a1zkPU9U86AdIOYeQZ2D1BByTWUySvDPNAkXHfQsjAVDLENhtj3A8RIWag\", \"created_voucher_count\": 0}', '2026-03-17 08:40:56'),
+(27, 1, NULL, 'payment_confirm_stripe', 'registration', 13, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": true, \"stripe_session_id\": \"cs_live_a1zkPU9U86AdIOYeQZ2D1BByTWUySvDPNAkXHfQsjAVDLENhtj3A8RIWag\", \"created_voucher_count\": 0}', '2026-03-17 08:56:49'),
+(28, 1, NULL, 'payment_confirm_stripe', 'registration', 13, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": true, \"stripe_session_id\": \"cs_live_a1zkPU9U86AdIOYeQZ2D1BByTWUySvDPNAkXHfQsjAVDLENhtj3A8RIWag\", \"created_voucher_count\": 0}', '2026-03-17 09:10:53'),
+(29, 1, NULL, 'payment_confirm_stripe', 'registration', 13, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": true, \"stripe_session_id\": \"cs_live_a1zkPU9U86AdIOYeQZ2D1BByTWUySvDPNAkXHfQsjAVDLENhtj3A8RIWag\", \"created_voucher_count\": 0}', '2026-03-17 10:09:05'),
+(30, 1, NULL, 'payment_confirm_stripe', 'registration', 13, '{\"source\": \"checkout_finalize\", \"paid_amount\": 15, \"already_paid\": true, \"stripe_session_id\": \"cs_live_a1zkPU9U86AdIOYeQZ2D1BByTWUySvDPNAkXHfQsjAVDLENhtj3A8RIWag\", \"created_voucher_count\": 0}', '2026-03-17 18:14:11'),
+(31, 1, 185, 'registration_create', 'registration', 14, '{\"payment_method\": \"stripe_checkout\", \"donation_amount\": 50, \"expected_amount\": 80, \"voucher_redeemed\": false, \"account_invited_by\": null, \"gift_voucher_quantity\": 1, \"account_created_in_flow\": true}', '2026-03-18 13:20:46'),
+(32, 1, NULL, 'payment_confirm_stripe', 'registration', 14, '{\"source\": \"checkout_finalize\", \"paid_amount\": 80, \"already_paid\": false, \"stripe_session_id\": \"cs_live_a1VccU7qN1k9MQvhDR0qsUFK7NVDi9t2aLsP6miC4CZQBLzx7Ox99YfKkZ\", \"created_voucher_count\": 1}', '2026-03-18 13:23:26'),
+(33, 1, 1, 'stamp_card_pass', 'checkpoint', 10, '{\"mode\": \"test\", \"source\": \"gps_click\", \"checkin_id\": null, \"distance_m\": 95.90816873685657, \"qr_code_id\": 15, \"scan_saved\": true, \"already_scanned\": false, \"client_distance_m\": 95.90816873685654}', '2026-03-18 18:53:30');
 
 -- --------------------------------------------------------
 
@@ -8916,12 +9385,14 @@ CREATE TABLE `event2026_checkpoints` (
 --
 
 INSERT INTO `event2026_checkpoints` (`id`, `event_id`, `shop_id`, `name`, `lat`, `lng`, `order_index`, `stamp_card_mode`, `is_mandatory`, `min_distance_km`, `route_keys_csv`, `qr_code_id`, `created_at`, `updated_at`) VALUES
-(1, 1, 314, 'Bäckerei Bräunig', 50.6437530, 12.9665080, 1, 'live', 1, 140, 'classic_3,epic_4', 8, '2026-03-07 08:44:12', '2026-03-11 19:12:56'),
-(2, 1, 145, 'Eisdiele & Partyservice Schöne', 50.8850360, 13.0079640, 2, 'live', 1, 70, 'family_2,classic_3,epic_4', 9, '2026-03-07 08:44:12', '2026-03-11 19:12:56'),
-(3, 1, 111, 'Klatt-Eis Eismanufaktur', 51.0003740, 12.8999140, 3, 'live', 1, 70, 'family_2,classic_3,epic_4', 10, '2026-03-07 08:44:12', '2026-03-11 19:12:57'),
-(4, 1, 22, 'Eiscafé Elisenhof', 51.0184330, 12.6046630, 4, 'live', 1, 175, 'epic_4', 11, '2026-03-07 08:44:12', '2026-03-11 19:12:57'),
-(5, 1, 1, 'Eiscafé Eis-Zapfen', 50.8370210, 12.9047370, 1, 'test', 1, 0, 'family_2,classic_3,epic_4', 12, '2026-03-11 19:12:57', '2026-03-11 19:12:57'),
-(6, 1, 2, 'Eiscafé Kohlebunker', 50.8249280, 12.8995950, 2, 'test', 1, 0, 'family_2,classic_3,epic_4', 13, '2026-03-11 19:12:57', '2026-03-11 19:12:57');
+(1, 1, 314, 'Bäckerei Bräunig', 50.6437530, 12.9665080, 1, 'live', 1, 140, 'classic_3,epic_4', 8, '2026-03-11 21:48:18', '2026-03-11 21:48:18'),
+(2, 1, 145, 'Eisdiele & Partyservice Schöne', 50.8850360, 13.0079640, 2, 'live', 1, 70, 'family_2,classic_3,epic_4', 9, '2026-03-11 21:48:18', '2026-03-11 21:48:18'),
+(3, 1, 111, 'Klatt-Eis Eismanufaktur', 51.0003740, 12.8999140, 3, 'live', 1, 70, 'family_2,classic_3,epic_4', 10, '2026-03-11 21:48:18', '2026-03-11 21:48:18'),
+(4, 1, 22, 'Eiscafé Elisenhof', 51.0184330, 12.6046630, 4, 'live', 1, 175, 'epic_4', 11, '2026-03-11 21:48:18', '2026-03-11 21:48:18'),
+(9, 1, 293, 'Karl mag\'s süß ', 50.8418920, 12.9239570, 5, 'live', 1, 70, 'family_2,classic_3,epic_4', 14, '2026-03-18 12:06:39', '2026-03-18 12:06:39'),
+(10, 1, 565, 'nouri.', 50.8353230, 12.9006290, 3, 'test', 1, 0, 'family_2,classic_3,epic_4', 15, '2026-03-18 12:06:39', '2026-03-19 09:03:38'),
+(11, 1, 20, 'Ackermanns Eiscafé', 50.7995190, 12.7996540, 1, 'test', 1, 0, 'family_2,classic_3,epic_4', 16, '2026-03-19 09:03:38', '2026-03-19 09:03:38'),
+(12, 1, 179, 'Café Klatsch - Andreas Wörl', 50.8785970, 12.5942750, 2, 'test', 1, 0, 'family_2,classic_3,epic_4', 17, '2026-03-19 09:03:38', '2026-03-19 09:03:38');
 
 -- --------------------------------------------------------
 
@@ -8945,18 +9416,31 @@ CREATE TABLE `event2026_checkpoint_passages` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `event2026_invite_tokens`
+-- Tabellenstruktur für Tabelle `event2026_gift_vouchers`
 --
 
-CREATE TABLE `event2026_invite_tokens` (
+CREATE TABLE `event2026_gift_vouchers` (
   `id` int NOT NULL,
-  `slot_id` int NOT NULL,
-  `token_hash` varchar(128) NOT NULL,
-  `expires_at` datetime NOT NULL,
-  `claimed_at` datetime DEFAULT NULL,
-  `revoked_at` datetime DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `event_id` int NOT NULL,
+  `purchased_by_registration_id` int DEFAULT NULL,
+  `purchased_by_addon_purchase_id` int DEFAULT NULL,
+  `redeemed_by_registration_id` int DEFAULT NULL,
+  `redeemed_by_slot_id` int DEFAULT NULL,
+  `code_value` varchar(64) NOT NULL,
+  `code_hash` varchar(128) NOT NULL,
+  `status` enum('open','redeemed','cancelled') NOT NULL DEFAULT 'open',
+  `redeemed_at` datetime DEFAULT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Daten für Tabelle `event2026_gift_vouchers`
+--
+
+INSERT INTO `event2026_gift_vouchers` (`id`, `event_id`, `purchased_by_registration_id`, `purchased_by_addon_purchase_id`, `redeemed_by_registration_id`, `redeemed_by_slot_id`, `code_value`, `code_hash`, `status`, `redeemed_at`, `cancelled_at`, `created_at`, `updated_at`) VALUES
+(1, 1, 14, NULL, NULL, NULL, '5AB3-751E-3168', '0aa40a71e041763dafd7b5bb63732de3050a35c962561c271233bb360b37a9d0', 'open', NULL, NULL, '2026-03-18 13:23:26', '2026-03-18 13:23:26');
 
 -- --------------------------------------------------------
 
@@ -8973,6 +9457,25 @@ CREATE TABLE `event2026_legal_acceptances` (
   `user_agent_hash` varchar(128) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Daten für Tabelle `event2026_legal_acceptances`
+--
+
+INSERT INTO `event2026_legal_acceptances` (`id`, `slot_id`, `legal_version_id`, `accepted_at`, `ip_hash`, `user_agent_hash`, `created_at`) VALUES
+(1, 1, 1, '2026-03-12 19:17:26', 'b42fdc7294a31054c4f25b472cd12a2273c0af4bf3c05be1f35214c0091ef557', '3275726d683cb831634aec8afb3b3e6d9b0bb995f64e1e9e3ebf1580e16b1b6d', '2026-03-12 18:17:26'),
+(3, 3, 1, '2026-03-15 17:04:39', '82356b387172439b8b154042f191896ba31f67d7b58eca2e5f29c6f1971235ba', '53304b2e8c092ed66b5666499bea55dc9f17570f682a0413aeaf69034cef3f69', '2026-03-15 16:04:39'),
+(4, 4, 1, '2026-03-15 18:29:06', '9ae6790f0522e0a7968935c752da07b5956e11558fcd238f6dbc47fd052ff86a', 'd84e942950de2b93644836b7c61977321e139bd06e9d482ef8e048a4d03f6f3f', '2026-03-15 17:29:06'),
+(5, 5, 1, '2026-03-15 23:21:19', 'fd64669011f31ffe5873ff7f67c18f60e5b2629cb667bc8477a2c5a8994d4ece', '69ea04d8e46c0585048e36e514e912d7b16736a6296438928c0dc27e78fb438d', '2026-03-15 22:21:19'),
+(6, 6, 1, '2026-03-16 08:28:36', '34c5899c8af03998f098d94eecc0789ea185a69ee4d6ba0ae52145f4f99fc8be', 'fbf5aeabbd4aa99b92d7c471cab78c1606ecae1fa037a2550c06bc35b888d4af', '2026-03-16 07:28:36'),
+(7, 7, 1, '2026-03-16 15:30:45', '64ea98633547c529e8795c59dd2beedde16aaf6102c136bad736520cd568f75d', '69ea04d8e46c0585048e36e514e912d7b16736a6296438928c0dc27e78fb438d', '2026-03-16 14:30:45'),
+(8, 8, 1, '2026-03-16 20:03:40', '5b54a40a55efe088925190bfd496f8c36646be4ca392fbbf1263852728f28da0', '26db7dc59ea05230b52dc533d1d4c9d2c6edb2d6be252bb45c069c21d634ca6c', '2026-03-16 19:03:40'),
+(9, 9, 1, '2026-03-16 20:23:00', '474b6e70e89084b32954c399f8875c4d05d511545543e602ea2e8ea464648e99', '33a16152942fc374e82e9c23d6cb878d4caafeb98fef23c4db8923ce2fad3e28', '2026-03-16 19:23:00'),
+(10, 10, 1, '2026-03-16 20:35:02', '4026e440bb7f9ee0196d9de674afde21f20c7920d2735b9ed043c086bd06c2de', '3275726d683cb831634aec8afb3b3e6d9b0bb995f64e1e9e3ebf1580e16b1b6d', '2026-03-16 19:35:02'),
+(11, 11, 1, '2026-03-16 21:35:22', '7bf966a352fb879c5a7eccfc9bb4955e8059de091db710677e5b928dfe98b6bf', 'de1728e96a68bf815507c1ac19dc7ea3cf90f4eec4d95094ded41a462d302cd8', '2026-03-16 20:35:22'),
+(12, 12, 1, '2026-03-17 09:09:57', '40ef205590d0f0dd200e8167106d6541065860c64301e82c4a2df16c90a63400', '48da1af908be076363e16c00999867b2c05b0261ae4e010e737f12eae1e71aff', '2026-03-17 08:09:57'),
+(13, 13, 1, '2026-03-17 09:37:25', '26312057713ed47d5828bc77e517d912e5cdb65c9c88149b78c214b34c977beb', '515c4d163335c58ddd14e2fe49a170790676644d17803451886717916e952cc1', '2026-03-17 08:37:25'),
+(14, 14, 1, '2026-03-18 14:20:46', 'fe7bcf74df038c5604c329441b7f666528d849d522ad36dda05386185d99ea96', '43199383349c8f4b0ed5ef5e96de6419a3eb80db210ded7cdde6997b9e288a54', '2026-03-18 13:20:46');
 
 -- --------------------------------------------------------
 
@@ -8994,7 +9497,7 @@ CREATE TABLE `event2026_legal_versions` (
 --
 
 INSERT INTO `event2026_legal_versions` (`id`, `event_id`, `version`, `content_md`, `is_active`, `created_at`) VALUES
-(1, 1, '2026.1', '## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 150 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.', 1, '2026-03-07 08:44:12');
+(1, 1, '2026.1', '## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 150 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.', 1, '2026-03-11 21:48:18');
 
 -- --------------------------------------------------------
 
@@ -9027,6 +9530,25 @@ CREATE TABLE `event2026_participant_slots` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Daten für Tabelle `event2026_participant_slots`
+--
+
+INSERT INTO `event2026_participant_slots` (`id`, `registration_id`, `event_id`, `user_id`, `full_name`, `email`, `route_key`, `distance_km`, `pace_group`, `women_wave_opt_in`, `public_name_consent`, `jersey_interest`, `clothing_interest`, `jersey_size`, `bib_size`, `license_status`, `legal_version_id`, `legal_accepted_at`, `legal_ip_hash`, `legal_user_agent_hash`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 23, 'Michael Knoof', 'michael.knoof@web.de', 'epic_4', 175, '27_30', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-12 19:17:26', 'b42fdc7294a31054c4f25b472cd12a2273c0af4bf3c05be1f35214c0091ef557', '3275726d683cb831634aec8afb3b3e6d9b0bb995f64e1e9e3ebf1580e16b1b6d', '2026-03-12 18:17:26', '2026-03-12 18:53:39'),
+(3, 3, 1, 1, 'Christian Helbig', 'ch_helbig@mail.de', 'epic_4', 175, 'ueber_30', 0, 1, 1, 'kit_interest', '5', '5', 'pending_payment', 1, '2026-03-15 17:04:39', '82356b387172439b8b154042f191896ba31f67d7b58eca2e5f29c6f1971235ba', '53304b2e8c092ed66b5666499bea55dc9f17570f682a0413aeaf69034cef3f69', '2026-03-15 16:04:39', '2026-03-15 20:44:14'),
+(4, 4, 1, 174, 'Michael Burgold', 'burgoldservice@gmail.com', 'epic_4', 175, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-15 18:29:06', '9ae6790f0522e0a7968935c752da07b5956e11558fcd238f6dbc47fd052ff86a', 'd84e942950de2b93644836b7c61977321e139bd06e9d482ef8e048a4d03f6f3f', '2026-03-15 17:29:06', '2026-03-16 10:02:36'),
+(5, 5, 1, 175, 'Lars Hiemann', 'lars-hiemann@web.de', 'epic_4', 175, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-15 23:21:19', 'fd64669011f31ffe5873ff7f67c18f60e5b2629cb667bc8477a2c5a8994d4ece', '69ea04d8e46c0585048e36e514e912d7b16736a6296438928c0dc27e78fb438d', '2026-03-15 22:21:19', '2026-03-16 02:48:45'),
+(6, 6, 1, 177, 'Christian Schädel', 'christianschaedel1976@gmail.com', 'epic_4', 175, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-16 08:28:36', '34c5899c8af03998f098d94eecc0789ea185a69ee4d6ba0ae52145f4f99fc8be', 'fbf5aeabbd4aa99b92d7c471cab78c1606ecae1fa037a2550c06bc35b888d4af', '2026-03-16 07:28:36', '2026-03-16 08:07:41'),
+(7, 7, 1, 178, 'Lars Schindler', 'schindlerlars7@web.de', 'classic_3', 140, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-16 15:30:45', '64ea98633547c529e8795c59dd2beedde16aaf6102c136bad736520cd568f75d', '69ea04d8e46c0585048e36e514e912d7b16736a6296438928c0dc27e78fb438d', '2026-03-16 14:30:45', '2026-03-16 14:34:54'),
+(8, 8, 1, 179, 'Patrick Eppler', 'patrick-eppler@gmx.de', 'epic_4', 175, '27_30', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-16 20:03:40', '5b54a40a55efe088925190bfd496f8c36646be4ca392fbbf1263852728f28da0', '26db7dc59ea05230b52dc533d1d4c9d2c6edb2d6be252bb45c069c21d634ca6c', '2026-03-16 19:03:40', '2026-03-16 19:05:49'),
+(9, 9, 1, 180, 'Hannes Brenner', 'brennerhannes@yahoo.de', 'epic_4', 175, '27_30', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-16 20:23:00', '474b6e70e89084b32954c399f8875c4d05d511545543e602ea2e8ea464648e99', '33a16152942fc374e82e9c23d6cb878d4caafeb98fef23c4db8923ce2fad3e28', '2026-03-16 19:23:00', '2026-03-16 19:30:46'),
+(10, 10, 1, 181, 'Christian Kuhl', 'ckuhl123@yahoo.de', 'epic_4', 175, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-16 20:35:02', '4026e440bb7f9ee0196d9de674afde21f20c7920d2735b9ed043c086bd06c2de', '3275726d683cb831634aec8afb3b3e6d9b0bb995f64e1e9e3ebf1580e16b1b6d', '2026-03-16 19:35:02', '2026-03-16 19:37:13'),
+(11, 11, 1, 182, 'Lukas Surma', 'lukas97.s@arcor.de', 'epic_4', 175, '27_30', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-16 21:35:22', '7bf966a352fb879c5a7eccfc9bb4955e8059de091db710677e5b928dfe98b6bf', 'de1728e96a68bf815507c1ac19dc7ea3cf90f4eec4d95094ded41a462d302cd8', '2026-03-16 20:35:22', '2026-03-16 20:38:20'),
+(12, 12, 1, 183, 'Nils Lose', 'nilslose@icloud.com', 'epic_4', 175, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-17 09:09:57', '40ef205590d0f0dd200e8167106d6541065860c64301e82c4a2df16c90a63400', '48da1af908be076363e16c00999867b2c05b0261ae4e010e737f12eae1e71aff', '2026-03-17 08:09:57', '2026-03-17 08:12:02'),
+(13, 13, 1, 184, 'Florian Decker', 'quartal_keimzelle.3s@icloud.com', 'epic_4', 175, '24_27', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-17 09:37:25', '26312057713ed47d5828bc77e517d912e5cdb65c9c88149b78c214b34c977beb', '515c4d163335c58ddd14e2fe49a170790676644d17803451886717916e952cc1', '2026-03-17 08:37:25', '2026-03-17 08:40:56'),
+(14, 14, 1, 185, 'Nicole Neef', 'nine_@gmx.net', 'family_2', 75, 'family', 0, 1, 0, 'none', NULL, NULL, 'licensed', 1, '2026-03-18 14:20:46', 'fe7bcf74df038c5604c329441b7f666528d849d522ad36dda05386185d99ea96', '43199383349c8f4b0ed5ef5e96de6419a3eb80db210ded7cdde6997b9e288a54', '2026-03-18 13:20:46', '2026-03-18 13:23:26');
+
 -- --------------------------------------------------------
 
 --
@@ -9036,7 +9558,7 @@ CREATE TABLE `event2026_participant_slots` (
 CREATE TABLE `event2026_payments` (
   `id` int NOT NULL,
   `registration_id` int NOT NULL,
-  `method` enum('paypal_friends','bank_transfer') NOT NULL DEFAULT 'paypal_friends',
+  `method` enum('paypal_friends','bank_transfer','stripe_checkout') NOT NULL DEFAULT 'paypal_friends',
   `expected_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `paid_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `status` enum('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
@@ -9045,6 +9567,25 @@ CREATE TABLE `event2026_payments` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Daten für Tabelle `event2026_payments`
+--
+
+INSERT INTO `event2026_payments` (`id`, `registration_id`, `method`, `expected_amount`, `paid_amount`, `status`, `confirmed_by_admin`, `confirmed_at`, `created_at`, `updated_at`) VALUES
+(1, 1, 'paypal_friends', 15.00, 15.00, 'paid', 1, '2026-03-12 19:53:39', '2026-03-12 18:17:26', '2026-03-12 18:53:39'),
+(3, 3, 'stripe_checkout', 15.00, 0.00, 'pending', NULL, NULL, '2026-03-15 16:04:39', '2026-03-15 16:04:39'),
+(4, 4, 'stripe_checkout', 15.00, 15.00, 'paid', 1, '2026-03-16 11:02:36', '2026-03-15 17:29:06', '2026-03-16 10:02:36'),
+(5, 5, 'stripe_checkout', 25.00, 25.00, 'paid', 1, '2026-03-16 03:48:45', '2026-03-15 22:21:19', '2026-03-16 02:48:45'),
+(6, 6, 'stripe_checkout', 15.00, 15.00, 'paid', 1, '2026-03-16 09:07:41', '2026-03-16 07:28:36', '2026-03-16 08:07:41'),
+(7, 7, 'stripe_checkout', 15.00, 15.00, 'paid', 1, '2026-03-16 15:34:54', '2026-03-16 14:30:45', '2026-03-16 14:34:54'),
+(8, 8, 'stripe_checkout', 15.00, 15.00, 'paid', 1, '2026-03-16 20:05:49', '2026-03-16 19:03:40', '2026-03-16 19:05:49'),
+(9, 9, 'stripe_checkout', 15.00, 15.00, 'paid', 1, '2026-03-16 20:30:46', '2026-03-16 19:23:00', '2026-03-16 19:30:46'),
+(10, 10, 'stripe_checkout', 15.00, 15.00, 'paid', 1, '2026-03-16 20:37:13', '2026-03-16 19:35:02', '2026-03-16 19:37:13'),
+(11, 11, 'stripe_checkout', 15.00, 15.00, 'paid', NULL, '2026-03-16 21:38:20', '2026-03-16 20:35:22', '2026-03-16 20:38:20'),
+(12, 12, 'stripe_checkout', 15.00, 15.00, 'paid', NULL, '2026-03-17 09:12:02', '2026-03-17 08:09:57', '2026-03-17 08:12:02'),
+(13, 13, 'stripe_checkout', 15.00, 15.00, 'paid', NULL, '2026-03-17 09:40:56', '2026-03-17 08:37:25', '2026-03-17 08:40:56'),
+(14, 14, 'stripe_checkout', 80.00, 80.00, 'paid', NULL, '2026-03-18 14:23:26', '2026-03-18 13:20:46', '2026-03-18 13:23:26');
 
 -- --------------------------------------------------------
 
@@ -9079,12 +9620,35 @@ CREATE TABLE `event2026_registrations` (
   `registered_by_user_id` int DEFAULT NULL,
   `team_name` varchar(255) DEFAULT NULL,
   `payment_reference_code` varchar(64) NOT NULL,
+  `entry_fee_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `gift_voucher_quantity` int NOT NULL DEFAULT '0',
+  `gift_voucher_purchase_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `donation_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `voucher_discount_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
   `payment_status` enum('pending','partially_paid','paid','cancelled') NOT NULL DEFAULT 'pending',
   `notes` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Daten für Tabelle `event2026_registrations`
+--
+
+INSERT INTO `event2026_registrations` (`id`, `event_id`, `registered_by_user_id`, `team_name`, `payment_reference_code`, `entry_fee_amount`, `gift_voucher_quantity`, `gift_voucher_purchase_amount`, `donation_amount`, `voucher_discount_amount`, `payment_status`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 1, 23, 'Rüttelpiloten', 'ICE26-R9183FF25', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-12 18:17:26', '2026-03-12 18:53:39'),
+(3, 1, 1, 'Team Gourmet Cycling', 'ICE26-R24A52327', 15.00, 0, 0.00, 0.00, 0.00, 'pending', NULL, '2026-03-15 16:04:39', '2026-03-15 16:04:39'),
+(4, 1, 174, 'Winschattenschleicher', 'ICE26-R0E640933', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-15 17:29:06', '2026-03-16 10:02:36'),
+(5, 1, 175, NULL, 'ICE26-R3B0B0C8F', 15.00, 0, 0.00, 10.00, 0.00, 'paid', NULL, '2026-03-15 22:21:19', '2026-03-16 02:48:45'),
+(6, 1, 177, 'Rüttelpiloten', 'ICE26-R4845682E', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-16 07:28:36', '2026-03-16 08:07:41'),
+(7, 1, 178, '2Radsportverein Hartmannsdorf', 'ICE26-R02DBC218', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-16 14:30:45', '2026-03-16 14:34:54'),
+(8, 1, 179, NULL, 'ICE26-R507F9541', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-16 19:03:40', '2026-03-16 19:05:49'),
+(9, 1, 180, NULL, 'ICE26-R52DE408F', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-16 19:23:00', '2026-03-16 19:30:46'),
+(10, 1, 181, NULL, 'ICE26-R33F6506E', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-16 19:35:02', '2026-03-16 19:37:13'),
+(11, 1, 182, 'Die Trittfrequenz-Titanen', 'ICE26-RDFE6A81B', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-16 20:35:22', '2026-03-16 20:38:20'),
+(12, 1, 183, NULL, 'ICE26-REB7E55F4', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-17 08:09:57', '2026-03-17 08:12:02'),
+(13, 1, 184, NULL, 'ICE26-R14F47ED6', 15.00, 0, 0.00, 0.00, 0.00, 'paid', NULL, '2026-03-17 08:37:25', '2026-03-17 08:40:56'),
+(14, 1, 185, 'Remse Radsport', 'ICE26-R422573B7', 15.00, 1, 15.00, 50.00, 0.00, 'paid', NULL, '2026-03-18 13:20:46', '2026-03-18 13:23:26');
 
 -- --------------------------------------------------------
 
@@ -9100,6 +9664,25 @@ CREATE TABLE `event2026_registration_access_tokens` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `used_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Daten für Tabelle `event2026_registration_access_tokens`
+--
+
+INSERT INTO `event2026_registration_access_tokens` (`id`, `registration_id`, `token_hash`, `expires_at`, `created_at`, `used_at`) VALUES
+(1, 1, '37308650a2c507d8d8b33b1d1aa7d6af2025ab32a143167632265955eea5361d', '2026-03-26 19:17:26', '2026-03-12 18:17:26', '2026-03-12 19:17:26'),
+(3, 3, '238192552e2f077a1e54f58db17543111b1c83e59df4c8c891d1c37b0764f16d', '2026-03-29 17:04:39', '2026-03-15 16:04:39', '2026-03-15 17:04:42'),
+(4, 4, '0fa8f01d5b297b3cbc1571eb6365f2329a67422febe0fed34ae45d03758130e2', '2026-03-29 18:29:06', '2026-03-15 17:29:06', '2026-03-15 18:29:06'),
+(5, 5, 'c96e3879011bd10f0738f7587e9a3e0358581f6c496f14ca4db84ee1c95577de', '2026-03-29 23:21:19', '2026-03-15 22:21:19', '2026-03-15 23:21:59'),
+(6, 6, '45c087e9994ebf39bc8df5886eb4c7e63633d951e42050eb437644c8376cfb6a', '2026-03-30 08:28:36', '2026-03-16 07:28:36', '2026-03-16 08:29:19'),
+(7, 7, 'cab1ec68c48062e6be537ffdee389bb10930c965765455e44170f75fedfc8c78', '2026-03-30 15:30:45', '2026-03-16 14:30:45', '2026-03-16 15:30:53'),
+(8, 8, '2da7071c1a1870318ed5c4c5b2735f735788574b7065b4edc49af01761b552c6', '2026-03-30 20:03:40', '2026-03-16 19:03:40', '2026-03-16 20:03:56'),
+(9, 9, '096e32a3630f49a48bead8972522ecbc223c9c7afb543ef3ad51ba46e81a97bb', '2026-03-30 20:23:00', '2026-03-16 19:23:00', '2026-03-16 20:23:19'),
+(10, 10, '7f65128e45e66e3400e79ad29e673fa166c715a8a2c018306d2a9f9549dbe621', '2026-03-30 20:35:02', '2026-03-16 19:35:02', '2026-03-16 20:35:08'),
+(11, 11, '354fcd8ec770ed8b4bec03abba129f2864bea7489a2c56a5a3a591f0fd9e9951', '2026-03-30 21:35:22', '2026-03-16 20:35:22', '2026-03-16 21:38:21'),
+(12, 12, 'e6e369b529ab9df72fc419003086f668ad9ba5976ca5e2fe90dcd8c4c54c7d24', '2026-03-31 09:09:57', '2026-03-17 08:09:57', '2026-03-17 09:12:02'),
+(13, 13, 'e9915e1c29a778e36d6aeb4896624966ed1004d5ccb353ff9bd68c3436d2dad7', '2026-03-31 09:37:25', '2026-03-17 08:37:25', '2026-03-17 19:14:11'),
+(14, 14, '48bdeb2e72f2d42668a7be11ba3e2a46dc756e0b807baffb612c6425966d6b5b', '2026-04-01 14:20:46', '2026-03-18 13:20:46', '2026-03-18 14:23:26');
 
 -- --------------------------------------------------------
 
@@ -9125,7 +9708,7 @@ CREATE TABLE `event2026_seasons` (
 --
 
 INSERT INTO `event2026_seasons` (`id`, `slug`, `name`, `event_date`, `status`, `max_participants`, `min_participants_for_go`, `cancellation_deadline`, `created_at`, `updated_at`) VALUES
-(1, 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59', '2026-03-07 08:44:12', '2026-03-07 17:56:47');
+(1, 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59', '2026-03-11 21:48:18', '2026-03-11 21:48:18');
 
 -- --------------------------------------------------------
 
@@ -9216,9 +9799,12 @@ INSERT INTO `favoriten` (`nutzer_id`, `eisdiele_id`, `hinzugefuegt_am`) VALUES
 (1, 482, '2025-10-03 07:32:01'),
 (1, 545, '2025-10-22 20:33:14'),
 (1, 570, '2025-11-14 22:37:42'),
+(1, 654, '2026-03-17 17:03:49'),
 (19, 9, '2026-03-06 15:38:32'),
+(23, 106, '2026-03-11 22:40:07'),
 (31, 249, '2025-06-24 17:34:14'),
-(48, 611, '2026-02-22 10:28:34'),
+(48, 611, '2026-03-13 23:07:09'),
+(48, 635, '2026-03-13 23:07:45'),
 (53, 1, '2026-03-08 21:11:19'),
 (53, 65, '2025-08-15 23:12:28'),
 (53, 275, '2025-06-30 20:28:23'),
@@ -9460,7 +10046,32 @@ INSERT INTO `kommentare` (`id`, `nutzer_id`, `checkin_id`, `bewertung_id`, `komm
 (219, 1, 853, NULL, 'Ja das mach ich 😊\nDu kannst natürlich auch gerne Bescheid geben wenn du Richtung Chemnitz mal ein Eis essen bist 😁', '2026-03-10 18:16:11', NULL, NULL),
 (220, 1, 852, NULL, 'Hey, super cool dich in zur Eis-Saison 2026 auf der Ice-App begrüßen zu können! 😊', '2026-03-10 20:48:57', NULL, NULL),
 (221, 1, 851, NULL, 'Hey, cool dich mal wieder auf der Ice-App zu sehen 😊\n\nsieht auf jeden Fall sehr lecker was es bei euch gab, ein scheinbar guter Start in die Eis-Saison 2026! :D', '2026-03-10 20:50:18', NULL, NULL),
-(222, 1, 858, NULL, 'Ja Ackermanns Eiscafé ist für Chemnitz ein echter Geheimtipp 😎', '2026-03-10 21:11:02', NULL, NULL);
+(222, 1, 858, NULL, 'Ja Ackermanns Eiscafé ist für Chemnitz ein echter Geheimtipp 😎', '2026-03-10 21:11:02', NULL, NULL),
+(223, 1, 866, NULL, 'oh na das sieht aber paradiesisch aus! einen schönen Urlaub euch!', '2026-03-11 21:49:28', NULL, NULL),
+(224, 31, 866, NULL, 'Danke schön :)', '2026-03-11 21:52:20', NULL, NULL),
+(225, 1, NULL, NULL, 'Herzlich Willkommen auf der Ice-App 🤗\n\nSchön dass du hier bist 😎', '2026-03-12 12:53:56', NULL, 169),
+(226, 1, 869, NULL, 'Ohh eine Waffel 5 Bewertung bei Bäckerei Bräunig?! Hat Markus seine Ankündigung wahr gemacht und knusprige Waffeln eingeführt? 😍\n\nBtw: krasses Commitment was du momentan an den Tag legst! 😁👌🏼', '2026-03-13 08:08:37', NULL, NULL),
+(227, 48, 780, NULL, 'Jap, wurde erledigt 🤗☺️', '2026-03-13 22:05:34', NULL, NULL),
+(228, 1, NULL, NULL, 'Hey and a Happy Welcome to the Ice-App 😎🍦🤗', '2026-03-14 08:59:47', NULL, 170),
+(229, 53, NULL, NULL, 'Willkommen im Eis-Paradies', '2026-03-14 11:48:26', NULL, 170),
+(230, 1, 873, NULL, 'Hui das gab ja einen Award Hagel bei dir 🏆👍🏼💪🏼', '2026-03-14 11:57:23', NULL, NULL),
+(231, 53, 873, NULL, 'Unverhofft hat so ein kleines Eis eingeschlagen 🤣', '2026-03-14 12:03:24', NULL, NULL),
+(232, 1, NULL, NULL, 'Hey, willkommen auf der Ice-App! 😄 Mega cool, dass du bei der Ice-Tour dabei bist – wird legendär!', '2026-03-17 08:52:50', NULL, 183),
+(233, 1, NULL, NULL, 'Willkommen bei der Ice-App! 🙌 Freut mich riesig, dich bei der Ice-Tour am Start zu haben!', '2026-03-17 08:53:01', NULL, 182),
+(234, 1, NULL, NULL, 'Hey! Schön, dass du hier bist – und noch besser: dass du bei der Ice-Tour mitrollst! 🚴‍♂️🍦', '2026-03-17 08:53:11', NULL, 181),
+(235, 1, NULL, NULL, 'Schön, dass du Teil der Ice-Tour bist! 🙌 Freu dich auf viele coole Leute, starke Momente und natürlich richtig gutes Eis 🍦', '2026-03-17 08:53:27', NULL, 180),
+(236, 1, NULL, NULL, 'Willkommen auf der Ice-App! 🚴‍♂️🍦 Ich freue mich riesig, dass du Teil der Ice-Tour bist – das wird ein richtig schönes Erlebnis!', '2026-03-17 08:53:53', NULL, 179),
+(237, 1, NULL, NULL, 'Hey Pavel, schön, dass du dabei bist! 💛 Auf viele unvergessliche Momente auf dem Rad und genussvolle Eis-Stopps!', '2026-03-17 08:54:26', NULL, 178),
+(238, 1, NULL, NULL, 'Willkommen auf der Ice-App! 💪 Freu dich auf viele starke Kilometer und verdiente Eis-Stopps bei der Ice-Tour!', '2026-03-17 08:55:04', NULL, 175),
+(239, 1, NULL, NULL, 'Hey! Schön, dass du hier bist – und noch besser: dass du bei der Ice-Tour mitrollst! 🚴‍♂️🍦', '2026-03-17 08:55:12', NULL, 176),
+(240, 1, NULL, NULL, 'Herzlich willkommen auf der Ice-App! 🤝 Richtig cool, dich bei der Ice-Tour dabei zu haben, ich freue mich riesig!', '2026-03-17 08:55:38', NULL, 177),
+(241, 1, NULL, NULL, 'Willkommen bei der Ice-App! 🙌 Freut mich riesig, dich bei der Ice-Tour am Start zu haben!', '2026-03-17 08:56:29', NULL, 174),
+(242, 1, 877, NULL, 'Cool wie du rum kommst und sehr spannend mit Fruchtstückchen im Schoko-Eis! :D\n\neine tolle Reise dir noch! 🤗', '2026-03-17 12:58:24', NULL, NULL),
+(243, 158, 877, NULL, 'danke! 😋', '2026-03-17 15:25:49', NULL, NULL),
+(245, 1, 885, NULL, 'Hach wie schön ein Eis am Strand nach einer langen Radtour 😎👌🏼', '2026-03-18 17:36:28', NULL, NULL),
+(246, 1, 884, NULL, 'Oh yes Ackermanns will ich diese Woche eigentlich auch nochmal ansteuern 😋', '2026-03-18 17:36:57', NULL, NULL),
+(247, 53, 858, NULL, '👍🏼', '2026-03-18 17:45:31', NULL, NULL),
+(248, 1, NULL, NULL, 'Willkommen auf der Ice-App! 🚴‍♂️🍦 Ich freue mich riesig, dass du Teil der Ice-Tour bist – das wird ein richtig schönes Erlebnis!', '2026-03-19 05:08:04', NULL, 185);
 
 -- --------------------------------------------------------
 
@@ -9469,11 +10080,11 @@ INSERT INTO `kommentare` (`id`, `nutzer_id`, `checkin_id`, `bewertung_id`, `komm
 -- (Siehe unten für die tatsächliche Ansicht)
 --
 CREATE TABLE `kugel_scores` (
-`avg_geschmack` double
+`eisdiele_id` int
+,`finaler_kugel_score` double
+,`avg_geschmack` double
 ,`avg_geschmacksfaktor` double
 ,`avg_preisleistung` double
-,`eisdiele_id` int
-,`finaler_kugel_score` double
 );
 
 -- --------------------------------------------------------
@@ -9550,7 +10161,8 @@ INSERT INTO `laender` (`id`, `name`, `country_code`, `waehrung_id`) VALUES
 (54, 'Marokko', 'MAR', 29),
 (55, 'Ägypten', 'EGY', 30),
 (56, 'Usbekistan', 'uz', NULL),
-(57, 'Britische Jungferninseln', 'vg', 25);
+(57, 'Britische Jungferninseln', 'vg', 25),
+(58, 'St. Kitts und Nevis', 'kn', NULL);
 
 -- --------------------------------------------------------
 
@@ -9569,12 +10181,14 @@ CREATE TABLE `landkreise` (
 --
 
 INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
+(173, 'Almaty', 110),
 (7, 'Altenburger Land', 1),
 (128, 'Anhalt-Bitterfeld', 2),
 (19, 'Aussiger Region', 6),
 (30, 'Autonome Provinz Trient', 12),
 (93, 'Barcelonès', 57),
 (45, 'Bari', 26),
+(171, 'Basseterre', 108),
 (37, 'Berlin', 18),
 (121, 'Bezirk Gmunden', 64),
 (101, 'Bezirk Horgen', 16),
@@ -9647,6 +10261,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (160, 'L-Imdina', 100),
 (130, 'La Spezia', 68),
 (73, 'Landkreis Breisgau-Hochschwarzwald', 17),
+(174, 'Landkreis Gotha', 1),
 (70, 'Landkreis Hameln-Pyrmont', 22),
 (84, 'Landkreis Harz', 2),
 (61, 'Landkreis Heilbronn', 17),
@@ -9671,6 +10286,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (157, 'Marsaxlokk', 99),
 (10, 'Meißen', 3),
 (4, 'Mittelsachsen', 3),
+(175, 'Mogán', 97),
 (98, 'München', 7),
 (32, 'Neu-Görz', 13),
 (90, 'New York County', 54),
@@ -9690,6 +10306,7 @@ INSERT INTO `landkreise` (`id`, `name`, `bundesland_id`) VALUES
 (52, 'Potsdam', 5),
 (165, 'Prag', 59),
 (41, 'Provinz Jämtland', 25),
+(172, 'Qaraghandy', 109),
 (81, 'Region Hannover', 22),
 (104, 'Regionalbezirk Chania', 58),
 (167, 'Regionalbezirk Ostattika', 104),
@@ -9839,7 +10456,331 @@ INSERT INTO `leaderboard_daily_snapshots` (`id`, `leaderboard_type`, `snapshot_d
 (84, 'birthday', '2026-03-11', 10, 26, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-10 23:05:01'),
 (85, 'birthday', '2026-03-11', 163, 30, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-10 23:05:01'),
 (86, 'birthday', '2026-03-11', 156, 31, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-10 23:05:01'),
-(87, 'birthday', '2026-03-11', 124, 32, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-10 23:05:01');
+(87, 'birthday', '2026-03-11', 124, 32, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-10 23:05:01'),
+(88, 'birthday', '2026-03-12', 1, 1, 555, '{\"bonus_completed\": 3, \"mandatory_completed\": 7}', '2026-03-11 23:05:02'),
+(89, 'birthday', '2026-03-12', 53, 2, 355, '{\"bonus_completed\": 2, \"mandatory_completed\": 6}', '2026-03-11 23:05:02'),
+(90, 'birthday', '2026-03-12', 19, 3, 218, '{\"bonus_completed\": 2, \"mandatory_completed\": 7}', '2026-03-11 23:05:02'),
+(91, 'birthday', '2026-03-12', 118, 4, 175, '{\"bonus_completed\": 2, \"mandatory_completed\": 7}', '2026-03-11 23:05:02'),
+(92, 'birthday', '2026-03-12', 8, 5, 150, '{\"bonus_completed\": 1, \"mandatory_completed\": 6}', '2026-03-11 23:05:02'),
+(93, 'birthday', '2026-03-12', 22, 5, 150, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-11 23:05:02'),
+(94, 'birthday', '2026-03-12', 31, 7, 135, '{\"bonus_completed\": 1, \"mandatory_completed\": 5}', '2026-03-11 23:05:02'),
+(95, 'birthday', '2026-03-12', 23, 8, 127, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-11 23:05:02'),
+(96, 'birthday', '2026-03-12', 125, 9, 125, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-11 23:05:02'),
+(97, 'birthday', '2026-03-12', 4, 10, 117, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-11 23:05:02'),
+(98, 'birthday', '2026-03-12', 155, 11, 102, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-11 23:05:02'),
+(99, 'birthday', '2026-03-12', 99, 12, 100, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-11 23:05:02'),
+(100, 'birthday', '2026-03-12', 158, 13, 95, '{\"bonus_completed\": 1, \"mandatory_completed\": 4}', '2026-03-11 23:05:02'),
+(101, 'birthday', '2026-03-12', 156, 14, 90, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-11 23:05:02'),
+(102, 'birthday', '2026-03-12', 3, 15, 85, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(103, 'birthday', '2026-03-12', 167, 16, 77, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-11 23:05:02'),
+(104, 'birthday', '2026-03-12', 165, 17, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-11 23:05:02'),
+(105, 'birthday', '2026-03-12', 62, 17, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-11 23:05:02'),
+(106, 'birthday', '2026-03-12', 52, 19, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-11 23:05:02'),
+(107, 'birthday', '2026-03-12', 86, 20, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-11 23:05:02'),
+(108, 'birthday', '2026-03-12', 139, 20, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(109, 'birthday', '2026-03-12', 27, 22, 55, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(110, 'birthday', '2026-03-12', 133, 23, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(111, 'birthday', '2026-03-12', 160, 23, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-11 23:05:02'),
+(112, 'birthday', '2026-03-12', 157, 25, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-11 23:05:02'),
+(113, 'birthday', '2026-03-12', 159, 26, 27, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(114, 'birthday', '2026-03-12', 77, 27, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(115, 'birthday', '2026-03-12', 40, 27, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(116, 'birthday', '2026-03-12', 2, 27, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(117, 'birthday', '2026-03-12', 10, 27, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-11 23:05:02'),
+(118, 'birthday', '2026-03-12', 163, 31, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-11 23:05:02'),
+(119, 'birthday', '2026-03-12', 124, 32, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-11 23:05:02'),
+(120, 'birthday', '2026-03-12', 101, 33, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-11 23:05:02'),
+(121, 'birthday', '2026-03-13', 1, 1, 582, '{\"bonus_completed\": 3, \"mandatory_completed\": 8}', '2026-03-12 23:05:01'),
+(122, 'birthday', '2026-03-13', 53, 2, 372, '{\"bonus_completed\": 2, \"mandatory_completed\": 6}', '2026-03-12 23:05:01'),
+(123, 'birthday', '2026-03-13', 19, 3, 223, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-12 23:05:01'),
+(124, 'birthday', '2026-03-13', 118, 4, 180, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-12 23:05:01'),
+(125, 'birthday', '2026-03-13', 22, 5, 155, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-12 23:05:01'),
+(126, 'birthday', '2026-03-13', 8, 6, 150, '{\"bonus_completed\": 1, \"mandatory_completed\": 6}', '2026-03-12 23:05:01'),
+(127, 'birthday', '2026-03-13', 31, 7, 145, '{\"bonus_completed\": 1, \"mandatory_completed\": 6}', '2026-03-12 23:05:01'),
+(128, 'birthday', '2026-03-13', 156, 8, 140, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-12 23:05:01'),
+(129, 'birthday', '2026-03-13', 23, 9, 132, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-12 23:05:01'),
+(130, 'birthday', '2026-03-13', 125, 10, 130, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-12 23:05:01'),
+(131, 'birthday', '2026-03-13', 4, 11, 122, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-12 23:05:01'),
+(132, 'birthday', '2026-03-13', 155, 12, 102, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-12 23:05:01'),
+(133, 'birthday', '2026-03-13', 99, 13, 100, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-12 23:05:01'),
+(134, 'birthday', '2026-03-13', 158, 14, 95, '{\"bonus_completed\": 1, \"mandatory_completed\": 4}', '2026-03-12 23:05:01'),
+(135, 'birthday', '2026-03-13', 3, 15, 85, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(136, 'birthday', '2026-03-13', 167, 16, 77, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-12 23:05:01'),
+(137, 'birthday', '2026-03-13', 165, 17, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-12 23:05:01'),
+(138, 'birthday', '2026-03-13', 62, 17, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-12 23:05:01'),
+(139, 'birthday', '2026-03-13', 52, 19, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-12 23:05:01'),
+(140, 'birthday', '2026-03-13', 139, 20, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(141, 'birthday', '2026-03-13', 86, 21, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-12 23:05:01'),
+(142, 'birthday', '2026-03-13', 27, 22, 55, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(143, 'birthday', '2026-03-13', 133, 23, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(144, 'birthday', '2026-03-13', 160, 23, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-12 23:05:01'),
+(145, 'birthday', '2026-03-13', 157, 25, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-12 23:05:01'),
+(146, 'birthday', '2026-03-13', 40, 25, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(147, 'birthday', '2026-03-13', 159, 27, 27, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(148, 'birthday', '2026-03-13', 77, 28, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(149, 'birthday', '2026-03-13', 2, 28, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(150, 'birthday', '2026-03-13', 10, 28, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-12 23:05:01'),
+(151, 'birthday', '2026-03-13', 163, 31, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-12 23:05:01'),
+(152, 'birthday', '2026-03-13', 124, 32, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-12 23:05:01'),
+(153, 'birthday', '2026-03-13', 101, 32, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-12 23:05:01'),
+(154, 'birthday', '2026-03-14', 1, 1, 626, '{\"bonus_completed\": 3, \"mandatory_completed\": 8}', '2026-03-13 23:05:02'),
+(155, 'birthday', '2026-03-14', 53, 2, 417, '{\"bonus_completed\": 2, \"mandatory_completed\": 6}', '2026-03-13 23:05:02'),
+(156, 'birthday', '2026-03-14', 19, 3, 232, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-13 23:05:02'),
+(157, 'birthday', '2026-03-14', 118, 4, 185, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-13 23:05:02'),
+(158, 'birthday', '2026-03-14', 31, 4, 185, '{\"bonus_completed\": 1, \"mandatory_completed\": 6}', '2026-03-13 23:05:02'),
+(159, 'birthday', '2026-03-14', 156, 6, 165, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-13 23:05:02'),
+(160, 'birthday', '2026-03-14', 22, 7, 160, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-13 23:05:02'),
+(161, 'birthday', '2026-03-14', 8, 8, 150, '{\"bonus_completed\": 1, \"mandatory_completed\": 6}', '2026-03-13 23:05:02'),
+(162, 'birthday', '2026-03-14', 23, 9, 137, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-13 23:05:02'),
+(163, 'birthday', '2026-03-14', 125, 10, 130, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-13 23:05:02'),
+(164, 'birthday', '2026-03-14', 4, 11, 127, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(165, 'birthday', '2026-03-14', 48, 12, 117, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-13 23:05:02'),
+(166, 'birthday', '2026-03-14', 2, 13, 105, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(167, 'birthday', '2026-03-14', 155, 14, 102, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(168, 'birthday', '2026-03-14', 99, 15, 100, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(169, 'birthday', '2026-03-14', 158, 16, 95, '{\"bonus_completed\": 1, \"mandatory_completed\": 4}', '2026-03-13 23:05:02'),
+(170, 'birthday', '2026-03-14', 3, 17, 85, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(171, 'birthday', '2026-03-14', 167, 18, 77, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-13 23:05:02'),
+(172, 'birthday', '2026-03-14', 165, 19, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-13 23:05:02'),
+(173, 'birthday', '2026-03-14', 62, 19, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(174, 'birthday', '2026-03-14', 52, 21, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-13 23:05:02'),
+(175, 'birthday', '2026-03-14', 139, 22, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(176, 'birthday', '2026-03-14', 86, 23, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-13 23:05:02'),
+(177, 'birthday', '2026-03-14', 77, 24, 55, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(178, 'birthday', '2026-03-14', 27, 24, 55, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(179, 'birthday', '2026-03-14', 51, 26, 45, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(180, 'birthday', '2026-03-14', 63, 26, 45, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(181, 'birthday', '2026-03-14', 133, 28, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(182, 'birthday', '2026-03-14', 160, 28, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-13 23:05:02'),
+(183, 'birthday', '2026-03-14', 157, 30, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-13 23:05:02'),
+(184, 'birthday', '2026-03-14', 40, 30, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(185, 'birthday', '2026-03-14', 159, 32, 27, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(186, 'birthday', '2026-03-14', 10, 33, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-13 23:05:02'),
+(187, 'birthday', '2026-03-14', 163, 34, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-13 23:05:02'),
+(188, 'birthday', '2026-03-14', 124, 35, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-13 23:05:02'),
+(189, 'birthday', '2026-03-14', 101, 35, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-13 23:05:02'),
+(190, 'birthday', '2026-03-15', 1, 1, 706, '{\"bonus_completed\": 3, \"mandatory_completed\": 9}', '2026-03-14 23:05:02'),
+(191, 'birthday', '2026-03-15', 53, 2, 542, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-14 23:05:02'),
+(192, 'birthday', '2026-03-15', 19, 3, 314, '{\"bonus_completed\": 2, \"mandatory_completed\": 9}', '2026-03-14 23:05:02'),
+(193, 'birthday', '2026-03-15', 118, 4, 250, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-14 23:05:02'),
+(194, 'birthday', '2026-03-15', 22, 5, 231, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-14 23:05:02'),
+(195, 'birthday', '2026-03-15', 4, 6, 192, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(196, 'birthday', '2026-03-15', 31, 7, 190, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-14 23:05:02'),
+(197, 'birthday', '2026-03-15', 2, 8, 182, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(198, 'birthday', '2026-03-15', 8, 9, 170, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-14 23:05:02'),
+(199, 'birthday', '2026-03-15', 156, 9, 170, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-14 23:05:02'),
+(200, 'birthday', '2026-03-15', 23, 11, 157, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-14 23:05:02'),
+(201, 'birthday', '2026-03-15', 125, 12, 135, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-14 23:05:02'),
+(202, 'birthday', '2026-03-15', 48, 13, 122, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-14 23:05:02'),
+(203, 'birthday', '2026-03-15', 155, 14, 107, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(204, 'birthday', '2026-03-15', 99, 15, 105, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(205, 'birthday', '2026-03-15', 158, 16, 95, '{\"bonus_completed\": 1, \"mandatory_completed\": 4}', '2026-03-14 23:05:02'),
+(206, 'birthday', '2026-03-15', 3, 17, 90, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(207, 'birthday', '2026-03-15', 167, 18, 77, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-14 23:05:02'),
+(208, 'birthday', '2026-03-15', 165, 19, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-14 23:05:02'),
+(209, 'birthday', '2026-03-15', 62, 19, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(210, 'birthday', '2026-03-15', 52, 21, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-14 23:05:02'),
+(211, 'birthday', '2026-03-15', 139, 22, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(212, 'birthday', '2026-03-15', 86, 23, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-14 23:05:02'),
+(213, 'birthday', '2026-03-15', 77, 23, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(214, 'birthday', '2026-03-15', 27, 25, 55, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(215, 'birthday', '2026-03-15', 51, 26, 50, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(216, 'birthday', '2026-03-15', 63, 27, 45, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(217, 'birthday', '2026-03-15', 13, 28, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(218, 'birthday', '2026-03-15', 133, 28, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(219, 'birthday', '2026-03-15', 160, 28, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-14 23:05:02'),
+(220, 'birthday', '2026-03-15', 157, 31, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-14 23:05:02'),
+(221, 'birthday', '2026-03-15', 40, 31, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(222, 'birthday', '2026-03-15', 159, 33, 27, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(223, 'birthday', '2026-03-15', 10, 34, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-14 23:05:02'),
+(224, 'birthday', '2026-03-15', 163, 35, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-14 23:05:02'),
+(225, 'birthday', '2026-03-15', 101, 36, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-14 23:05:02'),
+(226, 'birthday', '2026-03-15', 124, 37, 10, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-14 23:05:02'),
+(227, 'birthday', '2026-03-16', 1, 1, 713, '{\"bonus_completed\": 3, \"mandatory_completed\": 9}', '2026-03-15 23:05:01'),
+(228, 'birthday', '2026-03-16', 53, 2, 547, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-15 23:05:01'),
+(229, 'birthday', '2026-03-16', 19, 3, 323, '{\"bonus_completed\": 2, \"mandatory_completed\": 9}', '2026-03-15 23:05:01'),
+(230, 'birthday', '2026-03-16', 118, 4, 255, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-15 23:05:01'),
+(231, 'birthday', '2026-03-16', 8, 5, 235, '{\"bonus_completed\": 1, \"mandatory_completed\": 8}', '2026-03-15 23:05:01'),
+(232, 'birthday', '2026-03-16', 22, 6, 231, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-15 23:05:01'),
+(233, 'birthday', '2026-03-16', 125, 7, 215, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-15 23:05:01'),
+(234, 'birthday', '2026-03-16', 4, 8, 212, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-15 23:05:01'),
+(235, 'birthday', '2026-03-16', 48, 9, 202, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-15 23:05:01'),
+(236, 'birthday', '2026-03-16', 31, 10, 195, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-15 23:05:01'),
+(237, 'birthday', '2026-03-16', 2, 11, 187, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:01'),
+(238, 'birthday', '2026-03-16', 156, 12, 175, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-15 23:05:01'),
+(239, 'birthday', '2026-03-16', 99, 13, 170, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:01'),
+(240, 'birthday', '2026-03-16', 23, 14, 162, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-15 23:05:01'),
+(241, 'birthday', '2026-03-16', 51, 15, 115, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:01'),
+(242, 'birthday', '2026-03-16', 155, 16, 112, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-15 23:05:01'),
+(243, 'birthday', '2026-03-16', 63, 17, 110, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:01'),
+(244, 'birthday', '2026-03-16', 158, 18, 100, '{\"bonus_completed\": 1, \"mandatory_completed\": 4}', '2026-03-15 23:05:01'),
+(245, 'birthday', '2026-03-16', 3, 19, 90, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:01'),
+(246, 'birthday', '2026-03-16', 167, 20, 82, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-15 23:05:01'),
+(247, 'birthday', '2026-03-16', 165, 21, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-15 23:05:01'),
+(248, 'birthday', '2026-03-16', 62, 21, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-15 23:05:01'),
+(249, 'birthday', '2026-03-16', 52, 23, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-15 23:05:01'),
+(250, 'birthday', '2026-03-16', 77, 24, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:01'),
+(251, 'birthday', '2026-03-16', 139, 24, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:01'),
+(252, 'birthday', '2026-03-16', 86, 26, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-15 23:05:02'),
+(253, 'birthday', '2026-03-16', 27, 26, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(254, 'birthday', '2026-03-16', 13, 28, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:02'),
+(255, 'birthday', '2026-03-16', 133, 29, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(256, 'birthday', '2026-03-16', 160, 29, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-15 23:05:02'),
+(257, 'birthday', '2026-03-16', 159, 31, 32, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(258, 'birthday', '2026-03-16', 157, 32, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-15 23:05:02'),
+(259, 'birthday', '2026-03-16', 40, 32, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(260, 'birthday', '2026-03-16', 172, 32, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(261, 'birthday', '2026-03-16', 10, 32, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(262, 'birthday', '2026-03-16', 174, 36, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(263, 'birthday', '2026-03-16', 108, 36, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(264, 'birthday', '2026-03-16', 163, 36, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-15 23:05:02'),
+(265, 'birthday', '2026-03-16', 101, 36, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-15 23:05:02'),
+(266, 'birthday', '2026-03-16', 173, 40, 17, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-15 23:05:02'),
+(267, 'birthday', '2026-03-16', 94, 41, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-15 23:05:02'),
+(268, 'birthday', '2026-03-16', 124, 41, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-15 23:05:02'),
+(269, 'birthday', '2026-03-17', 1, 1, 792, '{\"bonus_completed\": 3, \"mandatory_completed\": 9}', '2026-03-16 23:05:01'),
+(270, 'birthday', '2026-03-17', 53, 2, 595, '{\"bonus_completed\": 2, \"mandatory_completed\": 9}', '2026-03-16 23:05:01'),
+(271, 'birthday', '2026-03-17', 19, 3, 328, '{\"bonus_completed\": 2, \"mandatory_completed\": 9}', '2026-03-16 23:05:01'),
+(272, 'birthday', '2026-03-17', 118, 4, 260, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-16 23:05:01'),
+(273, 'birthday', '2026-03-17', 8, 5, 240, '{\"bonus_completed\": 1, \"mandatory_completed\": 8}', '2026-03-16 23:05:01'),
+(274, 'birthday', '2026-03-17', 22, 6, 231, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-16 23:05:01'),
+(275, 'birthday', '2026-03-17', 125, 7, 215, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-16 23:05:01'),
+(276, 'birthday', '2026-03-17', 4, 8, 212, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-16 23:05:01'),
+(277, 'birthday', '2026-03-17', 48, 9, 207, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-16 23:05:01'),
+(278, 'birthday', '2026-03-17', 31, 10, 195, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-16 23:05:01'),
+(279, 'birthday', '2026-03-17', 2, 11, 187, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:01'),
+(280, 'birthday', '2026-03-17', 156, 12, 175, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-16 23:05:01'),
+(281, 'birthday', '2026-03-17', 99, 13, 170, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(282, 'birthday', '2026-03-17', 23, 14, 167, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-16 23:05:02'),
+(283, 'birthday', '2026-03-17', 155, 15, 117, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-16 23:05:02'),
+(284, 'birthday', '2026-03-17', 51, 16, 115, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(285, 'birthday', '2026-03-17', 63, 17, 110, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(286, 'birthday', '2026-03-17', 158, 18, 100, '{\"bonus_completed\": 1, \"mandatory_completed\": 4}', '2026-03-16 23:05:02'),
+(287, 'birthday', '2026-03-17', 3, 19, 90, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(288, 'birthday', '2026-03-17', 167, 20, 87, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-16 23:05:02'),
+(289, 'birthday', '2026-03-17', 165, 21, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-16 23:05:02'),
+(290, 'birthday', '2026-03-17', 62, 21, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(291, 'birthday', '2026-03-17', 52, 23, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-16 23:05:02'),
+(292, 'birthday', '2026-03-17', 77, 24, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(293, 'birthday', '2026-03-17', 139, 24, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(294, 'birthday', '2026-03-17', 86, 26, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-16 23:05:02'),
+(295, 'birthday', '2026-03-17', 27, 26, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(296, 'birthday', '2026-03-17', 13, 28, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(297, 'birthday', '2026-03-17', 133, 29, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(298, 'birthday', '2026-03-17', 172, 29, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(299, 'birthday', '2026-03-17', 160, 29, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(300, 'birthday', '2026-03-17', 159, 32, 32, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(301, 'birthday', '2026-03-17', 157, 33, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-16 23:05:02'),
+(302, 'birthday', '2026-03-17', 40, 33, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(303, 'birthday', '2026-03-17', 10, 33, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(304, 'birthday', '2026-03-17', 174, 36, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(305, 'birthday', '2026-03-17', 173, 37, 22, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(306, 'birthday', '2026-03-17', 108, 38, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(307, 'birthday', '2026-03-17', 177, 38, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(308, 'birthday', '2026-03-17', 180, 38, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(309, 'birthday', '2026-03-17', 163, 38, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(310, 'birthday', '2026-03-17', 101, 38, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(311, 'birthday', '2026-03-17', 94, 43, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-16 23:05:02'),
+(312, 'birthday', '2026-03-17', 124, 43, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(313, 'birthday', '2026-03-17', 178, 45, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(314, 'birthday', '2026-03-17', 179, 45, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-16 23:05:02'),
+(315, 'birthday', '2026-03-18', 1, 1, 931, '{\"bonus_completed\": 3, \"mandatory_completed\": 10}', '2026-03-17 23:05:01'),
+(316, 'birthday', '2026-03-18', 53, 2, 661, '{\"bonus_completed\": 2, \"mandatory_completed\": 9}', '2026-03-17 23:05:01'),
+(317, 'birthday', '2026-03-18', 19, 3, 415, '{\"bonus_completed\": 2, \"mandatory_completed\": 10}', '2026-03-17 23:05:01'),
+(318, 'birthday', '2026-03-18', 118, 4, 325, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-17 23:05:01'),
+(319, 'birthday', '2026-03-18', 22, 5, 296, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-17 23:05:01'),
+(320, 'birthday', '2026-03-18', 23, 6, 292, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-17 23:05:01'),
+(321, 'birthday', '2026-03-18', 4, 7, 277, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-17 23:05:01'),
+(322, 'birthday', '2026-03-18', 2, 8, 267, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-17 23:05:01'),
+(323, 'birthday', '2026-03-18', 8, 9, 245, '{\"bonus_completed\": 1, \"mandatory_completed\": 8}', '2026-03-17 23:05:01'),
+(324, 'birthday', '2026-03-18', 125, 10, 220, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-17 23:05:01'),
+(325, 'birthday', '2026-03-18', 48, 11, 212, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-17 23:05:01'),
+(326, 'birthday', '2026-03-18', 31, 12, 195, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-17 23:05:01'),
+(327, 'birthday', '2026-03-18', 63, 13, 187, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(328, 'birthday', '2026-03-18', 156, 14, 180, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-17 23:05:01'),
+(329, 'birthday', '2026-03-18', 51, 14, 180, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(330, 'birthday', '2026-03-18', 158, 16, 170, '{\"bonus_completed\": 2, \"mandatory_completed\": 5}', '2026-03-17 23:05:01'),
+(331, 'birthday', '2026-03-18', 99, 16, 170, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(332, 'birthday', '2026-03-18', 155, 18, 122, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-17 23:05:01'),
+(333, 'birthday', '2026-03-18', 3, 19, 90, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(334, 'birthday', '2026-03-18', 167, 20, 87, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-17 23:05:01'),
+(335, 'birthday', '2026-03-18', 165, 21, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-17 23:05:01'),
+(336, 'birthday', '2026-03-18', 62, 21, 75, '{\"bonus_completed\": 1, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(337, 'birthday', '2026-03-18', 52, 23, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-17 23:05:01'),
+(338, 'birthday', '2026-03-18', 77, 23, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(339, 'birthday', '2026-03-18', 139, 25, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(340, 'birthday', '2026-03-18', 86, 26, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-17 23:05:01'),
+(341, 'birthday', '2026-03-18', 27, 26, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(342, 'birthday', '2026-03-18', 13, 28, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(343, 'birthday', '2026-03-18', 172, 28, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(344, 'birthday', '2026-03-18', 133, 30, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(345, 'birthday', '2026-03-18', 150, 30, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(346, 'birthday', '2026-03-18', 160, 30, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-17 23:05:01'),
+(347, 'birthday', '2026-03-18', 159, 33, 32, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(348, 'birthday', '2026-03-18', 157, 34, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-17 23:05:01'),
+(349, 'birthday', '2026-03-18', 40, 34, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(350, 'birthday', '2026-03-18', 10, 34, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(351, 'birthday', '2026-03-18', 174, 34, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(352, 'birthday', '2026-03-18', 94, 34, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(353, 'birthday', '2026-03-18', 173, 39, 27, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-17 23:05:01'),
+(354, 'birthday', '2026-03-18', 180, 40, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(355, 'birthday', '2026-03-18', 108, 41, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:01'),
+(356, 'birthday', '2026-03-18', 177, 41, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-17 23:05:02'),
+(357, 'birthday', '2026-03-18', 163, 41, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-17 23:05:02'),
+(358, 'birthday', '2026-03-18', 101, 41, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-17 23:05:02'),
+(359, 'birthday', '2026-03-18', 124, 45, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-17 23:05:02'),
+(360, 'birthday', '2026-03-18', 178, 46, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-17 23:05:02'),
+(361, 'birthday', '2026-03-18', 179, 46, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-17 23:05:02'),
+(362, 'birthday', '2026-03-19', 1, 1, 938, '{\"bonus_completed\": 3, \"mandatory_completed\": 10}', '2026-03-18 23:05:02'),
+(363, 'birthday', '2026-03-19', 53, 2, 775, '{\"bonus_completed\": 3, \"mandatory_completed\": 9}', '2026-03-18 23:05:02'),
+(364, 'birthday', '2026-03-19', 19, 3, 424, '{\"bonus_completed\": 2, \"mandatory_completed\": 10}', '2026-03-18 23:05:02'),
+(365, 'birthday', '2026-03-19', 23, 4, 392, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-18 23:05:02'),
+(366, 'birthday', '2026-03-19', 118, 5, 330, '{\"bonus_completed\": 2, \"mandatory_completed\": 8}', '2026-03-18 23:05:02'),
+(367, 'birthday', '2026-03-19', 22, 6, 316, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-18 23:05:02'),
+(368, 'birthday', '2026-03-19', 8, 7, 310, '{\"bonus_completed\": 1, \"mandatory_completed\": 8}', '2026-03-18 23:05:02'),
+(369, 'birthday', '2026-03-19', 125, 8, 285, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-18 23:05:02'),
+(370, 'birthday', '2026-03-19', 4, 9, 282, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-18 23:05:02'),
+(371, 'birthday', '2026-03-19', 48, 10, 277, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-18 23:05:02'),
+(372, 'birthday', '2026-03-19', 2, 11, 267, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(373, 'birthday', '2026-03-19', 31, 12, 200, '{\"bonus_completed\": 1, \"mandatory_completed\": 7}', '2026-03-18 23:05:02'),
+(374, 'birthday', '2026-03-19', 63, 13, 192, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-18 23:05:02'),
+(375, 'birthday', '2026-03-19', 156, 14, 185, '{\"bonus_completed\": 0, \"mandatory_completed\": 5}', '2026-03-18 23:05:02'),
+(376, 'birthday', '2026-03-19', 51, 14, 185, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-18 23:05:02'),
+(377, 'birthday', '2026-03-19', 158, 16, 175, '{\"bonus_completed\": 2, \"mandatory_completed\": 5}', '2026-03-18 23:05:02'),
+(378, 'birthday', '2026-03-19', 99, 16, 175, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-18 23:05:02'),
+(379, 'birthday', '2026-03-19', 3, 18, 155, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(380, 'birthday', '2026-03-19', 155, 19, 127, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(381, 'birthday', '2026-03-19', 62, 20, 95, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(382, 'birthday', '2026-03-19', 167, 21, 92, '{\"bonus_completed\": 1, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(383, 'birthday', '2026-03-19', 165, 22, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(384, 'birthday', '2026-03-19', 77, 22, 75, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(385, 'birthday', '2026-03-19', 52, 24, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 4}', '2026-03-18 23:05:02'),
+(386, 'birthday', '2026-03-19', 139, 24, 70, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(387, 'birthday', '2026-03-19', 86, 26, 65, '{\"bonus_completed\": 0, \"mandatory_completed\": 3}', '2026-03-18 23:05:02'),
+(388, 'birthday', '2026-03-19', 27, 27, 60, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(389, 'birthday', '2026-03-19', 98, 28, 50, '{\"bonus_completed\": 1, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(390, 'birthday', '2026-03-19', 119, 29, 45, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-18 23:05:02'),
+(391, 'birthday', '2026-03-19', 13, 30, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-18 23:05:02'),
+(392, 'birthday', '2026-03-19', 172, 30, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(393, 'birthday', '2026-03-19', 150, 30, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(394, 'birthday', '2026-03-19', 133, 30, 40, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(395, 'birthday', '2026-03-19', 94, 34, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(396, 'birthday', '2026-03-19', 174, 34, 35, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(397, 'birthday', '2026-03-19', 160, 34, 35, '{\"bonus_completed\": 1, \"mandatory_completed\": 0}', '2026-03-18 23:05:02'),
+(398, 'birthday', '2026-03-19', 159, 37, 32, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(399, 'birthday', '2026-03-19', 157, 38, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 2}', '2026-03-18 23:05:02'),
+(400, 'birthday', '2026-03-19', 40, 38, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(401, 'birthday', '2026-03-19', 10, 38, 30, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(402, 'birthday', '2026-03-19', 173, 41, 27, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-18 23:05:02'),
+(403, 'birthday', '2026-03-19', 180, 42, 25, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(404, 'birthday', '2026-03-19', 108, 43, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(405, 'birthday', '2026-03-19', 177, 43, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 1}', '2026-03-18 23:05:02'),
+(406, 'birthday', '2026-03-19', 163, 43, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-18 23:05:02'),
+(407, 'birthday', '2026-03-19', 101, 43, 20, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-18 23:05:02');
+INSERT INTO `leaderboard_daily_snapshots` (`id`, `leaderboard_type`, `snapshot_date`, `user_id`, `rank_position`, `score`, `payload_json`, `created_at`) VALUES
+(408, 'birthday', '2026-03-19', 124, 47, 15, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-18 23:05:02'),
+(409, 'birthday', '2026-03-19', 178, 48, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-18 23:05:02'),
+(410, 'birthday', '2026-03-19', 179, 48, 5, '{\"bonus_completed\": 0, \"mandatory_completed\": 0}', '2026-03-18 23:05:02');
 
 -- --------------------------------------------------------
 
@@ -9935,31 +10876,31 @@ CREATE TABLE `nutzer` (
 --
 
 INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level`, `last_active_at`, `invite_code`, `invited_by`, `erstellt_am`, `is_verified`, `verification_token`, `last_notification_email_at`) VALUES
-(1, 'TheGourmetCyclist', 'ch_helbig@mail.de', '$2y$12$O/CHPXbZV4c15.qj5IE7bu7II5NZu636n2cNc2qSKnRHpBeqA2Nni', 50, '2026-03-11 21:28:18', 'd21c6e56dc', NULL, '2025-03-14 06:11:55', 1, NULL, '2026-03-10 15:26:45'),
-(2, 'TheGourmetBiker', 'luca.bock.2411@web.de', '$2y$12$tzxQ4L3gRKTiZbUVA2nxpu5i4bPIpuMcTt5KsH5DCBUcofOQE8Mue', 23, '2026-03-09 14:42:39', '128906c515', NULL, '2025-03-27 20:10:27', 1, NULL, NULL),
-(3, 'Leckermäulchen95', 'simon.oertel1995@gmail.com', '$2y$10$AmnTKz9H5knO2.l9HULqYuyyCZxfXraAivdGc0PUOH/tET0JjYoia', 11, '2026-03-08 18:12:33', '0b1b662a4f', NULL, '2025-04-02 19:28:56', 1, NULL, NULL),
-(4, 'Tom', 'tom-heilmann@live.de', '$2y$10$d2y8ktSLxyYbEfK1XftTcOJgKdvr9V9lv/y.tUYO4TRREe5iwzaby', 18, '2026-03-10 09:16:59', '1c6e4d07db', NULL, '2025-04-05 12:41:30', 1, NULL, '2026-02-14 07:51:21'),
+(1, 'TheGourmetCyclist', 'ch_helbig@mail.de', '$2y$12$O/CHPXbZV4c15.qj5IE7bu7II5NZu636n2cNc2qSKnRHpBeqA2Nni', 50, '2026-03-19 10:10:51', 'd21c6e56dc', NULL, '2025-03-14 06:11:55', 1, NULL, '2026-03-18 16:45:31'),
+(2, 'TheGourmetBiker', 'luca.bock.2411@web.de', '$2y$12$tzxQ4L3gRKTiZbUVA2nxpu5i4bPIpuMcTt5KsH5DCBUcofOQE8Mue', 23, '2026-03-17 11:45:38', '128906c515', NULL, '2025-03-27 20:10:27', 1, NULL, NULL),
+(3, 'Leckermäulchen95', 'simon.oertel1995@gmail.com', '$2y$10$AmnTKz9H5knO2.l9HULqYuyyCZxfXraAivdGc0PUOH/tET0JjYoia', 11, '2026-03-14 11:58:56', '0b1b662a4f', NULL, '2025-04-02 19:28:56', 1, NULL, NULL),
+(4, 'Tom', 'tom-heilmann@live.de', '$2y$10$d2y8ktSLxyYbEfK1XftTcOJgKdvr9V9lv/y.tUYO4TRREe5iwzaby', 18, '2026-03-17 08:44:06', '1c6e4d07db', NULL, '2025-04-05 12:41:30', 1, NULL, '2026-02-14 07:51:21'),
 (5, 'Erik', 'erik.loeschner@web.de', '$2y$10$Gtb7FMoek5h1mrypChCMp.5znsANd34Fc5UpuCNXLkhDHa.2QWet6', 9, '2025-10-04 08:34:52', '31145ca634', NULL, '2025-04-08 18:20:29', 1, NULL, NULL),
 (6, 'Agon', 'agon-muli@hotmail.de', '$2y$10$ULhCRGTYoScnJvPs3GfUyuK4H7PATTLrsPcdUjNY6MeViXUN.m4Je', 1, NULL, '2af144b83f', NULL, '2025-04-15 18:56:58', 1, NULL, NULL),
 (7, 'Luise', 'lilori@gmx.de', '$2y$10$O3pjh/Ly81ENzpiihb8MYurFtzH6ZFj.fF63nXQpSLmFwte19LzCu', 1, NULL, 'b26f690e28', NULL, '2025-04-16 06:43:01', 1, NULL, NULL),
-(8, 'Enkiboy', 'enke.sebastian.91@gmail.com', '$2y$12$c0Y872JEWOfGRlTrdRjY1ey.u8V1ETZyxY3aJ2d7KrWeki9uUCUkK', 24, '2026-03-10 10:19:51', '8d4a14bc01', NULL, '2025-04-26 18:34:34', 1, NULL, '2026-03-07 15:50:45'),
+(8, 'Enkiboy', 'enke.sebastian.91@gmail.com', '$2y$12$c0Y872JEWOfGRlTrdRjY1ey.u8V1ETZyxY3aJ2d7KrWeki9uUCUkK', 24, '2026-03-17 18:42:29', '8d4a14bc01', NULL, '2025-04-26 18:34:34', 1, NULL, '2026-03-07 15:50:45'),
 (9, 'Carola-Eis', 'carola@dummymail.de', '$2y$10$91uWQyVuYLqaO71OCaWxC.Jfud15N.o0esDW.OEOwvYOeMhBXRGSy', 1, NULL, '75e6275092', NULL, '2025-04-27 19:01:59', 1, NULL, NULL),
 (10, 'Pitiwowo', 'joel.machado@freenet.de', '$2y$10$eoosY8ZARZ5CvsbWt1KA6eQ6gWqQlxoZDyrjJUKyX..Rjq1Qufa1y', 6, '2026-03-10 13:01:26', 'caea6bee5f', NULL, '2025-05-01 07:29:02', 1, NULL, '2026-03-10 19:50:18'),
 (11, 'CaptManu', 'cptnmanu@web.de', '$2y$12$9gJBrhhLlyti46LmOhAco.BFc5dpzHjB0uaJYMIwjZvbY1Cj4/jVe', 9, '2025-12-27 21:50:52', '15c2a2c0c8', NULL, '2025-05-02 17:37:31', 1, NULL, NULL),
 (12, 'Matze T', 'matthias.trebeck@gmx.de', '$2y$10$fuCFkI8bAP8zxeXzrVcOiu3p3.ik1s1Y4pCJsTcChYhp6TONiIUBW', 1, NULL, 'a71597d7f7', NULL, '2025-05-04 18:04:06', 1, NULL, NULL),
-(13, 'Admin', 'admin@ice-app.de', '$2y$12$pjFKBd97VTV1NFf1CU7HVu6Q/x31qTfkX.RNW9HGmDnBTlDFUVEfK', 5, '2025-11-27 13:26:01', 'c98f1d4636', NULL, '2025-05-06 05:10:51', 1, NULL, '2026-02-25 06:42:25'),
-(19, 'Maerc96', 'maerc96@gmail.com', '$2y$12$VsOFRx9XLXA1J2NmKmkbfuqwTDYMsGkZSTq0nEjqIzgOMHuVTlWti', 15, '2026-03-11 11:47:35', '0354f20c07', NULL, '2025-05-06 16:25:27', 1, NULL, '2026-03-10 17:16:11'),
+(13, 'Admin', 'admin@ice-app.de', '$2y$12$pjFKBd97VTV1NFf1CU7HVu6Q/x31qTfkX.RNW9HGmDnBTlDFUVEfK', 5, '2026-03-14 20:31:12', 'c98f1d4636', NULL, '2025-05-06 05:10:51', 1, NULL, '2026-02-25 06:42:25'),
+(19, 'Maerc96', 'maerc96@gmail.com', '$2y$12$VsOFRx9XLXA1J2NmKmkbfuqwTDYMsGkZSTq0nEjqIzgOMHuVTlWti', 15, '2026-03-19 08:10:41', '0354f20c07', NULL, '2025-05-06 16:25:27', 1, NULL, '2026-03-17 14:32:00'),
 (20, 'Beatrice', 'beatrice.schubert29@icloud.com', '$2y$12$LSgIRunbW2b3GagzwxYY8uwqvOeWGaL.tNYWIRRkTCk2.Zsn2K6QS', 1, NULL, 'faa4a6dca6', NULL, '2025-05-06 17:36:20', 1, NULL, NULL),
 (21, 'emmi', 'schreiter.emmely@gmail.com', '$2y$12$aebCt7siPEdLonjfP4nHXeln1OED033MPcqJv7t4zK5vvjYHErdGe', 1, NULL, '82d283392c', NULL, '2025-05-06 18:36:53', 1, NULL, NULL),
-(22, 'Eispfote', 'franziska.scharbrodt@gmail.com', '$2y$12$pZFM9rkGwuL2k4yhT5xy5.vtewpdUXr1SXrP2pIjiAyYgCaB6Fjfe', 25, '2026-03-11 18:54:34', '973c05c5f4', NULL, '2025-05-06 19:38:09', 1, NULL, '2026-02-14 13:59:25'),
-(23, 'Holzmichl', 'michael.knoof@web.de', '$2y$12$W00hzmTBdIS2Yq3f9mDupODHtH/FJfr0RmldhSKxR6XLqNKZzua7u', 17, '2026-03-08 13:21:11', 'd2434287c2', NULL, '2025-05-12 14:51:32', 1, NULL, '2026-02-25 06:42:26'),
+(22, 'Eispfote', 'franziska.scharbrodt@gmail.com', '$2y$12$pZFM9rkGwuL2k4yhT5xy5.vtewpdUXr1SXrP2pIjiAyYgCaB6Fjfe', 26, '2026-03-18 16:37:34', '973c05c5f4', NULL, '2025-05-06 19:38:09', 1, NULL, '2026-02-14 13:59:25'),
+(23, 'Holzmichl', 'michael.knoof@web.de', '$2y$12$W00hzmTBdIS2Yq3f9mDupODHtH/FJfr0RmldhSKxR6XLqNKZzua7u', 19, '2026-03-18 22:13:08', 'd2434287c2', NULL, '2025-05-12 14:51:32', 1, NULL, '2026-03-18 16:36:28'),
 (25, 'alvaperez12', 'theresa.anna.perez@googlemail.com', '$2y$12$52IxywCiQd0kR8O2wGc9zeCOst2r8Fyj0dKVX8jiqkbXBPWtJpl3e', 6, '2025-09-22 17:49:34', 'a8af7f342a', NULL, '2025-05-19 17:09:16', 1, NULL, NULL),
 (26, 'moritz', 'moritzlistner1@gmail.com', '$2y$12$fByEoYTP8KAUwoXCgko/6Oxm34xb/3HzYqEv2PX7e65aOy86T9e5a', 5, '2025-10-23 16:48:36', 'e9efa25ecd', NULL, '2025-05-22 04:56:36', 1, NULL, NULL),
 (27, 'Ben', 'ben.merb@gmail.com', '$2y$12$AH0w57pnJh95.OQensCn4OQQ4.xw.PND4I7MR83VEE/7XMg.Y3/EG', 3, '2026-03-08 14:01:43', 'c9ad393cdc', NULL, '2025-05-25 05:40:47', 1, NULL, '2026-03-07 13:37:42'),
 (28, 'Radolph', 'ralph@raumausstattung-kretz.de', '$2y$12$VahKmrDf4Sv0O7JAwo7W2.gQRSKfgv8g8nd6seT65rtuSzhGcJCni', 1, NULL, '6a2da9613c', NULL, '2025-05-26 08:21:07', 1, NULL, NULL),
 (29, 'KingGC', 'mrupkalwis@gmx.de', '$2y$12$xtWKYNcALSnMhHRuCtgagufSO1rAucyIxvy.USFAfbqFxg9W6uZRa', 1, NULL, '3ef3df8a96', NULL, '2025-05-26 08:31:08', 1, NULL, NULL),
 (30, 'Erfurter Feinschmecker', 'valentin.oertel@uni-erfurt.de', '$2y$12$5ja9eCAIzB41g3rIcaFfHeRvXGEQMNUfCgGuTWgg9iVrBrQf7R8yS', 7, '2025-09-03 15:01:36', 'f0d8f52d30', NULL, '2025-05-26 18:19:26', 1, NULL, NULL),
-(31, 'yannickr.t', 'yannick.runst@gmx.de', '$2y$12$ieQwX3G1TuVDcLE0g7ceFulTh8gBoLRorDOC10i/vPTk5QfiyeM.m', 25, '2026-03-11 21:09:54', '32b8fddb86', NULL, '2025-05-26 19:53:40', 1, NULL, '2026-02-25 06:42:26'),
+(31, 'yannickr.t', 'yannick.runst@gmx.de', '$2y$12$ieQwX3G1TuVDcLE0g7ceFulTh8gBoLRorDOC10i/vPTk5QfiyeM.m', 25, '2026-03-13 13:47:05', '32b8fddb86', NULL, '2025-05-26 19:53:40', 1, NULL, '2026-03-11 20:49:28'),
 (32, 'Lemony', 'Sarah.Reinhold.mail@gmail.com', '$2y$12$Ocaljou1GY.DgsL0CRdLSOR9MO.fmUYcRhgjE7l8ie8J1hygVKZeO', 1, NULL, 'a5d1edcf35', NULL, '2025-05-27 10:57:57', 1, NULL, NULL),
 (33, 'Mandy', 'pieschelnico@aol.com', '$2y$12$iWJWiZ4WYxoA0Xsg0Rkafe.hqKsEd9rs5Ea9dgFhBmXZWZFG8AdFK', 1, NULL, '5341a51d0d', NULL, '2025-05-27 16:32:53', 1, NULL, NULL),
 (34, 'Bräuti', 'grohmii@aol.com', '$2y$12$JQymVJ3oo/L.sR.6wc2fUeA14vzlw2Tw8U2r1j1itPsEY0UTb.svG', 4, '2025-09-21 09:30:50', '1605fec742', NULL, '2025-05-27 16:36:09', 1, NULL, NULL),
@@ -9976,16 +10917,16 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (45, 'Anne_glace', 'annemuhhle@gmail.com', '$2y$12$loj9Z4xFZPcAJt9z71Z2RehrzTH7L1ibkMoEcr5GHcgftYI4u1U2y', 5, '2025-07-24 08:21:55', '7cfedad382', NULL, '2025-06-08 12:48:47', 1, NULL, NULL),
 (46, 'Jutta B.', 'juttamobil49@gmail.com', '$2y$12$HZdrqw5v5E/VyD1K3eLpUOQVK3CyCSU6052fyp.zOeDDHZ2NGIjwO', 1, NULL, '8300fe3a93', NULL, '2025-06-09 18:17:19', 0, '6d110e61611825576353735d8414010504011c0c126426ee5b71e4898b1b4fdd', NULL),
 (47, 'Kristin', 'Kristin-79@web.de', '$2y$12$EevmPVhJ7pPcJb.TpeNRYOjrOOO8VH8sTsKF82cQgJvEwO5L1IOv.', 1, NULL, '66cc4e1f12', NULL, '2025-06-11 04:44:21', 1, NULL, NULL),
-(48, 'Simon', 'simon.lang09337@gmail.com', '$2y$12$QAO3Voa5GhdPDwGl6k5K4emua8tTsNH5DcnaTp0oxC88XGpAPVwum', 19, '2026-02-22 18:55:55', '8ed8ebd9f5', NULL, '2025-06-13 12:47:28', 1, NULL, '2026-03-08 04:49:32'),
+(48, 'Simon', 'simon.lang09337@gmail.com', '$2y$12$QAO3Voa5GhdPDwGl6k5K4emua8tTsNH5DcnaTp0oxC88XGpAPVwum', 19, '2026-03-17 12:23:51', '8ed8ebd9f5', NULL, '2025-06-13 12:47:28', 1, NULL, '2026-03-08 04:49:32'),
 (49, 'Thomas', 'thomas.runst@t-online.de', '$2y$12$wDiceHHgD8NNL7NDzyd5he0r9rXADeOS9eCL7lCTQsY.IIUsiNFHq', 14, '2025-09-11 09:00:17', 'd53683f9b2', NULL, '2025-06-16 15:21:59', 1, NULL, NULL),
 (50, 'VanessaR96', 'vanessa_uhlig@live.de', '$2y$12$HubZSEAP/7UnRpQe7dE9z.YmZQjcnixM7h1CLrEn.TPZ/hInvm35a', 1, NULL, 'ece8afdf03', NULL, '2025-06-17 12:46:20', 1, NULL, NULL),
-(51, 'Selina', 'selinawill539@gmail.com', '$2y$12$lIwb/P/KEXeXaoEbOHJYhe7l6VhU3AXvBSDXRir2QTCBZoL4u/k9e', 5, '2026-02-23 09:10:14', '94881c8f17', NULL, '2025-06-18 04:00:44', 1, NULL, '2026-02-22 15:38:47'),
-(52, 'alinaa.wrnr', 'werneralina318@gmail.com', '$2y$12$LGIprNo3nW0jkVH5V0ysSeGGKmxnLBXNFclj0V/WlOsvt1jb4aMyO', 24, '2026-03-11 18:59:14', '5d91129676', NULL, '2025-06-18 15:32:27', 1, NULL, '2026-03-11 17:36:24'),
-(53, 'IceGoe', 'danielgoetze1982@gmail.com', '$2y$12$LxWIS/4pZYe3kiiOvCCbGe6IGLgYSUUjF5/kgvbxNO8qAxIYBrptq', 35, '2026-03-11 20:51:15', '754f8689f2', NULL, '2025-06-18 19:14:12', 1, NULL, '2026-03-10 20:11:02'),
+(51, 'Selina', 'selinawill539@gmail.com', '$2y$12$lIwb/P/KEXeXaoEbOHJYhe7l6VhU3AXvBSDXRir2QTCBZoL4u/k9e', 5, '2026-03-17 18:47:14', '94881c8f17', NULL, '2025-06-18 04:00:44', 1, NULL, '2026-02-22 15:38:47'),
+(52, 'alinaa.wrnr', 'werneralina318@gmail.com', '$2y$12$LGIprNo3nW0jkVH5V0ysSeGGKmxnLBXNFclj0V/WlOsvt1jb4aMyO', 24, '2026-03-11 18:59:14', '5d91129676', NULL, '2025-06-18 15:32:27', 1, NULL, '2026-03-13 11:14:09'),
+(53, 'IceGoe', 'danielgoetze1982@gmail.com', '$2y$12$LxWIS/4pZYe3kiiOvCCbGe6IGLgYSUUjF5/kgvbxNO8qAxIYBrptq', 37, '2026-03-18 17:51:15', '754f8689f2', NULL, '2025-06-18 19:14:12', 1, NULL, '2026-03-18 16:36:57'),
 (54, 'lewi', 'Winfried.Leister@gmail.com', '$2y$12$vUZhkDBRfHQmMWQb1PpN4ewEr1BLfyAjdmAOsjJ1BKsHs.s3IGN/O', 7, '2025-10-05 14:45:21', '5c7c147b81', NULL, '2025-06-20 21:53:11', 1, NULL, NULL),
 (55, 'Philipp', 'p-m-grosse@web.de', '$2y$12$mH51FEkAfsTUFz0eh6YxQOIx1t0qkEUFncDn.udc11E32eP0kBVQ.', 6, '2025-12-24 09:40:29', 'e7fadec6b6', NULL, '2025-06-25 06:39:27', 1, NULL, NULL),
 (62, 'reyckh', 'raikhelbig@gmail.com', '$2y$12$zlzPDZfxAZkoREDa/7L6CO8guHJzTgPEE6JEvAdADqTiDfi9FW28K', 14, '2026-03-09 17:09:01', '327956fa2c', 1, '2025-06-28 14:20:57', 1, NULL, '2026-03-08 13:15:14'),
-(63, 'Schleckzilla', 'mako_acc@posteo.de', '$2y$12$qcEUxl.qkx3Ptx/wzcbD6.Sf3JQDDzqPDpptJHUDIIMMVeq1bQeiS', 12, '2026-02-14 10:26:36', 'baa6a86d6d', NULL, '2025-06-29 11:01:47', 1, NULL, '2026-02-25 06:42:26'),
+(63, 'Schleckzilla', 'mako_acc@posteo.de', '$2y$12$qcEUxl.qkx3Ptx/wzcbD6.Sf3JQDDzqPDpptJHUDIIMMVeq1bQeiS', 12, '2026-03-17 09:51:04', 'baa6a86d6d', NULL, '2025-06-29 11:01:47', 1, NULL, '2026-02-25 06:42:26'),
 (64, 'Melanie', 'info@ghs-glauchau.de', '$2y$12$29V46LFTb8WyBzE87RGbt.gvs1BK5wWINuVf2LSEfODSouloZ.x5S', 3, '2025-07-19 19:37:16', '6da7720fed', 52, '2025-06-30 11:48:13', 1, NULL, NULL),
 (65, 'Marissi', 'melanie-roesler@outlook.de', '$2y$12$GjJSdAeO9T3yEAu/z14G9OhJO7KjPN8fXZZLqIvL15R5EhLQq5kpK', 1, NULL, 'd05a50fbad', 52, '2025-06-30 11:55:38', 1, NULL, NULL),
 (66, 'Lilli', 'lilli.poralla@icloud.com', '$2y$12$M1Xg5ighcdUMI62VceGeCeazsppaOfd4jlTQeft8SDORNmeUQKoo6', 1, NULL, '5fb095751e', 52, '2025-06-30 13:04:25', 1, NULL, NULL),
@@ -9999,7 +10940,7 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (74, 'Tische', 'tim.tischendorf@gmx.de', '$2y$12$mG9MBxsnF5wnpYuf98uYpudcQ/urTCAA1eCer4eypxWcIe3/nEXSG', 5, '2025-08-27 13:41:56', '8af4894370', 31, '2025-07-05 12:57:45', 1, NULL, NULL),
 (75, 'Brommsler', 'bastel.s@gmx.de', '$2y$12$yM/jt/CYL9OLsGrrRVObUuI/XMiMADlskWSAuR7I7yZxv7e7TIKqC', 2, '2025-10-27 18:53:05', 'cd1174821f', 1, '2025-07-05 14:55:47', 1, NULL, '2025-10-28 05:51:38'),
 (76, 'marvxn', 'mxrvin00@icloud.com', '$2y$12$UjAQm44LC3NH3FsNkNWbg.KhcK4mv0H33DIpi1.OlcFR0eqw/Pn4G', 1, NULL, '8bb5dce6bf', 52, '2025-07-06 11:52:58', 1, NULL, NULL),
-(77, 'DiKuHo', 'kuhne.tina@web.de', '$2y$12$t4QI.nACe1sj7xTqCt2jVuYZpeAWIICFsmtNNAFMxTf8.sE.L2F2W', 10, '2026-03-06 12:04:09', '0884e97998', NULL, '2025-07-06 14:19:47', 1, NULL, NULL),
+(77, 'DiKuHo', 'kuhne.tina@web.de', '$2y$12$t4QI.nACe1sj7xTqCt2jVuYZpeAWIICFsmtNNAFMxTf8.sE.L2F2W', 10, '2026-03-17 14:01:16', '0884e97998', NULL, '2025-07-06 14:19:47', 1, NULL, NULL),
 (78, 'Ratatouille', 'susann.scharbrodt@web.de', '$2y$12$MIZoyXoTEQk3fPK6dlLR0.4a96Jyyhp5DwTNdWEZv2yEWNAdSNt8W', 5, '2025-07-27 17:59:34', 'faea465b69', 40, '2025-07-06 15:11:08', 1, NULL, NULL),
 (79, 'maxenderlein', 'maxenderleinracing@gmail.com', '$2y$12$hSdvY.2txc5CZOC5XP7zl.Jr1bVpPmaBroC6.GYs4R6gv5vfAxYO.', 1, '2025-07-06 18:07:16', '5b6f60ac31', NULL, '2025-07-06 18:06:41', 1, NULL, NULL),
 (80, 'Lenny', 'lennard.karl@aol.com', '$2y$12$Rq69.Stj4RdRITTEwBXGa.jOJDN./NOl/esavcfkL1vQK7K44R1Ki', 1, NULL, '1a17358b69', 52, '2025-07-07 13:46:24', 1, NULL, NULL),
@@ -10016,21 +10957,21 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (91, 'Anni113', 'famschalla@aol.de', '$2y$12$HcLSnM8UaO2AQSrVaJerg.dtPi5ED6SRacCmYR20GmslYnCEc6LeK', 1, NULL, 'c5bccd75d8', 22, '2025-07-15 18:45:14', 1, NULL, NULL),
 (92, 'Daniel', 'daniel-tuerpe@web.de', '$2y$12$cNYYIBB2UeflAZs1sWyE9ea9sE3qiag4mEG.cAjK3oZkDqQo0C5/C', 4, '2025-07-21 06:23:37', '096ae6f4a9', 1, '2025-07-20 18:59:47', 1, NULL, NULL),
 (93, 'Lexi', 'lexistar27@gmail.com', '$2y$12$xiVRYiLRVZeB6Cx5AlJdU.TEvBT5E1LITxK8HKGtQpG7YkTIyfWmW', 6, '2025-07-25 14:18:09', 'add340a4c4', 8, '2025-07-21 20:04:38', 1, NULL, NULL),
-(94, 'jhhot', 'jhhot@t-online.de', '$2y$12$WQhIIwhe0BOea4a0lt6Anu.qj7YCugpJmoX1Ynn5baxvCgHpdK90m', 6, '2025-09-08 09:40:20', '37f7cc6ee4', NULL, '2025-07-22 15:36:47', 1, NULL, NULL),
+(94, 'jhhot', 'jhhot@t-online.de', '$2y$12$WQhIIwhe0BOea4a0lt6Anu.qj7YCugpJmoX1Ynn5baxvCgHpdK90m', 6, '2026-03-19 09:48:30', '37f7cc6ee4', NULL, '2025-07-22 15:36:47', 1, NULL, NULL),
 (95, 'Romy', 'Romy.Roblick@gmx.de', '$2y$12$eTl5ekf6XJ1Ozk9QfnR2F.FGi0V48I8MQJCIG70lYdulCluWH8Cse', 1, NULL, '1adafabeb1', 1, '2025-07-22 21:38:39', 1, NULL, NULL),
 (96, 'GourmetKommissar', 'felix.ist.online@gmx.net', '$2y$12$h0jHlUZW5R015piLE9N7S.NX/Q87K..t59j4z2zyYFZ2nQFa3NuDi', 15, '2025-11-16 03:49:42', '87ee5f4bd1', NULL, '2025-07-24 14:20:04', 1, NULL, '2026-03-08 04:52:06'),
 (97, 'Markus', 'wombat_bluest.3o@icloud.com', '$2y$12$Y1mUcEXijUsA8tHwAyAUTeeipYk8q6hrGiOvgpIJ8MiLVbnej59AC', 1, '2025-08-12 16:24:43', 'f2baaae7ca', 40, '2025-07-26 16:41:45', 1, NULL, NULL),
-(98, 'SchleckLina', 'alina.neugebauer@gmx.de', '$2y$12$WavvELKWmnGCrh.Scx.3VO5pmD2UUaVRnS6uMtC9amR2XCa.C1qM.', 9, '2026-02-27 14:23:10', '65508f5d45', NULL, '2025-07-27 14:10:38', 1, NULL, '2026-02-27 15:48:34'),
-(99, 'Eiskat', 'uhlig.katja@t-online.de', '$2y$12$e/bW2Z7TQ/kkdX/7/vcqi.tzdLkSbN6VQr97M0ibi2wkEWwoGE2kW', 13, '2026-03-10 16:32:14', '2eb69a4f97', NULL, '2025-07-28 14:39:06', 1, NULL, '2026-02-14 13:59:25'),
+(98, 'SchleckLina', 'alina.neugebauer@gmx.de', '$2y$12$WavvELKWmnGCrh.Scx.3VO5pmD2UUaVRnS6uMtC9amR2XCa.C1qM.', 10, '2026-03-18 13:46:17', '65508f5d45', NULL, '2025-07-27 14:10:38', 1, NULL, '2026-02-27 15:48:34'),
+(99, 'Eiskat', 'uhlig.katja@t-online.de', '$2y$12$e/bW2Z7TQ/kkdX/7/vcqi.tzdLkSbN6VQr97M0ibi2wkEWwoGE2kW', 13, '2026-03-14 12:48:07', '2eb69a4f97', NULL, '2025-07-28 14:39:06', 1, NULL, '2026-02-14 13:59:25'),
 (100, 'FrankaFah', 'frankafah@icloud.com', '$2y$12$Lq3snf1EaTIt1ffKBJKmB.HRc40JzaFNIfBglZYzh4y.m7q.86aKi', 3, '2025-09-16 20:09:20', '5dc158a210', NULL, '2025-07-29 16:14:27', 1, NULL, NULL),
-(101, 'grumpelstielzchen', 'steve_grumpelt@gmx.de', '$2y$12$bIDv6L71ZhtTaeLO3239lOqfwJq2Uj.iKa9IsnHCi5X5g9kzQeKSW', 1, '2026-03-11 11:03:01', '7f28c061aa', 1, '2025-08-01 14:32:00', 1, NULL, NULL),
+(101, 'grumpelstielzchen', 'steve_grumpelt@gmx.de', '$2y$12$bIDv6L71ZhtTaeLO3239lOqfwJq2Uj.iKa9IsnHCi5X5g9kzQeKSW', 1, '2026-03-14 11:24:24', '7f28c061aa', 1, '2025-08-01 14:32:00', 1, NULL, NULL),
 (102, 'Zelt', 'z-steffi@gmx.net', '$2y$12$nulmSGggSoaLHx7YcY/TlORBCaEF3gPz8NHp9ZpcAP0cwEIhXzXr2', 8, '2025-09-07 07:00:03', 'bf2ef77725', NULL, '2025-08-01 20:19:24', 1, NULL, NULL),
 (103, 'Rooney82', 'ronald.kraatz@freenet.de', '$2y$12$/l9i5O4NAKbbiQ465uM/hOMIwdWOHOrIygYy4UKncjk8Ru2TKfiju', 7, '2025-08-10 13:20:56', '6bbd83eb13', NULL, '2025-08-02 05:26:40', 1, NULL, NULL),
 (104, 'MayA', 'andreasmay83@gmail.com', '$2y$12$GD9WezJ5/.gClGqxV4LBb.edTd5/GhK91PQUNEqWcasJR4.KQzvyq', 1, NULL, '4e997eb104', 1, '2025-08-02 05:40:42', 1, NULL, NULL),
 (105, 'Maria1987', 'fichtner.maria@web.de', '$2y$12$NVFFDBWNE2CGOeNy8aFkk.hq7TBGW2S.o.W.v7OEESVBON8IKU9TC', 1, '2025-08-02 06:36:53', '74b4e99996', NULL, '2025-08-02 06:19:21', 1, NULL, NULL),
 (106, 'Iceroadtrucker', 'tommyspindler@freenet.de', '$2y$12$7NL8OE3yFJbR49ZvBtLdPuvwCKDHYa97S7K5Ex9WYiY0Ytzha20pi', 4, '2026-02-07 11:30:17', 'd4e0a1ab32', 23, '2025-08-02 15:40:21', 1, NULL, NULL),
 (107, 'Antje Unger', 'unger.antje@gmx.de', '$2y$12$sBiefRcxhOXRP0Uf5M36Zen9jqTizcdYPi5d2lBoJp3ezq.oqBa2S', 1, NULL, 'a630fe0f1f', NULL, '2025-08-03 16:05:35', 1, NULL, NULL),
-(108, 'lampshade', 'obstladen@t-online.de', '$2y$12$Qn7V20JE1BhzVGbsasc0euw5P/bd4JoilTBeWUTYcHhizwLRTogiu', 4, '2025-09-01 07:09:17', 'ac0c44e6dd', NULL, '2025-08-04 08:31:10', 1, NULL, NULL),
+(108, 'lampshade', 'obstladen@t-online.de', '$2y$12$Qn7V20JE1BhzVGbsasc0euw5P/bd4JoilTBeWUTYcHhizwLRTogiu', 4, '2026-03-15 18:33:27', 'ac0c44e6dd', NULL, '2025-08-04 08:31:10', 1, NULL, NULL),
 (109, 'Juli_He', 'Juliane.helbig@web.de', '$2y$12$QrEyGiWD/nOaXinLpwGMbeqKvUJI2vKhdlr.2KhI..860NPNK50.W', 7, '2025-10-06 14:52:38', '01b5ce4eff', NULL, '2025-08-05 14:05:37', 1, NULL, NULL),
 (110, 'Reino', 'reino.albrecht@protonmail.com', '$2y$12$8ZC/gP4BFGsPNBcww8WXw./wHJX0w4e5ThYwAIjcTix5CUbDMxsMa', 1, '2025-08-09 13:10:57', '4918838ff5', NULL, '2025-08-05 14:33:20', 1, NULL, NULL),
 (111, 'Kai', 'kaix0r@me.com', '$2y$12$uIi6F53qpWz7BMf4KxQDJ.vN5ue2rjpz2rWJQt21SFOB8V7OsZb8q', 4, '2025-09-14 09:24:56', '1c1651698d', NULL, '2025-08-05 14:44:55', 1, NULL, NULL),
@@ -10038,14 +10979,14 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (115, 'Hagen', 'hagen.schanze@mail.de', '$2y$12$VwJlNwWKp6raaQAwt4vis.Mseh/ZMc89OeT70m6ENuHVLkskzY6Ri', 1, NULL, 'a2885a6ad0', 102, '2025-08-09 17:14:20', 1, NULL, NULL),
 (116, 'Hoschi', 'andreposcher@t-online.de', '$2y$12$GGi0qyaAYORwqqIyXbbl3OBF.t/X3GJBQpDHE0ND2LNNLchTlmyuO', 1, NULL, '70ca71a0ae', NULL, '2025-08-10 10:33:12', 0, '17102810e66f436e16904c0b75b9f5cac7198640730c828bb65f8ee7aa7fda5e', NULL),
 (117, 'Marco Peters', 'marco-peters@outlook.de', '$2y$12$shxekxfcvIPe9glXOy23aORzqwk2vi0G8exdV10O64OuQxZu8VlNO', 2, '2025-08-13 10:01:25', '9a864434dd', NULL, '2025-08-12 14:35:26', 1, NULL, NULL),
-(118, 'kleinesritzel', 'ach.hase@icloud.com', '$2y$12$O2u44DHB1Ztzol6EanCqIO8TdfbZhukyCGXAqjQRWKlTyODpRUPVG', 15, '2026-03-11 18:18:03', '40b21c042b', NULL, '2025-08-15 20:30:25', 1, NULL, '2026-03-04 18:03:11'),
-(119, 'Gelatobert', 'weber85robert@gmail.com', '$2y$12$ShKcSMvtHk.uxGwqewZojOth.oParJGHptOCsbSdkVmBNwHiNcZWe', 7, '2025-10-08 12:45:30', 'ef3383b26e', 2, '2025-08-17 20:21:14', 1, NULL, NULL),
+(118, 'kleinesritzel', 'ach.hase@icloud.com', '$2y$12$O2u44DHB1Ztzol6EanCqIO8TdfbZhukyCGXAqjQRWKlTyODpRUPVG', 15, '2026-03-18 11:12:14', '40b21c042b', NULL, '2025-08-15 20:30:25', 1, NULL, '2026-03-04 18:03:11'),
+(119, 'Gelatobert', 'weber85robert@gmail.com', '$2y$12$ShKcSMvtHk.uxGwqewZojOth.oParJGHptOCsbSdkVmBNwHiNcZWe', 8, '2026-03-18 15:28:16', 'ef3383b26e', 2, '2025-08-17 20:21:14', 1, NULL, NULL),
 (120, 'Marcello77', 'mlohmann77@gmx.de', '$2y$12$bp6MdwAiidpA3nmjW5PlbedyAEQ8B9hdW5RhlnmbrsPKiYwuBkOWO', 1, NULL, 'b5858cb9d8', NULL, '2025-08-21 08:09:17', 1, NULL, NULL),
 (121, 'Gustomucho233', 'Paulschool@web.de', '$2y$12$dkHn.deJPfx3ZQcqvVttseo1yZWYe5PIZNIrdKw/qihGSHjepXpBe', 1, NULL, '04c3416230', 96, '2025-08-22 17:06:02', 1, NULL, NULL),
 (122, 'Robert', 'rob12@gmx.de', '$2y$12$Y7y0OnGZyOZ9EHKwl7/ApuFaOSHLS/qxDkY/4gvMAqohzhCdzYdpy', 1, '2025-08-26 14:18:28', 'acb11d56e4', NULL, '2025-08-24 14:07:58', 1, NULL, NULL),
 (123, 'Rabnizz', 'mischa.rabe@t-online.de', '$2y$12$DEcpZYZ0mA98n7W5jwK.JeE.O6WDpF1SLt8sp6NljtDhdwwrRlgae', 4, '2025-09-22 21:26:33', 'b917e85545', NULL, '2025-08-26 14:15:50', 1, NULL, NULL),
-(124, 'Mr. Uno', 'paul.zilly@aol.com', '$2y$12$.kLwVw6uD5Pl9RBl5rGC4O3R89wa6Jj2dxtgO0KUhbHgb9Lxices.', 1, '2026-03-09 20:33:00', 'b02eab482a', 8, '2025-08-27 08:08:27', 1, NULL, NULL),
-(125, 'Suklaafani', 'isabel.helbig@googlemail.com', '$2y$12$C6ECDM1SxofqJAYH3XnH2exabEZf6OYu9FZzqEb/e0f3dDLE.m/ai', 12, '2026-03-11 19:09:39', '4026dfc798', NULL, '2025-08-29 17:44:06', 1, NULL, '2026-03-08 09:26:22'),
+(124, 'Mr. Uno', 'paul.zilly@aol.com', '$2y$12$.kLwVw6uD5Pl9RBl5rGC4O3R89wa6Jj2dxtgO0KUhbHgb9Lxices.', 1, '2026-03-15 07:26:09', 'b02eab482a', 8, '2025-08-27 08:08:27', 1, NULL, NULL),
+(125, 'Suklaafani', 'isabel.helbig@googlemail.com', '$2y$12$C6ECDM1SxofqJAYH3XnH2exabEZf6OYu9FZzqEb/e0f3dDLE.m/ai', 13, '2026-03-18 22:35:56', '4026dfc798', NULL, '2025-08-29 17:44:06', 1, NULL, '2026-03-08 09:26:22'),
 (126, 'Miranda', 'auriphrygia@gmail.com', '$2y$12$.NTSKsWSOTYakLXRtu4RqugFwKK7/T1HCtq2tK9ZjyNQlZFtAV9sm', 1, NULL, '86dcfeb4fe', 40, '2025-08-30 17:06:32', 0, '37d3d5173b3998b9605a23b44d36175c604de7466cfabeea6e4ed69b10daa5a7', NULL),
 (127, 'eisprinzessin', 'miranda.stattmann@gmail.com', '$2y$12$IIlYGyVdUyc2jUXiNTtLL.E7PxhcTUmu4Vc1y4zOAiKFAjneXjx7K', 1, NULL, 'c65e1bd3f3', 40, '2025-08-30 17:07:09', 1, NULL, NULL),
 (128, 'Kuki93', 'kunzek1993@gmail.com', '$2y$12$ozXFWUdpvakdTu4WEmpWmOYigjxBkDBoADYzLawf/ePTJn/SGGkYC', 1, '2025-09-23 18:30:54', '991887d5da', NULL, '2025-08-31 15:31:11', 1, NULL, NULL),
@@ -10059,7 +11000,7 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (136, 'Martin86', 'martin.missler@gmx.net', '$2y$12$6c0RIujfPydj1f/b7aTTA.lXcwm4HW/85xTmFU2JGy6Rp6wr8rgbu', 1, NULL, 'f301b6960b', NULL, '2025-09-14 11:57:14', 0, '1db009200ea9a9fefe410cc08f031d45cac89a6702a266e3110a479268978bdb', NULL),
 (137, 'Mamil23', 'tilo.kozlik@gmail.com', '$2y$12$solkoEGNzKlYimstpQxIE.ocDiv/B9jdiZrBf1hLUSW5onwmizpYK', 7, '2025-09-22 10:13:50', '143c2dfc29', NULL, '2025-09-16 17:57:55', 1, NULL, NULL),
 (138, 'Lydia S.', 'lydsch2000@googlemail.com', '$2y$12$y2zH9MN0llOCuIKGjgUap.gQzyMNOr320zGBhOEDbuR554tRMYzIe', 1, NULL, '8ee2b9e0e1', NULL, '2025-09-23 15:55:08', 1, NULL, NULL),
-(139, 'LexaE', 'zillyalexandra@aol.com', '$2y$12$j7BwiRQw3jFBYaACYrtE/eGml2FD0toul3lvxkHJeBmptDwhkVKda', 13, '2026-03-10 05:48:45', '91a02309e7', 8, '2025-10-01 16:15:05', 1, NULL, '2026-03-07 14:58:50'),
+(139, 'LexaE', 'zillyalexandra@aol.com', '$2y$12$j7BwiRQw3jFBYaACYrtE/eGml2FD0toul3lvxkHJeBmptDwhkVKda', 13, '2026-03-12 14:44:23', '91a02309e7', 8, '2025-10-01 16:15:05', 1, NULL, '2026-03-07 14:58:50'),
 (140, 'Tboneflow', 'posaunenfreak3@gmail.com', '$2y$12$nXsFQXrzgKmC8g5ZxOz4hOjkewB76h0wvxW6gsKHy8YozFG7rF45m', 1, NULL, 'dedb393c18', 22, '2025-10-04 14:35:06', 1, NULL, NULL),
 (141, 'jäätelö-dori', 'dorothee.braun@quaerosys.com', '$2y$12$i8YMFclt5/T69ddnfNMinOHrdE10grn1vABqqjILzenZ9JBzQFm.S', 1, NULL, '2d38553f70', 22, '2025-10-04 14:44:07', 1, NULL, NULL),
 (142, 'Stax', 'max.5@web.de', '$2y$12$GoCliJX6rB7gtTR0BxGax.r7kn6duqxgiz2yx54YhxgpPeRnBnnlq', 5, '2025-10-07 18:32:30', '5ac9b73638', 22, '2025-10-07 18:11:36', 1, NULL, NULL),
@@ -10070,15 +11011,15 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (147, 'tilmiteineml', 'tilmiteineml2020@gmail.com', '$2y$12$egMcfRMhmOhUa3aef7VlDOY4yA.ppfdpWd5T3TQfhbkJgrIiAY02a', 1, '2026-02-05 12:43:09', 'a236ac4071', NULL, '2026-02-05 12:39:15', 1, NULL, NULL),
 (148, 'Rene', 'rene_steinert@gmx.de', '$2y$12$90t17DsJz/aSph99gMYW1.JCj6MxDXxnYaxmlgD2iysml.lxaCL8y', 6, '2026-02-08 08:30:58', '5fed45c475', NULL, '2026-02-06 19:37:44', 1, NULL, '2026-02-06 18:51:08'),
 (149, 'UltraAlex', 'ride@veloventure.org', '$2y$12$kH.8lXxJ/R3jJ1wfnl5wpOfxCLvdQYlmOZ5wiDOWsyFL63EQaGBnm', 3, '2026-02-08 10:57:21', 'f2a8d4689b', NULL, '2026-02-07 23:36:19', 1, NULL, '2026-02-25 06:42:26'),
-(150, 'AnnaMCDough', 'a.schrage@gmx.net', '$2y$12$MBBaJ569HO/AtfQ5jGsgCOE4jffOncXeKgPqozpWCsNWBBrUM6J4q', 9, '2026-02-11 22:27:50', 'c8b6cf1217', 22, '2026-02-10 15:40:35', 1, NULL, '2026-02-11 12:25:14'),
+(150, 'AnnaMCDough', 'a.schrage@gmx.net', '$2y$12$MBBaJ569HO/AtfQ5jGsgCOE4jffOncXeKgPqozpWCsNWBBrUM6J4q', 9, '2026-03-17 18:19:51', 'c8b6cf1217', 22, '2026-02-10 15:40:35', 1, NULL, '2026-02-11 12:25:14'),
 (151, 'lara_217', 'lara.muelhausen@icloud.com', '$2y$12$FZI8swAjGWOppa3vXCxIyuy5UgEJN.Zg4IqJyCbAIGIKwikmF6JhK', 5, '2026-02-22 20:04:12', '60203035b4', 48, '2026-02-11 20:48:29', 1, NULL, '2026-02-22 15:35:39'),
 (152, 'FrozenJo', 'jonas.hausmann98@gmail.com', '$2y$12$3lDL9kpeDRCA7z5id0ET6Ox7XIJB8pSQr73Ex.ux6asttn0zeeJMy', 1, NULL, '3a585c65a8', 48, '2026-02-15 13:46:01', 1, NULL, NULL),
 (153, 'IceNadl', 'nadiner79@gmx.de', '$2y$12$90pzciKvBuKJao5PKvgTAOVU3e4FN0fOBOZEnj5yXbpRgCnJ06QBC', 4, '2026-02-19 20:37:03', '86236ff477', 53, '2026-02-19 20:33:08', 1, NULL, NULL),
 (154, 'Finja', 'dutenhoeferfinja@gmail.com', '$2y$12$NZwuuS1duyou6GQV1.LmXOJ5vcZa.U0lkeFeEWXbpr4KzxI8sFnnO', 1, '2026-02-23 11:39:15', '28ae36a21f', NULL, '2026-02-23 11:34:47', 1, NULL, '2026-02-25 06:42:26'),
 (155, 'Mathilda069', 'tilchmathilda1@gmail.com', '$2y$12$wJFSt1rufB67wbcNviose.giE7a.eFKNbIjMIv7ScwATmitc27gIK', 6, '2026-03-10 13:00:04', '9363b144fa', NULL, '2026-02-23 11:37:23', 1, NULL, '2026-02-25 06:42:26'),
-(156, 'Thetasteofchemnitz', 'thetasteofchemnitz@gmail.com', '$2y$12$Va68hEhaaR9ALB3aKOMPDu5vmuSVTGBaXaFuvFsiXnXeXogv.bw0m', 8, '2026-03-11 17:18:15', '7b1c6f9521', NULL, '2026-02-28 13:40:05', 1, NULL, '2026-03-08 05:01:23'),
+(156, 'Thetasteofchemnitz', 'thetasteofchemnitz@gmail.com', '$2y$12$Va68hEhaaR9ALB3aKOMPDu5vmuSVTGBaXaFuvFsiXnXeXogv.bw0m', 9, '2026-03-13 18:34:34', '7b1c6f9521', NULL, '2026-02-28 13:40:05', 1, NULL, '2026-03-08 05:01:23'),
 (157, 'HerrZensdinge', 'herr.zensdinge@icloud.com', '$2y$12$/tw6CyB.74UUfnIsGLzVAOTq.b6kSTq78u/ztDp..zSAPERX8n4qa', 6, '2026-03-08 16:37:46', '98120a5c80', NULL, '2026-02-28 21:56:30', 1, NULL, '2026-03-08 14:44:20'),
-(158, 'ScoopsAroundTheWorld', 'fe.korte@web.de', '$2y$12$lfHR48LgiKBWvEXbhebs1eXkYhKa1LKTnxWDoIDBnR3vp7nZxwkG6', 4, '2026-03-09 19:08:43', 'd54d1c2772', NULL, '2026-03-06 10:28:25', 1, NULL, '2026-03-08 04:59:26'),
+(158, 'ScoopsAroundTheWorld', 'fe.korte@web.de', '$2y$12$lfHR48LgiKBWvEXbhebs1eXkYhKa1LKTnxWDoIDBnR3vp7nZxwkG6', 7, '2026-03-17 16:11:48', 'd54d1c2772', NULL, '2026-03-06 10:28:25', 1, NULL, '2026-03-17 11:58:24'),
 (159, 'Pierrilein', 'pierrilein@aol.com', '$2y$12$ZCVfkGVjfwDs97zzzqWSAuCPpQNedhMujbi820.rGosxk.p3UXk12', 1, '2026-03-06 17:00:58', '550ca2a165', NULL, '2026-03-06 16:30:17', 1, NULL, NULL),
 (160, 'PatrickmagEis', 'patrick.klix1996@gmail.com', '$2y$12$UpwFbuB8ZnlrDSAxGdNWF./JzHBBCEpxnb4oUR4Q6T6Livs8vNhOq', 3, '2026-03-06 20:53:38', '56a1a9fead', NULL, '2026-03-06 17:13:11', 1, NULL, '2026-03-06 18:19:19'),
 (161, 'Flo', 'flo289@gmx.dd', '$2y$12$arkxSXqXUhHMTkouTUfgte6NzYSAuUgQlEwksCJ60rHeQwdSV5S86', 1, NULL, 'b8809b9f18', NULL, '2026-03-06 22:02:22', 0, 'edafd8be9c85c828c9aeaa77e4151ecbd63019e620f91e3272d1de6ecca903b4', NULL),
@@ -10088,7 +11029,24 @@ INSERT INTO `nutzer` (`id`, `username`, `email`, `password_hash`, `current_level
 (165, 'Sabiscreative', 'sabrinaschreiter.work@gmail.com', '$2y$12$Ro7gn.L37lNa0zkUxX8wYOCbsU7HaCJOKWyR9qRn8UfHs4Cc/wVze', 6, '2026-03-07 17:14:02', 'd62c3bf73f', NULL, '2026-03-07 06:50:13', 1, NULL, '2026-03-07 05:55:30'),
 (166, 'LifePloschke', 'matze0906matze@gmail.com', '$2y$12$k1izAn7SdwEfCTwWYJWorubc0DvsPUw2wwrbcg9vyIpf0gsHsbFIq', 1, NULL, '7770bea937', 19, '2026-03-07 11:41:44', 1, NULL, NULL),
 (167, 'Anni', 'familie.ahnert@gmx.de', '$2y$12$0qMSoZjK3Xef3KSOX4ZO/uk4i.6y04mHcKaFRoF1fO9GAyLG8p2M6', 4, '2026-03-08 09:56:10', '5609628faf', NULL, '2026-03-07 21:14:57', 1, NULL, '2026-03-08 04:56:20'),
-(168, 'Fladenbrot', 'info@steveconrad.de', '$2y$12$0M0SsuB18oTGdTifZ.wuzuDQxyaYjhSA.uJcPPCx9pugVzskeyem2', 1, NULL, 'c3be8651af', NULL, '2026-03-08 00:10:49', 1, NULL, NULL);
+(168, 'Fladenbrot', 'info@steveconrad.de', '$2y$12$0M0SsuB18oTGdTifZ.wuzuDQxyaYjhSA.uJcPPCx9pugVzskeyem2', 1, NULL, 'c3be8651af', NULL, '2026-03-08 00:10:49', 1, NULL, NULL),
+(169, 'trail_surfer_Basti', 'Sebastian.noack@mail.de', '$2y$12$2CnbkrwZVQBQ0W.5HNfRauyazDdHglYrJHuCADlwZ/kzaJbDxXhW6', 1, NULL, 'eed0365da4', 1, '2026-03-12 07:36:15', 1, NULL, NULL),
+(170, 'oatarrow', 'otero.mason@gmail.com', '$2y$12$Nui0H0TROfQcVIIvP/Yp5.UdGSTRR3VCwMQ9JEtPDTiAyht/3GNdi', 1, NULL, 'a7210b7ef8', 1, '2026-03-13 20:31:17', 1, NULL, NULL),
+(171, 'Krissy85', 'leseratte8589@gmail.com', '$2y$12$Ka66uW.fbRcfAP/s.ONzieNZksJH9A/7GtkzOy5xscjzaQKKnRqn.', 1, NULL, '3acf3fba74', NULL, '2026-03-14 15:43:22', 0, '73bf5f39ffd89d0633a8f4c0adce67a0bb2ee2714c12de57b18b49d5e34be415', NULL),
+(172, 'soddelini', 'schneidersophie@gmx.de', '$2y$12$aWO0gSfVn9rdHQHi1AWIs.SDq1NBnbECcoLuTIerfpo2eKr/dBXqy', 1, '2026-03-15 10:35:34', 'e68c4efe22', NULL, '2026-03-15 10:21:41', 1, NULL, NULL),
+(173, 'Djemba_Djemba', 'richard.schirmer@gmx.de', '$2y$12$IG6.zrZtIVzVtmhtcDFBM.KKegKaavNkAvRiPJV8oXN6t0tOF/U0m', 1, '2026-03-15 10:34:23', '4bb9e6db35', NULL, '2026-03-15 10:32:32', 1, NULL, NULL),
+(174, 'MichaB', 'burgoldservice@gmail.com', '$2y$12$vj0GMOwjrV01EwYzD5E99utoVRceCsLQwu5QRKonkzIuDWeby.tDW', 1, '2026-03-16 16:37:05', '16db952109', 23, '2026-03-15 17:29:06', 1, NULL, NULL),
+(175, 'LarsKrachen', 'lars-hiemann@web.de', '$2y$12$j8.fmilaFLxSBNEDD.TltekoCOhWjBexX1Nla4nOSlUsRN3DV.4Ry', 1, NULL, 'a27a2ac953', NULL, '2026-03-15 22:21:19', 1, NULL, NULL),
+(176, 'Triceman09', 'patrice.nielsen1@gmail.com', '$2y$12$H26rwdOISfzvY5rVo.kJ1Ob5QiPTnfPBWZUGipC0Cy.aAKpMnpRcy', 1, NULL, '5990bda21f', NULL, '2026-03-16 06:57:44', 1, NULL, NULL),
+(177, 'Christian', 'christianschaedel1976@gmail.com', '$2y$12$8zOR7qII7UVdeylssh/dhe4LPhHVEbLSvY7FVfTl2EmL0xnmRG0nm', 1, '2026-03-16 07:42:41', '43a549f7f9', 23, '2026-03-16 07:28:36', 1, NULL, NULL),
+(178, 'Pavel82', 'schindlerlars7@web.de', '$2y$12$GiTwOT2kdmLrl7K2qxndk.jszlWBaZ/WkKXAbAXs2NGuaY4lUXO6C', 1, '2026-03-16 14:33:12', '09a06ce2be', NULL, '2026-03-16 14:30:45', 1, NULL, NULL),
+(179, 'PatrickE', 'patrick-eppler@gmx.de', '$2y$12$Y5bcHJWoQ5LqAAvnPngTd.SCXkVxjtbWTALJDI7FQtvZD2Epy2Jmq', 1, '2026-03-16 19:05:48', '494f3d240c', NULL, '2026-03-16 19:03:40', 1, NULL, NULL),
+(180, 'Hannesbre', 'brennerhannes@yahoo.de', '$2y$12$17PGLU.hriCr45z2tSF7A.tXOB9GVEr5/TRGiEYLP/IEyOQAatXRa', 1, '2026-03-16 19:26:27', '884561ce40', NULL, '2026-03-16 19:23:00', 1, NULL, NULL),
+(181, 'ckuhl96', 'ckuhl123@yahoo.de', '$2y$12$Zvy7.wfv0XBzMhAQq.s6VeNKw.mRuPJiOyZyKv4CRm65AmawzOcta', 1, NULL, 'a7858be1bc', NULL, '2026-03-16 19:35:02', 1, NULL, NULL),
+(182, 'Luki', 'lukas97.s@arcor.de', '$2y$12$WfFJ0uQl69VBkZ/g7LBen./r4x6yrqoUkkGjhci9E27EJ6b6kfJVi', 1, NULL, '6d473ae909', NULL, '2026-03-16 20:35:21', 1, NULL, NULL),
+(183, 'Nils', 'nilslose@icloud.com', '$2y$12$GsKdOimSe7dqc3FVnKEi6O3KHRv8Ep28Y35k4FHUmSBWtXa2clsG.', 1, NULL, '84ca3b47b3', NULL, '2026-03-17 08:09:57', 1, NULL, NULL),
+(184, 'RIAN_Dee', 'quartal_keimzelle.3s@icloud.com', '$2y$12$Dnb3KRjcBjCOA2/sITibPerTdgtOd5BrkX3XP.Zf5i4RihoHHbOai', 1, NULL, '198eb33db9', NULL, '2026-03-17 08:37:25', 0, 'dda6aa7036b03a6b3e9efbe07247dd5bf3565fe0f3968b08b83c89754da90956', NULL),
+(185, 'Nine', 'nine_@gmx.net', '$2y$12$JKDSzIelgjvXtc/qD2i8UO3awJqhQmkx6wYywe4eD5I/ZfZCm51se', 1, NULL, '347958e1c6', NULL, '2026-03-18 13:20:46', 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -10181,7 +11139,7 @@ CREATE TABLE `photo_challenges` (
 --
 
 INSERT INTO `photo_challenges` (`id`, `title`, `description`, `status`, `group_size`, `start_at`, `submission_deadline`, `submission_limit_per_user`, `group_schedule`, `group_advancers`, `lucky_loser_slots`, `ko_bracket_size`, `created_by`, `created_at`, `updated_at`) VALUES
-(3, 'Ice-App Fotochallenge – 1 Jahr Ice-App!', 'Ein Jahr voller Eis-Momente liegt hinter uns – jetzt suchen wir die besten Eisfotos aus der Ice-App! 🎉\r\n\r\nWähle einfach deine schönsten Bilder aus deinen bisherigen Ice-App Posts aus und reiche sie für die Challenge ein. Egal ob perfekte Kugel, beeindruckender Eisbecher oder dein Lieblingsmoment mit Eis. 🍨\r\n\r\n🏆 Es wird tolle Preise zu gewinnen geben! Auch wer nur abstimmt hat eine Chance zu gewinnen.\r\n\r\nAlso stöbere durch deine bisherigen Beiträge, reiche deine Favoriten ein und lade Freunde ein, ebenfalls mitzumachen.\r\n\r\nViel Spaß bei der Fotochallenge! 📷🍦', 'submission_open', 4, '2026-03-06 09:00:00', '2026-03-14 12:00:00', 3, NULL, 2, 2, NULL, 1, '2026-03-06 08:30:41', '2026-03-06 08:30:41');
+(3, 'Ice-App Fotochallenge – 1 Jahr Ice-App!', 'Ein Jahr voller Eis-Momente liegt hinter uns – jetzt suchen wir die besten Eisfotos aus der Ice-App! 🎉\r\n\r\nWähle einfach deine schönsten Bilder aus deinen bisherigen Ice-App Posts aus und reiche sie für die Challenge ein. Egal ob perfekte Kugel, beeindruckender Eisbecher oder dein Lieblingsmoment mit Eis. 🍨\r\n\r\n🏆 Es wird tolle Preise zu gewinnen geben! Auch wer nur abstimmt hat eine Chance zu gewinnen.\r\n\r\nAlso stöbere durch deine bisherigen Beiträge, reiche deine Favoriten ein und lade Freunde ein, ebenfalls mitzumachen.\r\n\r\nViel Spaß bei der Fotochallenge! 📷🍦', 'group_running', 4, '2026-03-06 09:00:00', '2026-03-14 12:00:00', 3, NULL, 2, 2, NULL, 1, '2026-03-06 08:30:41', '2026-03-14 11:36:41');
 
 -- --------------------------------------------------------
 
@@ -10199,6 +11157,22 @@ CREATE TABLE `photo_challenge_groups` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Daten für Tabelle `photo_challenge_groups`
+--
+
+INSERT INTO `photo_challenge_groups` (`id`, `challenge_id`, `name`, `position`, `start_at`, `end_at`, `created_at`) VALUES
+(8, 3, 'Gruppe A', 1, '2026-03-14 00:00:00', '2026-03-20 00:00:00', '2026-03-14 11:36:41'),
+(9, 3, 'Gruppe B', 2, '2026-03-14 00:00:00', '2026-03-20 00:00:00', '2026-03-14 11:36:41'),
+(10, 3, 'Gruppe C', 3, '2026-03-17 00:00:00', '2026-03-23 00:00:00', '2026-03-14 11:36:41'),
+(11, 3, 'Gruppe D', 4, '2026-03-17 00:00:00', '2026-03-23 00:00:00', '2026-03-14 11:36:41'),
+(12, 3, 'Gruppe E', 5, '2026-03-20 00:00:00', '2026-03-26 00:00:00', '2026-03-14 11:36:41'),
+(13, 3, 'Gruppe F', 6, '2026-03-20 00:00:00', '2026-03-26 00:00:00', '2026-03-14 11:36:41'),
+(14, 3, 'Gruppe G', 7, '2026-03-23 00:00:00', '2026-03-29 00:00:00', '2026-03-14 11:36:41'),
+(15, 3, 'Gruppe H', 8, '2026-03-23 00:00:00', '2026-03-29 00:00:00', '2026-03-14 11:36:41'),
+(16, 3, 'Gruppe I', 9, '2026-03-26 00:00:00', '2026-04-01 00:00:00', '2026-03-14 11:36:41'),
+(17, 3, 'Gruppe J', 10, '2026-03-26 00:00:00', '2026-04-01 00:00:00', '2026-03-14 11:36:41');
+
 -- --------------------------------------------------------
 
 --
@@ -10214,6 +11188,52 @@ CREATE TABLE `photo_challenge_group_entries` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Daten für Tabelle `photo_challenge_group_entries`
+--
+
+INSERT INTO `photo_challenge_group_entries` (`id`, `challenge_id`, `group_id`, `image_id`, `seed`, `created_at`) VALUES
+(29, 3, 8, 102, 1, '2026-03-14 11:36:41'),
+(30, 3, 8, 448, 2, '2026-03-14 11:36:41'),
+(31, 3, 8, 764, 3, '2026-03-14 11:36:41'),
+(32, 3, 8, 882, 4, '2026-03-14 11:36:41'),
+(33, 3, 9, 925, 1, '2026-03-14 11:36:41'),
+(34, 3, 9, 976, 2, '2026-03-14 11:36:41'),
+(35, 3, 9, 690, 3, '2026-03-14 11:36:41'),
+(36, 3, 9, 759, 4, '2026-03-14 11:36:41'),
+(37, 3, 10, 146, 1, '2026-03-14 11:36:41'),
+(38, 3, 10, 677, 2, '2026-03-14 11:36:41'),
+(39, 3, 10, 593, 3, '2026-03-14 11:36:41'),
+(40, 3, 10, 466, 4, '2026-03-14 11:36:41'),
+(41, 3, 11, 883, 1, '2026-03-14 11:36:41'),
+(42, 3, 11, 430, 2, '2026-03-14 11:36:41'),
+(43, 3, 11, 474, 3, '2026-03-14 11:36:41'),
+(44, 3, 11, 816, 4, '2026-03-14 11:36:41'),
+(45, 3, 12, 427, 1, '2026-03-14 11:36:41'),
+(46, 3, 12, 964, 2, '2026-03-14 11:36:41'),
+(47, 3, 12, 543, 3, '2026-03-14 11:36:41'),
+(48, 3, 12, 947, 4, '2026-03-14 11:36:41'),
+(49, 3, 13, 638, 1, '2026-03-14 11:36:41'),
+(50, 3, 13, 768, 2, '2026-03-14 11:36:41'),
+(51, 3, 13, 880, 3, '2026-03-14 11:36:41'),
+(52, 3, 13, 718, 4, '2026-03-14 11:36:41'),
+(53, 3, 14, 810, 1, '2026-03-14 11:36:41'),
+(54, 3, 14, 632, 2, '2026-03-14 11:36:41'),
+(55, 3, 14, 337, 3, '2026-03-14 11:36:41'),
+(56, 3, 14, 429, 4, '2026-03-14 11:36:41'),
+(57, 3, 15, 315, 1, '2026-03-14 11:36:41'),
+(58, 3, 15, 832, 2, '2026-03-14 11:36:41'),
+(59, 3, 15, 913, 3, '2026-03-14 11:36:41'),
+(60, 3, 15, 445, 4, '2026-03-14 11:36:41'),
+(61, 3, 16, 874, 1, '2026-03-14 11:36:41'),
+(62, 3, 16, 924, 2, '2026-03-14 11:36:41'),
+(63, 3, 16, 71, 3, '2026-03-14 11:36:41'),
+(64, 3, 16, 58, 4, '2026-03-14 11:36:41'),
+(65, 3, 17, 852, 1, '2026-03-14 11:36:41'),
+(66, 3, 17, 938, 2, '2026-03-14 11:36:41'),
+(67, 3, 17, 411, 3, '2026-03-14 11:36:41'),
+(68, 3, 17, 440, 4, '2026-03-14 11:36:41');
+
 -- --------------------------------------------------------
 
 --
@@ -10228,6 +11248,52 @@ CREATE TABLE `photo_challenge_images` (
   `assigned_by` int NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Daten für Tabelle `photo_challenge_images`
+--
+
+INSERT INTO `photo_challenge_images` (`id`, `challenge_id`, `image_id`, `title`, `assigned_by`, `created_at`) VALUES
+(29, 3, 474, NULL, 1, '2026-03-14 11:00:56'),
+(30, 3, 880, NULL, 1, '2026-03-14 11:00:58'),
+(31, 3, 883, NULL, 1, '2026-03-14 11:00:59'),
+(32, 3, 913, NULL, 1, '2026-03-14 11:01:00'),
+(33, 3, 816, NULL, 1, '2026-03-14 11:01:01'),
+(34, 3, 429, NULL, 1, '2026-03-14 11:01:01'),
+(35, 3, 337, NULL, 1, '2026-03-14 11:01:03'),
+(36, 3, 440, NULL, 1, '2026-03-14 11:01:04'),
+(37, 3, 638, NULL, 1, '2026-03-14 11:01:05'),
+(38, 3, 976, NULL, 1, '2026-03-14 11:01:06'),
+(39, 3, 315, NULL, 1, '2026-03-14 11:01:07'),
+(40, 3, 146, NULL, 1, '2026-03-14 11:01:08'),
+(41, 3, 427, NULL, 1, '2026-03-14 11:01:08'),
+(43, 3, 925, NULL, 1, '2026-03-14 11:01:10'),
+(44, 3, 924, NULL, 1, '2026-03-14 11:01:17'),
+(45, 3, 411, NULL, 1, '2026-03-14 11:01:18'),
+(46, 3, 430, NULL, 1, '2026-03-14 11:01:19'),
+(47, 3, 759, NULL, 1, '2026-03-14 11:01:20'),
+(48, 3, 964, NULL, 1, '2026-03-14 11:01:21'),
+(49, 3, 690, NULL, 1, '2026-03-14 11:01:22'),
+(50, 3, 677, NULL, 1, '2026-03-14 11:01:31'),
+(51, 3, 938, NULL, 1, '2026-03-14 11:01:32'),
+(52, 3, 810, NULL, 1, '2026-03-14 11:01:33'),
+(53, 3, 882, NULL, 1, '2026-03-14 11:01:33'),
+(54, 3, 71, NULL, 1, '2026-03-14 11:01:34'),
+(55, 3, 764, NULL, 1, '2026-03-14 11:01:35'),
+(56, 3, 102, NULL, 1, '2026-03-14 11:01:36'),
+(57, 3, 593, NULL, 1, '2026-03-14 11:01:37'),
+(58, 3, 768, NULL, 1, '2026-03-14 11:01:37'),
+(59, 3, 852, NULL, 1, '2026-03-14 11:01:38'),
+(60, 3, 58, NULL, 1, '2026-03-14 11:01:39'),
+(61, 3, 466, NULL, 1, '2026-03-14 11:01:40'),
+(62, 3, 632, NULL, 1, '2026-03-14 11:01:41'),
+(63, 3, 947, NULL, 1, '2026-03-14 11:01:42'),
+(64, 3, 448, NULL, 1, '2026-03-14 11:01:42'),
+(65, 3, 445, NULL, 1, '2026-03-14 11:01:43'),
+(66, 3, 543, NULL, 1, '2026-03-14 11:01:44'),
+(67, 3, 718, NULL, 1, '2026-03-14 11:01:45'),
+(68, 3, 874, NULL, 1, '2026-03-14 11:01:45'),
+(69, 3, 832, NULL, 1, '2026-03-14 11:01:47');
 
 -- --------------------------------------------------------
 
@@ -10249,6 +11315,72 @@ CREATE TABLE `photo_challenge_matches` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `locked_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Daten für Tabelle `photo_challenge_matches`
+--
+
+INSERT INTO `photo_challenge_matches` (`id`, `challenge_id`, `phase`, `round`, `group_id`, `position`, `image_a_id`, `image_b_id`, `winner_image_id`, `status`, `created_at`, `locked_at`) VALUES
+(70, 3, 'group', 1, 8, 1, 102, 448, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(71, 3, 'group', 1, 8, 2, 102, 764, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(72, 3, 'group', 1, 8, 3, 102, 882, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(73, 3, 'group', 1, 8, 4, 448, 764, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(74, 3, 'group', 1, 8, 5, 448, 882, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(75, 3, 'group', 1, 8, 6, 764, 882, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(76, 3, 'group', 1, 9, 7, 925, 976, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(77, 3, 'group', 1, 9, 8, 925, 690, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(78, 3, 'group', 1, 9, 9, 925, 759, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(79, 3, 'group', 1, 9, 10, 976, 690, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(80, 3, 'group', 1, 9, 11, 976, 759, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(81, 3, 'group', 1, 9, 12, 690, 759, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(82, 3, 'group', 1, 10, 13, 146, 677, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(83, 3, 'group', 1, 10, 14, 146, 593, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(84, 3, 'group', 1, 10, 15, 146, 466, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(85, 3, 'group', 1, 10, 16, 677, 593, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(86, 3, 'group', 1, 10, 17, 677, 466, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(87, 3, 'group', 1, 10, 18, 593, 466, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(88, 3, 'group', 1, 11, 19, 883, 430, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(89, 3, 'group', 1, 11, 20, 883, 474, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(90, 3, 'group', 1, 11, 21, 883, 816, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(91, 3, 'group', 1, 11, 22, 430, 474, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(92, 3, 'group', 1, 11, 23, 430, 816, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(93, 3, 'group', 1, 11, 24, 474, 816, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(94, 3, 'group', 1, 12, 25, 427, 964, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(95, 3, 'group', 1, 12, 26, 427, 543, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(96, 3, 'group', 1, 12, 27, 427, 947, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(97, 3, 'group', 1, 12, 28, 964, 543, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(98, 3, 'group', 1, 12, 29, 964, 947, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(99, 3, 'group', 1, 12, 30, 543, 947, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(100, 3, 'group', 1, 13, 31, 638, 768, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(101, 3, 'group', 1, 13, 32, 638, 880, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(102, 3, 'group', 1, 13, 33, 638, 718, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(103, 3, 'group', 1, 13, 34, 768, 880, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(104, 3, 'group', 1, 13, 35, 768, 718, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(105, 3, 'group', 1, 13, 36, 880, 718, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(106, 3, 'group', 1, 14, 37, 810, 632, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(107, 3, 'group', 1, 14, 38, 810, 337, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(108, 3, 'group', 1, 14, 39, 810, 429, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(109, 3, 'group', 1, 14, 40, 632, 337, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(110, 3, 'group', 1, 14, 41, 632, 429, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(111, 3, 'group', 1, 14, 42, 337, 429, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(112, 3, 'group', 1, 15, 43, 315, 832, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(113, 3, 'group', 1, 15, 44, 315, 913, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(114, 3, 'group', 1, 15, 45, 315, 445, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(115, 3, 'group', 1, 15, 46, 832, 913, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(116, 3, 'group', 1, 15, 47, 832, 445, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(117, 3, 'group', 1, 15, 48, 913, 445, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(118, 3, 'group', 1, 16, 49, 874, 924, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(119, 3, 'group', 1, 16, 50, 874, 71, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(120, 3, 'group', 1, 16, 51, 874, 58, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(121, 3, 'group', 1, 16, 52, 924, 71, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(122, 3, 'group', 1, 16, 53, 924, 58, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(123, 3, 'group', 1, 16, 54, 71, 58, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(124, 3, 'group', 1, 17, 55, 852, 938, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(125, 3, 'group', 1, 17, 56, 852, 411, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(126, 3, 'group', 1, 17, 57, 852, 440, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(127, 3, 'group', 1, 17, 58, 938, 411, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(128, 3, 'group', 1, 17, 59, 938, 440, NULL, 'open', '2026-03-14 11:36:41', NULL),
+(129, 3, 'group', 1, 17, 60, 411, 440, NULL, 'open', '2026-03-14 11:36:41', NULL);
 
 -- --------------------------------------------------------
 
@@ -10273,35 +11405,47 @@ CREATE TABLE `photo_challenge_submissions` (
 --
 
 INSERT INTO `photo_challenge_submissions` (`id`, `challenge_id`, `image_id`, `nutzer_id`, `title`, `status`, `reviewer_id`, `created_at`, `reviewed_at`) VALUES
-(1, 3, 832, 1, 'Weihnachten in der Ice-App', 'pending', NULL, '2026-03-06 08:31:08', NULL),
-(3, 3, 874, 1, 'Wilde Kombi, aber super lecker!', 'pending', NULL, '2026-03-06 08:34:13', NULL),
-(4, 3, 819, 1, 'Softeis in Perfektion', 'pending', NULL, '2026-03-06 08:34:44', NULL),
-(5, 3, 718, 19, NULL, 'pending', NULL, '2026-03-06 14:42:45', NULL),
-(6, 3, 543, 22, NULL, 'pending', NULL, '2026-03-06 16:12:10', NULL),
-(7, 3, 445, 22, NULL, 'pending', NULL, '2026-03-06 16:12:23', NULL),
-(8, 3, 448, 22, NULL, 'pending', NULL, '2026-03-06 16:13:29', NULL),
-(10, 3, 947, 8, 'hEISse Liebe', 'pending', NULL, '2026-03-07 18:36:04', NULL),
-(11, 3, 632, 4, 'Dolce Fredo ist nicht nur das Kredo der Waffel, nein es ist ein Italienisches Lebensgefühl.', 'pending', NULL, '2026-03-08 09:47:03', NULL),
-(12, 3, 466, 4, 'Hier sieht man was es in einem auslöst, wenn man sein Eisbecher mich nicht bekommen hat.', 'pending', NULL, '2026-03-08 09:48:20', NULL),
-(13, 3, 58, 4, 'Ein vierfach Axel in leckerer Form zum vernaschen!', 'pending', NULL, '2026-03-08 09:50:22', NULL),
-(14, 3, 852, 125, 'Konfetti & Kugeln', 'pending', NULL, '2026-03-08 09:50:40', NULL),
-(15, 3, 768, 125, 'Urbaner Eisgenuss', 'pending', NULL, '2026-03-08 10:07:46', NULL),
-(16, 3, 593, 125, 'Rosaroter Genuss zwischen Reben', 'pending', NULL, '2026-03-08 10:11:08', NULL),
-(17, 3, 102, 3, NULL, 'pending', NULL, '2026-03-08 18:13:13', NULL),
-(18, 3, 764, 3, NULL, 'pending', NULL, '2026-03-08 18:13:16', NULL),
-(19, 3, 71, 3, NULL, 'pending', NULL, '2026-03-08 18:13:19', NULL),
-(20, 3, 931, 53, 'Spaghetti-Eisbecher Deluxe', 'pending', NULL, '2026-03-08 20:47:45', NULL),
-(21, 3, 882, 53, 'Das Beste Topping ever', 'pending', NULL, '2026-03-08 20:49:07', NULL),
-(22, 3, 810, 53, 'Ein Traum mit Schokolade', 'pending', NULL, '2026-03-08 20:50:19', NULL),
-(23, 3, 938, 158, 'Eis auf der Seidenstraße', 'pending', NULL, '2026-03-09 19:07:22', NULL),
-(24, 3, 677, 139, 'Schokotastisch', 'pending', NULL, '2026-03-10 05:49:26', NULL),
-(25, 3, 690, 139, 'When in Rome', 'pending', NULL, '2026-03-10 05:49:49', NULL),
-(26, 3, 964, 118, NULL, 'pending', NULL, '2026-03-10 15:36:05', NULL),
-(28, 3, 759, 99, '1001 Nacht und ein Eis', 'pending', NULL, '2026-03-10 16:28:00', NULL),
-(29, 3, 430, 99, 'Heilige Kalorien vor der heiligen Kirche', 'pending', NULL, '2026-03-10 16:28:03', NULL),
-(30, 3, 411, 99, 'Wellenrauschen und Waffelbecher', 'pending', NULL, '2026-03-10 16:28:05', NULL),
-(31, 3, 924, 156, NULL, 'pending', NULL, '2026-03-11 15:08:59', NULL),
-(32, 3, 925, 156, NULL, 'pending', NULL, '2026-03-11 15:09:08', NULL);
+(1, 3, 832, 1, 'Oh no, he is about to eat my brother!', 'accepted', 1, '2026-03-06 08:31:08', '2026-03-14 11:01:47'),
+(3, 3, 874, 1, 'Wilde Kombi, aber super lecker!', 'accepted', 1, '2026-03-06 08:34:13', '2026-03-14 11:01:45'),
+(5, 3, 718, 19, NULL, 'accepted', 1, '2026-03-06 14:42:45', '2026-03-14 11:01:45'),
+(6, 3, 543, 22, NULL, 'accepted', 1, '2026-03-06 16:12:10', '2026-03-14 11:01:44'),
+(7, 3, 445, 22, NULL, 'accepted', 1, '2026-03-06 16:12:23', '2026-03-14 11:01:43'),
+(8, 3, 448, 22, NULL, 'accepted', 1, '2026-03-06 16:13:29', '2026-03-14 11:01:42'),
+(10, 3, 947, 8, 'hEISse Liebe', 'accepted', 1, '2026-03-07 18:36:04', '2026-03-14 11:01:42'),
+(11, 3, 632, 4, 'Dolce Fredo ist nicht nur das Kredo der Waffel, nein es ist ein Italienisches Lebensgefühl.', 'accepted', 1, '2026-03-08 09:47:03', '2026-03-14 11:01:41'),
+(12, 3, 466, 4, 'Hier sieht man was es in einem auslöst, wenn man sein Eisbecher mich nicht bekommen hat.', 'accepted', 1, '2026-03-08 09:48:20', '2026-03-14 11:01:40'),
+(13, 3, 58, 4, 'Ein vierfach Axel in leckerer Form zum vernaschen!', 'accepted', 1, '2026-03-08 09:50:22', '2026-03-14 11:01:39'),
+(14, 3, 852, 125, 'Konfetti & Kugeln', 'accepted', 1, '2026-03-08 09:50:40', '2026-03-14 11:01:38'),
+(15, 3, 768, 125, 'Urbaner Eisgenuss', 'accepted', 1, '2026-03-08 10:07:46', '2026-03-14 11:01:37'),
+(16, 3, 593, 125, 'Rosaroter Genuss zwischen Reben', 'accepted', 1, '2026-03-08 10:11:08', '2026-03-14 11:01:37'),
+(17, 3, 102, 3, NULL, 'accepted', 1, '2026-03-08 18:13:13', '2026-03-14 11:01:36'),
+(18, 3, 764, 3, NULL, 'accepted', 1, '2026-03-08 18:13:16', '2026-03-14 11:01:35'),
+(19, 3, 71, 3, NULL, 'accepted', 1, '2026-03-08 18:13:19', '2026-03-14 11:01:34'),
+(21, 3, 882, 53, 'Das Beste Topping ever', 'accepted', 1, '2026-03-08 20:49:07', '2026-03-14 11:01:33'),
+(22, 3, 810, 53, 'Ein Traum mit Schokolade', 'accepted', 1, '2026-03-08 20:50:19', '2026-03-14 11:01:33'),
+(23, 3, 938, 158, 'Eis auf der Seidenstraße', 'accepted', 1, '2026-03-09 19:07:22', '2026-03-14 11:01:32'),
+(24, 3, 677, 139, 'Schokotastisch', 'accepted', 1, '2026-03-10 05:49:26', '2026-03-14 11:01:31'),
+(25, 3, 690, 139, 'When in Rome', 'accepted', 1, '2026-03-10 05:49:49', '2026-03-14 11:01:22'),
+(26, 3, 964, 118, NULL, 'accepted', 1, '2026-03-10 15:36:05', '2026-03-14 11:01:21'),
+(28, 3, 759, 99, '1001 Nacht und ein Eis', 'accepted', 1, '2026-03-10 16:28:00', '2026-03-14 11:01:20'),
+(29, 3, 430, 99, 'Heilige Kalorien vor der heiligen Kirche', 'accepted', 1, '2026-03-10 16:28:03', '2026-03-14 11:01:19'),
+(30, 3, 411, 99, 'Wellenrauschen und Waffelbecher', 'accepted', 1, '2026-03-10 16:28:05', '2026-03-14 11:01:18'),
+(31, 3, 924, 156, NULL, 'accepted', 1, '2026-03-11 15:08:59', '2026-03-14 11:01:17'),
+(32, 3, 925, 156, NULL, 'accepted', 1, '2026-03-11 15:09:08', '2026-03-14 11:01:10'),
+(33, 3, 441, 23, 'Eis mit Aussicht', 'accepted', 1, '2026-03-11 21:35:55', '2026-03-14 11:01:09'),
+(34, 3, 427, 23, 'Italian Gelato', 'accepted', 1, '2026-03-11 21:36:38', '2026-03-14 11:01:08'),
+(35, 3, 146, 23, 'Für ein Eis nach Potsdam', 'accepted', 1, '2026-03-11 21:37:42', '2026-03-14 11:01:08'),
+(36, 3, 315, 1, 'Kommt man mit dem Eis überhaupt noch durch die Tür? 🍨🚪', 'accepted', 1, '2026-03-12 01:58:30', '2026-03-14 11:01:07'),
+(37, 3, 976, 53, 'Prager Eistraum mit Hut', 'accepted', 1, '2026-03-12 07:32:52', '2026-03-14 11:01:06'),
+(38, 3, 638, 2, 'Softes Eis, softes Herz ❤️', 'accepted', 1, '2026-03-13 10:54:34', '2026-03-14 11:01:05'),
+(39, 3, 440, 2, 'Verlobung mit Eis am Gardasee', 'accepted', 1, '2026-03-13 10:55:08', '2026-03-14 11:01:04'),
+(40, 3, 337, 2, 'Ein Hauch von Tüll', 'accepted', 1, '2026-03-13 10:55:30', '2026-03-14 11:01:03'),
+(41, 3, 429, 63, 'Wie vom Titel der Eisdiele versprochen gab es hier eine positive Karambolage der Sinne.', 'accepted', 1, '2026-03-13 15:43:09', '2026-03-14 11:01:01'),
+(42, 3, 816, 77, 'Macht Lust auf Sommer', 'accepted', 1, '2026-03-13 17:48:09', '2026-03-14 11:01:01'),
+(43, 3, 913, 51, NULL, 'accepted', 1, '2026-03-13 19:00:16', '2026-03-14 11:01:00'),
+(44, 3, 883, 48, NULL, 'accepted', 1, '2026-03-13 22:00:05', '2026-03-14 11:00:59'),
+(45, 3, 880, 48, NULL, 'accepted', 1, '2026-03-13 22:00:23', '2026-03-14 11:00:58'),
+(46, 3, 474, 48, NULL, 'accepted', 1, '2026-03-13 22:00:49', '2026-03-14 11:00:56');
 
 -- --------------------------------------------------------
 
@@ -10316,6 +11460,362 @@ CREATE TABLE `photo_challenge_votes` (
   `image_id` int NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Daten für Tabelle `photo_challenge_votes`
+--
+
+INSERT INTO `photo_challenge_votes` (`id`, `match_id`, `nutzer_id`, `image_id`, `created_at`) VALUES
+(113, 74, 1, 448, '2026-03-14 11:45:49'),
+(114, 78, 53, 925, '2026-03-14 11:45:51'),
+(115, 80, 53, 976, '2026-03-14 11:45:53'),
+(116, 77, 53, 690, '2026-03-14 11:45:59'),
+(117, 76, 53, 976, '2026-03-14 11:46:01'),
+(118, 75, 1, 882, '2026-03-14 11:46:04'),
+(119, 73, 1, 764, '2026-03-14 11:46:07'),
+(120, 72, 1, 882, '2026-03-14 11:46:10'),
+(121, 71, 1, 102, '2026-03-14 11:46:12'),
+(122, 81, 53, 759, '2026-03-14 11:46:14'),
+(123, 70, 1, 102, '2026-03-14 11:46:14'),
+(124, 79, 53, 976, '2026-03-14 11:46:16'),
+(125, 78, 1, 759, '2026-03-14 11:46:20'),
+(126, 77, 1, 690, '2026-03-14 11:46:24'),
+(127, 76, 1, 976, '2026-03-14 11:46:26'),
+(128, 81, 1, 759, '2026-03-14 11:46:29'),
+(129, 79, 1, 976, '2026-03-14 11:46:32'),
+(130, 71, 53, 102, '2026-03-14 11:46:32'),
+(131, 80, 1, 759, '2026-03-14 11:46:34'),
+(132, 73, 53, 764, '2026-03-14 11:46:35'),
+(133, 72, 53, 882, '2026-03-14 11:46:37'),
+(134, 74, 53, 882, '2026-03-14 11:46:38'),
+(135, 75, 53, 882, '2026-03-14 11:46:40'),
+(136, 70, 53, 102, '2026-03-14 11:46:43'),
+(137, 71, 22, 764, '2026-03-14 11:58:25'),
+(138, 74, 22, 448, '2026-03-14 11:58:29'),
+(139, 75, 22, 882, '2026-03-14 11:58:35'),
+(140, 73, 22, 448, '2026-03-14 11:58:38'),
+(141, 70, 22, 448, '2026-03-14 11:58:42'),
+(142, 72, 22, 882, '2026-03-14 11:58:44'),
+(143, 79, 22, 976, '2026-03-14 11:58:57'),
+(144, 70, 3, 448, '2026-03-14 11:59:00'),
+(145, 80, 22, 976, '2026-03-14 11:59:00'),
+(146, 76, 22, 925, '2026-03-14 11:59:04'),
+(147, 71, 3, 102, '2026-03-14 11:59:04'),
+(148, 77, 22, 925, '2026-03-14 11:59:06'),
+(149, 75, 3, 882, '2026-03-14 11:59:07'),
+(150, 78, 22, 925, '2026-03-14 11:59:08'),
+(151, 81, 22, 759, '2026-03-14 11:59:11'),
+(152, 74, 3, 882, '2026-03-14 11:59:12'),
+(153, 73, 3, 448, '2026-03-14 11:59:14'),
+(154, 72, 3, 882, '2026-03-14 11:59:16'),
+(155, 81, 3, 759, '2026-03-14 11:59:26'),
+(156, 79, 3, 690, '2026-03-14 11:59:30'),
+(157, 78, 3, 759, '2026-03-14 11:59:38'),
+(158, 77, 3, 925, '2026-03-14 11:59:40'),
+(159, 80, 3, 759, '2026-03-14 11:59:42'),
+(160, 76, 3, 925, '2026-03-14 11:59:44'),
+(161, 72, 19, 882, '2026-03-14 12:43:19'),
+(162, 70, 19, 448, '2026-03-14 12:43:29'),
+(163, 71, 19, 764, '2026-03-14 12:43:32'),
+(164, 73, 19, 448, '2026-03-14 12:43:34'),
+(165, 74, 19, 882, '2026-03-14 12:43:37'),
+(166, 75, 19, 882, '2026-03-14 12:43:39'),
+(167, 78, 19, 759, '2026-03-14 12:43:45'),
+(168, 80, 19, 759, '2026-03-14 12:43:48'),
+(169, 81, 19, 759, '2026-03-14 12:43:50'),
+(170, 76, 19, 976, '2026-03-14 12:43:52'),
+(171, 79, 19, 976, '2026-03-14 12:43:55'),
+(172, 77, 19, 690, '2026-03-14 12:43:57'),
+(173, 75, 99, 882, '2026-03-14 12:48:52'),
+(174, 71, 99, 102, '2026-03-14 12:48:56'),
+(175, 73, 99, 448, '2026-03-14 12:48:57'),
+(176, 72, 99, 882, '2026-03-14 12:48:59'),
+(177, 70, 99, 102, '2026-03-14 12:49:44'),
+(178, 74, 99, 882, '2026-03-14 12:49:47'),
+(179, 76, 99, 976, '2026-03-14 12:49:54'),
+(180, 79, 99, 976, '2026-03-14 12:49:57'),
+(181, 80, 99, 759, '2026-03-14 12:49:58'),
+(182, 78, 99, 759, '2026-03-14 12:49:59'),
+(183, 77, 99, 925, '2026-03-14 12:50:03'),
+(184, 81, 99, 759, '2026-03-14 12:50:04'),
+(185, 73, 2, 764, '2026-03-14 14:42:26'),
+(186, 72, 2, 102, '2026-03-14 14:42:28'),
+(187, 71, 2, 764, '2026-03-14 14:42:31'),
+(188, 75, 2, 882, '2026-03-14 14:42:34'),
+(189, 70, 2, 102, '2026-03-14 14:42:36'),
+(190, 74, 2, 882, '2026-03-14 14:42:41'),
+(191, 78, 2, 759, '2026-03-14 14:42:54'),
+(192, 81, 2, 759, '2026-03-14 14:42:57'),
+(193, 76, 2, 925, '2026-03-14 14:43:02'),
+(194, 80, 2, 759, '2026-03-14 14:43:05'),
+(195, 77, 2, 925, '2026-03-14 14:43:08'),
+(196, 79, 2, 690, '2026-03-14 14:43:13'),
+(197, 74, 118, 882, '2026-03-14 16:01:34'),
+(198, 71, 118, 764, '2026-03-14 16:01:47'),
+(199, 70, 118, 102, '2026-03-14 16:01:57'),
+(200, 72, 118, 882, '2026-03-14 16:02:02'),
+(201, 73, 118, 448, '2026-03-14 16:02:11'),
+(202, 75, 118, 882, '2026-03-14 16:02:12'),
+(203, 76, 118, 925, '2026-03-14 16:02:24'),
+(204, 78, 118, 759, '2026-03-14 16:02:26'),
+(205, 77, 118, 925, '2026-03-14 16:02:31'),
+(206, 80, 118, 759, '2026-03-14 16:02:33'),
+(207, 81, 118, 759, '2026-03-14 16:02:34'),
+(208, 79, 118, 976, '2026-03-14 16:02:36'),
+(209, 73, 4, 764, '2026-03-14 17:29:51'),
+(210, 74, 4, 882, '2026-03-14 17:31:46'),
+(211, 72, 4, 882, '2026-03-14 17:31:50'),
+(212, 71, 4, 102, '2026-03-14 17:31:51'),
+(213, 75, 4, 882, '2026-03-14 17:31:53'),
+(214, 70, 4, 448, '2026-03-14 17:31:57'),
+(215, 77, 4, 690, '2026-03-14 17:32:07'),
+(216, 76, 4, 976, '2026-03-14 17:32:11'),
+(217, 78, 4, 759, '2026-03-14 17:32:13'),
+(218, 79, 4, 690, '2026-03-14 17:32:14'),
+(219, 81, 4, 690, '2026-03-14 17:32:16'),
+(220, 80, 4, 976, '2026-03-14 17:32:17'),
+(221, 81, 8, 690, '2026-03-14 22:41:03'),
+(222, 79, 8, 690, '2026-03-14 22:41:09'),
+(223, 78, 8, 759, '2026-03-14 22:41:29'),
+(224, 76, 8, 976, '2026-03-14 22:41:37'),
+(225, 80, 8, 759, '2026-03-14 22:41:40'),
+(226, 77, 8, 690, '2026-03-14 22:41:45'),
+(227, 73, 8, 764, '2026-03-14 22:42:09'),
+(228, 70, 8, 448, '2026-03-14 22:42:13'),
+(229, 71, 8, 764, '2026-03-14 22:42:15'),
+(230, 75, 8, 882, '2026-03-14 22:42:20'),
+(231, 74, 8, 882, '2026-03-14 22:42:22'),
+(232, 72, 8, 882, '2026-03-14 22:42:25'),
+(233, 71, 63, 102, '2026-03-15 08:47:28'),
+(234, 74, 63, 448, '2026-03-15 08:47:34'),
+(235, 73, 63, 448, '2026-03-15 08:47:39'),
+(236, 72, 63, 102, '2026-03-15 08:47:44'),
+(237, 70, 63, 102, '2026-03-15 08:47:48'),
+(238, 75, 63, 882, '2026-03-15 08:47:50'),
+(239, 76, 63, 925, '2026-03-15 08:48:05'),
+(240, 81, 63, 759, '2026-03-15 08:48:09'),
+(241, 80, 63, 759, '2026-03-15 08:48:12'),
+(242, 77, 63, 925, '2026-03-15 08:48:15'),
+(243, 79, 63, 690, '2026-03-15 08:48:16'),
+(244, 78, 63, 759, '2026-03-15 08:48:18'),
+(245, 80, 172, 759, '2026-03-15 10:27:58'),
+(246, 81, 172, 759, '2026-03-15 10:28:00'),
+(247, 77, 172, 690, '2026-03-15 10:28:02'),
+(248, 79, 172, 976, '2026-03-15 10:28:03'),
+(249, 76, 172, 925, '2026-03-15 10:28:04'),
+(250, 71, 125, 102, '2026-03-15 11:21:47'),
+(251, 70, 125, 448, '2026-03-15 11:22:00'),
+(252, 75, 125, 882, '2026-03-15 11:22:14'),
+(253, 73, 125, 448, '2026-03-15 11:22:22'),
+(254, 74, 125, 882, '2026-03-15 11:22:35'),
+(255, 72, 125, 882, '2026-03-15 11:22:44'),
+(256, 76, 125, 976, '2026-03-15 11:23:20'),
+(257, 81, 125, 759, '2026-03-15 11:23:43'),
+(258, 79, 125, 976, '2026-03-15 11:23:52'),
+(259, 78, 125, 759, '2026-03-15 11:23:57'),
+(260, 77, 125, 925, '2026-03-15 11:24:01'),
+(261, 80, 125, 759, '2026-03-15 11:24:04'),
+(262, 74, 94, 882, '2026-03-15 14:35:39'),
+(263, 81, 94, 759, '2026-03-15 14:36:02'),
+(264, 75, 48, 882, '2026-03-15 17:16:00'),
+(265, 73, 48, 448, '2026-03-15 17:16:06'),
+(266, 74, 48, 882, '2026-03-15 17:16:09'),
+(267, 71, 48, 764, '2026-03-15 17:16:11'),
+(268, 70, 48, 448, '2026-03-15 17:16:16'),
+(269, 72, 48, 882, '2026-03-15 17:16:18'),
+(270, 80, 48, 759, '2026-03-15 17:16:40'),
+(271, 78, 48, 759, '2026-03-15 17:16:48'),
+(272, 77, 48, 925, '2026-03-15 17:16:55'),
+(273, 79, 48, 976, '2026-03-15 17:16:58'),
+(274, 81, 48, 759, '2026-03-15 17:16:59'),
+(275, 76, 48, 925, '2026-03-15 17:17:02'),
+(276, 70, 51, 448, '2026-03-15 17:17:44'),
+(277, 71, 51, 764, '2026-03-15 17:17:48'),
+(278, 72, 51, 882, '2026-03-15 17:17:52'),
+(279, 74, 51, 882, '2026-03-15 17:17:56'),
+(280, 75, 51, 882, '2026-03-15 17:17:59'),
+(281, 73, 51, 448, '2026-03-15 17:18:05'),
+(282, 79, 51, 976, '2026-03-15 17:18:23'),
+(283, 78, 51, 759, '2026-03-15 17:18:27'),
+(284, 76, 51, 976, '2026-03-15 17:18:28'),
+(285, 77, 51, 925, '2026-03-15 17:18:30'),
+(286, 81, 51, 759, '2026-03-15 17:18:35'),
+(287, 80, 51, 976, '2026-03-15 17:18:37'),
+(300, 84, 4, 466, '2026-03-17 08:44:19'),
+(301, 86, 4, 466, '2026-03-17 08:44:23'),
+(302, 82, 4, 677, '2026-03-17 08:44:27'),
+(303, 83, 4, 146, '2026-03-17 08:44:30'),
+(304, 85, 4, 677, '2026-03-17 08:44:32'),
+(305, 87, 4, 466, '2026-03-17 08:44:33'),
+(306, 92, 4, 430, '2026-03-17 08:44:43'),
+(307, 90, 4, 883, '2026-03-17 08:44:49'),
+(308, 91, 4, 430, '2026-03-17 08:44:51'),
+(309, 93, 4, 816, '2026-03-17 08:44:53'),
+(310, 88, 4, 883, '2026-03-17 08:44:55'),
+(311, 89, 4, 883, '2026-03-17 08:44:57'),
+(312, 87, 1, 593, '2026-03-17 08:57:41'),
+(313, 82, 1, 677, '2026-03-17 08:57:43'),
+(314, 84, 1, 146, '2026-03-17 08:57:46'),
+(315, 85, 53, 593, '2026-03-17 08:57:49'),
+(316, 85, 1, 677, '2026-03-17 08:57:50'),
+(317, 83, 1, 593, '2026-03-17 08:57:56'),
+(318, 82, 53, 146, '2026-03-17 08:57:56'),
+(319, 86, 1, 677, '2026-03-17 08:57:58'),
+(320, 91, 1, 474, '2026-03-17 08:58:01'),
+(321, 86, 53, 466, '2026-03-17 08:58:02'),
+(322, 90, 1, 883, '2026-03-17 08:58:02'),
+(323, 89, 1, 883, '2026-03-17 08:58:04'),
+(324, 93, 1, 474, '2026-03-17 08:58:05'),
+(325, 88, 1, 883, '2026-03-17 08:58:06'),
+(326, 87, 53, 593, '2026-03-17 08:58:07'),
+(327, 92, 1, 430, '2026-03-17 08:58:08'),
+(328, 84, 53, 146, '2026-03-17 08:58:12'),
+(329, 83, 53, 593, '2026-03-17 08:58:17'),
+(330, 92, 53, 430, '2026-03-17 08:58:47'),
+(331, 93, 53, 816, '2026-03-17 08:58:52'),
+(332, 89, 53, 474, '2026-03-17 08:59:07'),
+(333, 88, 53, 430, '2026-03-17 08:59:09'),
+(334, 90, 53, 816, '2026-03-17 08:59:11'),
+(335, 83, 63, 593, '2026-03-17 09:50:08'),
+(336, 85, 63, 593, '2026-03-17 09:50:11'),
+(337, 82, 63, 677, '2026-03-17 09:50:15'),
+(338, 84, 63, 466, '2026-03-17 09:50:17'),
+(339, 87, 63, 593, '2026-03-17 09:50:18'),
+(340, 86, 63, 466, '2026-03-17 09:50:23'),
+(341, 90, 63, 883, '2026-03-17 09:50:34'),
+(342, 92, 63, 430, '2026-03-17 09:50:38'),
+(343, 88, 63, 430, '2026-03-17 09:50:41'),
+(344, 91, 63, 430, '2026-03-17 09:50:43'),
+(345, 89, 63, 883, '2026-03-17 09:50:44'),
+(346, 93, 63, 816, '2026-03-17 09:50:46'),
+(347, 82, 48, 146, '2026-03-17 10:30:34'),
+(348, 84, 48, 466, '2026-03-17 10:30:37'),
+(349, 86, 48, 466, '2026-03-17 10:30:40'),
+(350, 87, 48, 593, '2026-03-17 10:30:46'),
+(351, 83, 48, 146, '2026-03-17 10:30:49'),
+(352, 85, 48, 593, '2026-03-17 10:30:51'),
+(353, 93, 48, 474, '2026-03-17 10:30:58'),
+(354, 91, 48, 474, '2026-03-17 10:31:00'),
+(355, 90, 48, 883, '2026-03-17 10:31:02'),
+(356, 89, 48, 474, '2026-03-17 10:31:21'),
+(357, 92, 48, 430, '2026-03-17 10:31:24'),
+(358, 88, 48, 883, '2026-03-17 10:31:25'),
+(359, 73, 23, 448, '2026-03-17 11:04:55'),
+(360, 72, 23, 882, '2026-03-17 11:04:59'),
+(361, 70, 23, 448, '2026-03-17 11:05:00'),
+(362, 71, 23, 764, '2026-03-17 11:05:02'),
+(363, 75, 23, 882, '2026-03-17 11:05:04'),
+(364, 74, 23, 882, '2026-03-17 11:05:10'),
+(365, 76, 23, 976, '2026-03-17 11:05:15'),
+(366, 80, 23, 759, '2026-03-17 11:05:18'),
+(367, 79, 23, 976, '2026-03-17 11:05:20'),
+(368, 77, 23, 690, '2026-03-17 11:05:25'),
+(369, 78, 23, 759, '2026-03-17 11:05:26'),
+(370, 81, 23, 759, '2026-03-17 11:05:27'),
+(371, 87, 23, 466, '2026-03-17 11:05:32'),
+(372, 83, 23, 146, '2026-03-17 11:05:38'),
+(373, 82, 23, 146, '2026-03-17 11:05:40'),
+(374, 84, 23, 146, '2026-03-17 11:05:42'),
+(375, 85, 23, 593, '2026-03-17 11:05:45'),
+(376, 86, 23, 466, '2026-03-17 11:05:47'),
+(377, 90, 23, 883, '2026-03-17 11:05:54'),
+(378, 92, 23, 430, '2026-03-17 11:05:56'),
+(379, 89, 23, 474, '2026-03-17 11:06:01'),
+(380, 93, 23, 474, '2026-03-17 11:06:03'),
+(381, 91, 23, 430, '2026-03-17 11:06:05'),
+(382, 88, 23, 430, '2026-03-17 11:06:07'),
+(383, 83, 2, 593, '2026-03-17 11:45:52'),
+(384, 87, 2, 466, '2026-03-17 11:45:55'),
+(385, 86, 2, 466, '2026-03-17 11:45:58'),
+(386, 84, 2, 466, '2026-03-17 11:46:03'),
+(387, 82, 2, 677, '2026-03-17 11:46:06'),
+(388, 85, 2, 593, '2026-03-17 11:46:08'),
+(389, 93, 2, 474, '2026-03-17 11:46:15'),
+(390, 91, 2, 430, '2026-03-17 11:46:18'),
+(391, 90, 2, 883, '2026-03-17 11:46:21'),
+(392, 89, 2, 883, '2026-03-17 11:46:23'),
+(393, 92, 2, 430, '2026-03-17 11:46:24'),
+(394, 88, 2, 430, '2026-03-17 11:46:29'),
+(395, 82, 51, 677, '2026-03-17 11:47:01'),
+(396, 87, 51, 466, '2026-03-17 11:47:14'),
+(397, 85, 51, 677, '2026-03-17 11:47:16'),
+(398, 84, 51, 146, '2026-03-17 11:47:19'),
+(399, 83, 51, 146, '2026-03-17 11:47:22'),
+(400, 86, 51, 677, '2026-03-17 11:47:23'),
+(401, 89, 51, 474, '2026-03-17 11:47:36'),
+(402, 88, 51, 883, '2026-03-17 11:47:38'),
+(403, 93, 51, 474, '2026-03-17 11:47:39'),
+(404, 92, 51, 430, '2026-03-17 11:47:42'),
+(405, 90, 51, 883, '2026-03-17 11:47:44'),
+(406, 91, 51, 474, '2026-03-17 11:47:45'),
+(407, 85, 19, 593, '2026-03-17 13:41:20'),
+(408, 86, 19, 466, '2026-03-17 13:41:36'),
+(409, 84, 19, 466, '2026-03-17 13:41:40'),
+(410, 82, 19, 677, '2026-03-17 13:41:43'),
+(411, 87, 19, 466, '2026-03-17 13:41:46'),
+(412, 83, 19, 593, '2026-03-17 13:41:48'),
+(413, 89, 19, 474, '2026-03-17 13:42:00'),
+(414, 88, 19, 430, '2026-03-17 13:42:08'),
+(415, 91, 19, 430, '2026-03-17 13:42:11'),
+(416, 93, 19, 474, '2026-03-17 13:42:14'),
+(417, 90, 19, 883, '2026-03-17 13:42:19'),
+(418, 92, 19, 430, '2026-03-17 13:42:25'),
+(419, 87, 118, 593, '2026-03-17 15:38:06'),
+(420, 83, 118, 146, '2026-03-17 15:38:10'),
+(421, 85, 118, 593, '2026-03-17 15:38:11'),
+(422, 86, 118, 677, '2026-03-17 15:38:14'),
+(423, 84, 118, 146, '2026-03-17 15:38:15'),
+(424, 82, 118, 146, '2026-03-17 15:38:17'),
+(425, 93, 118, 474, '2026-03-17 15:38:26'),
+(426, 89, 118, 883, '2026-03-17 15:38:29'),
+(427, 92, 118, 430, '2026-03-17 15:38:30'),
+(428, 88, 118, 430, '2026-03-17 15:38:32'),
+(429, 91, 118, 430, '2026-03-17 15:38:33'),
+(430, 90, 118, 883, '2026-03-17 15:38:34'),
+(431, 82, 94, 677, '2026-03-17 17:09:40'),
+(432, 88, 94, 430, '2026-03-17 17:10:04'),
+(433, 86, 150, 466, '2026-03-17 18:08:20'),
+(434, 84, 150, 466, '2026-03-17 18:08:20'),
+(435, 87, 150, 466, '2026-03-17 18:08:24'),
+(436, 82, 150, 677, '2026-03-17 18:08:27'),
+(437, 83, 150, 593, '2026-03-17 18:08:45'),
+(438, 85, 150, 593, '2026-03-17 18:08:50'),
+(439, 85, 8, 677, '2026-03-17 18:43:04'),
+(440, 86, 8, 677, '2026-03-17 18:43:06'),
+(441, 87, 8, 593, '2026-03-17 18:43:09'),
+(442, 82, 8, 677, '2026-03-17 18:43:11'),
+(443, 84, 8, 466, '2026-03-17 18:43:13'),
+(444, 83, 8, 593, '2026-03-17 18:43:15'),
+(445, 91, 8, 430, '2026-03-17 18:43:32'),
+(446, 92, 8, 430, '2026-03-17 18:43:33'),
+(447, 93, 8, 474, '2026-03-17 18:43:36'),
+(448, 90, 8, 883, '2026-03-17 18:43:38'),
+(449, 88, 8, 883, '2026-03-17 18:43:39'),
+(450, 89, 8, 883, '2026-03-17 18:43:41'),
+(451, 82, 22, 146, '2026-03-17 19:39:59'),
+(452, 85, 22, 593, '2026-03-17 19:40:04'),
+(453, 84, 22, 146, '2026-03-17 19:40:07'),
+(454, 86, 22, 677, '2026-03-17 19:40:08'),
+(455, 83, 22, 593, '2026-03-17 19:40:11'),
+(456, 87, 22, 593, '2026-03-17 19:40:13'),
+(457, 89, 22, 474, '2026-03-17 19:40:22'),
+(458, 92, 22, 816, '2026-03-17 19:40:24'),
+(459, 93, 22, 816, '2026-03-17 19:40:26'),
+(460, 91, 22, 474, '2026-03-17 19:40:28'),
+(461, 88, 22, 883, '2026-03-17 19:40:30'),
+(462, 90, 22, 816, '2026-03-17 19:40:31'),
+(463, 84, 125, 146, '2026-03-17 22:01:33'),
+(464, 87, 125, 593, '2026-03-17 22:02:11'),
+(465, 86, 125, 677, '2026-03-17 22:02:20'),
+(466, 83, 125, 593, '2026-03-17 22:02:26'),
+(467, 82, 125, 677, '2026-03-17 22:02:52'),
+(468, 85, 125, 593, '2026-03-17 22:03:09'),
+(469, 89, 125, 883, '2026-03-17 22:03:53'),
+(470, 92, 125, 430, '2026-03-17 22:04:02'),
+(471, 88, 125, 430, '2026-03-17 22:04:06'),
+(472, 93, 125, 474, '2026-03-17 22:04:08'),
+(473, 90, 125, 883, '2026-03-17 22:04:29'),
+(474, 91, 125, 430, '2026-03-17 22:04:32');
 
 -- --------------------------------------------------------
 
@@ -10370,7 +11870,7 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (30, 43, 'softeis', 3.00, 'kleines Softeis - 3.00 €\r\ngroßes Softeis - 4.00 €', 1, '2025-03-24 17:23:48', 1, '2025-03-24 17:21:28'),
 (31, 44, 'kugel', 1.50, NULL, 1, '2025-03-24 16:43:57', 1, '2025-03-24 17:21:28'),
 (32, 45, 'kugel', 1.00, NULL, 1, '2025-05-02 11:16:58', 1, '2025-03-24 18:17:14'),
-(34, 11, 'kugel', 1.60, NULL, 1, '2026-03-10 14:22:03', 1, NULL),
+(34, 11, 'kugel', 1.60, NULL, 1, '2026-03-17 15:33:49', 1, NULL),
 (42, 51, 'kugel', 1.80, 'Premiumsorten - 2.20 €', 1, '2025-05-22 18:53:34', 1, '2025-03-27 07:45:18'),
 (51, 26, 'kugel', 1.80, 'Premiumsorten - 2.20 €', 1, '2025-03-27 15:11:26', 1, NULL),
 (52, 13, 'kugel', 1.50, 'Kleines gemischtes Eis - 1,50 €\nGroßes gemischtes Eis - 2,50 €', 1, '2025-10-21 14:15:18', 1, '2025-03-14 06:44:00'),
@@ -10989,7 +12489,7 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (844, 21, 'softeis', 2.50, 'kleines Softeis - 2.50€\r\ngroßes Softeis - 3.00 €', 53, '2025-11-01 21:39:14', 1, NULL),
 (845, 92, 'kugel', 2.00, 'Premiumsorten 2,40€', 53, '2026-02-09 13:59:22', 1, NULL),
 (846, 92, 'softeis', 3.50, 'Großes Softeis 5€', 53, '2026-02-09 13:59:22', 1, NULL),
-(847, 165, 'kugel', 1.80, 'Kategorie Zwei: 2€ / Kategorie 3: 2,20€', 53, '2026-02-22 20:29:19', 1, NULL),
+(847, 165, 'kugel', 1.80, 'Kategorie Zwei: 2€ / Kategorie 3: 2,20€', 53, '2026-03-12 16:00:27', 1, NULL),
 (848, 563, 'kugel', 4.00, NULL, 31, '2025-11-02 11:41:18', 1, '2025-11-02 11:39:52'),
 (849, 564, 'kugel', 1.50, NULL, 1, '2025-11-03 10:46:36', 1, '2025-11-03 10:46:07'),
 (850, 565, 'kugel', 2.00, NULL, 1, '2025-12-27 13:32:30', 1, '2025-11-03 11:09:45'),
@@ -11050,7 +12550,7 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (944, 39, 'kugel', 1.50, NULL, 53, '2026-02-14 12:28:52', 1, '2026-02-14 12:28:52'),
 (945, 617, 'kugel', 3.00, 'Small 3€ - Medium 4,50€ - Large 5,50€', 1, '2026-02-14 14:42:11', 1, '2026-02-14 14:42:11'),
 (946, 618, 'kugel', 2.20, NULL, 48, '2026-02-15 13:46:07', 1, '2026-02-15 13:46:07'),
-(947, 570, 'kugel', 1.70, NULL, 53, '2026-02-15 16:03:26', 1, '2026-02-15 16:03:26'),
+(947, 570, 'kugel', 1.70, NULL, 53, '2026-03-14 11:50:32', 1, '2026-02-15 16:03:26'),
 (948, 5, 'kugel', 2.00, NULL, 53, '2026-03-11 20:28:06', 1, '2026-02-15 16:15:43'),
 (949, 620, 'kugel', 35.00, NULL, 53, '2026-02-19 10:43:00', 2, '2026-02-19 10:43:00'),
 (950, 626, 'kugel', 109.00, 'Spezialeis wegen Waffel und Füllung ', 53, '2026-02-19 10:49:36', 2, '2026-02-19 10:49:36'),
@@ -11071,19 +12571,19 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (972, 636, 'kugel', 2.50, 'Bechereis', 53, '2026-02-26 16:36:34', 1, '2026-02-26 16:36:34'),
 (973, 273, 'kugel', 1.60, NULL, 19, '2026-02-27 13:11:55', 1, '2026-02-27 13:11:55'),
 (974, 637, 'kugel', 1.75, NULL, 98, '2026-02-27 14:18:16', 1, '2026-02-27 14:18:16'),
-(975, 1, 'kugel', 1.80, 'Premiumsorten 2.20€ -\nCremino 2.50€', 1, '2026-02-28 15:09:35', 1, '2026-02-28 15:09:35'),
-(976, 1, 'softeis', 2.20, 'Kleines Softeis 2.20€ -\nGroßes Softeis 3.50€', 1, '2026-02-28 15:09:35', 1, '2026-02-28 15:09:35'),
+(975, 1, 'kugel', 1.80, 'Premiumsorten 2.20€ -\nCremino 2.50€', 1, '2026-03-16 12:06:25', 1, '2026-02-28 15:09:35'),
+(976, 1, 'softeis', 2.20, 'Kleines Softeis 2.20€ -\nGroßes Softeis 3.50€', 1, '2026-03-16 12:06:25', 1, '2026-02-28 15:09:35'),
 (977, 314, 'kugel', 1.70, NULL, 157, '2026-02-28 22:00:48', 1, '2026-02-28 22:00:48'),
 (978, 117, 'kugel', 1.80, 'Premiumsorten 2.20€ - Cremino 2.50€', 1, '2026-03-01 02:57:09', 1, '2026-03-01 02:57:09'),
 (979, 17, 'kugel', 2.00, NULL, 19, '2026-03-01 15:35:25', 1, '2026-03-01 15:35:25'),
 (981, 639, 'kugel', 1.70, NULL, 1, '2026-03-03 20:01:01', 1, '2026-03-03 20:01:01'),
 (982, 640, 'softeis', 2.50, 'Kleines Softeis in der Waffel 2,50€ - im Pappbecher ab 3€', 1, '2026-03-04 02:47:26', 1, '2026-03-04 02:47:26'),
-(984, 353, 'kugel', 2.00, NULL, 53, '2026-03-04 20:15:10', 1, '2026-03-04 20:15:10'),
+(984, 353, 'kugel', 2.00, NULL, 53, '2026-03-18 14:07:39', 1, '2026-03-04 20:15:10'),
 (986, 642, 'kugel', 0.71, NULL, 158, '2026-03-06 10:35:18', 1, '2026-03-06 10:35:18'),
 (988, 356, 'softeis', 2.50, 'S 2,5€ M 3,0€ L 3,5€', 165, '2026-03-07 06:53:03', 1, '2026-03-07 06:53:03'),
 (989, 293, 'kugel', 2.00, NULL, 165, '2026-03-07 06:57:20', 1, '2026-03-07 06:57:20'),
-(993, 11, 'kugel', 1.60, NULL, 19, '2026-03-07 14:08:00', 1, '2026-03-07 14:08:00'),
-(994, 11, 'softeis', 1.60, 'Für das kleine Softeis ', 19, '2026-03-07 14:08:00', 1, '2026-03-07 14:08:00'),
+(993, 11, 'kugel', 1.60, NULL, 19, '2026-03-17 15:54:03', 1, '2026-03-07 14:08:00'),
+(994, 11, 'softeis', 1.60, 'Für das kleine Softeis ', 19, '2026-03-17 15:54:03', 1, '2026-03-07 14:08:00'),
 (995, 165, 'kugel', 1.80, 'Kategorie Zwei: 2€ / Kategorie 3: 2,20€', 27, '2026-03-07 14:16:06', 1, '2026-03-07 14:16:06'),
 (996, 316, 'kugel', 1.80, NULL, 8, '2026-03-07 15:59:03', 1, '2026-03-07 15:59:03'),
 (997, 645, 'kugel', 1.80, NULL, 1, '2026-03-07 18:18:00', 1, '2026-03-07 18:18:00'),
@@ -11097,13 +12597,27 @@ INSERT INTO `preise` (`id`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `geme
 (1011, 273, 'kugel', 1.60, NULL, 53, '2026-03-08 20:08:59', 1, '2026-03-08 20:08:59'),
 (1012, 115, 'softeis', 2.00, 'Großes Softeis - 4€', 53, '2026-03-08 20:11:55', 1, '2026-03-08 20:11:55'),
 (1014, 5, 'kugel', 2.00, NULL, 86, '2026-03-10 12:50:07', 1, '2026-03-10 12:50:07'),
-(1016, 11, 'softeis', 1.60, 'Für das kleine Softeis ', 1, '2026-03-10 14:22:03', 1, '2026-03-10 14:22:03'),
+(1016, 11, 'softeis', 1.60, 'Für das kleine Softeis ', 1, '2026-03-17 15:33:49', 1, '2026-03-10 14:22:03'),
 (1017, 116, 'kugel', 1.70, '3 Kugeln 5€', 1, '2026-03-10 15:00:21', 1, '2026-03-10 15:00:21'),
-(1019, 20, 'kugel', 1.50, NULL, 53, '2026-03-10 17:48:29', 1, '2026-03-10 17:48:29'),
+(1019, 20, 'kugel', 1.50, NULL, 53, '2026-03-18 14:30:07', 1, '2026-03-10 17:48:29'),
 (1020, 408, 'kugel', 1.70, NULL, 53, '2026-03-11 08:29:02', 1, '2026-03-11 08:29:02'),
 (1021, 649, 'kugel', 5.00, NULL, 31, '2026-03-11 18:34:48', 25, '2026-03-11 18:34:48'),
 (1022, 649, 'kugel', 5.00, NULL, 52, '2026-03-11 18:59:05', 25, '2026-03-11 18:59:03'),
-(1025, 650, 'kugel', 4.00, NULL, 31, '2026-03-11 21:01:01', 25, '2026-03-11 21:01:01');
+(1025, 650, 'kugel', 4.00, NULL, 31, '2026-03-11 21:01:01', 25, '2026-03-11 21:01:01'),
+(1027, 293, 'kugel', 2.00, NULL, 156, '2026-03-12 18:53:52', 1, '2026-03-12 18:53:52'),
+(1028, 314, 'kugel', 1.70, NULL, 53, '2026-03-13 07:45:45', 1, '2026-03-13 07:45:45'),
+(1029, 651, 'kugel', 4.36, '5$', 31, '2026-03-13 12:12:43', 1, '2026-03-13 12:12:43'),
+(1030, 60, 'kugel', 1.60, 'Premiumsorten 1,90€', 53, '2026-03-13 16:52:08', 1, '2026-03-13 16:52:08'),
+(1034, 416, 'kugel', 2.10, 'Premium 2,4€', 53, '2026-03-16 12:55:50', 1, '2026-03-16 12:55:50'),
+(1035, 416, 'softeis', 2.50, 'Groß 4€', 53, '2026-03-16 12:55:50', 1, '2026-03-16 12:55:50'),
+(1036, 654, 'kugel', 1.63, NULL, 158, '2026-03-17 12:38:06', 12, '2026-03-17 12:38:06'),
+(1037, 654, 'kugel', 900.00, NULL, 158, '2026-03-17 12:38:26', 12, '2026-03-17 12:38:26'),
+(1038, 11, 'kugel', 1.60, NULL, 53, '2026-03-17 15:29:44', 1, '2026-03-17 15:29:44'),
+(1039, 11, 'softeis', 1.60, 'Für das kleine Softeis ', 53, '2026-03-17 15:29:44', 1, '2026-03-17 15:29:44'),
+(1044, 655, 'kugel', 1.70, NULL, 98, '2026-03-18 13:36:31', 1, '2026-03-18 13:36:31'),
+(1045, 655, 'kugel', 1.50, NULL, 98, '2026-03-18 13:47:10', 1, '2026-03-18 13:47:10'),
+(1046, 5, 'kugel', 2.00, NULL, 119, '2026-03-18 13:54:50', 1, '2026-03-18 13:54:19'),
+(1051, 656, 'kugel', 2.60, NULL, 23, '2026-03-18 15:13:21', 1, '2026-03-18 15:13:21');
 
 -- --------------------------------------------------------
 
@@ -11141,7 +12655,11 @@ INSERT INTO `qr_codes` (`id`, `name`, `code`, `description`, `created_at`, `vali
 (10, 'Ice-Tour 2026 Checkpoint: Klatt-Eis Eismanufaktur', 'event2026-live-shop-111', ' QR-Code für die Event-Stempelkarte Klatt-Eis Eismanufaktur.', '2026-03-11 19:12:56', NULL, NULL, 'event_stamp_card', '', 0, 111),
 (11, 'Ice-Tour 2026 Checkpoint: Eiscafé Elisenhof', 'event2026-live-shop-22', ' QR-Code für die Event-Stempelkarte Eiscafé Elisenhof.', '2026-03-11 19:12:57', NULL, NULL, 'event_stamp_card', '', 0, 22),
 (12, 'Ice-Tour 2026 Test: Eiscafé Eis-Zapfen', 'event2026-test-shop-1', 'Test- QR-Code für die Event-Stempelkarte Eiscafé Eis-Zapfen.', '2026-03-11 19:12:57', NULL, NULL, 'event_stamp_card', '', 0, 1),
-(13, 'Ice-Tour 2026 Test: Eiscafé Kohlebunker', 'event2026-test-shop-2', 'Test- QR-Code für die Event-Stempelkarte Eiscafé Kohlebunker.', '2026-03-11 19:12:57', NULL, NULL, 'event_stamp_card', '', 0, 2);
+(13, 'Ice-Tour 2026 Test: Eiscafé Kohlebunker', 'event2026-test-shop-2', 'Test- QR-Code für die Event-Stempelkarte Eiscafé Kohlebunker.', '2026-03-11 19:12:57', NULL, NULL, 'event_stamp_card', '', 0, 2),
+(14, 'Ice-Tour 2026 Checkpoint: Karl mag\'s süß ', 'event2026-live-shop-293', ' QR-Code für die Event-Stempelkarte Karl mag\'s süß .', '2026-03-18 12:06:39', NULL, NULL, 'event_stamp_card', '', 0, 293),
+(15, 'Ice-Tour 2026 Test: nouri.', 'event2026-test-shop-565', 'Test- QR-Code für die Event-Stempelkarte nouri..', '2026-03-18 12:06:39', NULL, NULL, 'event_stamp_card', '', 0, 565),
+(16, 'Ice-Tour 2026 Test: Ackermanns Eiscafé', 'event2026-test-shop-20', 'Test- QR-Code für die Event-Stempelkarte Ackermanns Eiscafé.', '2026-03-19 09:03:38', NULL, NULL, 'event_stamp_card', '', 0, 20),
+(17, 'Ice-Tour 2026 Test: Café Klatsch - Andreas Wörl', 'event2026-test-shop-179', 'Test- QR-Code für die Event-Stempelkarte Café Klatsch - Andreas Wörl.', '2026-03-19 09:03:38', NULL, NULL, 'event_stamp_card', '', 0, 179);
 
 -- --------------------------------------------------------
 
@@ -11351,7 +12869,14 @@ INSERT INTO `rate_limit` (`id`, `ip_address`, `timestamp`) VALUES
 (201, '2003:f4:e73f:2300:e265:6d82:8575:10a4', '2026-03-07 12:41:31'),
 (202, '2003:f4:e73f:2300:e265:6d82:8575:10a4', '2026-03-07 12:41:44'),
 (203, '2a02:810a:900e:f300:c8eb:24af:7ea3:633', '2026-03-07 22:14:56'),
-(204, '2001:9e8:11b2:6f00:fd3b:d3b8:70a2:de45', '2026-03-08 01:10:49');
+(204, '2001:9e8:11b2:6f00:fd3b:d3b8:70a2:de45', '2026-03-08 01:10:49'),
+(205, '2a02:3036:222:6270:123d:79c5:630b:5750', '2026-03-12 08:36:14'),
+(206, '128.230.147.106', '2026-03-13 21:31:17'),
+(207, '2a00:1f:6003:6101:2ceb:3092:f186:9d4', '2026-03-14 16:43:22'),
+(208, '2a02:26f7:ec5c:660e:0:2000:0:8', '2026-03-15 11:21:41'),
+(209, '2a00:20:608d:7c6f:4321:dfe6:bbf6:4f8e', '2026-03-15 11:32:32'),
+(210, '84.19.212.1', '2026-03-16 07:57:44'),
+(211, '2001:9e8:eb8:8a00:4512:b5af:2145:72f1', '2026-03-18 14:25:42');
 
 -- --------------------------------------------------------
 
@@ -11528,11 +13053,11 @@ INSERT INTO `route_eisdielen` (`route_id`, `eisdiele_id`) VALUES
 -- (Siehe unten für die tatsächliche Ansicht)
 --
 CREATE TABLE `softeis_scores` (
-`avg_geschmack` double
+`eisdiele_id` int
+,`finaler_softeis_score` double
+,`avg_geschmack` double
 ,`avg_geschmacksfaktor` double
 ,`avg_preisleistung` double
-,`eisdiele_id` int
-,`finaler_softeis_score` double
 );
 
 -- --------------------------------------------------------
@@ -11554,7 +13079,8 @@ CREATE TABLE `systemmeldungen` (
 
 INSERT INTO `systemmeldungen` (`id`, `titel`, `nachricht`, `erstellt_am`) VALUES
 (11, '🎉 Die Ice-App wird bald 1 Jahr alt! 🍨', 'Zum Geburtstag haben wir der App ein riesiges Design-Update verpasst.\nMehr Funktionen, übersichtlicheres Design und eine deutlich verbesserte Nutzererfahrung.\nNatürlich gibt es auch wieder eine neue Challenge:\nSammelt Punkte, schaltet Awards frei und gewinnt echte Preise. 🏆\n\n📸 Neu: Die Ice-App Fotochallenge\nSucht euer liebstes Eis-Bild aus dem ersten Jahr Ice-App heraus und reicht es bis zum 14. März ein.\nDanach startet ein Turnierbaum-Voting, bei dem die Community entscheidet, welches Bild gewinnt.\n\nUnd ja…\nGewinne. Gewinne. Gewinne. 🎁\n\nNeue Awards zum Beispiel in Kooperation mit TheTasteOfChemnitz gibt es auch. 🏆\n\nFeiert mit uns 1 Jahr Ice-App! 🍦', '2026-03-06 11:44:30'),
-(12, '📸 Ice-App Foto-Challenge – Endspurt!', 'Der Countdown läuft: Noch 3 Tage Zeit!\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder für die Ice-App Foto-Challenge einreichen.\n\nBereits 29 Bilder wurden eingereicht – jetzt fehlt nur noch dein bestes Eis-Motiv! ❄️📷\nEs warten tolle Preise auf die Gewinner, und zusätzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\n\nSo nimmst du teil:\n\nÖffne in der App den Bereich „Foto-Challenge“\n\nWähle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\n\nVergib optional einen Titel für dein Bild\n\nEinreichen – fertig!\n\nDu hast noch kein perfektes Bild? Kein Problem!\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\n\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschließend in die KO-Runde, in der Bild für Bild bis zum Gewinner abgestimmt wird.\n\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! 🧊📸', '2026-03-11 17:35:05');
+(12, '📸 Ice-App Foto-Challenge – Endspurt!', 'Der Countdown läuft: Noch 3 Tage Zeit!\nBis Samstag, 14.03., 12:00 Uhr kannst du deine Bilder für die Ice-App Foto-Challenge einreichen.\n\nBereits 29 Bilder wurden eingereicht – jetzt fehlt nur noch dein bestes Eis-Motiv! ❄️📷\nEs warten tolle Preise auf die Gewinner, und zusätzlich wird unter allen Teilnehmern ein weiterer Preis verlost. Mitmachen lohnt sich also auf jeden Fall!\n\nSo nimmst du teil:\n\nÖffne in der App den Bereich „Foto-Challenge“\n\nWähle bis zu 3 Bilder aus deinen bereits hochgeladenen Fotos aus\n\nVergib optional einen Titel für dein Bild\n\nEinreichen – fertig!\n\nDu hast noch kein perfektes Bild? Kein Problem!\nNutze die verbleibende Zeit, um bis zum 14.03 noch ein richtig starkes Eis-Foto aufzunehmen und einzuchecken.\n\nNach Ablauf der Einreichungsfrist beginnt der Wettbewerb:\nZuerst treten die Bilder in einer Gruppenphase gegeneinander an. Die besten Fotos kommen anschließend in die KO-Runde, in der Bild für Bild bis zum Gewinner abgestimmt wird.\n\nAlso: Jetzt mitmachen und dein bestes Eis-Foto ins Rennen schicken! 🧊📸', '2026-03-11 17:35:05'),
+(13, 'Eis-Tour und Foto-Challenge', 'Wie ihr vielleicht schon im Rahmen der Geburtstagsaktion mitbekommen habt, wird es am 16. Mai 2026 eine Ice-Tour geben.\nDas Ganze wird eine Radtour zum Sammeln von Spenden für den Elternverein krebskranker Kinder e.V. sein.\n\nDas Besondere ist: Je nach Route gibt es zwischen zwei und vier Eisdielen, die als Checkpoints fungieren. An jeder Eisdiele bzw. an jedem Checkpoint gibt es eine Kugel Eis pro Starter inklusive.\n\nEs wird drei Routen geben: 175, 140 und 70 Kilometer.\nDas Ganze ist mir eine absolute Herzensangelegenheit, und ich bin wirklich wahnsinnig froh, dass es stattfinden kann. Es ist eine tolle Strecke, es gibt echt super Eisdielen als Partner auf der Route und mit Karl mag’s süß einen mega Start- und Zielort auf dem Brühl.\n\nMeldet euch gerne an und erzählt anderen von der Tour. Ich würde mich riesig freuen, ganz viele von euch als Starter oder Zuschauer begrüßen zu dürfen.\n\nWeitere Meldungen:\nAktuell läuft auch noch die Foto-Challenge, die ersten Gruppen sind bereits in der Voting-Phase. Falls ihr noch nicht abgestimmt habt, macht das gerne noch – das bringt auch viele EP für die Geburtstagschallenge.\n\nDie Geburtstagschallenge läuft noch bis Sonntag, also habt ihr noch ein paar Tage Zeit, in der Rangliste aufzusteigen und euch einen Special Award zu sichern.\n\nLG\nTheGourmetCyclist', '2026-03-18 05:57:36');
 
 -- --------------------------------------------------------
 
@@ -11605,7 +13131,7 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (24, 118, 'e96cda71e866bcdd01849a7f5897a4c0392816672c8a46ed12bd21f7f688652f', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23B85 Instagram 410.0.0.29.70 (iPhone14,5; iOS 26_1; de_DE; de; scale=3.00; 1170x2532; IABMV/1; 843189213) Safari/604.1', '2a00:1ca0:1000:812a:45ef:a7bc:c855:5479', '2025-12-24 09:39:05', '2025-12-24 09:39:20', '2026-01-23 09:39:20', NULL),
 (25, 62, '484a7cba9f4abca703461be40dd97552788aa96bf95b70b8f1293bf223c776c4', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '79.240.95.131', '2025-12-24 10:30:21', '2025-12-25 13:13:19', '2026-01-24 13:13:19', '2026-03-07 13:50:50'),
 (26, 55, '29f5211f7492ac5cabcd35cc4284262aa518e8214607a98b45a92876bd2bd01c', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7.2 Mobile/15E148 Safari/604.1', '194.126.177.131', '2025-12-24 10:40:18', '2025-12-24 10:40:30', '2026-01-23 10:40:30', NULL),
-(27, 22, '78a61f6b6e920b6df9c0a0a35bb4d04edc52c6388cf161b1cfa5bc1aad6fabeb', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '2003:ca:6f34:800:3743:cdfa:68d0:a00b', '2025-12-24 11:18:47', '2026-03-11 19:54:34', '2026-04-10 19:54:34', NULL),
+(27, 22, '78a61f6b6e920b6df9c0a0a35bb4d04edc52c6388cf161b1cfa5bc1aad6fabeb', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '2003:ca:6f34:800:3743:cdfa:68d0:a00b', '2025-12-24 11:18:47', '2026-03-18 17:37:34', '2026-04-17 17:37:34', NULL),
 (28, 4, 'a693e0ccbc3a3582c70b2f944f958d68c202af93b7e4fe2e7f96494be4342cc1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '93.234.64.139', '2025-12-24 13:52:06', '2026-01-04 13:21:31', '2026-02-03 13:21:31', '2026-02-07 10:06:14'),
 (29, 19, '15d3d9f7867c87caf4854288f1f86a3b9b20db995e954e25ec6148c6d812f3c7', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '2003:f4:e732:7900:22e7:1f3b:1bdd:e82e', '2025-12-25 14:01:26', '2026-02-15 15:31:33', '2026-03-17 15:31:33', '2026-02-16 08:19:24'),
 (30, 1, '57ca3811b0f50375fd78d7a29c1d26a8b02516702599bbff548e826d5e807b8c', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '2a02:aa11:b501:a580:883e:7ecd:fe06:8739', '2025-12-30 20:20:19', '2026-01-11 16:49:15', '2026-02-10 16:49:15', '2026-01-11 16:49:21'),
@@ -11618,9 +13144,9 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (37, 1, '647d1e698c45e67b976fcbb374f0115faf5af68ef7c1870050c9d908b5f9fca4', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2003:ca:6f34:800:5d1b:7f59:6828:777a', '2026-01-11 17:04:12', '2026-01-13 17:44:53', '2026-02-12 17:44:53', '2026-01-13 17:44:55'),
 (38, 8, 'a1fdb2851f395e8740c7b5522eb42d2088042b0d12dfeb9bc2e294b40f1c0226', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2a09:bac3:2a78:2a0::43:ba', '2026-01-13 13:11:14', '2026-02-08 18:22:38', '2026-03-10 18:22:38', '2026-02-10 22:55:47'),
 (39, 1, '8547a19c556724538c654a6661572a286bed9426d130d8fdeb26eb3d2d3d1a36', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:792f:143f:610a:c59a', '2026-01-13 16:21:01', '2026-02-02 04:19:44', '2026-03-04 04:19:44', '2026-02-02 04:19:47'),
-(40, 1, 'f05dae8b42eb8cd44243c3758aaf43fd774815fec0ef0f81272f325c1691f480', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2003:ca:6f20:fd00:993e:52da:ffa1:8f48', '2026-01-13 17:45:03', '2026-03-11 22:13:40', '2026-04-10 22:13:40', NULL),
+(40, 1, 'f05dae8b42eb8cd44243c3758aaf43fd774815fec0ef0f81272f325c1691f480', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2003:ca:6f20:fd00:993e:52da:ffa1:8f48', '2026-01-13 17:45:03', '2026-03-15 20:45:05', '2026-04-14 20:45:05', '2026-03-15 20:45:31'),
 (41, 1, '2dff75dd3380ed4472ebffca87a402235911f64fc9b2620b5b1363f1cfaa0d6d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '178.249.25.156', '2026-01-20 21:56:34', '2026-01-20 22:08:59', '2026-02-19 22:08:59', NULL),
-(42, 8, '2711dc45aefcb9e408b910a39efe79eb18a6ec0783f10077e1f4bfc374356f26', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2a09:bac3:2ed9:2a0::43:95', '2026-01-25 15:33:04', '2026-03-10 11:19:51', '2026-04-09 11:19:51', NULL),
+(42, 8, '2711dc45aefcb9e408b910a39efe79eb18a6ec0783f10077e1f4bfc374356f26', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2a09:bac3:2ed9:2a0::43:95', '2026-01-25 15:33:04', '2026-03-17 19:42:29', '2026-04-16 19:42:29', NULL),
 (43, 1, 'a7430bd88fe81496c8b37499c5be88de35757777c6856e0737b6aad20c2a1c1e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '84.19.212.2', '2026-01-26 08:43:21', '2026-02-02 10:18:07', '2026-03-04 10:18:07', '2026-02-02 10:19:13'),
 (44, 77, '79553912448b8c308a032eda70f22bc5858da17aba7ea049f5440df0e21fe35a', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a02:810a:910b:d00:f329:89bb:faf1:d59', '2026-01-27 21:34:30', '2026-01-27 21:34:49', '2026-02-26 21:34:49', '2026-03-06 13:02:21'),
 (45, 2, '98d2b5637591692496d856539e5782ff614cb7cf2a83af756d0c9b66e7e84866', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '176.2.203.67', '2026-01-29 16:54:08', '2026-02-06 10:38:22', '2026-03-08 10:38:22', '2026-02-06 10:38:46'),
@@ -11634,7 +13160,7 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (53, 1, '9c4cc07e289002078c5b64dd1df8bef5c1d364b1eed123277e4bd833b7208543', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:26ae:61cb:9f5b:909f', '2026-02-06 07:37:10', '2026-02-06 07:59:40', '2026-03-08 07:59:40', NULL),
 (54, 1, '6d8a9365399cdf030c64005f1f49092d771dcf12f7ed580a536e1c1ab3b985bf', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '178.249.25.156', '2026-02-06 07:40:29', '2026-02-26 07:53:57', '2026-03-28 07:53:57', '2026-02-26 07:55:53'),
 (55, 1, 'a63164fcb77ba818c4940e8dbbd6a96fee63fab54a0e777d988d3e9fc6ad09b3', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:26ae:61cb:9f5b:909f', '2026-02-06 08:02:52', '2026-02-10 16:19:45', '2026-03-12 16:19:45', '2026-02-10 16:19:52'),
-(56, 23, 'a53df98db80fe41405bec1027a021c002d66cf5c04ec100dc2f8d329834fb2bf', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2a00:20:b2d3:116b:418:ff:fecf:f2cd', '2026-02-06 09:55:43', '2026-03-08 14:21:11', '2026-04-07 14:21:11', NULL),
+(56, 23, 'a53df98db80fe41405bec1027a021c002d66cf5c04ec100dc2f8d329834fb2bf', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2a00:20:b2d3:116b:418:ff:fecf:f2cd', '2026-02-06 09:55:43', '2026-03-18 23:13:13', '2026-04-17 23:13:13', NULL),
 (57, 2, '75f668cca2fd357641950c333a432cca89ab1691b2b882cc682fd0679b50a8b1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2003:f3:172c:6100:3c96:61cb:f676:c50', '2026-02-06 10:39:06', '2026-02-06 10:40:44', '2026-03-08 10:40:44', '2026-03-09 15:41:56'),
 (58, 48, '1d8c1169333245f0859933c7bb978c41aa4f9392473237ad0c030d6488f020cd', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d09b:9daa:4706:16d7:8ac8', '2026-02-06 11:50:20', '2026-02-07 11:16:41', '2026-03-09 11:16:41', '2026-02-07 11:16:50'),
 (59, 148, '11c9c8aee51d2cc2bab707024bf9b842d29f7a417b73d1bc78da02dbef8b2767', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a09:bac3:2ee9:246e::3a1:1f', '2026-02-06 20:39:58', '2026-02-08 09:30:58', '2026-03-10 09:30:58', NULL),
@@ -11649,7 +13175,7 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (68, 48, 'a4621c4d47b57241c32e6903929d4bb2af4c5d498469ec804c592de07dee0b8e', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0e3:b92a:ae9:247c:d3c5', '2026-02-07 11:17:08', '2026-02-07 11:21:25', '2026-03-09 11:21:25', '2026-02-07 11:21:58'),
 (69, 48, 'dc692814a6ad046e05fa65512249798d9c35af23e393a806117228735f168260', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0e3:b92a:ae9:247c:d3c5', '2026-02-07 11:22:12', '2026-02-08 14:42:31', '2026-03-10 14:42:31', '2026-02-08 14:42:33'),
 (70, 31, '4e462709219f8e2d7fd92b14fd72795a768cb77ce3094644961c62f324651d65', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2a02:26f7:ec40:660e:0:8000:0:8', '2026-02-07 14:48:07', '2026-02-07 22:28:23', '2026-03-09 22:28:23', '2026-02-07 22:30:01'),
-(71, 139, '65015a61bf22b5f0219ebfaee85f427cff00f9aa26d533f3fd58ee2e8337aa12', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '89.107.106.227', '2026-02-07 18:01:25', '2026-03-10 06:48:45', '2026-04-09 06:48:45', NULL),
+(71, 139, '65015a61bf22b5f0219ebfaee85f427cff00f9aa26d533f3fd58ee2e8337aa12', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '89.107.106.227', '2026-02-07 18:01:25', '2026-03-12 15:44:24', '2026-04-11 15:44:24', NULL),
 (72, 149, 'e0dbe0d4813ba34ce43fe20b1188a7713014a053200540f917f33a30a3f1ce70', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1', '94.156.65.21', '2026-02-08 00:38:36', '2026-02-08 00:38:38', '2026-03-10 00:38:38', NULL),
 (73, 149, '27a300d30074b6734f10cada543ecbc555e6dcc250abd1fefa9a802e1c6b49aa', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1', '94.156.65.21', '2026-02-08 00:38:37', '2026-02-08 11:57:22', '2026-03-10 11:57:22', NULL),
 (74, 63, 'a2d9a0279943db07d54dfbe8c087420fbb0e0c395f4e5761f6210581d24cd70c', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a02:26f7:ec50:660e:0:3000:0:5', '2026-02-08 08:56:13', '2026-02-14 11:26:36', '2026-03-16 11:26:36', NULL),
@@ -11676,12 +13202,12 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (95, 48, '4759f0deda826e08728e2569f79275e90ca53925cdc1eb214e40d61230e293ec', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0c4:f406:b352:2e42:3aa7', '2026-02-11 21:56:36', '2026-02-11 21:59:06', '2026-03-13 21:59:06', '2026-02-11 21:59:39'),
 (96, 48, '813ab5050ea3b3735996906c4f58a2d670b72819edbc8389877892497f65bd7a', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0c4:f406:b352:2e42:3aa7', '2026-02-11 22:00:51', '2026-02-11 23:09:32', '2026-03-13 23:09:32', '2026-02-11 23:10:22'),
 (97, 1, 'c6da115396893c1c85e4aaff27c11955dbd0ee283c9f45cff814814c2c765058', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '80.85.101.250', '2026-02-11 22:45:18', '2026-02-15 17:10:11', '2026-03-17 17:10:11', NULL),
-(98, 51, '409d78604429d13fe6a5c3720268f344dccabd73edf9322eae801971469d9ec8', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0c4:4176:7573:248b:682a', '2026-02-12 08:26:39', '2026-02-23 10:10:14', '2026-03-25 10:10:14', NULL),
+(98, 51, '409d78604429d13fe6a5c3720268f344dccabd73edf9322eae801971469d9ec8', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0c4:4176:7573:248b:682a', '2026-02-12 08:26:39', '2026-03-17 19:47:14', '2026-04-16 19:47:14', NULL),
 (99, 53, '71a41c2b93bcfaf404579faf333e3769f58cb4b8146ab925adc01d6a66c5924f', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:ec50:8dd4:9540:d58c:c21e:7c10', '2026-02-12 11:51:44', '2026-02-13 12:03:09', '2026-03-15 12:03:09', '2026-02-13 12:03:20'),
-(100, 125, '42fb78cf5b4e1f591beda53e8c1d9188ddd16fafd22c7ecc5118e77af900ac5e', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2003:dc:1710:6400:2db8:2249:e1b1:f0a9', '2026-02-12 20:46:03', '2026-03-11 20:09:39', '2026-04-10 20:09:39', NULL),
+(100, 125, '42fb78cf5b4e1f591beda53e8c1d9188ddd16fafd22c7ecc5118e77af900ac5e', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2003:dc:1710:6400:2db8:2249:e1b1:f0a9', '2026-02-12 20:46:03', '2026-03-18 23:35:56', '2026-04-17 23:35:56', NULL),
 (101, 48, 'df52526ca5932a3b07f31b16ad9cd1fdfc1ce4074726a8020623c95cb6bf077c', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0a8:ad8b:7f9c:7e5c:8950', '2026-02-12 20:57:45', '2026-02-12 21:18:43', '2026-03-14 21:18:43', '2026-02-12 21:19:37'),
 (102, 48, 'ac5bcb66397dc69cd8be1a5c0f0f11d421c61af3a3b8faacfff0e9bece13e6f8', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f9:8703:d0a8:ad8b:7f9c:7e5c:8950', '2026-02-12 21:21:06', '2026-02-13 23:01:31', '2026-03-15 23:01:31', '2026-02-13 23:01:34'),
-(103, 31, 'bddc6bdf8ce1224d388234ea241b4c405d9705da84c265fa8dd1f65132f13038', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2a02:26f7:ec40:660e:0:4000:0:8', '2026-02-13 10:22:22', '2026-03-11 22:09:54', '2026-04-10 22:09:54', NULL),
+(103, 31, 'bddc6bdf8ce1224d388234ea241b4c405d9705da84c265fa8dd1f65132f13038', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1', '2a02:26f7:ec40:660e:0:4000:0:8', '2026-02-13 10:22:22', '2026-03-13 14:47:12', '2026-04-12 14:47:12', NULL),
 (104, 53, '807b3022b2d1ec029773e2fdd1dde0da71ceaf6f85073dc8a2c85b7ff30433a8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2003:f4:e736:4b00:757e:5f16:ce3c:a237', '2026-02-13 12:03:27', '2026-02-14 13:28:16', '2026-03-16 13:28:16', '2026-02-14 13:28:24'),
 (105, 48, 'd69362f40498d4a3d60e9ea79e396e765013f3e1efe6fcda5b33d18890c9d932', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a00:fbc:ec4d:3449:4847:7f28:3c0b:b61', '2026-02-13 23:01:40', '2026-02-14 10:59:55', '2026-03-16 10:59:55', '2026-02-14 11:00:21'),
 (106, 48, 'b9ed90d802b24a9bd61cb5818e6b1ebff230624c511ebb3b668a4520ce491d31', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a00:fbc:ec4d:3449:4847:7f28:3c0b:b61', '2026-02-14 11:00:27', '2026-02-15 14:07:35', '2026-03-17 14:07:35', '2026-02-15 14:10:56'),
@@ -11705,7 +13231,7 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (124, 53, 'b43616a92e63fe1a077edd6b7b7c44b6e89d195756bf7cec34064480c8fdf48a', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:e87e:71e5:2443:f074:2ba2:582c', '2026-02-19 09:50:02', '2026-02-19 12:20:08', '2026-03-21 12:20:08', '2026-02-19 12:20:53'),
 (125, 53, '6b8cfa4843bf3f2d9f8e7786d78ce7b03c9f915735ff75b5825a94a0fcc63268', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:f1d5:a819:b1a0:e43e:774:82c0', '2026-02-19 12:21:04', '2026-02-19 13:46:00', '2026-03-21 13:46:00', NULL),
 (126, 53, '4a6d4ac6e868282248c71e392b4f595b97c46ea30e634581c0954b6d51931f9a', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:e87e:26d1:8195:62d8:b787:dd55', '2026-02-19 15:22:08', '2026-02-20 09:21:02', '2026-03-22 09:21:02', '2026-02-20 09:21:14'),
-(127, 1, 'b0fa9202ae64ea0412b070831031af6e9c3e5a8849a856e2693b5da3e9f46efa', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:733d:3b22:9b0e:3a3c', '2026-02-19 19:44:37', '2026-03-11 22:28:18', '2026-04-10 22:28:18', NULL),
+(127, 1, 'b0fa9202ae64ea0412b070831031af6e9c3e5a8849a856e2693b5da3e9f46efa', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:733d:3b22:9b0e:3a3c', '2026-02-19 19:44:37', '2026-03-13 10:26:49', '2026-04-12 10:26:49', '2026-03-13 10:26:56'),
 (128, 153, '4867d67dbf7ca2c11ef8e8d159695d02b67af6851c412f0bf02645400e834ce6', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2003:f4:e736:4b00:b81c:dc72:c5c4:9fdf', '2026-02-19 21:35:15', '2026-02-19 21:41:17', '2026-03-21 21:41:17', NULL),
 (129, 118, '0f44cda015a4eadfb4369cb709c78014fe8242aafd528f8740881e4097595779', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1', '2003:c8:1f1e:f800:a414:de8f:5fed:b882', '2026-02-19 22:06:25', '2026-03-11 19:18:04', '2026-04-10 19:18:04', NULL),
 (130, 53, '594941d1a8f8b10c0300853e9c414e17386c911c17439580c232b8696053e142', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:f237:dc39:b8a2:f9a5:377c:8492', '2026-02-20 09:21:22', '2026-02-22 21:27:08', '2026-03-24 21:27:08', '2026-02-22 21:27:13'),
@@ -11720,12 +13246,12 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (139, 53, 'd82f63297636310d9c42fe83f42a7df88cafafdb9315c5ff91c30c9d6bdf5255', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2003:f4:e736:4b00:552c:4ccd:b682:1b98', '2026-02-22 21:27:28', '2026-03-09 12:36:21', '2026-04-08 12:36:21', '2026-03-09 12:36:56'),
 (140, 1, '2c8c9fab280e44789ff47274b94a3f2d52b36b86779fe49d47c110fac5b648d3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '84.19.212.1', '2026-02-23 08:09:14', '2026-03-09 12:04:14', '2026-04-08 12:04:14', NULL),
 (141, 1, '9779d304165a038b01455d36e9456edb56803c5464d90ee14faf47d08a7156de', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '84.19.212.1', '2026-02-23 12:21:51', '2026-02-23 12:21:54', '2026-03-25 12:21:54', NULL),
-(142, 1, '3366ea8974b38525c2d3a55c7d6dc9ea25cc1c4ac29e070c53fb1431c6bd3aa3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '84.19.212.1', '2026-02-23 12:21:54', '2026-03-02 11:00:15', '2026-04-01 11:00:15', NULL),
+(142, 1, '3366ea8974b38525c2d3a55c7d6dc9ea25cc1c4ac29e070c53fb1431c6bd3aa3', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '84.19.212.1', '2026-02-23 12:21:54', '2026-03-16 10:54:40', '2026-04-15 10:54:40', NULL),
 (143, 154, '33ee8454d13c84c2251bccb7b07338e0672002ff1cc9e9806705b8434e2db4da', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a02:3036:213:f1ab:d840:ca1f:5914:3667', '2026-02-23 12:39:14', '2026-02-23 12:39:15', '2026-03-25 12:39:15', NULL),
 (144, 155, '94a3e9ad39012ca49c85ebdceb1803a65a5d01b95f4998f54ae888cdf151793f', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:3036:212:bd69:1050:8cf7:180e:88d8', '2026-02-23 12:39:47', '2026-03-10 14:00:04', '2026-04-09 14:00:04', NULL),
-(145, 19, 'f8b5fea925bb87335bdb35b83284224040aa24638c3ae939a88539382bae4c1c', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2003:f4:e737:2d00:53c9:db0b:6613:75ae', '2026-02-23 20:02:55', '2026-03-11 12:47:36', '2026-04-10 12:47:36', NULL),
-(146, 1, '7288f24c9558116d8a724b0ba7780e11029d12a21b2fb2eece0967f5d663f264', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '178.249.25.156', '2026-02-26 08:06:00', '2026-03-11 13:09:05', '2026-04-10 13:09:05', NULL),
-(147, 156, '9bdb825d3cc115175d34ef3d09cce630c69c019ff40bbb1a39ab72941ed9f80b', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a00:20:b2c0:a25a:61ab:591:5308:2edd', '2026-02-28 15:41:40', '2026-03-11 18:18:15', '2026-04-10 18:18:15', NULL),
+(145, 19, 'f8b5fea925bb87335bdb35b83284224040aa24638c3ae939a88539382bae4c1c', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2003:f4:e737:2d00:53c9:db0b:6613:75ae', '2026-02-23 20:02:55', '2026-03-19 09:10:42', '2026-04-18 09:10:42', NULL),
+(146, 1, '7288f24c9558116d8a724b0ba7780e11029d12a21b2fb2eece0967f5d663f264', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '178.249.25.156', '2026-02-26 08:06:00', '2026-03-13 10:45:36', '2026-04-12 10:45:36', '2026-03-13 10:50:56'),
+(147, 156, '9bdb825d3cc115175d34ef3d09cce630c69c019ff40bbb1a39ab72941ed9f80b', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a00:20:b2c0:a25a:61ab:591:5308:2edd', '2026-02-28 15:41:40', '2026-03-13 19:31:47', '2026-04-12 19:31:47', NULL),
 (148, 157, 'e292541347004575397b6a1b2c9651f886685f1a2612b54aee21afeea2594312', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a04:4e41:1801:a4f8::2ab6:34f8', '2026-02-28 22:58:11', '2026-03-08 17:37:46', '2026-04-07 17:37:46', NULL),
 (149, 86, 'e0e62609e1ccbef73ec3d45da2d0029b0889b7612ec4dda35bb77432ab01b29f', 'Mozilla/5.0 (Linux; Android 14; motorola edge 30 Build/U1RDS34.80-40-5-6; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/145.0.7632.154 Mobile Safari/537.36 Instagram 419.0.0.49.71 Android (34/14; 492dpi; 1080x2400; motorola; motorola edge ', '2a00:20:b2f9:2014:30e6:d7ff:fe6d:bd38', '2026-03-06 08:40:56', '2026-03-10 13:44:37', '2026-04-09 13:44:37', NULL),
 (150, 158, '5d6f693b76e63d9ed5b080a2a84da6a08bd65a295e4a65b9ea6887a12d15a64d', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '193.42.98.251', '2026-03-06 11:30:29', '2026-03-06 12:03:33', '2026-04-05 12:03:33', NULL),
@@ -11741,21 +13267,66 @@ INSERT INTO `user_api_tokens` (`id`, `user_id`, `token_hash`, `user_agent`, `ip_
 (159, 27, '5696682ed49e0f42f66c07f1a69ec1c214a2d2a6fffee14fbb87d3590ae1687c', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:fbc:ec41:838e::2', '2026-03-07 15:12:34', '2026-03-08 15:01:43', '2026-04-07 15:01:43', NULL),
 (160, 133, 'e7f4b563f5477f210e1afac368ece5c538a82dd5bb4ac8b6e869a55123d1fa9b', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:26f7:ec5c:660e:0:b000::', '2026-03-07 15:22:50', '2026-03-10 08:05:32', '2026-04-09 08:05:32', NULL),
 (161, 167, 'b69cf42c23503b05cb444aa7dbbd7ca2403dea81a79519b9d66ddecfd407f6c7', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:810a:900e:f300:c8eb:24af:7ea3:633', '2026-03-07 22:17:09', '2026-03-08 10:56:10', '2026-04-07 10:56:10', NULL),
-(162, 62, '1a7f909e5a5f955563dbb5cebd592e5dd3c5599b0804bb50943939409627cda8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '79.233.64.174', '2026-03-08 14:26:02', '2026-03-08 14:56:46', '2026-04-07 14:56:46', NULL),
+(162, 62, '1a7f909e5a5f955563dbb5cebd592e5dd3c5599b0804bb50943939409627cda8', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '79.233.64.174', '2026-03-08 14:26:02', '2026-03-16 09:09:05', '2026-04-15 09:09:05', NULL),
 (163, 3, 'c9f3c28424fee1356663e5f54efa715a0ce81560ab81a353e77dd0d16f45a1d5', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/23D127 Safari/604.1', '2a02:810a:9981:3000:9c40:dd26:9a88:b151', '2026-03-08 19:12:32', '2026-03-08 19:12:33', '2026-04-07 19:12:33', NULL),
-(164, 53, '8787ce3d86b75da18d5c103efc73ec1dde20baf972a31e16cb25f0717ad8e6cd', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:f219:aba3:44ed:8016:b259:338f', '2026-03-09 12:37:05', '2026-03-11 21:51:16', '2026-04-10 21:51:16', NULL),
-(165, 2, '819a385876ebc7856ac3a8015218d6b302270a59744a37a745ca1946329def72', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a02:3036:213:7ece:49c0:3334:1e93:c788', '2026-03-09 15:42:39', '2026-03-09 15:42:39', '2026-04-08 15:42:39', NULL),
+(164, 53, '8787ce3d86b75da18d5c103efc73ec1dde20baf972a31e16cb25f0717ad8e6cd', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:fbc:f219:aba3:44ed:8016:b259:338f', '2026-03-09 12:37:05', '2026-03-18 18:51:15', '2026-04-17 18:51:15', NULL),
+(165, 2, '819a385876ebc7856ac3a8015218d6b302270a59744a37a745ca1946329def72', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a02:3036:213:7ece:49c0:3334:1e93:c788', '2026-03-09 15:42:39', '2026-03-17 12:45:38', '2026-04-16 12:45:38', NULL),
 (166, 62, 'c988144fea3c754626d909538b8c4f972a66ad874de5ceec083fe4080b2a80d7', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '79.240.68.3', '2026-03-09 18:09:01', '2026-03-09 18:09:13', '2026-04-08 18:09:13', NULL),
 (167, 158, '0f33ecffed9380013b808689061ded817a477081ed917b43afcb271ed2e3bd7d', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '5.253.115.85', '2026-03-09 20:04:11', '2026-03-09 20:08:43', '2026-04-08 20:08:43', '2026-03-09 20:09:22'),
-(168, 124, 'a0b5da708d57958740b5f1aba076f072a2b7372abeb828573f06f665d412f075', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f4:e732:56fa:a021:a30c:88a9:fa50', '2026-03-09 21:31:15', '2026-03-09 21:33:01', '2026-04-08 21:33:01', NULL),
+(168, 124, 'a0b5da708d57958740b5f1aba076f072a2b7372abeb828573f06f665d412f075', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2003:f4:e732:56fa:a021:a30c:88a9:fa50', '2026-03-09 21:31:15', '2026-03-15 08:26:09', '2026-04-14 08:26:09', '2026-03-15 14:49:37'),
 (169, 133, '42f6f40bdd26fcaf4481da476dd6e8cc2ac199fbc5f9c33ad410a76b4d2f5721', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '89.12.195.92', '2026-03-10 08:05:40', '2026-03-10 08:05:40', '2026-04-09 08:05:40', NULL),
 (170, 133, '539a642c0f0211f20eb04897829fa0b95a9a9bfe7643fe6a76fad005e79a9912', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '89.12.195.92', '2026-03-10 08:05:42', '2026-03-10 08:55:05', '2026-04-09 08:55:05', NULL),
 (171, 10, 'ddf475ff1f3c20d9309af47d1a6e9e6f108bd60a4f3a29a3d38ff69381a85fa6', 'Mozilla/5.0 (Linux; Android 16; 23078PND5G Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/145.0.7632.154 Mobile Safari/537.36 Instagram 419.0.0.49.71 Android (36/16; 480dpi; 1220x2712; Xiaomi; 23078PND5G; corot; mt', '2a00:20:b2df:fc91:557f:23c0:5083:d855', '2026-03-10 13:39:42', '2026-03-10 14:01:26', '2026-04-09 14:01:26', NULL),
 (172, 86, 'fd8f2e989683bdc60530ec22f50cf4ebc266d732d2fc09fe9b670d0949fee703', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:20:b2f6:7f50:9038:edff:feb1:3e14', '2026-03-10 13:48:49', '2026-03-10 13:53:07', '2026-04-09 13:53:07', NULL),
-(173, 99, 'b7b3fbe50259ac696451b7363aaebf2239f678e9bd29ed6311a96858f3cb9ba5', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:2454:88a9:8000:ad1f:2ed:3617:716b', '2026-03-10 17:27:14', '2026-03-10 17:32:14', '2026-04-09 17:32:14', NULL),
+(173, 99, 'b7b3fbe50259ac696451b7363aaebf2239f678e9bd29ed6311a96858f3cb9ba5', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:2454:88a9:8000:ad1f:2ed:3617:716b', '2026-03-10 17:27:14', '2026-03-14 13:48:07', '2026-04-13 13:48:07', NULL),
 (174, 101, '54abde99f87677bf2244111338db8d95adcdd6d3fb2d2336dae7db8bdaa7085d', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:fbc:f214:707b::2', '2026-03-11 11:07:57', '2026-03-11 11:08:17', '2026-04-10 11:08:17', NULL),
 (175, 101, 'ab7be188a94f31a77c60bf9fd97796e51574d538f2835e0d1b739f884ee69394', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:fbc:f214:707b::2', '2026-03-11 11:08:09', '2026-03-11 11:08:18', '2026-04-10 11:08:18', NULL),
-(176, 101, '7b2749f5a1b35ff0fd67e3d35c3baddc68affd6f7527a969125a9216a1dfb7d2', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:fbc:f214:707b::2', '2026-03-11 11:08:09', '2026-03-11 12:03:01', '2026-04-10 12:03:01', NULL);
+(176, 101, '7b2749f5a1b35ff0fd67e3d35c3baddc68affd6f7527a969125a9216a1dfb7d2', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:fbc:f214:707b::2', '2026-03-11 11:08:09', '2026-03-19 11:13:24', '2026-04-18 11:13:24', NULL),
+(177, 1, '7100c8a8554034fc1ea85fd85c96c261828057b7ecb63053329441d355bcc877', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '178.249.25.156', '2026-03-13 11:01:40', '2026-03-19 10:45:42', '2026-04-18 10:45:42', NULL),
+(178, 1, 'e20b857b1a76011650f7813e1683a160d6da1937d42023c4486cec2e4a3adf2a', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:7b63:d3b8:e42e:9adc', '2026-03-13 13:16:14', '2026-03-13 14:03:35', '2026-04-12 14:03:35', '2026-03-13 14:03:40'),
+(179, 1, '1ac4b74a2c16f9ab14001391e1dbaca01ac269e980f6e25dd2a2e4c123547deb', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:7b63:d3b8:e42e:9adc', '2026-03-13 14:03:50', '2026-03-14 09:27:18', '2026-04-13 09:27:18', '2026-03-14 09:27:29'),
+(180, 63, 'eb7493726db51dace7aaaf66e22d70870e12bf99c85810f7bb15cb9f4fa3d45d', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/144.0.7559.230 Mobile/15E148 Safari/604.1', '2a02:3036:204:2ae8:e504:49f3:7790:78de', '2026-03-13 16:41:10', '2026-03-17 10:51:04', '2026-04-16 10:51:04', NULL),
+(181, 77, '06edc88dc309f52a58fa4279aced0bc45ff1bcbc2205a23f8b50fd4147124948', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a02:810a:910b:d00:e866:172c:7b8f:9002', '2026-03-13 18:44:47', '2026-03-13 18:46:43', '2026-04-12 18:46:43', '2026-03-13 18:49:21'),
+(182, 77, '5b2e3c85caae1d9d468338c86ed8a8075217d1cbb9552ef7ef6832d5063b0516', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a02:810a:910b:d00:e866:172c:7b8f:9002', '2026-03-13 18:49:35', '2026-03-14 13:02:33', '2026-04-13 13:02:33', '2026-03-14 13:02:37'),
+(183, 156, 'fe362596d454b12257aa2ff4af11a4e1030b744f9581623c0e90aa59c5f17c92', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '2a00:1f:3803:5201:fc43:2d54:bac:be7e', '2026-03-13 19:33:11', '2026-03-13 19:35:04', '2026-04-12 19:35:04', NULL),
+(184, 48, '9806df964f5198f729fcfef4dce454bbe51c265374072adac6513fa995f1d352', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2003:f9:8733:806:58cb:fa00:bb6:3b56', '2026-03-13 22:58:51', '2026-03-17 13:23:51', '2026-04-16 13:23:51', NULL),
+(185, 1, '6a1078973740af9e7fa6f5d37cc81b186cc2543343e583fc42b4d09a518ac1e5', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2a02:3036:20f:ba4:27fe:4a2a:e513:2518', '2026-03-14 09:37:52', '2026-03-14 15:43:43', '2026-04-13 15:43:43', '2026-03-14 15:46:13'),
+(186, 3, '258d82e44aec28e3ceb688ca20e36f2a44343e490b7231cf803c8f8c2d94bbc4', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:26f7:ec58:fc45:0:5000:0:2', '2026-03-14 12:57:36', '2026-03-14 12:58:56', '2026-04-13 12:58:56', NULL),
+(187, 1, 'fa156d693e172338cd0d650896d939b0c70fdc4d2e0298923b6e1d7ad830f34b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2a00:20:b2d6:6db8:5c72:86ff:fe90:b18e', '2026-03-14 15:46:21', '2026-03-14 21:30:08', '2026-04-13 21:30:08', '2026-03-14 21:30:40'),
+(188, 118, 'bcff3bb9ef9b46e8fc95feac223f61ec2b0ed52ba7aee04d94a574e7e7ca1dd6', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23D8133 Instagram 419.0.0.27.74 (iPhone14,5; iOS 26_3_1; de_DE; de; scale=3.00; 1170x2532; IABMV/1; 895010607) Safari/604.1', '2003:f3:8f46:3d00:6081:e586:1d44:2846', '2026-03-14 17:00:55', '2026-03-14 17:00:55', '2026-04-13 17:00:55', NULL),
+(189, 4, '1d1deb4ce481147d40d57bd6b3c450fe6c144604650f93e584e8c245c2c16521', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '176.6.147.124', '2026-03-14 18:29:41', '2026-03-17 09:44:06', '2026-04-16 09:44:06', NULL),
+(190, 13, '732b1c6ae4e04d33fe1717b42f9b071672b9c852847fe47c92e656d4dea58676', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2a00:20:b2e6:2877:18e7:e9ff:fe23:f407', '2026-03-14 21:30:51', '2026-03-14 21:30:51', '2026-04-13 21:30:51', '2026-03-14 21:30:57'),
+(191, 13, 'fe5272bb02cec9782e487b487482f1e6d5d11496d0b7c26f768ba7bd973376d9', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2a00:20:b2e6:2877:18e7:e9ff:fe23:f407', '2026-03-14 21:31:06', '2026-03-14 21:31:12', '2026-04-13 21:31:12', '2026-03-14 21:31:15'),
+(192, 1, '8059bb37862482d7ffa9cff7eca2bace138b839cd93f573da3f6ef83b16deaba', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2a00:20:b2e6:2877:18e7:e9ff:fe23:f407', '2026-03-14 21:31:23', '2026-03-16 07:04:34', '2026-04-15 07:04:34', NULL),
+(193, 172, 'bb592af61594d03c229fe876656f45f0104d760201ae22172a6f008def60caec', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:26f7:ec5c:660e:0:8000:0:d', '2026-03-15 11:26:56', '2026-03-15 11:35:34', '2026-04-14 11:35:34', NULL),
+(194, 173, '5637ba39fdea6e7ebddd6bef8bbaeb2238d1be0d6729da7fbc5d95ad56aa0747', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a00:20:608d:7c6f:4321:dfe6:bbf6:4f8e', '2026-03-15 11:33:42', '2026-03-17 09:41:48', '2026-04-16 09:41:48', NULL),
+(195, 94, '987be8df0ee28d96f262d48acc260770278d2d2282d00b9fa4f4cc679914972b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a02:810a:9105:2300:df40:5dc9:49a3:da50', '2026-03-15 15:35:00', '2026-03-18 19:58:48', '2026-04-17 19:58:48', NULL),
+(196, 174, '64d6445b9ca45c9908ba5e1ecbff496846dfc48d46da452888a9b990882d2371', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2003:f7:cf37:f901:bd57:f67b:3d93:4952', '2026-03-15 18:31:16', '2026-03-15 18:31:22', '2026-04-14 18:31:22', NULL),
+(197, 174, '7dde420656237647a379ce41e32261b657861a1f17f82725251cb1573fe7556d', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2003:f7:cf37:f901:bd57:f67b:3d93:4952', '2026-03-15 18:31:18', '2026-03-15 18:33:55', '2026-04-14 18:33:55', NULL),
+(198, 108, '4f124cc4c082ea3c2f9b9f4335fa328ad062a78572432f16d1c3bbb338f0fa10', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1', '2a09:bac3:2eb9:137::1f:9c', '2026-03-15 19:33:22', '2026-03-15 19:33:27', '2026-04-14 19:33:27', NULL),
+(199, 108, '004753e0fe25f0398a97aef342ce92dfc90f3552463c8ce1f808aa86a64edc73', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1', '2a09:bac3:2eb9:137::1f:9c', '2026-03-15 19:33:24', '2026-03-15 19:33:24', '2026-04-14 19:33:24', NULL),
+(200, 174, 'e1ba00c3ca63bdd0839bec1960db021554efb694fd2e3de4ce191c59e2547281', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2003:f7:cf37:f901:bd57:f67b:3d93:4952', '2026-03-15 19:54:28', '2026-03-15 19:55:03', '2026-04-14 19:55:03', NULL),
+(201, 1, 'e5c65f1c27682c4d2d53c9d9767d76edebc52c2f3a5b9d92a8967e39d9b949c4', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2003:ca:6f20:fd00:19bd:60d5:d1d2:7812', '2026-03-15 20:46:02', '2026-03-19 09:24:38', '2026-04-18 09:24:38', NULL),
+(202, 1, '114a732f6f04db171e10085b99287706b18543fb2fb9d3dc52c23eb1c3acf29b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:7666:e56:5bac:d447', '2026-03-16 07:07:46', '2026-03-16 15:35:16', '2026-04-15 15:35:16', '2026-03-16 17:03:31'),
+(203, 177, '369e690c6d054bf4ec0521e527369ea6bb1a6f7bfac869b1f633665a2dac22a4', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/145.0.3800.99 Version/26.0 Mobile/15E148 Safari/604.1', '2a00:10:5311:5f01:994f:7572:d71a:93d8', '2026-03-16 08:42:22', '2026-03-16 08:43:26', '2026-04-15 08:43:26', '2026-03-16 08:43:40'),
+(204, 178, '8b3edfbe2041518da9d012fa2cfe4de98e88069fab609d22f93080718ec37252', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2a02:3100:2d12:6c00:231b:f7bf:66fc:32ea', '2026-03-16 15:33:05', '2026-03-16 15:33:12', '2026-04-15 15:33:12', '2026-03-16 15:33:32'),
+(205, 174, '70ad80d5c9cd50abb8ddeee8b850242b0be8cce5ec225b4fb5606f0fff0f6e43', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2003:f7:cf05:3b01:63:eb45:6695:4d8a', '2026-03-16 16:24:15', '2026-03-16 17:37:05', '2026-04-15 17:37:05', NULL),
+(206, 1, '875d1bdc97dfbeaed15e4b36528e725a3f0c1d707f533b99b1f009c3780a1615', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36', '2003:ca:6f20:fd00:e689:3792:241c:a065', '2026-03-16 17:07:42', '2026-03-19 11:10:51', '2026-04-18 11:10:51', NULL),
+(207, 177, 'f2c88a4d74f04196c44734eb00538605485dc262e632f3c3e3f0aace3478e6d4', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/145.0.3800.99 Version/26.0 Mobile/15E148 Safari/604.1', '2a00:20:b2c0:831b:8d2e:4b90:523a:6da3', '2026-03-16 18:48:51', '2026-03-18 16:46:48', '2026-04-17 16:46:48', NULL),
+(208, 179, '5afb619c956f424dce5a49fd4eeaf661f91dcc90d230590f59bb0db63bbc812c', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '31.19.204.49', '2026-03-16 20:05:46', '2026-03-18 07:03:05', '2026-04-17 07:03:05', NULL),
+(209, 180, '7e1a74a4356581c25c94c206d1c812a5bcefd81efa2aa5cba42e64166d6bc566', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a02:2454:82a2:8700:c534:f937:40ed:767b', '2026-03-16 20:24:07', '2026-03-16 20:26:27', '2026-04-15 20:26:27', '2026-03-16 20:26:33'),
+(210, 180, '6dc7418ea3e44c4568859f0950bb6e41426ed14ecb6fa52623830b030ce9486c', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23D8133 Instagram 420.0.0.39.76 (iPhone17,2; iOS 26_3_1; de_DE; de; scale=3.00; 1320x2868; IABMV/1; 904620799) Safari/604.1', '2a02:2454:82a2:8700:c534:f937:40ed:767b', '2026-03-16 20:28:03', '2026-03-16 20:31:24', '2026-04-15 20:31:24', '2026-03-16 20:31:31'),
+(211, 181, '4a1e563af06da53ce936e5cc2989eaf10cba31d84eba69edd6660b3d56fc3dc0', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a02:3032:378:9a91:24b4:57b:b970:7398', '2026-03-16 20:37:11', '2026-03-17 11:56:17', '2026-04-16 11:56:17', NULL),
+(212, 118, '392a3292b2cc9ebb824f9224c955449765865824f3c26b3ca5b49ad2c6007d92', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2003:f3:8f02:5e00:ad5a:6b4b:b01e:3643', '2026-03-16 21:17:46', '2026-03-18 12:12:14', '2026-04-17 12:12:14', NULL),
+(213, 158, 'a8fb7f83c61b4984bddd7148b05ef42fd050c9bc9430136b8ceff205a28979e0', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '89.46.10.234', '2026-03-17 13:15:36', '2026-03-17 13:41:01', '2026-04-16 13:41:01', '2026-03-17 13:41:07'),
+(214, 77, 'ce8b6a2d6857c2060abb59aa5155ccc84126a779faf34c095c13840543ad2c9b', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/29.0 Chrome/136.0.0.0 Mobile Safari/537.36', '2a02:3037:610:cf06:6ed6:d9d:d247:1407', '2026-03-17 14:05:35', '2026-03-17 15:01:16', '2026-04-16 15:01:16', '2026-03-17 15:01:51'),
+(215, 158, '6a035ec870f8fcb2891e3ebc706fdb00bf92b5d34c8141b495d4eafa00337fee', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '89.46.10.236', '2026-03-17 16:21:10', '2026-03-17 16:21:11', '2026-04-16 16:21:11', NULL),
+(216, 158, '39ffeaae15a3cc2dfb4ddee403d2454495415da70806b5f948e98834a5af7870', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1', '89.46.10.236', '2026-03-17 16:21:10', '2026-03-17 17:11:48', '2026-04-16 17:11:48', NULL),
+(217, 150, '2f607ac54a61e6b0447a0e56d776b19368056ba7c3b50c07ea3457369a4da4ea', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2a00:1ca0:148a:9e00:ecd9:879:1006:8baa', '2026-03-17 19:07:46', '2026-03-17 19:19:52', '2026-04-16 19:19:52', NULL),
+(218, 94, 'b3e84987bfcbf6516172a21c768fc76bdd7ce374216b7f9bf8ffd9d10efea156', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2a02:810a:9105:2300:404:c773:35:2908', '2026-03-18 11:12:10', '2026-03-19 10:48:30', '2026-04-18 10:48:30', NULL),
+(219, 185, '154fe4dac33a0ec22976e25c3d07431716ba5067e2610d0bfcd67e0cedeedbee', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/25.0 Chrome/121.0.0.0 Mobile Safari/537.36', '2001:9e8:eb8:8a00:4512:b5af:2145:72f1', '2026-03-18 14:29:24', '2026-03-18 14:29:24', '2026-04-17 14:29:24', NULL),
+(220, 98, 'f4b0c1463394992367a1e45814362175e634630e09ea02833422cb82050e5cb4', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23A341 Safari/604.1 Instagram 408.1.0.45.70 (iPhone14,5; iOS 26_0; de_DE; de; scale=3.00; 1170x2532; IABMV/1; 833451024)', '2a01:599:809:240c:5541:56db:3347:7d9d', '2026-03-18 14:29:55', '2026-03-18 14:47:10', '2026-04-17 14:47:10', NULL),
+(221, 119, '61274296189fd1a4726c8e4d09f1ec6607be4b3116a84fe2370c013c27f16bfb', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2a00:fbc:ec50:31b1:9086:edff:fe39:98c6', '2026-03-18 14:51:22', '2026-03-18 16:28:16', '2026-04-17 16:28:16', NULL);
 
 -- --------------------------------------------------------
 
@@ -13448,7 +15019,70 @@ INSERT INTO `user_awards` (`id`, `user_id`, `award_id`, `level`, `awarded_at`) V
 (1786, 52, 21, 3, '2026-03-11 18:58:56'),
 (1787, 31, 19, 38, '2026-03-11 20:57:38'),
 (1788, 31, 57, 1, '2026-03-11 20:59:06'),
-(1789, 31, 38, 3, '2026-03-11 21:00:38');
+(1789, 31, 38, 3, '2026-03-11 21:00:38'),
+(1790, 23, 57, 1, '2026-03-11 21:38:05'),
+(1791, 53, 56, 2, '2026-03-12 11:34:41'),
+(1792, 53, 17, 3, '2026-03-12 16:00:03'),
+(1793, 53, 31, 2, '2026-03-12 16:00:03'),
+(1794, 156, 2, 3, '2026-03-12 18:53:46'),
+(1795, 156, 3, 1, '2026-03-12 18:53:46'),
+(1796, 156, 23, 1, '2026-03-12 18:53:46'),
+(1797, 156, 7, 1, '2026-03-12 18:53:52'),
+(1798, 156, 57, 1, '2026-03-12 18:54:15'),
+(1799, 156, 56, 1, '2026-03-12 18:56:22'),
+(1800, 53, 32, 1, '2026-03-13 07:45:43'),
+(1801, 2, 57, 1, '2026-03-13 10:55:39'),
+(1802, 31, 21, 4, '2026-03-13 12:14:09'),
+(1803, 156, 17, 1, '2026-03-13 18:34:05'),
+(1804, 156, 24, 2, '2026-03-13 18:34:05'),
+(1805, 48, 57, 1, '2026-03-13 22:03:45'),
+(1806, 53, 57, 3, '2026-03-14 11:47:23'),
+(1807, 53, 11, 1, '2026-03-14 11:50:21'),
+(1808, 53, 31, 3, '2026-03-14 11:50:21'),
+(1809, 53, 49, 2, '2026-03-14 11:50:21'),
+(1810, 53, 25, 1, '2026-03-14 11:50:21'),
+(1811, 22, 57, 2, '2026-03-14 13:28:18'),
+(1812, 118, 57, 2, '2026-03-14 17:59:31'),
+(1813, 158, 57, 1, '2026-03-14 23:38:21'),
+(1814, 8, 57, 2, '2026-03-15 07:39:14'),
+(1815, 63, 57, 1, '2026-03-15 09:23:55'),
+(1816, 125, 57, 2, '2026-03-15 11:25:39'),
+(1817, 48, 57, 2, '2026-03-15 17:18:40'),
+(1818, 4, 57, 2, '2026-03-15 17:20:15'),
+(1819, 51, 57, 1, '2026-03-15 18:43:51'),
+(1820, 1, 47, 2026, '2026-03-16 12:06:19'),
+(1821, 1, 45, 25, '2026-03-16 12:06:19'),
+(1822, 2, 57, 2, '2026-03-17 09:27:52'),
+(1823, 23, 57, 2, '2026-03-17 12:20:13'),
+(1824, 158, 8, 2, '2026-03-17 12:33:24'),
+(1825, 158, 21, 1, '2026-03-17 12:36:57'),
+(1826, 158, 19, 39, '2026-03-17 15:21:11'),
+(1827, 1, 45, 26, '2026-03-17 15:32:00'),
+(1828, 19, 44, 1, '2026-03-17 15:53:58'),
+(1829, 19, 6, 2, '2026-03-17 15:53:58'),
+(1830, 19, 50, 1, '2026-03-17 15:32:00'),
+(1831, 1, 59, 1, '2026-03-13 23:00:00'),
+(1832, 31, 57, 2, '2026-03-17 23:59:27'),
+(1833, 3, 57, 1, '2026-03-17 23:59:52'),
+(1834, 98, 56, 1, '2026-03-18 13:33:33'),
+(1835, 98, 12, 1, '2026-03-18 13:35:50'),
+(1836, 98, 29, 1, '2026-03-18 13:35:50'),
+(1837, 119, 1, 1, '2026-03-18 13:54:14'),
+(1838, 119, 3, 1, '2026-03-18 13:54:14'),
+(1839, 119, 7, 2, '2026-03-18 13:54:19'),
+(1840, 53, 12, 5, '2026-03-18 14:07:36'),
+(1841, 53, 12, 6, '2026-03-18 14:07:36'),
+(1842, 53, 11, 2, '2026-03-17 23:00:00'),
+(1843, 53, 45, 2, '2026-03-18 14:07:36'),
+(1844, 23, 34, 2, '2026-03-18 15:07:59'),
+(1845, 23, 34, 3, '2026-03-18 15:07:59'),
+(1846, 23, 19, 5, '2026-03-18 15:12:49'),
+(1847, 23, 21, 1, '2026-03-18 15:12:49'),
+(1848, 23, 21, 2, '2026-03-18 15:12:49'),
+(1849, 23, 30, 1, '2026-03-18 15:12:49'),
+(1850, 23, 3, 2, '2026-03-18 15:12:49'),
+(1851, 23, 38, 1, '2026-03-18 15:12:49'),
+(1852, 62, 57, 1, '2026-03-19 03:59:13');
 
 -- --------------------------------------------------------
 
@@ -13613,7 +15247,7 @@ INSERT INTO `user_notification_settings` (`id`, `user_id`, `notify_checkin_menti
 (265, 153, 1, 1, 1, 0, '2026-02-19 20:33:08', '2026-02-19 20:36:35'),
 (266, 154, 1, 1, 1, 1, '2026-02-23 11:34:47', '2026-02-23 11:34:47'),
 (267, 155, 1, 1, 1, 1, '2026-02-23 11:37:23', '2026-02-23 11:37:23'),
-(268, 156, 1, 1, 1, 1, '2026-02-28 13:40:05', '2026-02-28 13:40:05'),
+(268, 156, 1, 1, 1, 1, '2026-02-28 13:40:05', '2026-03-12 18:57:25'),
 (269, 157, 1, 1, 1, 0, '2026-02-28 21:56:30', '2026-02-28 21:56:30'),
 (270, 158, 1, 1, 1, 0, '2026-03-06 10:28:25', '2026-03-06 10:28:25'),
 (271, 159, 1, 1, 1, 1, '2026-03-06 16:30:17', '2026-03-06 16:30:17'),
@@ -13625,7 +15259,24 @@ INSERT INTO `user_notification_settings` (`id`, `user_id`, `notify_checkin_menti
 (277, 165, 1, 1, 1, 1, '2026-03-07 06:50:13', '2026-03-07 06:50:13'),
 (278, 166, 1, 1, 1, 0, '2026-03-07 11:41:44', '2026-03-07 11:41:44'),
 (279, 167, 1, 1, 1, 1, '2026-03-07 21:14:57', '2026-03-07 21:14:57'),
-(280, 168, 1, 1, 1, 0, '2026-03-08 00:10:49', '2026-03-08 00:10:49');
+(280, 168, 1, 1, 1, 0, '2026-03-08 00:10:49', '2026-03-08 00:10:49'),
+(281, 169, 1, 1, 1, 0, '2026-03-12 07:36:15', '2026-03-12 07:36:15'),
+(282, 170, 1, 1, 1, 0, '2026-03-13 20:31:17', '2026-03-13 20:31:17'),
+(283, 171, 1, 1, 1, 0, '2026-03-14 15:43:22', '2026-03-14 15:43:22'),
+(284, 172, 1, 1, 1, 1, '2026-03-15 10:21:41', '2026-03-15 10:21:41'),
+(285, 173, 1, 1, 1, 0, '2026-03-15 10:32:32', '2026-03-15 10:32:32'),
+(286, 174, 1, 1, 1, 1, '2026-03-15 17:29:06', '2026-03-15 17:29:06'),
+(287, 175, 1, 1, 1, 0, '2026-03-15 22:21:19', '2026-03-15 22:21:19'),
+(288, 176, 1, 1, 1, 0, '2026-03-16 06:57:44', '2026-03-16 06:57:44'),
+(289, 177, 1, 1, 1, 0, '2026-03-16 07:28:36', '2026-03-16 07:28:36'),
+(290, 178, 1, 1, 1, 1, '2026-03-16 14:30:45', '2026-03-16 14:30:45'),
+(291, 179, 1, 1, 1, 0, '2026-03-16 19:03:40', '2026-03-16 19:03:40'),
+(292, 180, 1, 1, 1, 0, '2026-03-16 19:23:00', '2026-03-16 19:23:00'),
+(293, 181, 1, 1, 1, 1, '2026-03-16 19:35:02', '2026-03-16 19:35:02'),
+(294, 182, 1, 1, 1, 0, '2026-03-16 20:35:21', '2026-03-16 20:35:21'),
+(295, 183, 1, 1, 1, 1, '2026-03-17 08:09:57', '2026-03-17 08:09:57'),
+(296, 184, 1, 1, 1, 0, '2026-03-17 08:37:25', '2026-03-17 08:37:25'),
+(297, 185, 1, 1, 1, 1, '2026-03-18 13:20:46', '2026-03-18 13:20:46');
 
 -- --------------------------------------------------------
 
@@ -13665,7 +15316,8 @@ INSERT INTO `user_profile_images` (`user_id`, `avatar_path`, `updated_at`) VALUE
 (118, 'uploads/user_avatars/user_118_690e52bf509122.84942112.jpg', '2025-11-07 20:12:47'),
 (125, 'uploads/user_avatars/user_125_690f737e4993e8.85010394.jpg', '2025-11-08 16:44:46'),
 (149, 'uploads/user_avatars/user_149_6987cd6e32f473.11170566.jpg', '2026-02-07 23:40:30'),
-(153, 'public/assets/comic-avatars/katze.png', '2026-02-19 20:36:16');
+(153, 'public/assets/comic-avatars/katze.png', '2026-02-19 20:36:16'),
+(156, 'uploads/user_avatars/user_156_69b30c951879e1.72124403.jpg', '2026-03-12 18:57:25');
 
 -- --------------------------------------------------------
 
@@ -13703,7 +15355,11 @@ INSERT INTO `user_qr_scans` (`id`, `user_id`, `qr_code_id`, `scanned_at`) VALUES
 (21, 62, 7, '2026-03-07 12:50:49'),
 (22, 22, 7, '2026-03-07 22:08:52'),
 (23, 10, 7, '2026-03-10 12:39:43'),
-(24, 86, 7, '2026-03-10 12:44:38');
+(24, 86, 7, '2026-03-10 12:44:38'),
+(25, 53, 7, '2026-03-12 11:34:41'),
+(26, 156, 7, '2026-03-12 18:56:22'),
+(27, 98, 7, '2026-03-18 13:29:56'),
+(28, 1, 15, '2026-03-18 18:53:30');
 
 -- --------------------------------------------------------
 
@@ -13723,7 +15379,7 @@ CREATE TABLE `waehrungen` (
 --
 
 INSERT INTO `waehrungen` (`id`, `code`, `name`, `symbol`) VALUES
-(1, 'EUR', 'Euro', '€'),
+(1, 'EUR', 'euro', '€'),
 (2, 'CZK', 'Tschechische Krone', 'Kč'),
 (3, 'CHF', 'Schweizer Franken', 'CHF'),
 (4, 'ALL', 'Albanischer Lek', 'L'),
@@ -13773,64 +15429,64 @@ CREATE TABLE `wechselkurse` (
 --
 
 INSERT INTO `wechselkurse` (`id`, `von_waehrung_id`, `zu_waehrung_id`, `kurs`, `aktualisiert_am`) VALUES
-(1, 1, 4, 95.916733, '2026-03-08 05:00:08'),
-(2, 4, 1, 0.010426, '2026-03-08 05:00:08'),
-(3, 1, 5, 435.149076, '2026-03-08 05:00:08'),
-(4, 5, 1, 0.002298, '2026-03-08 05:00:08'),
-(5, 1, 6, 1.980093, '2026-03-08 05:00:08'),
-(6, 6, 1, 0.505027, '2026-03-08 05:00:08'),
-(7, 1, 7, 1.955122, '2026-03-08 05:00:08'),
-(8, 7, 1, 0.511477, '2026-03-08 05:00:08'),
-(9, 1, 8, 1.914642, '2026-03-08 05:00:08'),
-(10, 8, 1, 0.522291, '2026-03-08 05:00:08'),
-(11, 1, 24, 3.401420, '2026-03-08 05:00:08'),
-(12, 24, 1, 0.293995, '2026-03-08 05:00:08'),
-(13, 1, 3, 0.902370, '2026-03-08 05:00:08'),
-(14, 3, 1, 1.108193, '2026-03-08 05:00:08'),
-(15, 1, 2, 24.393462, '2026-03-08 05:00:08'),
-(16, 2, 1, 0.040995, '2026-03-08 05:00:08'),
-(17, 1, 9, 7.473361, '2026-03-08 05:00:08'),
-(18, 9, 1, 0.133809, '2026-03-08 05:00:08'),
-(19, 1, 23, 0.866746, '2026-03-08 05:00:08'),
-(20, 23, 1, 1.153741, '2026-03-08 05:00:08'),
-(21, 1, 10, 3.166625, '2026-03-08 05:00:08'),
-(22, 10, 1, 0.315794, '2026-03-08 05:00:08'),
-(23, 1, 22, 392.551535, '2026-03-08 05:00:08'),
-(24, 22, 1, 0.002547, '2026-03-08 05:00:08'),
-(25, 1, 11, 145.198216, '2026-03-08 05:00:08'),
-(26, 11, 1, 0.006887, '2026-03-08 05:00:08'),
-(27, 1, 12, 571.081930, '2026-03-08 05:00:08'),
-(28, 12, 1, 0.001751, '2026-03-08 05:00:08'),
-(29, 1, 13, 19.991066, '2026-03-08 05:00:08'),
-(30, 13, 1, 0.050022, '2026-03-08 05:00:08'),
-(31, 1, 14, 61.618629, '2026-03-08 05:00:08'),
-(32, 14, 1, 0.016229, '2026-03-08 05:00:08'),
-(33, 1, 15, 11.136017, '2026-03-08 05:00:08'),
-(34, 15, 1, 0.089799, '2026-03-08 05:00:08'),
-(35, 1, 16, 4.272324, '2026-03-08 05:00:08'),
-(36, 16, 1, 0.234065, '2026-03-08 05:00:08'),
-(37, 1, 17, 5.092675, '2026-03-08 05:00:08'),
-(38, 17, 1, 0.196360, '2026-03-08 05:00:08'),
-(39, 1, 20, 117.339303, '2026-03-08 05:00:08'),
-(40, 20, 1, 0.008522, '2026-03-08 05:00:08'),
-(41, 1, 18, 92.107154, '2026-03-08 05:00:08'),
-(42, 18, 1, 0.010857, '2026-03-08 05:00:08'),
-(43, 1, 19, 10.670501, '2026-03-08 05:00:08'),
-(44, 19, 1, 0.093716, '2026-03-08 05:00:08'),
-(45, 1, 21, 50.508082, '2026-03-08 05:00:08'),
-(46, 21, 1, 0.019799, '2026-03-08 05:00:08'),
-(69, 1, 26, 7.536809, '2026-03-08 05:00:08'),
-(70, 26, 1, 0.132682, '2026-03-08 05:00:08'),
-(73, 1, 27, 3.594514, '2026-03-08 05:00:08'),
-(74, 27, 1, 0.278202, '2026-03-08 05:00:08'),
-(97, 1, 25, 1.162047, '2026-03-08 05:00:08'),
-(98, 25, 1, 0.860550, '2026-03-08 05:00:08'),
-(99, 28, 1, 0.019526, '2026-03-08 05:00:08'),
-(100, 1, 28, 51.214319, '2026-03-08 05:00:08'),
-(101, 30, 1, 0.017108, '2026-03-08 05:00:08'),
-(102, 1, 30, 58.453726, '2026-03-08 05:00:08'),
-(103, 29, 1, 0.092768, '2026-03-08 05:00:08'),
-(104, 1, 29, 10.779561, '2026-03-08 05:00:08');
+(1, 1, 4, 95.982096, '2026-03-15 05:00:07'),
+(2, 4, 1, 0.010419, '2026-03-15 05:00:07'),
+(3, 1, 5, 432.319357, '2026-03-15 05:00:07'),
+(4, 5, 1, 0.002313, '2026-03-15 05:00:07'),
+(5, 1, 6, 1.954004, '2026-03-15 05:00:07'),
+(6, 6, 1, 0.511770, '2026-03-15 05:00:07'),
+(7, 1, 7, 1.955435, '2026-03-15 05:00:07'),
+(8, 7, 1, 0.511395, '2026-03-15 05:00:07'),
+(9, 1, 8, 1.960126, '2026-03-15 05:00:07'),
+(10, 8, 1, 0.510171, '2026-03-15 05:00:07'),
+(11, 1, 24, 3.392867, '2026-03-15 05:00:07'),
+(12, 24, 1, 0.294736, '2026-03-15 05:00:07'),
+(13, 1, 3, 0.912745, '2026-03-15 05:00:07'),
+(14, 3, 1, 1.095596, '2026-03-15 05:00:07'),
+(15, 1, 2, 24.575006, '2026-03-15 05:00:07'),
+(16, 2, 1, 0.040692, '2026-03-15 05:00:07'),
+(17, 1, 9, 7.505507, '2026-03-15 05:00:07'),
+(18, 9, 1, 0.133236, '2026-03-15 05:00:07'),
+(19, 1, 23, 0.866311, '2026-03-15 05:00:07'),
+(20, 23, 1, 1.154320, '2026-03-15 05:00:07'),
+(21, 1, 10, 3.131037, '2026-03-15 05:00:07'),
+(22, 10, 1, 0.319383, '2026-03-15 05:00:07'),
+(23, 1, 22, 394.179508, '2026-03-15 05:00:07'),
+(24, 22, 1, 0.002537, '2026-03-15 05:00:07'),
+(25, 1, 11, 144.837141, '2026-03-15 05:00:07'),
+(26, 11, 1, 0.006904, '2026-03-15 05:00:07'),
+(27, 1, 12, 561.355287, '2026-03-15 05:00:07'),
+(28, 12, 1, 0.001781, '2026-03-15 05:00:07'),
+(29, 1, 13, 20.003269, '2026-03-15 05:00:07'),
+(30, 13, 1, 0.049992, '2026-03-15 05:00:07'),
+(31, 1, 14, 61.628504, '2026-03-15 05:00:07'),
+(32, 14, 1, 0.016226, '2026-03-15 05:00:07'),
+(33, 1, 15, 11.176343, '2026-03-15 05:00:07'),
+(34, 15, 1, 0.089475, '2026-03-15 05:00:07'),
+(35, 1, 16, 4.298483, '2026-03-15 05:00:07'),
+(36, 16, 1, 0.232640, '2026-03-15 05:00:07'),
+(37, 1, 17, 5.117429, '2026-03-15 05:00:07'),
+(38, 17, 1, 0.195411, '2026-03-15 05:00:07'),
+(39, 1, 20, 117.348110, '2026-03-15 05:00:07'),
+(40, 20, 1, 0.008522, '2026-03-15 05:00:07'),
+(41, 1, 18, 91.632507, '2026-03-15 05:00:07'),
+(42, 18, 1, 0.010913, '2026-03-15 05:00:07'),
+(43, 1, 19, 10.871865, '2026-03-15 05:00:07'),
+(44, 19, 1, 0.091981, '2026-03-15 05:00:07'),
+(45, 1, 21, 50.565468, '2026-03-15 05:00:07'),
+(46, 21, 1, 0.019776, '2026-03-15 05:00:07'),
+(69, 1, 26, 7.568004, '2026-03-15 05:00:07'),
+(70, 26, 1, 0.132135, '2026-03-15 05:00:07'),
+(73, 1, 27, 3.605729, '2026-03-15 05:00:07'),
+(74, 27, 1, 0.277336, '2026-03-15 05:00:07'),
+(97, 1, 25, 1.146736, '2026-03-15 05:00:07'),
+(98, 25, 1, 0.872040, '2026-03-15 05:00:07'),
+(99, 28, 1, 0.019745, '2026-03-15 05:00:07'),
+(100, 1, 28, 50.645643, '2026-03-15 05:00:07'),
+(101, 30, 1, 0.016702, '2026-03-15 05:00:07'),
+(102, 1, 30, 59.873831, '2026-03-15 05:00:07'),
+(103, 29, 1, 0.092595, '2026-03-15 05:00:07'),
+(104, 1, 29, 10.799685, '2026-03-15 05:00:07');
 
 -- --------------------------------------------------------
 
@@ -13918,7 +15574,8 @@ INSERT INTO `wochenstatistiken` (`id`, `start_datum`, `end_datum`, `neue_nutzer`
 (53, '2026-02-09', '2026-02-15', 3, 26, 9, 28, 49, 4, 138, 698, 563, '2026-02-16 04:00:02', '[{\"typ\": \"Kugel\", \"anzahl\": 26}, {\"typ\": \"Eisbecher\", \"anzahl\": 1}, {\"typ\": \"Softeis\", \"anzahl\": 1}]', '[{\"anzahl\": 3, \"anreise\": \"Auto\"}, {\"anzahl\": 18, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 4, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 3, \"anreise\": \"Bus / Bahn\"}]', '[{\"anzahl\": 24, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 4, \"bild_status\": \"Ohne Bild\"}]', NULL),
 (54, '2026-02-16', '2026-02-22', 1, 17, 8, 16, 20, 3, 139, 714, 580, '2026-02-23 04:00:02', '[{\"typ\": \"Kugel\", \"anzahl\": 16}]', '[{\"anzahl\": 13, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"\"}, {\"anzahl\": 1, \"anreise\": \"Bus / Bahn\"}, {\"anzahl\": 1, \"anreise\": \"Fahrrad\"}]', '[{\"anzahl\": 11, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 5, \"bild_status\": \"Ohne Bild\"}]', NULL),
 (55, '2026-02-23', '2026-03-01', 4, 2, 8, 13, 21, 2, 143, 727, 582, '2026-03-02 04:00:02', '[{\"typ\": \"Kugel\", \"anzahl\": 10}, {\"typ\": \"Eisbecher\", \"anzahl\": 2}, {\"typ\": \"Softeis\", \"anzahl\": 1}]', '[{\"anzahl\": 5, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 6, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 1, \"anreise\": \"Auto\"}, {\"anzahl\": 1, \"anreise\": \"\"}]', '[{\"anzahl\": 12, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 1, \"bild_status\": \"Ohne Bild\"}]', NULL),
-(56, '2026-03-02', '2026-03-08', 11, 9, 15, 26, 44, 2, 154, 753, 591, '2026-03-09 04:00:02', '[{\"typ\": \"Kugel\", \"anzahl\": 24}, {\"typ\": \"Eisbecher\", \"anzahl\": 2}]', '[{\"anzahl\": 11, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 13, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"\"}, {\"anzahl\": 1, \"anreise\": \"Auto\"}]', '[{\"anzahl\": 18, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 8, \"bild_status\": \"Ohne Bild\"}]', NULL);
+(56, '2026-03-02', '2026-03-08', 11, 9, 15, 26, 44, 2, 154, 753, 591, '2026-03-09 04:00:02', '[{\"typ\": \"Kugel\", \"anzahl\": 24}, {\"typ\": \"Eisbecher\", \"anzahl\": 2}]', '[{\"anzahl\": 11, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 13, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"\"}, {\"anzahl\": 1, \"anreise\": \"Auto\"}]', '[{\"anzahl\": 18, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 8, \"bild_status\": \"Ohne Bild\"}]', NULL),
+(57, '2026-03-09', '2026-03-15', 7, 6, 8, 26, 37, 3, 161, 779, 597, '2026-03-16 04:00:01', '[{\"typ\": \"Kugel\", \"anzahl\": 24}, {\"typ\": \"Eisbecher\", \"anzahl\": 1}, {\"typ\": \"Softeis\", \"anzahl\": 1}]', '[{\"anzahl\": 13, \"anreise\": \"Fahrrad\"}, {\"anzahl\": 4, \"anreise\": \"Auto\"}, {\"anzahl\": 1, \"anreise\": \"Bus / Bahn\"}, {\"anzahl\": 7, \"anreise\": \"Zu Fuß\"}, {\"anzahl\": 1, \"anreise\": \"Motorrad\"}]', '[{\"anzahl\": 17, \"bild_status\": \"Mit Bild\"}, {\"anzahl\": 9, \"bild_status\": \"Ohne Bild\"}]', NULL);
 
 --
 -- Indizes der exportierten Tabellen
@@ -14076,6 +15733,16 @@ ALTER TABLE `eisdiele_opening_hours`
   ADD KEY `idx_opening_hours_shop_day` (`eisdiele_id`,`weekday`);
 
 --
+-- Indizes für die Tabelle `event2026_addon_purchases`
+--
+ALTER TABLE `event2026_addon_purchases`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_event2026_addon_payment_ref` (`payment_reference_code`),
+  ADD KEY `fk_event2026_addon_event` (`event_id`),
+  ADD KEY `idx_event2026_addon_buyer` (`buyer_user_id`,`status`),
+  ADD KEY `idx_event2026_addon_registration` (`registration_id`,`status`);
+
+--
 -- Indizes für die Tabelle `event2026_audit_log`
 --
 ALTER TABLE `event2026_audit_log`
@@ -14088,6 +15755,7 @@ ALTER TABLE `event2026_audit_log`
 --
 ALTER TABLE `event2026_checkpoints`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_event2026_checkpoint_shop_mode` (`event_id`,`shop_id`,`stamp_card_mode`),
   ADD KEY `idx_event2026_checkpoint_order` (`event_id`,`order_index`);
 
 --
@@ -14100,12 +15768,16 @@ ALTER TABLE `event2026_checkpoint_passages`
   ADD KEY `idx_event2026_passage_checkpoint` (`checkpoint_id`,`passed_at`);
 
 --
--- Indizes für die Tabelle `event2026_invite_tokens`
+-- Indizes für die Tabelle `event2026_gift_vouchers`
 --
-ALTER TABLE `event2026_invite_tokens`
+ALTER TABLE `event2026_gift_vouchers`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_event2026_invite_hash` (`token_hash`),
-  ADD KEY `idx_event2026_invite_slot` (`slot_id`);
+  ADD UNIQUE KEY `uniq_event2026_voucher_hash` (`code_hash`),
+  ADD KEY `fk_event2026_voucher_purchase_addon` (`purchased_by_addon_purchase_id`),
+  ADD KEY `fk_event2026_voucher_redeem_slot` (`redeemed_by_slot_id`),
+  ADD KEY `idx_event2026_voucher_purchase_reg` (`purchased_by_registration_id`),
+  ADD KEY `idx_event2026_voucher_redeem_reg` (`redeemed_by_registration_id`),
+  ADD KEY `idx_event2026_voucher_status` (`event_id`,`status`);
 
 --
 -- Indizes für die Tabelle `event2026_legal_acceptances`
@@ -14438,19 +16110,19 @@ ALTER TABLE `attribute`
 -- AUTO_INCREMENT für Tabelle `awards`
 --
 ALTER TABLE `awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT für Tabelle `award_levels`
 --
 ALTER TABLE `award_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=372;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=385;
 
 --
 -- AUTO_INCREMENT für Tabelle `benachrichtigungen`
 --
 ALTER TABLE `benachrichtigungen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1854;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2055;
 
 --
 -- AUTO_INCREMENT für Tabelle `bewertungen`
@@ -14462,49 +16134,49 @@ ALTER TABLE `bewertungen`
 -- AUTO_INCREMENT für Tabelle `bilder`
 --
 ALTER TABLE `bilder`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=976;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=990;
 
 --
 -- AUTO_INCREMENT für Tabelle `bundeslaender`
 --
 ALTER TABLE `bundeslaender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=111;
 
 --
 -- AUTO_INCREMENT für Tabelle `challenges`
 --
 ALTER TABLE `challenges`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=504;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=527;
 
 --
 -- AUTO_INCREMENT für Tabelle `checkins`
 --
 ALTER TABLE `checkins`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=867;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=886;
 
 --
 -- AUTO_INCREMENT für Tabelle `checkin_groups`
 --
 ALTER TABLE `checkin_groups`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT für Tabelle `checkin_mentions`
 --
 ALTER TABLE `checkin_mentions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT für Tabelle `checkin_sorten`
 --
 ALTER TABLE `checkin_sorten`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2062;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2101;
 
 --
 -- AUTO_INCREMENT für Tabelle `eisdielen`
 --
 ALTER TABLE `eisdielen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=651;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=657;
 
 --
 -- AUTO_INCREMENT für Tabelle `eisdiele_change_requests`
@@ -14516,37 +16188,43 @@ ALTER TABLE `eisdiele_change_requests`
 -- AUTO_INCREMENT für Tabelle `eisdiele_opening_hours`
 --
 ALTER TABLE `eisdiele_opening_hours`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4449;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4496;
+
+--
+-- AUTO_INCREMENT für Tabelle `event2026_addon_purchases`
+--
+ALTER TABLE `event2026_addon_purchases`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_audit_log`
 --
 ALTER TABLE `event2026_audit_log`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_checkpoints`
 --
 ALTER TABLE `event2026_checkpoints`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_checkpoint_passages`
 --
 ALTER TABLE `event2026_checkpoint_passages`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT für Tabelle `event2026_invite_tokens`
+-- AUTO_INCREMENT für Tabelle `event2026_gift_vouchers`
 --
-ALTER TABLE `event2026_invite_tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `event2026_gift_vouchers`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_legal_acceptances`
 --
 ALTER TABLE `event2026_legal_acceptances`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_legal_versions`
@@ -14558,13 +16236,13 @@ ALTER TABLE `event2026_legal_versions`
 -- AUTO_INCREMENT für Tabelle `event2026_participant_slots`
 --
 ALTER TABLE `event2026_participant_slots`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_payments`
 --
 ALTER TABLE `event2026_payments`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_payment_mail_matches`
@@ -14576,13 +16254,13 @@ ALTER TABLE `event2026_payment_mail_matches`
 -- AUTO_INCREMENT für Tabelle `event2026_registrations`
 --
 ALTER TABLE `event2026_registrations`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_registration_access_tokens`
 --
 ALTER TABLE `event2026_registration_access_tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT für Tabelle `event2026_seasons`
@@ -14606,31 +16284,31 @@ ALTER TABLE `event2026_wave_assignments`
 -- AUTO_INCREMENT für Tabelle `kommentare`
 --
 ALTER TABLE `kommentare`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=223;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=249;
 
 --
 -- AUTO_INCREMENT für Tabelle `laender`
 --
 ALTER TABLE `laender`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT für Tabelle `landkreise`
 --
 ALTER TABLE `landkreise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=171;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=176;
 
 --
 -- AUTO_INCREMENT für Tabelle `leaderboard_daily_snapshots`
 --
 ALTER TABLE `leaderboard_daily_snapshots`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=411;
 
 --
 -- AUTO_INCREMENT für Tabelle `nutzer`
 --
 ALTER TABLE `nutzer`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=169;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=186;
 
 --
 -- AUTO_INCREMENT für Tabelle `passwort_reset_tokens`
@@ -14648,55 +16326,55 @@ ALTER TABLE `photo_challenges`
 -- AUTO_INCREMENT für Tabelle `photo_challenge_groups`
 --
 ALTER TABLE `photo_challenge_groups`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT für Tabelle `photo_challenge_group_entries`
 --
 ALTER TABLE `photo_challenge_group_entries`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT für Tabelle `photo_challenge_images`
 --
 ALTER TABLE `photo_challenge_images`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- AUTO_INCREMENT für Tabelle `photo_challenge_matches`
 --
 ALTER TABLE `photo_challenge_matches`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
 
 --
 -- AUTO_INCREMENT für Tabelle `photo_challenge_submissions`
 --
 ALTER TABLE `photo_challenge_submissions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT für Tabelle `photo_challenge_votes`
 --
 ALTER TABLE `photo_challenge_votes`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=475;
 
 --
 -- AUTO_INCREMENT für Tabelle `preise`
 --
 ALTER TABLE `preise`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1026;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1053;
 
 --
 -- AUTO_INCREMENT für Tabelle `qr_codes`
 --
 ALTER TABLE `qr_codes`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT für Tabelle `rate_limit`
 --
 ALTER TABLE `rate_limit`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=205;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
 
 --
 -- AUTO_INCREMENT für Tabelle `routen`
@@ -14708,31 +16386,31 @@ ALTER TABLE `routen`
 -- AUTO_INCREMENT für Tabelle `systemmeldungen`
 --
 ALTER TABLE `systemmeldungen`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT für Tabelle `user_api_tokens`
 --
 ALTER TABLE `user_api_tokens`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=177;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=222;
 
 --
 -- AUTO_INCREMENT für Tabelle `user_awards`
 --
 ALTER TABLE `user_awards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1790;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1853;
 
 --
 -- AUTO_INCREMENT für Tabelle `user_notification_settings`
 --
 ALTER TABLE `user_notification_settings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=281;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=298;
 
 --
 -- AUTO_INCREMENT für Tabelle `user_qr_scans`
 --
 ALTER TABLE `user_qr_scans`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT für Tabelle `waehrungen`
@@ -14744,13 +16422,13 @@ ALTER TABLE `waehrungen`
 -- AUTO_INCREMENT für Tabelle `wechselkurse`
 --
 ALTER TABLE `wechselkurse`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1903;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2019;
 
 --
 -- AUTO_INCREMENT für Tabelle `wochenstatistiken`
 --
 ALTER TABLE `wochenstatistiken`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 -- --------------------------------------------------------
 
@@ -14887,6 +16565,13 @@ ALTER TABLE `eisdiele_opening_hours`
   ADD CONSTRAINT `fk_opening_hours_shop` FOREIGN KEY (`eisdiele_id`) REFERENCES `eisdielen` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints der Tabelle `event2026_addon_purchases`
+--
+ALTER TABLE `event2026_addon_purchases`
+  ADD CONSTRAINT `fk_event2026_addon_event` FOREIGN KEY (`event_id`) REFERENCES `event2026_seasons` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_event2026_addon_registration` FOREIGN KEY (`registration_id`) REFERENCES `event2026_registrations` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints der Tabelle `event2026_audit_log`
 --
 ALTER TABLE `event2026_audit_log`
@@ -14907,10 +16592,14 @@ ALTER TABLE `event2026_checkpoint_passages`
   ADD CONSTRAINT `fk_event2026_passage_slot` FOREIGN KEY (`slot_id`) REFERENCES `event2026_participant_slots` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints der Tabelle `event2026_invite_tokens`
+-- Constraints der Tabelle `event2026_gift_vouchers`
 --
-ALTER TABLE `event2026_invite_tokens`
-  ADD CONSTRAINT `fk_event2026_invite_slot` FOREIGN KEY (`slot_id`) REFERENCES `event2026_participant_slots` (`id`) ON DELETE CASCADE;
+ALTER TABLE `event2026_gift_vouchers`
+  ADD CONSTRAINT `fk_event2026_voucher_event` FOREIGN KEY (`event_id`) REFERENCES `event2026_seasons` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_event2026_voucher_purchase_addon` FOREIGN KEY (`purchased_by_addon_purchase_id`) REFERENCES `event2026_addon_purchases` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_event2026_voucher_purchase_reg` FOREIGN KEY (`purchased_by_registration_id`) REFERENCES `event2026_registrations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_event2026_voucher_redeem_reg` FOREIGN KEY (`redeemed_by_registration_id`) REFERENCES `event2026_registrations` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_event2026_voucher_redeem_slot` FOREIGN KEY (`redeemed_by_slot_id`) REFERENCES `event2026_participant_slots` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints der Tabelle `event2026_legal_acceptances`

@@ -160,6 +160,7 @@ try {
             'id' => (int) $slot['id'],
             'route_key' => $routeKey,
             'route_name' => event2026_route_label($routeKey),
+            'distance_km' => (int) ($slot['distance_km'] ?? event2026_route_definition($routeKey)['distance_km']),
             'route_type' => event2026_route_definition($routeKey)['route_type'],
             'full_name' => (string) $slot['full_name'],
         ],
@@ -175,7 +176,7 @@ try {
             'available_from' => $stampingAvailableFrom,
             'message' => $stampingEnabled
                 ? null
-                : sprintf('Live-Stempel sind erst ab %s freigeschaltet.', $stampingAvailableFrom),
+                : event2026_live_stamping_message($event),
         ],
         'sync' => [
             'server_time' => gmdate('c'),

@@ -5,8 +5,15 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Link, useSearchParams } from "react-router-dom";
 import Header from "./Header";
+import CheckinCard from "../../components/CheckinCard";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { EVENT_START_FINISH, ROUTE_OPTIONS, getRouteByLabel, getRouteLabel, getRouteThemeByLabel } from "./eventConfig";
+import {
+  EVENT_START_FINISH,
+  ROUTE_OPTIONS,
+  formatRouteShortWithDistanceByLabel,
+  getRouteLabel,
+  getRouteThemeByLabel,
+} from "./eventConfig";
 import { useUser } from "../../context/UserContext";
 import route175Gpx from "./Ice-Tour_175km.gpx?raw";
 import route140Gpx from "./Ice-Tour_140km.gpx?raw";
@@ -52,17 +59,40 @@ const MapShell = styled.div`
   min-height: 0;
 `;
 
-const MapInfo = styled.div`
+const OverlayLayout = styled.div`
   position: absolute;
   top: 12px;
-  left: 50px;
+  left: 12px;
+  right: 12px;
   z-index: 900;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const MapInfo = styled.div`
   max-width: min(92vw, 540px);
   background: rgba(255, 253, 250, 0.95);
   border: 1px solid rgba(138, 87, 0, 0.2);
   border-radius: 12px;
   padding: 0.75rem 0.9rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  @media (max-width: 720px) {
+    max-width: none;
+    padding: 0.65rem 0.75rem;
+  }
 `;
 
 const ModalOverlay = styled.div`
@@ -182,42 +212,85 @@ const AppButton = styled.button`
   }
 `;
 
-const DetailsList = styled.div`
-  display: grid;
-  gap: 0.85rem;
+const DetailsTableWrap = styled.div`
   margin-top: 1rem;
-`;
-
-const DetailRow = styled.article`
+  margin-left: -1.1rem;
+  margin-right: -1.1rem;
   border: 1px solid rgba(138, 87, 0, 0.12);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 232, 0.96));
-  padding: 0.9rem;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.96);
 `;
 
-const DetailGrid = styled.div`
-  display: grid;
-  gap: 0.55rem 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+const DetailsTable = styled.table`
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(138, 87, 0, 0.1);
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(255, 248, 232, 0.98);
+    color: #7c4f00;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  @media (max-width: 720px) {
+    min-width: 480px;
+
+    th,
+    td {
+      padding: 0.42rem 0.36rem;
+      font-size: 0.82rem;
+    }
+
+    thead th {
+      font-size: 0.66rem;
+    }
+  }
 `;
 
-const DetailField = styled.div`
-  min-width: 0;
+const DetailRow = styled.tr`
+  background: ${({ $expanded }) => ($expanded ? "rgba(255, 248, 232, 0.42)" : "transparent")};
 `;
 
-const DetailLabel = styled.div`
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: rgba(124, 79, 0, 0.76);
-  margin-bottom: 0.2rem;
+const ExpandedRow = styled.tr`
+  background: rgba(255, 248, 232, 0.42);
+`;
+
+const ExpandedCell = styled.td`
+  padding-top: 0.25rem;
 `;
 
 const DetailValue = styled.div`
   color: #2f2100;
   line-height: 1.45;
   overflow-wrap: anywhere;
+  min-width: 0;
+
+  @media (max-width: 720px) {
+    line-height: 1.3;
+  }
+`;
+
+const TimeValue = styled(DetailValue)`
+  white-space: nowrap;
 `;
 
 const UserLink = styled(Link)`
@@ -230,26 +303,84 @@ const UserLink = styled(Link)`
   }
 `;
 
-const ExpandButton = styled.button`
-  margin-top: 0.75rem;
+const CheckinInlineButton = styled.button`
   padding: 0;
   border: none;
   background: none;
   color: #8a5700;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 0.76rem;
   cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  white-space: nowrap;
 
   &:hover {
-    text-decoration: underline;
+    color: #5a3900;
+  }
+
+  @media (max-width: 720px) {
+    font-size: 0.72rem;
+  }
+`;
+
+const CheckinActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+
+  @media (max-width: 720px) {
+    gap: 0.2rem;
+  }
+`;
+
+const NameStack = styled.div`
+  display: grid;
+  gap: 0.12rem;
+`;
+
+const SecondaryLinkButton = styled(Link)`
+  display: inline;
+  color: #8a5700;
+  font-weight: 700;
+  font-size: 0.76rem;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  white-space: nowrap;
+
+  &:hover {
+    color: #5a3900;
+  }
+
+  @media (max-width: 720px) {
+    font-size: 0.72rem;
+  }
+`;
+
+const CompactRouteBadge = styled(RouteBadge)`
+  margin-right: 0;
+  margin-bottom: 0;
+  padding: 0.08rem 0.38rem;
+  font-size: 0.7rem;
+  min-width: 0;
+
+  @media (max-width: 720px) {
+    padding: 0.05rem 0.28rem;
+    font-size: 0.66rem;
   }
 `;
 
 const LinkedCheckinBox = styled.div`
-  margin-top: 0.8rem;
-  padding: 0.85rem;
-  border-radius: 14px;
-  border: 1px solid rgba(138, 87, 0, 0.12);
-  background: rgba(255, 255, 255, 0.84);
+  padding: 0.15rem 0;
+  position: sticky;
+  left: 0;
+  width: min(calc(100vw - 3rem), 720px);
+  max-width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 720px) {
+    width: min(calc(100vw - 1.5rem), 100%);
+  }
 `;
 
 const LinkedCheckinMeta = styled.div`
@@ -258,11 +389,42 @@ const LinkedCheckinMeta = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 `;
 
+const LinkedCheckinField = styled.div`
+  min-width: 0;
+`;
+
+const LinkedCheckinLabel = styled.div`
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(124, 79, 0, 0.76);
+  margin-bottom: 0.2rem;
+`;
+
+const LinkedCheckinValue = styled.div`
+  color: #2f2100;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+`;
+
 const LinkedCheckinText = styled.p`
   margin: 0.7rem 0 0;
   color: #5b3a00;
   line-height: 1.5;
   white-space: pre-wrap;
+
+  @media (max-width: 720px) {
+    margin-top: 0.5rem;
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+`;
+
+const CheckinCardWrap = styled.div`
+  .card {
+    margin: 0;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -275,16 +437,20 @@ const EmptyState = styled.div`
 `;
 
 const RouteLegend = styled.div`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 900;
   min-width: 180px;
   background: rgba(255, 253, 250, 0.95);
   border: 1px solid rgba(138, 87, 0, 0.2);
   border-radius: 12px;
   padding: 0.75rem 0.9rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex: 0 0 auto;
+
+  @media (max-width: 720px) {
+    min-width: 0;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.6rem 0.75rem;
+  }
 `;
 
 const LegendItem = styled.div`
@@ -307,13 +473,81 @@ const LegendSwatch = styled.span`
   flex: 0 0 auto;
 `;
 
+const InfoHeading = styled.h1`
+  margin: 0;
+  font-size: 1.05rem;
+
+  @media (max-width: 720px) {
+    font-size: 0.98rem;
+  }
+`;
+
+const InfoText = styled.p`
+  margin: 0.35rem 0 0;
+  color: #7c4f00;
+  line-height: 1.35;
+
+  @media (max-width: 720px) {
+    font-size: 0.88rem;
+    line-height: 1.3;
+  }
+`;
+
 const ROUTE_OVERLAYS = [
-  { id: "route-175", label: "175 km", color: "#dc2626", offsetPx: -7, gpx: route175Gpx },
-  { id: "route-140", label: "140 km", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
-  { id: "route-70", label: "70 km", color: "#16a34a", offsetPx: 7, gpx: route70Gpx },
+  { id: "route-175", label: "König (175 km)", color: "#dc2626", offsetPx: -7, gpx: route175Gpx },
+  { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
+  { id: "route-70", label: "Genuss (75 km)", color: "#16a34a", offsetPx: 7, gpx: route70Gpx },
 ];
 
 const OFFSET_ZOOM_THRESHOLD = 12;
+
+const formatCheckpointTime = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+};
+
+const formatRouteDistanceOnly = (routeLabel) => {
+  const fullLabel = formatRouteShortWithDistanceByLabel(routeLabel);
+  const match = fullLabel.match(/\(([^)]+)\)/);
+  return match ? match[1] : routeLabel;
+};
+
+const resolveUsername = (row) => row.username || "Kein Profil";
+
+const resolveFullName = (row) => row.full_name || row.user_display_name || "-";
+
+const formatCheckpointVisitsSummary = (count) => {
+  if (count === 1) return "1 Teilnehmer hat diesen Checkpoint erreicht.";
+  return `${count} Teilnehmer haben diesen Checkpoint erreicht.`;
+};
+
+const toCheckinCardData = (checkin, row) => {
+  if (!checkin) return null;
+
+  return {
+    ...checkin,
+    id: checkin.id,
+    datum: checkin.datum || row?.checkin_time || new Date().toISOString(),
+    nutzer_id: checkin.nutzer_id ?? row?.user_id ?? null,
+    nutzer_name: checkin.nutzer_name || row?.username || row?.full_name || row?.user_display_name || "Unbekannt",
+    eisdiele_id: checkin.eisdiele_id ?? row?.shop_id ?? null,
+    eisdiele_name: checkin.eisdiele_name || "-",
+    typ: checkin.typ || "-",
+    kommentar: checkin.kommentar || "",
+    eissorten: Array.isArray(checkin.eissorten) ? checkin.eissorten : [],
+    bilder: Array.isArray(checkin.bilder) ? checkin.bilder : [],
+    commentCount: Number(checkin.commentCount || 0),
+    avatar_url: checkin.avatar_url || null,
+    geschmackbewertung: checkin.geschmackbewertung ?? null,
+    größenbewertung: checkin.größenbewertung ?? checkin.groessenbewertung ?? null,
+    preisleistungsbewertung: checkin.preisleistungsbewertung ?? null,
+    waffelbewertung: checkin.waffelbewertung ?? null,
+    anreise: checkin.anreise || "",
+    is_on_site: Number(checkin.is_on_site || 0),
+  };
+};
 
 const parseGpxTrack = (gpxContent) => {
   if (!gpxContent) return [];
@@ -646,30 +880,32 @@ export default function EventLiveMap() {
     <Page>
       <Header />
       <MapShell>
-        <MapInfo>
-          <h1 style={{ margin: 0, fontSize: "1.05rem" }}>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</h1>
-          <p style={{ margin: "0.35rem 0 0", color: "#7c4f00", lineHeight: 1.35 }}>
-            {mode === "test"
-              ? "Admin-Testansicht fuer die Stempelkarte. Hier siehst du, wie Check-ins und Checkpoint-Anzeigen auf der Live-Map wirken."
-              : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Klicke auf die Marker, um weitere Informationen zu erhalten oder die Check-in-Details einzusehen."}
-          </p>
-          {isAdmin && (
-            <div style={{ display: "flex", gap: "0.45rem", marginTop: "0.7rem", flexWrap: "wrap" }}>
-              <button type="button" onClick={() => setSearchParams({ mode: "live" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "live" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Live</button>
-              <button type="button" onClick={() => setSearchParams({ mode: "test" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "test" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Test</button>
-            </div>
-          )}
-        </MapInfo>
+        <OverlayLayout>
+          <MapInfo>
+            <InfoHeading>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</InfoHeading>
+            <InfoText>
+              {mode === "test"
+                ? "Admin-Testansicht fuer die Stempelkarte. Hier siehst du, wie Check-ins und Checkpoint-Anzeigen auf der Live-Map wirken."
+                : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker oeffnen die checkpointbezogene Live-Liste."}
+            </InfoText>
+            {isAdmin && (
+              <div style={{ display: "flex", gap: "0.45rem", marginTop: "0.7rem", flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setSearchParams({ mode: "live" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "live" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Live</button>
+                <button type="button" onClick={() => setSearchParams({ mode: "test" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "test" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Test</button>
+              </div>
+            )}
+          </MapInfo>
 
-        <RouteLegend>
-          <div style={{ fontWeight: 700, color: "#5b3a00", marginBottom: "0.45rem" }}>Routen</div>
-          {routeOverlays.map((route) => (
-            <LegendItem key={route.id} style={{ fontWeight: activeRouteId === route.id ? 700 : 500 }}>
-              <LegendSwatch $color={route.color} />
-              <span>{route.label}</span>
-            </LegendItem>
-          ))}
-        </RouteLegend>
+          <RouteLegend>
+            <div style={{ fontWeight: 700, color: "#5b3a00", marginBottom: "0.45rem" }}>Routen</div>
+            {routeOverlays.map((route) => (
+              <LegendItem key={route.id} style={{ fontWeight: activeRouteId === route.id ? 700 : 500 }}>
+                <LegendSwatch $color={route.color} />
+                <span>{route.label}</span>
+              </LegendItem>
+            ))}
+          </RouteLegend>
+        </OverlayLayout>
 
         {!error && (
           <MapContainer
@@ -712,7 +948,7 @@ export default function EventLiveMap() {
                         $border={getRouteThemeByLabel(label).border}
                         $color={getRouteThemeByLabel(label).text}
                       >
-                        {getRouteByLabel(label).shortLabel}
+                        {formatRouteShortWithDistanceByLabel(label)}
                       </RouteBadge>
                     ))}
                   </div>
@@ -740,7 +976,7 @@ export default function EventLiveMap() {
                 <ModalSubline>
                   {detailsLoading
                     ? "Lade Checkpoint-Übersicht..."
-                    : `${details.length} Check-ins in chronologischer Reihenfolge`}
+                    : formatCheckpointVisitsSummary(details.length)}
                 </ModalSubline>
               </div>
             </ModalHeader>
@@ -752,7 +988,7 @@ export default function EventLiveMap() {
                   $border={getRouteThemeByLabel(label).border}
                   $color={getRouteThemeByLabel(label).text}
                 >
-                  {getRouteByLabel(label).shortLabel}
+                  {formatRouteShortWithDistanceByLabel(label)}
                 </RouteBadge>
               ))}
             </div>
@@ -761,8 +997,19 @@ export default function EventLiveMap() {
             ) : details.length === 0 ? (
               <EmptyState>Noch keine Check-ins an diesem Checkpoint.</EmptyState>
             ) : (
-              <DetailsList>
-                {details.map((row, idx) => {
+              <DetailsTableWrap>
+                <DetailsTable>
+                  <thead>
+                    <tr>
+                      <th>Zeit</th>
+                      <th>Name</th>
+                      <th>User</th>
+                      <th>Route</th>
+                      <th>Check-in</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {details.map((row, idx) => {
                   const checkinId = Number(row.checkin_id);
                   const linkedState = checkinId ? linkedCheckins[checkinId] : null;
                   const isExpanded = checkinId ? Boolean(expandedCheckins[checkinId]) : false;
@@ -771,69 +1018,76 @@ export default function EventLiveMap() {
                   const flavourText = linkedCheckin?.eissorten?.length
                     ? linkedCheckin.eissorten.map((item) => item.sortenname).filter(Boolean).join(", ")
                     : "";
+                  const rowShopId = row.shop_id || selected.shop_id;
+                  const checkinLink = rowShopId && checkinId
+                    ? `/map/activeShop/${rowShopId}?tab=checkins&focusCheckin=${checkinId}`
+                    : rowShopId
+                      ? `/map/activeShop/${rowShopId}?tab=checkins`
+                      : null;
 
                   return (
-                    <DetailRow key={`${row.user_id || row.username || row.full_name || row.user_display_name}-${row.checkin_time}-${idx}`}>
-                      <DetailGrid>
-                        <DetailField>
-                          <DetailLabel>Nutzername</DetailLabel>
+                    <React.Fragment key={`${row.slot_id || row.user_id || row.username || row.full_name || row.user_display_name}-${row.checkin_time}-${idx}`}>
+                      <DetailRow $expanded={isExpanded}>
+                        <td>
+                          <TimeValue>{formatCheckpointTime(row.checkin_time)}</TimeValue>
+                        </td>
+                        <td>
+                          <NameStack>
+                            <DetailValue>{resolveFullName(row)}</DetailValue>
+                          </NameStack>
+                        </td>
+                        <td>
                           <DetailValue>
-                            {row.user_id && row.username ? <UserLink to={`/user/${row.user_id}`}>{row.username}</UserLink> : row.username || "-"}
+                            {row.user_id ? <UserLink to={`/user/${row.user_id}`}>{resolveUsername(row)}</UserLink> : resolveUsername(row)}
                           </DetailValue>
-                        </DetailField>
-                        <DetailField>
-                          <DetailLabel>Echter Name</DetailLabel>
-                          <DetailValue>{row.full_name || row.user_display_name || "-"}</DetailValue>
-                        </DetailField>
-                        <DetailField>
-                          <DetailLabel>Check-in</DetailLabel>
-                          <DetailValue>{row.checkin_time ? new Date(row.checkin_time).toLocaleString("de-DE") : "-"}</DetailValue>
-                        </DetailField>
-                        <DetailField>
-                          <DetailLabel>Route</DetailLabel>
-                          <DetailValue>{routeLabel}</DetailValue>
-                        </DetailField>
-                      </DetailGrid>
-                      {checkinId ? (
-                        <>
-                          <ExpandButton type="button" onClick={() => toggleLinkedCheckin(row)}>
-                            {isExpanded ? "Verknüpften Check-in ausblenden" : "Verknüpften Check-in anzeigen"}
-                          </ExpandButton>
-                          {isExpanded && (
+                        </td>
+                        <td>
+                          <CompactRouteBadge
+                            $bg={getRouteThemeByLabel(routeLabel).background}
+                            $border={getRouteThemeByLabel(routeLabel).border}
+                            $color={getRouteThemeByLabel(routeLabel).text}
+                          >
+                            {formatRouteDistanceOnly(routeLabel)}
+                          </CompactRouteBadge>
+                        </td>
+                        <td>
+                          {checkinId ? (
+                            <CheckinActions>
+                              <CheckinInlineButton type="button" onClick={() => toggleLinkedCheckin(row)}>
+                            {isExpanded ? "Check-in ausblenden" : "Check-in anzeigen"}
+                          </CheckinInlineButton>
+                            
+                          </CheckinActions>
+                          ) : (
+                            <DetailValue>-</DetailValue>
+                          )}
+                        </td>
+                      </DetailRow>
+                      {checkinId && isExpanded ? (
+                        <ExpandedRow>
+                          <ExpandedCell colSpan={5}>
                             <LinkedCheckinBox>
                               {linkedState?.loading ? (
                                 <div>Lade Check-in...</div>
                               ) : linkedState?.error ? (
                                 <div style={{ color: "#9f1239" }}>{linkedState.error}</div>
                               ) : linkedCheckin ? (
-                                <>
-                                  <LinkedCheckinMeta>
-                                    <DetailField>
-                                      <DetailLabel>Eisdiele</DetailLabel>
-                                      <DetailValue>{linkedCheckin.eisdiele_name || "-"}</DetailValue>
-                                    </DetailField>
-                                    <DetailField>
-                                      <DetailLabel>Typ</DetailLabel>
-                                      <DetailValue>{linkedCheckin.typ || "-"}</DetailValue>
-                                    </DetailField>
-                                    <DetailField>
-                                      <DetailLabel>Sorten</DetailLabel>
-                                      <DetailValue>{flavourText || "-"}</DetailValue>
-                                    </DetailField>
-                                  </LinkedCheckinMeta>
-                                  {linkedCheckin.kommentar ? <LinkedCheckinText>{linkedCheckin.kommentar}</LinkedCheckinText> : null}
-                                </>
+                                <CheckinCardWrap>
+                                  <CheckinCard checkin={toCheckinCardData(linkedCheckin, row)} />
+                                </CheckinCardWrap>
                               ) : (
                                 <div>Kein Detail-Check-in vorhanden.</div>
                               )}
                             </LinkedCheckinBox>
-                          )}
-                        </>
+                          </ExpandedCell>
+                        </ExpandedRow>
                       ) : null}
-                    </DetailRow>
+                    </React.Fragment>
                   );
-                })}
-              </DetailsList>
+                    })}
+                  </tbody>
+                </DetailsTable>
+              </DetailsTableWrap>
             )}
             <ModalActions>
               <AppButton type="button" onClick={() => setSelected(null)}>Schließen</AppButton>

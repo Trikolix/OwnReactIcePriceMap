@@ -124,6 +124,35 @@ export function getRouteLabel(routeKey) {
   return getRouteByKey(routeKey).label;
 }
 
+export function getRouteShortLabel(routeKey) {
+  return getRouteByKey(routeKey).shortLabel;
+}
+
+export function getRouteShortLabelByLabel(routeLabel) {
+  return getRouteByLabel(routeLabel).shortLabel;
+}
+
+export function formatRouteShortWithDistance(routeKey, fallbackDistanceKm = null) {
+  const route = getRouteByKey(routeKey);
+  const hasFallbackDistance = fallbackDistanceKm !== null && fallbackDistanceKm !== undefined && fallbackDistanceKm !== "";
+  const distanceKm = hasFallbackDistance && Number.isFinite(Number(fallbackDistanceKm)) ? Number(fallbackDistanceKm) : route.distanceKm;
+  return `${route.shortLabel} (${distanceKm} km)`;
+}
+
+export function formatRouteShortWithDistanceByLabel(routeLabel, fallbackDistanceKm = null) {
+  const route = getRouteByLabel(routeLabel);
+  const hasFallbackDistance = fallbackDistanceKm !== null && fallbackDistanceKm !== undefined && fallbackDistanceKm !== "";
+  const distanceKm = hasFallbackDistance && Number.isFinite(Number(fallbackDistanceKm)) ? Number(fallbackDistanceKm) : route.distanceKm;
+  return `${route.shortLabel} (${distanceKm} km)`;
+}
+
+export function formatRouteLabelWithDistance(routeKey, fallbackDistanceKm = null) {
+  const route = getRouteByKey(routeKey);
+  const hasFallbackDistance = fallbackDistanceKm !== null && fallbackDistanceKm !== undefined && fallbackDistanceKm !== "";
+  const distanceKm = hasFallbackDistance && Number.isFinite(Number(fallbackDistanceKm)) ? Number(fallbackDistanceKm) : route.distanceKm;
+  return `${route.label} (${distanceKm} km)`;
+}
+
 export function getRouteTheme(routeKey) {
   return getRouteByKey(routeKey).badgeTone;
 }

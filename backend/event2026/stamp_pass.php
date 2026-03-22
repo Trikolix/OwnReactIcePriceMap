@@ -22,7 +22,7 @@ try {
     }
     if ($mode === 'live' && !event2026_is_live_stamping_open($event)) {
         http_response_code(403);
-        throw new RuntimeException(sprintf('Live-Stempel sind erst ab %s freigeschaltet.', event2026_live_stamping_available_from($event)));
+        throw new RuntimeException(event2026_live_stamping_message($event));
     }
     $source = trim((string) ($data['source'] ?? 'gps_click'));
     $lat = isset($data['lat']) ? (float) $data['lat'] : null;

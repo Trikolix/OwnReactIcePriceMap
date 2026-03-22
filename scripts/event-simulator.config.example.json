@@ -1,0 +1,46 @@
+{
+  "apiBaseUrl": "http://localhost/ice-app/backend",
+  "admin": {
+    "username": "admin",
+    "password": "bitte-anpassen"
+  },
+  "simulation": {
+    "durationMinutes": 10,
+    "minStopsPerParticipant": 2,
+    "maxStopsPerParticipant": 3,
+    "checkinShare": 0.8,
+    "seed": 20260319,
+    "flavours": [
+      "Vanille",
+      "Schoko",
+      "Erdbeere",
+      "Haselnuss",
+      "Joghurt",
+      "Mango",
+      "Pistazie"
+    ],
+    "commentTemplates": [
+      "Kurzer Stopp auf der Runde.",
+      "Alles entspannt auf der Strecke.",
+      "Gute Pause, jetzt geht es weiter."
+    ]
+  },
+  "participants": [
+    {
+      "label": "Testfahrer 01",
+      "username": "testuser01",
+      "password": "bitte-anpassen"
+    },
+    {
+      "label": "Testfahrer 02",
+      "username": "testuser02",
+      "password": "bitte-anpassen"
+    },
+    {
+      "label": "Testfahrerin 03",
+      "token": "optional-bereits-vorhandener-token",
+      "userId": 3,
+      "username": "testuser03"
+    }
+  ]
+}

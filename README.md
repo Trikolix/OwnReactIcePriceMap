@@ -31,6 +31,74 @@ Build:
 npm run build
 ```
 
+## Event-Simulator
+Es gibt ein lokales CLI-Skript, um Event-Aktivitaet fuer Test-Live-Map und Dashboard zu simulieren:
+
+```bash
+npm run simulate:event -- --config scripts/event-simulator.config.json
+```
+
+Beispielkonfiguration:
+- `scripts/event-simulator.config.example.json`
+
+Typischer Ablauf:
+1. Beispieldatei kopieren:
+```bash
+copy scripts\event-simulator.config.example.json scripts\event-simulator.config.json
+```
+2. `apiBaseUrl` auf dein lokales Backend setzen.
+3. Admin-Zugang eintragen.
+4. Teilnehmer eintragen.
+5. Erst mit Dry Run pruefen:
+```bash
+npm run simulate:event -- --config scripts/event-simulator.config.json --dry-run
+```
+6. Danach echten Lauf starten:
+```bash
+npm run simulate:event -- --config scripts/event-simulator.config.json --participants 10 --duration-minutes 5
+```
+
+Wichtig:
+- Teilnehmer muessen bereits existierende Accounts sein.
+- Teilnehmer muessen bereits eine Event-Anmeldung bzw. einen Event-Slot haben, weil das Skript das ueber `event2026/me.php` prueft.
+- Du musst nicht zwingend neue Testfahrer anlegen; vorhandene Dev-Accounts reichen, wenn sie fuer das Event registriert sind.
+- Fuer `admin` und `participants` kannst du entweder `username + password` oder `token + userId` verwenden.
+- Das Skript schreibt absichtlich nur auf Test-Checkpoints.
+
+Technischer Hinweis:
+- Der normale `test`-Modus der Stempelkarte ist aktuell fuer Admin reserviert.
+- Deshalb liest der Simulator die Test-Checkpoint-Konfiguration ueber den Admin-Zugang aus, schreibt die Passagen fuer Teilnehmer aber ueber `event2026/checkpoints_pass.php`.
+- Die zeitliche Staffelung entsteht durch echte Laufzeit des Skripts. `passed_at` wird serverseitig gesetzt und nicht kuenstlich rueckdatiert.
+
+### Testaccounts fuer den Simulator
+Fuer groessere Testlaeufe gibt es ein separates Dev-CLI unter `backend_dev`, das Testaccounts und Event-Slots verwaltet:
+
+```bash
+npm run simulate:event-users -- seed --count 50 --batch mai-test --write-config scripts/event-simulator.config.json --admin-username Admin --admin-password deinpasswort
+```
+
+Wichtige Befehle:
+
+```bash
+npm run simulate:event-users -- --help
+npm run simulate:event-users -- seed --count 25 --batch mai-test
+npm run simulate:event-users -- list --batch mai-test
+npm run simulate:event-users -- cleanup --batch mai-test
+npm run simulate:event-users -- cleanup --all
+```
+
+Was das Tool macht:
+- legt verifizierte Dev-Testnutzer an
+- erzeugt fuer diese Nutzer Event-Registrierungen, Slots und bezahlte Payments
+- verteilt die Routen standardmaessig zyklisch auf Genuss / Sport / Koenig
+- kann direkt eine passende Simulator-Config schreiben
+- kann die erzeugten Nutzer spaeter wieder gezielt entfernen
+
+Hinweise:
+- Das Tool ist nur fuer CLI und Dev gedacht.
+- `cleanup --batch ...` ist der selektive Reset.
+- `backend/Skripte/cron_sync_dev_from_prod.php` bleibt der grobe Komplettreset fuer die gesamte Dev-Datenbank.
+
 ## Neue API-Fassade (Start)
 Aktuell eingeführt:
 - `GET /api/v2/shops`

@@ -117,16 +117,20 @@ const KoModal = ({
           {activeKoModalMatch.status !== 'open' && (
             <S.ResultsList>
               {koModalSides.map((side) => (
-                <S.ResultItem key={side.id}>
+                <S.ResultItem
+                  key={side.id}
+                  type="button"
+                  onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
+                  aria-label={`Bild ${side.id} in Vollbild ansehen`}
+                >
                   <S.ResultInfo>
-                    <S.ResultImageButton
-                      type="button"
-                      onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
-                    >
+                    <S.ResultImageButton>
                       <S.ResultImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
                     </S.ResultImageButton>
                     <div>
                       <strong>{side.title || `Bild #${side.id}`}</strong>
+                      <br />
+                      <small>Zum Vergrößern antippen</small>
                     </div>
                   </S.ResultInfo>
                   <S.ResultWins>{side.votes} Stimme(n)</S.ResultWins>

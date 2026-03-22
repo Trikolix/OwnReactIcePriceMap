@@ -742,6 +742,35 @@ function event2026_live_stamping_available_from(array $event): string
     return $eventDate !== '' ? $eventDate : '2026-05-16';
 }
 
+function event2026_live_stamping_message(array $event): string
+{
+    $rawDate = event2026_live_stamping_available_from($event);
+    $months = [
+        1 => 'Januar',
+        2 => 'Februar',
+        3 => 'März',
+        4 => 'April',
+        5 => 'Mai',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'August',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Dezember',
+    ];
+
+    try {
+        $date = new DateTimeImmutable($rawDate);
+        $month = $months[(int) $date->format('n')] ?? $date->format('m');
+        $formattedDate = sprintf('%d. %s %s', (int) $date->format('j'), $month, $date->format('y'));
+    } catch (Throwable $e) {
+        $formattedDate = $rawDate;
+    }
+
+    return sprintf('Die Stempelkarte kann erst am Event-Tag (%s) genutzt werden.', $formattedDate);
+}
+
 function event2026_is_live_stamping_open(array $event): bool
 {
     $timezone = new DateTimeZone('Europe/Berlin');

@@ -108,6 +108,13 @@ export const PhasePill = styled.button`
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
   font-weight: 600;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(255, 181, 34, 0.18);
+    border-color: #ffb522;
+  }
 `;
 
 export const GroupsGrid = styled.div`
@@ -116,8 +123,8 @@ export const GroupsGrid = styled.div`
   gap: 1rem;
 `;
 
-export const GroupCard = styled.div`
-  background: #fff;
+export const GroupCard = styled.button`
+  background: linear-gradient(180deg, #fffdfa 0%, #ffffff 100%);
   border-radius: 18px;
   border: 1px solid #f0f0f5;
   padding: 1rem;
@@ -125,16 +132,28 @@ export const GroupCard = styled.div`
   flex-direction: column;
   gap: 1rem;
   box-shadow: 0 15px 40px rgba(20, 21, 56, 0.08);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 48px rgba(20, 21, 56, 0.12);
+    border-color: #ffd58a;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.25);
+    outline-offset: 2px;
+  }
 `;
 
-export const GroupHeader = styled.button`
-  border: none;
-  background: transparent;
+export const GroupHeader = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0;
-  cursor: pointer;
+  align-items: flex-start;
+  gap: 0.75rem;
 
   h3 {
     margin: 0;
@@ -146,12 +165,32 @@ export const GroupHeader = styled.button`
 `;
 
 export const ProgressTag = styled.span`
+  position: relative;
+  overflow: hidden;
   border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  background: #f5f5f9;
-  font-weight: 600;
-  color: #6d6d85;
+  padding: 0.45rem 0.85rem;
+  background: ${({ $complete }) =>
+    $complete
+      ? 'linear-gradient(135deg, #ffe3a1 0%, #ffcc57 100%)'
+      : '#f5f5f9'};
+  border: 1px solid ${({ $complete }) => ($complete ? '#d8a324' : '#ececf5')};
+  font-weight: 700;
+  color: ${({ $complete }) => ($complete ? '#734600' : '#6d6d85')};
   font-size: 0.9rem;
+  flex-shrink: 0;
+`;
+
+export const ProgressTagFill = styled.span`
+  position: absolute;
+  inset: 0;
+  width: ${({ $progress }) => `${Math.max(0, Math.min(100, $progress || 0))}%`};
+  background: linear-gradient(90deg, rgba(255, 194, 71, 0.18) 0%, rgba(255, 181, 34, 0.55) 100%);
+  transition: width 0.25s ease;
+`;
+
+export const ProgressTagContent = styled.span`
+  position: relative;
+  z-index: 1;
 `;
 
 export const StatusChip = styled.span`
@@ -183,11 +222,15 @@ export const VoteOption = styled.button`
   border-radius: 18px;
   border: 2px solid ${({ $selected }) => ($selected ? '#ffb522' : 'transparent')};
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  background: #fff;
+  background: ${({ $selected }) =>
+    $selected
+      ? 'linear-gradient(180deg, rgba(69, 186, 91, 0.16) 0%, rgba(255, 255, 255, 0.96) 100%)'
+      : '#fff'};
   padding: 0.5rem;
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   &.advancer {
     border: 2px solid #2ecc40;
     border-radius: 8px;
@@ -200,6 +243,32 @@ export const VoteOption = styled.button`
   }
   cursor: pointer;
   opacity: ${({ disabled }) => (disabled ? 0.75 : 1)};
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  }
+`;
+
+export const GroupPreviewStrip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+`;
+
+export const GroupPreviewThumb = styled.img`
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #f3f4f8;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 18px rgba(15, 18, 63, 0.08);
+`;
+
+export const GroupCardHint = styled.small`
+  color: #8b7b58;
+  font-weight: 600;
 `;
 
 export const VoteImage = styled.img`
@@ -243,9 +312,16 @@ export const KoCardButton = styled.button`
   border: 1px solid #ececf3;
   cursor: pointer;
   text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 
   small {
     color: #7a7a90;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 42px rgba(15, 18, 63, 0.12);
+    border-color: #ffd58a;
   }
 `;
 
@@ -357,6 +433,13 @@ export const SubmissionImageCard = styled.div`
   flex-direction: column;
   gap: 0.5rem;
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 34px rgba(15, 18, 63, 0.08);
+    border-color: #ffd58a;
+  }
 `;
 
 export const SubmissionImageThumb = styled.img`
@@ -382,6 +465,14 @@ export const SubmissionCard = styled.div`
   gap: 0.75rem;
   align-items: center;
   background: #fff;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(15, 18, 63, 0.08);
+    border-color: #ffd58a;
+  }
+
   @media (max-width: 640px) {
     grid-template-columns: 60px 1fr;
   }
@@ -441,6 +532,15 @@ export const SubmitButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   text-align: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(15, 18, 63, 0.08);
+    border-color: #ffb522;
+    background: #fff9ed;
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -481,10 +581,14 @@ export const NavButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
 
   &:hover:not(:disabled) {
+    transform: translateY(-1px);
     border-color: #ffb522;
     color: #a85b00;
+    background: #fff9ed;
+    box-shadow: 0 12px 24px rgba(255, 181, 34, 0.12);
   }
 `;
 
@@ -677,9 +781,16 @@ export const ModalVoteCard = styled.div`
   height: 100%;
   border-radius: 18px;
   border: 2px solid ${({ $selected }) => ($selected ? '#2ecc40' : 'transparent')};
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  background: #fff;
+  box-shadow: ${({ $selected }) =>
+    $selected
+      ? '0 16px 34px rgba(46, 204, 64, 0.18)'
+      : '0 6px 20px rgba(0, 0, 0, 0.08)'};
+  background: ${({ $selected }) =>
+    $selected
+      ? 'linear-gradient(180deg, rgba(46, 204, 64, 0.14) 0%, rgba(255,255,255,0.98) 100%)'
+      : '#fff'};
   overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   ${({ $disabled }) =>
     $disabled
       ? `
@@ -689,6 +800,10 @@ export const ModalVoteCard = styled.div`
 
   @media (max-width: 720px) {
     padding: 0.35rem;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
   }
 `;
 
@@ -712,6 +827,12 @@ export const ModalVotePreviewButton = styled.button`
   justify-content: center;
   overflow: hidden;
   width: 100%;
+  transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
+
+  &:hover:not(:disabled) {
+    filter: saturate(1.03);
+    background: #f3f7f2;
+  }
 `;
 
 export const ModalVoteImage = styled.img`
@@ -803,7 +924,7 @@ export const PreviewGrid = styled.div`
   }
 `;
 
-export const PreviewCard = styled.div`
+export const PreviewCard = styled.button`
   border: 1px solid #eee;
   border-radius: 16px;
   padding: 0.75rem;
@@ -812,12 +933,19 @@ export const PreviewCard = styled.div`
   flex-direction: column;
   gap: 0.5rem;
   min-width: 0;
+  width: 100%;
+  text-align: left;
+  cursor: zoom-in;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 34px rgba(15, 18, 63, 0.08);
+    border-color: #ffd58a;
+  }
 `;
 
-export const PreviewImageButton = styled.button`
-  border: none;
-  padding: 0;
-  cursor: zoom-in;
+export const PreviewImageButton = styled.div`
   width: 100%;
   display: flex;
   align-items: center;
@@ -825,6 +953,7 @@ export const PreviewImageButton = styled.button`
   border-radius: 12px;
   background: #f8f8fb;
   overflow: hidden;
+  transition: transform 0.18s ease, background 0.18s ease;
 `;
 
 export const PreviewImage = styled.img`
@@ -849,7 +978,7 @@ export const ResultsList = styled.div`
   gap: 0.75rem;
 `;
 
-export const ResultItem = styled.div`
+export const ResultItem = styled.button`
   border: 1px solid #eee;
   border-radius: 14px;
   padding: 0.75rem 1rem;
@@ -857,15 +986,27 @@ export const ResultItem = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  cursor: zoom-in;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 34px rgba(15, 18, 63, 0.08);
+    border-color: #ffd58a;
+  }
+
   &.advancer {
     border: 2px solid #2ecc40;
     border-radius: 8px;
-    background: rgba(46, 204, 64, 0.08);
+    background: linear-gradient(180deg, rgba(46, 204, 64, 0.12) 0%, rgba(255,255,255,0.98) 100%);
   }
   &.lucky-loser {
     border: 2px solid #f39c12;
     border-radius: 8px;
-    background: rgba(243, 156, 18, 0.08);
+    background: linear-gradient(180deg, rgba(243, 156, 18, 0.12) 0%, rgba(255,255,255,0.98) 100%);
   }
 `;
 
@@ -875,11 +1016,8 @@ export const ResultInfo = styled.div`
   align-items: center;
 `;
 
-export const ResultImageButton = styled.button`
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: zoom-in;
+export const ResultImageButton = styled.div`
+  display: flex;
 `;
 
 export const ResultImage = styled.img`

@@ -23,7 +23,7 @@ import Footer from "./Footer";
 import CheckinForm from "../../CheckinForm";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { EVENT_START_FINISH } from "./eventConfig";
+import { EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -1157,7 +1157,10 @@ export default function EventStampCard() {
             </IdentityCard>
             <IdentityCard>
               <Label>Strecke</Label>
-              <Value><Flag size={17} />{data?.slot?.route_name || "-"}</Value>
+              <Value>
+                <Flag size={17} />
+                {data?.slot ? formatRouteLabelWithDistance(data.slot.route_key, data.slot.distance_km) : "-"}
+              </Value>
             </IdentityCard>
           </IdentityGrid>
 
@@ -1224,7 +1227,7 @@ export default function EventStampCard() {
             <div style={{ width: 56, height: 6, borderRadius: 999, background: "#ebd6a6", margin: "0 auto 0.8rem" }} />
             <button type="button" onClick={() => setShowInfoSheet(false)} style={{ float: "right", border: "none", background: "transparent", fontSize: "1.4rem", cursor: "pointer" }}>×</button>
             <SectionTitle style={{ marginRight: "2rem" }}>Event-Infos</SectionTitle>
-            <SectionText>Technische Details sind hier ausgelagert, damit die Stempelkarte mobil kompakt bleibt.</SectionText>
+            <SectionText>Hier findest du zusätzliche Infos zu deinem Fortschritt, Standort und noch nicht übertragenen Stempeln.</SectionText>
 
             <IdentityGrid style={{ marginTop: "0.8rem" }}>
               <IdentityCard>
@@ -1232,11 +1235,11 @@ export default function EventStampCard() {
                 <Value>{completedMandatoryCount} / {mandatoryPrimaryCheckpoints.length}</Value>
               </IdentityCard>
               <IdentityCard>
-                <Label>Lokale Warteschlange</Label>
-                <Value>{pendingCount} offen</Value>
+                <Label>Noch nicht übertragene Stempel</Label>
+                <Value>{pendingCount} ausstehend</Value>
               </IdentityCard>
               <IdentityCard>
-                <Label>Standort</Label>
+                <Label>Standortgenauigkeit</Label>
                 <Value>{locationState.coords ? `${locationState.coords.accuracy?.toFixed?.(0) || "?"} m` : "Noch nicht erfasst"}</Value>
               </IdentityCard>
             </IdentityGrid>
@@ -1257,7 +1260,7 @@ export default function EventStampCard() {
               </Button>
               <Button type="button" $secondary onClick={syncPending} disabled={syncing || pendingCount === 0}>
                 <RefreshCw size={16} />
-                {syncing ? "Synchronisiere..." : "Offene Aktionen synchronisieren"}
+                {syncing ? "Übertrage..." : "Ausstehende Stempel übertragen"}
               </Button>
             </ActionRow>
           </Sheet>

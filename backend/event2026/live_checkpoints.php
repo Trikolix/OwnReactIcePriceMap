@@ -26,6 +26,7 @@ try {
             c.lat,
             c.lng,
             c.route_keys_csv,
+            c.shop_id,
             COUNT(DISTINCT p.slot_id) AS checked_in_count
         FROM event2026_checkpoints c
         LEFT JOIN event2026_checkpoint_passages p
@@ -33,7 +34,7 @@ try {
             AND p.event_id = c.event_id
         WHERE c.event_id = :event_id
           AND c.stamp_card_mode = :stamp_card_mode
-        GROUP BY c.id, c.name, c.lat, c.lng, c.route_keys_csv
+        GROUP BY c.id, c.name, c.lat, c.lng, c.route_keys_csv, c.shop_id
         ORDER BY c.order_index ASC, c.id ASC");
     $stmt->execute([
         ':event_id' => $eventId,
@@ -73,6 +74,7 @@ try {
             }
             return [
                 'checkpoint_id' => (int) $row['checkpoint_id'],
+                'shop_id' => $row['shop_id'] !== null ? (int) $row['shop_id'] : null,
                 'name' => $row['name'],
                 'lat' => (float) $row['lat'],
                 'lng' => (float) $row['lng'],

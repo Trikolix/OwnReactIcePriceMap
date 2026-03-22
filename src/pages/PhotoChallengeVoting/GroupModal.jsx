@@ -136,19 +136,21 @@ const GroupModal = ({
               ))}
             </S.ModalVoteWrapper>
           )}
-        {groupModal.mode === 'upcoming' && (
+          {groupModal.mode === 'upcoming' && (
             <S.PreviewGrid>
               {activeModalGroup.entries.map((entry) => (
-                <S.PreviewCard key={entry.image_id}>
-                  <S.PreviewImageButton
-                    type="button"
-                    onClick={() => openPreview(entry.url, entry.title || `Bild #${entry.image_id}`)}
-                    aria-label={`Bild ${entry.image_id} in Vollbild ansehen`}
-                  >
+                <S.PreviewCard
+                  key={entry.image_id}
+                  type="button"
+                  onClick={() => openPreview(entry.url, entry.title || `Bild #${entry.image_id}`)}
+                  aria-label={`Bild ${entry.image_id} in Vollbild ansehen`}
+                >
+                  <S.PreviewImageButton>
                     <S.PreviewImage src={buildAssetUrl(entry.url)} alt={entry.beschreibung || `Bild ${entry.image_id}`} />
                   </S.PreviewImageButton>
                   <S.PreviewMeta>
                     <strong>{entry.title || `Bild #${entry.image_id}`}</strong>
+                    <small>Zum Vergrößern antippen</small>
                   </S.PreviewMeta>
                 </S.PreviewCard>
               ))}
@@ -160,6 +162,9 @@ const GroupModal = ({
                 activeModalGroup.results.map((result) => (
                   <S.ResultItem
                     key={result.image_id}
+                    type="button"
+                    onClick={() => openPreview(result.url, result.title || `Bild #${result.image_id}`)}
+                    aria-label={`Ergebnis für Bild ${result.image_id} in Vollbild ansehen`}
                     className={
                       result.is_advancer
                         ? 'advancer'
@@ -169,10 +174,7 @@ const GroupModal = ({
                     }
                   >
                     <S.ResultInfo>
-                      <S.ResultImageButton
-                        type="button"
-                        onClick={() => openPreview(result.url, result.title || `Bild #${result.image_id}`)}
-                      >
+                      <S.ResultImageButton>
                         <S.ResultImage src={buildAssetUrl(result.url)} alt={result.title || `Bild ${result.image_id}`} />
                       </S.ResultImageButton>
                       <div>
@@ -184,6 +186,8 @@ const GroupModal = ({
                         {result.is_lucky_loser && (
                           <S.LuckyLoserBadge title="Lucky Loser: Nachgerückt">Lucky Loser</S.LuckyLoserBadge>
                         )}
+                        <br />
+                        <small>Zum Vergrößern antippen</small>
                       </div>
                     </S.ResultInfo>
                     <S.ResultWins>{result.votes} Stimmen</S.ResultWins>

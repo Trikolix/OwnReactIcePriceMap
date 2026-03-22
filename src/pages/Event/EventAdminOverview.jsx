@@ -4,6 +4,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
+import { formatRouteShortWithDistance } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -350,7 +351,7 @@ export default function EventAdminOverview() {
                           <td><Badge $tone={statusTone(registration.payment.status)}>{registration.payment.status}</Badge></td>
                           <td>{formatEuro(registration.payment.expected_amount)}</td>
                           <td>{formatEuro(registration.payment.outstanding_amount)}</td>
-                          <td>{primarySlot?.route_name || "-"}</td>
+                          <td>{primarySlot ? formatRouteShortWithDistance(primarySlot.route_key, primarySlot.distance_km) : "-"}</td>
                         </ClickableRow>
                       );
                     })}

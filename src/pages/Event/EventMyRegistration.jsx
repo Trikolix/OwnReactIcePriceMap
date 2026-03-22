@@ -19,7 +19,7 @@ import {
   JERSEY_DISPLAY_PRICE,
   getClothingLabel,
   getPaceLabel,
-  getRouteLabel,
+  formatRouteLabelWithDistance,
   getRouteTheme,
 } from "./eventConfig";
 
@@ -267,6 +267,17 @@ const LinkField = styled.input`
   box-sizing: border-box;
 `;
 
+const TextField = styled.input`
+  width: 100%;
+  border: 1px solid rgba(138, 87, 0, 0.18);
+  border-radius: 10px;
+  padding: 0.68rem 0.8rem;
+  background: #fff;
+  color: #2d1d00;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+`;
+
 const CopyButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -321,9 +332,12 @@ export default function EventMyRegistration() {
   const [isSavingClothing, setIsSavingClothing] = useState(false);
   const [activeAddonCheckoutId, setActiveAddonCheckoutId] = useState(null);
   const [showClothingEditor, setShowClothingEditor] = useState(false);
+  const [showTeamEditor, setShowTeamEditor] = useState(false);
   const [clothingInterest, setClothingInterest] = useState("none");
   const [jerseySize, setJerseySize] = useState("");
   const [bibSize, setBibSize] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [isSavingTeam, setIsSavingTeam] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -412,6 +426,10 @@ export default function EventMyRegistration() {
     setJerseySize(ownSlot.jersey_size || "");
     setBibSize(ownSlot.bib_size || "");
   }, [ownSlot]);
+
+  useEffect(() => {
+    setTeamName(data?.registration?.team_name || "");
+  }, [data?.registration?.team_name]);
 
   useEffect(() => {
     if (clothingInterest === "none") {
@@ -504,6 +522,51 @@ export default function EventMyRegistration() {
     }
   };
 
+  const canEditMissingTeamName = !String(data?.registration?.team_name || "").trim();
+
+  const handleUpdateTeamName = async () => {
+    if (!apiUrl || !authToken || !canEditMissingTeamName) return;
+    const normalizedTeamName = teamName.trim();
+    if (!normalizedTeamName) {
+      setError("Bitte gib einen Team- oder Vereinsnamen ein.");
+      return;
+    }
+
+    setIsSavingTeam(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${apiUrl}/event2026/update_team_name.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ teamName: normalizedTeamName }),
+      });
+      const json = await response.json();
+      if (!response.ok || json.status !== "success") {
+        throw new Error(json.message || "Team / Verein konnte nicht gespeichert werden.");
+      }
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          registration: {
+            ...prev.registration,
+            team_name: json.team_name,
+          },
+        };
+      });
+      setShowTeamEditor(false);
+      setSuccess(json.message || "Team / Verein aktualisiert.");
+    } catch (err) {
+      setError(err.message || "Team / Verein konnte nicht gespeichert werden.");
+    } finally {
+      setIsSavingTeam(false);
+    }
+  };
+
   return (
     <Page>
       <Header />
@@ -541,7 +604,7 @@ export default function EventMyRegistration() {
                         $border={getRouteTheme(ownSlot.route_key).border}
                         $color={getRouteTheme(ownSlot.route_key).text}
                       >
-                        {ownSlot.route_name || getRouteLabel(ownSlot.route_key)}
+                        {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)}
                       </RoutePill>
                     </Value>
                   </FieldRow>
@@ -551,7 +614,16 @@ export default function EventMyRegistration() {
                   </FieldRow>
                   <FieldRow>
                     <Label>Team / Verein</Label>
-                    <Value>{data.registration.team_name || "-"}</Value>
+                    <Value as="div">
+                      <ValueCluster>
+                        <span>{data.registration.team_name || "-"}</span>
+                        {canEditMissingTeamName && (
+                          <InlineLinkButton type="button" onClick={() => setShowTeamEditor((prev) => !prev)}>
+                            {showTeamEditor ? "Schließen" : "Nachtragen"}
+                          </InlineLinkButton>
+                        )}
+                      </ValueCluster>
+                    </Value>
                   </FieldRow>
                   <FieldRow>
                     <Label>Bekleidung</Label>
@@ -623,6 +695,37 @@ export default function EventMyRegistration() {
                           setBibSize(ownSlot.bib_size || "");
                         }}
                         disabled={isSavingClothing}
+                      >
+                        Abbrechen
+                      </SecondaryButton>
+                    </div>
+                  </div>
+                )}
+
+                {showTeamEditor && canEditMissingTeamName && (
+                  <div style={{ border: "1px solid rgba(138, 87, 0, 0.15)", borderRadius: 12, padding: "0.9rem" }}>
+                    <CardTitle style={{ marginBottom: "0.7rem" }}>Team / Verein nachtragen</CardTitle>
+                    <div>
+                      <FormLabel htmlFor="event-me-team-name">Team / Verein</FormLabel>
+                      <TextField
+                        id="event-me-team-name"
+                        value={teamName}
+                        onChange={(event) => setTeamName(event.target.value)}
+                        maxLength={255}
+                        placeholder="z. B. RSG Chemnitz"
+                      />
+                    </div>
+                    <div style={{ marginTop: "0.8rem", display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
+                      <SecondaryButton type="button" onClick={handleUpdateTeamName} disabled={isSavingTeam}>
+                        {isSavingTeam ? "Speichern..." : "Speichern"}
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          setShowTeamEditor(false);
+                          setTeamName(data.registration.team_name || "");
+                        }}
+                        disabled={isSavingTeam}
                       >
                         Abbrechen
                       </SecondaryButton>
@@ -728,7 +831,7 @@ export default function EventMyRegistration() {
                       $border={getRouteTheme(ownSlot.route_key).border}
                       $color={getRouteTheme(ownSlot.route_key).text}
                     >
-                      {ownSlot.route_name || getRouteLabel(ownSlot.route_key)}
+                      {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)}
                     </RoutePill>
                   </Value>
                 </FieldRow>
