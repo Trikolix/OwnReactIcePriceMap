@@ -16,22 +16,33 @@ const POINT_LABELS = {
   secret_location: 'Olympische Spielstätte gefunden',
   challenges_completed: 'Challenges abgeschlossen',
   referred_users: 'Geworbene Nutzer',
+  checkins_base_ep: 'Check-ins',
+  checkins_photo_ep: 'Check-ins mit Bild',
+  checkins_on_site_ep: 'Vor-Ort-Check-ins',
+  price_reported_ep: 'Preis gemeldet',
+  favorite_shop_added_ep: 'Favoriten hinzugefügt',
+  invite_registered_ep: 'Nutzer eingeladen',
+  invite_checkin_ep: 'Eingeladene Nutzer mit Check-in',
+  login_days_ep: 'Login-Tage',
+  profile_image_ep: 'Profilbild vorhanden',
+  comment_ep: 'Kommentare',
+  rad_event_page_ep: 'Ice-Tour-Seite besucht',
+  easter_eggs_ep: 'Geschenke gefunden',
+  new_shop_ep: 'Neue Eisdielen eingetragen',
+  challenge_completed_ep: 'Challenges abgeschlossen',
+  ice_shop_reviewed_ep: 'Eisdielen bewertet',
+  route_submitted_ep: 'Routen eingetragen',
+  photo_challenge_submission_ep: 'Fotochallenge: Einreichungen',
+  photo_challenge_vote_ep: 'Fotochallenge: Votes',
 };
 
 const UPCOMING_ACTIONS = [
   {
-    id: 'birthday',
-    title: 'Ice-App Geburtstagsaktion',
-    period: '07.03.2026 - 22.03.2026',
-    status: 'aktiv im März',
-    details: 'Pflichtaktionen erledigen, Fortschritt verfolgen und in der Bestenliste Punkte sammeln.',
-  },
-  {
     id: 'easter',
     title: 'Osteraktion',
-    period: 'Zeitraum wird noch nicht verraten',
+    period: 'genauer Zeitplan folgt',
     status: 'geplant',
-    details: 'Auch hier bleibt der Ablauf bewusst geheim. Weitere Infos kommen zur passenden Zeit.',
+    details: 'Vielleicht hat der Osterhase ein paar (Ei)s auf der Karte versteckt.',
   },
 ];
 
@@ -46,8 +57,61 @@ const ActionsOverviewModal = ({ open, onClose }) => {
   const [olympicsUserRank, setOlympicsUserRank] = useState(null);
   const [isOlympicsLoading, setIsOlympicsLoading] = useState(false);
   const [isOlympicsExpanded, setIsOlympicsExpanded] = useState(false);
+  const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
+  const [birthdayUserRank, setBirthdayUserRank] = useState(null);
+  const [isBirthdayLoading, setIsBirthdayLoading] = useState(false);
+  const [isBirthdayExpanded, setIsBirthdayExpanded] = useState(false);
+  const [birthdayBreakdownByUser, setBirthdayBreakdownByUser] = useState({});
+  const [activeBirthdayBreakdownUserId, setActiveBirthdayBreakdownUserId] = useState(null);
   const [breakdownByUser, setBreakdownByUser] = useState({});
   const [activeBreakdownUserId, setActiveBreakdownUserId] = useState(null);
+
+  const loadBirthdayBreakdown = async (entryUserId) => {
+    if (!apiUrl || !entryUserId) {
+      return;
+    }
+
+    const existing = birthdayBreakdownByUser[entryUserId];
+    if (existing?.loading || existing?.breakdown || existing?.error) {
+      return;
+    }
+
+    setBirthdayBreakdownByUser((prev) => ({
+      ...prev,
+      [entryUserId]: {
+        loading: true,
+        breakdown: null,
+        error: null,
+      },
+    }));
+
+    try {
+      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entryUserId}&readonly=1`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      setBirthdayBreakdownByUser((prev) => ({
+        ...prev,
+        [entryUserId]: {
+          loading: false,
+          breakdown: data?.points?.breakdown || {},
+          error: data?.error || null,
+        },
+      }));
+    } catch (error) {
+      console.error('Fehler beim Laden der Birthday-Aufschlüsselung:', error);
+      setBirthdayBreakdownByUser((prev) => ({
+        ...prev,
+        [entryUserId]: {
+          loading: false,
+          breakdown: null,
+          error: 'Details konnten nicht geladen werden.',
+        },
+      }));
+    }
+  };
 
   useEffect(() => {
     if (!open || !apiUrl) {
@@ -98,6 +162,33 @@ const ActionsOverviewModal = ({ open, onClose }) => {
       });
   }, [apiUrl, open, userId]);
 
+  useEffect(() => {
+    if (!open || !apiUrl) {
+      return;
+    }
+
+    setIsBirthdayExpanded(false);
+    setIsBirthdayLoading(true);
+    setBirthdayBreakdownByUser({});
+    setActiveBirthdayBreakdownUserId(null);
+    const userParam = userId ? `?user_id=${userId}` : '';
+    fetch(`${apiUrl}/api/birthday_leaderboard.php${userParam}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const leaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
+        setBirthdayLeaderboard(leaderboard);
+        setBirthdayUserRank(data?.user_rank || null);
+      })
+      .catch((error) => {
+        console.error('Fehler beim Laden des Birthday-Leaderboards:', error);
+        setBirthdayLeaderboard([]);
+        setBirthdayUserRank(null);
+      })
+      .finally(() => {
+        setIsBirthdayLoading(false);
+      });
+  }, [apiUrl, open, userId]);
+
   if (!open) {
     return null;
   }
@@ -105,6 +196,9 @@ const ActionsOverviewModal = ({ open, onClose }) => {
   const visibleOlympicsLeaderboard = isOlympicsExpanded
     ? olympicsLeaderboard
     : olympicsLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT);
+  const visibleBirthdayLeaderboard = isBirthdayExpanded
+    ? birthdayLeaderboard
+    : birthdayLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT);
 
   return (
     <OverlayBackground>
@@ -152,6 +246,77 @@ const ActionsOverviewModal = ({ open, onClose }) => {
         <IntroText>
           Hier findest du aktuelle und vergangene Ergebnisse sowie erste Hinweise auf kommende Aktionen.
         </IntroText>
+
+        <Section>
+          <SectionTitle>Ice-App Geburtstagschallenge 2026 - Ergebnisse</SectionTitle>
+          <Hint>
+            Die Geburtstagschallenge lief vom <strong>6. März 2026</strong> bis zum <strong>22. März 2026</strong>.
+            Hier bleibt die Abschlussrangliste auch nach Ende der Aktion historisch verfügbar.
+          </Hint>
+          {isBirthdayLoading ? (
+            <Hint>Lade Geburtstags-Rangliste...</Hint>
+          ) : birthdayLeaderboard.length === 0 ? (
+            <Hint>Keine Geburtstags-Ergebnisse vorhanden.</Hint>
+          ) : (
+            <LeaderboardList>
+              {visibleBirthdayLeaderboard.map((entry) => (
+                <LeaderboardItem
+                  key={`birthday-${entry.user_id}-${entry.rank}`}
+                  $highlight={Number(userId) === Number(entry.user_id)}
+                  onMouseEnter={() => {
+                    setActiveBirthdayBreakdownUserId(entry.user_id);
+                    loadBirthdayBreakdown(entry.user_id);
+                  }}
+                  onMouseLeave={() => setActiveBirthdayBreakdownUserId(null)}
+                >
+                  <span>#{entry.rank}</span>
+                  <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
+                  <strong>{entry.total_xp} XP</strong>
+                  {activeBirthdayBreakdownUserId === entry.user_id && (
+                    <BreakdownPopover>
+                      <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
+                      {birthdayBreakdownByUser[entry.user_id]?.loading ? (
+                        <small>Details werden geladen...</small>
+                      ) : birthdayBreakdownByUser[entry.user_id]?.error ? (
+                        <small>{birthdayBreakdownByUser[entry.user_id].error}</small>
+                      ) : (
+                        <>
+                          <BreakdownList>
+                            {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
+                              .filter(([, value]) => Number.isFinite(value) && value > 0)
+                              .map(([key, value]) => (
+                                <BreakdownListItem key={`birthday-${entry.user_id}-${key}`}>
+                                  <span>{POINT_LABELS[key] || key}</span>
+                                  <strong>+{value} XP</strong>
+                                </BreakdownListItem>
+                              ))}
+                          </BreakdownList>
+                          {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
+                            .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
+                              <small>Keine Punkte erfasst.</small>
+                            )}
+                        </>
+                      )}
+                    </BreakdownPopover>
+                  )}
+                </LeaderboardItem>
+              ))}
+            </LeaderboardList>
+          )}
+          {birthdayLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
+            <LeaderboardToggleButton
+              type="button"
+              onClick={() => setIsBirthdayExpanded((prev) => !prev)}
+            >
+              {isBirthdayExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
+            </LeaderboardToggleButton>
+          )}
+          {birthdayUserRank && (
+            <Hint>
+              Dein Rang: <strong>#{birthdayUserRank.rank}</strong> mit <strong>{birthdayUserRank.total_xp} XP</strong>
+            </Hint>
+          )}
+        </Section>
 
         <Section>
           <SectionTitle>Eis-Winterolympiade 2026 - Ergebnisse</SectionTitle>

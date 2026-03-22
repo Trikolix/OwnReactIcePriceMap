@@ -3,6 +3,11 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../evaluators/BirthdayChallengeEvaluator.php';
 
 $userId = intval($_GET['user_id'] ?? $_GET['nutzer_id'] ?? 0);
+$readOnly = in_array(
+    strtolower((string)($_GET['readonly'] ?? $_GET['read_only'] ?? '0')),
+    ['1', 'true', 'yes', 'on'],
+    true
+);
 if ($userId <= 0) {
     http_response_code(400);
     echo json_encode(['error' => 'user_id fehlt oder ungültig']);
@@ -281,7 +286,7 @@ try {
         $lastLoginDate = $progressRow['last_login_date'];
     }
 
-    if ($inPeriod && $today !== $lastLoginDate) {
+    if (!$readOnly && $inPeriod && $today !== $lastLoginDate) {
         $loginDays += 1;
         $lastLoginDate = $today;
     }
@@ -404,31 +409,35 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare(
-        "INSERT INTO birthday_user_progress (user_id, total_xp, login_days, last_login_date, mandatory_completed, bonus_completed)
-         VALUES (:user_id, :total_xp, :login_days, :last_login_date, :mandatory_completed, :bonus_completed)
-         ON DUPLICATE KEY UPDATE
-           total_xp = VALUES(total_xp),
-           login_days = VALUES(login_days),
-           last_login_date = VALUES(last_login_date),
-           mandatory_completed = VALUES(mandatory_completed),
-           bonus_completed = VALUES(bonus_completed)"
-    );
-    $stmt->execute([
-        'user_id' => $userId,
-        'total_xp' => $totalPoints,
-        'login_days' => $loginDays,
-        'last_login_date' => $lastLoginDate,
-        'mandatory_completed' => $mandatoryCompleted,
-        'bonus_completed' => $bonusCompleted,
-    ]);
+    if (!$readOnly) {
+        $stmt = $pdo->prepare(
+            "INSERT INTO birthday_user_progress (user_id, total_xp, login_days, last_login_date, mandatory_completed, bonus_completed)
+             VALUES (:user_id, :total_xp, :login_days, :last_login_date, :mandatory_completed, :bonus_completed)
+             ON DUPLICATE KEY UPDATE
+               total_xp = VALUES(total_xp),
+               login_days = VALUES(login_days),
+               last_login_date = VALUES(last_login_date),
+               mandatory_completed = VALUES(mandatory_completed),
+               bonus_completed = VALUES(bonus_completed)"
+        );
+        $stmt->execute([
+            'user_id' => $userId,
+            'total_xp' => $totalPoints,
+            'login_days' => $loginDays,
+            'last_login_date' => $lastLoginDate,
+            'mandatory_completed' => $mandatoryCompleted,
+            'bonus_completed' => $bonusCompleted,
+        ]);
+    }
 
     $newAwards = [];
-    try {
-        $evaluator = new BirthdayChallengeEvaluator($totalPoints);
-        $newAwards = $evaluator->evaluate($userId);
-    } catch (Exception $e) {
-        error_log("Fehler beim BirthdayChallengeEvaluator: " . $e->getMessage());
+    if (!$readOnly) {
+        try {
+            $evaluator = new BirthdayChallengeEvaluator($totalPoints);
+            $newAwards = $evaluator->evaluate($userId);
+        } catch (Exception $e) {
+            error_log("Fehler beim BirthdayChallengeEvaluator: " . $e->getMessage());
+        }
     }
 
     echo json_encode([
@@ -470,6 +479,7 @@ try {
             'award_id' => 57,
             'levels' => $birthdayAwardLevels,
         ],
+        'read_only' => $readOnly,
         'new_awards' => $newAwards,
     ]);
 } catch (PDOException $e) {

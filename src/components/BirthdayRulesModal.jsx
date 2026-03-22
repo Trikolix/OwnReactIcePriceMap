@@ -339,7 +339,7 @@ const BirthdayRulesModal = ({
     });
 
     try {
-      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entry.user_id}`);
+      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entry.user_id}&readonly=1`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
