@@ -12,7 +12,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
-import { isSpecialTime } from './utils/seasonal';
+import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
 import { buildAssetUrl } from './utils/assets.jsx';
 import {
   countActivitiesSince,
@@ -20,13 +20,7 @@ import {
   readActivityFeedSeenAt,
   writeActivityFeedCache,
 } from './utils/activityFeed';
-import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
-import headerWideChristmas from './header_wide_christmas.png';
-import headerWideEaster from './header_wide_easter.png';
-import headerWideBirthday from './header_wide_1st_birthday_new.png';
-import headerWide from './header_wide.png';
-import GewinnspielImage from './birthday_action.png';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,34 +33,18 @@ const Header = ({ refreshShops }) => {
   const [newAwards, setNewAwards] = useState([]);
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [showUserOfMonth, setShowUserOfMonth] = useState(false);
   const [showActionsOverview, setShowActionsOverview] = useState(false);
-  const [showBirthdayRules, setShowBirthdayRules] = useState(false);
-  const [birthdayPoints, setBirthdayPoints] = useState(null);
-  const [birthdayMaxPoints, setBirthdayMaxPoints] = useState(null);
-  const [birthdayBreakdown, setBirthdayBreakdown] = useState({});
-  const [birthdayStatus, setBirthdayStatus] = useState({});
-  const [birthdayCounts, setBirthdayCounts] = useState({});
-  const [birthdayMandatoryCompleted, setBirthdayMandatoryCompleted] = useState(0);
-  const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(11);
-  const [birthdayRewardUnlocked, setBirthdayRewardUnlocked] = useState(false);
-  const [isBirthdayProgressLoaded, setIsBirthdayProgressLoaded] = useState(false);
-  const [birthdayCampaignPhase, setBirthdayCampaignPhase] = useState('live');
-  const [birthdayAnniversaryUnlockedAt, setBirthdayAnniversaryUnlockedAt] = useState(null);
-  const [birthdayEisTourRegistrationOpen, setBirthdayEisTourRegistrationOpen] = useState(false);
-  const [birthdayAwardConfig, setBirthdayAwardConfig] = useState(null);
-  const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
-  const [birthdayLeaderboardFull, setBirthdayLeaderboardFull] = useState([]);
-  const [birthdayUserRank, setBirthdayUserRank] = useState(null);
-  const [isBirthdayLeaderboardLoading, setIsBirthdayLeaderboardLoading] = useState(false);
-  const [isBirthdayLeaderboardExpanded, setIsBirthdayLeaderboardExpanded] = useState(false);
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
-  const LEADERBOARD_COLLAPSED_COUNT = 3;
-  const specialTime = isSpecialTime();
+  const seasonalState = getResolvedSeasonalCampaigns();
+  const featuredCampaign = seasonalState.featuredCampaign;
+  const promoIconSrc = featuredCampaign?.teaserIcon ? buildAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
+  const promoIconAlt = featuredCampaign
+    ? `${featuredCampaign.title} öffnen`
+    : 'Aktionen & Ergebnisse öffnen';
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
@@ -380,162 +358,19 @@ const Header = ({ refreshShops }) => {
     }
   };
 
-  const [currentUser, setCurrentUser] = useState(null);
-  const [pastUsers, setPastUsers] = useState([]);
-
-  useEffect(() => {
-    const fetchUserOfMonth = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/get_user_of_the_month.php`);
-        const data = await response.json();
-        if (data.error) {
-          console.error("Error fetching user of the month:", data.error);
-        } else {
-          setCurrentUser(data.currentUser);
-          setPastUsers(data.pastUsers || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user of the month:', error);
-      }
-    };
-
-    fetchUserOfMonth();
-  }, [apiUrl]);
-
-
-  const getLogoSrc = () => {
-    const specialTime = isSpecialTime();
-    if (specialTime === 'christmas') {
-      return headerWideChristmas;
-    }
-    if (specialTime === 'easter') {
-      return headerWideEaster;
-    }
-    if (specialTime === 'birthday') {
-      return headerWideBirthday;
-    }
-    return headerWide;
-  };
-
-  const forceLocalBirthdayUnlock =
-    typeof window !== 'undefined'
-    && (window.location.hostname === 'localhost'
-      || window.location.hostname === '127.0.0.1'
-      || window.location.hostname === '::1');
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
-
-  useEffect(() => {
-    if (specialTime !== 'birthday' || !userId) {
-      setIsBirthdayProgressLoaded(true);
-      setBirthdayPoints(null);
-      setBirthdayMaxPoints(null);
-      setBirthdayBreakdown({});
-      setBirthdayStatus({});
-      setBirthdayCounts({});
-      setBirthdayMandatoryCompleted(0);
-      setBirthdayMandatoryTotal(11);
-      setBirthdayRewardUnlocked(false);
-      setBirthdayCampaignPhase('live');
-      setBirthdayAnniversaryUnlockedAt(null);
-      setBirthdayEisTourRegistrationOpen(false);
-      setBirthdayAwardConfig(null);
-      return;
-    }
-
-    setIsBirthdayProgressLoaded(false);
-    fetch(`${apiUrl}/api/birthday_progress.php?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const total = Number.isFinite(data?.points?.total) ? data.points.total : 0;
-        setBirthdayPoints(total);
-        setBirthdayMaxPoints(Number.isFinite(data?.points?.max) ? data.points.max : null);
-        setBirthdayBreakdown(data?.points?.breakdown || {});
-        setBirthdayStatus(data?.status || {});
-        setBirthdayCounts(data?.counts || {});
-        setBirthdayMandatoryCompleted(Number.isFinite(data?.mandatory?.completed) ? data.mandatory.completed : 0);
-        setBirthdayMandatoryTotal(Number.isFinite(data?.mandatory?.total) ? data.mandatory.total : 11);
-        setBirthdayRewardUnlocked(Boolean(data?.reward_unlocked));
-        setBirthdayCampaignPhase(typeof data?.campaign_phase === 'string' ? data.campaign_phase : 'live');
-        setBirthdayAnniversaryUnlockedAt(
-          typeof data?.anniversary_unlocked_at === 'string' ? data.anniversary_unlocked_at : null
-        );
-        setBirthdayEisTourRegistrationOpen(Boolean(data?.eis_tour_registration_open));
-        setBirthdayAwardConfig(data?.birthday_awards || null);
-        if (data?.new_awards && data.new_awards.length > 0) {
-          setNewAwards(data.new_awards);
-          setShowOverlay(true);
-        }
-        setIsBirthdayProgressLoaded(true);
-      })
-      .catch((err) => {
-        console.error('Fehler beim Laden der Geburtstags-Punkte:', err);
-        setBirthdayPoints(null);
-        setBirthdayMaxPoints(null);
-        setBirthdayBreakdown({});
-        setBirthdayStatus({});
-        setBirthdayCounts({});
-        setBirthdayMandatoryCompleted(0);
-        setBirthdayMandatoryTotal(11);
-        setBirthdayRewardUnlocked(false);
-        setBirthdayCampaignPhase('live');
-        setBirthdayAnniversaryUnlockedAt(null);
-        setBirthdayEisTourRegistrationOpen(false);
-        setBirthdayAwardConfig(null);
-        setIsBirthdayProgressLoaded(true);
-      });
-  }, [apiUrl, specialTime, userId]);
-
-  useEffect(() => {
-    if (specialTime !== 'birthday' || !showBirthdayRules) {
-      setBirthdayLeaderboard([]);
-      setBirthdayLeaderboardFull([]);
-      setBirthdayUserRank(null);
-      setIsBirthdayLeaderboardExpanded(false);
-      return;
-    }
-
-    setIsBirthdayLeaderboardLoading(true);
-    const userParam = userId ? `?user_id=${userId}` : '';
-    fetch(`${apiUrl}/api/birthday_leaderboard.php${userParam}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const fullLeaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
-        setBirthdayLeaderboardFull(fullLeaderboard);
-        setBirthdayLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
-        setBirthdayUserRank(data?.user_rank || null);
-      })
-      .catch((err) => {
-        console.error('Fehler beim Laden des Geburtstags-Leaderboards:', err);
-        setBirthdayLeaderboard([]);
-        setBirthdayLeaderboardFull([]);
-        setBirthdayUserRank(null);
-      })
-      .finally(() => {
-        setIsBirthdayLeaderboardLoading(false);
-      });
-  }, [apiUrl, specialTime, showBirthdayRules, userId]);
 
   return (
     <>
       <HeaderContainer $menuOpen={menuOpen}>
         <PromoIconsContainer>
-          <GewinnspielIcon onClick={() => {
-            if (specialTime === 'birthday') {
-              setShowBirthdayRules(true);
-              return;
-            }
-            setShowActionsOverview(true);
-          }}>
-            {specialTime === 'birthday' ? (
-              <img src={GewinnspielImage} alt="Geburtstagsaktionen & Belohnungen" />
-            ) : (
-              <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
-            )}
+          <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
+            <img src={promoIconSrc} alt={promoIconAlt} />
           </GewinnspielIcon>
         </PromoIconsContainer>
 
         <LogoContainer>
-          <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
+          <a href="/"><Logo src={seasonalState.headerLogo} alt="Website Logo" /></a>
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
@@ -743,81 +578,15 @@ const Header = ({ refreshShops }) => {
         </OverlayBackground>
       )}
 
-      <BirthdayRulesModal
-        open={showBirthdayRules}
-        onClose={() => setShowBirthdayRules(false)}
-        points={birthdayPoints}
-        maxPoints={birthdayMaxPoints}
-        isLoggedIn={isLoggedIn}
-        breakdown={birthdayBreakdown}
-        status={birthdayStatus}
-        counts={birthdayCounts}
-        mandatoryCompleted={birthdayMandatoryCompleted}
-        mandatoryTotal={birthdayMandatoryTotal}
-        rewardUnlocked={birthdayRewardUnlocked}
-        leaderboard={birthdayLeaderboard}
-        leaderboardFull={birthdayLeaderboardFull}
-        userRank={birthdayUserRank}
-        isLeaderboardLoading={isBirthdayLeaderboardLoading}
-        isLeaderboardFullLoading={isBirthdayLeaderboardLoading}
-        isLeaderboardExpanded={isBirthdayLeaderboardExpanded}
-        onToggleLeaderboard={(expanded) => setIsBirthdayLeaderboardExpanded(expanded)}
-        currentUserId={userId}
-        extraIceReward={birthdayStatus?.extra_ice_reward}
-        campaignPhase={birthdayCampaignPhase}
-        iceToursaryUnlockedAt={birthdayAnniversaryUnlockedAt}
-        eisTourRegistrationOpen={birthdayEisTourRegistrationOpen}
-        awardConfig={birthdayAwardConfig}
-        forceLocalUnlock={forceLocalBirthdayUnlock}
-        onLogin={() => {
-          setShowBirthdayRules(false);
-          setShowLoginModal(true);
-        }}
-      />
       <ActionsOverviewModal
         open={showActionsOverview}
         onClose={() => setShowActionsOverview(false)}
+        isLoggedIn={isLoggedIn}
+        onLogin={() => {
+          setShowActionsOverview(false);
+          setShowLoginModal(true);
+        }}
       />
-
-      {showUserOfMonth && currentUser && (
-        <OverlayBackground>
-          <Overlay>
-            <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
-            <h2>🏆 Nutzer/in des Monats 🏆</h2>
-            <CurrentUserWrapper>
-              <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
-                <UserCard>
-                  <MonthHeader><u>{currentUser.month}</u></MonthHeader>
-                  <CurrentUserImage
-                    src={currentUser.image}
-                    alt={currentUser.name}
-                  />
-                  <strong>
-                    {currentUser.name}
-                  </strong>
-                </UserCard>
-              </UserLink>
-            </CurrentUserWrapper>
-            <hr></hr>
-            <h3>🏆 Vorherige Nutzer/innen des Monats 🏆</h3>
-            <PastUsersGrid>
-              {pastUsers.map((user) => (
-                <UserLink to={`/user/${user.id}`} key={`${user.month}-${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
-                  <UserCard>
-                    <MonthHeader><u>{user.month}</u></MonthHeader>
-                    <UserImage src={user.image} alt={user.name} />
-                    <strong>
-                      {user.name}
-                    </strong>
-                  </UserCard>
-                </UserLink>
-              ))}
-            </PastUsersGrid>
-
-            <SubmitButton style={{ marginTop: '1rem' }} onClick={() => setShowUserOfMonth(false)}>Alles Klar!</SubmitButton>
-          </Overlay>
-        </OverlayBackground>
-      )}
 
       <QrScanModal
         open={modalData !== null}

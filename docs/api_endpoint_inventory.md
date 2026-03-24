@@ -14,13 +14,16 @@ Generated: 2026-03-05 14:46:43 CET
 | /activity_feed.php | Community/User | src/pages/DashBoard.jsx | /api/v2/users/* | Legacy active |
 | /admin/get_shop_change_requests.php | Admin | src/pages/ShopChangeRequestsAdmin.jsx | /api/v2/admin/* | Legacy active |
 | /admin/handle_shop_change_request.php | Admin | src/pages/ShopChangeRequestsAdmin.jsx | /api/v2/admin/* | Legacy active |
-| /api/birthday_easter_egg_click.php | Challenges/Event | src/components/BirthdayPresentMarkers.jsx | /api/v2/challenges/* | Legacy active |
-| /api/birthday_leaderboard.php | Challenges/Event | src/Header.jsx | /api/v2/challenges/* | Legacy active |
-| /api/birthday_progress.php | Challenges/Event | src/Header.jsx | /api/v2/challenges/* | Legacy active |
+| /api/birthday_easter_egg_click.php | Challenges/Event | src/archive/seasonal/legacy/BirthdayPresentMarkers.jsx | /api/v2/challenges/* | Archived legacy |
+| /api/birthday_leaderboard.php | Challenges/Event | src/pages/ActionsOverview.jsx | /api/v2/challenges/* | Legacy active |
+| /api/birthday_progress.php | Challenges/Event | src/pages/ActionsOverview.jsx | /api/v2/challenges/* | Legacy active |
 | /api/birthday_track_event_page.php | Challenges/Event | src/pages/Event/RadEvent.jsx | /api/v2/challenges/* | Legacy active |
 | /api/challenge_generate.php | Challenges/Event | src/pages/Challenges.jsx | /api/v2/challenges/* | Legacy active |
 | /api/challenge_list.php | Challenges/Event | src/pages/Challenges.jsx | /api/v2/challenges/* | Legacy active |
 | /api/checkin_mentions.php | Community/User | src/components/MentionInviteModal.jsx | TBD | Legacy active |
+| /api/easter_bunny_daily_hint.php | Challenges/Event | src/features/seasonal/EasterCampaignPanel.jsx | /api/v2/challenges/* | New seasonal |
+| /api/easter_bunny_hop.php | Challenges/Event | src/features/seasonal/EasterMapEncounter.jsx | /api/v2/challenges/* | New seasonal |
+| /api/easter_bunny_progress.php | Challenges/Event | src/features/seasonal/EasterCampaignPanel.jsx<br>src/features/seasonal/EasterMapEncounter.jsx | /api/v2/challenges/* | New seasonal |
 | /api/get_preise_hierarchisch.php | Statistics | src/pages/Statistics.jsx | /api/v2/statistics/* | Legacy active |
 | /api/get_preset_avatars.php | User API | src/pages/UserSettings.jsx | /api/v2/users/* | Legacy active |
 | /api/get_user_notification_settings.php | User API | src/pages/UserSettings.jsx | /api/v2/users/* | Legacy active |
@@ -28,6 +31,7 @@ Generated: 2026-03-05 14:46:43 CET
 | /api/qr_scan.php | User API | src/Header.jsx | /api/v2/users/* | Legacy active |
 | /api/search_user.php | User API | src/components/UserMentionField.jsx | /api/v2/users/* | Legacy active |
 | /api/update_user_notification_settings.php | User API | src/pages/UserSettings.jsx | /api/v2/users/* | Legacy active |
+| /api/seasonal_award_grant.php | Community/User | TBD | /api/v2/users/* | New seasonal helper |
 | /benachrichtigungen.php | Community/User | src/components/NotificationBell.jsx | /api/v2/users/* | Legacy active |
 | /checkin/checkin_upload.php | Checkins | src/CheckinForm.jsx | /api/v2/checkins | Legacy active |
 | /checkin/delete_checkin.php | Checkins | src/CheckinForm.jsx | /api/v2/checkins | Legacy active |
@@ -54,7 +58,7 @@ Generated: 2026-03-05 14:46:43 CET
 | /get_user_flavour_details.php | Community/User | src/pages/UserSite.jsx | /api/v2/users/* | Legacy active |
 | /get_user_of_the_month.php | Community/User | src/Header.jsx<br>src/pages/ActionsOverview.jsx | /api/v2/users/* | Legacy active |
 | /get_user_stats.php | Community/User | src/Header.jsx<br>src/pages/UserSite.jsx<br>src/pages/Event/Header.jsx | /api/v2/users/* | Legacy active |
-| /grant_secret_award.php | Community/User | src/components/ChristmasElf.jsx<br>src/components/EasterBunny.jsx<br>src/components/OlympicsVenues.jsx | /api/v2/users/* | Legacy active |
+| /grant_secret_award.php | Community/User | src/archive/seasonal/legacy/ChristmasElf.jsx<br>src/archive/seasonal/legacy/EasterBunny.jsx<br>src/archive/seasonal/legacy/OlympicsVenues.jsx | /api/v2/users/* | Archived legacy wrapper |
 | /is_favorit.php | Favorites | src/components/FavoritButton.jsx | /api/v2/favorites | Legacy active |
 | /kommentare.php | Community/User | src/components/CommentSection.jsx | /api/v2/users/* | Legacy active |
 | /photo_challenge/add_images.php | PhotoChallenge | src/pages/PhotoChallengeAdmin.jsx | /api/v2/photo-challenges | Legacy active |

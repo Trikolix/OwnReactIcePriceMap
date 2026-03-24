@@ -1,61 +1,55 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/seasonal_results.php';
 
 $userId = intval($_GET['user_id'] ?? $_GET['nutzer_id'] ?? 0);
 
 try {
-    $stmt = $pdo->prepare(
-        "SELECT oup.user_id, n.username, oup.total_xp
-         FROM olympics_user_progress oup
-         JOIN nutzer n ON n.id = oup.user_id
-         ORDER BY oup.total_xp DESC, oup.updated_at ASC, oup.user_id ASC"
-    );
-    $stmt->execute();
-    $topRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = getArchivedCampaignResults($pdo, 'olympics_2026');
 
-    $leaderboard = [];
-    $currentRank = 0;
-    $lastXp = null;
-    foreach ($topRows as $index => $row) {
-        $xp = (int)$row['total_xp'];
-        if ($lastXp === null || $xp < $lastXp) {
-            $currentRank = $index + 1;
-            $lastXp = $xp;
-        }
-        $leaderboard[] = [
-            'rank' => $currentRank,
-            'user_id' => (int)$row['user_id'],
-            'username' => $row['username'],
-            'total_xp' => $xp,
-        ];
-    }
+    if (!empty($rows)) {
+        $leaderboard = [];
+        $breakdowns = [];
+        $userRank = null;
 
-    $userRank = null;
-    if ($userId > 0) {
-        $stmt = $pdo->prepare(
-            "SELECT total_xp FROM olympics_user_progress WHERE user_id = :user_id LIMIT 1"
-        );
-        $stmt->execute(['user_id' => $userId]);
-        $userXp = $stmt->fetchColumn();
-
-        if ($userXp !== false) {
-            $userXp = (int)$userXp;
-            $stmt = $pdo->prepare(
-                "SELECT COUNT(DISTINCT total_xp) FROM olympics_user_progress WHERE total_xp > :xp"
-            );
-            $stmt->execute(['xp' => $userXp]);
-            $higherDistinct = (int)$stmt->fetchColumn();
-            $userRank = [
-                'rank' => $higherDistinct + 1,
-                'user_id' => $userId,
-                'total_xp' => $userXp,
+        foreach ($rows as $row) {
+            $payload = decodeArchivedPayload($row['payload_json'] ?? null);
+            $uid = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+            $leaderboard[] = [
+                'rank' => (int)$row['rank_position'],
+                'user_id' => $uid,
+                'username' => $row['username_snapshot'],
+                'total_xp' => (int)$row['score'],
             ];
+            $breakdowns[$uid] = [
+                'breakdown' => $payload['points']['breakdown'] ?? [],
+                'counts' => $payload['counts'] ?? [],
+                'total_xp' => (int)$row['score'],
+            ];
+
+            if ($userId > 0 && $uid === $userId) {
+                $userRank = [
+                    'rank' => (int)$row['rank_position'],
+                    'user_id' => $uid,
+                    'total_xp' => (int)$row['score'],
+                ];
+            }
         }
+
+        echo json_encode([
+            'leaderboard' => $leaderboard,
+            'breakdowns' => $breakdowns,
+            'user_rank' => $userRank,
+            'archived' => true,
+        ]);
+        exit;
     }
 
     echo json_encode([
-        'leaderboard' => $leaderboard,
-        'user_rank' => $userRank,
+        'leaderboard' => [],
+        'breakdowns' => [],
+        'user_rank' => null,
+        'archived' => false,
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

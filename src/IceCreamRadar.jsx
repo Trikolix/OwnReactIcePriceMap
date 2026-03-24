@@ -17,11 +17,8 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
-import ChristmasElf, { SecretWorkshopMarker } from './components/ChristmasElf';
-import EasterBunny, { EasterEggMarker } from './components/EasterBunny';
-import OlympicsVenueMarkers from './components/OlympicsVenues';
-import BirthdayPresentMarkers from './components/BirthdayPresentMarkers';
-import { isSpecialTime } from './utils/seasonal';
+import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
+import { CAMPAIGN_STATUS, getCampaignStatus } from './features/seasonal/campaigns';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const DEFAULT_CONTEXT_MENU_STATE = {
   isVisible: false,
@@ -808,7 +805,7 @@ const IceCreamRadar = () => {
     }
   }, [userId, openFilterQueryString]);
 
-  const specialTime = isSpecialTime();
+  const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
 
   return (
     <div
@@ -836,8 +833,6 @@ const IceCreamRadar = () => {
       </LogoContainer>
 
       <MapSection>
-        {specialTime === 'christmas' && <ChristmasElf />}
-        {specialTime === 'easter' && <EasterBunny />}
         {isSearchVisible && (
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
@@ -930,14 +925,10 @@ const IceCreamRadar = () => {
             maxZoom={19}
           />
           {activeShop && <MapCenterOnShop shop={activeShop} />}
-          {specialTime === 'christmas' && currentZoom > 5 && <SecretWorkshopMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
-          {specialTime === 'easter' && currentZoom > 5 && <EasterEggMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
-          {specialTime === 'olympics' && currentZoom > 9 && <OlympicsVenueMarkers isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
-          {specialTime === 'birthday' && currentZoom > 9 && (
-            <BirthdayPresentMarkers
-              shops={iceCreamShops}
+          {easterCampaignActive && currentZoom > 5 && (
+            <EasterMapEncounter
+              enabled={easterCampaignActive}
               isLoggedIn={isLoggedIn}
-              userId={userId}
               setShowLoginModal={setShowLoginModal}
             />
           )}

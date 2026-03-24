@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import {
+  CAMPAIGN_STATUS,
+  getActionsOverviewCampaigns,
+} from '../features/seasonal/campaigns';
+import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 
 const POINT_LABELS = {
   login_active: 'App geöffnet & eingeloggt',
@@ -36,20 +41,22 @@ const POINT_LABELS = {
   photo_challenge_vote_ep: 'Fotochallenge: Votes',
 };
 
-const UPCOMING_ACTIONS = [
-  {
-    id: 'easter',
-    title: 'Osteraktion',
-    period: 'genauer Zeitplan folgt',
-    status: 'geplant',
-    details: 'Vielleicht hat der Osterhase ein paar (Ei)s auf der Karte versteckt.',
-  },
-];
+const formatCampaignDate = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return null;
+  }
 
-const ActionsOverviewModal = ({ open, onClose }) => {
-  const LEADERBOARD_COLLAPSED_COUNT = 10;
+  return new Intl.DateTimeFormat('de-DE', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+};
+
+const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const { userId } = useUser();
+  const campaigns = useMemo(() => getActionsOverviewCampaigns(), []);
   const [currentUser, setCurrentUser] = useState(null);
   const [pastUsers, setPastUsers] = useState([]);
   const [isUserOfMonthLoading, setIsUserOfMonthLoading] = useState(false);
@@ -65,53 +72,7 @@ const ActionsOverviewModal = ({ open, onClose }) => {
   const [activeBirthdayBreakdownUserId, setActiveBirthdayBreakdownUserId] = useState(null);
   const [breakdownByUser, setBreakdownByUser] = useState({});
   const [activeBreakdownUserId, setActiveBreakdownUserId] = useState(null);
-
-  const loadBirthdayBreakdown = async (entryUserId) => {
-    if (!apiUrl || !entryUserId) {
-      return;
-    }
-
-    const existing = birthdayBreakdownByUser[entryUserId];
-    if (existing?.loading || existing?.breakdown || existing?.error) {
-      return;
-    }
-
-    setBirthdayBreakdownByUser((prev) => ({
-      ...prev,
-      [entryUserId]: {
-        loading: true,
-        breakdown: null,
-        error: null,
-      },
-    }));
-
-    try {
-      const response = await fetch(`${apiUrl}/api/birthday_progress.php?user_id=${entryUserId}&readonly=1`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      setBirthdayBreakdownByUser((prev) => ({
-        ...prev,
-        [entryUserId]: {
-          loading: false,
-          breakdown: data?.points?.breakdown || {},
-          error: data?.error || null,
-        },
-      }));
-    } catch (error) {
-      console.error('Fehler beim Laden der Birthday-Aufschlüsselung:', error);
-      setBirthdayBreakdownByUser((prev) => ({
-        ...prev,
-        [entryUserId]: {
-          loading: false,
-          breakdown: null,
-          error: 'Details konnten nicht geladen werden.',
-        },
-      }));
-    }
-  };
+  const LEADERBOARD_COLLAPSED_COUNT = 10;
 
   useEffect(() => {
     if (!open || !apiUrl) {
@@ -130,9 +91,7 @@ const ActionsOverviewModal = ({ open, onClose }) => {
       .catch((error) => {
         console.error('Failed to fetch user of the month:', error);
       })
-      .finally(() => {
-        setIsUserOfMonthLoading(false);
-      });
+      .finally(() => setIsUserOfMonthLoading(false));
   }, [apiUrl, open]);
 
   useEffect(() => {
@@ -146,8 +105,7 @@ const ActionsOverviewModal = ({ open, onClose }) => {
     fetch(`${apiUrl}/api/olympics_leaderboard.php${userParam}`)
       .then((res) => res.json())
       .then((data) => {
-        const leaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
-        setOlympicsLeaderboard(leaderboard);
+        setOlympicsLeaderboard(Array.isArray(data?.leaderboard) ? data.leaderboard : []);
         setOlympicsUserRank(data?.user_rank || null);
         setBreakdownByUser(data?.breakdowns || {});
       })
@@ -157,9 +115,7 @@ const ActionsOverviewModal = ({ open, onClose }) => {
         setOlympicsUserRank(null);
         setBreakdownByUser({});
       })
-      .finally(() => {
-        setIsOlympicsLoading(false);
-      });
+      .finally(() => setIsOlympicsLoading(false));
   }, [apiUrl, open, userId]);
 
   useEffect(() => {
@@ -175,18 +131,17 @@ const ActionsOverviewModal = ({ open, onClose }) => {
     fetch(`${apiUrl}/api/birthday_leaderboard.php${userParam}`)
       .then((res) => res.json())
       .then((data) => {
-        const leaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
-        setBirthdayLeaderboard(leaderboard);
+        setBirthdayLeaderboard(Array.isArray(data?.leaderboard) ? data.leaderboard : []);
         setBirthdayUserRank(data?.user_rank || null);
+        setBirthdayBreakdownByUser(data?.breakdowns || {});
       })
       .catch((error) => {
         console.error('Fehler beim Laden des Birthday-Leaderboards:', error);
         setBirthdayLeaderboard([]);
         setBirthdayUserRank(null);
+        setBirthdayBreakdownByUser({});
       })
-      .finally(() => {
-        setIsBirthdayLoading(false);
-      });
+      .finally(() => setIsBirthdayLoading(false));
   }, [apiUrl, open, userId]);
 
   if (!open) {
@@ -199,6 +154,9 @@ const ActionsOverviewModal = ({ open, onClose }) => {
   const visibleBirthdayLeaderboard = isBirthdayExpanded
     ? birthdayLeaderboard
     : birthdayLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT);
+  const activeCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
+  const upcomingCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
+  const hasPastEvents = campaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
 
   return (
     <OverlayBackground>
@@ -243,44 +201,73 @@ const ActionsOverviewModal = ({ open, onClose }) => {
         )}
 
         <MainHeading>Aktionen & Ergebnisse</MainHeading>
-        <IntroText>
-          Hier findest du aktuelle und vergangene Ergebnisse sowie erste Hinweise auf kommende Aktionen.
-        </IntroText>
 
-        <Section>
-          <SectionTitle>Ice-App Geburtstagschallenge 2026 - Ergebnisse</SectionTitle>
-          <Hint>
-            Die Geburtstagschallenge lief vom <strong>6. März 2026</strong> bis zum <strong>22. März 2026</strong>.
-            Hier bleibt die Abschlussrangliste auch nach Ende der Aktion historisch verfügbar.
-          </Hint>
-          {isBirthdayLoading ? (
-            <Hint>Lade Geburtstags-Rangliste...</Hint>
-          ) : birthdayLeaderboard.length === 0 ? (
-            <Hint>Keine Geburtstags-Ergebnisse vorhanden.</Hint>
-          ) : (
-            <LeaderboardList>
-              {visibleBirthdayLeaderboard.map((entry) => (
-                <LeaderboardItem
-                  key={`birthday-${entry.user_id}-${entry.rank}`}
-                  $highlight={Number(userId) === Number(entry.user_id)}
-                  onMouseEnter={() => {
-                    setActiveBirthdayBreakdownUserId(entry.user_id);
-                    loadBirthdayBreakdown(entry.user_id);
-                  }}
-                  onMouseLeave={() => setActiveBirthdayBreakdownUserId(null)}
-                >
-                  <span>#{entry.rank}</span>
-                  <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
-                  <strong>{entry.total_xp} XP</strong>
-                  {activeBirthdayBreakdownUserId === entry.user_id && (
-                    <BreakdownPopover>
-                      <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
-                      {birthdayBreakdownByUser[entry.user_id]?.loading ? (
-                        <small>Details werden geladen...</small>
-                      ) : birthdayBreakdownByUser[entry.user_id]?.error ? (
-                        <small>{birthdayBreakdownByUser[entry.user_id].error}</small>
-                      ) : (
-                        <>
+        {activeCampaigns.length > 0 && (
+          <>
+            <CategoryHeading>Laufende Events</CategoryHeading>
+            {activeCampaigns.map((campaign) => (
+              <EasterCampaignPanel
+                key={campaign.id}
+                campaign={campaign}
+                isLoggedIn={isLoggedIn}
+                onLogin={onLogin}
+              />
+            ))}
+          </>
+        )}
+
+        {upcomingCampaigns.length > 0 && (
+          <>
+            <CategoryHeading>Anstehende Events</CategoryHeading>
+            {upcomingCampaigns.map((campaign) => (
+              <Section key={campaign.id}>
+                <SectionTitle>{campaign.title}</SectionTitle>
+                <Hint>
+                  {campaign.schedule?.start ? (
+                    <>
+                      Start geplant am <strong>{formatCampaignDate(campaign.schedule.start)}</strong>.
+                    </>
+                  ) : (
+                    'Ein Starttermin folgt.'
+                  )}
+                </Hint>
+                <Hint>
+                  Seid gespannt, welche spannende Aktion der Osterhase sich für euch ausgedacht hat!
+                </Hint>
+              </Section>
+            ))}
+          </>
+        )}
+
+        {hasPastEvents && <CategoryHeading>Vergangene Events</CategoryHeading>}
+
+        {hasPastEvents && (
+          <>
+            <Section>
+              <SectionTitle>Ice-App Geburtstagschallenge 2026 - Ergebnisse</SectionTitle>
+              <Hint>
+                Die Geburtstagschallenge lief vom <strong>6. März 2026</strong> bis zum <strong>22. März 2026</strong>.
+                Hier bleibt die Abschlussrangliste historisch sichtbar, die Live-Aktionslogik wurde aus dem regulären Produktfluss entfernt.
+              </Hint>
+              {isBirthdayLoading ? (
+                <Hint>Lade Geburtstags-Rangliste...</Hint>
+              ) : birthdayLeaderboard.length === 0 ? (
+                <Hint>Keine Geburtstags-Ergebnisse vorhanden.</Hint>
+              ) : (
+                <LeaderboardList>
+                  {visibleBirthdayLeaderboard.map((entry) => (
+                    <LeaderboardItem
+                      key={`birthday-${entry.user_id}-${entry.rank}`}
+                      $highlight={Number(userId) === Number(entry.user_id)}
+                      onMouseEnter={() => setActiveBirthdayBreakdownUserId(entry.user_id)}
+                      onMouseLeave={() => setActiveBirthdayBreakdownUserId(null)}
+                    >
+                      <span>#{entry.rank}</span>
+                      <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
+                      <strong>{entry.total_xp} XP</strong>
+                      {activeBirthdayBreakdownUserId === entry.user_id && (
+                        <BreakdownPopover>
+                          <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
                           <BreakdownList>
                             {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
                               .filter(([, value]) => Number.isFinite(value) && value > 0)
@@ -295,102 +282,82 @@ const ActionsOverviewModal = ({ open, onClose }) => {
                             .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
                               <small>Keine Punkte erfasst.</small>
                             )}
-                        </>
+                        </BreakdownPopover>
                       )}
-                    </BreakdownPopover>
-                  )}
-                </LeaderboardItem>
-              ))}
-            </LeaderboardList>
-          )}
-          {birthdayLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
-            <LeaderboardToggleButton
-              type="button"
-              onClick={() => setIsBirthdayExpanded((prev) => !prev)}
-            >
-              {isBirthdayExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
-            </LeaderboardToggleButton>
-          )}
-          {birthdayUserRank && (
-            <Hint>
-              Dein Rang: <strong>#{birthdayUserRank.rank}</strong> mit <strong>{birthdayUserRank.total_xp} XP</strong>
-            </Hint>
-          )}
-        </Section>
+                    </LeaderboardItem>
+                  ))}
+                </LeaderboardList>
+              )}
+              {birthdayLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
+                <LeaderboardToggleButton type="button" onClick={() => setIsBirthdayExpanded((prev) => !prev)}>
+                  {isBirthdayExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
+                </LeaderboardToggleButton>
+              )}
+              {birthdayUserRank && (
+                <Hint>
+                  Dein Rang: <strong>#{birthdayUserRank.rank}</strong> mit <strong>{birthdayUserRank.total_xp} XP</strong>
+                </Hint>
+              )}
+            </Section>
 
-        <Section>
-          <SectionTitle>Eis-Winterolympiade 2026 - Ergebnisse</SectionTitle>
-          <Hint>
-            Die Eis-Winterolympiade war eine zeitlich begrenzte Community-Aktion mit Punkten für Aktivitäten in der App.
-            Sie fand vom <strong>6. Februar 2026</strong> bis zum <strong>22. Februar 2026</strong> statt.
-          </Hint>
-          {isOlympicsLoading ? (
-            <Hint>Lade Olympia-Rangliste...</Hint>
-          ) : olympicsLeaderboard.length === 0 ? (
-            <Hint>Keine Olympia-Ergebnisse vorhanden.</Hint>
-          ) : (
-            <LeaderboardList>
-              {visibleOlympicsLeaderboard.map((entry) => (
-                <LeaderboardItem
-                  key={`${entry.user_id}-${entry.rank}`}
-                  $highlight={Number(userId) === Number(entry.user_id)}
-                  onMouseEnter={() => setActiveBreakdownUserId(entry.user_id)}
-                  onMouseLeave={() => setActiveBreakdownUserId(null)}
-                >
-                  <span>#{entry.rank}</span>
-                  <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
-                  <strong>{entry.total_xp} XP</strong>
-                  {activeBreakdownUserId === entry.user_id && (
-                    <BreakdownPopover>
-                      <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
-                      <BreakdownList>
-                        {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
-                          .filter(([, value]) => Number.isFinite(value) && value > 0)
-                          .map(([key, value]) => (
-                            <BreakdownListItem key={`${entry.user_id}-${key}`}>
-                              <span>{POINT_LABELS[key] || key}</span>
-                              <strong>+{value} XP</strong>
-                            </BreakdownListItem>
-                          ))}
-                      </BreakdownList>
-                      {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
-                        .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
-                          <small>Keine Punkte erfasst.</small>
-                        )}
-                    </BreakdownPopover>
-                  )}
-                </LeaderboardItem>
-              ))}
-            </LeaderboardList>
-          )}
-          {olympicsLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
-            <LeaderboardToggleButton
-              type="button"
-              onClick={() => setIsOlympicsExpanded((prev) => !prev)}
-            >
-              {isOlympicsExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
-            </LeaderboardToggleButton>
-          )}
-          {olympicsUserRank && (
-            <Hint>
-              Dein Rang: <strong>#{olympicsUserRank.rank}</strong> mit <strong>{olympicsUserRank.total_xp} XP</strong>
-            </Hint>
-          )}
-        </Section>
-
-        <Section>
-          <SectionTitle>Zukünftige Aktionen</SectionTitle>
-          <CardGrid>
-            {UPCOMING_ACTIONS.map((action) => (
-              <UpcomingCard key={action.id}>
-                <ActionTitle>{action.title}</ActionTitle>
-                <ActionPeriod>{action.period}</ActionPeriod>
-                <Status>{action.status}</Status>
-                <p>{action.details}</p>
-              </UpcomingCard>
-            ))}
-          </CardGrid>
-        </Section>
+            <Section>
+              <SectionTitle>Eis-Winterolympiade 2026 - Ergebnisse</SectionTitle>
+              <Hint>
+                Die Eis-Winterolympiade fand vom <strong>6. Februar 2026</strong> bis zum <strong>22. Februar 2026</strong> statt.
+                Auch hier bleibt nur die historische Ergebnisansicht sichtbar.
+              </Hint>
+              {isOlympicsLoading ? (
+                <Hint>Lade Olympia-Rangliste...</Hint>
+              ) : olympicsLeaderboard.length === 0 ? (
+                <Hint>Keine Olympia-Ergebnisse vorhanden.</Hint>
+              ) : (
+                <LeaderboardList>
+                  {visibleOlympicsLeaderboard.map((entry) => (
+                    <LeaderboardItem
+                      key={`${entry.user_id}-${entry.rank}`}
+                      $highlight={Number(userId) === Number(entry.user_id)}
+                      onMouseEnter={() => setActiveBreakdownUserId(entry.user_id)}
+                      onMouseLeave={() => setActiveBreakdownUserId(null)}
+                    >
+                      <span>#{entry.rank}</span>
+                      <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
+                      <strong>{entry.total_xp} XP</strong>
+                      {activeBreakdownUserId === entry.user_id && (
+                        <BreakdownPopover>
+                          <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
+                          <BreakdownList>
+                            {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
+                              .filter(([, value]) => Number.isFinite(value) && value > 0)
+                              .map(([key, value]) => (
+                                <BreakdownListItem key={`${entry.user_id}-${key}`}>
+                                  <span>{POINT_LABELS[key] || key}</span>
+                                  <strong>+{value} XP</strong>
+                                </BreakdownListItem>
+                              ))}
+                          </BreakdownList>
+                          {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
+                            .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
+                              <small>Keine Punkte erfasst.</small>
+                            )}
+                        </BreakdownPopover>
+                      )}
+                    </LeaderboardItem>
+                  ))}
+                </LeaderboardList>
+              )}
+              {olympicsLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
+                <LeaderboardToggleButton type="button" onClick={() => setIsOlympicsExpanded((prev) => !prev)}>
+                  {isOlympicsExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
+                </LeaderboardToggleButton>
+              )}
+              {olympicsUserRank && (
+                <Hint>
+                  Dein Rang: <strong>#{olympicsUserRank.rank}</strong> mit <strong>{olympicsUserRank.total_xp} XP</strong>
+                </Hint>
+              )}
+            </Section>
+          </>
+        )}
       </Overlay>
     </OverlayBackground>
   );
@@ -422,6 +389,9 @@ const Overlay = styled.div`
   max-height: 84vh;
   overflow-y: auto;
   text-align: center;
+  @media (max-width: 720px) {
+    padding: 1rem 0.5rem;
+  }
 `;
 
 const CloseButton = styled.button`
@@ -457,9 +427,9 @@ const MainHeading = styled.h2`
   text-align: center;
 `;
 
-const IntroText = styled.p`
-  margin: 0;
-  text-align: center;
+const CategoryHeading = styled.h3`
+  margin: 1.2rem 0 0.4rem;
+  text-align: left;
 `;
 
 const SubTitle = styled.h4`
@@ -602,32 +572,6 @@ const LeaderboardToggleButton = styled.button`
   &:hover {
     background: #ffe4ad;
   }
-`;
-
-const UpcomingCard = styled.article`
-  background: #fff8ea;
-  border-radius: 12px;
-  padding: 0.8rem;
-
-  p {
-    margin: 0.5rem 0 0;
-  }
-`;
-
-const ActionTitle = styled.strong`
-  display: block;
-`;
-
-const ActionPeriod = styled.small`
-  display: block;
-`;
-
-const Status = styled.span`
-  display: inline-block;
-  margin-top: 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #4b2b00;
 `;
 
 const Hint = styled.p`
