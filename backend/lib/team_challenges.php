@@ -133,6 +133,11 @@ function teamChallengeActiveStatuses(): array
     return ['pending_acceptance', 'accepted', 'proposal_open', 'proposal_submitted', 'shop_finalized'];
 }
 
+function teamChallengeMaxActivePerUser(): int
+{
+    return 3;
+}
+
 function teamChallengeSyncExpired(PDO $pdo): void
 {
     $now = teamChallengeNow()->format('Y-m-d H:i:s');
@@ -193,7 +198,7 @@ function teamChallengeRequireNoOtherActive(PDO $pdo, int $userId, ?int $excludeC
     $statuses = teamChallengeActiveStatuses();
     $placeholders = implode(',', array_fill(0, count($statuses), '?'));
     $sql = "
-        SELECT id
+        SELECT COUNT(*)
         FROM team_challenges
         WHERE (inviter_user_id = ? OR invitee_user_id = ?)
           AND status IN ($placeholders)
@@ -208,8 +213,9 @@ function teamChallengeRequireNoOtherActive(PDO $pdo, int $userId, ?int $excludeC
     $sql .= " LIMIT 1";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    if ($stmt->fetchColumn()) {
-        throw new RuntimeException('Dieser Nutzer hat bereits eine aktive Team-Challenge.');
+    $activeCount = (int)$stmt->fetchColumn();
+    if ($activeCount >= teamChallengeMaxActivePerUser()) {
+        throw new RuntimeException('Dieser Nutzer hat bereits die maximale Anzahl aktiver Team-Challenges erreicht.');
     }
 }
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Bell, Check, Clock3, MapPinned, Send, Target, Users, X } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
@@ -55,7 +56,7 @@ async function readJsonResponse(res) {
 }
 
 function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locationNotice, focusChallengeId, onFocusChallengeHandled }) {
-  const [listState, setListState] = useState({ active: null, received_invitations: [], sent_invitations: [], history: [] });
+  const [listState, setListState] = useState({ active: null, active_challenges: [], received_invitations: [], sent_invitations: [], history: [] });
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -69,7 +70,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
   const [selectedProposalIds, setSelectedProposalIds] = useState([]);
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
 
-  const activeOrFocusedId = focusChallengeId || selectedChallengeId || listState.active?.id || null;
+  const activeOrFocusedId = focusChallengeId || selectedChallengeId || listState.active_challenges?.[0]?.id || listState.active?.id || null;
 
   const fetchList = async () => {
     if (!userId || !apiUrl) {
@@ -83,6 +84,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
       const data = await readJsonResponse(res);
       setListState({
         active: data.active || null,
+        active_challenges: Array.isArray(data.active_challenges) ? data.active_challenges : (data.active ? [data.active] : []),
         received_invitations: Array.isArray(data.received_invitations) ? data.received_invitations : [],
         sent_invitations: Array.isArray(data.sent_invitations) ? data.sent_invitations : [],
         history: Array.isArray(data.history) ? data.history : [],
@@ -180,7 +182,12 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
         setActionNotice({ type: "success", message: successMessage });
       }
       await fetchList();
-      const returnedId = data.team_challenge?.id || payload.team_challenge_id || focusChallengeId || listState.active?.id;
+      const returnedId =
+        data.team_challenge?.id ||
+        payload.team_challenge_id ||
+        focusChallengeId ||
+        listState.active_challenges?.[0]?.id ||
+        listState.active?.id;
       if (returnedId) {
         await fetchDetail(returnedId);
       }
@@ -355,7 +362,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
           <SectionHead>
             <div>
               <SectionTitle>Aktuelle Team-Challenge</SectionTitle>
-              <SectionSubline>Statusgesteuerter Flow statt freier Formulare.</SectionSubline>
+              <SectionSubline>Statusgesteuerter Flow statt freier Formulare. Bis zu 3 aktive Team-Challenges gleichzeitig sind möglich.</SectionSubline>
             </div>
             {detailLoading && <MutedText>Lade Details...</MutedText>}
           </SectionHead>
@@ -471,7 +478,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                     <SubSectionHeading><MapPinned size={16} /> Ziel-Eisdiele</SubSectionHeading>
                     <FinalShopCard>
                       <div>
-                        <CandidateName>{detail.final_shop.name}</CandidateName>
+                        <CandidateLink to={`/map/activeShop/${detail.final_shop.id}`}>{detail.final_shop.name}</CandidateLink>
                         <CandidateMeta>{detail.final_shop.address}</CandidateMeta>
                         <CandidateMeta>Beide müssen innerhalb von {detail.completion_window_minutes} Minuten dort einchecken.</CandidateMeta>
                       </div>
@@ -540,6 +547,28 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
         </SectionCard>
       </MainColumn>
       <SideColumn>
+        <SectionCard>
+          <SectionTitle>Aktive Challenges</SectionTitle>
+          <SectionSubline>Du kannst bis zu 3 aktive Team-Challenges parallel haben.</SectionSubline>
+          {listState.active_challenges.length === 0 ? (
+            <MiniState>Keine aktiven Team-Challenges.</MiniState>
+          ) : (
+            <CompactList>
+              {listState.active_challenges.map((challenge) => (
+                <CompactCard
+                  key={challenge.id}
+                  type="button"
+                  $active={Number(activeOrFocusedId) === Number(challenge.id)}
+                  onClick={() => fetchDetail(challenge.id)}
+                >
+                  <strong>{challenge.inviter.username} + {challenge.invitee.username}</strong>
+                  <span>{statusLabels[challenge.status]}</span>
+                </CompactCard>
+              ))}
+            </CompactList>
+          )}
+        </SectionCard>
+
         <SectionCard>
           <SectionTitle>Einladungen</SectionTitle>
           <SectionSubline>Offene und erhaltene Team-Challenge-Einladungen.</SectionSubline>
@@ -908,6 +937,17 @@ const CandidateName = styled.div`
   font-weight: 800;
 `;
 
+const CandidateLink = styled(Link)`
+  color: #2f2100;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const CandidateMeta = styled.div`
   color: rgba(47, 33, 0, 0.65);
   font-size: 0.82rem;
@@ -991,8 +1031,8 @@ const CompactCard = styled.button`
   align-items: center;
   padding: 0.8rem 0.85rem;
   border-radius: 14px;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid ${({ $active }) => ($active ? "rgba(255, 181, 34, 0.32)" : "rgba(47, 33, 0, 0.08)")};
+  background: ${({ $active }) => ($active ? "rgba(255, 244, 221, 0.94)" : "rgba(255, 255, 255, 0.84)")};
   cursor: pointer;
   color: #2f2100;
   text-align: left;

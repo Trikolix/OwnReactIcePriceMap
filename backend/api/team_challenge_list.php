@@ -34,6 +34,7 @@ $stmt->execute(['user_id' => $userId]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $active = null;
+$activeChallenges = [];
 $sent = [];
 $received = [];
 $history = [];
@@ -42,16 +43,28 @@ foreach ($rows as $row) {
     $summary = teamChallengeBuildSummary($row, $userId);
     $isActive = in_array($row['status'], teamChallengeActiveStatuses(), true);
 
-    if ($isActive && $active === null) {
-        $active = $summary;
-        continue;
+    if ($isActive) {
+        $activeChallenges[] = $summary;
+        if ($active === null) {
+            $active = $summary;
+        }
     }
 
     if ($row['status'] === 'pending_acceptance' && (int)$row['invitee_user_id'] === $userId) {
-        $received[] = $summary;
-    } elseif ($row['status'] === 'pending_acceptance' && (int)$row['inviter_user_id'] === $userId) {
-        $sent[] = $summary;
-    } elseif (!$isActive) {
+        if (!$isActive) {
+            $received[] = $summary;
+        }
+        continue;
+    }
+
+    if ($row['status'] === 'pending_acceptance' && (int)$row['inviter_user_id'] === $userId) {
+        if (!$isActive) {
+            $sent[] = $summary;
+        }
+        continue;
+    }
+
+    if (!$isActive) {
         $history[] = $summary;
     }
 }
@@ -59,8 +72,8 @@ foreach ($rows as $row) {
 echo json_encode([
     'status' => 'success',
     'active' => $active,
+    'active_challenges' => $activeChallenges,
     'received_invitations' => $received,
     'sent_invitations' => $sent,
     'history' => $history,
 ]);
-
