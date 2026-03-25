@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/mail.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/currency.php';
@@ -239,13 +240,9 @@ function sendChangeRequestNotificationMail(int $shopId, string $shopName, int $r
     $message .= "Eingereicht von: {$requestedByUsername} (User-ID {$requestedByUserId})\n\n";
     $message .= "Vorgeschlagene Änderungen:\n{$changesJson}\n\n";
     $message .= "Bitte im Admin-Bereich prüfen.\n";
-    $message .= "Direktlink: https://ice-app.de/#/shop-change-requests\n";
+    $message .= "Direktlink: https://ice-app.de/shop-change-requests\n";
 
-    $headers = "From: Ice-App <noreply@ice-app.de>\r\n";
-    $headers .= "Reply-To: noreply@ice-app.de\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-
-    @mail($to, $subject, $message, $headers);
+    iceapp_send_utf8_text_mail($to, $subject, $message);
 }
 
 function buildChangeSet(array $data, array $validStatuses, array $normalizedHours, string $openingHoursText): array {

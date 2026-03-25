@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/mail.php';
 
 /**
  * Erkennt eine lokale/dev-Ausfuehrung anhand des Dateipfads (backend_dev).
@@ -94,9 +95,9 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         // Link generieren
         $link = '';
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
-            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
+            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
         } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
-            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
+            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
         }
         if ($link) {
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
@@ -108,9 +109,9 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         // Link generieren
         $link = '';
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
-            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
+            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
         } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
-            $link = "https://ice-app.de/#/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
+            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
         }
         if ($link) {
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
@@ -122,7 +123,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         // Link generieren
         $link = '';
         if (!empty($extra['routeId']) && !empty($extra['route_autor_id'])) {
-            $link = "https://ice-app.de/#/user/" . $extra['route_autor_id'] . "?tab=routes&focusRoute=" . $extra['routeId'];
+            $link = "https://ice-app.de/user/" . $extra['route_autor_id'] . "?tab=routes&focusRoute=" . $extra['routeId'];
         }
         if ($link) {
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
@@ -137,7 +138,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $mailBody .= "<p>Viel Spaß beim Eis essen und Punkte sammeln!<br>Dein Ice-App Team</p>";
     $mailBody .= "<hr style='margin:24px 0;'>";
     $mailBody .= "<small>Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter 'Einstellungen' ändern.<br>";
-    $mailBody .= "Profil-Link: <a href='https://ice-app.de/#/user/" . $userId . "?openSettings=1' style='color:#0077b6;'>https://ice-app.de/#/user/" . $userId . "?openSettings=1</a></small>";
+    $mailBody .= "Profil-Link: <a href='https://ice-app.de/user/" . $userId . "?openSettings=1' style='color:#0077b6;'>https://ice-app.de/user/" . $userId . "?openSettings=1</a></small>";
     $mailBody .= "</body></html>";
 
     // Im backend_dev werden Mails nur real an user_id=1 gesendet.
@@ -158,10 +159,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         );
     }
 
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: noreply@ice-app.de\r\n";
-    @mail($mailTo, $mailSubject, $mailBody, $headers);
+    iceapp_send_utf8_html_mail($mailTo, $mailSubject, $mailBody, 'noreply@ice-app.de');
 
     // Nach erfolgreichem Versand: Timestamp aktualisieren
     $stmtUpdate = $pdo->prepare("UPDATE nutzer SET last_notification_email_at = ? WHERE id = ?");

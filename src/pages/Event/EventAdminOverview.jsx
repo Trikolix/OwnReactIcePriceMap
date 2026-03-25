@@ -4,6 +4,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
+import Seo from "../../components/Seo";
 import { formatRouteShortWithDistance } from "./eventConfig";
 
 const Page = styled.div`
@@ -279,6 +280,11 @@ export default function EventAdminOverview() {
 
   return (
     <Page>
+      <Seo
+        title="Ice-Tour Admin"
+        description="Administrationsbereich der Ice-Tour 2026."
+        robots="noindex,nofollow"
+      />
       <Header />
       <Container>
         <Card>

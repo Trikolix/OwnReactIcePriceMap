@@ -1,19 +1,9 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../lib/mail.php';
 
 const EVENT2026_CONFIRM_PAYPAL = 'ch_helbig@mail.de';
 const EVENT2026_CONFIRM_PAYPAL_LINK = 'https://paypal.me/ChristianHelbig451';
-
-function event2026_confirm_send_utf8_mail(string $to, string $subjectText, string $body): bool
-{
-    $subject = '=?UTF-8?B?' . base64_encode($subjectText) . '?=';
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-    $headers .= "From: Ice-App <noreply@ice-app.de>\r\n";
-    $headers .= "Reply-To: noreply@ice-app.de\r\n";
-    return @mail($to, $subject, $body, $headers);
-}
 
 try {
     event2026_ensure_schema($pdo);
@@ -49,7 +39,7 @@ try {
         ]);
         $payment = $paymentStmt->fetch(PDO::FETCH_ASSOC);
         if (!$payment) {
-            throw new RuntimeException('Zahlung fuer Registrierung nicht gefunden.');
+            throw new RuntimeException('Zahlung für Registrierung nicht gefunden.');
         }
 
         $effectivePaid = $paidAmount > 0 ? $paidAmount : (float) $payment['expected_amount'];
@@ -83,18 +73,18 @@ try {
         $owner = event2026_fetch_registration_owner($pdo, $registrationId);
         if ($owner && !empty($owner['email']) && !empty($createdVouchers)) {
             $mailBody = "Hallo {$owner['username']},\n\n";
-            $mailBody .= "deine Zahlung fuer die Ice-Tour 2026 wurde bestaetigt.\n";
+            $mailBody .= "deine Zahlung für die Ice-Tour 2026 wurde bestätigt.\n";
             $mailBody .= "Deine Geschenk-Codes sind jetzt freigeschaltet:\n";
             foreach ($createdVouchers as $voucher) {
                 $mailBody .= "- {$voucher['code']}\n";
             }
-            $mailBody .= "\nViele Gruesse\nIce-App Team";
-            event2026_confirm_send_utf8_mail($owner['email'], 'Ice-Tour 2026: Gutschein-Codes freigeschaltet', $mailBody);
+            $mailBody .= "\nViele Grüße\nIce-App Team";
+            iceapp_send_utf8_text_mail($owner['email'], 'Ice-Tour 2026: Gutschein-Codes freigeschaltet', $mailBody);
         }
 
         echo json_encode([
             'status' => 'success',
-            'message' => 'Zahlung bestaetigt und Lizenzen freigeschaltet.',
+            'message' => 'Zahlung bestätigt und Lizenzen freigeschaltet.',
             'created_vouchers' => $createdVouchers,
         ]);
         exit;
@@ -142,18 +132,18 @@ try {
     if ($owner && !empty($owner['email']) && !empty($createdVouchers)) {
         $ownerName = (string) ($owner['username'] ?? $owner['name'] ?? 'Ice-Tour Teilnehmer');
         $mailBody = "Hallo {$ownerName},\n\n";
-        $mailBody .= "deine Zusatzbestellung fuer die Ice-Tour 2026 wurde bestaetigt.\n";
+        $mailBody .= "deine Zusatzbestellung für die Ice-Tour 2026 wurde bestätigt.\n";
         $mailBody .= "Deine Geschenk-Codes sind jetzt freigeschaltet:\n";
         foreach ($createdVouchers as $voucher) {
             $mailBody .= "- {$voucher['code']}\n";
         }
-        $mailBody .= "\nViele Gruesse\nIce-App Team";
-        event2026_confirm_send_utf8_mail($owner['email'], 'Ice-Tour 2026: Zusatzkauf freigeschaltet', $mailBody);
+        $mailBody .= "\nViele Grüße\nIce-App Team";
+        iceapp_send_utf8_text_mail($owner['email'], 'Ice-Tour 2026: Zusatzkauf freigeschaltet', $mailBody);
     }
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'Zusatzbestellung bestaetigt und Gutschein-Codes freigeschaltet.',
+        'message' => 'Zusatzbestellung bestätigt und Gutschein-Codes freigeschaltet.',
         'created_vouchers' => $createdVouchers,
     ]);
 } catch (Throwable $e) {

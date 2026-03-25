@@ -6,6 +6,7 @@ import L from "leaflet";
 import { Link, useSearchParams } from "react-router-dom";
 import Header from "./Header";
 import CheckinCard from "../../components/CheckinCard";
+import Seo from "../../components/Seo";
 import { getApiBaseUrl } from "../../shared/api/client";
 import {
   EVENT_START_FINISH,
@@ -878,6 +879,18 @@ export default function EventLiveMap() {
 
   return (
     <Page>
+      <Seo
+        title="Ice-Tour Live-Karte | Event-Karte der Ice-Tour 2026"
+        description="Öffentliche Live-Karte zur Ice-Tour 2026 in Chemnitz. Hier lassen sich Event-Checkpoints, Routen und aktuelle Check-ins am Veranstaltungstag verfolgen."
+        keywords={[
+          "Ice-Tour Live",
+          "Ice-Tour Live-Karte",
+          "Event-Karte Chemnitz",
+          "Eis-Tour Live",
+          "Radtour Live Chemnitz",
+        ]}
+        canonical="/ice-tour-2026.html"
+      />
       <Header />
       <MapShell>
         <OverlayLayout>
@@ -885,8 +898,8 @@ export default function EventLiveMap() {
             <InfoHeading>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</InfoHeading>
             <InfoText>
               {mode === "test"
-                ? "Admin-Testansicht fuer die Stempelkarte. Hier siehst du, wie Check-ins und Checkpoint-Anzeigen auf der Live-Map wirken."
-                : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker oeffnen die checkpointbezogene Live-Liste."}
+                ? "Admin-Testansicht für die Stempelkarte. Hier siehst du, wie Check-ins und Checkpoint-Anzeigen auf der Live-Map wirken."
+                : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker öffnen die checkpointbezogene Live-Liste."}
             </InfoText>
             {isAdmin && (
               <div style={{ display: "flex", gap: "0.45rem", marginTop: "0.7rem", flexWrap: "wrap" }}>
@@ -936,7 +949,7 @@ export default function EventLiveMap() {
                 <Popup>
                   <strong>{item.name}</strong>
                   {item.isStartFinishHub ? (
-                    <div>{mode === "test" ? "Test-Start- und Zielbereich" : "Start- und Zielbereich fuer alle Routen"}</div>
+                    <div>{mode === "test" ? "Test-Start- und Zielbereich" : "Start- und Zielbereich für alle Routen"}</div>
                   ) : (
                     <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
                   )}

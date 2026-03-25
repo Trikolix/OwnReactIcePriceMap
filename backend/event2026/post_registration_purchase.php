@@ -1,20 +1,9 @@
 ﻿<?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../lib/mail.php';
 
 const EVENT2026_ADDON_ENTRY_FEE = 15.0;
 const EVENT2026_ADDON_PAYMENT_CONTACT = 'admin@ice-app.de';
-
-function event2026_addon_send_utf8_mail(string $to, string $subjectText, string $body): bool
-{
-    $subject = '=?UTF-8?B?' . base64_encode($subjectText) . '?=';
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-    $headers .= "From: Ice-App <noreply@ice-app.de>\r\n";
-    $headers .= "Reply-To: noreply@ice-app.de\r\n";
-
-    return @mail($to, $subject, $body, $headers);
-}
 
 function event2026_addon_payment_instruction_text(): string
 {
@@ -163,7 +152,7 @@ try {
         $mailBody .= "Die Gutschein-Codes werden erst nach bestaetigtem Zahlungseingang freigeschaltet.\n";
         $mailBody .= "Bitte gib den Referenzcode {$paymentRef} an.\n";
         $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_ADDON_PAYMENT_CONTACT . ".\n";
-        $mailSent = event2026_addon_send_utf8_mail($owner['email'], 'Ice-Tour 2026: Deine Zusatzbestellung', $mailBody);
+        $mailSent = iceapp_send_utf8_text_mail($owner['email'], 'Ice-Tour 2026: Deine Zusatzbestellung', $mailBody);
     }
 
     echo json_encode([

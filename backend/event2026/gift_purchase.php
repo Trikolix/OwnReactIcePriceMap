@@ -1,19 +1,9 @@
 ﻿<?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../lib/mail.php';
 
 const EVENT2026_GIFT_PAYMENT_CONTACT = 'admin@ice-app.de';
 const EVENT2026_GIFT_ENTRY_FEE = 15.0;
-
-function event2026_gift_send_utf8_mail(string $to, string $subjectText, string $body): bool
-{
-    $subject = '=?UTF-8?B?' . base64_encode($subjectText) . '?=';
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-    $headers .= "From: Ice-App <noreply@ice-app.de>\r\n";
-    $headers .= "Reply-To: noreply@ice-app.de\r\n";
-    return @mail($to, $subject, $body, $headers);
-}
 
 try {
     event2026_ensure_schema($pdo);
@@ -109,15 +99,15 @@ try {
     $pdo->commit();
 
     $mailBody = "Hallo {$buyerName},\n\n";
-    $mailBody .= "deine Gutschein-Bestellung fuer die Ice-Tour 2026 wurde gespeichert.\n\n";
+    $mailBody .= "deine Gutschein-Bestellung für die Ice-Tour 2026 wurde gespeichert.\n\n";
     $mailBody .= "Bestellung: #{$purchaseId}\n";
     $mailBody .= "Referenzcode: {$paymentRef}\n";
     $mailBody .= "Gutschein-Codes: {$giftVoucherQuantity}\n";
     $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n\n";
-    $mailBody .= "Bitte schliesse die Zahlung ueber Stripe im Event-Portal ab.\n";
-    $mailBody .= "Die Gutschein-Codes werden erst nach bestaetigtem Zahlungseingang per Mail freigeschaltet.\n";
+    $mailBody .= "Bitte schließe die Zahlung über Stripe im Event-Portal ab.\n";
+    $mailBody .= "Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang per Mail freigeschaltet.\n";
     $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_GIFT_PAYMENT_CONTACT . ".\n";
-    event2026_gift_send_utf8_mail($buyerEmail, 'Ice-Tour 2026: Deine Gutschein-Bestellung', $mailBody);
+    iceapp_send_utf8_text_mail($buyerEmail, 'Ice-Tour 2026: Deine Gutschein-Bestellung', $mailBody);
 
     echo json_encode([
         'status' => 'success',

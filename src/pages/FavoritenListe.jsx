@@ -6,9 +6,9 @@ import { Link } from "react-router-dom";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 
 const SORT_OPTIONS = [
-  { value: "favorit_desc", label: "Zuletzt hinzugefuegt" },
+  { value: "favorit_desc", label: "Zuletzt hinzugefügt" },
   { value: "name_asc", label: "Name (A-Z)" },
-  { value: "open_first", label: "Geoeffnet zuerst" },
+  { value: "open_first", label: "Geöffnet zuerst" },
   { value: "distance_asc", label: "Entfernung" },
   { value: "kugel_preis_asc", label: "Kugelpreis" },
   { value: "score_desc", label: "Bester Score" },
@@ -118,7 +118,7 @@ function FavoritenListe() {
         }
         const data = await res.json();
         if (!Array.isArray(data)) {
-          throw new Error(data?.error || "Ungueltige Antwort vom Server");
+          throw new Error(data?.error || "Ungültige Antwort vom Server");
         }
         if (!isCancelled) {
           setFavoriten(data);
@@ -384,7 +384,7 @@ function FavoritenListe() {
                         setVisitedFilter("all");
                       }}
                     >
-                      Filter zuruecksetzen
+                      Filter zurücksetzen
                     </SecondaryButton>
                   )}
                 </StateActions>
@@ -408,7 +408,7 @@ function FavoritenListe() {
                           </ShopName>
                           <MetaLine>
                             <OpenBadge $open={shop.is_open_now === true}>
-                              {shop.is_open_now === true ? "Jetzt geoeffnet" : "Geschlossen"}
+                              {shop.is_open_now === true ? "Jetzt geöffnet" : "Geschlossen"}
                             </OpenBadge>
                             {Number(shop.has_visited) === 1 && <MetaChip>Besucht</MetaChip>}
                             {Number(shop.has_active_challenge) === 1 && (

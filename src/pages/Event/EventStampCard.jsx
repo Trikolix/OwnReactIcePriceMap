@@ -23,6 +23,7 @@ import Footer from "./Footer";
 import CheckinForm from "../../CheckinForm";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
+import Seo from "../../components/Seo";
 import { EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
 
 const Page = styled.div`
@@ -1126,6 +1127,11 @@ export default function EventStampCard() {
 
   return (
     <Page>
+      <Seo
+        title="Ice-Tour Stempelkarte"
+        description="Digitale Stempelkarte für Teilnehmer der Ice-Tour 2026."
+        robots="noindex,nofollow"
+      />
       <Header />
       <Container>
         <PassCard>

@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import JerseyInfoDialog from "./JerseyInfoDialog";
+import Seo from "../../components/Seo";
 import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
@@ -393,9 +394,9 @@ export default function EventMyRegistration() {
       query.set("inviteCode", inviteCode);
     }
     if (typeof window === "undefined") {
-      return `https://ice-app.de/#/event-registration?${query.toString()}`;
+      return `https://ice-app.de/event-registration?${query.toString()}`;
     }
-    return `${window.location.origin}/#/event-registration?${query.toString()}`;
+    return `${window.location.origin}/event-registration?${query.toString()}`;
   }, [data?.account?.invite_code, data?.registration?.team_name]);
 
   const copyTeamInviteLink = async () => {
@@ -569,6 +570,11 @@ export default function EventMyRegistration() {
 
   return (
     <Page>
+      <Seo
+        title="Meine Ice-Tour Anmeldung"
+        description="Persoenlicher Teilnehmerbereich der Ice-Tour 2026."
+        robots="noindex,nofollow"
+      />
       <Header />
       <Container>
         <HeroCard>

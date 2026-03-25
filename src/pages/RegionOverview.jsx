@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import Header from '../Header';
 import UserAvatar from '../components/UserAvatar';
+import Seo from '../components/Seo';
 
 const formatPrice = (value) => (value != null ? `${Number(value).toFixed(2)} €` : 'kein Preis');
 
@@ -137,6 +138,18 @@ const RegionOverview = () => {
 
   return (
     <Page>
+      <Seo
+        title={`${title} | Regionale Eispreise und Eisdielen in der Ice-App`}
+        description={`Regionenübersicht für ${title}: Eisdielen, Preise, Bewertungen und Entwicklungen in der Ice-App.`}
+        keywords={[
+          title,
+          'Eispreise Region',
+          'Eisdielen Region',
+          'Ice-App Region',
+          'Eispreise Deutschland Regionen',
+        ]}
+        canonical={`/region/${level}/${regionId}`}
+      />
       <Header />
       <Container>
         <HeroCard>
@@ -235,7 +248,7 @@ const RegionOverview = () => {
               {displayedTopShops.length === 0 && (
                 <RankItem>
                   <RankContent>
-                    <small>Keine Eisdielen mit Score fuer diese Kategorie vorhanden.</small>
+                    <small>Keine Eisdielen mit Score für diese Kategorie vorhanden.</small>
                   </RankContent>
                 </RankItem>
               )}

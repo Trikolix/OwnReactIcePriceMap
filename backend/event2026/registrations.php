@@ -1,21 +1,10 @@
 ﻿<?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../lib/mail.php';
 
 const EVENT2026_PAYMENT_CONTACT = 'admin@ice-app.de';
 const EVENT2026_ENTRY_FEE = 15.0;
 const EVENT2026_ADMIN_NOTIFY_EMAIL = 'admin@ice-app.de';
-
-function event2026_send_utf8_mail(string $to, string $subjectText, string $body): bool
-{
-    $subject = '=?UTF-8?B?' . base64_encode($subjectText) . '?=';
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-    $headers .= "From: Ice-App <noreply@ice-app.de>\r\n";
-    $headers .= "Reply-To: noreply@ice-app.de\r\n";
-
-    return @mail($to, $subject, $body, $headers);
-}
 
 function event2026_generate_invite_code(int $length = 10): string
 {
@@ -95,13 +84,13 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
         ':notify_news' => $newsletterOptIn ? 1 : 0,
     ]);
 
-    $verifyUrl = 'https://ice-app.de/#/verify?token=' . urlencode($verifyToken);
+    $verifyUrl = 'https://ice-app.de/verify?token=' . urlencode($verifyToken);
     $mailBody = "Hallo {$username},\n\n";
     $mailBody .= "dein Ice-App Account für die Ice-Tour 2026 wurde erstellt.\n";
     $mailBody .= "Bitte bestätige deine E-Mail-Adresse über diesen Link:\n{$verifyUrl}\n\n";
     $mailBody .= "Viele Grüße\nIce-App Team";
 
-    $mailSent = event2026_send_utf8_mail($email, 'Bestätige deine Registrierung für die Ice-App', $mailBody);
+    $mailSent = iceapp_send_utf8_text_mail($email, 'Bestätige deine Registrierung für die Ice-App', $mailBody);
 
     return [
         'user_id' => $userId,
@@ -586,7 +575,7 @@ try {
     $reservedAfter = event2026_reserved_count($pdo, $eventId);
     $mailSent = false;
     if ($accountEmail) {
-        $appBaseUrl = 'https://ice-app.de/#';
+        $appBaseUrl = 'https://ice-app.de';
         $salutationName = $fullName !== '' ? $fullName : $auth['username'];
         $mailBody = "Hallo {$salutationName},\n\n";
         $mailBody .= "vielen Dank für deine Anmeldung zur Ice-Tour 2026.\n";
@@ -628,7 +617,7 @@ try {
         $mailBody .= "- Bei der aktuellen Geburtstagsaktion mitmachen\n";
         $mailBody .= "- Bei der laufenden Foto-Challenge abstimmen und tolle Preise gewinnen\n\n";
         $mailBody .= "Viele Grüße\nIce-App Team";
-        $mailSent = event2026_send_utf8_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
+        $mailSent = iceapp_send_utf8_text_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
     }
 
     $adminMailBody = "Neue Event-Registrierung eingegangen.\n\n";
@@ -645,7 +634,7 @@ try {
     $adminMailBody .= "Zahlungsmethode: {$paymentMethod}\n";
     $adminMailBody .= "Newsletter: " . ($newsletterOptIn ? 'Ja' : 'Nein') . "\n";
     $adminMailBody .= "Bemerkung: " . ($registrationNote !== '' ? $registrationNote : '-') . "\n";
-    event2026_send_utf8_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Ice-Tour Registrierung #' . $registrationId, $adminMailBody);
+    iceapp_send_utf8_text_mail(EVENT2026_ADMIN_NOTIFY_EMAIL, 'Neue Ice-Tour Registrierung #' . $registrationId, $adminMailBody);
 
     echo json_encode([
         'status' => 'success',

@@ -39,7 +39,7 @@ try {
     // -- Finaler E-Mail-Versand als Multipart-Mail --
 
     $to = $email;
-    $resetLink = "https://ice-app.de/#/resetToken/$token";
+    $resetLink = "https://ice-app.de/resetToken/$token";
     $boundary = "----=" . md5(uniqid(rand()));
 
     // 1. Betreff (UTF-8 und Base64 kodiert)

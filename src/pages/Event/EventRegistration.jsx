@@ -7,6 +7,7 @@ import Footer from "./Footer";
 import LiabilityWaiver from "./LiabilityWaiver";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import { useUser } from "../../context/UserContext";
+import Seo from "../../components/Seo";
 import "../../styles/eventTheme.css";
 import { getApiBaseUrl } from "../../shared/api/client";
 import {
@@ -588,6 +589,18 @@ export default function EventRegistration() {
 
   return (
     <PageWrapper>
+      <Seo
+        title="Anmeldung zur Ice-Tour 2026 | Spendenfahrt und Eis-Tour in Chemnitz"
+        description="Anmeldung zur Ice-Tour 2026 in Chemnitz: sichere dir deinen Startplatz für die Eis-Tour mit Eisdielen-Stopps, Community-Ride und freiwilliger Spende."
+        keywords={[
+          "Ice-Tour Anmeldung",
+          "Ice-Tour 2026 Anmeldung",
+          "Eis-Tour Chemnitz Anmeldung",
+          "Spendenfahrt Chemnitz Anmeldung",
+          "Fahrrad Event Chemnitz Anmeldung",
+        ]}
+        canonical="/ice-tour-2026.html"
+      />
       {error && (
         <ErrorOverlay role="presentation" onClick={() => setError(null)}>
           <ErrorDialog role="alertdialog" aria-modal="true" aria-labelledby="event-registration-error-title" onClick={(event) => event.stopPropagation()}>
@@ -652,7 +665,7 @@ export default function EventRegistration() {
                       <Input value={newAccount.password} type="password" onChange={(e) => setNewAccount((prev) => ({ ...prev, password: e.target.value }))} required />
                       <CheckboxLabel>
                         <input type="checkbox" checked={acceptAccountTerms} onChange={(e) => setAcceptAccountTerms(e.target.checked)} />
-                        <span>Ich akzeptiere die <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutzerklärung</a> und <a href="/#/community" target="_blank" rel="noreferrer">Community-Richtlinien</a>.</span>
+                        <span>Ich akzeptiere die <a href="/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutzerklärung</a> und <a href="/community" target="_blank" rel="noreferrer">Community-Richtlinien</a>.</span>
                       </CheckboxLabel>
                     </div>
                   )}
@@ -981,7 +994,7 @@ export default function EventRegistration() {
                     Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
                   </LegalSmall>
                   <LegalSmall>
-                    Weitere Informationen: <a href="/#/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
+                    Weitere Informationen: <a href="/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
                   </LegalSmall>
                   <LegalSmall>{EVENT_WITHDRAWAL_NOTICE}</LegalSmall>
                   <LegalSmall>
@@ -1001,7 +1014,7 @@ export default function EventRegistration() {
                     Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
                   </LegalSmall>
                   <LegalSmall>
-                    Weitere Informationen: <a href="/#/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/#/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/#/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
+                    Weitere Informationen: <a href="/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
                   </LegalSmall>
                   <LegalSmall>
                     Mit Klick auf „Zusätzliche Startplätze verbindlich reservieren“ gibst du eine verbindliche, zahlungspflichtige Zusatzreservierung ab.

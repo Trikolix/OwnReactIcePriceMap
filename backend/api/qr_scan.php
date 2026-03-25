@@ -9,7 +9,7 @@ $nutzerId = $input['nutzer_id'] ?? null;
 // Validierung
 if (!$code) {
   http_response_code(400);
-  echo json_encode(['status' => 'error', 'message' => 'Kein Code uebergeben.']);
+  echo json_encode(['status' => 'error', 'message' => 'Kein Code übergeben.']);
   exit;
 }
 
@@ -20,18 +20,18 @@ $qrCode = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$qrCode) {
   http_response_code(404);
-  echo json_encode(['status' => 'error', 'message' => 'QR-Code ungueltig.']);
+  echo json_encode(['status' => 'error', 'message' => 'QR-Code ungültig.']);
   exit;
 }
 
-// Gueltigkeit pruefen (optional: leere Felder = immer gueltig)
+// Gültigkeit prüfen (optional: leere Felder = immer gültig)
 $now = date('Y-m-d H:i:s');
 if (
     (!empty($qrCode['valid_from']) && $now < $qrCode['valid_from']) ||
     (!empty($qrCode['valid_until']) && $now > $qrCode['valid_until'])
 ) {
   http_response_code(403);
-  echo json_encode(['status' => 'error', 'message' => 'QR-Code nicht gueltig (zeitlich).']);
+  echo json_encode(['status' => 'error', 'message' => 'QR-Code nicht gültig (zeitlich).']);
   exit;
 }
 

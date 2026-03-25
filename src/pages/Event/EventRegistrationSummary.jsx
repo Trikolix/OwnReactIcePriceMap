@@ -5,6 +5,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
+import Seo from "../../components/Seo";
 import {
   EVENT_COMMUNITY_RIDE_CLAIM,
   EVENT_ENTRY_FEE_NOTICE,
@@ -273,6 +274,11 @@ export default function EventRegistrationSummary() {
 
   return (
     <Page>
+      <Seo
+        title="Ice-Tour Registrierungsübersicht"
+        description="Zusammenfassung einer Ice-Tour Registrierung."
+        robots="noindex,nofollow"
+      />
       <Header />
       <Container>
         <HeroCard>

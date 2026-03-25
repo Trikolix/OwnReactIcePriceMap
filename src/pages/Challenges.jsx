@@ -87,7 +87,7 @@ async function readJsonResponse(res) {
   try {
     data = await res.json();
   } catch {
-    throw new Error(`Ungueltige Server-Antwort (HTTP ${res.status})`);
+    throw new Error(`Ungültige Server-Antwort (HTTP ${res.status})`);
   }
 
   if (!res.ok) {
@@ -177,7 +177,7 @@ function Challenges() {
       setLoadingLocation(false);
       setLocationNotice({
         type: "error",
-        message: "Dein Browser unterstuetzt keinen Standortzugriff. Challenges koennen ohne Standort nicht generiert werden.",
+        message: "Dein Browser unterstützt keinen Standortzugriff. Challenges können ohne Standort nicht generiert werden.",
       });
       return;
     }
@@ -239,7 +239,7 @@ function Challenges() {
       .then(readJsonResponse)
       .then((data) => {
         if (!Array.isArray(data)) {
-          throw new Error(getApiMessage(data, "Ungueltige Antwort beim Laden der Challenges."));
+          throw new Error(getApiMessage(data, "Ungültige Antwort beim Laden der Challenges."));
         }
         if (isCancelled) return;
         setChallenges(sortChallenges(data.map(normalizeChallenge).filter(Boolean)));
@@ -334,7 +334,7 @@ function Challenges() {
 
     const normalized = normalizeChallenge(data);
     if (!normalized || normalized.id == null) {
-      throw new Error("Challenge wurde erstellt, aber die Server-Antwort ist unvollstaendig.");
+      throw new Error("Challenge wurde erstellt, aber die Server-Antwort ist unvollständig.");
     }
 
     return { data, challenge: normalized };
@@ -344,7 +344,7 @@ function Challenges() {
     if (!location) {
       setActionMessage(
         "error",
-        "Standort konnte nicht ermittelt werden. Fuer die Generierung einer Challenge wird dein Standort benoetigt."
+        "Standort konnte nicht ermittelt werden. Für die Generierung einer Challenge wird dein Standort benötigt."
       );
       return;
     }
@@ -429,7 +429,7 @@ function Challenges() {
     if (!location) {
       setActionMessage(
         "error",
-        "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff fuer einen Neuversuch."
+        "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff für einen Neuversuch."
       );
       return;
     }
@@ -600,7 +600,7 @@ function Challenges() {
                   <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                       <DifficultyLabel style={{ color: getDifficultyColor(ch.difficulty) }}>
-                        {ch.type === "daily" ? "Taeglich" : "Woechentlich"} - {ch.difficulty}
+                        {ch.type === "daily" ? "Täglich" : "Wöchentlich"} - {ch.difficulty}
                       </DifficultyLabel>
                       {isRecreatingThis && <UsedBadge>Wird neu generiert...</UsedBadge>}
                     </div>
@@ -625,13 +625,13 @@ function Challenges() {
                       {canRecreate ? (
                         <RecreateButton
                           onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}
-                          title="Challenge unmoeglich? Einmalig neu generieren."
+                          title="Challenge unmöglich? Einmalig neu generieren."
                           disabled={isRecreatingThis || generating || bulkGenerating || !location}
                         >
                           {isRecreatingThis ? "Erstelle neu..." : "Neu generieren"}
                         </RecreateButton>
                       ) : (
-                        <UsedBadge>{ch.recreated ? "Bereits neu generiert" : "Nicht mehr verfuegbar"}</UsedBadge>
+                        <UsedBadge>{ch.recreated ? "Bereits neu generiert" : "Nicht mehr verfügbar"}</UsedBadge>
                       )}
                     </div>
                   </ChallengeCard>
@@ -761,17 +761,17 @@ function Challenges() {
               )}
             </SelectionWrapper>
             <p>
-              Waehle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
-              Anhand deines aktuellen Standorts wird eine zufaellige Eisdiele in der Naehe ausgewaehlt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
+              Wähle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
+              Anhand deines aktuellen Standorts wird eine zufällige Eisdiele in der Nähe ausgewählt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
               Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br />
-              Falls eine Daily-Challenge nach 18 Uhr generiert wird, gilt diese fuer den naechsten Tag.<br />
-              Falls eine Weekly-Challenge an einem Sonntag generiert wird, gilt diese fuer die naechste Woche.<br />
+              Falls eine Daily-Challenge nach 18 Uhr generiert wird, gilt diese für den nächsten Tag.<br />
+              Falls eine Weekly-Challenge an einem Sonntag generiert wird, gilt diese für die nächste Woche.<br />
               Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfaellt diese und du kannst eine neue generieren.
             </p>
 
             <Explanation>
-              Challenges sind zufaellige Eisdielen, die du in einem bestimmten Umkreis besuchen musst.
-              Fuer den erfolgreichen Check-In erhaeltst du Extra-EP und Awards.
+              Challenges sind zufällige Eisdielen, die du in einem bestimmten Umkreis besuchen musst.
+              Für den erfolgreichen Check-In erhältst du Extra-EP und Awards.
               Je schwieriger die Challenge (weiter entfernte Eisdiele), desto mehr Punkte kannst du sammeln.
               Wichtig: der Check-In muss <b>vor Ort (maximal 300m Distanz zur Eisdiele)</b> erfolgen!
             </Explanation>

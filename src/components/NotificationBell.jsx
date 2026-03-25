@@ -72,29 +72,29 @@ const NotificationBell = () => {
         if (notification.typ === 'kommentar') {
             const data = JSON.parse(notification.zusatzdaten || '{}');
             if (data.checkin_id && data.eisdiele_id) {
-                const url = `/#/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
+                const url = `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
                 window.location.href = url;
             }
         } else if (notification.typ === 'kommentar_bewertung') {
             const data = JSON.parse(notification.zusatzdaten || '{}');
             if (data.bewertung_id && data.eisdiele_id) {
-                const url = `/#/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
+                const url = `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
                 window.location.href = url;
             }
         } else if (notification.typ === 'kommentar_route') {
             const data = JSON.parse(notification.zusatzdaten || '{}');
             if (data.route_id && data.route_autor_id) {
-                const url = `/#/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}`;
+                const url = `/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}`;
                 window.location.href = url;
             }
         } else if (notification.typ === 'kommentar_new_user') {
             const data = JSON.parse(notification.zusatzdaten || '{}');
             const targetUserId = data.user_registration_id || notification.referenz_id;
             if (targetUserId) {
-                window.location.href = `/#/user/${targetUserId}`;
+                window.location.href = `/user/${targetUserId}`;
             }
         } else if (notification.typ === 'new_user') {
-            const url = `/#/user/${notification.referenz_id}`;
+            const url = `/user/${notification.referenz_id}`;
             window.location.href = url;
         } else if (notification.typ === 'systemmeldung') {
             try {

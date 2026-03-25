@@ -53,7 +53,7 @@ const MentionInviteModal = ({ open, onClose, checkinId, shopId, inviterName, sho
 
   const handleCreateNew = () => {
     if (onClose) onClose();
-    window.location.href = `/#/map/activeShop/${shopId}?tab=checkins&createReferencedCheckin=${checkinId}`;
+    window.location.href = `/map/activeShop/${shopId}?tab=checkins&createReferencedCheckin=${checkinId}`;
   };
 
   const handleDecline = async () => {

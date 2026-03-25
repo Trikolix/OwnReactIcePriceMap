@@ -4,6 +4,7 @@ import { Bike, Calendar, CheckCircle2, Euro, Flag, HeartHandshake, Mail, MapPin,
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
+import Seo from "../../components/Seo";
 import { EVENT_COMMUNITY_RIDE_CLAIM, EVENT_DATE, EVENT_ENTRY_FEE, EVENT_ENTRY_FEE_NOTICE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
 import eisdieleSchoeneImage from "./images/eisdiele_schoene.webp";
 import eismanufakturKlattImage from "./images/eismanufaktur_klatt.jpg";
@@ -315,11 +316,11 @@ function Hero({ hasEventRegistration }) {
           </HeroSubtitle>
           <HeroActions>
             {hasEventRegistration ? (
-              <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              <Button href="/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
                 Meine Anmeldung
               </Button>
             ) : (
-              <Button href="/#/event-registration">Jetzt anmelden</Button>
+              <Button href="/event-registration">Jetzt anmelden</Button>
             )}
           </HeroActions>
           <FactGrid>
@@ -632,6 +633,21 @@ export default function RadEvent() {
   const [hasEventRegistration, setHasEventRegistration] = useState(
     () => localStorage.getItem("event2026_has_registration") === "1"
   );
+  const seoDescription = `Ice-Tour 2026 in Chemnitz: Eis-Tour und Spendenfahrt mit ${ROUTE_OPTIONS.map((route) => route.distanceKm).join(", ")} km, offiziellen Eisdielen-Stopps, digitaler Stempelkarte und freiwilligen Spenden für einen guten Zweck.`;
+  const seoKeywords = [
+    "Ice-Tour 2026",
+    "Eis-Tour 2026",
+    "Chemnitz",
+    "Spendenfahrt",
+    "Eisdielen",
+    "Eisdielenradtour",
+    "Charity Radtour Chemnitz",
+    "Fahrrad Event Chemnitz",
+    "Community Ride Chemnitz",
+    "Radtour Chemnitz Mai 2026",
+    "Eisdielen Chemnitz",
+    "Ice-App Event",
+  ];
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -664,6 +680,41 @@ export default function RadEvent() {
 
   return (
     <PageWrapper>
+      <Seo
+        title="Ice-Tour 2026 in Chemnitz | Eis-Tour, Spendenfahrt und Eisdielen-Stopps"
+        description={seoDescription}
+        keywords={seoKeywords}
+        canonical="/ice-tour-2026.html"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: "Ice-Tour 2026",
+          startDate: "2026-05-16",
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          description: seoDescription,
+          url: "https://ice-app.de/ice-tour-2026.html",
+          location: {
+            "@type": "Place",
+            name: EVENT_START_FINISH.name,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: EVENT_START_FINISH.address,
+              postalCode: EVENT_START_FINISH.postalCode,
+              addressLocality: EVENT_START_FINISH.city,
+              addressCountry: "DE",
+            },
+          },
+          offers: {
+            "@type": "Offer",
+            price: String(EVENT_ENTRY_FEE),
+            priceCurrency: "EUR",
+            availability: "https://schema.org/InStock",
+            url: "https://ice-app.de/event-registration",
+          },
+          keywords: seoKeywords.join(", "),
+        }}
+      />
       <Header />
       <Hero hasEventRegistration={hasEventRegistration} />
       <RouteOverview />
@@ -690,12 +741,12 @@ export default function RadEvent() {
             </p>
             <div style={{ display: "flex", gap: "0.8rem", justifyContent: "center", flexWrap: "wrap" }}>
               {hasEventRegistration ? (
-                <Button href="/#/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+                <Button href="/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
                   Mein Teilnehmer-Bereich
                 </Button>
               ) : (
                 <>
-                  <Button href="/#/event-registration">Zur Anmeldung</Button>
+                  <Button href="/event-registration">Zur Anmeldung</Button>
                   {/* <Button href="/#/event-gifts" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
                     Startplatz verschenken
                   </Button> */}
