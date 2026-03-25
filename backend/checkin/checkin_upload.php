@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/email_notification.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
+require_once __DIR__ . '/../lib/team_challenges.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
@@ -471,6 +472,7 @@ try {
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
     elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
 
+    $completedTeamChallenge = null;
     if ($isOnSite) {
         // Aktive Challenge suchen
         $stmt = $pdo->prepare("
@@ -510,6 +512,7 @@ try {
             ];
             $evaluators[] = new ChallengeCountEvaluator();
         }
+        $completedTeamChallenge = teamChallengeCompleteFromCheckin($pdo, (int)$userId, (int)$shopId, (int)$checkinId);
         $evaluators[] = new OnSiteEvaluator();
     }
 
@@ -612,7 +615,8 @@ try {
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
-        'completed_challenge' => $completedChallenge ?? null
+        'completed_challenge' => $completedChallenge ?? null,
+        'completed_team_challenge' => $completedTeamChallenge
     ]);
 
 } catch (Exception $e) {

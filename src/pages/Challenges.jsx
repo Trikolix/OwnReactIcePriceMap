@@ -3,11 +3,12 @@ import styled from "styled-components";
 import { MapPinned, RefreshCcw, Sparkles, Target, Timer, Trophy as TrophyGlyph } from "lucide-react";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Seo from "../components/Seo";
 import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import TeamChallengesPanel from "../components/TeamChallengesPanel";
 
 const greenIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
@@ -118,6 +119,7 @@ function FlyToMapTarget({ target }) {
 }
 
 function Challenges() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTrophy, setSelectedTrophy] = useState(null);
   const [showTypeInfo, setShowTypeInfo] = useState(false);
   const { userId, isLoggedIn } = useUser();
@@ -141,6 +143,8 @@ function Challenges() {
   const [countdownNowTs, setCountdownNowTs] = useState(Date.now());
   const newChallengeModalButtonRef = useRef(null);
   const trophyModalButtonRef = useRef(null);
+  const activeTab = searchParams.get("tab") === "team" ? "team" : "solo";
+  const focusTeamChallengeId = searchParams.get("teamChallengeId");
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setCountdownNowTs(Date.now()), 60000);
@@ -411,6 +415,20 @@ function Challenges() {
     () => ({ active: activeChallenges.length, completed: completedChallenges.length, missing: missingCombinations.length }),
     [activeChallenges.length, completedChallenges.length, missingCombinations.length]
   );
+  const handleTabChange = (nextTab) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextTab === "team") nextParams.set("tab", "team");
+    else nextParams.delete("tab");
+    if (nextTab !== "team") nextParams.delete("teamChallengeId");
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleFocusChallengeHandled = () => {
+    if (!focusTeamChallengeId) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("teamChallengeId");
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <Page>
@@ -432,6 +450,15 @@ function Challenges() {
             <MetaChip>{stats.missing} Kombinationen frei</MetaChip>
           </MetaRow>
         </HeroCard>
+
+        <TabRow>
+          <TabButton type="button" $active={activeTab === "solo"} onClick={() => handleTabChange("solo")}>
+            Solo
+          </TabButton>
+          <TabButton type="button" $active={activeTab === "team"} onClick={() => handleTabChange("team")}>
+            Team
+          </TabButton>
+        </TabRow>
 
         {showNewChallengeModal && newChallenge && (
           <ModalOverlay onClick={() => setShowNewChallengeModal(false)}>
@@ -469,6 +496,16 @@ function Challenges() {
               Melde dich an, um aktive Challenges zu sehen, neue Aufgaben zu generieren und abgeschlossene Challenges als Erfolge zu sammeln.
             </BodyText>
           </SectionCard>
+        ) : activeTab === "team" ? (
+          <TeamChallengesPanel
+            userId={userId}
+            apiUrl={apiUrl}
+            location={location}
+            loadingLocation={loadingLocation}
+            locationNotice={locationNotice}
+            focusChallengeId={focusTeamChallengeId}
+            onFocusChallengeHandled={handleFocusChallengeHandled}
+          />
         ) : (
           <LayoutGrid>
             <MainColumn>
@@ -845,6 +882,24 @@ const MetaRow = styled.div`
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
+`;
+
+const TabRow = styled.div`
+  display: flex;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+`;
+
+const TabButton = styled.button`
+  padding: 0.72rem 1rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $active }) => ($active ? "rgba(255, 181, 34, 0.45)" : "rgba(47, 33, 0, 0.1)")};
+  background: ${({ $active }) => ($active ? "rgba(255, 181, 34, 0.16)" : "rgba(255, 252, 243, 0.8)")};
+  color: #2f2100;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
 `;
 
 const MetaChip = styled.span`

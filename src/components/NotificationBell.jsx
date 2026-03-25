@@ -24,6 +24,12 @@ const NotificationBell = () => {
         const data = await res.json();
         if (data.status === "success") {
             setNotifications(data.notifications);
+        } else if (notification.typ === 'team_challenge') {
+            const data = JSON.parse(notification.zusatzdaten || '{}');
+            const challengeId = data.team_challenge_id || notification.referenz_id;
+            window.location.href = challengeId
+                ? `/challenge?tab=team&teamChallengeId=${challengeId}`
+                : '/challenge?tab=team';
         }
     };
 
