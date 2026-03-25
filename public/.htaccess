@@ -2,7 +2,12 @@
   RewriteEngine On
   RewriteBase /
 
+  <IfModule mod_negotiation.c>
+    Options -MultiViews
+  </IfModule>
+
   RewriteRule ^index\.html$ - [L]
+  RewriteRule \.(?:js|mjs|css|map|json|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|eot|mp4|webm|ogg|mp3|wav|pdf|txt|xml)$ - [L,NC]
 
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d [OR]
