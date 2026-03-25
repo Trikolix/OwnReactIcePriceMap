@@ -545,6 +545,37 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
             </>
           )}
         </SectionCard>
+
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>So funktionieren Team-Challenges</SectionTitle>
+              <SectionSubline>Der Ablauf ist etwas anders als bei Solo-Challenges, weil zwei Personen beteiligt sind.</SectionSubline>
+            </div>
+          </SectionHead>
+          <InfoStack>
+            <InfoRow>
+              <InfoIcon><Send size={16} /></InfoIcon>
+              <span>Du lädst genau eine andere Person ein und wählst Daily oder Weekly.</span>
+            </InfoRow>
+            <InfoRow>
+              <InfoIcon><Check size={16} /></InfoIcon>
+              <span>Nimmt die eingeladene Person an, wird aus euren beiden Standorten ein gemeinsamer Mittelpunkt berechnet.</span>
+            </InfoRow>
+            <InfoRow>
+              <InfoIcon><Target size={16} /></InfoIcon>
+              <span>Im Radius um den gemeinsamen Mittelpunkt werden Eisdielen gesucht. Die eingeladene Person wählt daraus 1 bis 3 Vorschläge aus.</span>
+            </InfoRow>
+            <InfoRow>
+              <InfoIcon><MapPinned size={16} /></InfoIcon>
+              <span>Die einladende Person bestätigt anschließend eine Ziel-Eisdiele aus den Vorschlägen.</span>
+            </InfoRow>
+            <InfoRow>
+              <InfoIcon><Clock3 size={16} /></InfoIcon>
+              <span>Danach habt ihr beide innerhalb des vorgegebenen Zeitfensters bei dieser Eisdiele einzuchecken, damit die Team-Challenge erfolgreich abgeschlossen wird.</span>
+            </InfoRow>
+          </InfoStack>
+        </SectionCard>
       </MainColumn>
       <SideColumn>
         <SectionCard>
@@ -1053,4 +1084,28 @@ const MiniState = styled.div`
 const MutedText = styled.div`
   color: rgba(47, 33, 0, 0.58);
   font-size: 0.84rem;
+`;
+
+const InfoStack = styled.div`
+  display: grid;
+  gap: 0.8rem;
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  color: #5b4520;
+  line-height: 1.45;
+`;
+
+const InfoIcon = styled.div`
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 181, 34, 0.16);
+  color: #7a4a00;
 `;
