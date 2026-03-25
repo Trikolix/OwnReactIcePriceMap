@@ -17,11 +17,9 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
-import ChristmasElf, { SecretWorkshopMarker } from './components/ChristmasElf';
-import EasterBunny, { EasterEggMarker } from './components/EasterBunny';
-import OlympicsVenueMarkers from './components/OlympicsVenues';
-import BirthdayPresentMarkers from './components/BirthdayPresentMarkers';
-import { isSpecialTime } from './utils/seasonal';
+import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
+import Seo from './components/Seo';
+import { CAMPAIGN_STATUS, getCampaignStatus } from './features/seasonal/campaigns';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const DEFAULT_CONTEXT_MENU_STATE = {
   isVisible: false,
@@ -808,18 +806,57 @@ const IceCreamRadar = () => {
     }
   }, [userId, openFilterQueryString]);
 
-  const specialTime = isSpecialTime();
+  const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
+  const seoKeywords = [
+    'Ice-App',
+    'Eispreise Deutschland',
+    'Eis-App',
+    'Eis',
+    'Eis-Plattform',
+    'Eisdielen Deutschland',
+    'Eisdielen Karte',
+    'Eisdielen Bewertung',
+    'Kugelpreis',
+    'Softeis Preis',
+    'Eisbecher Bewertung',
+    'Eis Ranking',
+  ];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100dvh',
-        minHeight: '100vh',
-        backgroundColor: '#ffb522',
-      }}
-    >
+    <>
+      <Seo
+        title="Ice-App | Eispreise, Bewertungen und Eisdielen in Deutschland"
+        description="Ice-App ist die Plattform für Eispreise in Deutschland. Finde Eisdielen auf der Karte, vergleiche Kugelpreise, entdecke Bewertungen und teile eigene Eis-Erfahrungen."
+        keywords={seoKeywords}
+        canonical={location.pathname === '/map' ? '/' : location.pathname || '/'}
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Ice-App',
+            url: 'https://ice-app.de/',
+            description: 'Plattform für Eispreise, Eisdielen-Bewertungen, Rankings und Community in Deutschland.',
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'Ice-App',
+            applicationCategory: 'TravelApplication',
+            operatingSystem: 'Web',
+            url: 'https://ice-app.de/',
+            description: 'Web-App für Eispreise, Eisdielen-Karte, Bewertungen und Community in Deutschland.',
+          },
+        ]}
+      />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100dvh',
+          minHeight: '100vh',
+          backgroundColor: '#ffb522',
+        }}
+      >
       <Header
         refreshShops={refreshShops}
       />
@@ -836,8 +873,6 @@ const IceCreamRadar = () => {
       </LogoContainer>
 
       <MapSection>
-        {specialTime === 'christmas' && <ChristmasElf />}
-        {specialTime === 'easter' && <EasterBunny />}
         {isSearchVisible && (
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
@@ -930,14 +965,10 @@ const IceCreamRadar = () => {
             maxZoom={19}
           />
           {activeShop && <MapCenterOnShop shop={activeShop} />}
-          {specialTime === 'christmas' && currentZoom > 5 && <SecretWorkshopMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
-          {specialTime === 'easter' && currentZoom > 5 && <EasterEggMarker isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
-          {specialTime === 'olympics' && currentZoom > 9 && <OlympicsVenueMarkers isLoggedIn={isLoggedIn} setShowLoginModal={setShowLoginModal} />}
-          {specialTime === 'birthday' && currentZoom > 9 && (
-            <BirthdayPresentMarkers
-              shops={iceCreamShops}
+          {easterCampaignActive && currentZoom > 5 && (
+            <EasterMapEncounter
+              enabled={easterCampaignActive}
               isLoggedIn={isLoggedIn}
-              userId={userId}
               setShowLoginModal={setShowLoginModal}
             />
           )}
@@ -1141,7 +1172,7 @@ const IceCreamRadar = () => {
         </FilterModalOverlay>
       )}
       {token && (
-        <ResetPasswordModal resetToken={token} isOpen={true} onClose={() => (window.location.href = "/#/login")} />
+        <ResetPasswordModal resetToken={token} isOpen={true} onClose={() => (window.location.href = "/login")} />
       )}
       {showLoginModal &&
         <LoginModal
@@ -1171,7 +1202,8 @@ const IceCreamRadar = () => {
           onClose={handleCloseShopDetails}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

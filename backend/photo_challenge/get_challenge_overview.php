@@ -41,12 +41,13 @@ try {
                b.beschreibung,
                b.nutzer_id,
                n.username,
-               pci.title AS title
+               COALESCE(pci.title, s.title, b.beschreibung) AS title
         FROM photo_challenge_group_entries ge
         JOIN photo_challenge_groups g ON g.id = ge.group_id
         JOIN bilder b ON b.id = ge.image_id
         LEFT JOIN nutzer n ON n.id = b.nutzer_id
         LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ge.challenge_id AND pci.image_id = ge.image_id
+        LEFT JOIN photo_challenge_submissions s ON s.challenge_id = ge.challenge_id AND s.image_id = ge.image_id
         WHERE ge.challenge_id = :challenge_id
         ORDER BY g.position ASC, ge.seed ASC
     ");
@@ -165,6 +166,14 @@ try {
     }
 
     $now = new DateTimeImmutable();
+    $groupAdvancers = (int)($challenge['group_advancers'] ?? 2);
+    if ($groupAdvancers < 1) {
+        $groupAdvancers = 1;
+    }
+    $luckySlots = max(0, (int)($challenge['lucky_loser_slots'] ?? 0));
+    $allGroupsFinished = !empty($groups);
+    $allLuckyCandidates = [];
+
     foreach ($groups as &$group) {
         $groupId = (int)$group['id'];
         $startAt = $group['start_at'] ? new DateTimeImmutable($group['start_at']) : null;
@@ -176,6 +185,9 @@ try {
             $status = 'finished';
         }
         $group['status'] = $status;
+        if ($status !== 'finished') {
+            $allGroupsFinished = false;
+        }
         $group['start_at'] = $startAt ? $startAt->format(DateTimeInterface::ATOM) : null;
         $group['end_at'] = $endAt ? $endAt->format(DateTimeInterface::ATOM) : null;
         if ($status === 'upcoming' && $startAt) {
@@ -203,48 +215,30 @@ try {
             $entry['votes'] = isset($votesMap[$entry['image_id']]) ? $votesMap[$entry['image_id']] : 0;
         }
         unset($entry);
-        if ($status === 'finished') {
-            $results = [];
-            // Calculate advancers and true lucky losers for this group
-            $groupAdvancers = $challenge['group_advancers'] ?? 2;
-            $entriesSorted = $group['entries'];
-            usort($entriesSorted, function($a, $b) {
-                return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
-            });
-            $advancers = array_slice(array_column($entriesSorted, 'image_id'), 0, $groupAdvancers);
 
-            // --- TRUE LUCKY LOSERS LOGIC ---
-            // Gather all lucky loser candidates from all groups
-            $allLuckyCandidates = [];
-            foreach ($groups as $g) {
-                $gEntriesSorted = $g['entries'];
-                usort($gEntriesSorted, function($a, $b) {
-                    return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
-                });
-                $gAdvancers = array_slice(array_column($gEntriesSorted, 'image_id'), 0, $groupAdvancers);
-                foreach ($gEntriesSorted as $idx => $entry) {
-                    if (!in_array($entry['image_id'], $gAdvancers)) {
-                        $allLuckyCandidates[] = [
-                            'image_id' => $entry['image_id'],
-                            'votes' => $entry['votes'] ?? 0,
-                            'group_id' => $g['id'],
-                        ];
-                    }
+        $entriesSorted = $group['entries'];
+        usort($entriesSorted, function($a, $b) {
+            return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+        });
+
+        $advancers = array_slice(array_column($entriesSorted, 'image_id'), 0, $groupAdvancers);
+        $group['advancers'] = $status === 'finished' ? $advancers : [];
+        $group['lucky_losers'] = [];
+
+        if ($status === 'finished') {
+            foreach ($entriesSorted as $entry) {
+                if (!in_array($entry['image_id'], $advancers, true)) {
+                    $allLuckyCandidates[] = [
+                        'image_id' => $entry['image_id'],
+                        'votes' => $entry['votes'] ?? 0,
+                        'group_id' => $groupId,
+                    ];
                 }
             }
-            // Sort all lucky loser candidates globally
-            usort($allLuckyCandidates, function($a, $b) {
-                return $b['votes'] <=> $a['votes'];
-            });
-            $luckySlots = $challenge['lucky_loser_slots'] ?? 0;
-            $trueLuckyLosers = array_slice(array_column($allLuckyCandidates, 'image_id'), 0, $luckySlots);
-            $group['advancers'] = $advancers;
-            $group['lucky_losers'] = array_values(array_filter($trueLuckyLosers, function($id) use ($group) {
-                foreach ($group['entries'] as $entry) {
-                    if ($entry['image_id'] === $id) return true;
-                }
-                return false;
-            }));
+        }
+
+        if ($status === 'finished') {
+            $results = [];
             foreach ($group['entries'] as $entry) {
                 $results[$entry['image_id']] = [
                     'image_id' => $entry['image_id'],
@@ -253,8 +247,8 @@ try {
                     'beschreibung' => $entry['beschreibung'],
                     'username' => $entry['username'],
                     'votes' => $entry['votes'] ?? 0,
-                    'is_advancer' => in_array($entry['image_id'], $advancers),
-                    'is_lucky_loser' => in_array($entry['image_id'], $group['lucky_losers']),
+                    'is_advancer' => in_array($entry['image_id'], $advancers, true),
+                    'is_lucky_loser' => false,
                 ];
             }
             // Sortiere nach Stimmen absteigend
@@ -266,6 +260,46 @@ try {
         $group['user_votes'] = $userVotesPerGroup[$groupId] ?? 0;
     }
     unset($group);
+
+    if ($allGroupsFinished && $luckySlots > 0 && !empty($allLuckyCandidates)) {
+        usort($allLuckyCandidates, function($a, $b) {
+            if (($a['votes'] ?? 0) !== ($b['votes'] ?? 0)) {
+                return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+            }
+            if (($a['group_id'] ?? 0) !== ($b['group_id'] ?? 0)) {
+                return ($a['group_id'] ?? 0) <=> ($b['group_id'] ?? 0);
+            }
+            return ($a['image_id'] ?? 0) <=> ($b['image_id'] ?? 0);
+        });
+
+        $trueLuckyLosers = array_slice(array_column($allLuckyCandidates, 'image_id'), 0, $luckySlots);
+
+        foreach ($groups as &$group) {
+            if (($group['status'] ?? null) !== 'finished') {
+                continue;
+            }
+
+            $group['lucky_losers'] = array_values(array_filter(
+                $trueLuckyLosers,
+                function($id) use ($group) {
+                    foreach ($group['entries'] as $entry) {
+                        if ($entry['image_id'] === $id) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            ));
+
+            if (!empty($group['results'])) {
+                foreach ($group['results'] as &$result) {
+                    $result['is_lucky_loser'] = in_array($result['image_id'], $group['lucky_losers'], true);
+                }
+                unset($result);
+            }
+        }
+        unset($group);
+    }
 
     if ($viewerId) {
         $stmt = $pdo->prepare("

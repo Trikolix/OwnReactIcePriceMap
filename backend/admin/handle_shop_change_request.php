@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/mail.php';
 require_once __DIR__ . '/../lib/opening_hours.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -207,13 +208,9 @@ function sendChangeRequestStatusEmail($email, $username, $shopName, $shopId, $st
         $body .= "<p><strong>Hinweis vom Team:</strong><br>" . nl2br(htmlspecialchars($adminMessage)) . "</p>";
     }
 
-    $body .= "<p>Zur Eisdiele: <a href='https://ice-app.de/#/map/activeShop/" . intval($shopId) . "' style='color:#0077b6;'>Direktlink öffnen</a></p>";
+    $body .= "<p>Zur Eisdiele: <a href='https://ice-app.de/map/activeShop/" . intval($shopId) . "' style='color:#0077b6;'>Direktlink öffnen</a></p>";
     $body .= "<p>Vielen Dank für deinen Beitrag zur Ice-App!<br>Dein Ice-App Team</p>";
     $body .= "</body></html>";
 
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: noreply@ice-app.de\r\n";
-
-    @mail($email, $subject, $body, $headers);
+    iceapp_send_utf8_html_mail($email, $subject, $body, 'noreply@ice-app.de');
 }

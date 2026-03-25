@@ -18,7 +18,7 @@ try {
     $stmt = $pdo->prepare("INSERT INTO invitations (id, inviter_id) VALUES (?, ?)");
     $stmt->execute([$code, $inviterId]);
 
-    $inviteLink = "https://ice-app.de/#/register/$code";
+    $inviteLink = "https://ice-app.de/register/$code";
 
     echo json_encode([
         'status' => 'success',

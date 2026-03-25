@@ -4,6 +4,7 @@ import Header from "../Header";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
+import Seo from "../components/Seo";
 
 const EARTH_RADIUS_KM = 6371;
 const FILTERS_COMPACT_BREAKPOINT_PX = 768;
@@ -588,6 +589,18 @@ const Ranking = () => {
 
     return (
         <>
+            <Seo
+                title="Eisdielen-Ranking | Bewertungen und Preis-Leistung in der Ice-App"
+                description="Eisdielen-Ranking der Ice-App: Vergleiche Bewertungen, Preis-Leistung und Community-Ratings für Eisdielen in Deutschland."
+                keywords={[
+                    'Eisdielen Ranking',
+                    'Ice-App Ranking',
+                    'Eisdielen Bewertung',
+                    'Eis Bewertung Deutschland',
+                    'Preis Leistung Eisdiele',
+                ]}
+                canonical="/ranking"
+            />
             <Header />
             <Container>
                 <TableContainer className="container">

@@ -579,8 +579,8 @@ function UserSite() {
                 <h3>Lade neue Nutzer ein und verdiene extra EP <Sparkles size={21} style={{ verticalAlign: 'sub' }} /></h3>
                 <LinkContainer>
                   Dein Einladungslink:
-                  <Input value={`https://ice-app.de/#/register/${data.invite_code}`} readOnly />
-                  <CopyButton onClick={() => copyToClipboard(`https://ice-app.de/#/register/${data.invite_code}`)}>Kopieren</CopyButton>
+                  <Input value={`https://ice-app.de/register/${data.invite_code}`} readOnly />
+                  <CopyButton onClick={() => copyToClipboard(`https://ice-app.de/register/${data.invite_code}`)}>Kopieren</CopyButton>
                 </LinkContainer>
                 {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
               </InviteCard>

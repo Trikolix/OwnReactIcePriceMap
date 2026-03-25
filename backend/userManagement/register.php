@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
+require_once  __DIR__ . '/../lib/mail.php';
 
 // 1. Rate-Limiting prüfen
 $ipAddress = $_SERVER['REMOTE_ADDR'];
@@ -87,7 +88,7 @@ $stmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_c
 $stmt->execute([$userId, $newsletterOptIn]);
 
 // 8. Bestätigungs-E-Mail senden (Multipart)
-$verifyUrl = "https://ice-app.de/#/verify?token=" . urlencode($token);
+$verifyUrl = "https://ice-app.de/verify?token=" . urlencode($token);
 
 // ---- E-Mail Aufbau ----
 $boundary = "----=" . md5(uniqid(rand()));
@@ -140,12 +141,12 @@ Es hat sich ein neuer Nutzer bei ice-app.de registriert.
 
 Benutzername: $username
 E-Mail: $email
-Link zum Profil: https://ice-app.de/#/user/$userId
+Link zum Profil: https://ice-app.de/user/$userId
 EOD;
 
 // Zusätzliche Zeile hinzufügen, falls invited_by gesetzt ist
 if ($invitedById != null) {
-    $message .= "\nEingeladen von: https://ice-app.de/#/user/$invitedById";
+    $message .= "\nEingeladen von: https://ice-app.de/user/$invitedById";
 }
 
 $message .= <<<EOD
@@ -155,9 +156,7 @@ Viele Grüße
 dein Eis-Team
 EOD;
 
-$headers = "From: noreply@ice-app.de";
-
-$mailSent2 = mail("admin@ice-app.de", $subject, $message, $headers);
+$mailSent2 = iceapp_send_utf8_text_mail("admin@ice-app.de", $subject, $message);
 
 if ($mailSent) {
     echo json_encode(['status' => 'success', 'message' => 'Registrierung erfolgreich. Schau in deine E-Mails um deine Registierung zu bestätigen.']);

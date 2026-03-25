@@ -12,7 +12,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
-import { isSpecialTime } from './utils/seasonal';
+import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
 import { buildAssetUrl } from './utils/assets.jsx';
 import {
   countActivitiesSince,
@@ -20,13 +20,7 @@ import {
   readActivityFeedSeenAt,
   writeActivityFeedCache,
 } from './utils/activityFeed';
-import BirthdayRulesModal from './components/BirthdayRulesModal';
 import ActionsOverviewModal from './pages/ActionsOverview';
-import headerWideChristmas from './header_wide_christmas.png';
-import headerWideEaster from './header_wide_easter.png';
-import headerWideBirthday from './header_wide_1st_birthday.png';
-import headerWide from './header_wide.png';
-import GewinnspielImage from './birthday_action.png';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,35 +33,21 @@ const Header = ({ refreshShops }) => {
   const [newAwards, setNewAwards] = useState([]);
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [showUserOfMonth, setShowUserOfMonth] = useState(false);
   const [showActionsOverview, setShowActionsOverview] = useState(false);
-  const [showBirthdayRules, setShowBirthdayRules] = useState(false);
-  const [birthdayPoints, setBirthdayPoints] = useState(null);
-  const [birthdayMaxPoints, setBirthdayMaxPoints] = useState(null);
-  const [birthdayBreakdown, setBirthdayBreakdown] = useState({});
-  const [birthdayStatus, setBirthdayStatus] = useState({});
-  const [birthdayCounts, setBirthdayCounts] = useState({});
-  const [birthdayMandatoryCompleted, setBirthdayMandatoryCompleted] = useState(0);
-  const [birthdayMandatoryTotal, setBirthdayMandatoryTotal] = useState(11);
-  const [birthdayRewardUnlocked, setBirthdayRewardUnlocked] = useState(false);
-  const [birthdayCampaignPhase, setBirthdayCampaignPhase] = useState('live');
-  const [birthdayAnniversaryUnlockedAt, setBirthdayAnniversaryUnlockedAt] = useState(null);
-  const [birthdayEisTourRegistrationOpen, setBirthdayEisTourRegistrationOpen] = useState(false);
-  const [birthdayAwardConfig, setBirthdayAwardConfig] = useState(null);
-  const [birthdayLeaderboard, setBirthdayLeaderboard] = useState([]);
-  const [birthdayLeaderboardFull, setBirthdayLeaderboardFull] = useState([]);
-  const [birthdayUserRank, setBirthdayUserRank] = useState(null);
-  const [isBirthdayLeaderboardLoading, setIsBirthdayLeaderboardLoading] = useState(false);
-  const [isBirthdayLeaderboardExpanded, setIsBirthdayLeaderboardExpanded] = useState(false);
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
-  const LEADERBOARD_COLLAPSED_COUNT = 3;
+  const seasonalState = getResolvedSeasonalCampaigns();
+  const featuredCampaign = seasonalState.featuredCampaign;
+  const promoIconSrc = featuredCampaign?.teaserIcon ? buildAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
+  const promoIconAlt = featuredCampaign
+    ? `${featuredCampaign.title} öffnen`
+    : 'Aktionen & Ergebnisse öffnen';
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
-  const showEisTourNavLink = now >= new Date(2026, 2, 14, 0, 0, 0);
+  const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
 
   const toggleMenu = () => {
     setMenuOpen((isOpen) => !isOpen);
@@ -192,7 +172,7 @@ const Header = ({ refreshShops }) => {
       checkForLevelUp();
     }, 5 * 60 * 1000); // alle 5 Minuten
 
-    // sofort einmal ausfÃ¼hren (optional)
+    // sofort einmal ausführen (optional)
     checkForLevelUp();
 
     return () => clearInterval(checkLevelInterval);
@@ -225,7 +205,7 @@ const Header = ({ refreshShops }) => {
     }
 
     if (scanCode) {
-      // âœ… QR-Code erkannt â€“ weiterverarbeiten
+      // ✅ QR-Code erkannt – weiterverarbeiten
       console.log("Scan-Code erkannt:", scanCode);
 
       // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
@@ -249,7 +229,7 @@ const Header = ({ refreshShops }) => {
               return;
             }
 
-            // ðŸ§  Wenn nicht eingeloggt â†’ lokal speichern
+            // 🧠 Wenn nicht eingeloggt → lokal speichern
             if (!userId) {
               const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
               if (stored.includes(scanCode)) {
@@ -262,7 +242,7 @@ const Header = ({ refreshShops }) => {
               }
             }
 
-            // âœ… Modal anzeigen
+            // ✅ Modal anzeigen
             console.log("setModalData", {
               icon: data.icon,
               name: data.name,
@@ -284,7 +264,7 @@ const Header = ({ refreshShops }) => {
           console.error("Fehler beim Senden des QR-Codes:", err);
         })
         .finally(() => {
-          // âœ… Parameter aus URL entfernen, ohne Reload
+          // ✅ Parameter aus URL entfernen, ohne Reload
           params.delete("scan");
           const newSearch = params.toString();
           navigate(
@@ -333,7 +313,7 @@ const Header = ({ refreshShops }) => {
             body: JSON.stringify({ code, nutzer_id: userId }),
           });
           const data = await res.json();
-          console.log("QR-Scan nach Login Ã¼bertragen:", data);
+          console.log("QR-Scan nach Login übertragen:", data);
 
           if (data?.status !== "success") {
             failedCodes.push(code);
@@ -378,172 +358,34 @@ const Header = ({ refreshShops }) => {
     }
   };
 
-  const [currentUser, setCurrentUser] = useState(null);
-  const [pastUsers, setPastUsers] = useState([]);
-
-  useEffect(() => {
-    const fetchUserOfMonth = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/get_user_of_the_month.php`);
-        const data = await response.json();
-        if (data.error) {
-          console.error("Error fetching user of the month:", data.error);
-        } else {
-          setCurrentUser(data.currentUser);
-          setPastUsers(data.pastUsers || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user of the month:', error);
-      }
-    };
-
-    fetchUserOfMonth();
-  }, [apiUrl]);
-
-
-  const getLogoSrc = () => {
-    const specialTime = isSpecialTime();
-    if (specialTime === 'christmas') {
-      return headerWideChristmas;
-    }
-    if (specialTime === 'easter') {
-        return headerWideEaster;
-    }
-    if (specialTime === 'birthday') {
-      return headerWideBirthday;
-    }
-    return headerWide;
-  };
-
-  const specialTime = isSpecialTime();
-  const forceLocalBirthdayUnlock =
-    typeof window !== 'undefined'
-    && (window.location.hostname === 'localhost'
-      || window.location.hostname === '127.0.0.1'
-      || window.location.hostname === '::1');
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
-
-  useEffect(() => {
-    if (specialTime !== 'birthday' || !userId) {
-      setBirthdayPoints(null);
-      setBirthdayMaxPoints(null);
-      setBirthdayBreakdown({});
-      setBirthdayStatus({});
-      setBirthdayCounts({});
-      setBirthdayMandatoryCompleted(0);
-      setBirthdayMandatoryTotal(11);
-      setBirthdayRewardUnlocked(false);
-      setBirthdayCampaignPhase('live');
-      setBirthdayAnniversaryUnlockedAt(null);
-      setBirthdayEisTourRegistrationOpen(false);
-      setBirthdayAwardConfig(null);
-      return;
-    }
-
-    fetch(`${apiUrl}/api/birthday_progress.php?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const total = Number.isFinite(data?.points?.total) ? data.points.total : 0;
-        setBirthdayPoints(total);
-        setBirthdayMaxPoints(Number.isFinite(data?.points?.max) ? data.points.max : null);
-        setBirthdayBreakdown(data?.points?.breakdown || {});
-        setBirthdayStatus(data?.status || {});
-        setBirthdayCounts(data?.counts || {});
-        setBirthdayMandatoryCompleted(Number.isFinite(data?.mandatory?.completed) ? data.mandatory.completed : 0);
-        setBirthdayMandatoryTotal(Number.isFinite(data?.mandatory?.total) ? data.mandatory.total : 11);
-        setBirthdayRewardUnlocked(Boolean(data?.reward_unlocked));
-        setBirthdayCampaignPhase(typeof data?.campaign_phase === 'string' ? data.campaign_phase : 'live');
-        setBirthdayAnniversaryUnlockedAt(
-          typeof data?.anniversary_unlocked_at === 'string' ? data.anniversary_unlocked_at : null
-        );
-        setBirthdayEisTourRegistrationOpen(Boolean(data?.eis_tour_registration_open));
-        setBirthdayAwardConfig(data?.birthday_awards || null);
-        if (data?.new_awards && data.new_awards.length > 0) {
-          setNewAwards(data.new_awards);
-          setShowOverlay(true);
-        }
-      })
-      .catch((err) => {
-        console.error('Fehler beim Laden der Geburtstags-Punkte:', err);
-        setBirthdayPoints(null);
-        setBirthdayMaxPoints(null);
-        setBirthdayBreakdown({});
-        setBirthdayStatus({});
-        setBirthdayCounts({});
-        setBirthdayMandatoryCompleted(0);
-        setBirthdayMandatoryTotal(11);
-        setBirthdayRewardUnlocked(false);
-        setBirthdayCampaignPhase('live');
-        setBirthdayAnniversaryUnlockedAt(null);
-        setBirthdayEisTourRegistrationOpen(false);
-        setBirthdayAwardConfig(null);
-      });
-  }, [apiUrl, specialTime, userId]);
-
-  useEffect(() => {
-    if (specialTime !== 'birthday' || !showBirthdayRules) {
-      setBirthdayLeaderboard([]);
-      setBirthdayLeaderboardFull([]);
-      setBirthdayUserRank(null);
-      setIsBirthdayLeaderboardExpanded(false);
-      return;
-    }
-
-    setIsBirthdayLeaderboardLoading(true);
-    const userParam = userId ? `?user_id=${userId}` : '';
-    fetch(`${apiUrl}/api/birthday_leaderboard.php${userParam}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const fullLeaderboard = Array.isArray(data?.leaderboard) ? data.leaderboard : [];
-        setBirthdayLeaderboardFull(fullLeaderboard);
-        setBirthdayLeaderboard(fullLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT));
-        setBirthdayUserRank(data?.user_rank || null);
-      })
-      .catch((err) => {
-        console.error('Fehler beim Laden des Geburtstags-Leaderboards:', err);
-        setBirthdayLeaderboard([]);
-        setBirthdayLeaderboardFull([]);
-        setBirthdayUserRank(null);
-      })
-      .finally(() => {
-        setIsBirthdayLeaderboardLoading(false);
-      });
-  }, [apiUrl, specialTime, showBirthdayRules, userId]);
 
   return (
     <>
-      <HeaderContainer>
+      <HeaderContainer $menuOpen={menuOpen}>
         <PromoIconsContainer>
-          <GewinnspielIcon onClick={() => {
-            if (specialTime === 'birthday') {
-              setShowBirthdayRules(true);
-              return;
-            }
-            setShowActionsOverview(true);
-          }}>
-            {specialTime === 'birthday' ? (
-              <img src={GewinnspielImage} alt="Geburtstagsaktionen & Belohnungen" />
-            ) : (
-              <img src={userOfTheMonthImg} alt="Aktionen & Ergebnisse" />
-            )}
+          <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
+            <img src={promoIconSrc} alt={promoIconAlt} />
           </GewinnspielIcon>
         </PromoIconsContainer>
 
         <LogoContainer>
-          <a href="/"><Logo src={getLogoSrc()} alt="Website Logo" /></a>
+          <a href="/"><Logo src={seasonalState.headerLogo} alt="Website Logo" /></a>
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
+          <DesktopNavLink to="/ice-tour" $compact>
+            Ice-Tour
+            {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
+          </DesktopNavLink>
           <DesktopNavLink to="/photo-challenge" $compact>
             Foto-Challenge
-            <DesktopNavBadge>NEU</DesktopNavBadge>
+            {showPhotoChallengeNewBadge && <DesktopNavBadge>NEU</DesktopNavBadge>}
           </DesktopNavLink>
           <DesktopNavLink to="/dashboard">
             Aktivitäten
             {dashboardNewCount > 0 && <ActivityBadge>{dashboardNewCount}</ActivityBadge>}
           </DesktopNavLink>
-          <DesktopNavLink to="/ranking">Top Eisdielen</DesktopNavLink>
-          <DesktopNavLink to="/statistics">Statistiken</DesktopNavLink>
         </DesktopNav>
         <HeaderRight>
           {isLoggedIn ? (
@@ -580,7 +422,7 @@ const Header = ({ refreshShops }) => {
           <MenuTriggerWrap ref={menuTriggerRef}>
             <BurgerMenu
               type="button"
-              aria-label={menuOpen ? 'MenÃ¼ schlieÃŸen' : 'MenÃ¼ Ã¶ffnen'}
+              aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
               aria-expanded={menuOpen}
               onClick={toggleMenu}
             >
@@ -609,6 +451,10 @@ const Header = ({ refreshShops }) => {
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
               <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
+              <MenuItemLink to="/ice-tour" onClick={closeMenu}>
+                Zur Ice-Tour
+                {showIceTourNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+              </MenuItemLink>
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
                 Foto-Challenges
                 {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
@@ -620,12 +466,6 @@ const Header = ({ refreshShops }) => {
               <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
               <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
               <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
-              {showEisTourNavLink && (
-                <MenuItemLink to="/ice-tour" onClick={closeMenu}>
-                  Zur Ice-Tour
-                  <MenuItemBadge>NEU</MenuItemBadge>
-                </MenuItemLink>
-              )}
             </MenuSection>
 
             <MenuDivider />
@@ -720,7 +560,7 @@ const Header = ({ refreshShops }) => {
 
             {levelUpInfo && (
               <>
-                <h2>ðŸŽ‰ Level-Up!</h2>
+                <h2>🎉 Level-Up!</h2>
                 <p>Du hast <strong>Level {levelUpInfo.level}</strong> erreicht!</p>
                 <p><em>{levelUpInfo.level_name}</em></p>
               </>
@@ -738,81 +578,15 @@ const Header = ({ refreshShops }) => {
         </OverlayBackground>
       )}
 
-      <BirthdayRulesModal
-        open={showBirthdayRules}
-        onClose={() => setShowBirthdayRules(false)}
-        points={birthdayPoints}
-        maxPoints={birthdayMaxPoints}
-        isLoggedIn={isLoggedIn}
-        breakdown={birthdayBreakdown}
-        status={birthdayStatus}
-        counts={birthdayCounts}
-        mandatoryCompleted={birthdayMandatoryCompleted}
-        mandatoryTotal={birthdayMandatoryTotal}
-        rewardUnlocked={birthdayRewardUnlocked}
-        leaderboard={birthdayLeaderboard}
-        leaderboardFull={birthdayLeaderboardFull}
-        userRank={birthdayUserRank}
-        isLeaderboardLoading={isBirthdayLeaderboardLoading}
-        isLeaderboardFullLoading={isBirthdayLeaderboardLoading}
-        isLeaderboardExpanded={isBirthdayLeaderboardExpanded}
-        onToggleLeaderboard={(expanded) => setIsBirthdayLeaderboardExpanded(expanded)}
-        currentUserId={userId}
-        extraIceReward={birthdayStatus?.extra_ice_reward}
-        campaignPhase={birthdayCampaignPhase}
-        iceToursaryUnlockedAt={birthdayAnniversaryUnlockedAt}
-        eisTourRegistrationOpen={birthdayEisTourRegistrationOpen}
-        awardConfig={birthdayAwardConfig}
-        forceLocalUnlock={forceLocalBirthdayUnlock}
-        onLogin={() => {
-          setShowBirthdayRules(false);
-          setShowLoginModal(true);
-        }}
-      />
       <ActionsOverviewModal
         open={showActionsOverview}
         onClose={() => setShowActionsOverview(false)}
+        isLoggedIn={isLoggedIn}
+        onLogin={() => {
+          setShowActionsOverview(false);
+          setShowLoginModal(true);
+        }}
       />
-
-      {showUserOfMonth && currentUser && (
-        <OverlayBackground>
-          <Overlay>
-            <CloseButton onClick={() => setShowUserOfMonth(false)}>&times;</CloseButton>
-            <h2>ðŸ… Nutzer/in des Monats ðŸ…</h2>
-            <CurrentUserWrapper>
-              <UserLink to={`/user/${currentUser.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
-                <UserCard>
-                  <MonthHeader><u>{currentUser.month}</u></MonthHeader>
-                  <CurrentUserImage
-                    src={currentUser.image}
-                    alt={currentUser.name}
-                  />
-                  <strong>
-                    {currentUser.name}
-                  </strong>
-                </UserCard>
-              </UserLink>
-            </CurrentUserWrapper>
-            <hr></hr>
-            <h3>ðŸ… Vorherige Nutzer/innen des Monats ðŸ…</h3>
-            <PastUsersGrid>
-              {pastUsers.map((user) => (
-                <UserLink to={`/user/${user.id}`} key={`${user.month}-${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setShowUserOfMonth(false)}>
-                  <UserCard>
-                    <MonthHeader><u>{user.month}</u></MonthHeader>
-                    <UserImage src={user.image} alt={user.name} />
-                    <strong>
-                      {user.name}
-                    </strong>
-                  </UserCard>
-                </UserLink>
-              ))}
-            </PastUsersGrid>
-
-            <SubmitButton style={{ marginTop: '1rem' }} onClick={() => setShowUserOfMonth(false)}>Alles Klar!</SubmitButton>
-          </Overlay>
-        </OverlayBackground>
-      )}
 
       <QrScanModal
         open={modalData !== null}
@@ -834,11 +608,18 @@ const HeaderContainer = styled.header`
   padding: 10px 16px;
   background-color: #ffb522;
   position: relative;
-  z-index: 1600;
+  z-index: ${({ $menuOpen }) => ($menuOpen ? 1600 : 1200)};
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  width: 100%;
 
   > * {
     position: relative;
+  }
+
+  @media (max-width: 420px) {
+    gap: 8px;
+    padding: 8px;
   }
 `;
 
@@ -848,6 +629,12 @@ const LogoContainer = styled.div`
   margin: 0 auto;
   color: black;
 
+  @media (max-width: 768px) {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+  }
+
   @media (min-width: 769px) {
     position: absolute;
     left: 50%;
@@ -856,12 +643,33 @@ const LogoContainer = styled.div`
     margin: 0;
     z-index: 0;
   }
+
+  @media (min-width: 1450px) and (max-width: 1625px) {
+    left: calc(50% + 24px);
+  }
+
+  @media (min-width: 1300px) and (max-width: 1449px) {
+    left: calc(50% + 44px);
+  }
+
+  @media (min-width: 1200px) and (max-width: 1299px) {
+    left: calc(50% + 68px);
+  }
+
+  @media (min-width: 1100px) and (max-width: 1199px) {
+    left: calc(50% + 92px);
+  }
 `;
 
 const Logo = styled.img`
   height: 100px;
   @media (max-width: 768px) {
     height: 60px;
+  }
+
+  @media (max-width: 420px) {
+    height: 48px;
+    max-width: 100%;
   }
 `;
 
@@ -873,6 +681,10 @@ const DesktopNav = styled.nav`
 
   @media (min-width: 1100px) {
     display: flex;
+  }
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    gap: 2px;
   }
 `;
 
@@ -898,6 +710,13 @@ const DesktopNavLink = styled(NavLink)`
     color: #2b1d00;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    gap: 5px;
+    font-size: 0.92rem;
+    padding: 7px ${({ $compact }) => ($compact ? '0px' : '7px')} 7px 7px;
+    margin-right: ${({ $compact }) => ($compact ? '-2px' : '0')};
+  }
 `;
 
 const DesktopNavBadge = styled.span`
@@ -915,6 +734,10 @@ const DesktopNavBadge = styled.span`
   transform: translate(-10px, -12px) rotate(12deg);
   transform-origin: center;
   box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    transform: translate(-8px, -10px) rotate(12deg);
+  }
 `;
 
 const ActivityBadge = styled.span`
@@ -938,6 +761,19 @@ const HeaderRight = styled.div`
   align-items: center;
   gap: 8px;
   margin-left: auto;
+
+  @media (max-width: 768px) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  @media (max-width: 420px) {
+    gap: 6px;
+  }
+
+  @media (min-width: 1100px) and (max-width: 1625px) {
+    gap: 6px;
+  }
 `;
 
 const AccountCluster = styled.div`
@@ -950,7 +786,11 @@ const AccountCluster = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   @media (max-width: 768px) {
-    max-width: calc(100vw - 150px);
+    min-height: 42px;
+    height: 42px;
+    min-width: 0;
+    max-width: none;
+    flex: 0 1 auto;
   }
 `;
 
@@ -968,6 +808,11 @@ const NotificationBellWrap = styled.div`
   min-height: 40px;
   color: #2f2100;
   padding: 0 2px 0 4px;
+
+  @media (max-width: 768px) {
+    min-height: 42px;
+    height: 42px;
+  }
 `;
 
 const UserStatusLink = styled(Link)`
@@ -987,7 +832,9 @@ const UserStatusLink = styled(Link)`
   }
 
   @media (max-width: 768px) {
-    padding-right: 8px;
+    min-height: 42px;
+    height: 42px;
+    padding: 0 8px 0 6px;
   }
 `;
 
@@ -1085,7 +932,7 @@ const BurgerMenu = styled.button`
 
 const MenuTriggerWrap = styled.div`
   position: relative;
-  z-index: 1602;
+  z-index: 2;
 `;
 
 const Menu = styled.nav`
@@ -1103,7 +950,7 @@ const Menu = styled.nav`
   border-radius: 16px;
   border: 1px solid rgba(47, 33, 0, 0.12);
   box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
-  z-index: 1601;
+  z-index: 3;
   color: #2f2100;
 
   @media (max-width: 480px) {
@@ -1287,11 +1134,24 @@ const GewinnspielIcon = styled.div`
       height: 50px;
     }
   }
+
+  @media (max-width: 420px) {
+    margin-right: 0;
+
+    img {
+      width: 42px;
+      height: 42px;
+    }
+  }
 `;
 
 const PromoIconsContainer = styled.div`
   display: flex;
   align-items: center;
+
+  @media (max-width: 420px) {
+    flex: 0 0 auto;
+  }
 `;
 
 const UserLink = styled(Link)`

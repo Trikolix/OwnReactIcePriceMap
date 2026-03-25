@@ -1,8 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import * as S from './PhotoChallengeVoting.styles';
 import { buildAssetUrl } from './utils';
 
 const ImageLightbox = ({ imagePreview, setImagePreview }) => {
+  useEffect(() => {
+    if (!imagePreview) {
+      return undefined;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [imagePreview]);
+
   if (!imagePreview) {
     return null;
   }

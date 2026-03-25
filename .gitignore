@@ -30,3 +30,4 @@ yarn-error.log*
 *.xcf
 uploads/
 backend/Database/restore_*.zip
+backend/event2026/stripe.local.php

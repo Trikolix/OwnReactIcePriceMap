@@ -372,7 +372,7 @@ const ShopDetailsContent = ({
           </SectionHead>
           {!hasPriceData && (
             <EmptyState>
-              Es sind noch keine Preise fuer diese Eisdiele gemeldet.{isLoggedIn ? ' Trage gerne einen Preis ein.' : ''}
+              Es sind noch keine Preise für diese Eisdiele gemeldet.{isLoggedIn ? ' Trage gerne einen Preis ein.' : ''}
             </EmptyState>
           )}
           {hasPriceData && (
@@ -418,11 +418,11 @@ const ShopDetailsContent = ({
           <SectionHead>
             <div>
               <SectionTitle>Durchschnittliche Bewertung</SectionTitle>
-              <SectionSubline>Community-Bewertungen fuer Sorten, Auswahl und Attribute.</SectionSubline>
+              <SectionSubline>Community-Bewertungen für Sorten, Auswahl und Attribute.</SectionSubline>
             </div>
           </SectionHead>
           {!hasRatingData && (
-            <EmptyState>Es sind noch keine Bewertungen fuer diese Eisdiele vorhanden.</EmptyState>
+            <EmptyState>Es sind noch keine Bewertungen für diese Eisdiele vorhanden.</EmptyState>
           )}
           {hasRatingData && (
             <TableScroll>
@@ -476,11 +476,11 @@ const ShopDetailsContent = ({
           <SectionHead>
             <div>
               <SectionTitle>Komoot Routen</SectionTitle>
-              <SectionSubline>Oeffentliche Routen mit Stopps bei dieser Eisdiele.</SectionSubline>
+              <SectionSubline>Öffentliche Routen mit Stopps bei dieser Eisdiele.</SectionSubline>
             </div>
             <CountPill>{routes.length}</CountPill>
           </SectionHead>
-          {routes.length < 1 && <EmptyState>Es sind noch keine oeffentlichen Routen fuer die Eisdiele vorhanden.</EmptyState>}
+          {routes.length < 1 && <EmptyState>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</EmptyState>}
           {isLoggedIn && (
             <ActionBar>
               <Button type="button" onClick={() => setShowRouteForm(true)}>Neue Route einreichen</Button>
@@ -509,7 +509,7 @@ const ShopDetailsContent = ({
           <SectionHead>
             <div>
               <SectionTitle>Check-ins</SectionTitle>
-              <SectionSubline>Alle eingetragenen Eis-Besuche fuer diese Eisdiele.</SectionSubline>
+              <SectionSubline>Alle eingetragenen Eis-Besuche für diese Eisdiele.</SectionSubline>
             </div>
             <CountPill>{shopData.checkins?.length || 0}</CountPill>
           </SectionHead>

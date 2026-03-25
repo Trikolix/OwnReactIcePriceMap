@@ -45,7 +45,7 @@ const KoMatches = ({ koMatches, openKoModal, getKoRoundLabel, activePhase, koMat
             >
               {match.status === 'open'
                 ? match.user_choice
-                  ? 'Du hast hier bereits abgestimmt'
+                  ? 'Stimme abgegeben – antippen zum Ändern'
                   : 'Voting läuft – tippe zum Abstimmen'
                 : 'Voting beendet – Ergebnisse ansehen'}
             </S.StatusChip>

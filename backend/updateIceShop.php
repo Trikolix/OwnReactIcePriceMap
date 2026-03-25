@@ -1,7 +1,9 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/mail.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/currency.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -132,13 +134,38 @@ function getLocationDetailsFromCoords($lat, $lon) {
 }
 
 function getOrCreateLandId($pdo, $land, $country_code = null) {
-    $stmt = $pdo->prepare("SELECT id FROM laender WHERE name = ?");
-    $stmt->execute([$land]);
-    $id = $stmt->fetchColumn();
-    if ($id) return $id;
+    $normalizedCountryCode = normalizeCountryCode($country_code);
+    $resolvedCurrency = ensureCountryCurrencyAndRates($pdo, $normalizedCountryCode);
+    $currencyId = $resolvedCurrency['currency_id'] ?? null;
 
-    $insert = $pdo->prepare("INSERT INTO laender (name, country_code) VALUES (?, ?)");
-    $insert->execute([$land, $country_code]);
+    $stmt = $pdo->prepare("SELECT id, country_code, waehrung_id FROM laender WHERE name = ?");
+    $stmt->execute([$land]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        $updates = [];
+        $params = [];
+
+        if ($normalizedCountryCode !== null && empty($row['country_code'])) {
+            $updates[] = "country_code = ?";
+            $params[] = $normalizedCountryCode;
+        }
+
+        if ($currencyId !== null && empty($row['waehrung_id'])) {
+            $updates[] = "waehrung_id = ?";
+            $params[] = $currencyId;
+        }
+
+        if ($updates) {
+            $params[] = $row['id'];
+            $update = $pdo->prepare("UPDATE laender SET " . implode(', ', $updates) . " WHERE id = ?");
+            $update->execute($params);
+        }
+
+        return (int)$row['id'];
+    }
+
+    $insert = $pdo->prepare("INSERT INTO laender (name, country_code, waehrung_id) VALUES (?, ?, ?)");
+    $insert->execute([$land, $normalizedCountryCode, $currencyId]);
     return $pdo->lastInsertId();
 }
 
@@ -213,13 +240,9 @@ function sendChangeRequestNotificationMail(int $shopId, string $shopName, int $r
     $message .= "Eingereicht von: {$requestedByUsername} (User-ID {$requestedByUserId})\n\n";
     $message .= "Vorgeschlagene Änderungen:\n{$changesJson}\n\n";
     $message .= "Bitte im Admin-Bereich prüfen.\n";
-    $message .= "Direktlink: https://ice-app.de/#/shop-change-requests\n";
+    $message .= "Direktlink: https://ice-app.de/shop-change-requests\n";
 
-    $headers = "From: Ice-App <noreply@ice-app.de>\r\n";
-    $headers .= "Reply-To: noreply@ice-app.de\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-
-    @mail($to, $subject, $message, $headers);
+    iceapp_send_utf8_text_mail($to, $subject, $message);
 }
 
 function buildChangeSet(array $data, array $validStatuses, array $normalizedHours, string $openingHoursText): array {
@@ -307,7 +330,7 @@ if ($location) {
         replace_opening_hours($pdo, $eisdieleId, $normalizedHours['rows']);
         $pdo->commit();
         echo json_encode(["status" => "success"]);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }

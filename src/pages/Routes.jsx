@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Header from '../Header';
 import { useUser } from '../context/UserContext';
 import RouteCard from '../components/RouteCard';
+import Seo from '../components/Seo';
 
 const ROUTE_TYPES = ['Rennrad', 'MTB', 'Gravel', 'Wanderung', 'Sonstiges'];
 const DIFFICULTIES = ['Leicht', 'Mittel', 'Schwer'];
@@ -214,6 +215,18 @@ const RoutesPage = () => {
 
   return (
     <PageWrapper>
+      <Seo
+        title="Eis-Routen und Touren entdecken | Ice-App"
+        description="Entdecke öffentliche Eis-Routen, Radtouren und Strecken mit Eisdielen in der Ice-App. Filtere nach Typ, Schwierigkeit und Länge."
+        keywords={[
+          'Eis Routen',
+          'Eisdielen Touren',
+          'Ice-App Routen',
+          'Radtour Eisdielen',
+          'Eis Touren Deutschland',
+        ]}
+        canonical="/routes"
+      />
       <Header />
       <Content>
         <TitleSection>

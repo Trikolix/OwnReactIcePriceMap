@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { UserProvider } from './context/UserContext';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { coreRoutes } from './features/core/routes';
 import { eventRoutes } from './features/event/routes';
 import { mapRoutes } from './features/map/routes';

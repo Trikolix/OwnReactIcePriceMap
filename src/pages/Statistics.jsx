@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Link, useSearchParams } from 'react-router-dom';
 import UserAvatar from '../components/UserAvatar';
 import { useUser } from '../context/UserContext';
+import Seo from '../components/Seo';
 
 const getNumericPrice = (node) => {
   if (!node) {
@@ -318,6 +319,18 @@ function Statistics() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#fff7e8' }}>
+      <Seo
+        title="Eispreis-Statistiken Deutschland | Ice-App"
+        description="Statistiken der Ice-App: regionale Eispreise, beliebte Sorten, Community-Aktivität und Preisübersichten für Eisdielen in Deutschland."
+        keywords={[
+          'Eispreis Statistik',
+          'Eispreise Deutschland',
+          'Kugelpreis Statistik',
+          'Ice-App Statistik',
+          'Eisdielen Deutschland Preise',
+        ]}
+        canonical="/statistics"
+      />
       <Header />
       <div style={{ width: '100%', minHeight: '100%', backgroundColor: 'transparent' }}>
         <Container>
@@ -636,7 +649,7 @@ function Statistics() {
 
                 {rankingPeriod === 'month' && (
                   <RankingDisclaimer>
-                    Diese Monatsrangliste entspricht nicht automatisch der Wertung fuer den User of the Month.
+                    Diese Monatsrangliste entspricht nicht automatisch der Wertung für den User of the Month.
                   </RankingDisclaimer>
                 )}
 

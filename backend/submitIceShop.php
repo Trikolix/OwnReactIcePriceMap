@@ -4,6 +4,7 @@ require_once __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/currency.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -95,13 +96,42 @@ function getLocationDetailsFromCoords($lat, $lon) {
 }
 
 function getOrCreateLandId($pdo, $land, $country_code = null) {
-    $stmt = $pdo->prepare("SELECT id FROM laender WHERE name = ?");
-    $stmt->execute([$land]);
-    $id = $stmt->fetchColumn();
-    if ($id) return $id;
+    $normalizedCountryCode = normalizeCountryCode($country_code);
+    $resolvedCurrency = ensureCountryCurrencyAndRates($pdo, $normalizedCountryCode);
+    $currencyId = $resolvedCurrency['currency_id'] ?? null;
 
-    $insert = $pdo->prepare("INSERT INTO laender (name, country_code) VALUES (?, ?)");
-    $insert->execute([$land, $country_code]);
+    if ($normalizedCountryCode !== null && $currencyId === null) {
+        throw new RuntimeException("Keine Waehrung fuer Land '{$land}' ({$normalizedCountryCode}) gefunden.");
+    }
+
+    $stmt = $pdo->prepare("SELECT id, country_code, waehrung_id FROM laender WHERE name = ?");
+    $stmt->execute([$land]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        $updates = [];
+        $params = [];
+
+        if ($normalizedCountryCode !== null && empty($row['country_code'])) {
+            $updates[] = "country_code = ?";
+            $params[] = $normalizedCountryCode;
+        }
+
+        if ($currencyId !== null && empty($row['waehrung_id'])) {
+            $updates[] = "waehrung_id = ?";
+            $params[] = $currencyId;
+        }
+
+        if ($updates) {
+            $params[] = $row['id'];
+            $update = $pdo->prepare("UPDATE laender SET " . implode(', ', $updates) . " WHERE id = ?");
+            $update->execute($params);
+        }
+
+        return (int)$row['id'];
+    }
+
+    $insert = $pdo->prepare("INSERT INTO laender (name, country_code, waehrung_id) VALUES (?, ?, ?)");
+    $insert->execute([$land, $normalizedCountryCode, $currencyId]);
     return $pdo->lastInsertId();
 }
 
@@ -146,18 +176,19 @@ $lat = $data['latitude'];
 $lon = $data['longitude'];
 $location = getLocationDetailsFromCoords($lat, $lon);
 if ($location) {
-    $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
-
-    $bundeslandId = null;
-    $landkreisId = null;
-    if (!empty($location['bundesland'])) {
-        $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'] ?? null, $landId);
-    }
-
-    if (!empty($location['landkreis']) && $bundeslandId !== null) {
-        $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
-    }
     try {
+        $landId = getOrCreateLandId($pdo, $location['land'], $location['country_code']);
+
+        $bundeslandId = null;
+        $landkreisId = null;
+        if (!empty($location['bundesland'])) {
+            $bundeslandId = getOrCreateBundeslandId($pdo, $location['bundesland'], $location['bundesland_iso'] ?? null, $landId);
+        }
+
+        if (!empty($location['landkreis']) && $bundeslandId !== null) {
+            $landkreisId = getOrCreateLandkreisId($pdo, $location['landkreis'], $bundeslandId);
+        }
+
         $pdo->beginTransaction();
         $stmt->execute([
             ':name' => $data['name'],
@@ -194,7 +225,7 @@ if ($location) {
             'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
             'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
         ]);
-    } catch (PDOException $e) {
+    } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }

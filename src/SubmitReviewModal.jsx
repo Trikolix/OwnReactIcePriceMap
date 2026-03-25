@@ -22,6 +22,8 @@ import {
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
 
+const MAX_REVIEW_ATTRIBUTES = 5;
+
 const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceForm, onSuccess }) => {
     const [geschmack, setGeschmack] = useState(null);
     const [kugelgroesse, setKugelgroesse] = useState(null);
@@ -194,19 +196,30 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     };
 
     const handleAttributeSelect = (attr) => {
+        if (selectedAttributes.length >= MAX_REVIEW_ATTRIBUTES) {
+            setMessage(`Maximal ${MAX_REVIEW_ATTRIBUTES} Attribute pro Review.`);
+            return;
+        }
         setAttribute((prev) => prev.filter((a) => a !== attr));
         setSelectedAttributes((prev) => [...prev, attr]);
+        setMessage("");
     };
 
     const handleAttributeRemove = (attr) => {
         setSelectedAttributes((prev) => prev.filter((a) => a !== attr));
         setAttribute((prev) => [...prev, attr]);
+        setMessage("");
     };
 
     const handleNewAttribute = () => {
+        if (selectedAttributes.length >= MAX_REVIEW_ATTRIBUTES) {
+            setMessage(`Maximal ${MAX_REVIEW_ATTRIBUTES} Attribute pro Review.`);
+            return;
+        }
         if (neuesAttribut.trim()) {
             setSelectedAttributes([...selectedAttributes, neuesAttribut]);
             setNeuesAttribut("");
+            setMessage("");
         }
     };
 
@@ -339,7 +352,11 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
                     <SectionCard>
                         <AttributeSection>
-                        <BoldText>Ausgewählte Attribute:</BoldText>
+                        <AttributeHeader>
+                            <BoldText>Ausgewählte Attribute</BoldText>
+                            <AttributeCount>{selectedAttributes.length} / {MAX_REVIEW_ATTRIBUTES}</AttributeCount>
+                        </AttributeHeader>
+                        <AttributeHint>Wähle bis zu {MAX_REVIEW_ATTRIBUTES} passende Merkmale für dein Review.</AttributeHint>
                         <FlexWrap>
                             {selectedAttributes.map((attr) => (
                                 <SelectedAttr key={attr} onClick={() => handleAttributeRemove(attr)}>
@@ -350,7 +367,12 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                         <BoldText>Verfügbare Attribute:</BoldText>
                         <FlexWrap>
                             {(showAllAttributes ? attribute : attribute.slice(0, 5)).map((attr) => (
-                                <AvailableAttr key={attr} onClick={() => handleAttributeSelect(attr)}>
+                                <AvailableAttr
+                                    key={attr}
+                                    type="button"
+                                    onClick={() => handleAttributeSelect(attr)}
+                                    disabled={selectedAttributes.length >= MAX_REVIEW_ATTRIBUTES}
+                                >
                                     {attr}
                                 </AvailableAttr>
                             ))}
@@ -361,8 +383,19 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                             )}
                         </FlexWrap>
                         <AddAttributeRow>
-                            <Input value={neuesAttribut} onChange={(e) => setNeuesAttribut(e.target.value)} placeholder="Neues Attribut" />
-                            <SharedSmallButton onClick={handleNewAttribute}>Hinzufügen</SharedSmallButton>
+                            <Input
+                                value={neuesAttribut}
+                                onChange={(e) => setNeuesAttribut(e.target.value)}
+                                placeholder="Neues Attribut"
+                                disabled={selectedAttributes.length >= MAX_REVIEW_ATTRIBUTES}
+                            />
+                            <SharedSmallButton
+                                type="button"
+                                onClick={handleNewAttribute}
+                                disabled={selectedAttributes.length >= MAX_REVIEW_ATTRIBUTES}
+                            >
+                                Hinzufügen
+                            </SharedSmallButton>
                         </AddAttributeRow>
                         </AttributeSection>
                     </SectionCard>
@@ -478,7 +511,30 @@ const AttributeSection = styled.div`
     display: grid;
     gap: 0.5rem;
 `;
+const AttributeHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+`;
 const BoldText = styled.strong``;
+const AttributeCount = styled.span`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 181, 34, 0.16);
+    color: #7a4a00;
+    font-weight: 700;
+    font-size: 0.82rem;
+`;
+const AttributeHint = styled.p`
+    margin: 0;
+    color: rgba(47, 33, 0, 0.68);
+    font-size: 0.86rem;
+`;
 const FlexWrap = styled.div`
     display: flex;
     gap: 0.5rem;
@@ -500,6 +556,11 @@ const AvailableAttr = styled.button`
     padding: 0.25rem 0.5rem;
     border-radius: 8px;
     cursor: pointer;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 `;
 const ToggleAttrButton = styled.button`
     background: linear-gradient(180deg, #ffe6a8 0%, #ffd36f 100%);

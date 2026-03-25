@@ -11,13 +11,31 @@ import UserAvatar from "./UserAvatar";
 
 const ShopCard = ({ iceShop, onSuccess }) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editShopData, setEditShopData] = useState(iceShop);
+  const [isLoadingEditShop, setIsLoadingEditShop] = useState(false);
   const { userId, isLoggedIn } = useUser();
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("de-DE");
 
-  const handleEditClick = () => {
-    setShowEditModal(true);
+  const handleEditClick = async () => {
+    setIsLoadingEditShop(true);
+    try {
+      const userQuery = userId ? `&nutzer_id=${userId}` : "";
+      const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${iceShop.id}${userQuery}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setEditShopData(data?.eisdiele || iceShop);
+    } catch (error) {
+      console.error("Fehler beim Laden der Eisdielen-Details für das Bearbeitungsmodal:", error);
+      setEditShopData(iceShop);
+    } finally {
+      setIsLoadingEditShop(false);
+      setShowEditModal(true);
+    }
   };
 
   return (<>
@@ -49,8 +67,8 @@ const ShopCard = ({ iceShop, onSuccess }) => {
       <OpeningHours eisdiele={iceShop} />
       <ShopWebsite eisdiele={iceShop} />
       {isLoggedIn && (
-        <SuggestionLink type="button" onClick={handleEditClick}>
-          Änderung vorschlagen
+        <SuggestionLink type="button" onClick={handleEditClick} disabled={isLoadingEditShop}>
+          {isLoadingEditShop ? "Lade Details..." : "Änderung vorschlagen"}
         </SuggestionLink>
       )}
     </Card>
@@ -61,7 +79,7 @@ const ShopCard = ({ iceShop, onSuccess }) => {
         setShowForm={setShowEditModal}
         userId={userId}
         refreshShops={onSuccess}
-        existingIceShop={iceShop}
+        existingIceShop={editShopData}
       />
     )}
   </>
@@ -140,6 +158,11 @@ const SuggestionLink = styled.button`
 
   &:hover {
     color: #1f1f1f;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
   }
 `;
 

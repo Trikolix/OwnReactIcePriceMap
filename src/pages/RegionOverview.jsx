@@ -12,6 +12,9 @@ import {
 } from 'recharts';
 import Header from '../Header';
 import UserAvatar from '../components/UserAvatar';
+import Seo from '../components/Seo';
+
+const formatPrice = (value) => (value != null ? `${Number(value).toFixed(2)} €` : 'kein Preis');
 
 const RegionOverview = () => {
   const { level, regionId } = useParams();
@@ -19,6 +22,7 @@ const RegionOverview = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [shopScoreType, setShopScoreType] = useState('kugel');
 
   useEffect(() => {
     let isCancelled = false;
@@ -62,6 +66,54 @@ const RegionOverview = () => {
     return data.region_meta.name;
   }, [data]);
 
+  const scoreConfig = useMemo(() => {
+    if (shopScoreType === 'softeis') {
+      return {
+        key: 'softeis_score',
+        label: 'Softeis',
+        getPrice: (shop) => shop.softeis_preis,
+        getCheckins: (shop) => shop.checkin_counts?.softeis ?? 0,
+      };
+    }
+    if (shopScoreType === 'eisbecher') {
+      return {
+        key: 'eisbecher_score',
+        label: 'Eisbecher',
+        getPrice: () => null,
+        getCheckins: (shop) => shop.checkin_counts?.eisbecher ?? 0,
+      };
+    }
+    return {
+      key: 'kugel_score',
+      label: 'Kugeleis',
+      getPrice: (shop) => shop.kugel_preis,
+      getCheckins: (shop) => shop.checkin_counts?.kugel ?? 0,
+    };
+  }, [shopScoreType]);
+
+  const priceSummary = data?.price_summary || {};
+  const priceTrend = Array.isArray(data?.price_trend) ? data.price_trend : [];
+  const activeUsers = Array.isArray(data?.active_users) ? data.active_users : [];
+  const topShops = Array.isArray(data?.top_shops) ? data.top_shops : [];
+  const displayedTopShops = useMemo(() => (
+    [...topShops]
+      .filter((shop) => shop[scoreConfig.key] != null)
+      .sort((left, right) => {
+        const scoreDiff = (right[scoreConfig.key] ?? -Infinity) - (left[scoreConfig.key] ?? -Infinity);
+        if (scoreDiff !== 0) {
+          return scoreDiff;
+        }
+
+        const checkinDiff = scoreConfig.getCheckins(right) - scoreConfig.getCheckins(left);
+        if (checkinDiff !== 0) {
+          return checkinDiff;
+        }
+
+        return left.name.localeCompare(right.name, 'de');
+      })
+      .slice(0, 10)
+  ), [scoreConfig, topShops]);
+
   if (loading) {
     return (
       <Page>
@@ -84,13 +136,20 @@ const RegionOverview = () => {
     );
   }
 
-  const priceSummary = data.price_summary || {};
-  const priceTrend = Array.isArray(data.price_trend) ? data.price_trend : [];
-  const activeUsers = Array.isArray(data.active_users) ? data.active_users : [];
-  const topShops = Array.isArray(data.top_shops) ? data.top_shops : [];
-
   return (
     <Page>
+      <Seo
+        title={`${title} | Regionale Eispreise und Eisdielen in der Ice-App`}
+        description={`Regionenübersicht für ${title}: Eisdielen, Preise, Bewertungen und Entwicklungen in der Ice-App.`}
+        keywords={[
+          title,
+          'Eispreise Region',
+          'Eisdielen Region',
+          'Ice-App Region',
+          'Eispreise Deutschland Regionen',
+        ]}
+        canonical={`/region/${level}/${regionId}`}
+      />
       <Header />
       <Container>
         <HeroCard>
@@ -129,12 +188,12 @@ const RegionOverview = () => {
                 </SimpleList>
               </MiniColumn>
               <MiniColumn>
-                <h4>Teuerste</h4>
+                <h4>Populärste</h4>
                 <SimpleList>
-                  {(priceSummary.expensive_shops || []).map((shop) => (
-                    <li key={`exp-${shop.id}`}>
+                  {(priceSummary.popular_shops || []).map((shop) => (
+                    <li key={`popular-${shop.id}`}>
                       <Link to={`/map/activeShop/${shop.id}`}>{shop.name}</Link>
-                      <strong>{Number(shop.preis).toFixed(2)} €</strong>
+                      <strong>{shop.checkin_count} Check-ins</strong>
                     </li>
                   ))}
                 </SimpleList>
@@ -159,8 +218,19 @@ const RegionOverview = () => {
 
           <SectionCard>
             <SectionTitle>Beliebteste Eisdielen</SectionTitle>
+            <FilterRow>
+              <FilterButton type="button" $active={shopScoreType === 'kugel'} onClick={() => setShopScoreType('kugel')}>
+                Kugeleis
+              </FilterButton>
+              <FilterButton type="button" $active={shopScoreType === 'softeis'} onClick={() => setShopScoreType('softeis')}>
+                Softeis
+              </FilterButton>
+              <FilterButton type="button" $active={shopScoreType === 'eisbecher'} onClick={() => setShopScoreType('eisbecher')}>
+                Eisbecher
+              </FilterButton>
+            </FilterRow>
             <RankList>
-              {topShops.map((shop, index) => (
+              {displayedTopShops.map((shop, index) => (
                 <RankItem key={shop.id}>
                   <RankNumber>#{index + 1}</RankNumber>
                   <RankContent>
@@ -168,11 +238,20 @@ const RegionOverview = () => {
                     <small>{shop.adresse}</small>
                   </RankContent>
                   <RankAside>
-                    <strong>{shop.overall_score != null ? shop.overall_score.toFixed(2) : '-'}</strong>
-                    <small>{shop.kugel_preis != null ? `${Number(shop.kugel_preis).toFixed(2)} €` : 'kein Preis'}</small>
+                    <strong>{shop[scoreConfig.key] != null ? Number(shop[scoreConfig.key]).toFixed(2) : '-'}</strong>
+                    <small>{scoreConfig.label}</small>
+                    <small>{formatPrice(scoreConfig.getPrice(shop))}</small>
+                    <small>{scoreConfig.getCheckins(shop)} Check-ins</small>
                   </RankAside>
                 </RankItem>
               ))}
+              {displayedTopShops.length === 0 && (
+                <RankItem>
+                  <RankContent>
+                    <small>Keine Eisdielen mit Score für diese Kategorie vorhanden.</small>
+                  </RankContent>
+                </RankItem>
+              )}
             </RankList>
           </SectionCard>
 
@@ -288,6 +367,29 @@ const SectionTitle = styled.h3`
   color: #2f2100;
   font-size: 1.05rem;
   font-weight: 800;
+`;
+
+const FilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+`;
+
+const FilterButton = styled.button`
+  border: 1px solid ${({ $active }) => ($active ? '#d97706' : 'rgba(47, 33, 0, 0.12)')};
+  background: ${({ $active }) => ($active ? 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)' : 'rgba(255, 255, 255, 0.72)')};
+  color: ${({ $active }) => ($active ? '#fff8ef' : '#5b430d')};
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(217, 119, 6, 0.15);
+  }
 `;
 
 const SummaryGrid = styled.div`

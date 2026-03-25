@@ -1,6 +1,6 @@
 {
   "name": "ice-app",
-  "version": "2.0.2",
+  "version": "2.1.3",
   "private": true,
   "homepage": "https://ice-app.de/",
   "dependencies": {
@@ -40,7 +40,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "react-scripts test",
-    "dead-files": "bash ./scripts/find-dead-files.sh"
+    "dead-files": "bash ./scripts/find-dead-files.sh",
+    "simulate:event": "node scripts/simulate-event-traffic.mjs",
+    "simulate:event-users": "php backend_dev/event_sim_accounts.php"
   },
   "eslintConfig": {
     "extends": [

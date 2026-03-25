@@ -77,7 +77,7 @@ export default function Footer() {
         </FooterBrand>
         <FooterLinks>
           <FooterSeparator />
-          <FooterLink href="/#/impressum">Impressum</FooterLink>
+          <FooterLink href="/impressum">Impressum</FooterLink>
         </FooterLinks>
       </FooterInner>
     </FooterWrapper>

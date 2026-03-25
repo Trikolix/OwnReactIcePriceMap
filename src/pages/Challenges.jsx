@@ -1,43 +1,53 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { Trophy as TrophyGlyph } from "lucide-react";
+import { MapPinned, RefreshCcw, Sparkles, Target, Timer, Trophy as TrophyGlyph } from "lucide-react";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
-
+import Seo from "../components/Seo";
 import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// Custom marker icons for each difficulty
 const greenIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
+
 const yellowIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
+
 const orangeIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const DIFFICULTIES = ["leicht", "mittel", "schwer"];
 const CHALLENGE_TYPES = ["daily", "weekly"];
 const difficultyOrder = { leicht: 0, mittel: 1, schwer: 2 };
+const difficultyMeta = {
+  leicht: { color: "#23a55a", label: "Leicht", range: "0-5 km" },
+  mittel: { color: "#d97706", label: "Mittel", range: "5-15 km" },
+  schwer: { color: "#dc2626", label: "Schwer", range: "15-45 km" },
+};
+const typeMeta = {
+  daily: { label: "Daily", helper: "bis Mitternacht" },
+  weekly: { label: "Weekly", helper: "bis Sonntag 23:59 Uhr" },
+};
 
 const toNumberOrNull = (value) => {
   if (value == null || value === "") return null;
@@ -47,9 +57,7 @@ const toNumberOrNull = (value) => {
 
 const sortChallenges = (challengeList) =>
   [...challengeList].sort((a, b) => {
-    if (a.type !== b.type) {
-      return a.type === "daily" ? -1 : 1;
-    }
+    if (a.type !== b.type) return a.type === "daily" ? -1 : 1;
     return (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99);
   });
 
@@ -60,7 +68,6 @@ const normalizeChallenge = (raw) => {
   const source = raw.challenge && typeof raw.challenge === "object" ? { ...raw, ...raw.challenge } : raw;
   const shop = source.shop || {};
   const normalizedId = source.id ?? source.challenge_id ?? null;
-
   return {
     ...source,
     id: normalizedId,
@@ -87,21 +94,34 @@ async function readJsonResponse(res) {
   try {
     data = await res.json();
   } catch {
-    throw new Error(`Ungueltige Server-Antwort (HTTP ${res.status})`);
+    throw new Error(`Ungültige Server-Antwort (HTTP ${res.status})`);
   }
-
-  if (!res.ok) {
-    throw new Error(getApiMessage(data, `HTTP ${res.status}`));
-  }
-
+  if (!res.ok) throw new Error(getApiMessage(data, `HTTP ${res.status}`));
   return data;
+}
+
+function SetMapZoom({ zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setZoom(zoom);
+  }, [zoom, map]);
+  return null;
+}
+
+function FlyToMapTarget({ target }) {
+  const map = useMap();
+  useEffect(() => {
+    if (target?.lat == null || target?.lon == null) return;
+    map.flyTo([target.lat, target.lon], Math.max(map.getZoom(), 13), { animate: true, duration: 0.8 });
+  }, [target, map]);
+  return null;
 }
 
 function Challenges() {
   const [selectedTrophy, setSelectedTrophy] = useState(null);
+  const [showTypeInfo, setShowTypeInfo] = useState(false);
   const { userId, isLoggedIn } = useUser();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
-
   const [challenges, setChallenges] = useState([]);
   const [showNewChallengeModal, setShowNewChallengeModal] = useState(false);
   const [newChallenge, setNewChallenge] = useState(null);
@@ -109,90 +129,46 @@ function Challenges() {
   const [loadError, setLoadError] = useState(null);
   const [actionNotice, setActionNotice] = useState(null);
   const [locationNotice, setLocationNotice] = useState(null);
-
   const [difficulty, setDifficulty] = useState("leicht");
   const [challengeType, setChallengeType] = useState("daily");
   const [generating, setGenerating] = useState(false);
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [recreatingChallengeId, setRecreatingChallengeId] = useState(null);
-
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
-
   const [mapZoom, setMapZoom] = useState(12);
   const [mapFocusTarget, setMapFocusTarget] = useState(null);
   const [countdownNowTs, setCountdownNowTs] = useState(Date.now());
-
   const newChallengeModalButtonRef = useRef(null);
   const trophyModalButtonRef = useRef(null);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setCountdownNowTs(Date.now());
-    }, 60000);
+    const intervalId = window.setInterval(() => setCountdownNowTs(Date.now()), 60000);
     return () => window.clearInterval(intervalId);
   }, []);
+
   useEffect(() => {
-    switch (difficulty) {
-      case "leicht":
-        setMapZoom(11);
-        break;
-      case "mittel":
-        setMapZoom(10);
-        break;
-      case "schwer":
-        setMapZoom(8);
-        break;
-      default:
-        setMapZoom(11);
-    }
+    setMapZoom(difficulty === "schwer" ? 8 : difficulty === "mittel" ? 10 : 11);
   }, [difficulty]);
-
-  // Hilfs-Komponente, um den Zoom dynamisch zu setzen
-  function SetMapZoom({ zoom }) {
-    const map = useMap();
-    useEffect(() => {
-      map.setZoom(zoom);
-    }, [zoom, map]);
-    return null;
-  }
-
-  function FlyToMapTarget({ target }) {
-    const map = useMap();
-    useEffect(() => {
-      if (target?.lat == null || target?.lon == null) return;
-      map.flyTo([target.lat, target.lon], Math.max(map.getZoom(), 13), {
-        animate: true,
-        duration: 0.8,
-      });
-    }, [target, map]);
-    return null;
-  }
 
   useEffect(() => {
     let watchId;
-
     if (!navigator.geolocation) {
-      console.warn("Geolocation not supported");
       setLoadingLocation(false);
       setLocationNotice({
         type: "error",
-        message: "Dein Browser unterstuetzt keinen Standortzugriff. Challenges koennen ohne Standort nicht generiert werden.",
+        message: "Dein Browser unterstützt keinen Standortzugriff. Challenges können ohne Standort nicht generiert werden.",
       });
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocation({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-        });
+        setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         setLoadingLocation(false);
         setLocationNotice(null);
       },
-      (err) => {
-        console.warn("Geolocation initial failed:", err);
+      () => {
         setLoadingLocation(false);
         setLocationNotice({
           type: "info",
@@ -204,15 +180,10 @@ function Challenges() {
 
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        setLocation({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-        });
+        setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         setLocationNotice(null);
       },
-      (err) => {
-        console.warn("watchPosition error:", err);
-      },
+      () => {},
       { enableHighAccuracy: false, maximumAge: 0 }
     );
 
@@ -231,30 +202,22 @@ function Challenges() {
 
     let isCancelled = false;
     const controller = new AbortController();
-
     setLoading(true);
     setLoadError(null);
 
     fetch(`${apiUrl}/api/challenge_list.php?nutzer_id=${userId}`, { signal: controller.signal })
       .then(readJsonResponse)
       .then((data) => {
-        if (!Array.isArray(data)) {
-          throw new Error(getApiMessage(data, "Ungueltige Antwort beim Laden der Challenges."));
-        }
-        if (isCancelled) return;
-        setChallenges(sortChallenges(data.map(normalizeChallenge).filter(Boolean)));
+        if (!Array.isArray(data)) throw new Error(getApiMessage(data, "Ungültige Antwort beim Laden der Challenges."));
+        if (!isCancelled) setChallenges(sortChallenges(data.map(normalizeChallenge).filter(Boolean)));
       })
       .catch((err) => {
-        if (err.name === "AbortError") return;
-        console.error("Fehler beim Laden der Challenges:", err);
-        if (!isCancelled) {
+        if (err.name !== "AbortError" && !isCancelled) {
           setLoadError(err.message || "Challenges konnten nicht geladen werden.");
         }
       })
       .finally(() => {
-        if (!isCancelled) {
-          setLoading(false);
-        }
+        if (!isCancelled) setLoading(false);
       });
 
     return () => {
@@ -264,40 +227,26 @@ function Challenges() {
   }, [userId, isLoggedIn, apiUrl]);
 
   useEffect(() => {
-    if (showNewChallengeModal) {
-      newChallengeModalButtonRef.current?.focus();
-    }
+    if (showNewChallengeModal) newChallengeModalButtonRef.current?.focus();
   }, [showNewChallengeModal]);
 
   useEffect(() => {
-    if (selectedTrophy) {
-      trophyModalButtonRef.current?.focus();
-    }
+    if (selectedTrophy) trophyModalButtonRef.current?.focus();
   }, [selectedTrophy]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
-      if (selectedTrophy) {
-        setSelectedTrophy(null);
-        return;
-      }
-      if (showNewChallengeModal) {
-        setShowNewChallengeModal(false);
-      }
+      if (selectedTrophy) setSelectedTrophy(null);
+      else if (showNewChallengeModal) setShowNewChallengeModal(false);
     };
-
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedTrophy, showNewChallengeModal]);
 
   const setMapFocusToChallenge = (challenge) => {
     if (challenge?.shop_lat == null || challenge?.shop_lon == null) return;
-    setMapFocusTarget({
-      lat: challenge.shop_lat,
-      lon: challenge.shop_lon,
-      key: `${challenge.id}-${Date.now()}`,
-    });
+    setMapFocusTarget({ lat: challenge.shop_lat, lon: challenge.shop_lon, key: `${challenge.id}-${Date.now()}` });
   };
 
   const setActionMessage = (type, message, details = []) => {
@@ -305,59 +254,32 @@ function Challenges() {
   };
 
   const buildChallengeRequest = async ({ requestedDifficulty, requestedType, existingChallengeId = null }) => {
-    if (!location) {
-      throw new Error("Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff.");
-    }
-    if (!userId || !apiUrl) {
-      throw new Error("Nutzer oder API-Konfiguration fehlt.");
-    }
-
+    if (!location) throw new Error("Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff.");
+    if (!userId || !apiUrl) throw new Error("Nutzer oder API-Konfiguration fehlt.");
     const form = new FormData();
     form.append("nutzer_id", String(userId));
     form.append("lat", String(location.lat));
     form.append("lon", String(location.lon));
     form.append("difficulty", requestedDifficulty);
     form.append("type", requestedType);
-    if (existingChallengeId != null) {
-      form.append("challenge_id", String(existingChallengeId));
-    }
-
-    const res = await fetch(`${apiUrl}/api/challenge_generate.php`, {
-      method: "POST",
-      body: form,
-    });
-
+    if (existingChallengeId != null) form.append("challenge_id", String(existingChallengeId));
+    const res = await fetch(`${apiUrl}/api/challenge_generate.php`, { method: "POST", body: form });
     const data = await readJsonResponse(res);
-    if (data.status !== "success") {
-      throw new Error(getApiMessage(data, "Challenge konnte nicht erstellt werden."));
-    }
-
+    if (data.status !== "success") throw new Error(getApiMessage(data, "Challenge konnte nicht erstellt werden."));
     const normalized = normalizeChallenge(data);
-    if (!normalized || normalized.id == null) {
-      throw new Error("Challenge wurde erstellt, aber die Server-Antwort ist unvollstaendig.");
-    }
-
-    return { data, challenge: normalized };
+    if (!normalized || normalized.id == null) throw new Error("Challenge wurde erstellt, aber die Server-Antwort ist unvollständig.");
+    return { challenge: normalized };
   };
 
   const handleGenerateChallenge = async () => {
     if (!location) {
-      setActionMessage(
-        "error",
-        "Standort konnte nicht ermittelt werden. Fuer die Generierung einer Challenge wird dein Standort benoetigt."
-      );
+      setActionMessage("error", "Standort konnte nicht ermittelt werden. Für die Generierung einer Challenge wird dein Standort benötigt.");
       return;
     }
-
     setGenerating(true);
     setActionNotice(null);
-
     try {
-      const { challenge } = await buildChallengeRequest({
-        requestedDifficulty: difficulty,
-        requestedType: challengeType,
-      });
-
+      const { challenge } = await buildChallengeRequest({ requestedDifficulty: difficulty, requestedType: challengeType });
       setChallenges((prev) => upsertChallenge(prev, challenge));
       setNewChallenge(challenge);
       setShowNewChallengeModal(true);
@@ -372,10 +294,7 @@ function Challenges() {
 
   const handleGenerateAllMissing = async () => {
     if (!location) {
-      setActionMessage(
-        "error",
-        "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff, um Challenges zu generieren."
-      );
+      setActionMessage("error", "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff, um Challenges zu generieren.");
       return;
     }
     if (missingCombinations.length === 0) {
@@ -385,38 +304,25 @@ function Challenges() {
 
     setBulkGenerating(true);
     setActionNotice(null);
-
     const createdChallenges = [];
     const failedMessages = [];
-
     try {
       for (const combo of missingCombinations) {
         try {
-          const { challenge } = await buildChallengeRequest({
-            requestedDifficulty: combo.difficulty,
-            requestedType: combo.type,
-          });
+          const { challenge } = await buildChallengeRequest({ requestedDifficulty: combo.difficulty, requestedType: combo.type });
           createdChallenges.push(challenge);
         } catch (error) {
           failedMessages.push(`${combo.difficulty}/${combo.type}: ${error.message || "Unbekannter Fehler"}`);
         }
       }
-
       if (createdChallenges.length > 0) {
-        setChallenges((prev) =>
-          createdChallenges.reduce((acc, challenge) => upsertChallenge(acc, challenge), prev)
-        );
+        setChallenges((prev) => createdChallenges.reduce((acc, challenge) => upsertChallenge(acc, challenge), prev));
         setMapFocusToChallenge(createdChallenges[createdChallenges.length - 1]);
       }
-
       if (createdChallenges.length > 0 && failedMessages.length === 0) {
         setActionMessage("success", `${createdChallenges.length} Challenge(s) erfolgreich erstellt.`);
-      } else if (createdChallenges.length > 0 && failedMessages.length > 0) {
-        setActionMessage(
-          "info",
-          `${createdChallenges.length} Challenge(s) erstellt, ${failedMessages.length} fehlgeschlagen.`,
-          failedMessages
-        );
+      } else if (createdChallenges.length > 0) {
+        setActionMessage("info", `${createdChallenges.length} Challenge(s) erstellt, ${failedMessages.length} fehlgeschlagen.`, failedMessages);
       } else {
         setActionMessage("error", "Keine Challenge konnte erstellt werden.", failedMessages);
       }
@@ -425,25 +331,19 @@ function Challenges() {
     }
   };
 
-  const handleRecreateChallenge = async (challengeId, difficulty, type) => {
+  const handleRecreateChallenge = async (challengeId, currentDifficulty, currentType) => {
     if (!location) {
-      setActionMessage(
-        "error",
-        "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff fuer einen Neuversuch."
-      );
+      setActionMessage("error", "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff für einen Neuversuch.");
       return;
     }
-
     setRecreatingChallengeId(challengeId);
     setActionNotice(null);
-
     try {
       const { challenge } = await buildChallengeRequest({
-        requestedDifficulty: difficulty,
-        requestedType: type,
+        requestedDifficulty: currentDifficulty,
+        requestedType: currentType,
         existingChallengeId: challengeId,
       });
-
       setChallenges((prev) => upsertChallenge(prev, challenge));
       setNewChallenge(challenge);
       setShowNewChallengeModal(true);
@@ -466,17 +366,12 @@ function Challenges() {
   const renderNotice = (notice, keyPrefix) => {
     if (!notice?.message) return null;
     return (
-      <NoticeBox
-        key={`${keyPrefix}-${notice.type}-${notice.message}`}
-        $type={notice.type || "info"}
-        role={notice.type === "error" ? "alert" : "status"}
-        aria-live={notice.type === "error" ? "assertive" : "polite"}
-      >
+      <NoticeBox $type={notice.type || "info"} key={`${keyPrefix}-${notice.message}`}>
         <NoticeMessage>{notice.message}</NoticeMessage>
         {Array.isArray(notice.details) && notice.details.length > 0 && (
           <NoticeList>
             {notice.details.map((line, index) => (
-              <li key={`${keyPrefix}-detail-${index}`}>{line}</li>
+              <li key={`${keyPrefix}-${index}`}>{line}</li>
             ))}
           </NoticeList>
         )}
@@ -484,380 +379,559 @@ function Challenges() {
     );
   };
 
-
-  const getDifficultyColor = (difficultyValue) => {
-    switch (difficultyValue) {
-      case "leicht":
-        return "#4caf50";
-      case "mittel":
-        return "#ff9800";
-      case "schwer":
-        return "#f44336";
-      default:
-        return "#9e9e9e";
-    }
-  };
-
   const formatCountdown = (validUntil) => {
     const end = new Date(validUntil);
     if (Number.isNaN(end.getTime())) return "-";
     const diffMs = end.getTime() - countdownNowTs;
-
     if (diffMs <= 0) return "Abgelaufen";
-
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     return `${diffHours}h ${diffMinutes}min`;
   };
 
-  const activeChallenges = useMemo(
-    () => sortChallenges(challenges.filter((challenge) => !challenge.completed)),
-    [challenges]
-  );
-
+  const activeChallenges = useMemo(() => sortChallenges(challenges.filter((challenge) => !challenge.completed)), [challenges]);
   const completedChallenges = useMemo(
-    () =>
-      challenges
-        .filter((challenge) => challenge.completed)
-        .sort((a, b) => {
-          const dateA = new Date(a.completed_at || 0);
-          const dateB = new Date(b.completed_at || 0);
-          return dateB - dateA;
-        }),
+    () => challenges.filter((challenge) => challenge.completed).sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0)),
     [challenges]
   );
-
   const missingCombinations = useMemo(() => {
     const existing = new Set(activeChallenges.map((challenge) => `${challenge.difficulty}|${challenge.type}`));
     const missing = [];
     for (const d of DIFFICULTIES) {
       for (const t of CHALLENGE_TYPES) {
-        if (!existing.has(`${d}|${t}`)) {
-          missing.push({ difficulty: d, type: t });
-        }
+        if (!existing.has(`${d}|${t}`)) missing.push({ difficulty: d, type: t });
       }
     }
     return missing;
   }, [activeChallenges]);
-
   const selectedCombinationExists = activeChallenges.some(
     (challenge) => challenge.difficulty === difficulty && challenge.type === challengeType
   );
+  const stats = useMemo(
+    () => ({ active: activeChallenges.length, completed: completedChallenges.length, missing: missingCombinations.length }),
+    [activeChallenges.length, completedChallenges.length, missingCombinations.length]
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Page>
+      <Seo
+        title="Challenges | Ice-App"
+        description="Zufällige Eisdielen-Challenges in deiner Nähe: tägliche und wöchentliche Aufgaben für mehr EP, Awards und neue Eisziele."
+        canonical="/challenge"
+      />
       <Header />
-      <Container>
-        <Title>Challenges</Title>
+      <Content>
+        <HeroCard>
+          <HeroTitle>Challenges</HeroTitle>
+          <HeroSubtitle>
+            Tägliche und wöchentliche Eis-Ziele im Stil der restlichen Ice-App: klarere Struktur, bessere Statusanzeige und direktere Aktionen.
+          </HeroSubtitle>
+          <MetaRow>
+            <MetaChip>{stats.active} aktiv</MetaChip>
+            <MetaChip>{stats.completed} abgeschlossen</MetaChip>
+            <MetaChip>{stats.missing} Kombinationen frei</MetaChip>
+          </MetaRow>
+        </HeroCard>
 
         {showNewChallengeModal && newChallenge && (
           <ModalOverlay onClick={() => setShowNewChallengeModal(false)}>
-            <ModalBox
-              onClick={(event) => event.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="new-challenge-modal-title"
-            >
-              <h2 id="new-challenge-modal-title">Neue Challenge generiert!</h2>
-              <ChallengeCard color={getDifficultyColor(newChallenge.difficulty)} style={{ marginBottom: 0 }}>
-                <h3>
+            <ModalBox onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-challenge-modal-title">
+              <ModalTitle id="new-challenge-modal-title">Neue Challenge generiert</ModalTitle>
+              <ChallengeCard $accent={difficultyMeta[newChallenge.difficulty]?.color || "#9e9e9e"} style={{ marginBottom: 0 }}>
+                <ChallengeTopRow>
+                  <ChallengePill $accent={difficultyMeta[newChallenge.difficulty]?.color || "#9e9e9e"}>
+                    {typeMeta[newChallenge.type]?.label || newChallenge.type} · {difficultyMeta[newChallenge.difficulty]?.label || newChallenge.difficulty}
+                  </ChallengePill>
+                </ChallengeTopRow>
+                <ChallengeName>
                   <CleanLink to={`/map/activeShop/${newChallenge.shop_id}`}>{newChallenge.shop_name}</CleanLink>
-                </h3>
-                <p>{newChallenge.shop_address}</p>
-                <DifficultyLabel>
-                  {String(newChallenge.difficulty || "").toUpperCase()} - {newChallenge.type === "daily" ? "Daily" : "Weekly"}
-                </DifficultyLabel>
-                <Countdown>Verbleibende Zeit: {formatCountdown(newChallenge.valid_until)}</Countdown>
-                {newChallenge.shop_lat != null && newChallenge.shop_lon != null && (
-                  <Countdown>Marker wurde direkt auf der Karte aktualisiert.</Countdown>
-                )}
+                </ChallengeName>
+                <ChallengeAddress>{newChallenge.shop_address}</ChallengeAddress>
+                <ChallengeBottomRow>
+                  <Countdown>
+                    <Timer size={15} />
+                    <span>{formatCountdown(newChallenge.valid_until)}</span>
+                  </Countdown>
+                  {newChallenge.shop_lat != null && newChallenge.shop_lon != null && <InlineHint>Marker wurde auf der Karte fokussiert.</InlineHint>}
+                </ChallengeBottomRow>
               </ChallengeCard>
               <ModalButton ref={newChallengeModalButtonRef} onClick={() => setShowNewChallengeModal(false)}>
-                OK
+                Schließen
               </ModalButton>
             </ModalBox>
           </ModalOverlay>
         )}
 
         {!isLoggedIn ? (
-          <p>Bitte melde dich an, um deine Challenges zu sehen, oder neue zu erhalten.</p>
+          <SectionCard>
+            <SectionTitle>Login erforderlich</SectionTitle>
+            <BodyText>
+              Melde dich an, um aktive Challenges zu sehen, neue Aufgaben zu generieren und abgeschlossene Challenges als Erfolge zu sammeln.
+            </BodyText>
+          </SectionCard>
         ) : (
-          <>
-            <h3>Aktive Challenges</h3>
-            {loadError && renderNotice({ type: "error", message: loadError }, "load-error")}
-            {loading ? (
-              <p>Lade Challenges...</p>
-            ) : activeChallenges.length === 0 ? (
-              <NoChallenges>Du hast aktuell keine aktiven Challenges.</NoChallenges>
-            ) : (
-              activeChallenges.map((ch) => {
-                const isExpired = new Date(ch.valid_until) <= new Date();
-                const canRecreate = !ch.recreated && !isExpired;
-                const isRecreatingThis =
-                  recreatingChallengeId != null && String(recreatingChallengeId) === String(ch.id);
+          <LayoutGrid>
+            <MainColumn>
+              <SectionCard>
+                <SectionHead>
+                  <div>
+                    <SectionTitle>Aktive Challenges</SectionTitle>
+                    <SectionSubline>Deine aktuellen Aufgaben mit Ziel-Eisdiele, Restzeit und möglichem Neuversuch.</SectionSubline>
+                  </div>
+                  <MetaChip $muted>{activeChallenges.length} offen</MetaChip>
+                </SectionHead>
 
-                return (
-                  <ChallengeCard key={ch.id} color={getDifficultyColor(ch.difficulty)}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <DifficultyLabel style={{ color: getDifficultyColor(ch.difficulty) }}>
-                        {ch.type === "daily" ? "Taeglich" : "Woechentlich"} - {ch.difficulty}
-                      </DifficultyLabel>
-                      {isRecreatingThis && <UsedBadge>Wird neu generiert...</UsedBadge>}
-                    </div>
+                {loadError && renderNotice({ type: "error", message: loadError }, "load-error")}
+                {loading ? (
+                  <StateBox>Lade Challenges...</StateBox>
+                ) : activeChallenges.length === 0 ? (
+                  <StateBox>Du hast aktuell keine aktiven Challenges.</StateBox>
+                ) : (
+                  <ChallengeList>
+                    {activeChallenges.map((ch) => {
+                      const meta = difficultyMeta[ch.difficulty] || difficultyMeta.leicht;
+                      const isExpired = new Date(ch.valid_until) <= new Date();
+                      const canRecreate = !ch.recreated && !isExpired;
+                      const isRecreatingThis = recreatingChallengeId != null && String(recreatingChallengeId) === String(ch.id);
 
-                    <h3 style={{ margin: "10px 0 5px 0" }}>
-                      <CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink>
-                    </h3>
-                    <p style={{ color: "#666", fontSize: "0.9rem" }}>{ch.shop_address}</p>
-
-                    <hr style={{ border: "none", borderBottom: "1px solid #eee", margin: "15px 0" }} />
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Countdown>{formatCountdown(ch.valid_until)}</Countdown>
-                      {canRecreate ? (
-                        <RecreateButton
-                          onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}
-                          title="Challenge unmoeglich? Einmalig neu generieren."
-                          disabled={isRecreatingThis || generating || bulkGenerating || !location}
-                        >
-                          {isRecreatingThis ? "Erstelle neu..." : "Neu generieren"}
-                        </RecreateButton>
-                      ) : (
-                        <UsedBadge>{ch.recreated ? "Bereits neu generiert" : "Nicht mehr verfuegbar"}</UsedBadge>
-                      )}
-                    </div>
-                  </ChallengeCard>
-                );
-              })
-            )}
-
-            <h3>Neue Challenge generieren</h3>
-            {renderNotice(locationNotice, "location")}
-            {renderNotice(actionNotice, "action")}
-
-            {location && (
-              <>
-                <LegendContainer>
-                  <LegendItem>
-                    <ColorDot className="green" />
-                    <span>Leicht 0-5 km (Gruen)</span>
-                  </LegendItem>
-                  <LegendItem>
-                    <ColorDot className="yellow" />
-                    <span>Mittel 5-15 km (Gelb)</span>
-                  </LegendItem>
-                  <LegendItem>
-                    <ColorDot className="orange" />
-                    <span>Schwer 15-45 km (Orange)</span>
-                  </LegendItem>
-                </LegendContainer>
-                <div style={{ marginBottom: 20 }}>
-                  <MapContainer
-                    center={[location.lat, location.lon]}
-                    zoom={mapZoom}
-                    style={{ height: "300px", width: "100%" }}
-                    scrollWheelZoom={false}
-                  >
-                    <SetMapZoom zoom={mapZoom} />
-                    <FlyToMapTarget target={mapFocusTarget} />
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution="&copy; OpenStreetMap contributors"
-                    />
-                    <Marker position={[location.lat, location.lon]}>
-                      <Popup>Dein Standort</Popup>
-                    </Marker>
-                    <Circle
-                      center={[location.lat, location.lon]}
-                      radius={5000}
-                      pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }}
-                    />
-                    <Circle
-                      center={[location.lat, location.lon]}
-                      radius={15000}
-                      pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }}
-                    />
-                    <Circle
-                      center={[location.lat, location.lon]}
-                      radius={45000}
-                      pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.1 }}
-                    />
-                    {activeChallenges.map((ch, idx) => {
-                      const lat = toNumberOrNull(
-                        ch.shop_lat ?? ch.shop?.lat ?? ch.shop?.shop_lat ?? ch.shop?.latitude
-                      );
-                      const lon = toNumberOrNull(
-                        ch.shop_lon ?? ch.shop?.lon ?? ch.shop?.shop_lon ?? ch.shop?.longitude
-                      );
-                      let icon = greenIcon;
-                      if (ch.difficulty === "mittel") icon = yellowIcon;
-                      else if (ch.difficulty === "schwer") icon = orangeIcon;
-                      if (lat == null || lon == null) return null;
                       return (
-                        <Marker key={ch.id || idx} position={[lat, lon]} icon={icon}>
-                          <Popup>
-                            <b>{ch.shop_name}</b><br />
-                            {ch.shop_address}
-                            <br />{ch.difficulty} - {ch.type === "daily" ? "Daily" : "Weekly"}
-                          </Popup>
-                        </Marker>
+                        <ChallengeCard key={ch.id} $accent={meta.color}>
+                          <ChallengeTopRow>
+                            <ChallengePill $accent={meta.color}>
+                              {typeMeta[ch.type]?.label || ch.type} · {meta.label}
+                            </ChallengePill>
+                            {isRecreatingThis && <MutedBadge>Wird neu generiert...</MutedBadge>}
+                          </ChallengeTopRow>
+
+                          <ChallengeName>
+                            <CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink>
+                          </ChallengeName>
+                          <ChallengeAddress>{ch.shop_address}</ChallengeAddress>
+
+                          <ChallengeTiles>
+                            <InfoTile>
+                              <InfoLabel>Reichweite</InfoLabel>
+                              <InfoValue>{meta.range}</InfoValue>
+                            </InfoTile>
+                            <InfoTile>
+                              <InfoLabel>Ablauf</InfoLabel>
+                              <InfoValue>{typeMeta[ch.type]?.helper || "-"}</InfoValue>
+                            </InfoTile>
+                            <InfoTile>
+                              <InfoLabel>Status</InfoLabel>
+                              <InfoValue>{isExpired ? "Abgelaufen" : "Aktiv"}</InfoValue>
+                            </InfoTile>
+                          </ChallengeTiles>
+
+                          <ChallengeBottomRow>
+                            <Countdown>
+                              <Timer size={15} />
+                              <span>{formatCountdown(ch.valid_until)}</span>
+                            </Countdown>
+                            {canRecreate ? (
+                              <RecreateButton
+                                type="button"
+                                onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}
+                                disabled={isRecreatingThis || generating || bulkGenerating || !location}
+                              >
+                                <RefreshCcw size={15} />
+                                <span>{isRecreatingThis ? "Erstelle neu..." : "Neu generieren"}</span>
+                              </RecreateButton>
+                            ) : (
+                              <MutedBadge>{ch.recreated ? "Bereits neu generiert" : "Nicht mehr verfügbar"}</MutedBadge>
+                            )}
+                          </ChallengeBottomRow>
+                        </ChallengeCard>
                       );
                     })}
-                  </MapContainer>
-                </div>
-              </>
-            )}
-
-            <SelectionWrapper>
-              <SelectBox value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                <option value="leicht">Leicht (0-5 km)</option>
-                <option value="mittel">Mittel (5-15 km)</option>
-                <option value="schwer">Schwer (15-45 km)</option>
-              </SelectBox>
-
-              <SelectBox value={challengeType} onChange={(e) => setChallengeType(e.target.value)}>
-                <option value="daily">Daily Challenge</option>
-                <option value="weekly">Weekly Challenge</option>
-              </SelectBox>
-              {loadingLocation ? (
-                <p>Standort wird geladen...</p>
-              ) : (
-                <>
-                  <GenerateButton
-                    onClick={handleGenerateChallenge}
-                    disabled={generating || bulkGenerating || selectedCombinationExists || !location}
-                    title={!location ? "Standortzugriff erforderlich" : undefined}
-                  >
-                    {generating
-                      ? "Erstelle..."
-                      : !location
-                        ? "Standort erforderlich"
-                        : selectedCombinationExists
-                          ? "Du hast bereits eine solche Challenge"
-                          : "Neue Challenge generieren"}
-                  </GenerateButton>
-                  <GenerateButton
-                    onClick={handleGenerateAllMissing}
-                    disabled={generating || bulkGenerating || !location || missingCombinations.length === 0}
-                    title="Generiert alle noch fehlenden Kombinationen aus Schwierigkeit und Typ"
-                  >
-                    {bulkGenerating
-                      ? "Generiere..."
-                      : !location
-                        ? "Standort erforderlich"
-                        : missingCombinations.length === 0
-                          ? "Alle Kombinationen sind bereits aktiv"
-                          : "Alle fehlenden Challenges generieren"}
-                  </GenerateButton>
-                </>
-              )}
-            </SelectionWrapper>
-            <p>
-              Waehle eine Schwierigkeit und Art der Challenge aus und starte eine neue Aufgabe.
-              Anhand deines aktuellen Standorts wird eine zufaellige Eisdiele in der Naehe ausgewaehlt, welches es gilt am heutigen Tag oder der aktuellen Woche zu besuchen.
-              Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr.<br />
-              Falls eine Daily-Challenge nach 18 Uhr generiert wird, gilt diese fuer den naechsten Tag.<br />
-              Falls eine Weekly-Challenge an einem Sonntag generiert wird, gilt diese fuer die naechste Woche.<br />
-              Sollte eine Challenge nicht innerhalb der Zeitspanne abgeschlossen werden, verfaellt diese und du kannst eine neue generieren.
-            </p>
-
-            <Explanation>
-              Challenges sind zufaellige Eisdielen, die du in einem bestimmten Umkreis besuchen musst.
-              Fuer den erfolgreichen Check-In erhaeltst du Extra-EP und Awards.
-              Je schwieriger die Challenge (weiter entfernte Eisdiele), desto mehr Punkte kannst du sammeln.
-              Wichtig: der Check-In muss <b>vor Ort (maximal 300m Distanz zur Eisdiele)</b> erfolgen!
-            </Explanation>
-
-            {completedChallenges.length > 0 && (
-              <>
-                <Title>Deine Erfolge</Title>
-                <TrophyGrid>
-                  {completedChallenges.map((ch) => (
-                    <TrophyCard
-                      key={ch.id}
-                      onClick={() => setSelectedTrophy(ch)}
-                      onKeyDown={(event) => handleTrophyKeyDown(event, ch)}
-                      tabIndex={0}
-                      role="button"
-                      title="Mehr Infos anzeigen"
-                    >
-                      <TrophyIcon>
-                        <TrophyGlyph aria-hidden="true" />
-                      </TrophyIcon>
-                      <TrophyName>{ch.shop_name}</TrophyName>
-                      <TrophyDate>{new Date(ch.completed_at).toLocaleDateString()}</TrophyDate>
-                      <TrophyType color={getDifficultyColor(ch.difficulty)}>
-                        {ch.difficulty}
-                      </TrophyType>
-                    </TrophyCard>
-                  ))}
-                </TrophyGrid>
-                {selectedTrophy && (
-                  <ModalOverlay onClick={() => setSelectedTrophy(null)}>
-                    <ModalBox
-                      onClick={(e) => e.stopPropagation()}
-                      role="dialog"
-                      aria-modal="true"
-                      aria-labelledby="trophy-modal-title"
-                    >
-                      <h2 id="trophy-modal-title">Challenge-Details</h2>
-                      <TrophyIcon style={{ fontSize: "3rem" }}>
-                        <TrophyGlyph aria-hidden="true" />
-                      </TrophyIcon>
-                      <h3 style={{ margin: "10px 0 5px 0" }}>{selectedTrophy.shop_name}</h3>
-                      <p style={{ color: "#666", fontSize: "0.95rem", marginBottom: 8 }}>{selectedTrophy.shop_address}</p>
-                      <TrophyType color={getDifficultyColor(selectedTrophy.difficulty)}>
-                        {String(selectedTrophy.difficulty || "").toUpperCase()} - {selectedTrophy.type === "daily" ? "Daily" : "Weekly"}
-                      </TrophyType>
-                      <TrophyDate>Abgeschlossen am: {selectedTrophy.completed_at ? new Date(selectedTrophy.completed_at).toLocaleString() : "-"}</TrophyDate>
-                      <ModalButton ref={trophyModalButtonRef} onClick={() => setSelectedTrophy(null)} style={{ marginTop: 18 }}>
-                        Schliessen
-                      </ModalButton>
-                    </ModalBox>
-                  </ModalOverlay>
+                  </ChallengeList>
                 )}
-              </>
-            )}
-          </>
+              </SectionCard>
+
+              <SectionCard>
+                <SectionHead>
+                  <div>
+                    <SectionTitle>Neue Challenge generieren</SectionTitle>
+                    <SectionSubline>Wähle Schwierigkeit und Typ und generiere eine zufällige Eisdiele in deiner Nähe.</SectionSubline>
+                  </div>
+                  <SelectionPill $accent={difficultyMeta[difficulty].color}>
+                    {difficultyMeta[difficulty].label} · {typeMeta[challengeType].label}
+                  </SelectionPill>
+                </SectionHead>
+
+                {renderNotice(locationNotice, "location")}
+                {renderNotice(actionNotice, "action")}
+
+
+                <SelectionSection>
+                  <SelectionGroup>
+                    <SelectionHeading>Schwierigkeit</SelectionHeading>
+                    <SelectionCards>
+                      {DIFFICULTIES.map((entry) => (
+                        <SelectionCard
+                          key={entry}
+                          type="button"
+                          $active={difficulty === entry}
+                          $accent={difficultyMeta[entry].color}
+                          onClick={() => setDifficulty(entry)}
+                        >
+                          <SummaryIcon>
+                            <Target size={18} />
+                          </SummaryIcon>
+                          <div>
+                            <SummaryValue>{difficultyMeta[entry].label}</SummaryValue>
+                            <SummaryHint>{difficultyMeta[entry].range}</SummaryHint>
+                          </div>
+                        </SelectionCard>
+                      ))}
+                    </SelectionCards>
+                  </SelectionGroup>
+
+                  <SelectionGroup>
+                    <SelectionHeadingRow>
+                      <SelectionHeading>Typ</SelectionHeading>
+                      <InfoTooltipWrap>
+                        <InfoTooltipButton
+                          type="button"
+                          aria-label="Info zu Daily- und Weekly-Challenges"
+                          aria-expanded={showTypeInfo}
+                          onClick={() => setShowTypeInfo((prev) => !prev)}
+                        >
+                          i
+                        </InfoTooltipButton>
+                        <InfoTooltipBubble $visible={showTypeInfo}>
+                          Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr. Dailys nach 18 Uhr gelten für den nächsten Tag, Weeklys am Sonntag für die nächste Woche. Läuft eine Challenge ab, kannst du wieder eine neue generieren.
+                        </InfoTooltipBubble>
+                      </InfoTooltipWrap>
+                    </SelectionHeadingRow>
+                    <SelectionCards>
+                      {CHALLENGE_TYPES.map((entry) => (
+                        <SelectionCard
+                          key={entry}
+                          type="button"
+                          $active={challengeType === entry}
+                          $accent="#ffb522"
+                          onClick={() => setChallengeType(entry)}
+                        >
+                          <SummaryIcon>
+                            <Sparkles size={18} />
+                          </SummaryIcon>
+                          <div>
+                            <SummaryValue>{typeMeta[entry].label}</SummaryValue>
+                            <SummaryHint>{typeMeta[entry].helper}</SummaryHint>
+                          </div>
+                        </SelectionCard>
+                      ))}
+                    </SelectionCards>
+                  </SelectionGroup>
+
+                  <SelectionGroup>
+                    <SelectionHeading>Standort</SelectionHeading>
+                    <StatusCard $ready={Boolean(location)}>
+                      <SummaryIcon>
+                        <MapPinned size={18} />
+                      </SummaryIcon>
+                      <div>
+                        <SummaryValue>{loadingLocation ? "Wird geladen" : location ? "Bereit" : "Fehlt"}</SummaryValue>
+                        <SummaryHint>{location ? "Challenge kann erzeugt werden" : "Browser-Freigabe nötig"}</SummaryHint>
+                      </div>
+                    </StatusCard>
+                  </SelectionGroup>
+                </SelectionSection>
+
+                <ActionArea>
+                  {loadingLocation && <SmallText>Standort wird geladen...</SmallText>}
+                  <ButtonRow>
+                    <GenerateButton
+                      type="button"
+                      onClick={handleGenerateChallenge}
+                      disabled={generating || bulkGenerating || selectedCombinationExists || !location}
+                    >
+                      {generating
+                        ? "Erstelle..."
+                        : !location
+                          ? "Standort erforderlich"
+                          : selectedCombinationExists
+                            ? "Bereits aktiv"
+                            : "Neue Challenge generieren"}
+                    </GenerateButton>
+                    <SecondaryButton
+                      type="button"
+                      onClick={handleGenerateAllMissing}
+                      disabled={generating || bulkGenerating || !location || missingCombinations.length === 0}
+                    >
+                      {bulkGenerating
+                        ? "Generiere..."
+                        : !location
+                          ? "Standort erforderlich"
+                          : missingCombinations.length === 0
+                            ? "Alles aktiv"
+                            : "Alle fehlenden generieren"}
+                    </SecondaryButton>
+                  </ButtonRow>
+                </ActionArea>
+
+                {location && (
+                  <>
+                    <LegendContainer>
+                      {DIFFICULTIES.map((entry) => (
+                        <LegendItem key={entry}>
+                          <ColorDot style={{ backgroundColor: difficultyMeta[entry].color }} />
+                          <span>{difficultyMeta[entry].label} {difficultyMeta[entry].range}</span>
+                        </LegendItem>
+                      ))}
+                    </LegendContainer>
+
+                    <MapWrap>
+                      <MapContainer center={[location.lat, location.lon]} zoom={mapZoom} style={{ height: "320px", width: "100%" }} scrollWheelZoom={false}>
+                        <SetMapZoom zoom={mapZoom} />
+                        <FlyToMapTarget target={mapFocusTarget} />
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                        <Marker position={[location.lat, location.lon]}>
+                          <Popup>Dein Standort</Popup>
+                        </Marker>
+                        <Circle center={[location.lat, location.lon]} radius={5000} pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }} />
+                        <Circle center={[location.lat, location.lon]} radius={15000} pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }} />
+                        <Circle center={[location.lat, location.lon]} radius={45000} pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.1 }} />
+                        {activeChallenges.map((ch, idx) => {
+                          const lat = toNumberOrNull(ch.shop_lat ?? ch.shop?.lat ?? ch.shop?.shop_lat ?? ch.shop?.latitude);
+                          const lon = toNumberOrNull(ch.shop_lon ?? ch.shop?.lon ?? ch.shop?.shop_lon ?? ch.shop?.longitude);
+                          let icon = greenIcon;
+                          if (ch.difficulty === "mittel") icon = yellowIcon;
+                          else if (ch.difficulty === "schwer") icon = orangeIcon;
+                          if (lat == null || lon == null) return null;
+                          return (
+                            <Marker key={ch.id || idx} position={[lat, lon]} icon={icon}>
+                              <Popup>
+                                <strong>{ch.shop_name}</strong>
+                                <br />
+                                {ch.shop_address}
+                                <br />
+                                {difficultyMeta[ch.difficulty]?.label || ch.difficulty} · {typeMeta[ch.type]?.label || ch.type}
+                              </Popup>
+                            </Marker>
+                          );
+                        })}
+                      </MapContainer>
+                    </MapWrap>
+                  </>
+                )}
+              </SectionCard>
+            </MainColumn>
+
+            <SideColumn>
+              <SectionCard>
+                <SectionTitle>So funktionieren Challenges</SectionTitle>
+                <InfoStack>
+                  <InfoRow>
+                    <InfoIcon><MapPinned size={16} /></InfoIcon>
+                    <span>Es wird eine zufällige Eisdiele im gewählten Umkreis ausgewählt.</span>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoIcon><Timer size={16} /></InfoIcon>
+                    <span>Je nach Typ ist die Aufgabe nur für den Tag oder die laufende Woche gültig.</span>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoIcon><Sparkles size={16} /></InfoIcon>
+                    <span>Erfolgreiche Check-ins bringen Extra-EP und können zusätzliche Awards freischalten.</span>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoIcon><Target size={16} /></InfoIcon>
+                    <span>Der Check-in muss vor Ort erfolgen, maximal 300 Meter von der Eisdiele entfernt.</span>
+                  </InfoRow>
+                </InfoStack>
+              </SectionCard>
+
+              <SectionCard>
+                <SectionHead>
+                  <div>
+                    <SectionTitle>Deine Erfolge</SectionTitle>
+                    <SectionSubline>Abgeschlossene Challenges als kompaktes Archiv.</SectionSubline>
+                  </div>
+                  <MetaChip $muted>{completedChallenges.length} gesammelt</MetaChip>
+                </SectionHead>
+
+                {completedChallenges.length === 0 ? (
+                  <StateBox>Noch keine abgeschlossenen Challenges.</StateBox>
+                ) : (
+                  <TrophyGrid>
+                    {completedChallenges.map((ch) => (
+                      <TrophyCard
+                        key={ch.id}
+                        onClick={() => setSelectedTrophy(ch)}
+                        onKeyDown={(event) => handleTrophyKeyDown(event, ch)}
+                        tabIndex={0}
+                        role="button"
+                      >
+                        <TrophyIcon>
+                          <TrophyGlyph aria-hidden="true" />
+                        </TrophyIcon>
+                        <TrophyName>{ch.shop_name}</TrophyName>
+                        <TrophyDate>{new Date(ch.completed_at).toLocaleDateString("de-DE")}</TrophyDate>
+                        <TrophyType $accent={difficultyMeta[ch.difficulty]?.color || "#9e9e9e"}>
+                          {difficultyMeta[ch.difficulty]?.label || ch.difficulty}
+                        </TrophyType>
+                      </TrophyCard>
+                    ))}
+                  </TrophyGrid>
+                )}
+              </SectionCard>
+            </SideColumn>
+          </LayoutGrid>
         )}
-      </Container>
-    </div>
+
+        {selectedTrophy && (
+          <ModalOverlay onClick={() => setSelectedTrophy(null)}>
+            <ModalBox onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="trophy-modal-title">
+              <ModalTitle id="trophy-modal-title">Challenge-Details</ModalTitle>
+              <CenteredTrophyIcon>
+                <TrophyGlyph aria-hidden="true" />
+              </CenteredTrophyIcon>
+              <ChallengeName style={{ textAlign: "center" }}>{selectedTrophy.shop_name}</ChallengeName>
+              <ChallengeAddress style={{ textAlign: "center" }}>{selectedTrophy.shop_address}</ChallengeAddress>
+              <ChallengePill $accent={difficultyMeta[selectedTrophy.difficulty]?.color || "#9e9e9e"} style={{ margin: "0.8rem auto 0", display: "table" }}>
+                {difficultyMeta[selectedTrophy.difficulty]?.label || selectedTrophy.difficulty} · {typeMeta[selectedTrophy.type]?.label || selectedTrophy.type}
+              </ChallengePill>
+              <TrophyDate style={{ marginTop: "0.9rem", textAlign: "center" }}>
+                Abgeschlossen am: {selectedTrophy.completed_at ? new Date(selectedTrophy.completed_at).toLocaleString("de-DE") : "-"}
+              </TrophyDate>
+              <ModalButton ref={trophyModalButtonRef} onClick={() => setSelectedTrophy(null)}>
+                Schließen
+              </ModalButton>
+            </ModalBox>
+          </ModalOverlay>
+        )}
+      </Content>
+    </Page>
   );
 }
 
 export default Challenges;
 
+const Page = styled.div`
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fffaf0 0%, #fff7e7 100%);
+`;
+
+const Content = styled.div`
+  width: min(96%, 1440px);
+  margin: 0 auto;
+  padding: 0.5rem 0 1.5rem;
+`;
+
+const HeroCard = styled.div`
+  background: rgba(255, 252, 243, 0.96);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem 1rem 0.95rem;
+  margin-bottom: 1rem;
+`;
+
+const HeroTitle = styled.h1`
+  margin: 0;
+  color: #2f2100;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+`;
+
+const HeroSubtitle = styled.p`
+  margin: 0.4rem 0 0;
+  color: rgba(47, 33, 0, 0.7);
+  line-height: 1.5;
+`;
+
+const MetaRow = styled.div`
+  margin-top: 0.8rem;
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+`;
+
+const MetaChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.68rem;
+  border-radius: 999px;
+  background: ${({ $muted }) => ($muted ? "rgba(47, 33, 0, 0.05)" : "rgba(255, 181, 34, 0.16)")};
+  border: 1px solid ${({ $muted }) => ($muted ? "rgba(47, 33, 0, 0.08)" : "rgba(255, 181, 34, 0.28)")};
+  color: #6c4500;
+  font-size: 0.8rem;
+  font-weight: 700;
+`;
+
+const LayoutGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+
+  @media (min-width: 1080px) {
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+    align-items: start;
+  }
+`;
+
+const MainColumn = styled.div`
+  display: grid;
+  gap: 1rem;
+`;
+
+const SideColumn = styled.div`
+  display: grid;
+  gap: 1rem;
+`;
+
+const SectionCard = styled.section`
+  background: rgba(255, 252, 243, 0.94);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  padding: 1rem;
+`;
+
+const SectionHead = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+`;
+
+const SectionTitle = styled.h2`
+  margin: 0;
+  color: #2f2100;
+  font-size: 1.05rem;
+  font-weight: 800;
+`;
+
+const SectionSubline = styled.p`
+  margin: 0.15rem 0 0;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.92rem;
+  line-height: 1.45;
+`;
+
+const BodyText = styled.p`
+  margin: 0.9rem 0 0;
+  color: #5b4520;
+  line-height: 1.55;
+`;
+
+const StateBox = styled.div`
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  padding: 1rem;
+  color: #6c5830;
+`;
+
 const NoticeBox = styled.div`
-  margin-bottom: 10px;
-  border-radius: 10px;
-  padding: 10px 12px;
+  margin-bottom: 0.8rem;
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
   border: 1px solid transparent;
-  background: ${({ $type }) =>
-    $type === "error"
-      ? "#ffe9e9"
-      : $type === "success"
-        ? "#e8f7ec"
-        : "#eef5ff"};
-  border-color: ${({ $type }) =>
-    $type === "error"
-      ? "#f5b5b5"
-      : $type === "success"
-        ? "#b9e0c3"
-        : "#bfd6ff"};
-  color: ${({ $type }) =>
-    $type === "error"
-      ? "#8b1e1e"
-      : $type === "success"
-        ? "#185c2b"
-        : "#1e3f7a"};
+  background: ${({ $type }) => ($type === "error" ? "#ffe9e9" : $type === "success" ? "#e8f7ec" : "#eef5ff")};
+  border-color: ${({ $type }) => ($type === "error" ? "#f5b5b5" : $type === "success" ? "#b9e0c3" : "#bfd6ff")};
+  color: ${({ $type }) => ($type === "error" ? "#8b1e1e" : $type === "success" ? "#185c2b" : "#1e3f7a")};
 `;
 
 const NoticeMessage = styled.div`
@@ -866,53 +940,73 @@ const NoticeMessage = styled.div`
 `;
 
 const NoticeList = styled.ul`
-  margin: 6px 0 0 18px;
+  margin: 0.4rem 0 0 1rem;
   padding: 0;
   font-size: 0.85rem;
-  line-height: 1.3;
+  line-height: 1.4;
 `;
-// Modal Styles
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0,0,0,0.4);
+
+const ChallengeList = styled.div`
+  display: grid;
+  gap: 0.9rem;
+`;
+
+const ChallengeCard = styled.article`
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,239,0.95));
+  border-radius: 18px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+  padding: 1rem;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 5px;
+    background: ${({ $accent }) => $accent};
+  }
+`;
+
+const ChallengeTopRow = styled.div`
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+`;
+
+const ChallengePill = styled.span`
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  z-index: 1001;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: ${({ $accent }) => `${$accent}1a`};
+  border: 1px solid ${({ $accent }) => `${$accent}40`};
+  color: #5b4520;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
-const ModalBox = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  padding: 32px 24px 24px 24px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-  min-width: 320px;
-  max-width: 90vw;
-  text-align: center;
+const MutedBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.05);
+  color: rgba(47, 33, 0, 0.6);
+  font-size: 0.78rem;
+  font-weight: 700;
 `;
 
-const ModalButton = styled.button`
-  margin-top: 18px;
-  padding: 10px 28px;
-  background: #ffb522;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.15s;
-  &:hover { background: #ffcb4c; }
-`;
-
-const UsedBadge = styled.span`
-  font-size: 0.7rem;
-  color: #ccc;
-  font-style: italic;
+const ChallengeName = styled.h3`
+  margin: 0.85rem 0 0.2rem;
+  color: #2f2100;
+  font-size: 1.08rem;
 `;
 
 const CleanLink = styled(Link)`
@@ -920,173 +1014,432 @@ const CleanLink = styled(Link)`
   color: inherit;
 `;
 
-
-const Container = styled.div`
-  padding: 1rem;
-  background-color: white;
-  min-height: 100vh;
-  max-width: 800px;  /* Desktop: breite Mitte */
-  margin: 0 auto;    /* zentriert das Ganze */
-
-  @media (max-width: 600px) {
-    max-width: 95%;   /* Text läuft nicht bis zum Rand */
-    padding: 0.8rem;  /* kleineres Padding für Handy */
-  }
+const ChallengeAddress = styled.p`
+  margin: 0;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.92rem;
+  line-height: 1.45;
 `;
-const Title = styled.h2`
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  text-align: center;
 
-  @media (max-width: 600px) {
-    font-size: 1.25rem;
+const ChallengeTiles = styled.div`
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+
+  @media (min-width: 720px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 `;
 
-const Explanation = styled.div`
-  background: #fff3cd;
-  border: 1px solid #ffeeba;
-  padding: 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.4;
-  @media (max-width: 600px) {
-    font-size: 13px;
-  }
+const InfoTile = styled.div`
+  border-radius: 14px;
+  padding: 0.7rem 0.8rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(47, 33, 0, 0.08);
 `;
 
-const NoChallenges = styled.div`
-  font-size: 16px;
-  color: #555;
-  text-align: center;
-  margin-top: 20px;
+const InfoLabel = styled.div`
+  color: rgba(47, 33, 0, 0.62);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
-const ChallengeCard = styled.div`
-  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #eee;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-
-  /* Der farbige Akzent als dezenter Glow oben */
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 6px;
-    background: ${props => props.color};
-  }
+const InfoValue = styled.div`
+  color: #2f2100;
+  font-size: 0.92rem;
+  font-weight: 800;
+  margin-top: 0.2rem;
+  line-height: 1.35;
 `;
 
-const DifficultyLabel = styled.div`
-  font-size: 14px;
-  font-weight: bold;
-  margin-top: 10px;
+const ChallengeBottomRow = styled.div`
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
 `;
 
 const Countdown = styled.div`
-  font-size: 13px;
-  color: #666;
-  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #5b4520;
+  font-size: 0.9rem;
+  font-weight: 700;
 `;
 
-const SelectionWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin: 20px 0;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
-  }
+const InlineHint = styled.span`
+  color: rgba(47, 33, 0, 0.62);
+  font-size: 0.82rem;
 `;
 
-const SelectBox = styled.select`
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  background: #f8f9fa;
+const RecreateButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2f2100;
+  background: #ffb522;
+  border-radius: 10px;
+  border: none;
   cursor: pointer;
 
-  @media (max-width: 600px) {
-    font-size: 0.9rem;
-    padding: 8px 12px;
+  &:hover:enabled {
+    background: #ffc546;
   }
 
-  &:focus {
-    outline: none;
-    border-color: #339af0;
-    box-shadow: 0 0 0 2px rgba(51, 154, 240, 0.25);
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const SelectionSection = styled.div`
+  display: grid;
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+`;
+
+const SelectionGroup = styled.div`
+  display: grid;
+  gap: 0.55rem;
+`;
+
+const SelectionHeadingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+`;
+
+const SelectionHeading = styled.div`
+  color: #6b5327;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const InfoTooltipWrap = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+
+  &:hover > div {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+`;
+
+const InfoTooltipButton = styled.button`
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  color: #7a4a00;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    border-color: rgba(255, 181, 34, 0.5);
+    background: #fff4dd;
+  }
+`;
+
+const InfoTooltipBubble = styled.div`
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(320px, 70vw);
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(47, 33, 0, 0.96);
+  color: #fff8eb;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+
+  @media (max-width: 640px) {
+    width: min(280px, 78vw);
+    font-size: 0.76rem;
+  }
+`;
+
+const SelectionCards = styled.div`
+  display: grid;
+  gap: 0.75rem;
+
+  @media (min-width: 860px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (max-width: 640px) {
+    gap: 0.5rem;
+  }
+`;
+
+const SelectionCard = styled.button`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 16px;
+  background: ${({ $active, $accent }) =>
+    $active ? `linear-gradient(180deg, ${$accent}18, rgba(255,250,239,0.96))` : "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,250,239,0.92))"};
+  border: 1px solid ${({ $active, $accent }) => ($active ? `${$accent}66` : "rgba(47, 33, 0, 0.08)")};
+  box-shadow: ${({ $active }) => ($active ? "0 8px 20px rgba(28,20,0,0.08)" : "none")};
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ $accent }) => `${$accent}66`};
+  }
+
+  @media (max-width: 640px) {
+    gap: 0.55rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 14px;
+  }
+`;
+
+const StatusCard = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,250,239,0.92));
+  border: 1px solid ${({ $ready }) => ($ready ? "rgba(35,165,90,0.28)" : "rgba(47, 33, 0, 0.08)")};
+
+  @media (max-width: 640px) {
+    gap: 0.55rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 14px;
+  }
+`;
+
+const SummaryIcon = styled.div`
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 181, 34, 0.16);
+  color: #7a4a00;
+  flex-shrink: 0;
+
+  @media (max-width: 640px) {
+    width: 1.7rem;
+    height: 1.7rem;
+
+    svg {
+      width: 0.95rem;
+      height: 0.95rem;
+    }
+  }
+`;
+
+const SummaryLabel = styled.div`
+  color: rgba(47, 33, 0, 0.65);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const SummaryValue = styled.div`
+  color: #2f2100;
+  font-size: 1rem;
+  font-weight: 800;
+  margin-top: 0.08rem;
+
+  @media (max-width: 640px) {
+    font-size: 0.92rem;
+  }
+`;
+
+const SummaryHint = styled.div`
+  color: rgba(47, 33, 0, 0.65);
+  font-size: 0.82rem;
+  margin-top: 0.12rem;
+  line-height: 1.35;
+
+  @media (max-width: 640px) {
+    font-size: 0.76rem;
+    line-height: 1.25;
+  }
+`;
+
+const LegendContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-bottom: 0.8rem;
+  color: #5b4520;
+  font-size: 0.88rem;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+`;
+
+const ColorDot = styled.div`
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  opacity: 0.78;
+`;
+
+const MapWrap = styled.div`
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(47, 33, 0, 0.1);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  margin-bottom: 0.9rem;
+`;
+
+const ActionArea = styled.div`
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+`;
+
+const SmallText = styled.div`
+  color: #6b5327;
+  font-size: 0.88rem;
+`;
+
+const ButtonRow = styled.div`
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 680px) {
+    flex-direction: column;
   }
 `;
 
 const GenerateButton = styled.button`
   background-color: #ffb522;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  color: #2f2100;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 1rem;
-  transition: background-color 0.15s ease, opacity 0.15s;
+  font-weight: 800;
+  font-size: 0.95rem;
+
   &:hover:enabled {
-    background-color: #ffcb4c;
-  }
-  &:disabled {
-    opacity: 0.55;
-    background-color: #ffb522;
-    color: #fff;
-    cursor: not-allowed;
-    box-shadow: none;
+    background-color: #ffc546;
   }
 
-  @media (max-width: 600px) {
-    width: 100%;
-    font-size: 0.95rem;
-    padding: 10px;
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 640px) {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.9rem;
   }
 `;
 
+const SecondaryButton = styled(GenerateButton)`
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 181, 34, 0.35);
+  color: #7a4a00;
 
-// Trophäen-Gitter für abgeschlossene Challenges
+  &:hover:enabled {
+    background: #fff4dd;
+  }
+`;
+
+const SelectionPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.72rem;
+  border-radius: 999px;
+  background: ${({ $accent }) => `${$accent}1f`};
+  border: 1px solid ${({ $accent }) => `${$accent}40`};
+  color: #6c4500;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    font-size: 0.74rem;
+    padding: 0.22rem 0.58rem;
+  }
+`;
+
+const InfoStack = styled.div`
+  display: grid;
+  gap: 0.8rem;
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  color: #5b4520;
+  line-height: 1.45;
+`;
+
+const InfoIcon = styled.div`
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 181, 34, 0.16);
+  color: #7a4a00;
+`;
+
 const TrophyGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  padding-bottom: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 0.75rem;
 `;
 
 const TrophyCard = styled.div`
-  background: #fafafa;
-  border-radius: 12px;
-  padding: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 14px;
+  padding: 0.85rem 0.75rem;
   text-align: center;
-  border: 1px solid #eee;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
   cursor: pointer;
-  transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s;
   outline: none;
-  &:hover, &:focus {
-    transform: scale(1.045) translateY(-2px);
-    box-shadow: 0 6px 24px rgba(255,181,34,0.18), 0 2px 8px rgba(0,0,0,0.08);
-    border-color: #ffb522;
-    z-index: 2;
+
+  &:hover,
+  &:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255,181,34,0.18);
+    border-color: rgba(255,181,34,0.45);
   }
 `;
 
 const TrophyIcon = styled.div`
   font-size: 2rem;
-  margin-bottom: 5px;
+  margin-bottom: 0.35rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1101,80 +1454,76 @@ const TrophyIcon = styled.div`
   }
 `;
 
+const CenteredTrophyIcon = styled(TrophyIcon)`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+`;
+
 const TrophyName = styled.div`
-  font-size: 0.85rem;
-  font-weight: bold;
+  font-size: 0.84rem;
+  font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #2f2100;
 `;
 
 const TrophyDate = styled.div`
-  font-size: 0.7rem;
-  color: #999;
+  font-size: 0.75rem;
+  color: rgba(47, 33, 0, 0.6);
 `;
 
 const TrophyType = styled.div`
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   font-weight: 800;
-  color: ${props => props.color};
-  margin-top: 4px;
+  color: ${({ $accent }) => $accent};
+  margin-top: 0.28rem;
 `;
 
-const RecreateButton = styled.button`
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: white;
-  background: #ffb522;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-
-  &:hover:enabled {
-    background: #a37416ff;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  @media (max-width: 600px) {
-    width: 100%;
-  }
-`;
-
-const LegendContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-`;
-
-const LegendItem = styled.div`
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  z-index: 1001;
+  padding: 1rem;
 `;
 
-const ColorDot = styled.div`
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  opacity: 0.7;
-  
-  &.green {
-    background-color: #22c55e;
-  }
-  
-  &.yellow {
-    background-color: #eab308;
-  }
-  
-  &.orange {
-    background-color: #f97316;
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.4rem 1.2rem 1.2rem;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.18);
+  width: min(520px, 100%);
+  text-align: left;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0 0 1rem;
+  color: #2f2100;
+  font-size: 1.2rem;
+  text-align: center;
+`;
+
+const ModalButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  background: #ffb522;
+  color: #2f2100;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    background: #ffc546;
   }
 `;

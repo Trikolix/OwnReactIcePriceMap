@@ -70,26 +70,55 @@ try {
         'match_id' => $matchId,
         'nutzer_id' => $userId,
     ]);
-    if ($stmt->fetchColumn() !== false) {
-        throw new RuntimeException('Du hast in diesem Duell bereits abgestimmt.');
-    }
+    $existingVote = $stmt->fetchColumn();
+    $voteAction = 'created';
 
-    $stmt = $pdo->prepare("
-        INSERT INTO photo_challenge_votes (match_id, nutzer_id, image_id)
-        VALUES (:match_id, :nutzer_id, :image_id)
-    ");
-    $stmt->execute([
-        'match_id' => $matchId,
-        'nutzer_id' => $userId,
-        'image_id' => $imageId,
-    ]);
+    if ($existingVote !== false) {
+        if ((int)$existingVote === $imageId) {
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Diese Stimme ist bereits aktiv.',
+                'vote_action' => 'unchanged',
+                'match' => [
+                    'id' => $matchId,
+                    'image_a_id' => $imageA,
+                    'image_b_id' => $imageB,
+                    'user_choice' => $imageId,
+                ],
+            ]);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("
+            UPDATE photo_challenge_votes
+            SET image_id = :image_id
+            WHERE match_id = :match_id AND nutzer_id = :nutzer_id
+        ");
+        $stmt->execute([
+            'match_id' => $matchId,
+            'nutzer_id' => $userId,
+            'image_id' => $imageId,
+        ]);
+        $voteAction = 'updated';
+    } else {
+        $stmt = $pdo->prepare("
+            INSERT INTO photo_challenge_votes (match_id, nutzer_id, image_id)
+            VALUES (:match_id, :nutzer_id, :image_id)
+        ");
+        $stmt->execute([
+            'match_id' => $matchId,
+            'nutzer_id' => $userId,
+            'image_id' => $imageId,
+        ]);
+    }
 
     $votes = getMatchVoteSummary($pdo, [$matchId]);
     $summary = summarizeMatchVotes($match, $votes);
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'Stimme wurde gezählt.',
+        'message' => $voteAction === 'updated' ? 'Stimme wurde geändert.' : 'Stimme wurde gezählt.',
+        'vote_action' => $voteAction,
         'match' => [
             'id' => $matchId,
             'votes_a' => $summary['votes_a'],
@@ -106,14 +135,6 @@ try {
         'message' => $e->getMessage(),
     ]);
 } catch (PDOException $e) {
-    if (($e->getCode() ?? '') === '23000') {
-        http_response_code(422);
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'Du hast in diesem Duell bereits abgestimmt.',
-        ]);
-        exit;
-    }
     http_response_code(500);
     echo json_encode([
         'status' => 'error',

@@ -19,8 +19,13 @@ try {
             r.event_id,
             r.registered_by_user_id,
             r.payment_reference_code,
+            r.entry_fee_amount,
+            r.gift_voucher_purchase_amount,
+            r.donation_amount,
+            r.voucher_discount_amount,
             r.payment_status,
             r.team_name,
+            r.notes,
             r.created_at,
             p.method AS payment_method,
             p.expected_amount,
@@ -42,14 +47,12 @@ try {
 
     $auth = authenticateRequest($pdo);
     $summaryToken = trim((string) ($_GET['summary_token'] ?? ''));
-
     $isAllowedByAuth = false;
     if ($auth) {
         $isAllowedByAuth = (int) $auth['user_id'] === 1
             || (int) $registration['registered_by_user_id'] === (int) $auth['user_id'];
     }
     $isAllowedByToken = event2026_validate_registration_access_token($pdo, $registrationId, $summaryToken);
-
     if (!$isAllowedByAuth && !$isAllowedByToken) {
         http_response_code(403);
         throw new RuntimeException('Keine Berechtigung für diese Registrierung.');
@@ -58,12 +61,15 @@ try {
     $slotsStmt = $pdo->prepare("SELECT
             s.id,
             s.full_name,
+            s.route_key,
             s.distance_km,
             s.license_status,
             s.pace_group,
             s.public_name_consent,
             s.jersey_interest,
+            s.clothing_interest,
             s.jersey_size,
+            s.bib_size,
             l.version AS legal_version
         FROM event2026_participant_slots s
         INNER JOIN event2026_legal_versions l ON l.id = s.legal_version_id
@@ -74,13 +80,26 @@ try {
     ]);
     $slots = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $voucherStmt = $pdo->prepare("SELECT id, code_value, status, created_at
+        FROM event2026_gift_vouchers
+        WHERE purchased_by_registration_id = :registration_id
+        ORDER BY id ASC");
+    $voucherStmt->execute([':registration_id' => $registrationId]);
+    $giftVouchers = $voucherStmt->fetchAll(PDO::FETCH_ASSOC);
+
     echo json_encode([
         'status' => 'success',
         'registration' => [
             'id' => (int) $registration['id'],
             'payment_reference_code' => (string) $registration['payment_reference_code'],
+            'entry_fee_amount' => (float) ($registration['entry_fee_amount'] ?? 0),
+            'gift_voucher_quantity' => (int) ($registration['gift_voucher_quantity'] ?? 0),
+            'gift_voucher_purchase_amount' => (float) ($registration['gift_voucher_purchase_amount'] ?? 0),
+            'donation_amount' => (float) ($registration['donation_amount'] ?? 0),
+            'voucher_discount_amount' => (float) ($registration['voucher_discount_amount'] ?? 0),
             'payment_status' => (string) $registration['payment_status'],
             'team_name' => $registration['team_name'],
+            'notes' => $registration['notes'],
             'created_at' => $registration['created_at'],
         ],
         'payment' => [
@@ -89,16 +108,29 @@ try {
             'paid_amount' => $registration['paid_amount'] !== null ? (float) $registration['paid_amount'] : null,
             'status' => $registration['payment_status_detail'] ?: null,
         ],
+        'gift_vouchers' => array_map(static function (array $voucher): array {
+            return [
+                'id' => (int) $voucher['id'],
+                'code' => (string) ($voucher['code_value'] ?? ''),
+                'status' => (string) $voucher['status'],
+                'created_at' => $voucher['created_at'],
+            ];
+        }, $giftVouchers),
         'slots' => array_map(static function (array $row): array {
             return [
                 'id' => (int) $row['id'],
                 'full_name' => (string) $row['full_name'],
+                'route_key' => event2026_normalize_route_key($row['route_key'] ?? ''),
+                'route_name' => event2026_route_label($row['route_key'] ?? ''),
                 'distance_km' => (int) $row['distance_km'],
                 'license_status' => (string) $row['license_status'],
                 'pace_group' => (string) $row['pace_group'],
                 'public_name_consent' => (int) $row['public_name_consent'],
                 'jersey_interest' => (int) $row['jersey_interest'],
+                'clothing_interest' => event2026_normalize_clothing_interest($row['clothing_interest'] ?? ''),
+                'clothing_interest_label' => event2026_clothing_interest_label($row['clothing_interest'] ?? ''),
                 'jersey_size' => $row['jersey_size'],
+                'bib_size' => $row['bib_size'],
                 'legal_version' => (string) $row['legal_version'],
             ];
         }, $slots),
