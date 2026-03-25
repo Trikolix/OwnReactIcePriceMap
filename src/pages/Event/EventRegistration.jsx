@@ -302,10 +302,12 @@ export default function EventRegistration() {
     return {
       teamName: (params.get("team") || "").trim(),
       inviteCode: (params.get("inviteCode") || "").trim(),
+      voucherCode: (params.get("voucherCode") || "").trim(),
     };
   }, [location.search]);
   const invitedTeamName = inviteContext.teamName;
   const inviteCode = inviteContext.inviteCode;
+  const invitedVoucherCode = inviteContext.voucherCode;
 
   const [participant, setParticipant] = useState(createParticipant());
   const [teamName, setTeamName] = useState("");
@@ -410,6 +412,40 @@ export default function EventRegistration() {
     if (!invitedTeamName || existingRegistration) return;
     setTeamName((prev) => (prev.trim() ? prev : invitedTeamName));
   }, [existingRegistration, invitedTeamName]);
+
+  useEffect(() => {
+    if (!invitedVoucherCode || existingRegistration) return;
+    setVoucherCode((prev) => (prev.trim() ? prev : invitedVoucherCode.toUpperCase()));
+  }, [existingRegistration, invitedVoucherCode]);
+
+  useEffect(() => {
+    if (existingRegistration || !invitedVoucherCode || !API_BASE) return;
+
+    let cancelled = false;
+    const normalizedVoucherCode = invitedVoucherCode.toUpperCase();
+
+    setVoucherLookup(null);
+
+    fetch(`${API_BASE}/event2026/voucher_lookup.php?code=${encodeURIComponent(normalizedVoucherCode)}`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || data.status !== "success") {
+          throw new Error(data.message || "Gutschein konnte nicht geprüft werden.");
+        }
+        if (!cancelled) {
+          setVoucherLookup(data.voucher);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setVoucherLookup({ valid: false, state: "invalid", message: err.message || "Gutschein konnte nicht geprüft werden." });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [API_BASE, existingRegistration, invitedVoucherCode]);
 
   useEffect(() => {
     if (isLoggedIn || !newAccount.email || existingRegistration) return;

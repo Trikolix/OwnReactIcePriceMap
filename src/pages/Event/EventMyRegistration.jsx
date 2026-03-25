@@ -321,6 +321,29 @@ function formatPaymentStatus(status) {
   return status || "-";
 }
 
+function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
+  const normalizedTeamName = (teamName || "").trim();
+  const normalizedInviteCode = (inviteCode || "").trim();
+  const normalizedVoucherCode = (voucherCode || "").trim();
+  if (!normalizedTeamName && !normalizedInviteCode && !normalizedVoucherCode) return "";
+
+  const query = new URLSearchParams();
+  if (normalizedTeamName) {
+    query.set("team", normalizedTeamName);
+  }
+  if (normalizedInviteCode) {
+    query.set("inviteCode", normalizedInviteCode);
+  }
+  if (normalizedVoucherCode) {
+    query.set("voucherCode", normalizedVoucherCode);
+  }
+
+  if (typeof window === "undefined") {
+    return `https://ice-app.de/event-registration?${query.toString()}`;
+  }
+  return `${window.location.origin}/event-registration?${query.toString()}`;
+}
+
 export default function EventMyRegistration() {
   const apiUrl = getApiBaseUrl();
   const { authToken, userId } = useUser();
@@ -385,25 +408,22 @@ export default function EventMyRegistration() {
     return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
   }, [isAdmin]);
   const teamInviteLink = useMemo(() => {
-    const teamName = (data?.registration?.team_name || "").trim();
-    const inviteCode = (data?.account?.invite_code || "").trim();
-    if (!teamName) return "";
-    const query = new URLSearchParams();
-    query.set("team", teamName);
-    if (inviteCode) {
-      query.set("inviteCode", inviteCode);
-    }
-    if (typeof window === "undefined") {
-      return `https://ice-app.de/event-registration?${query.toString()}`;
-    }
-    return `${window.location.origin}/event-registration?${query.toString()}`;
+    return buildEventRegistrationInviteLink(data?.registration?.team_name, data?.account?.invite_code);
   }, [data?.account?.invite_code, data?.registration?.team_name]);
+  const giftVoucherLinks = useMemo(
+    () =>
+      (data?.gift_vouchers || []).map((voucher) => ({
+        ...voucher,
+        shareUrl: buildEventRegistrationInviteLink(data?.registration?.team_name, data?.account?.invite_code, voucher.code),
+      })),
+    [data?.account?.invite_code, data?.gift_vouchers, data?.registration?.team_name]
+  );
 
-  const copyTeamInviteLink = async () => {
-    if (!teamInviteLink) return;
+  const copyInviteLink = async (link, label = "Link") => {
+    if (!link) return;
     try {
-      await navigator.clipboard.writeText(teamInviteLink);
-      setCopyStatus("Link kopiert.");
+      await navigator.clipboard.writeText(link);
+      setCopyStatus(`${label} kopiert.`);
     } catch (err) {
       setCopyStatus("Kopieren fehlgeschlagen.");
     }
@@ -757,7 +777,7 @@ export default function EventMyRegistration() {
                 <div style={{ display: "grid", gap: "0.7rem", marginTop: "0.8rem" }}>
                   <LinkField value={teamInviteLink} readOnly />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem", alignItems: "center" }}>
-                    <CopyButton type="button" onClick={copyTeamInviteLink}>Link kopieren</CopyButton>
+                    <CopyButton type="button" onClick={() => copyInviteLink(teamInviteLink)}>Link kopieren</CopyButton>
                     {copyStatus && <SubText style={{ marginTop: 0 }}>{copyStatus}</SubText>}
                   </div>
                 </div>
@@ -879,7 +899,7 @@ export default function EventMyRegistration() {
                 <Card>
                   <CardTitle>Freigeschaltete Geschenk-Codes</CardTitle>
                   <InlineList>
-                    {data.gift_vouchers.map((voucher) => (
+                    {giftVoucherLinks.map((voucher) => (
                       <InlineItem key={voucher.id}>
                         <strong>{voucher.code || `Code #${voucher.id}`}</strong> <Badge>{voucher.status}</Badge>
                         <SubText>
@@ -887,6 +907,19 @@ export default function EventMyRegistration() {
                             ? `Eingelöst am ${new Date(voucher.redeemed_at).toLocaleString("de-DE")}`
                             : "Noch offen und verschenkbar"}
                         </SubText>
+                        {voucher.status !== "redeemed" && voucher.shareUrl && (
+                          <div style={{ display: "grid", gap: "0.65rem", marginTop: "0.75rem" }}>
+                            <LinkField value={voucher.shareUrl} readOnly />
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem", alignItems: "center" }}>
+                              <CopyButton type="button" onClick={() => copyInviteLink(voucher.shareUrl, `Link für ${voucher.code || `Code #${voucher.id}`}`)}>
+                                Link kopieren
+                              </CopyButton>
+                              <SubText style={{ marginTop: 0 }}>
+                                Sende diesen Link an die Person, der du den Geschenk-Code schenken möchtest. Auf der Registrierungsseite ist das Feld Team / Verein dann bereits mit <strong>{data.registration.team_name}</strong> ausgefüllt und der Geschenk-Code wird automatisch hinterlegt.
+                              </SubText>
+                            </div>
+                          </div>
+                        )}
                       </InlineItem>
                     ))}
                   </InlineList>
