@@ -7,7 +7,7 @@ const GroupCard = ({ group, openGroupModal }) => {
   const completedMatches = group.user_votes ?? group.matches.filter((match) => match.has_voted).length;
   const statusVariant = group.status === 'finished' ? 'closed' : group.status === 'upcoming' ? 'upcoming' : 'open';
   const progress = totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0;
-  const previewEntries = (group.entries || []).slice(0, 3);
+  const previewEntries = (group.entries || []).slice(0, 4);
   const isComplete = totalMatches > 0 && completedMatches >= totalMatches;
   const cardHint =
     group.status === 'finished'

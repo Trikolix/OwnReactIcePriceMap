@@ -251,14 +251,14 @@ export const VoteOption = styled.button`
 `;
 
 export const GroupPreviewStrip = styled.div`
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
 `;
 
 export const GroupPreviewThumb = styled.img`
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 12px;
   object-fit: cover;
   background: #f3f4f8;

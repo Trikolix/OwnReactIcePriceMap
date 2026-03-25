@@ -211,7 +211,29 @@ function PhotoChallengeVoting() {
   };
 
   const groupsSorted = useMemo(() => {
-    return (overview?.groups || []).slice().sort((a, b) => a.position - b.position);
+    const getGroupPriority = (group) => {
+      const totalMatches = Array.isArray(group.matches) ? group.matches.length : 0;
+      const completedMatches =
+        typeof group.user_votes === 'number'
+          ? group.user_votes
+          : (group.matches || []).filter((match) => match.has_voted).length;
+      const hasOpenVotes = group.status !== 'finished' && group.status !== 'upcoming' && totalMatches > 0 && completedMatches < totalMatches;
+      const isRunningButDone = group.status !== 'finished' && group.status !== 'upcoming' && totalMatches > 0 && completedMatches >= totalMatches;
+
+      if (hasOpenVotes) return 0;
+      if (isRunningButDone) return 1;
+      if (group.status === 'upcoming') return 2;
+      if (group.status === 'finished') return 3;
+      return 4;
+    };
+
+    return (overview?.groups || [])
+      .slice()
+      .sort((a, b) => {
+        const priorityDiff = getGroupPriority(a) - getGroupPriority(b);
+        if (priorityDiff !== 0) return priorityDiff;
+        return (a.position || 0) - (b.position || 0);
+      });
   }, [overview?.groups]);
 
   const koMatchesByRound = useMemo(() => {
