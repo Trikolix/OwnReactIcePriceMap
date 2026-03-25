@@ -614,7 +614,6 @@ try {
         $mailBody .= "Wir freuen uns schon darauf, dich bei der Ice-Tour begrüßen zu dürfen. Bis dahin kannst du in der {$appBaseUrl} schon aktiv werden:\n";
         $mailBody .= "- Profilbild hochladen\n";
         $mailBody .= "- Ein Probe-Eis einchecken\n";
-        $mailBody .= "- Bei der aktuellen Geburtstagsaktion mitmachen\n";
         $mailBody .= "- Bei der laufenden Foto-Challenge abstimmen und tolle Preise gewinnen\n\n";
         $mailBody .= "Viele Grüße\nIce-App Team";
         $mailSent = iceapp_send_utf8_text_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);

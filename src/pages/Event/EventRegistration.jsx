@@ -81,33 +81,36 @@ const Label = styled.label`
 const Input = styled.input`
   width: 100%;
   padding: 0.55em 0.8em;
-  border: 1px solid #ffd77a;
+  border: 1px solid ${({ $invalid }) => ($invalid ? "#ef4444" : "#ffd77a")};
   border-radius: 6px;
   font-size: 1rem;
   margin-bottom: 0.5rem;
-  background: #fff;
+  background: ${({ $invalid }) => ($invalid ? "#fff5f5" : "#fff")};
   box-sizing: border-box;
+  box-shadow: ${({ $invalid }) => ($invalid ? "0 0 0 3px rgba(239, 68, 68, 0.12)" : "none")};
 `;
 const Textarea = styled.textarea`
   width: 100%;
   padding: 0.6em 0.8em;
-  border: 1px solid #ffd77a;
+  border: 1px solid ${({ $invalid }) => ($invalid ? "#ef4444" : "#ffd77a")};
   border-radius: 6px;
   font-size: 1rem;
   margin-bottom: 0.5rem;
-  background: #fff;
+  background: ${({ $invalid }) => ($invalid ? "#fff5f5" : "#fff")};
   min-height: 90px;
   resize: vertical;
   box-sizing: border-box;
+  box-shadow: ${({ $invalid }) => ($invalid ? "0 0 0 3px rgba(239, 68, 68, 0.12)" : "none")};
 `;
 const Select = styled.select`
   width: 100%;
   padding: 0.55em 0.8em;
-  border: 1px solid #ffd77a;
+  border: 1px solid ${({ $invalid }) => ($invalid ? "#ef4444" : "#ffd77a")};
   border-radius: 6px;
   font-size: 1rem;
   margin-bottom: 0.5rem;
-  background: #fff;
+  background: ${({ $invalid }) => ($invalid ? "#fff5f5" : "#fff")};
+  box-shadow: ${({ $invalid }) => ($invalid ? "0 0 0 3px rgba(239, 68, 68, 0.12)" : "none")};
 `;
 const Button = styled.button`
   display: inline-flex;
@@ -148,6 +151,10 @@ const CheckboxLabel = styled.label`
   gap: 0.6rem;
   font-size: 0.97rem;
   margin-bottom: 0.6rem;
+  padding: ${({ $invalid }) => ($invalid ? "0.65rem 0.75rem" : "0")};
+  border-radius: 10px;
+  border: ${({ $invalid }) => ($invalid ? "1px solid #fecaca" : "none")};
+  background: ${({ $invalid }) => ($invalid ? "#fff5f5" : "transparent")};
 `;
 const GridRow = styled.div`
   display: grid;
@@ -276,6 +283,15 @@ const LegalSmall = styled.p`
   font-size: 0.9rem;
   line-height: 1.45;
 `;
+const LegalLink = styled.a`
+  color: var(--event-accent);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
 
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
@@ -339,6 +355,8 @@ export default function EventRegistration() {
   const [activeAddonCheckoutId, setActiveAddonCheckoutId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [validationMessage, setValidationMessage] = useState(null);
+  const [invalidFields, setInvalidFields] = useState({});
 
   useEffect(() => {
     let aborted = false;
@@ -486,6 +504,12 @@ export default function EventRegistration() {
   }, [normalizedDonationAmount, normalizedGiftVoucherQuantity, voucherLookup]);
 
   const handleParticipantChange = (field, value) => {
+    setInvalidFields((prev) => {
+      if (!prev[`participant_${field}`]) return prev;
+      const next = { ...prev };
+      delete next[`participant_${field}`];
+      return next;
+    });
     setParticipant((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "routeKey") {
@@ -500,12 +524,67 @@ export default function EventRegistration() {
     });
   };
 
+  const clearInvalidField = (field) => {
+    setInvalidFields((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const focusInvalidField = (field) => {
+    if (!field) return;
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector(`[data-field="${field}"]`);
+      if (!target) return;
+      const headerOffset = 132;
+      const targetTop = target.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top: Math.max(targetTop, 0), behavior: "smooth" });
+      if (typeof target.focus === "function") {
+        target.focus({ preventScroll: true });
+      }
+    });
+  };
+
+  const validateRegistrationForm = () => {
+    const nextInvalidFields = {};
+
+    if (!isLoggedIn) {
+      if (!newAccount.username.trim()) nextInvalidFields.account_username = true;
+      if (!newAccount.email.trim()) nextInvalidFields.account_email = true;
+      if (!newAccount.password.trim()) nextInvalidFields.account_password = true;
+      if (!acceptAccountTerms) nextInvalidFields.accept_account_terms = true;
+    }
+
+    if (!participant.name.trim()) nextInvalidFields.participant_name = true;
+    if (!participant.email.trim()) nextInvalidFields.participant_email = true;
+    if (!acceptWaiver) nextInvalidFields.accept_waiver = true;
+    if (clothingInterest !== "none" && !jerseySize) nextInvalidFields.jersey_size = true;
+    if (clothingInterest === "kit_interest" && !bibSize) nextInvalidFields.bib_size = true;
+    if (voucherCode.trim() && voucherLookup && !voucherLookup.valid) nextInvalidFields.voucher_code = true;
+
+    setInvalidFields(nextInvalidFields);
+
+    const firstInvalidField = Object.keys(nextInvalidFields)[0];
+    if (firstInvalidField) {
+      setValidationMessage("Bitte ergänze die markierten Pflichtfelder.");
+      focusInvalidField(firstInvalidField);
+      return false;
+    }
+
+    setValidationMessage(null);
+    return true;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!API_BASE || existingRegistration) return;
+    if (!validateRegistrationForm()) return;
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
+    setValidationMessage(null);
 
     const payload = {
       participant,
@@ -656,6 +735,7 @@ export default function EventRegistration() {
           <div>
             {loadingMeta && <StatusBanner>Eventdaten werden geladen...</StatusBanner>}
             {success && <StatusBanner tone="success">{success}</StatusBanner>}
+            {validationMessage && <StatusBanner tone="danger">{validationMessage}</StatusBanner>}
 
             {eventMeta && (
               <Card>
@@ -690,26 +770,63 @@ export default function EventRegistration() {
                       <GridRow>
                         <div>
                           <Label>Benutzername (neu)</Label>
-                          <Input value={newAccount.username} onChange={(e) => setNewAccount((prev) => ({ ...prev, username: e.target.value }))} required />
+                          <Input
+                            data-field="account_username"
+                            $invalid={Boolean(invalidFields.account_username)}
+                            value={newAccount.username}
+                            onChange={(e) => {
+                              clearInvalidField("account_username");
+                              setNewAccount((prev) => ({ ...prev, username: e.target.value }));
+                            }}
+                            required
+                          />
                         </div>
                         <div>
                           <Label>E-Mail (Account)</Label>
-                          <Input value={newAccount.email} type="email" onChange={(e) => setNewAccount((prev) => ({ ...prev, email: e.target.value }))} required />
+                          <Input
+                            data-field="account_email"
+                            $invalid={Boolean(invalidFields.account_email)}
+                            value={newAccount.email}
+                            type="email"
+                            onChange={(e) => {
+                              clearInvalidField("account_email");
+                              setNewAccount((prev) => ({ ...prev, email: e.target.value }));
+                            }}
+                            required
+                          />
                         </div>
                       </GridRow>
                       <Label>Passwort (mind. 6 Zeichen)</Label>
-                      <Input value={newAccount.password} type="password" onChange={(e) => setNewAccount((prev) => ({ ...prev, password: e.target.value }))} required />
-                      <CheckboxLabel>
-                        <input type="checkbox" checked={acceptAccountTerms} onChange={(e) => setAcceptAccountTerms(e.target.checked)} />
-                        <span>Ich akzeptiere die <a href="/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutzerklärung</a> und <a href="/community" target="_blank" rel="noreferrer">Community-Richtlinien</a>.</span>
+                      <Input
+                        data-field="account_password"
+                        $invalid={Boolean(invalidFields.account_password)}
+                        value={newAccount.password}
+                        type="password"
+                        onChange={(e) => {
+                          clearInvalidField("account_password");
+                          setNewAccount((prev) => ({ ...prev, password: e.target.value }));
+                        }}
+                        required
+                      />
+                      <CheckboxLabel $invalid={Boolean(invalidFields.accept_account_terms)}>
+                        <input
+                          data-field="accept_account_terms"
+                          type="checkbox"
+                          checked={acceptAccountTerms}
+                          onChange={(e) => {
+                            clearInvalidField("accept_account_terms");
+                            setAcceptAccountTerms(e.target.checked);
+                          }}
+                        />
+                        <span>Ich akzeptiere die <LegalLink href="/agb" target="_blank" rel="noreferrer">AGB</LegalLink>, <LegalLink href="/datenschutz" target="_blank" rel="noreferrer">Datenschutzerklärung</LegalLink> und <LegalLink href="/community" target="_blank" rel="noreferrer">Community-Richtlinien</LegalLink>.</span>
                       </CheckboxLabel>
                     </div>
                   )}
 
                   <Label>Vollständiger Name (Echtname)</Label>
-                  <Input value={participant.name} onChange={(e) => handleParticipantChange("name", e.target.value)} required />
+                  <Input data-field="participant_name" $invalid={Boolean(invalidFields.participant_name)} value={participant.name} onChange={(e) => handleParticipantChange("name", e.target.value)} required />
                   <Label>E-Mail-Adresse</Label>
-                  <Input value={participant.email} type="email" onChange={(e) => handleParticipantChange("email", e.target.value)} required />
+                  <Input data-field="participant_email" $invalid={Boolean(invalidFields.participant_email)} value={participant.email} type="email" onChange={(e) => handleParticipantChange("email", e.target.value)} required />
                   <Label>Route</Label>
                   <RouteGrid>
                     {ROUTE_OPTIONS.map((route) => (
@@ -913,7 +1030,16 @@ export default function EventRegistration() {
                   <GridRow style={{ marginTop: 12 }}>
                     <div>
                       <Label>Trikotgröße</Label>
-                      <Select value={jerseySize} onChange={(e) => setJerseySize(e.target.value)} required={clothingInterest !== "none"}>
+                      <Select
+                        data-field="jersey_size"
+                        $invalid={Boolean(invalidFields.jersey_size)}
+                        value={jerseySize}
+                        onChange={(e) => {
+                          clearInvalidField("jersey_size");
+                          setJerseySize(e.target.value);
+                        }}
+                        required={clothingInterest !== "none"}
+                      >
                         <option value="">Bitte wählen</option>
                         {TSHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
                       </Select>
@@ -921,7 +1047,16 @@ export default function EventRegistration() {
                     {clothingInterest === "kit_interest" && (
                       <div>
                         <Label>Hosengröße</Label>
-                        <Select value={bibSize} onChange={(e) => setBibSize(e.target.value)} required={clothingInterest === "kit_interest"}>
+                        <Select
+                          data-field="bib_size"
+                          $invalid={Boolean(invalidFields.bib_size)}
+                          value={bibSize}
+                          onChange={(e) => {
+                            clearInvalidField("bib_size");
+                            setBibSize(e.target.value);
+                          }}
+                          required={clothingInterest === "kit_interest"}
+                        >
                           <option value="">Bitte wählen</option>
                           {BIB_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
                         </Select>
@@ -966,8 +1101,13 @@ export default function EventRegistration() {
                   </Muted>
                   <Label>Gutschein-Code (optional)</Label>
                   <Input
+                    data-field="voucher_code"
+                    $invalid={Boolean(invalidFields.voucher_code)}
                     value={voucherCode}
-                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      clearInvalidField("voucher_code");
+                      setVoucherCode(e.target.value.toUpperCase());
+                    }}
                     onBlur={lookupVoucher}
                     placeholder="AB12-CD34-EF56"
                   />
@@ -975,8 +1115,17 @@ export default function EventRegistration() {
                 </Card>
                 <Card>
                   <CardTitle><ShieldAlert /> Teilnahmebedingungen & Newsletter</CardTitle>
-                  <CheckboxLabel>
-                    <input type="checkbox" checked={acceptWaiver} onChange={(e) => setAcceptWaiver(e.target.checked)} required />
+                  <CheckboxLabel $invalid={Boolean(invalidFields.accept_waiver)}>
+                    <input
+                      data-field="accept_waiver"
+                      type="checkbox"
+                      checked={acceptWaiver}
+                      onChange={(e) => {
+                        clearInvalidField("accept_waiver");
+                        setAcceptWaiver(e.target.checked);
+                      }}
+                      required
+                    />
                     <span>Ich habe die <LiabilityWaiver /> gelesen und akzeptiere die Teilnahmebedingungen in der aktuellen Version.</span>
                   </CheckboxLabel>
                   <CheckboxLabel>
@@ -1030,7 +1179,7 @@ export default function EventRegistration() {
                     Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
                   </LegalSmall>
                   <LegalSmall>
-                    Weitere Informationen: <a href="/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
+                    Weitere Informationen: <LegalLink href="/impressum" target="_blank" rel="noreferrer">Impressum</LegalLink>, <LegalLink href="/agb" target="_blank" rel="noreferrer">AGB</LegalLink>, <LegalLink href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</LegalLink>.
                   </LegalSmall>
                   <LegalSmall>{EVENT_WITHDRAWAL_NOTICE}</LegalSmall>
                   <LegalSmall>
@@ -1050,7 +1199,7 @@ export default function EventRegistration() {
                     Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
                   </LegalSmall>
                   <LegalSmall>
-                    Weitere Informationen: <a href="/impressum" target="_blank" rel="noreferrer">Impressum</a>, <a href="/agb" target="_blank" rel="noreferrer">AGB</a>, <a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</a>.
+                    Weitere Informationen: <LegalLink href="/impressum" target="_blank" rel="noreferrer">Impressum</LegalLink>, <LegalLink href="/agb" target="_blank" rel="noreferrer">AGB</LegalLink>, <LegalLink href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</LegalLink>.
                   </LegalSmall>
                   <LegalSmall>
                     Mit Klick auf „Zusätzliche Startplätze verbindlich reservieren“ gibst du eine verbindliche, zahlungspflichtige Zusatzreservierung ab.

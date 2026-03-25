@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
-import { formatRouteShortWithDistance } from "./eventConfig";
+import { formatRouteShortWithDistance, getPaceLabel, routeSupportsPace } from "./eventConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -132,6 +133,7 @@ const InfoRow = styled.div`
   gap: 1rem;
   border-bottom: 1px dashed rgba(138, 87, 0, 0.18);
   padding-bottom: 0.45rem;
+  flex-wrap: wrap;
 
   &:last-child {
     border-bottom: none;
@@ -147,6 +149,11 @@ const InfoValue = styled.span`
   color: #2d1d00;
   font-weight: 700;
   text-align: right;
+
+  @media (max-width: 720px) {
+    width: 100%;
+    text-align: left;
+  }
 `;
 
 const ActionRow = styled.div`
@@ -168,6 +175,16 @@ const ActionButton = styled.button`
   cursor: pointer;
 `;
 
+const AccountLink = styled(Link)`
+  color: #d97706;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
@@ -181,6 +198,12 @@ function formatDateTime(value) {
 
 function statusTone(status) {
   return status === "paid" ? "success" : undefined;
+}
+
+function formatWomenWavePreference(slot) {
+  if (!slot) return "-";
+  if (!routeSupportsPace(slot.route_key)) return "nicht relevant";
+  return slot.women_wave_opt_in ? "gewünscht" : "nein";
 }
 
 export default function EventAdminOverview() {
@@ -278,6 +301,11 @@ export default function EventAdminOverview() {
     [data, selectedAddonId]
   );
 
+  const selectedPrimarySlot = useMemo(
+    () => selectedRegistration?.slots?.[0] || null,
+    [selectedRegistration]
+  );
+
   return (
     <Page>
       <Seo
@@ -339,6 +367,8 @@ export default function EventAdminOverview() {
                       <th>Soll</th>
                       <th>Offen</th>
                       <th>Route</th>
+                      <th>Tempo</th>
+                      <th>Frauenwelle</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -358,6 +388,8 @@ export default function EventAdminOverview() {
                           <td>{formatEuro(registration.payment.expected_amount)}</td>
                           <td>{formatEuro(registration.payment.outstanding_amount)}</td>
                           <td>{primarySlot ? formatRouteShortWithDistance(primarySlot.route_key, primarySlot.distance_km) : "-"}</td>
+                          <td>{primarySlot ? getPaceLabel(primarySlot.pace_group) : "-"}</td>
+                          <td>{formatWomenWavePreference(primarySlot)}</td>
                         </ClickableRow>
                       );
                     })}
@@ -384,14 +416,6 @@ export default function EventAdminOverview() {
 
                 <DetailGrid>
                   <DetailSection>
-                    <DetailTitle>Registrierungsinfos</DetailTitle>
-                    <InfoList>
-                      <InfoRow><InfoLabel>Team / Verein</InfoLabel><InfoValue>{selectedRegistration.team_name || "-"}</InfoValue></InfoRow>
-                      <InfoRow><InfoLabel>Bemerkung</InfoLabel><InfoValue>{selectedRegistration.notes || "-"}</InfoValue></InfoRow>
-                    </InfoList>
-                  </DetailSection>
-
-                  <DetailSection>
                     <DetailTitle>Zahlung</DetailTitle>
                     <InfoList>
                       <InfoRow><InfoLabel>Status</InfoLabel><InfoValue>{selectedRegistration.payment.status}</InfoValue></InfoRow>
@@ -403,32 +427,20 @@ export default function EventAdminOverview() {
                     </InfoList>
                   </DetailSection>
 
-                  <DetailSection>
-                    <DetailTitle>Starter</DetailTitle>
-                    <TableWrap>
-                      <Table>
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Route</th>
-                            <th>Linked Account</th>
-                            <th>Status</th>
-                            <th>Bekleidung</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedRegistration.slots.map((slot) => (
-                            <tr key={slot.id}>
-                              <td>{slot.full_name}<div>{slot.email}</div></td>
-                              <td>{slot.route_name} ({slot.distance_km} km)</td>
-                              <td>{slot.linked_username || "-"}</td>
-                              <td>{slot.license_status}</td>
-                              <td>{slot.clothing_interest_label}{slot.jersey_size ? `, Trikot ${slot.jersey_size}` : ""}{slot.bib_size ? `, Hose ${slot.bib_size}` : ""}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </Table>
-                    </TableWrap>
+                  <DetailSection style={{ gridColumn: "1 / -1" }}>
+                    <DetailTitle>Registrierung & Starter</DetailTitle>
+                    <InfoList>
+                      <InfoRow><InfoLabel>Team / Verein</InfoLabel><InfoValue>{selectedRegistration.team_name || "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Bemerkung</InfoLabel><InfoValue>{selectedRegistration.notes || "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Name / E-Mail</InfoLabel><InfoValue>{selectedPrimarySlot ? <>{selectedPrimarySlot.full_name}<br />{selectedPrimarySlot.email}</> : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Route</InfoLabel><InfoValue>{selectedPrimarySlot ? `${selectedPrimarySlot.route_name} (${selectedPrimarySlot.distance_km} km)` : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Tempo</InfoLabel><InfoValue>{selectedPrimarySlot ? getPaceLabel(selectedPrimarySlot.pace_group) : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Frauenwelle</InfoLabel><InfoValue>{formatWomenWavePreference(selectedPrimarySlot)}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Linked Account</InfoLabel><InfoValue>{selectedPrimarySlot?.linked_user_id ? <AccountLink to={`/user/${selectedPrimarySlot.linked_user_id}`}>{selectedPrimarySlot.linked_username || `User #${selectedPrimarySlot.linked_user_id}`}</AccountLink> : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Bekleidung</InfoLabel><InfoValue>{selectedPrimarySlot ? `${selectedPrimarySlot.clothing_interest_label}${selectedPrimarySlot.jersey_size ? `, Trikot ${selectedPrimarySlot.jersey_size}` : ""}${selectedPrimarySlot.bib_size ? `, Hose ${selectedPrimarySlot.bib_size}` : ""}` : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Live-Karte</InfoLabel><InfoValue>{selectedPrimarySlot ? (selectedPrimarySlot.public_name_consent ? "Name sichtbar" : "Name verborgen") : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Starter-Status</InfoLabel><InfoValue>{selectedPrimarySlot?.license_status || "-"}</InfoValue></InfoRow>
+                    </InfoList>
                   </DetailSection>
 
                   {selectedRegistration.gift_vouchers.length > 0 && (

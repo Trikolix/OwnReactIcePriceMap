@@ -1026,13 +1026,19 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
             ), 0)
             +
             COALESCE((
-                SELECT SUM(GREATEST(r.gift_voucher_quantity - COALESCE(v.redeemed_count, 0), 0))
+                SELECT COUNT(*)
+                FROM event2026_gift_vouchers gv
+                WHERE gv.event_id = :event_id_open_vouchers
+                  AND gv.status NOT IN ('redeemed', 'cancelled')
+            ), 0)
+            +
+            COALESCE((
+                SELECT SUM(GREATEST(r.gift_voucher_quantity - COALESCE(v.created_count, 0), 0))
                 FROM event2026_registrations r
                 LEFT JOIN (
-                    SELECT purchased_by_registration_id AS registration_id, COUNT(*) AS redeemed_count
+                    SELECT purchased_by_registration_id AS registration_id, COUNT(*) AS created_count
                     FROM event2026_gift_vouchers
-                    WHERE event_id = :event_id_reg_voucher
-                      AND status = 'redeemed'
+                    WHERE event_id = :event_id_reg_voucher_created
                       AND purchased_by_registration_id IS NOT NULL
                     GROUP BY purchased_by_registration_id
                 ) v ON v.registration_id = r.id
@@ -1047,13 +1053,12 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
             ), 0)
             +
             COALESCE((
-                SELECT SUM(GREATEST(ap.gift_voucher_quantity - COALESCE(v.redeemed_count, 0), 0))
+                SELECT SUM(GREATEST(ap.gift_voucher_quantity - COALESCE(v.created_count, 0), 0))
                 FROM event2026_addon_purchases ap
                 LEFT JOIN (
-                    SELECT purchased_by_addon_purchase_id AS addon_purchase_id, COUNT(*) AS redeemed_count
+                    SELECT purchased_by_addon_purchase_id AS addon_purchase_id, COUNT(*) AS created_count
                     FROM event2026_gift_vouchers
-                    WHERE event_id = :event_id_addon_voucher
-                      AND status = 'redeemed'
+                    WHERE event_id = :event_id_addon_voucher_created
                       AND purchased_by_addon_purchase_id IS NOT NULL
                     GROUP BY purchased_by_addon_purchase_id
                 ) v ON v.addon_purchase_id = ap.id
@@ -1070,9 +1075,10 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':event_id_slots' => $eventId,
-        ':event_id_reg_voucher' => $eventId,
+        ':event_id_open_vouchers' => $eventId,
+        ':event_id_reg_voucher_created' => $eventId,
         ':event_id_reg' => $eventId,
-        ':event_id_addon_voucher' => $eventId,
+        ':event_id_addon_voucher_created' => $eventId,
         ':event_id_addon' => $eventId,
     ]);
     return (int) $stmt->fetchColumn();
