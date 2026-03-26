@@ -157,7 +157,13 @@ const RegionOverview = () => {
           <Title>{title}</Title>
           <HeroMeta>
             <MetaPill>{data.region_meta.shop_count || 0} Eisdielen</MetaPill>
-            {data.region_meta.bundesland?.name && <MetaPill>{data.region_meta.bundesland.name}</MetaPill>}
+            {data.region_meta.bundesland?.name && data.region_meta.bundesland?.id ? (
+              <MetaPill as={Link} to={`/region/bundesland/${data.region_meta.bundesland.id}`}>
+                {data.region_meta.bundesland.name}
+              </MetaPill>
+            ) : (
+              data.region_meta.bundesland?.name && <MetaPill>{data.region_meta.bundesland.name}</MetaPill>
+            )}
             {data.region_meta.land?.name && <MetaPill>{data.region_meta.land.name}</MetaPill>}
           </HeroMeta>
         </HeroCard>

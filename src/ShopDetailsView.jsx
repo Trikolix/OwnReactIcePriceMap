@@ -361,6 +361,11 @@ const ShopDetailsContent = ({
               </SuggestionButton>
             </SecondaryActionRow>
           )}
+          <SecondaryActionRow>
+            <FullscreenLink to={`/shop/${shopData.eisdiele.id}`}>
+              Vollansicht mit Statistiken öffnen
+            </FullscreenLink>
+          </SecondaryActionRow>
         </SectionCard>
 
         <SectionCard>
@@ -1052,6 +1057,24 @@ const SuggestionButton = styled.button`
 
   &:hover {
     color: #6f4300;
+  }
+`;
+
+const FullscreenLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.65rem;
+  border-radius: 12px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  color: #5a3900;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.1);
   }
 `;
 

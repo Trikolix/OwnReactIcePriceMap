@@ -41,3 +41,13 @@ function getCommentCountForRoute(PDO $pdo, int $routeId): int {
     return (int) $stmtKommentare->fetchColumn();
 }
 
+function isRouteLikedByUser(PDO $pdo, int $routeId, ?int $userId): bool {
+    if (!$userId || $routeId <= 0) {
+        return false;
+    }
+
+    // Route likes are not available in every deployment yet.
+    // Keep the detail endpoint stable until the corresponding table exists everywhere.
+    return false;
+}
+
