@@ -118,6 +118,19 @@ try {
         }
     }
 
+    $imageMetaById = [];
+    foreach ($groups as $group) {
+        foreach ($group['entries'] as $entry) {
+            $imageMetaById[(int)$entry['image_id']] = [
+                'title' => isset($entry['title']) ? $entry['title'] : null,
+                'url' => $entry['url'],
+                'beschreibung' => $entry['beschreibung'],
+                'username' => $entry['username'],
+                'nutzer_id' => (int)$entry['nutzer_id'],
+            ];
+        }
+    }
+
     $koMatches = [];
     $userVotesPerGroup = [];
     $userSubmissions = [];
@@ -131,25 +144,22 @@ try {
             }
             $userVotesPerGroup[$gid]++;
         }
-        // Fetch titles for KO matches
-        $stmtTitleA = $pdo->prepare("SELECT COALESCE(pci.title, s.title, b.beschreibung) AS title FROM bilder b LEFT JOIN photo_challenge_images pci ON pci.challenge_id = :challenge_id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = :challenge_id AND s.image_id = b.id WHERE b.id = :image_id LIMIT 1");
-        $stmtTitleA->execute(['challenge_id' => $challengeId, 'image_id' => $match['image_a_id']]);
-        $titleA = $stmtTitleA->fetchColumn();
-        $stmtTitleB = $pdo->prepare("SELECT COALESCE(pci.title, s.title, b.beschreibung) AS title FROM bilder b LEFT JOIN photo_challenge_images pci ON pci.challenge_id = :challenge_id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = :challenge_id AND s.image_id = b.id WHERE b.id = :image_id LIMIT 1");
-        $stmtTitleB->execute(['challenge_id' => $challengeId, 'image_id' => $match['image_b_id']]);
-        $titleB = $stmtTitleB->fetchColumn();
+        $imageAId = (int)$match['image_a_id'];
+        $imageBId = (int)$match['image_b_id'];
+        $imageATitle = $imageMetaById[$imageAId]['title'] ?? null;
+        $imageBTitle = $imageMetaById[$imageBId]['title'] ?? null;
         $payload = [
             'id' => (int)$match['id'],
             'phase' => $match['phase'],
             'round' => (int)$match['round'],
             'group_id' => $match['group_id'] ? (int)$match['group_id'] : null,
             'position' => (int)$match['position'],
-            'image_a_id' => (int)$match['image_a_id'],
-            'image_b_id' => (int)$match['image_b_id'],
+            'image_a_id' => $imageAId,
+            'image_b_id' => $imageBId,
             'image_a_url' => $match['image_a_url'],
             'image_b_url' => $match['image_b_url'],
-            'image_a_title' => $titleA,
-            'image_b_title' => $titleB,
+            'image_a_title' => $imageATitle,
+            'image_b_title' => $imageBTitle,
             'votes_a' => $summary['votes_a'],
             'votes_b' => $summary['votes_b'],
             'status' => $match['status'],
@@ -332,6 +342,28 @@ try {
     usort($koMatches, fn($a, $b) => $a['round'] <=> $b['round'] ?: $a['position'] <=> $b['position']);
     usort($groups, fn($a, $b) => $a['position'] <=> $b['position']);
 
+    $stmt = $pdo->prepare("
+        SELECT v.nutzer_id,
+               n.username,
+               COUNT(*) AS votes_count,
+               MAX(v.created_at) AS last_vote_at
+        FROM photo_challenge_votes v
+        JOIN photo_challenge_matches m ON m.id = v.match_id
+        LEFT JOIN nutzer n ON n.id = v.nutzer_id
+        WHERE m.challenge_id = :challenge_id
+        GROUP BY v.nutzer_id, n.username
+        ORDER BY votes_count DESC, last_vote_at DESC, v.nutzer_id ASC
+    ");
+    $stmt->execute(['challenge_id' => $challengeId]);
+    $voteStats = array_map(static function ($row) {
+        return [
+            'nutzer_id' => (int)$row['nutzer_id'],
+            'username' => $row['username'],
+            'votes_count' => (int)$row['votes_count'],
+            'last_vote_at' => $row['last_vote_at'],
+        ];
+    }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
     $winnerPayload = null;
     if ($challenge['status'] === 'finished') {
         $finalMatch = null;
@@ -386,6 +418,7 @@ try {
         ],
         'groups' => $groups,
         'ko_matches' => $koMatches,
+        'vote_stats' => $voteStats,
         'winner' => $winnerPayload,
         'user_submissions' => $userSubmissions,
     ];

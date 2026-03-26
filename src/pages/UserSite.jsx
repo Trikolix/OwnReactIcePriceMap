@@ -11,6 +11,7 @@ import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
+import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -637,11 +638,13 @@ function UserSite() {
                 <AwardsGrid ref={awardsGridRef}>
                   {displayedAwards.map((award, index) => {
                     const iconSources = getAwardIconSources(award?.icon_path, 512);
+                    const epicTier = getActiveAwardEffectTier(award?.ep);
 
                     return (
                       <AwardCard key={index}>
                         <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
                         <AwardImageButton
+                          $epicTier={epicTier}
                           type="button"
                           onClick={() => setSelectedAward({
                             src: iconSources.src || '',
@@ -649,11 +652,13 @@ function UserSite() {
                             title: award.title_de || 'Award',
                             description: award.description_de || '',
                             ep: award.ep ?? 0,
+                            epicTier,
                             awardedAt: award.awarded_at || null,
                           })}
                           aria-label={`Award ${award.title_de || ''} groß anzeigen`}
                         >
                           <AwardImage
+                            $epicTier={epicTier}
                             src={iconSources.src || ''}
                             data-fallback-src={iconSources.fallbackSrc || ''}
                             onError={handleAwardIconFallback}
@@ -718,6 +723,7 @@ function UserSite() {
                     Schließen
                   </AwardLightboxClose>
                   <AwardLightboxImage
+                    $epicTier={selectedAward.epicTier || getActiveAwardEffectTier(selectedAward.ep)}
                     src={selectedAward.src}
                     data-fallback-src={selectedAward.fallbackSrc || ''}
                     onError={handleAwardIconFallback}
@@ -1699,6 +1705,22 @@ const AwardsGrid = styled.div`
   }
 `;
 
+const AWARD_SHIMMER_KEYFRAMES = `
+  @keyframes awardShimmerSweep {
+    0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+    18% { opacity: 0.22; }
+    45% { opacity: 0.52; }
+    100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+  }
+
+  @keyframes awardShimmerSweepSecondary {
+    0% { transform: translateX(-180%) skewX(16deg); opacity: 0; }
+    28% { opacity: 0.12; }
+    52% { opacity: 0.3; }
+    100% { transform: translateX(240%) skewX(16deg); opacity: 0; }
+  }
+`;
+
 const AwardCard = styled.div`
   background-color: rgba(255, 252, 243, 0.95);
   border-radius: 14px;
@@ -1715,6 +1737,20 @@ const AwardImage = styled.img`
   max-width: 140px;
   height: 140px;
   object-fit: contain;
+  position: relative;
+  z-index: 1;
+  transition: filter 220ms ease;
+  ${({ $epicTier }) => $epicTier !== 'base' && `
+    filter: drop-shadow(0 0 12px rgba(255, 214, 122, 0.34)) saturate(1.06) contrast(1.03);
+  `}
+  ${({ $epicTier }) => $epicTier === 'legendary' && `
+    filter: drop-shadow(0 0 18px rgba(255, 197, 86, 0.44)) drop-shadow(0 0 28px rgba(255, 176, 58, 0.18)) saturate(1.12) contrast(1.05);
+  `}
+  ${({ $epicTier }) => $epicTier === 'mythic' && `
+    filter: drop-shadow(0 0 24px rgba(255, 196, 92, 0.52)) drop-shadow(0 0 44px rgba(255, 166, 48, 0.28)) brightness(1.08) saturate(1.18) contrast(1.08);
+  `}
+
+  ${AWARD_SHIMMER_KEYFRAMES}
 `;
 
 const AwardImageButton = styled.button`
@@ -1727,6 +1763,54 @@ const AwardImageButton = styled.button`
   padding: 0;
   cursor: zoom-in;
   border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -18%;
+    pointer-events: none;
+    opacity: ${({ $epicTier }) => ($epicTier === 'base' ? 0 : 1)};
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      transparent 30%,
+      rgba(255, 255, 255, ${({ $epicTier }) => ($epicTier === 'mythic' ? 0.22 : $epicTier === 'legendary' ? 0.14 : 0.1)}) 42%,
+      rgba(255, 246, 205, ${({ $epicTier }) => ($epicTier === 'mythic' ? 0.96 : $epicTier === 'legendary' ? 0.8 : 0.58)}) 50%,
+      rgba(255, 255, 255, ${({ $epicTier }) => ($epicTier === 'mythic' ? 0.3 : $epicTier === 'legendary' ? 0.18 : 0.12)}) 58%,
+      transparent 66%,
+      transparent 100%
+    );
+    animation: ${({ $epicTier }) =>
+      $epicTier === 'base'
+        ? 'none'
+        : $epicTier === 'mythic'
+          ? 'awardShimmerSweep 2.7s linear infinite'
+          : $epicTier === 'legendary'
+            ? 'awardShimmerSweep 3.2s linear infinite'
+            : 'awardShimmerSweep 4.2s linear infinite'};
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -22%;
+    pointer-events: none;
+    opacity: ${({ $epicTier }) => ($epicTier === 'mythic' ? 1 : 0)};
+    background:
+      linear-gradient(
+        72deg,
+        transparent 0%,
+        transparent 40%,
+        rgba(255, 255, 255, 0.14) 47%,
+        rgba(255, 230, 160, 0.44) 52%,
+        rgba(255, 255, 255, 0.08) 58%,
+        transparent 68%,
+        transparent 100%
+      );
+    animation: ${({ $epicTier }) => ($epicTier === 'mythic' ? 'awardShimmerSweepSecondary 1.9s linear infinite' : 'none')};
+  }
 `;
 
 const AwardTitle = styled.h3`
@@ -1789,12 +1873,27 @@ const AwardLightboxImage = styled.img`
   height: auto;
   border-radius: 8px;
   object-fit: contain;
+  position: relative;
+  z-index: 1;
+  transition: filter 220ms ease;
+  ${({ $epicTier }) => $epicTier !== 'base' && `
+    filter: drop-shadow(0 0 18px rgba(255, 214, 122, 0.36)) saturate(1.06) contrast(1.03);
+  `}
+  ${({ $epicTier }) => $epicTier === 'legendary' && `
+    filter: drop-shadow(0 0 24px rgba(255, 197, 86, 0.46)) drop-shadow(0 0 34px rgba(255, 176, 58, 0.2)) saturate(1.12) contrast(1.05);
+  `}
+  ${({ $epicTier }) => $epicTier === 'mythic' && `
+    filter: drop-shadow(0 0 30px rgba(255, 196, 92, 0.56)) drop-shadow(0 0 56px rgba(255, 166, 48, 0.3)) brightness(1.1) saturate(1.2) contrast(1.08);
+  `}
+
+  ${AWARD_SHIMMER_KEYFRAMES}
 `;
 
 const AwardLightboxClose = styled.button`
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 3;
   border: none;
   border-radius: 8px;
   background: #111827;

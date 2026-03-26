@@ -98,6 +98,75 @@ const buildPlanningFormFromChallenge = (challenge) => {
   };
 };
 
+const getImageDisplayLabel = (imageId, title) => {
+  const normalizedTitle = typeof title === 'string' ? title.trim() : '';
+  return normalizedTitle || `Bild #${imageId}`;
+};
+
+const getImageHoverLabel = (imageId, title) => {
+  const normalizedTitle = typeof title === 'string' ? title.trim() : '';
+  return normalizedTitle ? `${normalizedTitle} (#${imageId})` : `Bild #${imageId}`;
+};
+
+const formatVoteStatTimestamp = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('de-DE');
+};
+
+const getMatchStatusMeta = ({ matchStatus, groupStatus, round }) => {
+  if (groupStatus === 'finished') {
+    return { label: 'Voting beendet', variant: 'finished' };
+  }
+  if (groupStatus === 'upcoming') {
+    return { label: 'Startet später', variant: 'upcoming' };
+  }
+  if (matchStatus === 'closed') {
+    return { label: 'Abgeschlossen', variant: 'finished' };
+  }
+  if (typeof round === 'number') {
+    return { label: `Runde ${round} aktiv`, variant: 'open' };
+  }
+  return { label: 'Voting läuft', variant: 'open' };
+};
+
+const renderCompactMatch = (match, statusMeta, openImageLightbox) => (
+  <MatchRow key={match.id}>
+    <MatchParticipants>
+      <MatchLinkButton
+        type="button"
+        title={getImageHoverLabel(match.image_a_id, match.image_a_title)}
+        onClick={() =>
+          openImageLightbox({
+            url: match.image_a_url,
+            title: getImageDisplayLabel(match.image_a_id, match.image_a_title),
+          })
+        }
+      >
+        Bild #{match.image_a_id}
+      </MatchLinkButton>
+      <MatchVs>vs.</MatchVs>
+      <MatchLinkButton
+        type="button"
+        title={getImageHoverLabel(match.image_b_id, match.image_b_title)}
+        onClick={() =>
+          openImageLightbox({
+            url: match.image_b_url,
+            title: getImageDisplayLabel(match.image_b_id, match.image_b_title),
+          })
+        }
+      >
+        Bild #{match.image_b_id}
+      </MatchLinkButton>
+      <MatchVotes>
+        {match.votes_a}:{match.votes_b}
+      </MatchVotes>
+    </MatchParticipants>
+    <MatchStatus $variant={statusMeta.variant}>{statusMeta.label}</MatchStatus>
+  </MatchRow>
+);
+
 function PhotoChallengeAdmin() {
   const { userId, isLoggedIn } = useUser();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -130,6 +199,8 @@ function PhotoChallengeAdmin() {
   const [groupTimeDrafts, setGroupTimeDrafts] = useState({});
   const [groupTimeSaving, setGroupTimeSaving] = useState({});
   const [showChallengeImages, setShowChallengeImages] = useState(false);
+  const [showSubmissions, setShowSubmissions] = useState(true);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   const STATUS_LABELS = {
     draft: 'Entwurf',
@@ -205,6 +276,9 @@ function PhotoChallengeAdmin() {
     return stats;
   }, [submissions]);
 
+  const isSubmissionSectionCollapsible = ['group_running', 'ko_running', 'finished'].includes(challengeStatus);
+  const voteStats = overview?.vote_stats || [];
+
   const getGroupTimeDraft = useCallback(
     (groupId) => {
       const group = overview?.groups?.find((entry) => entry.id === groupId);
@@ -220,6 +294,23 @@ function PhotoChallengeAdmin() {
     setGroupTimeDrafts({});
     setGroupTimeSaving({});
   }, [overview?.challenge?.id, overview?.groups?.length]);
+
+  useEffect(() => {
+    setShowSubmissions(!isSubmissionSectionCollapsible);
+  }, [selectedChallengeId, isSubmissionSectionCollapsible]);
+
+  useEffect(() => {
+    if (!lightboxImage) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setLightboxImage(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [lightboxImage]);
 
   const showFeedback = (message, variant = 'info') => {
     setFeedback({ message, variant });
@@ -468,6 +559,16 @@ function PhotoChallengeAdmin() {
     setImageResults([]);
     setImageSearchPage(1);
     setImageSearchHasMore(false);
+  };
+
+  const openImageLightbox = (image) => {
+    if (!image?.url) return;
+    setLightboxImage({
+      src: buildAssetUrl(image.url),
+      alt: image.alt || image.beschreibung || image.title || 'Challenge-Bild',
+      title: image.title || null,
+      subtitle: image.subtitle || null,
+    });
   };
 
   const handleStartGroupPhase = async () => {
@@ -812,7 +913,19 @@ function PhotoChallengeAdmin() {
 
   const renderImageCard = (image, inChallenge) => (
     <ImageCard key={`${inChallenge ? 'assigned' : 'candidate'}-${image.image_id || image.id}`}>
-      <ImagePreview src={buildAssetUrl(image.url)} alt={image.beschreibung || 'Eisfoto'} />
+      <ImagePreviewButton
+        type="button"
+        onClick={() =>
+          openImageLightbox({
+            url: image.url,
+            title: getImageDisplayLabel(image.image_id || image.id, image.title || image.beschreibung),
+            beschreibung: image.beschreibung,
+            subtitle: image.username || null,
+          })
+        }
+      >
+        <ImagePreview src={buildAssetUrl(image.url)} alt={image.beschreibung || 'Eisfoto'} />
+      </ImagePreviewButton>
       <ImageInfo>
         <strong>#{image.image_id || image.id}</strong>
         <span>{image.username || 'Unbekannt'}</span>
@@ -1354,9 +1467,16 @@ function PhotoChallengeAdmin() {
               <PanelCard>
                 <PanelHeader>
                   <h3>Einreichungen</h3>
-                  <button type="button" onClick={() => loadSubmissions(selectedChallengeId)} disabled={submissionsLoading}>
-                    Aktualisieren
-                  </button>
+                  <PanelHeaderActions>
+                    {isSubmissionSectionCollapsible && (
+                      <button type="button" onClick={() => setShowSubmissions((prev) => !prev)}>
+                        {showSubmissions ? 'Einklappen' : 'Ausklappen'}
+                      </button>
+                    )}
+                    <button type="button" onClick={() => loadSubmissions(selectedChallengeId)} disabled={submissionsLoading}>
+                      Aktualisieren
+                    </button>
+                  </PanelHeaderActions>
                 </PanelHeader>
                 <SubmissionMeta>
                   <span>
@@ -1378,49 +1498,101 @@ function PhotoChallengeAdmin() {
                       : 'keine'}
                   </span>
                   <span>Deadline erreicht: {submissionDeadlinePassed ? 'ja' : 'nein'}</span>
+                  <span>Einreichungen: {submissionStats.total}</span>
+                  <span>Offen: {submissionStats.pending}</span>
+                  <span>Übernommen: {submissionStats.accepted}</span>
+                  <span>Abgelehnt: {submissionStats.rejected}</span>
                 </SubmissionMeta>
-                {submissionsLoading && <PlaceholderText>Lade Einreichungen…</PlaceholderText>}
-                {!submissionsLoading && !submissions.length && (
-                  <PlaceholderText>Noch keine Einreichungen vorhanden.</PlaceholderText>
+                {showSubmissions ? (
+                  <>
+                    {submissionsLoading && <PlaceholderText>Lade Einreichungen…</PlaceholderText>}
+                    {!submissionsLoading && !submissions.length && (
+                      <PlaceholderText>Noch keine Einreichungen vorhanden.</PlaceholderText>
+                    )}
+                    {!submissionsLoading && submissions.length > 0 && (
+                      <SubmissionList>
+                        {submissions.map((submission) => (
+                          <SubmissionCard key={submission.id}>
+                            <SubmissionImageButton
+                              type="button"
+                              onClick={() =>
+                                openImageLightbox({
+                                  url: submission.url,
+                                  title: getImageDisplayLabel(submission.image_id, submission.title),
+                                  beschreibung: submission.beschreibung,
+                                  subtitle: submission.username || `User ${submission.nutzer_id}`,
+                                })
+                              }
+                            >
+                              <SubmissionImage src={buildAssetUrl(submission.url)} alt={submission.beschreibung || `Bild ${submission.image_id}`} />
+                            </SubmissionImageButton>
+                            <SubmissionInfo>
+                              <strong>{getImageDisplayLabel(submission.image_id, submission.title)}</strong>
+                              <span>von {submission.username || `User ${submission.nutzer_id}`}</span>
+                              <small>{new Date(submission.created_at).toLocaleString('de-DE')}</small>
+                            </SubmissionInfo>
+                            <SubmissionStatusChip
+                              $variant={
+                                submission.status === 'accepted'
+                                  ? 'voted'
+                                  : submission.status === 'pending'
+                                  ? 'open'
+                                  : 'closed'
+                              }
+                            >
+                              {submission.status === 'accepted'
+                                ? 'Übernommen'
+                                : submission.status === 'rejected'
+                                ? 'Abgelehnt'
+                                : 'Wartet auf Entscheidung'}
+                            </SubmissionStatusChip>
+                            {submission.status === 'pending' && isPlanningPhase && (
+                              <SubmissionActions>
+                                <SecondaryButton type="button" onClick={() => handleSubmissionAction(submission.id, 'approve')}>
+                                  Übernehmen
+                                </SecondaryButton>
+                                <InlineResetButton type="button" onClick={() => handleSubmissionAction(submission.id, 'reject')}>
+                                  Ablehnen
+                                </InlineResetButton>
+                              </SubmissionActions>
+                            )}
+                          </SubmissionCard>
+                        ))}
+                      </SubmissionList>
+                    )}
+                  </>
+                ) : (
+                  <CollapsedHint>
+                    Abschnitt eingeklappt. {submissionStats.total} Einreichungen vorhanden, davon {submissionStats.pending} offen.
+                  </CollapsedHint>
                 )}
-                {!submissionsLoading && submissions.length > 0 && (
-                  <SubmissionList>
-                    {submissions.map((submission) => (
-                      <SubmissionCard key={submission.id}>
-                        <SubmissionImage src={buildAssetUrl(submission.url)} alt={submission.beschreibung || `Bild ${submission.image_id}`} />
-                        <SubmissionInfo>
-                          <strong>{submission.title || `Bild #${submission.image_id}`}</strong>
-                          <span>von {submission.username || `User ${submission.nutzer_id}`}</span>
-                          <small>{new Date(submission.created_at).toLocaleString()}</small>
-                        </SubmissionInfo>
-                        <SubmissionStatusChip
-                          $variant={
-                            submission.status === 'accepted'
-                              ? 'voted'
-                              : submission.status === 'pending'
-                              ? 'open'
-                              : 'closed'
-                          }
-                        >
-                          {submission.status === 'accepted'
-                            ? 'Übernommen'
-                            : submission.status === 'rejected'
-                            ? 'Abgelehnt'
-                            : 'Wartet auf Entscheidung'}
-                        </SubmissionStatusChip>
-                        {submission.status === 'pending' && isPlanningPhase && (
-                          <SubmissionActions>
-                            <SecondaryButton type="button" onClick={() => handleSubmissionAction(submission.id, 'approve')}>
-                              Übernehmen
-                            </SecondaryButton>
-                            <InlineResetButton type="button" onClick={() => handleSubmissionAction(submission.id, 'reject')}>
-                              Ablehnen
-                            </InlineResetButton>
-                          </SubmissionActions>
-                        )}
-                      </SubmissionCard>
+              </PanelCard>
+            )}
+
+            {selectedChallenge && (
+              <PanelCard>
+                <PanelHeader>
+                  <h3>Vote-Statistik</h3>
+                  <span>{voteStats.length} Nutzer</span>
+                </PanelHeader>
+                {voteStats.length === 0 ? (
+                  <PlaceholderText>Noch keine Votes für diese Challenge vorhanden.</PlaceholderText>
+                ) : (
+                  <VoteStatsList>
+                    {voteStats.map((entry, index) => (
+                      <VoteStatRow key={entry.nutzer_id}>
+                        <strong>
+                          {index + 1}. {entry.username || `User ${entry.nutzer_id}`}
+                        </strong>
+                        <span>{entry.votes_count} Votes</span>
+                        <small>
+                          {formatVoteStatTimestamp(entry.last_vote_at)
+                            ? `Letzter Vote: ${formatVoteStatTimestamp(entry.last_vote_at)}`
+                            : 'Zeitpunkt unbekannt'}
+                        </small>
+                      </VoteStatRow>
                     ))}
-                  </SubmissionList>
+                  </VoteStatsList>
                 )}
               </PanelCard>
             )}
@@ -1512,6 +1684,7 @@ function PhotoChallengeAdmin() {
                     const draft = groupTimeDrafts[group.id] ?? getGroupTimeDraft(group.id);
                     const saving = Boolean(groupTimeSaving[group.id]);
                     const hasLocalChanges = Boolean(groupTimeDrafts[group.id]);
+                    const groupMatchStatus = getMatchStatusMeta({ groupStatus: group.status });
                     // Stimmen berechnen und sortieren
                     const sortedEntries = [...group.entries].sort((a, b) => {
                       const votesA = (a.votes ?? 0);
@@ -1538,11 +1711,27 @@ function PhotoChallengeAdmin() {
                             }
                             return (
                               <li key={entry.image_id} className={entryClass}>
-                                <span>#{entry.seed}</span>
-                                <img src={buildAssetUrl(entry.url)} alt={entry.beschreibung || 'Eisfoto'} />
+                                <EntryBadge>
+                                  <strong>#{entry.image_id}</strong>
+                                  <small>Seed {entry.seed}</small>
+                                </EntryBadge>
+                                <EntryImageButton
+                                  type="button"
+                                  title={getImageHoverLabel(entry.image_id, entry.title)}
+                                  onClick={() =>
+                                    openImageLightbox({
+                                      url: entry.url,
+                                      title: getImageDisplayLabel(entry.image_id, entry.title),
+                                      beschreibung: entry.beschreibung,
+                                      subtitle: entry.username || null,
+                                    })
+                                  }
+                                >
+                                  <img src={buildAssetUrl(entry.url)} alt={entry.beschreibung || 'Eisfoto'} />
+                                </EntryImageButton>
                                 <div>
-                                  <strong>{entry.username || `Bild ${entry.image_id}`}</strong>
-                                  {entry.beschreibung && <small>{entry.beschreibung}</small>}
+                                  <strong title={getImageHoverLabel(entry.image_id, entry.title)}>Bild #{entry.image_id}</strong>
+                                  {entry.username && <small>von {entry.username}</small>}
                                   <small>Stimmen: {entry.votes ?? 0}</small>
                                 </div>
                               </li>
@@ -1553,20 +1742,7 @@ function PhotoChallengeAdmin() {
                           <>
                             <SectionTitle>Duelle</SectionTitle>
                             <MatchesList>
-                              {group.matches.map((match) => (
-                                <MatchRow key={match.id}>
-                                  <MatchParticipants>
-                                    <span>
-                                      Bild #{match.image_a_id} · {match.votes_a} Stimme(n)
-                                    </span>
-                                    <span>vs.</span>
-                                    <span>
-                                      Bild #{match.image_b_id} · {match.votes_b} Stimme(n)
-                                    </span>
-                                  </MatchParticipants>
-                                  <MatchStatus>{match.status === 'open' ? 'Offen' : 'Beendet'}</MatchStatus>
-                                </MatchRow>
-                              ))}
+                              {group.matches.map((match) => renderCompactMatch(match, groupMatchStatus, openImageLightbox))}
                             </MatchesList>
                           </>
                         )}
@@ -1654,20 +1830,13 @@ function PhotoChallengeAdmin() {
                       <div key={round} style={{ marginBottom: '1.5rem' }}>
                         <SectionTitle>{phaseLabel}</SectionTitle>
                         <MatchesList>
-                          {matches.map((match) => (
-                            <MatchRow key={match.id}>
-                              <MatchParticipants>
-                                <span>
-                                  #{match.image_a_id} · {match.votes_a} Stimme(n)
-                                </span>
-                                <span>vs.</span>
-                                <span>
-                                  #{match.image_b_id} · {match.votes_b} Stimme(n)
-                                </span>
-                              </MatchParticipants>
-                              <MatchStatus>{match.status === 'open' ? `Runde ${match.round}` : 'Beendet'}</MatchStatus>
-                            </MatchRow>
-                          ))}
+                          {matches.map((match) =>
+                            renderCompactMatch(
+                              match,
+                              getMatchStatusMeta({ matchStatus: match.status, round: match.round }),
+                              openImageLightbox
+                            )
+                          )}
                         </MatchesList>
                       </div>
                     );
@@ -1678,6 +1847,22 @@ function PhotoChallengeAdmin() {
           </>
         )}
       </Content>
+      {lightboxImage && (
+        <LightboxOverlay onClick={() => setLightboxImage(null)}>
+          <LightboxCard onClick={(event) => event.stopPropagation()}>
+            <LightboxClose type="button" onClick={() => setLightboxImage(null)}>
+              Schließen
+            </LightboxClose>
+            <LightboxImage src={lightboxImage.src} alt={lightboxImage.alt} />
+            {(lightboxImage.title || lightboxImage.subtitle) && (
+              <LightboxCaption>
+                {lightboxImage.title && <strong>{lightboxImage.title}</strong>}
+                {lightboxImage.subtitle && <span>{lightboxImage.subtitle}</span>}
+              </LightboxCaption>
+            )}
+          </LightboxCard>
+        </LightboxOverlay>
+      )}
     </PageWrapper>
   );
 }
@@ -1772,6 +1957,12 @@ const PanelHeader = styled.div`
     border-radius: 999px;
     cursor: pointer;
   }
+`;
+
+const PanelHeaderActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 `;
 
 const Field = styled.div`
@@ -1980,6 +2171,13 @@ const ImageCard = styled.div`
   background: #fff;
 `;
 
+const ImagePreviewButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
+`;
+
 const ImagePreview = styled.img`
   width: 100%;
   height: 150px;
@@ -2075,6 +2273,7 @@ const GroupEntries = styled.ul`
     align-items: center;
     border-radius: 8px;
     transition: background 0.2s;
+    padding: 0.3rem;
   }
 
   li.advancer {
@@ -2100,7 +2299,30 @@ const GroupEntries = styled.ul`
 
   small {
     color: #777;
+    display: block;
   }
+`;
+
+const EntryBadge = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+
+  strong {
+    font-size: 0.95rem;
+  }
+
+  small {
+    color: #777;
+  }
+`;
+
+const EntryImageButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
 `;
 
 const MatchesList = styled.div`
@@ -2112,24 +2334,66 @@ const MatchesList = styled.div`
 const MatchRow = styled.div`
   border: 1px solid #f0f0f0;
   border-radius: 10px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.55rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #fafafa;
+  gap: 0.5rem;
+  @media (max-width: 720px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 `;
 
 const MatchParticipants = styled.div`
   display: flex;
-  gap: 0.35rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
-  font-size: 0.9rem;
+  align-items: center;
+`;
+
+const MatchLinkButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #0b5d8b;
+  cursor: zoom-in;
+  font-weight: 700;
+  font-size: 0.88rem;
+  line-height: 1.1;
+`;
+
+const MatchVs = styled.span`
+  color: #777;
+  font-size: 0.8rem;
+  font-weight: 600;
+`;
+
+const MatchVotes = styled.span`
+  color: #666278;
+  font-size: 0.8rem;
+  font-weight: 600;
 `;
 
 const MatchStatus = styled.span`
   font-size: 0.8rem;
   font-weight: 600;
-  color: #666;
+  color: ${({ $variant }) =>
+    $variant === 'finished'
+      ? '#2e7d32'
+      : $variant === 'upcoming'
+      ? '#8a5b00'
+      : '#0b5d8b'};
+  background: ${({ $variant }) =>
+    $variant === 'finished'
+      ? '#e6f6ea'
+      : $variant === 'upcoming'
+      ? '#fff4e6'
+      : '#e8f4ff'};
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  white-space: nowrap;
 `;
 
 const GroupTimeControls = styled.div`
@@ -2220,6 +2484,13 @@ const SubmissionImage = styled.img`
   }
 `;
 
+const SubmissionImageButton = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
+`;
+
 const SubmissionInfo = styled.div`
   display: flex;
   flex-direction: column;
@@ -2267,4 +2538,87 @@ const SubmissionStatusChip = styled.span`
       : $variant === 'open'
       ? '#a85b00'
       : '#2e7d32'};
+`;
+
+const CollapsedHint = styled.p`
+  margin: 0;
+  color: #6a6882;
+  font-size: 0.95rem;
+`;
+
+const VoteStatsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const VoteStatRow = styled.div`
+  border: 1px solid #ececf3;
+  border-radius: 14px;
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+
+  strong {
+    min-width: 220px;
+  }
+
+  span {
+    font-weight: 600;
+  }
+
+  small {
+    color: #777;
+  }
+`;
+
+const LightboxOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 18, 24, 0.78);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+`;
+
+const LightboxCard = styled.div`
+  width: min(960px, 100%);
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 18px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const LightboxClose = styled.button`
+  align-self: flex-end;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+`;
+
+const LightboxImage = styled.img`
+  width: 100%;
+  max-height: calc(90vh - 6rem);
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f5f5f7;
+`;
+
+const LightboxCaption = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  span {
+    color: #6a6882;
+  }
 `;
