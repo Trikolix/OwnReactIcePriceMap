@@ -42,6 +42,48 @@ try {
     ]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $routeCountsStmt = $pdo->prepare("SELECT
+            c.id AS checkpoint_id,
+            s.route_key,
+            COUNT(DISTINCT p.slot_id) AS checked_in_count
+        FROM event2026_checkpoints c
+        LEFT JOIN event2026_checkpoint_passages p
+            ON p.checkpoint_id = c.id
+            AND p.event_id = c.event_id
+        LEFT JOIN event2026_participant_slots s
+            ON s.id = p.slot_id
+        WHERE c.event_id = :event_id
+          AND c.stamp_card_mode = :stamp_card_mode
+          AND s.route_key IS NOT NULL
+        GROUP BY c.id, s.route_key");
+    $routeCountsStmt->execute([
+        ':event_id' => $eventId,
+        ':stamp_card_mode' => $mode,
+    ]);
+    $routeCountsByCheckpoint = [];
+    foreach ($routeCountsStmt->fetchAll(PDO::FETCH_ASSOC) as $routeCountRow) {
+        $checkpointId = (int) ($routeCountRow['checkpoint_id'] ?? 0);
+        $routeKey = event2026_normalize_route_key($routeCountRow['route_key'] ?? '');
+        if ($checkpointId <= 0 || $routeKey === '') {
+            continue;
+        }
+        if (!isset($routeCountsByCheckpoint[$checkpointId])) {
+            $routeCountsByCheckpoint[$checkpointId] = [];
+        }
+        $routeCountsByCheckpoint[$checkpointId][$routeKey] = (int) ($routeCountRow['checked_in_count'] ?? 0);
+    }
+
+    $portionCountStmt = $pdo->prepare("SELECT COUNT(*) 
+        FROM event2026_checkpoint_passages p
+        INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
+        WHERE p.event_id = :event_id
+          AND c.stamp_card_mode = :stamp_card_mode");
+    $portionCountStmt->execute([
+        ':event_id' => $eventId,
+        ':stamp_card_mode' => $mode,
+    ]);
+    $checkedInPortions = (int) $portionCountStmt->fetchColumn();
+
     $licensedCountsByRoute = [];
     if ($mode === 'test') {
         $licensedCountsByRoute = [
@@ -66,7 +108,10 @@ try {
         'status' => 'success',
         'mode' => $mode,
         'start_finish' => event2026_start_finish_config($pdo, $mode),
-        'items' => array_map(static function (array $row) use ($licensedCountsByRoute): array {
+        'stats' => [
+            'checked_in_portions' => $checkedInPortions,
+        ],
+        'items' => array_map(static function (array $row) use ($licensedCountsByRoute, $routeCountsByCheckpoint): array {
             $routeKeys = event2026_checkpoint_route_keys((string) ($row['route_keys_csv'] ?? ''));
             $licensedCount = 0;
             foreach ($routeKeys as $routeKey) {
@@ -82,6 +127,7 @@ try {
                 'route_labels' => array_map('event2026_route_label', $routeKeys),
                 'checked_in_count' => (int) $row['checked_in_count'],
                 'licensed_count' => $licensedCount,
+                'route_counts' => $routeCountsByCheckpoint[(int) $row['checkpoint_id']] ?? new stdClass(),
             ];
         }, $rows),
     ]);

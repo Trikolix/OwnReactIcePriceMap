@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Link, useSearchParams } from "react-router-dom";
@@ -13,6 +13,7 @@ import {
   ROUTE_OPTIONS,
   formatRouteShortWithDistanceByLabel,
   getRouteLabel,
+  getRouteShortLabel,
   getRouteThemeByLabel,
 } from "./eventConfig";
 import { useUser } from "../../context/UserContext";
@@ -58,6 +59,22 @@ const MapShell = styled.div`
   position: relative;
   flex: 1;
   min-height: 0;
+
+  .leaflet-top.leaflet-left .leaflet-control-zoom {
+    display: none;
+  }
+
+  .leaflet-marker-pane {
+    z-index: 650;
+  }
+
+  .leaflet-popup-pane {
+    z-index: 1300;
+  }
+
+  .leaflet-tooltip-pane {
+    z-index: 1250;
+  }
 `;
 
 const OverlayLayout = styled.div`
@@ -65,7 +82,7 @@ const OverlayLayout = styled.div`
   top: 12px;
   left: 12px;
   right: 12px;
-  z-index: 900;
+  z-index: 600;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -93,6 +110,27 @@ const MapInfo = styled.div`
   @media (max-width: 720px) {
     max-width: none;
     padding: 0.65rem 0.75rem;
+    display: ${({ $isVisible }) => ($isVisible ? "block" : "none")};
+  }
+`;
+
+const InfoToggleButton = styled.button`
+  display: none;
+  min-height: 38px;
+  align-self: flex-start;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 87, 0, 0.28);
+  background: rgba(255, 253, 250, 0.96);
+  color: #5a3900;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+
+  @media (max-width: 720px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 `;
 
@@ -494,6 +532,92 @@ const InfoText = styled.p`
   }
 `;
 
+const StatsCard = styled.div`
+  min-width: 260px;
+  background: rgba(255, 253, 250, 0.96);
+  border: 1px solid rgba(138, 87, 0, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  @media (max-width: 720px) {
+    min-width: 0;
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+  }
+`;
+
+const StatsHeading = styled.div`
+  font-weight: 800;
+  color: #5b3a00;
+  margin-bottom: 0.5rem;
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+`;
+
+const StatItem = styled.div`
+  min-width: 0;
+`;
+
+const StatValue = styled.div`
+  font-size: 1.2rem;
+  line-height: 1.05;
+  font-weight: 900;
+  color: #2f2100;
+`;
+
+const StatLabel = styled.div`
+  margin-top: 0.22rem;
+  color: #7c4f00;
+  font-size: 0.78rem;
+  line-height: 1.25;
+`;
+
+const RouteStatSummary = styled.div`
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+`;
+
+const RouteStatPill = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.48rem;
+  border-radius: 999px;
+  background: ${({ $bg }) => $bg || "#fff3c2"};
+  color: ${({ $color }) => $color || "#8a5700"};
+  border: 1px solid ${({ $border }) => $border || "#f0d79a"};
+  font-size: 0.74rem;
+  font-weight: 800;
+`;
+
+const CHECKPOINT_PROGRESS_BY_ROUTE = {
+  epic_4: [
+    { shopId: 314, distanceKm: 55 },
+    { shopId: 145, distanceKm: 82 },
+    { shopId: 111, distanceKm: 112 },
+    { shopId: 22, distanceKm: 137 },
+    { shopId: 293, distanceKm: 175 },
+  ],
+  classic_3: [
+    { shopId: 314, distanceKm: 55 },
+    { shopId: 145, distanceKm: 82 },
+    { shopId: 111, distanceKm: 112 },
+    { shopId: 293, distanceKm: 140 },
+  ],
+  family_2: [
+    { shopId: 145, distanceKm: 17 },
+    { shopId: 111, distanceKm: 40 },
+    { shopId: 293, distanceKm: 73 },
+  ],
+};
+
 const ROUTE_OVERLAYS = [
   { id: "route-175", label: "König (175 km)", color: "#dc2626", offsetPx: -7, gpx: route175Gpx },
   { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
@@ -717,6 +841,8 @@ export default function EventLiveMap() {
   const [expandedCheckins, setExpandedCheckins] = useState({});
   const [linkedCheckins, setLinkedCheckins] = useState({});
   const [startFinish, setStartFinish] = useState(EVENT_START_FINISH);
+  const [checkedInPortions, setCheckedInPortions] = useState(0);
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
 
   useEffect(() => {
     if (requestedMode === "test" && !isAdmin) {
@@ -768,6 +894,7 @@ export default function EventLiveMap() {
         if (!canceled) {
           setItems(json.items || []);
           setStartFinish(json.start_finish || EVENT_START_FINISH);
+          setCheckedInPortions(Number(json.stats?.checked_in_portions || 0));
         }
       })
       .catch((err) => {
@@ -805,6 +932,44 @@ export default function EventLiveMap() {
   );
 
   const bounds = useMemo(() => mapItems.map((item) => [item.lat, item.lng]), [mapItems]);
+
+  const liveStats = useMemo(() => {
+    const itemsByShopId = new Map(
+      items
+        .filter((item) => Number.isFinite(Number(item.shop_id)))
+        .map((item) => [Number(item.shop_id), item])
+    );
+
+    let totalKm = 0;
+    const routeBreakdown = ROUTE_OPTIONS.map((route) => {
+      const checkpoints = CHECKPOINT_PROGRESS_BY_ROUTE[route.key] || [];
+      let routeKm = 0;
+      let previousDistanceKm = 0;
+
+      checkpoints.forEach((checkpoint) => {
+        const item = itemsByShopId.get(checkpoint.shopId);
+        const reachedCount = Number(item?.route_counts?.[route.key] || 0);
+        const segmentDistanceKm = Math.max(0, checkpoint.distanceKm - previousDistanceKm);
+        routeKm += reachedCount * segmentDistanceKm;
+        previousDistanceKm = checkpoint.distanceKm;
+      });
+
+      totalKm += routeKm;
+
+      return {
+        routeKey: route.key,
+        shortLabel: getRouteShortLabel(route.key),
+        distanceKm: routeKm,
+        theme: route.badgeTone,
+      };
+    });
+
+    return {
+      totalKm,
+      checkedInPortions,
+      routeBreakdown,
+    };
+  }, [checkedInPortions, items]);
 
   const openDetails = async (item) => {
     setSelected(item);
@@ -894,7 +1059,10 @@ export default function EventLiveMap() {
       <Header />
       <MapShell>
         <OverlayLayout>
-          <MapInfo>
+          <InfoToggleButton type="button" onClick={() => setShowInfoPanel((prev) => !prev)}>
+            {showInfoPanel ? "Info ausblenden" : "Info anzeigen"}
+          </InfoToggleButton>
+          <MapInfo $isVisible={showInfoPanel}>
             <InfoHeading>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</InfoHeading>
             <InfoText>
               {mode === "test"
@@ -908,6 +1076,33 @@ export default function EventLiveMap() {
               </div>
             )}
           </MapInfo>
+
+          <StatsCard>
+            <StatsHeading>Live-Stand</StatsHeading>
+            <StatsGrid>
+              <StatItem>
+                <StatValue>{liveStats.totalKm.toLocaleString("de-DE")} km</StatValue>
+                <StatLabel>gemeinsam gefahren</StatLabel>
+              </StatItem>
+              <StatItem>
+                <StatValue>{liveStats.checkedInPortions.toLocaleString("de-DE")}</StatValue>
+                <StatLabel>Eisportionen eingecheckt</StatLabel>
+              </StatItem>
+            </StatsGrid>
+            <RouteStatSummary>
+              {liveStats.routeBreakdown.map((route) => (
+                <RouteStatPill
+                  key={route.routeKey}
+                  $bg={route.theme.background}
+                  $border={route.theme.border}
+                  $color={route.theme.text}
+                >
+                  <span>{route.shortLabel}</span>
+                  <span>{route.distanceKm.toLocaleString("de-DE")} km</span>
+                </RouteStatPill>
+              ))}
+            </RouteStatSummary>
+          </StatsCard>
 
           <RouteLegend>
             <div style={{ fontWeight: 700, color: "#5b3a00", marginBottom: "0.45rem" }}>Routen</div>
@@ -924,10 +1119,12 @@ export default function EventLiveMap() {
           <MapContainer
             center={[startFinish.lat, startFinish.lng]}
             zoom={10}
+            zoomControl={false}
             bounds={bounds}
             boundsOptions={{ padding: [50, 50] }}
             style={{ width: "100%", height: "100%" }}
           >
+            <ZoomControl position="bottomright" />
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
