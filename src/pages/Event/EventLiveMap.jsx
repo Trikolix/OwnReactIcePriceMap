@@ -619,9 +619,9 @@ const CHECKPOINT_PROGRESS_BY_ROUTE = {
 };
 
 const ROUTE_OVERLAYS = [
-  { id: "route-175", label: "König (175 km)", color: "#dc2626", offsetPx: -7, gpx: route175Gpx },
+  { id: "route-175", label: "König (175 km)", color: "#dc2626", offsetPx: 4, gpx: route175Gpx },
   { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
-  { id: "route-70", label: "Genuss (75 km)", color: "#16a34a", offsetPx: 7, gpx: route70Gpx },
+  { id: "route-70", label: "Genuss (75 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
 ];
 
 const OFFSET_ZOOM_THRESHOLD = 12;
