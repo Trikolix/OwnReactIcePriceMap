@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/mail.php';
+require_once __DIR__ . '/user_notification_settings.php';
 
 /**
  * Erkennt eine lokale/dev-Ausfuehrung anhand des Dateipfads (backend_dev).
@@ -31,6 +32,8 @@ function isBackendDevNotificationContext() {
  * @return void
  */
 function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $senderName, $extra = []) {
+    ensureUserNotificationSettingsSchema($pdo);
+
     // Nutzer-Email, Name, letzte Aktivität und letzte Email holen
     $stmt = $pdo->prepare("SELECT email, username, last_active_at, last_notification_email_at FROM nutzer WHERE id = ?");
     $stmt->execute([$userId]);
@@ -67,6 +70,8 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $settingField = 'notify_comment_participated';
     } elseif ($notificationType === 'news') {
         $settingField = 'notify_news';
+    } elseif ($notificationType === 'team_challenge') {
+        $settingField = 'notify_team_challenge';
     } else {
         $settingField = 'notify_comment';
     }
@@ -129,6 +134,43 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
             $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
         }
         $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+
+    } elseif ($notificationType === 'team_challenge') {
+        $action = (string)($extra['teamChallengeAction'] ?? 'update');
+        $challengeLink = '';
+        if (!empty($extra['teamChallengeId'])) {
+            $challengeLink = "https://ice-app.de/challenge?tab=team&teamChallengeId=" . urlencode((string)$extra['teamChallengeId']);
+        }
+
+        if ($action === 'invite') {
+            $mailSubject = "Ice-App: Neue Team-Challenge-Einladung";
+            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat dich zu einer Team-Challenge eingeladen.</p>";
+        } elseif ($action === 'accepted') {
+            $mailSubject = "Ice-App: Deine Team-Challenge wurde angenommen";
+            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deine Team-Challenge angenommen.</p>";
+        } elseif ($action === 'declined') {
+            $mailSubject = "Ice-App: Deine Team-Challenge wurde abgelehnt";
+            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deine Team-Challenge abgelehnt.</p>";
+        } elseif ($action === 'cancelled') {
+            $mailSubject = "Ice-App: Team-Challenge abgebrochen";
+            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat die Team-Challenge abgebrochen.</p>";
+        } elseif ($action === 'completed') {
+            $mailSubject = "Ice-App: Team-Challenge erfolgreich abgeschlossen";
+            $mailBody .= "<p>Eure Team-Challenge wurde erfolgreich abgeschlossen.</p>";
+        } else {
+            $mailSubject = "Ice-App: Update zu deiner Team-Challenge";
+            $mailBody .= "<p>Es gibt ein Update zu deiner Team-Challenge.</p>";
+        }
+
+        if (!empty($extra['shopName'])) {
+            $mailBody .= "<p>Ziel-Eisdiele: <strong>" . htmlspecialchars((string)$extra['shopName']) . "</strong></p>";
+        }
+
+        if ($challengeLink) {
+            $mailBody .= "<p>Direkter Link: <a href='" . $challengeLink . "' style='color:#0077b6;'>" . $challengeLink . "</a></p>";
+        }
+
+        $mailBody .= "<p>Details findest du direkt im Bereich Challenges der Ice-App.</p>";
 
      } else {
         // Unbekannter Typ

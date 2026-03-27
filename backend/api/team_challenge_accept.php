@@ -101,6 +101,7 @@ try {
     ]);
 
     teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], $challengeId, "{$challenge['invitee_username']} hat deine Team-Challenge angenommen.", 'accepted', 'proposal_open');
+    teamChallengeSendEmail($pdo, (int)$challenge['inviter_user_id'], $challenge['invitee_username'], 'accepted', $challengeId);
     $pdo->commit();
 
     echo json_encode([
@@ -114,4 +115,3 @@ try {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-

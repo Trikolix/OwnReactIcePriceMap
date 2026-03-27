@@ -46,6 +46,7 @@ try {
     ]);
 
     teamChallengeInsertNotification($pdo, $otherUserId, $challengeId, "{$actorName} hat die Team-Challenge abgebrochen.", 'cancelled', 'cancelled');
+    teamChallengeSendEmail($pdo, $otherUserId, $actorName, 'cancelled', $challengeId);
     $pdo->commit();
 
     echo json_encode(['status' => 'success']);

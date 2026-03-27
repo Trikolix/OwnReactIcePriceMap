@@ -68,20 +68,65 @@ function Statistics() {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'activeUsers';
+  const initialTabParam = searchParams.get('tab');
+  const initialTab = initialTabParam === 'rankings' ? 'activeUsers' : (initialTabParam || 'activeUsers');
+  const initialRankingPeriodParam = searchParams.get('period');
+  const initialRankingPeriod = ['overall', 'week', 'month'].includes(initialRankingPeriodParam)
+    ? initialRankingPeriodParam
+    : 'overall';
+  const initialRankingArchiveKey = initialRankingPeriod === 'overall' ? '' : (searchParams.get('period_key') || '');
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const [expandedFlavour, setExpandedFlavour] = useState(null);
   const [flavourDetails, setFlavourDetails] = useState({});
-  const [rankingPeriod, setRankingPeriod] = useState('week');
+  const [rankingPeriod, setRankingPeriod] = useState(initialRankingPeriod);
+  const [rankingArchiveKey, setRankingArchiveKey] = useState(initialRankingArchiveKey);
   const [rankingsData, setRankingsData] = useState(null);
   const [rankingsLoading, setRankingsLoading] = useState(false);
 
   // Tab wechseln und URL aktualisieren
   const changeTab = (tab) => {
     setActiveTab(tab);
-    setSearchParams({ tab }); // setzt ?tab=...
   };
+
+  useEffect(() => {
+    const nextTabParam = searchParams.get('tab');
+    const nextTab = nextTabParam === 'rankings' ? 'activeUsers' : (nextTabParam || 'activeUsers');
+    const nextPeriodParam = searchParams.get('period');
+    const nextPeriod = ['overall', 'week', 'month'].includes(nextPeriodParam) ? nextPeriodParam : 'overall';
+    const nextArchiveKey = nextPeriod === 'overall' ? '' : (searchParams.get('period_key') || '');
+
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+    if (nextPeriod !== rankingPeriod) {
+      setRankingPeriod(nextPeriod);
+    }
+    if (nextArchiveKey !== rankingArchiveKey) {
+      setRankingArchiveKey(nextArchiveKey);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', activeTab);
+
+    if (activeTab === 'activeUsers') {
+      nextParams.set('period', rankingPeriod);
+      if (rankingPeriod !== 'overall' && rankingArchiveKey) {
+        nextParams.set('period_key', rankingArchiveKey);
+      } else {
+        nextParams.delete('period_key');
+      }
+    } else {
+      nextParams.delete('period');
+      nextParams.delete('period_key');
+    }
+
+    if (nextParams.toString() !== searchParams.toString()) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [activeTab, rankingArchiveKey, rankingPeriod, searchParams, setSearchParams]);
 
   const fetchDashboard = async () => {
     setLoading(true);
@@ -118,17 +163,18 @@ function Statistics() {
   }, [apiUrl]);
 
   useEffect(() => {
-    if (activeTab !== 'rankings') {
+    if (activeTab !== 'activeUsers' || rankingPeriod === 'overall') {
       return;
     }
 
     let isCancelled = false;
     const userParam = userId ? `&user_id=${userId}` : '';
+    const archiveParam = rankingArchiveKey ? `&period_key=${encodeURIComponent(rankingArchiveKey)}` : '';
 
     const loadRankings = async () => {
       setRankingsLoading(true);
       try {
-        const response = await fetch(`${apiUrl}/api/period_leaderboard.php?period=${rankingPeriod}${userParam}`);
+        const response = await fetch(`${apiUrl}/api/period_leaderboard.php?period=${rankingPeriod}${archiveParam}${userParam}`);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -152,7 +198,13 @@ function Statistics() {
     return () => {
       isCancelled = true;
     };
-  }, [activeTab, apiUrl, rankingPeriod, userId]);
+  }, [activeTab, apiUrl, rankingArchiveKey, rankingPeriod, userId]);
+
+  useEffect(() => {
+    if (rankingPeriod === 'overall' && rankingArchiveKey) {
+      setRankingArchiveKey('');
+    }
+  }, [rankingArchiveKey, rankingPeriod]);
 
   const loadFlavourDetails = async (sortenname, iceType) => {
     const key = `${sortenname}__${iceType}`;
@@ -297,9 +349,13 @@ function Statistics() {
   };
 
   const hasRankingEntries = (rankingsData?.leaderboard || []).length > 0;
-  const emptyRankingMessage = rankingPeriod === 'month'
-    ? 'Noch keine Einträge diesen Monat. Verdiene durch eine Aktion EP und sei der erste in der Rangliste.'
-    : 'Noch keine Einträge diese Woche. Verdiene durch eine Aktion EP und sei der erste in der Rangliste.';
+  let emptyRankingMessage = 'Noch keine Einträge im Gesamtranking.';
+  if (rankingPeriod === 'month') {
+    emptyRankingMessage = 'Noch keine Einträge diesen Monat. Verdiene durch eine Aktion EP und sei der erste in der Rangliste.';
+  } else if (rankingPeriod === 'week') {
+    emptyRankingMessage = 'Noch keine Einträge diese Woche. Verdiene durch eine Aktion EP und sei der erste in der Rangliste.';
+  }
+  const archiveOptions = rankingsData?.period_meta?.archives || [];
 
 
   if (loading) return (
@@ -345,7 +401,7 @@ function Statistics() {
               $active={activeTab === 'activeUsers'}
               onClick={() => changeTab('activeUsers')}
             >
-              aktivste Benutzer
+              aktivste Nutzer
             </TabButton>
             <TabButton
               $active={activeTab === 'mostPopularFlavours'}
@@ -358,12 +414,6 @@ function Statistics() {
               onClick={() => changeTab('priceHierarchy')}
             >
               Preisübersicht
-            </TabButton>
-            <TabButton
-              $active={activeTab === 'rankings'}
-              onClick={() => changeTab('rankings')}
-            >
-              Rankings
             </TabButton>
           </TabContainer>
 
@@ -577,74 +627,57 @@ function Statistics() {
             </SectionCard>
             )}
 
-            {activeTab === 'activeUsers' && (<SectionCard>
 
-              <SectionTitle>Benutzer nach Level</SectionTitle>
-              <TableScrollArea>
-              <Table $stickyFirstColumn>
-                <thead>
-                  <tr>
-                    <Th>Nutzer</Th>
-                    <Th>EP Gesamt</Th>
-                    <Th>Checkins</Th>
-                    <Th>Bewertungen</Th>
-                    <Th>Preismeldungen</Th>
-                    <Th>Routen</Th>
-                    <Th>EP Eisdielen</Th>
-                    <Th>EP geworbene Nutzer</Th>
-                    <Th>EP Awards</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.usersByLevel.map((entry) => (
-                    <tr key={entry.nutzer_id}>
-                      <Td>
-                        <UserInfo>
-                          <UserAvatar
-                            size={34}
-                            userId={entry.nutzer_id}
-                            name={entry.username}
-                            avatarUrl={entry.avatar_url}
-                          />
-                          <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
-                        </UserInfo>
-                      </Td>
-                      <Td><strong>{entry.ep_gesamt}</strong></Td>
-                      <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
-                      <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
-                      <Td>{entry.anzahl_preismeldungen} ({entry.ep_preismeldungen}EP)</Td>
-                      <Td>{entry.anzahl_routen} ({entry.ep_routen}EP)</Td>
-                      <Td>{entry.ep_eisdielen} EP</Td>
-                      <Td>{entry.ep_geworbene_nutzer} EP</Td>
-                      <Td>{entry.ep_awards} EP</Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-              </TableScrollArea>
-            </SectionCard>
-            )}
-
-            {activeTab === 'rankings' && (
+            {activeTab === 'activeUsers' && (
               <SectionCard>
                 <SectionHeaderRow>
-                  <SectionTitle style={{ marginBottom: 0 }}>Wochen- und Monatsranglisten</SectionTitle>
+                  <SectionTitle style={{ marginBottom: 0 }}>Aktivste Nutzer</SectionTitle>
+                  <HeaderControls>
                   <PeriodToggle>
-                    <ToggleButton
-                      type="button"
-                      $active={rankingPeriod === 'week'}
-                      onClick={() => setRankingPeriod('week')}
-                    >
-                      Woche
-                    </ToggleButton>
-                    <ToggleButton
-                      type="button"
-                      $active={rankingPeriod === 'month'}
-                      onClick={() => setRankingPeriod('month')}
-                    >
-                      Monat
-                    </ToggleButton>
+                      <ToggleButton
+                        type="button"
+                        $active={rankingPeriod === 'overall'}
+                        onClick={() => {
+                          setRankingPeriod('overall');
+                          setRankingArchiveKey('');
+                        }}
+                      >
+                        Gesamt
+                      </ToggleButton>
+                      <ToggleButton
+                        type="button"
+                        $active={rankingPeriod === 'week'}
+                        onClick={() => {
+                          setRankingPeriod('week');
+                          setRankingArchiveKey('');
+                        }}
+                      >
+                        Woche
+                      </ToggleButton>
+                      <ToggleButton
+                        type="button"
+                        $active={rankingPeriod === 'month'}
+                        onClick={() => {
+                          setRankingPeriod('month');
+                          setRankingArchiveKey('');
+                        }}
+                      >
+                        Monat
+                      </ToggleButton>
                   </PeriodToggle>
+                  {rankingPeriod !== 'overall' && (
+                    <ArchiveSelect
+                      value={rankingArchiveKey || (rankingsData?.period_meta?.key ?? '')}
+                      onChange={(event) => setRankingArchiveKey(event.target.value)}
+                    >
+                      {archiveOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </ArchiveSelect>
+                  )}
+                  </HeaderControls>
                 </SectionHeaderRow>
 
                 {rankingPeriod === 'month' && (
@@ -653,8 +686,51 @@ function Statistics() {
                   </RankingDisclaimer>
                 )}
 
-                {rankingsLoading ? (
+                {rankingPeriod !== 'overall' && rankingsLoading ? (
                   <EmptyText>Lade Rankings…</EmptyText>
+                ) : rankingPeriod === 'overall' ? (
+                  <TableScrollArea>
+                    <Table $stickyFirstColumn>
+                      <thead>
+                        <tr>
+                          <Th>Nutzer</Th>
+                          <Th>EP Gesamt</Th>
+                          <Th>Checkins</Th>
+                          <Th>Bewertungen</Th>
+                          <Th>Preismeldungen</Th>
+                          <Th>Routen</Th>
+                          <Th>EP Eisdielen</Th>
+                          <Th>EP geworbene Nutzer</Th>
+                          <Th>EP Awards</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.usersByLevel.map((entry) => (
+                          <tr key={entry.nutzer_id}>
+                            <Td>
+                              <UserInfo>
+                                <UserAvatar
+                                  size={34}
+                                  userId={entry.nutzer_id}
+                                  name={entry.username}
+                                  avatarUrl={entry.avatar_url}
+                                />
+                                <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
+                              </UserInfo>
+                            </Td>
+                            <Td><strong>{entry.ep_gesamt}</strong></Td>
+                            <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
+                            <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
+                            <Td>{entry.anzahl_preismeldungen} ({entry.ep_preismeldungen}EP)</Td>
+                            <Td>{entry.anzahl_routen} ({entry.ep_routen}EP)</Td>
+                            <Td>{entry.ep_eisdielen} EP</Td>
+                            <Td>{entry.ep_geworbene_nutzer} EP</Td>
+                            <Td>{entry.ep_awards} EP</Td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </TableScrollArea>
                 ) : (
                   <>
                     {rankingsData?.current_user && (
@@ -665,7 +741,9 @@ function Statistics() {
                           <small>{rankingsData.current_user.total_ep} EP im Zeitraum</small>
                         </RankingHeroMain>
                         <RankingHeroMeta>
-                          <MetaPill>Restzeit: {formatCountdown(rankingsData.countdown)}</MetaPill>
+                          {rankingPeriod !== 'overall' && rankingsData.countdown && (
+                            <MetaPill>Restzeit: {formatCountdown(rankingsData.countdown)}</MetaPill>
+                          )}
                           {rankingsData.progress_to_next_rank && (
                             <MetaPill $accent>
                               Noch {rankingsData.progress_to_next_rank.missing_ep} EP bis Rang #{rankingsData.progress_to_next_rank.target_rank}
@@ -802,11 +880,28 @@ const SectionHeaderRow = styled.div`
   flex-wrap: wrap;
 `;
 
+const HeaderControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+`;
+
 const PeriodToggle = styled.div`
   display: inline-flex;
   background: rgba(47, 33, 0, 0.05);
   border-radius: 999px;
   padding: 4px;
+`;
+
+const ArchiveSelect = styled.select`
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2f2100;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  min-width: 180px;
 `;
 
 const ToggleButton = styled.button`

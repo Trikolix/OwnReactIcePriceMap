@@ -9,6 +9,7 @@ import Rating from './components/Rating';
 import { useUser } from './context/UserContext';
 import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
+import MetaPill from './components/RegionMetaPill';
 import FavoritenButton from './components/FavoritButton';
 import OpeningHours from './components/OpeningHours';
 import ShopWebsite from './components/ShopWebsite';
@@ -363,7 +364,7 @@ const ShopDetailsContent = ({
           )}
           <SecondaryActionRow>
             <FullscreenLink to={`/shop/${shopData.eisdiele.id}`}>
-              Vollansicht mit Statistiken öffnen
+              Zur Vollansicht
             </FullscreenLink>
           </SecondaryActionRow>
         </SectionCard>
@@ -792,24 +793,6 @@ const HeaderCtaBar = styled.div`
   margin: 0.55rem;
 `;
 
-const MetaPill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(47, 33, 0, 0.04);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  color: #5b4520;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-decoration: none;
-
-  &:hover {
-    background: rgba(255, 181, 34, 0.14);
-    color: #2f2100;
-  }
-`;
-
 const IceShopHeader = styled.h2`
   margin: 0;
   color: #2f2100;
@@ -1063,18 +1046,21 @@ const SuggestionButton = styled.button`
 const FullscreenLink = styled(Link)`
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 2.65rem;
-  border-radius: 12px;
-  border: 1px solid rgba(47, 33, 0, 0.12);
-  background: rgba(255, 255, 255, 0.82);
-  color: #5a3900;
+  gap: 0.35rem;
+  color: #7a4a00;
   font-weight: 700;
   text-decoration: none;
+  font-size: 0.92rem;
+  padding: 0.1rem 0;
 
   &:hover {
-    background: rgba(255, 181, 34, 0.1);
+    color: #5a3900;
+  }
+
+  &::after {
+    content: '›';
+    font-size: 1rem;
+    line-height: 1;
   }
 `;
 

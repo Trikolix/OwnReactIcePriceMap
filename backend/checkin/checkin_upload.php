@@ -5,6 +5,7 @@ require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
+require_once __DIR__ . '/../lib/user_notification_settings.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
@@ -41,6 +42,7 @@ require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/TheTasteOfChemnitzEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/TeamChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
 require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
 
@@ -245,6 +247,11 @@ try {
     }
 
     $__profiling['after_picturehandling'] = microtime(true);
+
+    // Schema-Checks koennen implizite Commits ausloesen (z. B. ALTER TABLE).
+    // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
+    ensureTeamChallengeSchema($pdo);
+    ensureUserNotificationSettingsSchema($pdo);
 
     // -------------------------
     // Datenbank-Transaktion starten
@@ -453,6 +460,7 @@ try {
         new DetailedCheckinCountEvaluator(),
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
+        new TeamChallengeCountEvaluator(),
         new MultipleVehicleEvaluator(),
         new SeasonalPresentEvaluator(),
     ];

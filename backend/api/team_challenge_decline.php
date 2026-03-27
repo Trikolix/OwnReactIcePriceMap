@@ -38,6 +38,7 @@ try {
     $stmt->execute(['id' => $challengeId]);
 
     teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], $challengeId, "{$challenge['invitee_username']} hat deine Team-Challenge abgelehnt.", 'declined', 'cancelled');
+    teamChallengeSendEmail($pdo, (int)$challenge['inviter_user_id'], $challenge['invitee_username'], 'declined', $challengeId);
     $pdo->commit();
 
     echo json_encode(['status' => 'success']);
@@ -48,4 +49,3 @@ try {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-

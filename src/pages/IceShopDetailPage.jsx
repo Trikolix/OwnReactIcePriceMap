@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from '../Header';
 import { useUser } from '../context/UserContext';
+import MetaPill from '../components/RegionMetaPill';
 import FavoritenButton from '../components/FavoritButton';
 import ShareIcon from '../components/ShareButton';
 import OpeningHours from '../components/OpeningHours';
@@ -461,13 +462,7 @@ const IceShopDetailPage = () => {
           <HeroContent>
             <HeroMetaRow>
               <StatusBadge $tone={statusMeta.tone}>{statusMeta.label}</StatusBadge>
-              {eisdiele.landkreis && eisdiele.landkreis_id ? (
-                <MetaPill as={Link} to={`/region/landkreis/${eisdiele.landkreis_id}`}>
-                  {eisdiele.landkreis}
-                </MetaPill>
-              ) : (
-                eisdiele.landkreis && <MetaPill>{eisdiele.landkreis}</MetaPill>
-              )}
+              {eisdiele.land && <MetaPill>{eisdiele.land}</MetaPill>}
               {eisdiele.bundesland && eisdiele.bundesland_id ? (
                 <MetaPill as={Link} to={`/region/bundesland/${eisdiele.bundesland_id}`}>
                   {eisdiele.bundesland}
@@ -475,7 +470,13 @@ const IceShopDetailPage = () => {
               ) : (
                 eisdiele.bundesland && <MetaPill>{eisdiele.bundesland}</MetaPill>
               )}
-              {eisdiele.land && <MetaPill>{eisdiele.land}</MetaPill>}
+              {eisdiele.landkreis && eisdiele.landkreis_id ? (
+                <MetaPill as={Link} to={`/region/landkreis/${eisdiele.landkreis_id}`}>
+                  {eisdiele.landkreis}
+                </MetaPill>
+              ) : (
+                eisdiele.landkreis && <MetaPill>{eisdiele.landkreis}</MetaPill>
+              )}
             </HeroMetaRow>
             <HeroTitle>{eisdiele.name}</HeroTitle>
             <HeroAddress>
@@ -1115,18 +1116,6 @@ const StatusBadge = styled.span`
     if ($tone === 'closed') return '#555';
     return '#5b4520';
   }};
-`;
-
-const MetaPill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #5b4520;
-  background: rgba(47, 33, 0, 0.05);
-  border: 1px solid rgba(47, 33, 0, 0.08);
 `;
 
 const HeroTitle = styled.h1`

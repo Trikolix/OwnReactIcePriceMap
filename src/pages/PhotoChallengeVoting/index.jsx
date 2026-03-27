@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '../../Header';
+import NewAwards from '../../components/NewAwards';
 import { useUser } from '../../context/UserContext';
 import {
   useKoRoundLabel,
@@ -25,6 +26,7 @@ function PhotoChallengeVoting() {
   const [error, setError] = useState(null);
   const [activePhase, setActivePhase] = useState('group');
   const [actionMessage, setActionMessage] = useState(null);
+  const [newAwards, setNewAwards] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [groupModal, setGroupModal] = useState(null); // { groupId, mode, matchOrder, matchIndex, orientation }
   const [koModal, setKoModal] = useState(null); // { round, matchIds, matchIndex, orientation }
@@ -196,6 +198,7 @@ function PhotoChallengeVoting() {
       const data = await res.json();
       if (data.status === 'success') {
         setActionMessage(data.message || 'Stimme gespeichert – danke!');
+        setNewAwards(Array.isArray(data.new_awards) ? data.new_awards : []);
         if (data.vote_action === 'updated' && typeof options.onUpdate === 'function') {
           options.onUpdate(data);
         } else if (data.vote_action !== 'unchanged' && typeof options.onSuccess === 'function') {
@@ -573,6 +576,17 @@ function PhotoChallengeVoting() {
               ×
             </button>
           </S.ActionMessage>
+        )}
+
+        {newAwards.length > 0 && (
+          <S.AwardOverlay>
+            <S.AwardOverlayCard>
+              <S.AwardOverlayClose type="button" onClick={() => setNewAwards([])} aria-label="Auszeichnung schließen">
+                ×
+              </S.AwardOverlayClose>
+              <NewAwards awards={newAwards} />
+            </S.AwardOverlayCard>
+          </S.AwardOverlay>
         )}
 
         <SubmissionPanel

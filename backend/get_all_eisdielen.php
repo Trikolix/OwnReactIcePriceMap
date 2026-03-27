@@ -1,6 +1,9 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/opening_hours.php';
+require_once  __DIR__ . '/lib/team_challenges.php';
+
+ensureTeamChallengeSchema($pdo);
 
 $userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
 $openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
@@ -122,6 +125,13 @@ $sql = "SELECT
               AND c.nutzer_id = :userId
               AND c.completed = 0
               AND (c.valid_until IS NULL OR c.valid_until >= NOW())
+        ) OR EXISTS (
+            SELECT 1
+            FROM team_challenges tc
+            WHERE tc.final_shop_id = e.id
+              AND (tc.inviter_user_id = :userId OR tc.invitee_user_id = :userId)
+              AND tc.status = 'shop_finalized'
+              AND (tc.valid_until IS NULL OR tc.valid_until >= NOW())
         ) THEN 1
         ELSE 0
     END AS has_active_challenge,

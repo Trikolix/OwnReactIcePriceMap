@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { Bell, Check, Clock3, MapPinned, Send, Target, Users, X } from "lucide-react";
+import { Bell, Check, Clock3, MapPinned, Send, Target, Trophy, Users, X } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 
@@ -40,6 +40,31 @@ const typeLabels = {
   weekly: "Weekly",
 };
 
+const activeStatuses = ["pending_acceptance", "accepted", "proposal_open", "proposal_submitted", "shop_finalized"];
+
+const formatChallengeDate = (value) => {
+  if (!value) return "–";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "–";
+  return parsed.toLocaleString("de-DE");
+};
+
+const formatChallengeDuration = (startValue, endValue) => {
+  if (!startValue || !endValue) return null;
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+
+  const diffMs = Math.max(0, end.getTime() - start.getTime());
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+  if (diffHours < 24) {
+    return `nach ${diffHours} Std.`;
+  }
+
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return `nach ${diffDays} Tag${diffDays === 1 ? "" : "en"}`;
+};
+
 const getApiMessage = (data, fallback) => data?.message || data?.error || fallback;
 
 async function readJsonResponse(res) {
@@ -69,8 +94,40 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
   const [busyAction, setBusyAction] = useState(null);
   const [selectedProposalIds, setSelectedProposalIds] = useState([]);
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
+  const [selectedCompletedChallenge, setSelectedCompletedChallenge] = useState(null);
 
-  const activeOrFocusedId = focusChallengeId || selectedChallengeId || listState.active_challenges?.[0]?.id || listState.active?.id || null;
+  const completedChallenges = useMemo(
+    () => listState.history.filter((challenge) => challenge.status === "completed"),
+    [listState.history]
+  );
+  const completionStats = useMemo(() => {
+    const partnerIds = new Set();
+    const shopIds = new Set();
+
+    completedChallenges.forEach((challenge) => {
+      const partnerId =
+        challenge.viewer_role === "inviter" ? challenge.invitee?.id : challenge.inviter?.id;
+      if (partnerId) partnerIds.add(partnerId);
+      if (challenge.final_shop?.id) shopIds.add(challenge.final_shop.id);
+    });
+
+    return {
+      total: completedChallenges.length,
+      partners: partnerIds.size,
+      shops: shopIds.size,
+    };
+  }, [completedChallenges]);
+  const activeChallengeIds = useMemo(
+    () => new Set((listState.active_challenges || []).map((challenge) => Number(challenge.id))),
+    [listState.active_challenges]
+  );
+  const activeOrFocusedId =
+    (focusChallengeId && activeChallengeIds.has(Number(focusChallengeId)) ? focusChallengeId : null) ||
+    (selectedChallengeId && activeChallengeIds.has(Number(selectedChallengeId)) ? selectedChallengeId : null) ||
+    listState.active_challenges?.[0]?.id ||
+    listState.active?.id ||
+    null;
+  const currentChallenge = detail && activeStatuses.includes(detail.status) ? detail : null;
 
   const fetchList = async () => {
     if (!userId || !apiUrl) {
@@ -275,9 +332,9 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
     </MetaRow>
   );
 
-  const mapCandidates = detail?.status === "shop_finalized" || detail?.status === "completed" ? [] : (detail?.candidates || []);
-  const mapCenter = detail?.center?.lat != null && detail?.center?.lon != null ? [detail.center.lat, detail.center.lon] : null;
-  const mapFinalShop = detail?.final_shop || null;
+  const mapCandidates = currentChallenge?.status === "shop_finalized" || currentChallenge?.status === "completed" ? [] : (currentChallenge?.candidates || []);
+  const mapCenter = currentChallenge?.center?.lat != null && currentChallenge?.center?.lon != null ? [currentChallenge.center.lat, currentChallenge.center.lon] : null;
+  const mapFinalShop = currentChallenge?.final_shop || null;
 
   return (
     <PanelGrid>
@@ -362,60 +419,60 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
           <SectionHead>
             <div>
               <SectionTitle>Aktuelle Team-Challenge</SectionTitle>
-              <SectionSubline>Statusgesteuerter Flow statt freier Formulare. Bis zu 3 aktive Team-Challenges gleichzeitig sind möglich.</SectionSubline>
+              <SectionSubline>Hier siehst du, was als Nächstes dran ist: Einladung annehmen, Vorschläge auswählen oder die gemeinsame Ziel-Eisdiele bestätigen.</SectionSubline>
             </div>
             {detailLoading && <MutedText>Lade Details...</MutedText>}
           </SectionHead>
 
           {loading ? (
             <StateBox>Team-Challenges werden geladen...</StateBox>
-          ) : !detail ? (
+          ) : !currentChallenge ? (
             <StateBox>Aktuell ist keine aktive Team-Challenge ausgewählt.</StateBox>
           ) : (
             <>
               <ChallengeCard>
                 <ChallengeTitleRow>
                   <div>
-                    <ChallengeTitle>{detail.inviter.username} + {detail.invitee.username}</ChallengeTitle>
-                    <SubtleText>Rolle: {detail.viewer_role === "inviter" ? "Einladend" : "Eingeladen"}</SubtleText>
+                    <ChallengeTitle>{currentChallenge.inviter.username} + {currentChallenge.invitee.username}</ChallengeTitle>
+                    <SubtleText>Rolle: {currentChallenge.viewer_role === "inviter" ? "Einladend" : "Eingeladen"}</SubtleText>
                   </div>
-                  <StatusPill>{statusLabels[detail.status] || detail.status}</StatusPill>
+                  <StatusPill>{statusLabels[currentChallenge.status] || currentChallenge.status}</StatusPill>
                 </ChallengeTitleRow>
-                {renderChallengeMeta(detail)}
+                {renderChallengeMeta(currentChallenge)}
 
-                {detail.failed_reason && detail.status !== "completed" && (
-                  <InlineAlert>{detail.failed_reason === "not_enough_shops" ? "Im gemeinsamen Radius wurden nicht genug offene Eisdielen gefunden." : "Diese Team-Challenge ist nicht mehr aktiv."}</InlineAlert>
+                {currentChallenge.failed_reason && currentChallenge.status !== "completed" && (
+                  <InlineAlert>{currentChallenge.failed_reason === "not_enough_shops" ? "Im gemeinsamen Radius wurden nicht genug offene Eisdielen gefunden." : "Diese Team-Challenge ist nicht mehr aktiv."}</InlineAlert>
                 )}
 
-                {detail.status === "pending_acceptance" && detail.can_accept && (
+                {currentChallenge.status === "pending_acceptance" && currentChallenge.can_accept && (
                   <ActionRow>
-                    <PrimaryButton type="button" onClick={() => handleAccept(detail.id)} disabled={busyAction !== null || !location}>
+                    <PrimaryButton type="button" onClick={() => handleAccept(currentChallenge.id)} disabled={busyAction !== null || !location}>
                       <Check size={16} />
                       Annehmen
                     </PrimaryButton>
-                    <SecondaryButton type="button" onClick={() => handleDecline(detail.id)} disabled={busyAction !== null}>
+                    <SecondaryButton type="button" onClick={() => handleDecline(currentChallenge.id)} disabled={busyAction !== null}>
                       Ablehnen
                     </SecondaryButton>
                   </ActionRow>
                 )}
 
-                {detail.status === "pending_acceptance" && detail.viewer_role === "inviter" && (
+                {currentChallenge.status === "pending_acceptance" && currentChallenge.viewer_role === "inviter" && (
                   <ActionRow>
                     <MutedText>Die Einladung ist verschickt. Sobald sie angenommen wird, werden Kandidaten berechnet.</MutedText>
-                    <SecondaryButton type="button" onClick={() => handleCancel(detail.id)} disabled={busyAction !== null}>
+                    <SecondaryButton type="button" onClick={() => handleCancel(currentChallenge.id)} disabled={busyAction !== null}>
                       Einladung zurückziehen
                     </SecondaryButton>
                   </ActionRow>
                 )}
 
-                {(detail.status === "proposal_open" || detail.status === "proposal_submitted") && (
+                {(currentChallenge.status === "proposal_open" || currentChallenge.status === "proposal_submitted") && (
                   <>
                     <SubSectionHeading><Target size={16} /> Kandidaten und Vorschläge</SubSectionHeading>
                     <HintText>Der gemeinsame Radius wurde so weit erweitert, bis mindestens 4 offene Eisdielen gefunden wurden.</HintText>
                     <CandidateList>
-                      {detail.candidates.map((candidate) => {
+                      {currentChallenge.candidates.map((candidate) => {
                         const selected = selectedProposalIds.includes(candidate.shop_id);
-                        const alreadyProposed = detail.proposals.some((proposal) => proposal.shop_id === candidate.shop_id);
+                        const alreadyProposed = currentChallenge.proposals.some((proposal) => proposal.shop_id === candidate.shop_id);
                         return (
                           <CandidateItem key={candidate.shop_id} $selected={selected || alreadyProposed}>
                             <div>
@@ -423,7 +480,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                               <CandidateMeta>{candidate.address}</CandidateMeta>
                               <CandidateMeta>{Math.round(candidate.distance_to_center)} m vom Mittelpunkt</CandidateMeta>
                             </div>
-                            {detail.can_submit_proposals ? (
+                            {currentChallenge.can_submit_proposals ? (
                               <ProposalToggle
                                 type="button"
                                 $selected={selected}
@@ -440,7 +497,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                       })}
                     </CandidateList>
 
-                    {detail.can_submit_proposals && (
+                    {currentChallenge.can_submit_proposals && (
                       <ActionRow>
                         <MutedText>{selectedProposalIds.length}/3 Vorschläge gewählt.</MutedText>
                         <PrimaryButton type="button" onClick={handleSubmitProposals} disabled={busyAction !== null || selectedProposalIds.length < 1}>
@@ -449,18 +506,18 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                       </ActionRow>
                     )}
 
-                    {detail.proposals.length > 0 && (
+                    {currentChallenge.proposals.length > 0 && (
                       <>
                         <SubSectionHeading><Bell size={16} /> Aktuelle Vorschläge</SubSectionHeading>
                         <CandidateList>
-                          {detail.proposals.map((proposal) => (
+                          {currentChallenge.proposals.map((proposal) => (
                             <CandidateItem key={proposal.id} $selected>
                               <div>
                                 <CandidateName>{proposal.shop.name}</CandidateName>
                                 <CandidateMeta>{proposal.shop.address}</CandidateMeta>
                                 <CandidateMeta>Vorgeschlagen von {proposal.proposed_by.username}</CandidateMeta>
                               </div>
-                              {detail.can_finalize && (
+                              {currentChallenge.can_finalize && (
                                 <PrimaryButton type="button" onClick={() => handleFinalize(proposal.shop_id)} disabled={busyAction !== null}>
                                   Bestätigen
                                 </PrimaryButton>
@@ -473,25 +530,25 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                   </>
                 )}
 
-                {(detail.status === "shop_finalized" || detail.status === "completed") && detail.final_shop && (
+                {(currentChallenge.status === "shop_finalized" || currentChallenge.status === "completed") && currentChallenge.final_shop && (
                   <>
                     <SubSectionHeading><MapPinned size={16} /> Ziel-Eisdiele</SubSectionHeading>
                     <FinalShopCard>
                       <div>
-                        <CandidateLink to={`/map/activeShop/${detail.final_shop.id}`}>{detail.final_shop.name}</CandidateLink>
-                        <CandidateMeta>{detail.final_shop.address}</CandidateMeta>
-                        <CandidateMeta>Beide müssen innerhalb von {detail.completion_window_minutes} Minuten dort einchecken.</CandidateMeta>
+                        <CandidateLink to={`/map/activeShop/${currentChallenge.final_shop.id}`}>{currentChallenge.final_shop.name}</CandidateLink>
+                        <CandidateMeta>{currentChallenge.final_shop.address}</CandidateMeta>
+                        <CandidateMeta>Beide müssen innerhalb von {currentChallenge.completion_window_minutes} Minuten dort einchecken.</CandidateMeta>
                       </div>
-                      {detail.valid_until && <StatusPill>Bis {new Date(detail.valid_until).toLocaleString("de-DE")}</StatusPill>}
+                      {currentChallenge.valid_until && <StatusPill>Bis {new Date(currentChallenge.valid_until).toLocaleString("de-DE")}</StatusPill>}
                     </FinalShopCard>
                   </>
                 )}
 
-                {detail.status === "completed" && detail.checkins?.length > 0 && (
+                {currentChallenge.status === "completed" && currentChallenge.checkins?.length > 0 && (
                   <>
                     <SubSectionHeading><Clock3 size={16} /> Check-ins</SubSectionHeading>
                     <CheckinList>
-                      {detail.checkins.map((entry) => (
+                      {currentChallenge.checkins.map((entry) => (
                         <li key={`${entry.user_id}-${entry.checkin_id}`}>
                           <strong>{entry.username}</strong> · {new Date(entry.checkin_date).toLocaleString("de-DE")}
                         </li>
@@ -500,9 +557,9 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                   </>
                 )}
 
-                {detail.can_cancel && detail.status !== "pending_acceptance" && (
+                {currentChallenge.can_cancel && currentChallenge.status !== "pending_acceptance" && (
                   <ActionRow>
-                    <SecondaryButton type="button" onClick={() => handleCancel(detail.id)} disabled={busyAction !== null}>
+                    <SecondaryButton type="button" onClick={() => handleCancel(currentChallenge.id)} disabled={busyAction !== null}>
                       Team-Challenge abbrechen
                     </SecondaryButton>
                   </ActionRow>
@@ -543,6 +600,47 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                 </MapWrap>
               )}
             </>
+          )}
+        </SectionCard>
+
+        <SectionCard>
+          <SectionHead>
+            <div>
+              <SectionTitle>Erfolge</SectionTitle>
+              <SectionSubline>Deine erfolgreich abgeschlossenen Team-Challenges mit Partner, Datum und Ziel-Eisdiele.</SectionSubline>
+            </div>
+            <StatsRow>
+              <StatsBadge>{completionStats.total} abgeschlossen</StatsBadge>
+              <StatsBadge>{completionStats.partners} Partner</StatsBadge>
+              <StatsBadge>{completionStats.shops} Eisdielen</StatsBadge>
+            </StatsRow>
+          </SectionHead>
+
+          {completedChallenges.length === 0 ? (
+            <StateBox>Noch keine erfolgreich abgeschlossene Team-Challenge.</StateBox>
+          ) : (
+            <TrophyGrid>
+              {completedChallenges.map((challenge) => {
+                const partner =
+                  challenge.viewer_role === "inviter" ? challenge.invitee?.username : challenge.inviter?.username;
+                const completionSpeed = formatChallengeDuration(challenge.created_at, challenge.completed_at);
+                return (
+                  <TrophyCard
+                    key={challenge.id}
+                    type="button"
+                    onClick={() => setSelectedCompletedChallenge(challenge)}
+                  >
+                    <TrophyIcon>
+                      <Trophy aria-hidden="true" />
+                    </TrophyIcon>
+                    <TrophyName>{challenge.final_shop?.name || "Ziel-Eisdiele"}</TrophyName>
+                    <TrophyDate>{formatChallengeDate(challenge.completed_at)}</TrophyDate>
+                    <TrophyMeta>mit {partner || "–"}</TrophyMeta>
+                    {completionSpeed && <TrophyType>{completionSpeed}</TrophyType>}
+                  </TrophyCard>
+                );
+              })}
+            </TrophyGrid>
           )}
         </SectionCard>
 
@@ -635,12 +733,15 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
 
         <SectionCard>
           <SectionTitle>Verlauf</SectionTitle>
-          <SectionSubline>Abgeschlossene, abgelaufene oder abgebrochene Team-Challenges.</SectionSubline>
-          {listState.history.length === 0 ? (
+          <SectionSubline>Abgelaufene, gescheiterte oder abgebrochene Team-Challenges.</SectionSubline>
+          {listState.history.filter((challenge) => challenge.status !== "completed").length === 0 ? (
             <MiniState>Noch kein Verlauf vorhanden.</MiniState>
           ) : (
             <CompactList>
-              {listState.history.slice(0, 8).map((challenge) => (
+              {listState.history
+                .filter((challenge) => challenge.status !== "completed")
+                .slice(0, 8)
+                .map((challenge) => (
                 <CompactCard key={challenge.id} type="button" onClick={() => fetchDetail(challenge.id)}>
                   <strong>{challenge.inviter.username} + {challenge.invitee.username}</strong>
                   <span>{statusLabels[challenge.status]}</span>
@@ -650,6 +751,45 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
           )}
         </SectionCard>
       </SideColumn>
+      {selectedCompletedChallenge && (
+        <ModalOverlay onClick={() => setSelectedCompletedChallenge(null)}>
+          <ModalBox onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="team-challenge-success-title">
+            <ModalTitle id="team-challenge-success-title">Team-Challenge-Erfolg</ModalTitle>
+            <CenteredTrophyIcon>
+              <Trophy aria-hidden="true" />
+            </CenteredTrophyIcon>
+            <SuccessModalTitle>
+              {selectedCompletedChallenge.final_shop?.id ? (
+                <CandidateLink to={`/map/activeShop/${selectedCompletedChallenge.final_shop.id}`}>
+                  {selectedCompletedChallenge.final_shop.name}
+                </CandidateLink>
+              ) : (
+                selectedCompletedChallenge.final_shop?.name || "Ziel-Eisdiele"
+              )}
+            </SuccessModalTitle>
+            <SuccessModalSubtitle>{selectedCompletedChallenge.final_shop?.address || "Adresse nicht verfügbar"}</SuccessModalSubtitle>
+            <MetaBadge style={{ margin: "0.8rem auto 0", display: "table" }}>
+              {typeLabels[selectedCompletedChallenge.type] || selectedCompletedChallenge.type}
+            </MetaBadge>
+            <SuccessInfoList>
+              <li>
+                <strong>Mit:</strong>{" "}
+                {selectedCompletedChallenge.viewer_role === "inviter"
+                  ? selectedCompletedChallenge.invitee?.username || "–"
+                  : selectedCompletedChallenge.inviter?.username || "–"}
+              </li>
+              <li><strong>Abgeschlossen:</strong> {formatChallengeDate(selectedCompletedChallenge.completed_at)}</li>
+              {formatChallengeDuration(selectedCompletedChallenge.created_at, selectedCompletedChallenge.completed_at) && (
+                <li><strong>Dauer:</strong> {formatChallengeDuration(selectedCompletedChallenge.created_at, selectedCompletedChallenge.completed_at)}</li>
+              )}
+              <li><strong>Erstellt:</strong> {formatChallengeDate(selectedCompletedChallenge.created_at)}</li>
+            </SuccessInfoList>
+            <ModalButton type="button" onClick={() => setSelectedCompletedChallenge(null)}>
+              Schließen
+            </ModalButton>
+          </ModalBox>
+        </ModalOverlay>
+      )}
     </PanelGrid>
   );
 }
@@ -717,6 +857,23 @@ const HeaderBadge = styled.div`
   color: #7a4a00;
   font-weight: 800;
   font-size: 0.82rem;
+`;
+
+const StatsRow = styled.div`
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+`;
+
+const StatsBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.05);
+  color: #5b4520;
+  font-size: 0.8rem;
+  font-weight: 800;
 `;
 
 const InviteLayout = styled.div`
@@ -1017,6 +1174,147 @@ const FinalShopCard = styled.div`
   border-radius: 16px;
   background: rgba(232, 247, 236, 0.75);
   border: 1px solid rgba(35, 165, 90, 0.26);
+`;
+
+const TrophyGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 0.75rem;
+`;
+
+const TrophyCard = styled.button`
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 14px;
+  padding: 0.85rem 0.75rem;
+  text-align: center;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255,181,34,0.18);
+    border-color: rgba(255,181,34,0.45);
+  }
+`;
+
+const TrophyIcon = styled.div`
+  font-size: 2rem;
+  margin-bottom: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #d4a017;
+
+  svg {
+    width: 1em;
+    height: 1em;
+    stroke-width: 2.2;
+    fill: #f4c542;
+    stroke: #b8860b;
+  }
+`;
+
+const CenteredTrophyIcon = styled(TrophyIcon)`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+`;
+
+const TrophyName = styled.div`
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #2f2100;
+`;
+
+const TrophyDate = styled.div`
+  font-size: 0.75rem;
+  color: rgba(47, 33, 0, 0.6);
+`;
+
+const TrophyMeta = styled.div`
+  font-size: 0.76rem;
+  color: rgba(47, 33, 0, 0.7);
+  margin-top: 0.2rem;
+`;
+
+const TrophyType = styled.div`
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #7a4a00;
+  margin-top: 0.28rem;
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 1rem;
+`;
+
+const ModalBox = styled.div`
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.4rem 1.2rem 1.2rem;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.18);
+  width: min(520px, 100%);
+  text-align: left;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0 0 1rem;
+  color: #2f2100;
+  font-size: 1.2rem;
+  text-align: center;
+`;
+
+const SuccessModalTitle = styled.h3`
+  margin: 0;
+  color: #2f2100;
+  font-size: 1.08rem;
+  text-align: center;
+`;
+
+const SuccessModalSubtitle = styled.p`
+  margin: 0.4rem 0 0;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  text-align: center;
+`;
+
+const SuccessInfoList = styled.ul`
+  margin: 1rem 0 0;
+  padding-left: 1rem;
+  color: #5b4520;
+  line-height: 1.5;
+`;
+
+const ModalButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  background: #ffb522;
+  color: #2f2100;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    background: #ffc546;
+  }
 `;
 
 const CheckinList = styled.ul`

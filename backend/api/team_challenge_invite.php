@@ -80,6 +80,7 @@ try {
 
     $text = "{$inviter['username']} hat dich zu einer Team-Challenge eingeladen.";
     teamChallengeInsertNotification($pdo, $inviteeUserId, $challengeId, $text, 'invite', 'pending_acceptance');
+    teamChallengeSendEmail($pdo, $inviteeUserId, $inviter['username'], 'invite', $challengeId);
 
     $pdo->commit();
 
@@ -94,4 +95,3 @@ try {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-

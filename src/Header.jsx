@@ -476,6 +476,7 @@ const Header = ({ refreshShops }) => {
                   <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
                   <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
+                  {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
                   <MenuActionButton
                     type="button"
                     onClick={() => {
@@ -1002,8 +1003,8 @@ const MenuDivider = styled.hr`
 const menuItemBase = `
   display: flex;
   align-items: center;
-  width: 100%;
-  min-height: 40px;
+  width: 95%;
+  min-height: 25px;
   padding: 9px 10px;
   border-radius: 10px;
   color: #2f2100;
@@ -1039,6 +1040,8 @@ const MenuItemAnchor = styled.a`
 
 const MenuActionButton = styled.button`
   ${menuItemBase}
+  width: 100%;
+  min-height: 40px;
   ${({ $danger }) =>
     $danger
       ? `

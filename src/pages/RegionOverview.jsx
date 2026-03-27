@@ -12,9 +12,13 @@ import {
 } from 'recharts';
 import Header from '../Header';
 import UserAvatar from '../components/UserAvatar';
+import MetaPill from '../components/RegionMetaPill';
 import Seo from '../components/Seo';
 
 const formatPrice = (value) => (value != null ? `${Number(value).toFixed(2)} €` : 'kein Preis');
+
+const DEFAULT_PRICE_LIST_LIMIT = 5;
+const DEFAULT_RANK_LIMIT = 10;
 
 const RegionOverview = () => {
   const { level, regionId } = useParams();
@@ -23,6 +27,11 @@ const RegionOverview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [shopScoreType, setShopScoreType] = useState('kugel');
+  const [activeUserPeriod, setActiveUserPeriod] = useState('overall');
+  const [showAllCheapest, setShowAllCheapest] = useState(false);
+  const [showAllPopular, setShowAllPopular] = useState(false);
+  const [expandedShopLists, setExpandedShopLists] = useState({ kugel: false, softeis: false, eisbecher: false });
+  const [showAllActiveUsers, setShowAllActiveUsers] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -32,7 +41,9 @@ const RegionOverview = () => {
       setError(null);
 
       try {
-        const response = await fetch(`${apiUrl}/api/region_overview.php?level=${encodeURIComponent(level)}&id=${encodeURIComponent(regionId)}`);
+        const response = await fetch(
+          `${apiUrl}/api/region_overview.php?level=${encodeURIComponent(level)}&id=${encodeURIComponent(regionId)}&active_user_period=${encodeURIComponent(activeUserPeriod)}`
+        );
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -57,7 +68,7 @@ const RegionOverview = () => {
     return () => {
       isCancelled = true;
     };
-  }, [apiUrl, level, regionId]);
+  }, [activeUserPeriod, apiUrl, level, regionId]);
 
   const title = useMemo(() => {
     if (!data?.region_meta) {
@@ -95,6 +106,8 @@ const RegionOverview = () => {
   const priceTrend = Array.isArray(data?.price_trend) ? data.price_trend : [];
   const activeUsers = Array.isArray(data?.active_users) ? data.active_users : [];
   const topShops = Array.isArray(data?.top_shops) ? data.top_shops : [];
+  const cheapestShops = Array.isArray(priceSummary.cheapest_shops) ? priceSummary.cheapest_shops : [];
+  const popularShops = Array.isArray(priceSummary.popular_shops) ? priceSummary.popular_shops : [];
   const displayedTopShops = useMemo(() => (
     [...topShops]
       .filter((shop) => shop[scoreConfig.key] != null)
@@ -111,8 +124,12 @@ const RegionOverview = () => {
 
         return left.name.localeCompare(right.name, 'de');
       })
-      .slice(0, 10)
   ), [scoreConfig, topShops]);
+  const visibleCheapestShops = showAllCheapest ? cheapestShops : cheapestShops.slice(0, DEFAULT_PRICE_LIST_LIMIT);
+  const visiblePopularShops = showAllPopular ? popularShops : popularShops.slice(0, DEFAULT_PRICE_LIST_LIMIT);
+  const isActiveShopListExpanded = expandedShopLists[shopScoreType];
+  const visibleTopShops = isActiveShopListExpanded ? displayedTopShops : displayedTopShops.slice(0, DEFAULT_RANK_LIMIT);
+  const visibleActiveUsers = showAllActiveUsers ? activeUsers : activeUsers.slice(0, DEFAULT_RANK_LIMIT);
 
   if (loading) {
     return (
@@ -157,6 +174,7 @@ const RegionOverview = () => {
           <Title>{title}</Title>
           <HeroMeta>
             <MetaPill>{data.region_meta.shop_count || 0} Eisdielen</MetaPill>
+            {data.region_meta.land?.name && <MetaPill>{data.region_meta.land.name}</MetaPill>}
             {data.region_meta.bundesland?.name && data.region_meta.bundesland?.id ? (
               <MetaPill as={Link} to={`/region/bundesland/${data.region_meta.bundesland.id}`}>
                 {data.region_meta.bundesland.name}
@@ -164,7 +182,7 @@ const RegionOverview = () => {
             ) : (
               data.region_meta.bundesland?.name && <MetaPill>{data.region_meta.bundesland.name}</MetaPill>
             )}
-            {data.region_meta.land?.name && <MetaPill>{data.region_meta.land.name}</MetaPill>}
+            {data.region_meta.level === 'landkreis' && <MetaPill>{title}</MetaPill>}
           </HeroMeta>
         </HeroCard>
 
@@ -185,24 +203,34 @@ const RegionOverview = () => {
               <MiniColumn>
                 <h4>Günstigste</h4>
                 <SimpleList>
-                  {(priceSummary.cheapest_shops || []).map((shop) => (
+                  {visibleCheapestShops.map((shop) => (
                     <li key={`cheap-${shop.id}`}>
                       <Link to={`/map/activeShop/${shop.id}`}>{shop.name}</Link>
                       <strong>{Number(shop.preis).toFixed(2)} €</strong>
                     </li>
                   ))}
                 </SimpleList>
+                {cheapestShops.length > DEFAULT_PRICE_LIST_LIMIT && (
+                  <ExpandButton type="button" onClick={() => setShowAllCheapest((current) => !current)}>
+                    {showAllCheapest ? 'Weniger anzeigen' : `Mehr anzeigen (${cheapestShops.length - DEFAULT_PRICE_LIST_LIMIT})`}
+                  </ExpandButton>
+                )}
               </MiniColumn>
               <MiniColumn>
                 <h4>Populärste</h4>
                 <SimpleList>
-                  {(priceSummary.popular_shops || []).map((shop) => (
+                  {visiblePopularShops.map((shop) => (
                     <li key={`popular-${shop.id}`}>
                       <Link to={`/map/activeShop/${shop.id}`}>{shop.name}</Link>
                       <strong>{shop.checkin_count} Check-ins</strong>
                     </li>
                   ))}
                 </SimpleList>
+                {popularShops.length > DEFAULT_PRICE_LIST_LIMIT && (
+                  <ExpandButton type="button" onClick={() => setShowAllPopular((current) => !current)}>
+                    {showAllPopular ? 'Weniger anzeigen' : `Mehr anzeigen (${popularShops.length - DEFAULT_PRICE_LIST_LIMIT})`}
+                  </ExpandButton>
+                )}
               </MiniColumn>
             </MiniColumns>
           </SectionCard>
@@ -236,7 +264,7 @@ const RegionOverview = () => {
               </FilterButton>
             </FilterRow>
             <RankList>
-              {displayedTopShops.map((shop, index) => (
+              {visibleTopShops.map((shop, index) => (
                 <RankItem key={shop.id}>
                   <RankNumber>#{index + 1}</RankNumber>
                   <RankContent>
@@ -259,12 +287,45 @@ const RegionOverview = () => {
                 </RankItem>
               )}
             </RankList>
+            {displayedTopShops.length > DEFAULT_RANK_LIMIT && (
+              <ExpandButton
+                type="button"
+                onClick={() => setExpandedShopLists((current) => ({ ...current, [shopScoreType]: !current[shopScoreType] }))}
+              >
+                {isActiveShopListExpanded ? 'Weniger anzeigen' : `Mehr anzeigen (${displayedTopShops.length - DEFAULT_RANK_LIMIT})`}
+              </ExpandButton>
+            )}
           </SectionCard>
 
           <SectionCard>
-            <SectionTitle>Aktivste Nutzer im Gebiet</SectionTitle>
+            <SectionHeaderRow>
+              <SectionTitle style={{ marginBottom: 0 }}>Aktivste Nutzer im Gebiet</SectionTitle>
+              <PeriodToggle>
+                <ToggleButton
+                  type="button"
+                  $active={activeUserPeriod === 'overall'}
+                  onClick={() => setActiveUserPeriod('overall')}
+                >
+                  Gesamt
+                </ToggleButton>
+                <ToggleButton
+                  type="button"
+                  $active={activeUserPeriod === 'month'}
+                  onClick={() => setActiveUserPeriod('month')}
+                >
+                  Monat
+                </ToggleButton>
+                <ToggleButton
+                  type="button"
+                  $active={activeUserPeriod === 'week'}
+                  onClick={() => setActiveUserPeriod('week')}
+                >
+                  Woche
+                </ToggleButton>
+              </PeriodToggle>
+            </SectionHeaderRow>
             <RankList>
-              {activeUsers.map((entry) => (
+              {visibleActiveUsers.map((entry) => (
                 <RankItem key={entry.user_id}>
                   <RankNumber>#{entry.rank}</RankNumber>
                   <RankContent>
@@ -286,7 +347,19 @@ const RegionOverview = () => {
                   </RankAside>
                 </RankItem>
               ))}
+              {visibleActiveUsers.length === 0 && (
+                <RankItem>
+                  <RankContent>
+                    <small>Für diesen Zeitraum gibt es noch keine aktiven Nutzer im Gebiet.</small>
+                  </RankContent>
+                </RankItem>
+              )}
             </RankList>
+            {activeUsers.length > DEFAULT_RANK_LIMIT && (
+              <ExpandButton type="button" onClick={() => setShowAllActiveUsers((current) => !current)}>
+                {showAllActiveUsers ? 'Weniger anzeigen' : `Mehr anzeigen (${activeUsers.length - DEFAULT_RANK_LIMIT})`}
+              </ExpandButton>
+            )}
           </SectionCard>
         </Grid>
       </Container>
@@ -338,17 +411,6 @@ const HeroMeta = styled.div`
   margin-top: 0.75rem;
 `;
 
-const MetaPill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  background: rgba(255, 181, 34, 0.14);
-  color: #5b420b;
-  font-weight: 700;
-  font-size: 0.86rem;
-`;
-
 const Grid = styled.div`
   display: grid;
   gap: 1rem;
@@ -373,6 +435,35 @@ const SectionTitle = styled.h3`
   color: #2f2100;
   font-size: 1.05rem;
   font-weight: 800;
+`;
+
+const SectionHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+
+  @media (max-width: 680px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const PeriodToggle = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`;
+
+const ToggleButton = styled.button`
+  border: 1px solid ${({ $active }) => ($active ? '#d97706' : 'rgba(47, 33, 0, 0.12)')};
+  background: ${({ $active }) => ($active ? 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)' : 'rgba(255, 255, 255, 0.72)')};
+  color: ${({ $active }) => ($active ? '#fff8ef' : '#5b430d')};
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
 `;
 
 const FilterRow = styled.div`
@@ -457,6 +548,20 @@ const SimpleList = styled.ul`
   a {
     color: #2f2100;
     text-decoration: none;
+  }
+`;
+
+const ExpandButton = styled.button`
+  margin-top: 0.7rem;
+  border: none;
+  background: transparent;
+  color: #b45309;
+  font-weight: 800;
+  padding: 0;
+  cursor: pointer;
+
+  &:hover {
+    color: #92400e;
   }
 `;
 

@@ -1,6 +1,9 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/opening_hours.php';
+require_once __DIR__ . '/lib/team_challenges.php';
+
+ensureTeamChallengeSchema($pdo);
 
 $nutzerId = $_GET['nutzer_id'] ?? null;
 
@@ -121,6 +124,13 @@ $stmt = $pdo->prepare("
                   AND c.nutzer_id = ?
                   AND c.completed = 0
                   AND (c.valid_until IS NULL OR c.valid_until >= NOW())
+            ) OR EXISTS (
+                SELECT 1
+                FROM team_challenges tc
+                WHERE tc.final_shop_id = e.id
+                  AND (tc.inviter_user_id = ? OR tc.invitee_user_id = ?)
+                  AND tc.status = 'shop_finalized'
+                  AND (tc.valid_until IS NULL OR tc.valid_until >= NOW())
             ) THEN 1
             ELSE 0
         END AS has_active_challenge,
@@ -145,7 +155,7 @@ $stmt = $pdo->prepare("
     WHERE f.nutzer_id = ?
     ORDER by f.hinzugefuegt_am DESC
 ");
-$stmt->execute([$nutzerId, $nutzerId, $nutzerId, $nutzerId]);
+$stmt->execute([$nutzerId, $nutzerId, $nutzerId, $nutzerId, $nutzerId, $nutzerId]);
 $favoriten = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $openingHoursMap = fetch_opening_hours_map($pdo, array_column($favoriten, 'id'));

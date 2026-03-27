@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../utils/cropImage";
 import styled from "styled-components";
@@ -23,6 +24,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_comment: 1,
     notify_comment_participated: 1,
     notify_news: 0,
+    notify_team_challenge: 1,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,6 +115,20 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       setShowPresetPicker(false);
     }
   }, [currentAvatar, presetAvatars]);
+
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    const previousTouchAction = body.style.touchAction;
+
+    body.style.overflow = "hidden";
+    body.style.touchAction = "none";
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.touchAction = previousTouchAction;
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, checked } = e.target;
@@ -289,11 +305,12 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
   };
 
-  if (loading) return <ModalOverlay><ModalBox><h2>Einstellungen</h2><p>Lade...</p></ModalBox></ModalOverlay>;
-
-  return (
+  const modalContent = (
     <ModalOverlay>
       <ModalBox>
+        <TopCloseButton type="button" onClick={onClose} aria-label="Einstellungen schließen">
+          ×
+        </TopCloseButton>
         <h2>Profil & Benachrichtigungen</h2>
         <AvatarSection>
           <AvatarPreviewCircle>
@@ -420,6 +437,15 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           />
           Systemmeldungen & News (Newsletter, Aktionen, wichtige Infos)
         </Label>
+        <Label>
+          <input
+            type="checkbox"
+            name="notify_team_challenge"
+            checked={!!settings.notify_team_challenge}
+            onChange={handleChange}
+          />
+          Team-Challenges (Einladungen, Annahmen, Abbrüche, Abschlüsse)
+        </Label>
         {error && <ErrorMsg>{error}</ErrorMsg>}
         {success && <SuccessMsg>Gespeichert!</SuccessMsg>}
         <ButtonRow>
@@ -429,6 +455,15 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       </ModalBox>
     </ModalOverlay>
   );
+
+  if (loading) {
+    return createPortal(
+      <ModalOverlay><ModalBox><h2>Einstellungen</h2><p>Lade...</p></ModalBox></ModalOverlay>,
+      document.body
+    );
+  }
+
+  return createPortal(modalContent, document.body);
 
 }
 export default UserSettings;
@@ -442,10 +477,11 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 4000;
 `;
 
 const ModalBox = styled.div`
+  position: relative;
   background: white;
   padding: 2rem;
   border-radius: 16px;
@@ -472,8 +508,10 @@ const Label = styled.label`
 
 const ButtonRow = styled.div`
   display: flex;
+  justify-content: center;
   gap: 1rem;
   margin-top: 1.5rem;
+  flex-wrap: wrap;
 `;
 
 const CancelButton = styled.button`
@@ -486,6 +524,25 @@ const CancelButton = styled.button`
   font-weight: bold;
   &:hover {
     background: #ddd;
+  }
+`;
+
+const TopCloseButton = styled.button`
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  color: #5b4520;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.14);
   }
 `;
 
@@ -706,7 +763,7 @@ const PresetButton = styled.button`
 
 // Crop modal styles
 const CropModalOverlay = styled(ModalOverlay)`
-  z-index: 2000;
+  z-index: 5000;
   background: rgba(0,0,0,0.6);
 `;
 

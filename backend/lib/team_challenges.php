@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/email_notification.php';
 
 function ensureTeamChallengeSchema(PDO $pdo): void
 {
@@ -444,6 +445,20 @@ function teamChallengeInsertNotification(PDO $pdo, int $recipientId, int $challe
     ]);
 }
 
+function teamChallengeSendEmail(PDO $pdo, int $recipientId, string $senderName, string $action, int $challengeId, array $extra = []): void
+{
+    sendNotificationEmailIfAllowed(
+        $pdo,
+        $recipientId,
+        'team_challenge',
+        $senderName,
+        array_merge($extra, [
+            'teamChallengeAction' => $action,
+            'teamChallengeId' => $challengeId,
+        ])
+    );
+}
+
 function teamChallengeStoreLocation(PDO $pdo, int $challengeId, int $userId, float $lat, float $lon): void
 {
     $stmt = $pdo->prepare("
@@ -639,6 +654,22 @@ function teamChallengeCompleteFromCheckin(PDO $pdo, int $userId, int $shopId, in
     $message = 'Eure Team-Challenge wurde erfolgreich abgeschlossen.';
     teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], (int)$challenge['id'], $message, 'completed', 'completed');
     teamChallengeInsertNotification($pdo, (int)$challenge['invitee_user_id'], (int)$challenge['id'], $message, 'completed', 'completed');
+    teamChallengeSendEmail(
+        $pdo,
+        (int)$challenge['inviter_user_id'],
+        $challenge['invitee_username'],
+        'completed',
+        (int)$challenge['id'],
+        ['shopName' => $challenge['final_shop_name']]
+    );
+    teamChallengeSendEmail(
+        $pdo,
+        (int)$challenge['invitee_user_id'],
+        $challenge['inviter_username'],
+        'completed',
+        (int)$challenge['id'],
+        ['shopName' => $challenge['final_shop_name']]
+    );
 
     return [
         'id' => (int)$challenge['id'],
