@@ -331,6 +331,7 @@ const IceCreamRadar = () => {
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
   const [currentZoom, setCurrentZoom] = useState(14);
+  const activeShopRequestRef = useRef(0);
 
   const handleMapInteraction = useCallback(() => {
     setHasInteractedWithMap(true);
@@ -387,23 +388,57 @@ const IceCreamRadar = () => {
     }
   }, [location]);
 
-  const fetchAndCenterShop = async (id) => {
+  const buildActiveShopPreview = useCallback((shopLike) => {
+    if (!shopLike) return null;
+    const resolvedId = shopLike.eisdiele?.id ?? shopLike.eisdielen_id ?? shopLike.id ?? null;
+    if (!resolvedId) return null;
+    const resolvedLatitude = shopLike.eisdiele?.latitude ?? shopLike.latitude ?? null;
+    const resolvedLongitude = shopLike.eisdiele?.longitude ?? shopLike.longitude ?? null;
+    return {
+      ...shopLike,
+      eisdiele: {
+        ...(shopLike.eisdiele || {}),
+        id: resolvedId,
+        name: shopLike.eisdiele?.name || shopLike.eisdielen_name || shopLike.eisdiele_name || shopLike.name || '',
+        adresse: shopLike.eisdiele?.adresse || shopLike.adresse || shopLike.eisdielen_adresse || '',
+        latitude: resolvedLatitude,
+        longitude: resolvedLongitude,
+      },
+    };
+  }, []);
+
+  const fetchAndCenterShop = useCallback(async (id, shopPreview = null) => {
+    const requestId = ++activeShopRequestRef.current;
+    const preview = buildActiveShopPreview(shopPreview)
+      || buildActiveShopPreview(iceCreamShops.find((shop) => String(shop.eisdielen_id) === String(id)));
+
+    if (preview) {
+      setActiveShop(preview);
+      setShowDetailsView(true);
+    }
+
     try {
       const detailQuery = openFilterQueryString ? `&${openFilterQueryString}` : "";
       const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${detailQuery}`);
       const data = await response.json();
+      if (requestId !== activeShopRequestRef.current) {
+        return;
+      }
       setActiveShop(data);
       setShowDetailsView(true);
     } catch (err) {
+      if (requestId !== activeShopRequestRef.current) {
+        return;
+      }
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
-  };
+  }, [apiUrl, buildActiveShopPreview, iceCreamShops, openFilterQueryString]);
 
   useEffect(() => {
     if (shopId) {
       fetchAndCenterShop(shopId);
     }
-  }, [shopId]);
+  }, [shopId, fetchAndCenterShop]);
 
   const getShopDisplayName = (shop) => {
     return shop.eisdielen_name || shop.eisdiele_name || shop.name || shop.eisdiele?.name || 'Unbenannte Eisdiele';
@@ -491,9 +526,10 @@ const IceCreamRadar = () => {
   const fetchShopDetails = async (shop) => {
     try {
       const querySuffix = openFilterQueryString ? `?${openFilterQueryString}` : "";
+      setActiveShop(buildActiveShopPreview(shop));
+      setShowDetailsView(true);
       navigate(`/map/activeShop/${shop.eisdielen_id}${querySuffix}`);
-      setShowDetailsView(false); // Reset the state to ensure re-rendering
-      setTimeout(() => setShowDetailsView(true), 0); // Reopen the view after resetting
+      fetchAndCenterShop(shop.eisdielen_id, shop);
     } catch (error) {
       console.error('Fehler beim Abrufen der Shop-Details:', error);
     }

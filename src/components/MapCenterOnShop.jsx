@@ -3,10 +3,14 @@ import { useEffect } from 'react';
 import L from 'leaflet';
 
 const MapCenterOnShop = ({ shop }) => {
-
-    const map = useMap();
+  const map = useMap();
+  const latitude = Number(shop?.eisdiele?.latitude ?? shop?.latitude);
+  const longitude = Number(shop?.eisdiele?.longitude ?? shop?.longitude);
 
   useEffect(() => {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return;
+    }
 
     const isMobile = window.innerWidth < 768;
 
@@ -14,7 +18,7 @@ const MapCenterOnShop = ({ shop }) => {
       ? [0, -(window.innerHeight / 4)]   // nach oben für mobile View
       : [(window.innerWidth * 0.15), 0];  // nach rechts für Sidebar links auf Desktop
 
-    const targetPoint = map.latLngToContainerPoint([shop.eisdiele.latitude, shop.eisdiele.longitude]);
+    const targetPoint = map.latLngToContainerPoint([latitude, longitude]);
     const adjustedPoint = L.point(
       targetPoint.x - offset[0],
       targetPoint.y - offset[1]
@@ -24,7 +28,7 @@ const MapCenterOnShop = ({ shop }) => {
     map.flyTo(adjustedLatLng, map.getZoom(), {
       duration: 0.5,
     });
-  }, [shop.eisdiele.latitude, shop.eisdiele.longitude, map]);
+  }, [latitude, longitude, map]);
 
   return null;
 };

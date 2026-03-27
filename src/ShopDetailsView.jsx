@@ -34,6 +34,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const [showEditModal, setShowEditModal] = useState(false);
   const [shopData, setShopData] = useState(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const shopRequestRef = useRef(0);
+  const routesRequestRef = useRef(0);
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const [currentHeight, setCurrentHeight] = useState(window.innerHeight * 0.5);
   const [{ height }, api] = useSpring(() => ({ height: currentHeight }));
@@ -71,18 +73,26 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   };
 
   const fetchShopData = useCallback(async (id) => {
+    const requestId = ++shopRequestRef.current;
     try {
       const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : '';
       const userQuery = userId ? `&nutzer_id=${userId}` : '';
       const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${userQuery}${referenceQuery}`);
       const data = await response.json();
+      if (requestId !== shopRequestRef.current) {
+        return;
+      }
       setShopData(data);
     } catch (err) {
+      if (requestId !== shopRequestRef.current) {
+        return;
+      }
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
   }, [apiUrl, openAtParam, userId]);
 
   const fetchRoutes = useCallback(async (id, currentUserId) => {
+    const requestId = ++routesRequestRef.current;
     try {
       let url = `${apiUrl}/routen/getRoutes.php?eisdiele_id=${id}`;
       if (currentUserId) {
@@ -90,14 +100,22 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
       }
       const response = await fetch(url);
       const data = await response.json();
+      if (requestId !== routesRequestRef.current) {
+        return;
+      }
       setRoutes(data);
     } catch (err) {
+      if (requestId !== routesRequestRef.current) {
+        return;
+      }
       console.error('Fehler beim Abrufen der Routen via URL:', err);
     }
   }, [apiUrl]);
 
   useEffect(() => {
     if (!shopId) return;
+    setShopData(null);
+    setRoutes([]);
     fetchShopData(shopId);
     fetchRoutes(shopId, userId);
   }, [shopId, userId, fetchShopData, fetchRoutes]);

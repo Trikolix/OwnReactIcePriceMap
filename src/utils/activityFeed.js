@@ -55,6 +55,11 @@ const getGroupedItemDate = (item) => {
     return extractActivityDate(lastAward);
   }
 
+  if (item.typ === 'award_wave') {
+    const lastAward = Array.isArray(item.data?.recipients) ? item.data.recipients[item.data.recipients.length - 1] : null;
+    return extractActivityDate(lastAward);
+  }
+
   return extractActivityDate(item.data);
 };
 
@@ -147,6 +152,87 @@ export const groupActivities = (activities) => {
     awardBundles.push(bundle[0]);
   }
 
+  const groupedAwardItems = [];
+  const standaloneAwardSingles = awardBundles
+    .filter((item) => item.typ === 'award')
+    .sort((a, b) => {
+      const dateA = extractActivityDate(a.data);
+      const dateB = extractActivityDate(b.data);
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return -1;
+      if (!dateB) return 1;
+      return dateA - dateB;
+    });
+
+  let awardWave = [];
+  for (let index = 0; index < standaloneAwardSingles.length; index += 1) {
+    const current = standaloneAwardSingles[index];
+    const currentDate = extractActivityDate(current.data);
+
+    if (awardWave.length === 0) {
+      awardWave.push(current);
+      continue;
+    }
+
+    const last = awardWave[awardWave.length - 1];
+    const lastDate = extractActivityDate(last.data);
+    const diffMs = (currentDate && lastDate)
+      ? Math.abs(currentDate - lastDate)
+      : Number.POSITIVE_INFINITY;
+    const hasSameAward = current.data?.award_id === last.data?.award_id && current.data?.level === last.data?.level;
+    const currentUserId = current.data?.user_id ?? current.data?.nutzer_id;
+    const lastUserId = last.data?.user_id ?? last.data?.nutzer_id;
+
+    if (hasSameAward && currentUserId !== lastUserId && diffMs <= 10 * 60 * 1000) {
+      awardWave.push(current);
+      continue;
+    }
+
+    if (awardWave.length > 1) {
+      const recipients = awardWave.map((item) => item.data);
+      const lastRecipient = recipients[recipients.length - 1];
+      groupedAwardItems.push({
+        typ: 'award_wave',
+        id: `awardwave-${lastRecipient?.award_id ?? 'unknown'}-${lastRecipient?.level ?? 'unknown'}-${extractActivityDate(lastRecipient)?.getTime?.() ?? 'unknown'}`,
+        data: {
+          award_id: lastRecipient?.award_id,
+          level: lastRecipient?.level,
+          title_de: lastRecipient?.title_de,
+          description_de: lastRecipient?.description_de,
+          icon_path: lastRecipient?.icon_path,
+          ep: lastRecipient?.ep,
+          datum: lastRecipient?.datum,
+          recipients,
+        },
+      });
+    } else {
+      groupedAwardItems.push(awardWave[0]);
+    }
+
+    awardWave = [current];
+  }
+
+  if (awardWave.length > 1) {
+    const recipients = awardWave.map((item) => item.data);
+    const lastRecipient = recipients[recipients.length - 1];
+    groupedAwardItems.push({
+      typ: 'award_wave',
+      id: `awardwave-${lastRecipient?.award_id ?? 'unknown'}-${lastRecipient?.level ?? 'unknown'}-${extractActivityDate(lastRecipient)?.getTime?.() ?? 'unknown'}`,
+      data: {
+        award_id: lastRecipient?.award_id,
+        level: lastRecipient?.level,
+        title_de: lastRecipient?.title_de,
+        description_de: lastRecipient?.description_de,
+        icon_path: lastRecipient?.icon_path,
+        ep: lastRecipient?.ep,
+        datum: lastRecipient?.datum,
+        recipients,
+      },
+    });
+  } else if (awardWave.length === 1) {
+    groupedAwardItems.push(awardWave[0]);
+  }
+
   return [
     ...singles,
     ...Object.keys(grouped).flatMap((groupId) => {
@@ -161,7 +247,8 @@ export const groupActivities = (activities) => {
         data: items.map((item) => item.data),
       };
     }),
-    ...awardBundles,
+    ...awardBundles.filter((item) => item.typ === 'award_bundle'),
+    ...groupedAwardItems,
   ].sort((a, b) => {
     const dateA = getGroupedItemDate(a);
     const dateB = getGroupedItemDate(b);

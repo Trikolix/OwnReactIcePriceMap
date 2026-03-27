@@ -72,7 +72,6 @@ const ShopMarker = ({
       eventHandlers={{
         click: () => {
           fetchShopDetails(shop);
-          fetchAndCenterShop(shop.eisdielen_id);
         },
       }}
     ></Marker>
