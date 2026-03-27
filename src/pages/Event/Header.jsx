@@ -137,6 +137,7 @@ export default function Header() {
             <MenuSection>
               <MenuSectionTitle>Ice-Tour</MenuSectionTitle>
               <MenuItemLink to="/ice-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
+              <MenuItemLink to="/ice-tour-unterstuetzen" onClick={() => setMenuOpen(false)}>Unterstützen</MenuItemLink>
               {/* <MenuItemLink to="/event-gifts" onClick={() => setMenuOpen(false)}>Gutscheine schenken</MenuItemLink> */}
               {!hasEventRegistration && (
                 <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>

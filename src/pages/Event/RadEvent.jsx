@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Bike, Calendar, CheckCircle2, Euro, Flag, HeartHandshake, Mail, MapPin, QrCode, Route, ShieldCheck, Smartphone, TimerReset } from "lucide-react";
+import { Bike, Calendar, CheckCircle2, Euro, Flag, HeartHandshake, MapPin, QrCode, Smartphone } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
 import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
+import EventContactForm from "./EventContactForm";
 import { EVENT_COMMUNITY_RIDE_CLAIM, EVENT_DATE, EVENT_ENTRY_FEE, EVENT_ENTRY_FEE_NOTICE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
 import eisdieleSchoeneImage from "./images/eisdiele_schoene.webp";
 import eismanufakturKlattImage from "./images/eismanufaktur_klatt.jpg";
@@ -322,6 +323,9 @@ function Hero({ hasEventRegistration }) {
             ) : (
               <Button href="/event-registration">Jetzt anmelden</Button>
             )}
+            <Button href="/ice-tour-unterstuetzen" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Ice-Tour unterstützen
+            </Button>
           </HeroActions>
           <FactGrid>
             <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
@@ -551,32 +555,27 @@ function ContactSection() {
   return (
     <Section>
       <Container>
-        <Card style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <SectionTitle>Fragen zum Event?</SectionTitle>
           <SectionDesc>
-            Wenn du Fragen zur Anmeldung, zu Geschenk-Startplätzen, zur Route oder zum Ablauf der Community-Ausfahrt hast, schreibe uns einfach eine Mail.
+            Nutze das Kontaktformular für Fragen zur Anmeldung, zur Route, zum Ablauf, für Unterstützungsaktionen, Partnerschaften oder wenn du als Eisdiele bei künftigen Events dabei sein möchtest.
           </SectionDesc>
-          <div style={{ marginTop: "1rem", textAlign: "center" }}>
-            <a
-              href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}?subject=Frage%20zur%20Ice-Tour%202026`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.55rem",
-                padding: "0.8rem 1rem",
-                borderRadius: 12,
-                background: "#fff7e5",
-                border: "1px solid #f0d79a",
-                color: "#8a5700",
-                textDecoration: "none",
-                fontWeight: 700,
-              }}
-            >
-              <Mail size={18} />
-              {EVENT_PAYMENT_CONTACT_EMAIL}
-            </a>
+          <div style={{ marginTop: "1rem" }}>
+            <EventContactForm
+              title="Direkt Kontakt aufnehmen"
+              description="Wir lesen jede Anfrage und melden uns per E-Mail zurück. Das gilt für Eventfragen genauso wie für Firmenaktionen, Partnerschaften und neue Ideen rund um die Ice-Tour."
+              sourcePage="ice-tour"
+            />
           </div>
-        </Card>
+          <div style={{ marginTop: "0.9rem", display: "flex", justifyContent: "center" }}>
+            <Button href="/ice-tour-unterstuetzen" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Mehr Möglichkeiten zur Unterstützung ansehen
+            </Button>
+          </div>
+          <p style={{ marginTop: "0.9rem", textAlign: "center", color: "#7c4f00", lineHeight: 1.5 }}>
+            Alternativ erreichst du uns direkt per Mail unter <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}?subject=Frage%20zur%20Ice-Tour%202026`} style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
+          </p>
+        </div>
       </Container>
     </Section>
   );
@@ -607,6 +606,10 @@ function Faq() {
     {
       q: "Gibt es am Eventtag eine öffentliche Event-Karte?",
       a: "Ja. Die Event-Karte wird am Veranstaltungstag freigeschaltet und ist öffentlich sichtbar. Dort sieht man, welche Starter an welchen offiziellen Checkpoints bereits eingecheckt haben.",
+    },
+    {
+      q: "Kann ich die Ice-Tour auch unterstützen, ohne mitzufahren?",
+      a: <>Ja. Für Firmen, Unterstützer, Nicht-Radler und Eisdielen gibt es eine eigene Seite mit Möglichkeiten zur Unterstützung. Alle Infos findest du unter <a href="/ice-tour-unterstuetzen" style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>Ice-Tour unterstützen</a>.</>,
     },
   ];
 
@@ -725,7 +728,6 @@ export default function RadEvent() {
       <EventTech />
       <EventMapSection />
       <Faq />
-      <ContactSection />
       <Section>
         <Container>
           <Card style={{ textAlign: "center" }}>
@@ -756,6 +758,7 @@ export default function RadEvent() {
           </Card>
         </Container>
       </Section>
+      <ContactSection />
       <Footer />
     </PageWrapper>
   );

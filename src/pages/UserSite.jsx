@@ -1043,6 +1043,12 @@ const ProfileIdentity = styled.div`
   @media (max-width: 640px) {
     align-items: flex-start;
   }
+
+  @media (max-width: 480px) {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
 `;
 
 const AvatarCircle = styled.div`
@@ -1075,17 +1081,31 @@ const AvatarCircle = styled.div`
     min-width: 104px;
     font-size: 1.7rem;
   }
+
+  @media (max-width: 480px) {
+    width: 88px;
+    height: 88px;
+    min-width: 88px;
+    font-size: 1.45rem;
+  }
 `;
 
 const ProfileInfo = styled.div`
   flex: 1;
   min-width: 0;
+  width: 100%;
 
   h1 {
     margin: 0;
     font-size: clamp(2rem, 4vw, 3rem);
     line-height: 1.02;
     color: #2f2100;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  @media (max-width: 480px) {
+    text-align: center;
   }
 `;
 
