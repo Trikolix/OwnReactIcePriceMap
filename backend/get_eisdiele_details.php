@@ -264,13 +264,17 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$eisdiele_id, $nutzer_id]);
 $routen = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Add like status for routes if user is logged in
-if ($nutzer_id) {
-    foreach ($routen as &$route) {
-        $route['is_liked'] = isRouteLikedByUser($pdo, $route['id'], $nutzer_id);
+$routeShopMap = getRouteIceShops($pdo, array_column($routen, 'id'));
+foreach ($routen as &$routeEntry) {
+    $rid = (int)$routeEntry['id'];
+    $routeEntry['eisdielen'] = $routeShopMap[$rid] ?? [];
+    if (!empty($routeEntry['eisdielen'])) {
+        $routeEntry['eisdiele_id'] = $routeEntry['eisdielen'][0]['id'];
+        $routeEntry['eisdiele_name'] = $routeEntry['eisdielen'][0]['name'];
     }
+    $routeEntry['commentCount'] = getCommentCountForRoute($pdo, $rid);
 }
+unset($routeEntry);
 
 // 17. Photo gallery from checkins
 $stmt = $pdo->prepare("

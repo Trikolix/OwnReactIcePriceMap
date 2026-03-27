@@ -403,7 +403,7 @@ const EPBadge = styled.div`
   padding: 4px 8px;
   border-radius: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  z-index: 1;
+  z-index: 4;
   animation: popIn 0.4s ease-out;
 
   @media (max-width: 640px) {

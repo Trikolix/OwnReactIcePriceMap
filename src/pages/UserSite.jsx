@@ -552,17 +552,19 @@ function UserSite() {
       <WhiteBackground>
         <DashboardWrapper>
             <ProfileHeader>
-              <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
-                {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
-              </AvatarCircle>
               <ProfileMainColumn>
-                <ProfileInfo>
-                  <h1>{data.nutzername}</h1>
+                <ProfileIdentity>
+                  <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
+                    {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
+                  </AvatarCircle>
+                  <ProfileInfo>
+                    <h1>{data.nutzername}</h1>
+                  </ProfileInfo>
                   <MetaRow>
                     <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
                     {isOwnProfile && <Chip>Dein Profil</Chip>}
                   </MetaRow>
-                </ProfileInfo>
+                </ProfileIdentity>
                 <LevelInlineCard>
                   <LevelDisplay levelInfo={data.level_info} />
                 </LevelInlineCard>
@@ -1017,8 +1019,8 @@ const LoadingCard = styled.div`
 
 const ProfileHeader = styled.div`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 1rem 1.2rem;
   background: rgba(255, 252, 243, 0.96);
   border: 1px solid rgba(47, 33, 0, 0.08);
@@ -1032,9 +1034,23 @@ const ProfileHeader = styled.div`
   }
 `;
 
+const ProfileIdentity = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem 1rem;
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+  }
+`;
+
 const AvatarCircle = styled.div`
-  width: 120px;
-  height: 120px;
+  width: 128px;
+  height: 128px;
+  min-width: 128px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   border-radius: 50%;
   background: linear-gradient(180deg, #ffe2b5, #ffd08a);
   border: 3px solid rgba(255, 255, 255, 0.9);
@@ -1052,14 +1068,23 @@ const AvatarCircle = styled.div`
     height: 100%;
     object-fit: cover;
   }
+
+  @media (max-width: 640px) {
+    width: 104px;
+    height: 104px;
+    min-width: 104px;
+    font-size: 1.7rem;
+  }
 `;
 
 const ProfileInfo = styled.div`
   flex: 1;
-  min-width: 240px;
+  min-width: 0;
+
   h1 {
     margin: 0;
-    font-size: clamp(1.35rem, 2vw, 2rem);
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.02;
     color: #2f2100;
   }
 `;
@@ -1069,7 +1094,7 @@ const ProfileMainColumn = styled.div`
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.85rem;
 `;
 
 const LevelInlineCard = styled.div`
@@ -1138,7 +1163,7 @@ const LevelInlineCard = styled.div`
 
 const ProfileActions = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-end;
 
   @media (max-width: 980px) {
@@ -1150,7 +1175,7 @@ const MetaRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  grid-column: 1 / -1;
 `;
 
 const Chip = styled.span`
@@ -1842,6 +1867,7 @@ const EPBadge = styled.div`
   padding: 4px 8px;
   border-radius: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 4;
 `;
 
 const AwardLightboxOverlay = styled.div`
