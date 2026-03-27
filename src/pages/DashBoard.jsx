@@ -146,7 +146,7 @@ function DashBoard() {
               case "group_checkin":
                 return <GroupCheckinCard key={id} checkins={data} onSuccess={reload} />;
               case 'bewertung':
-                return <ReviewCard key={`bewertung-${id}`} review={data} />;
+                return <ReviewCard key={`bewertung-${id}`} review={data} onSuccess={reload} />;
               case 'route':
                 return <RouteCard key={`route-${id}`} route={data} onSuccess={reload} />;
               case 'eisdiele':

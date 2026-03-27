@@ -920,7 +920,7 @@ function UserSite() {
                     <EmptyState>Noch keine Reviews vorhanden.</EmptyState>
                   )}
                   {displayedReviews.map((review, index) => (
-                    <ReviewCard key={index} review={review} />
+                    <ReviewCard key={index} review={review} onSuccess={refreshUser} />
                   ))}
                   {displayedReviews.length < reviews.length && (
                     <LoadMoreButton onClick={loadMoreReviews}>Mehr Reviews laden</LoadMoreButton>
