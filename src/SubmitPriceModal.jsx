@@ -53,6 +53,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
             });
             const data = await response.json();
             let localAwards = null;
+            let maintenanceBonus = 0;
             data.forEach(element => {
                 if (element.typ) {
                     if (element.status === 'success') {
@@ -66,6 +67,8 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 } else if (element.new_awards) {
                     setAwards(element.new_awards);
                     localAwards = element.new_awards;
+                } else if (element.maintenance_task_resolved?.bonus_ep) {
+                    maintenanceBonus = element.maintenance_task_resolved.bonus_ep;
                 } else if (element.level_up) {
                     setLevelUpInfo({
                         level: element.new_level,
@@ -73,6 +76,9 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                     });
                 }
             });
+            if (maintenanceBonus > 0) {
+                setMessage(`Preis erfolgreich gemeldet! +${maintenanceBonus} Pflege-EP`);
+            }
             if (!localAwards || localAwards.length === 0) {
                 setTimeout(() => {
                     setMessage('');

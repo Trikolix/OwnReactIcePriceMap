@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/shop_maintenance.php';
+
 function getLevelInformationForUser(PDO $pdo, int $userId): ?array {
 
     $epGesamt = getOverallEpForUser($pdo, $userId);
@@ -51,6 +53,7 @@ function getLevelInformationForUser(PDO $pdo, int $userId): ?array {
 }
 
 function getOverallEpForUser(PDO $pdo, int $userId): int {
+    ensureShopMaintenanceSchema($pdo);
     $stmt = $pdo->prepare("SELECT 
                 n.id AS nutzer_id,
                 n.username,
@@ -70,6 +73,8 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
                 COALESCE(e.ep, 0) AS ep_eisdielen,
                 -- EP durch geworbene Nutzer
                 COALESCE(gw.ep, 0) AS ep_geworbene_nutzer,
+                -- EP durch Pflegeaufgaben
+                COALESCE(mt.ep, 0) AS ep_pflege,
                 -- EP gesamt
                 (
                     COALESCE(ci_ohne_bild.count, 0) * 30 +
@@ -79,7 +84,8 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
                     COALESCE(r.count, 0) * 20 +
                     COALESCE(a.ep, 0) +
                     COALESCE(e.ep, 0) +
-                    COALESCE(gw.ep, 0)
+                    COALESCE(gw.ep, 0) +
+                    COALESCE(mt.ep, 0)
                 ) AS ep_gesamt
             FROM nutzer n
             -- Check-ins ohne Bild
@@ -153,6 +159,13 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
                 WHERE n.is_verified = 1 AND n.invited_by IS NOT NULL
                 GROUP BY n.invited_by
             ) gw ON gw.nutzer_id = n.id
+            LEFT JOIN (
+                SELECT resolved_by_user_id AS nutzer_id, SUM(bonus_ep_awarded) AS ep
+                FROM shop_maintenance_tasks
+                WHERE status = 'resolved'
+                  AND resolved_by_user_id IS NOT NULL
+                GROUP BY resolved_by_user_id
+            ) mt ON mt.nutzer_id = n.id
             WHERE n.id = :userid");
     $stmt->execute(['userid' => $userId]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);

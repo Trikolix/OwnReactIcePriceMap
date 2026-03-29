@@ -30,6 +30,13 @@ const DEFAULT_CONTEXT_MENU_STATE = {
   mode: 'menu',
   message: '',
 };
+const DISCOVERY_SLOT_LIMIT = 5;
+const DEFAULT_DISCOVERY_META = {
+  hiddenExisting: 0,
+  hiddenDuplicate: 0,
+  hiddenFalsePositive: 0,
+  truncated: false,
+};
 
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -177,6 +184,28 @@ const DISPLAY_OPTIONS = [
     formatValue: (value) => value.toFixed(2),
   },
 ];
+
+const createDiscoveryMarkerIcon = ({ flagged = false } = {}) => {
+  const gradient = flagged
+    ? 'linear-gradient(180deg,#b6bcc8 0%,#6e7687 100%)'
+    : 'linear-gradient(180deg,#2d7ff9 0%,#1652b8 100%)';
+  const shadow = flagged
+    ? '0 8px 18px rgba(55, 61, 74, 0.28)'
+    : '0 8px 18px rgba(10,44,99,0.35)';
+
+  return L.divIcon({
+    className: 'discovery-marker-icon',
+    html: `
+      <div style="position:relative; width:28px; height:28px;">
+        <div style="width:28px; height:28px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:${gradient}; border:2px solid #ffffff; box-shadow:${shadow};"></div>
+        <div style="position:absolute; inset:7px auto auto 7px; width:10px; height:10px; border-radius:50%; background:#ffffff;"></div>
+      </div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -24],
+  });
+};
 
 const createDefaultFilters = () => ({
   favorites: false,
@@ -353,6 +382,56 @@ const ClusteringToggleControl = ({ clustering, onToggle }) => {
   return null;
 };
 
+const DiscoveryToggleControl = ({ isDiscoveryVisible, onToggle }) => {
+  const map = useMap();
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    const toggleControl = L.control({ position: 'topright' });
+    toggleControl.onAdd = () => {
+      const container = L.DomUtil.create('div', 'leaflet-bar');
+      const button = L.DomUtil.create('a', 'leaflet-control-discovery-toggle', container);
+      button.href = '#';
+      button.innerHTML = '🧭';
+      buttonRef.current = button;
+
+      const handleClick = (event) => {
+        L.DomEvent.stopPropagation(event);
+        L.DomEvent.preventDefault(event);
+        onToggle();
+      };
+
+      L.DomEvent.on(button, 'click', handleClick);
+      L.DomEvent.disableClickPropagation(container);
+
+      return container;
+    };
+
+    toggleControl.addTo(map);
+
+    return () => {
+      buttonRef.current = null;
+      toggleControl.remove();
+    };
+  }, [map, onToggle]);
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    button.title = isDiscoveryVisible ? 'Discovery ausblenden' : 'Discovery einblenden';
+    if (isDiscoveryVisible) {
+      L.DomUtil.addClass(button, 'leaflet-active');
+    } else {
+      L.DomUtil.removeClass(button, 'leaflet-active');
+    }
+  }, [isDiscoveryVisible]);
+
+  return null;
+};
+
 const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
   const map = useMap();
   const buttonRef = useRef(null);
@@ -467,9 +546,10 @@ const IceCreamRadar = () => {
   const [searchLocation, setSearchLocation] = useState(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
-  const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
+  const [submitModalPrefill, setSubmitModalPrefill] = useState(null);
   const [currentZoom, setCurrentZoom] = useState(14);
   const [seasonalMapEnabled, setSeasonalMapEnabled] = useState(() => {
     if (typeof window === 'undefined') {
@@ -486,6 +566,12 @@ const IceCreamRadar = () => {
     loading: false,
     error: null,
   });
+  const [discoveryResults, setDiscoveryResults] = useState([]);
+  const [discoveryMeta, setDiscoveryMeta] = useState(() => ({ ...DEFAULT_DISCOVERY_META }));
+  const [discoveryMessage, setDiscoveryMessage] = useState('');
+  const [discoveryError, setDiscoveryError] = useState('');
+  const [isDiscoveryLoading, setIsDiscoveryLoading] = useState(false);
+  const [discoverySlots, setDiscoverySlots] = useState(null);
   const activeShopRequestRef = useRef(0);
 
   useEffect(() => {
@@ -678,6 +764,36 @@ const IceCreamRadar = () => {
 
   const fetchIceCreamShops = loadIceCreamShops;
   const refreshShops = loadIceCreamShops;
+  const clearDiscoveryResults = useCallback(() => {
+    setDiscoveryResults([]);
+    setDiscoveryMeta({ ...DEFAULT_DISCOVERY_META });
+    setDiscoveryMessage('');
+    setDiscoveryError('');
+  }, []);
+
+  const fetchDiscoverySlots = useCallback(async () => {
+    if (!isLoggedIn) {
+      setDiscoverySlots(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/discovery_slots.php`);
+      const data = await response.json();
+      if (data.status === 'success' && data.slots) {
+        setDiscoverySlots(data.slots);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Discovery-Slots:', error);
+    }
+  }, [apiUrl, isLoggedIn]);
+
+  const refreshShopsAndDiscovery = useCallback(() => {
+    refreshShops();
+    if (isLoggedIn) {
+      fetchDiscoverySlots();
+    }
+  }, [refreshShops, isLoggedIn, fetchDiscoverySlots]);
   const activeShopId =
     activeShop?.eisdiele?.id ??
     activeShop?.eisdielen_id ??
@@ -758,6 +874,10 @@ const IceCreamRadar = () => {
     setIsSearchVisible((prev) => !prev);
   }, []);
 
+  const toggleDiscoveryVisibility = useCallback(() => {
+    setIsDiscoveryVisible((prev) => !prev);
+  }, []);
+
   const closeContextMenu = useCallback(() => {
     setContextMenuState((prev) => (prev.isVisible ? { ...DEFAULT_CONTEXT_MENU_STATE } : prev));
   }, []);
@@ -798,7 +918,7 @@ const IceCreamRadar = () => {
   const handleSubmitModalVisibility = useCallback((visible) => {
     if (!visible) {
       setIsSubmitIceShopModalOpen(false);
-      setSubmitModalCoordinates(null);
+      setSubmitModalPrefill(null);
       return;
     }
     setIsSubmitIceShopModalOpen(true);
@@ -814,11 +934,196 @@ const IceCreamRadar = () => {
         setShowLoginModal(true);
         return;
       }
-      setSubmitModalCoordinates({ lat: latlng.lat, lng: latlng.lng });
+      setSubmitModalPrefill({ lat: latlng.lat, lng: latlng.lng });
       setIsSubmitIceShopModalOpen(true);
     },
     [closeContextMenu, isLoggedIn, setShowLoginModal]
   );
+
+  const handleDiscoverySearch = useCallback(async () => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    const mapInstance = mapRef.current;
+    if (!mapInstance) {
+      return;
+    }
+
+    const remainingSlots = Number(discoverySlots?.remaining_slots ?? DISCOVERY_SLOT_LIMIT);
+    const zoom = mapInstance.getZoom?.() ?? currentZoom;
+    if (remainingSlots <= 0) {
+      setDiscoveryError('Aktuell sind keine freien Discovery-Slots verfügbar.');
+      return;
+    }
+    if (zoom < MIN_CONTEXT_MENU_ZOOM) {
+      setDiscoveryError(`Bitte zoome mindestens auf Stufe ${MIN_CONTEXT_MENU_ZOOM}, bevor du den Kartenausschnitt durchsuchst.`);
+      return;
+    }
+
+    const bounds = mapInstance.getBounds?.();
+    if (!bounds) {
+      return;
+    }
+
+    setIsDiscoveryLoading(true);
+    setDiscoveryError('');
+    setDiscoveryMessage('');
+
+    try {
+      const response = await fetch(`${apiUrl}/api/discovery_search_map.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          north: bounds.getNorth(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          west: bounds.getWest(),
+          zoom,
+        }),
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        const results = Array.isArray(data.results) ? data.results : [];
+        const hiddenExisting = Number(data.meta?.hidden_existing || 0);
+        const hiddenDuplicate = Number(data.meta?.hidden_duplicate || 0);
+        const hiddenFalsePositive = Number(data.meta?.hidden_false_positive || 0);
+        const totalHidden = hiddenExisting + hiddenDuplicate + hiddenFalsePositive;
+        setDiscoveryResults(results);
+        setDiscoveryMeta({
+          hiddenExisting,
+          hiddenDuplicate,
+          hiddenFalsePositive,
+          truncated: Boolean(data.meta?.truncated),
+        });
+        if (data.meta?.slots) {
+          setDiscoverySlots(data.meta.slots);
+        }
+        if (results.length > 0) {
+          setDiscoveryMessage(`${results.length} neue Treffer im aktuellen Kartenausschnitt gefunden.`);
+        } else if (totalHidden > 0) {
+          setDiscoveryMessage('Im Kartenausschnitt wurden Treffer gefunden, sie sind aber bereits bekannt, zu ähnlich oder schon als falsch markiert.');
+        } else {
+          setDiscoveryMessage('Im aktuellen Kartenausschnitt wurden keine neuen Eisdielen gefunden.');
+        }
+      } else {
+        clearDiscoveryResults();
+        setDiscoveryError(data.message || 'Discovery-Suche fehlgeschlagen.');
+        if (data.slots) {
+          setDiscoverySlots(data.slots);
+        }
+      }
+    } catch (error) {
+      console.error('Fehler bei der Discovery-Suche:', error);
+      clearDiscoveryResults();
+      setDiscoveryError('Discovery-Suche fehlgeschlagen.');
+    } finally {
+      setIsDiscoveryLoading(false);
+    }
+  }, [apiUrl, clearDiscoveryResults, currentZoom, discoverySlots, isLoggedIn, setShowLoginModal]);
+
+  const handleOpenDiscoveryImport = useCallback((result) => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if ((discoverySlots?.remaining_slots ?? 0) <= 0) {
+      setDiscoveryError('Aktuell sind keine freien Discovery-Slots verfügbar.');
+      return;
+    }
+
+    setSubmitModalPrefill({
+      lat: result.lat,
+      lng: result.lon,
+      name: result.name || '',
+      address: result.address || '',
+      website: result.website || '',
+      openingHoursStructured: result.opening_hours_structured || null,
+      openingHoursNote: result.opening_hours_structured?.note || (!result.opening_hours_structured ? (result.opening_hours_note || '') : ''),
+      externalSource: {
+        entry_id: result.entry_id,
+        provider: result.provider,
+        external_id: result.external_id,
+        name: result.name,
+        address: result.address,
+        website: result.website,
+        opening_hours_note: result.opening_hours_note || '',
+        lat: result.lat,
+        lon: result.lon,
+      },
+    });
+    setIsSubmitIceShopModalOpen(true);
+  }, [discoverySlots?.remaining_slots, isLoggedIn, setShowLoginModal]);
+
+  const handleDiscoveryFeedback = useCallback(async (entryId) => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Diesen Treffer wirklich als falsch melden?\n\nNutze das nur, wenn es sich wirklich nicht um eine passende Eisdiele handelt oder der Eintrag klar unbrauchbar ist. Einzelne Meldungen markieren den Treffer zunächst nur, mehrere unabhängige Meldungen blenden ihn später aus.'
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/discovery_feedback.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry_id: entryId,
+          feedback_type: 'false_positive',
+        }),
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        const falsePositiveCount = Number(data.false_positive_count || 0);
+        setDiscoveryResults((prev) => prev.map((result) => {
+          if (Number(result.entry_id) !== Number(entryId)) {
+            return result;
+          }
+          if (falsePositiveCount >= 3) {
+            return null;
+          }
+          return {
+            ...result,
+            classification: 'flagged_false_positive',
+            feedback_false_positive_count: falsePositiveCount,
+            feedback_confirmed_valid_count: Number(data.confirmed_valid_count || 0),
+          };
+        }).filter(Boolean));
+        setDiscoveryMessage(
+          falsePositiveCount >= 3
+            ? 'Treffer wurde nach mehreren Meldungen ausgeblendet.'
+            : 'Treffer wurde gemeldet und bleibt vorerst nur markiert sichtbar.'
+        );
+      } else {
+        setDiscoveryError(data.message || 'Feedback konnte nicht gespeichert werden.');
+      }
+    } catch (error) {
+      console.error('Fehler beim Discovery-Feedback:', error);
+      setDiscoveryError('Feedback konnte nicht gespeichert werden.');
+    }
+  }, [apiUrl, isLoggedIn, setShowLoginModal]);
+
+  const handleSubmitIceShopSuccess = useCallback((payload, responseData) => {
+    const externalSource = payload?.external_source;
+    if (externalSource?.external_id) {
+      setDiscoveryResults((prev) => prev.filter((result) => !(
+        result.provider === externalSource.provider
+        && result.external_id === externalSource.external_id
+      )));
+    }
+    if (responseData?.discovery_slots) {
+      setDiscoverySlots(responseData.discovery_slots);
+    } else if (isLoggedIn) {
+      fetchDiscoverySlots();
+    }
+  }, [fetchDiscoverySlots, isLoggedIn]);
   const handleFilterToggle = (filterKey) => {
     setFilters((prev) => {
       const nextValue = !prev[filterKey];
@@ -1004,6 +1309,15 @@ const IceCreamRadar = () => {
     }
   }, [userId, openFilterQueryString]);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setDiscoverySlots(null);
+      clearDiscoveryResults();
+      return;
+    }
+    fetchDiscoverySlots();
+  }, [isLoggedIn, fetchDiscoverySlots, clearDiscoveryResults]);
+
   const mapDisplayShops = useMemo(
     () => shopsWithDisplayValue.map(({ shop }) => shop),
     [shopsWithDisplayValue]
@@ -1125,6 +1439,53 @@ const IceCreamRadar = () => {
             )}
             </SearchOverlay>
         )}
+        {isDiscoveryVisible && (
+          <DiscoveryOverlay>
+            <DiscoveryCard>
+              <DiscoveryHeader>
+                <DiscoveryTitle>Neue Eisdielen entdecken</DiscoveryTitle>
+                {discoveryResults.length > 0 && (
+                  <DiscoveryClearButton type="button" onClick={clearDiscoveryResults}>
+                    Treffer ausblenden
+                  </DiscoveryClearButton>
+                )}
+              </DiscoveryHeader>
+              <DiscoveryText>
+                {isLoggedIn
+                  ? 'Mit diesem Modus kannst du Eisdielen finden und eintragen, die im aktuellen Kartenausschnitt liegen und noch nicht in der Ice-App vorhanden sind.'
+                  : 'Melde dich an, um im aktuellen Kartenausschnitt nach Eisdielen zu suchen, die noch nicht in der Ice-App eingetragen sind.'}
+              </DiscoveryText>
+              {isLoggedIn && discoverySlots && (
+                <DiscoverySlotText>
+                  Freie Discovery-Slots: {discoverySlots.remaining_slots ?? 0}/{discoverySlots.limit ?? DISCOVERY_SLOT_LIMIT}
+                </DiscoverySlotText>
+              )}
+              <DiscoveryInfoBox>
+                <DiscoveryInfoSummary>Was macht Discovery?</DiscoveryInfoSummary>
+                <DiscoveryInfoContent>
+                  <li>Die Suche nutzt den aktuellen Kartenausschnitt und blendet bereits bekannte oder sehr ähnliche Treffer aus.</li>
+                  <li>Falsche Treffer kannst du direkt markieren, damit sie künftig zurückhaltender oder gar nicht mehr angezeigt werden.</li>
+                  <li>Neue Treffer lassen sich direkt mit vorausgefülltem Formular als Eisdiele eintragen.</li>
+                </DiscoveryInfoContent>
+              </DiscoveryInfoBox>
+              <DiscoveryPrimaryButton type="button" onClick={handleDiscoverySearch} disabled={isDiscoveryLoading}>
+                {isDiscoveryLoading ? 'Suche läuft…' : 'Kartenausschnitt durchsuchen'}
+              </DiscoveryPrimaryButton>
+              {discoveryMessage && <DiscoveryStatusText>{discoveryMessage}</DiscoveryStatusText>}
+              {discoveryError && <DiscoveryErrorText>{discoveryError}</DiscoveryErrorText>}
+              {(discoveryMeta.hiddenExisting > 0 || discoveryMeta.hiddenDuplicate > 0 || discoveryMeta.hiddenFalsePositive > 0 || discoveryMeta.truncated) && (
+                <DiscoveryText>
+                  {[
+                    discoveryMeta.hiddenExisting > 0 ? `${discoveryMeta.hiddenExisting} bereits bekannte Treffer` : null,
+                    discoveryMeta.hiddenDuplicate > 0 ? `${discoveryMeta.hiddenDuplicate} ähnliche Dubletten` : null,
+                    discoveryMeta.hiddenFalsePositive > 0 ? `${discoveryMeta.hiddenFalsePositive} bereits gemeldete Treffer` : null,
+                    discoveryMeta.truncated ? 'weitere Treffer wurden gekürzt' : null,
+                  ].filter(Boolean).join(' · ')}
+                </DiscoveryText>
+              )}
+            </DiscoveryCard>
+          </DiscoveryOverlay>
+        )}
         {contextMenuState.isVisible && (
           <MapContextMenu style={{ top: contextMenuState.y, left: contextMenuState.x }}>
             {contextMenuState.mode === 'menu' ? (
@@ -1165,6 +1526,7 @@ const IceCreamRadar = () => {
             onUserInteraction={handleMapInteraction}
           />
           <SearchToggleControl isSearchVisible={isSearchVisible} onToggle={toggleSearchVisibility} />
+          <DiscoveryToggleControl isDiscoveryVisible={isDiscoveryVisible} onToggle={toggleDiscoveryVisibility} />
           <ClusteringToggleControl clustering={clustering} onToggle={() => setClustering((prev) => !prev)} />
           <SeasonalViewToggleControl
             enabled={easterCampaignActive}
@@ -1243,6 +1605,57 @@ const IceCreamRadar = () => {
               );
             })
           )}
+          {isDiscoveryVisible && discoveryResults.map((result) => (
+            <Marker
+              key={`${result.provider}-${result.external_id}`}
+              position={[result.lat, result.lon]}
+              icon={createDiscoveryMarkerIcon({ flagged: result.classification === 'flagged_false_positive' })}
+            >
+              <Popup>
+                <DiscoveryPopup>
+                  <DiscoveryPopupTitle>{result.name}</DiscoveryPopupTitle>
+                  {result.address && <DiscoveryPopupMeta>{result.address}</DiscoveryPopupMeta>}
+                  {result.website && (
+                    <DiscoveryPopupMeta>
+                      <a href={result.website} target="_blank" rel="noreferrer">{result.website}</a>
+                    </DiscoveryPopupMeta>
+                  )}
+                  {result.opening_hours_note && (
+                    <DiscoveryPopupMeta>Öffnungszeiten: {result.opening_hours_note}</DiscoveryPopupMeta>
+                  )}
+                  {result.classification === 'flagged_false_positive' && (
+                    <DiscoveryPopupWarning>
+                      Dieser Treffer wurde bereits {result.feedback_false_positive_count || 1}x als möglicherweise falsch gemeldet und wird deshalb vorsichtiger angezeigt.
+                    </DiscoveryPopupWarning>
+                  )}
+                  <DiscoveryPopupMeta>Quelle: OSM Discovery</DiscoveryPopupMeta>
+                  <DiscoveryPopupActions>
+                    <DiscoveryPopupButton
+                      type="button"
+                      disabled={!isLoggedIn || (discoverySlots?.remaining_slots ?? 0) <= 0}
+                      onClick={() => handleOpenDiscoveryImport(result)}
+                    >
+                      Als Eisdiele eintragen
+                    </DiscoveryPopupButton>
+                    <DiscoveryPopupSecondaryButton
+                      type="button"
+                      onClick={() => handleDiscoveryFeedback(result.entry_id)}
+                    >
+                      Falscher Treffer
+                    </DiscoveryPopupSecondaryButton>
+                    {result.external_url && (
+                      <DiscoveryPopupLink href={result.external_url} target="_blank" rel="noreferrer">
+                        Externes Ergebnis ansehen
+                      </DiscoveryPopupLink>
+                    )}
+                  </DiscoveryPopupActions>
+                  {!isLoggedIn && (
+                    <DiscoveryPopupMeta>Anmelden, um Treffer zu importieren oder zu melden.</DiscoveryPopupMeta>
+                  )}
+                </DiscoveryPopup>
+              </Popup>
+            </Marker>
+          ))}
           {userPosition && (
             <Marker
               position={userPosition}
@@ -1419,20 +1832,27 @@ const IceCreamRadar = () => {
       {isSubmitIceShopModalOpen && (
         <SubmitIceShopModal
           showForm={isSubmitIceShopModalOpen}
-          setShowForm={setIsSubmitIceShopModalOpen}
+          setShowForm={handleSubmitModalVisibility}
           userId={userId}
-          refreshShops={refreshShops}
-          userLatitude={submitModalCoordinates?.lat ?? userPosition?.[0] ?? 50.83}
-          userLongitude={submitModalCoordinates?.lng ?? userPosition?.[1] ?? 12.92}
-          initialLatitude={submitModalCoordinates?.lat ?? null}
-          initialLongitude={submitModalCoordinates?.lng ?? null}
+          refreshShops={refreshShopsAndDiscovery}
+          userLatitude={submitModalPrefill?.lat ?? userPosition?.[0] ?? 50.83}
+          userLongitude={submitModalPrefill?.lng ?? userPosition?.[1] ?? 12.92}
+          initialLatitude={submitModalPrefill?.lat ?? null}
+          initialLongitude={submitModalPrefill?.lng ?? null}
+          initialName={submitModalPrefill?.name ?? ""}
+          initialAddress={submitModalPrefill?.address ?? ""}
+          initialWebsite={submitModalPrefill?.website ?? ""}
+          initialOpeningHoursStructured={submitModalPrefill?.openingHoursStructured ?? null}
+          initialOpeningHoursNote={submitModalPrefill?.openingHoursNote ?? ""}
+          initialExternalSource={submitModalPrefill?.externalSource ?? null}
+          onSubmitSuccess={handleSubmitIceShopSuccess}
         />
       )}
       {showDetailsView && activeShop && (
         <ShopDetailsView
           shopId={activeShop.eisdiele.id}
           setIceCreamShops={setIceCreamShops}
-          refreshMapShops={refreshShops}
+          refreshMapShops={refreshShopsAndDiscovery}
           onClose={handleCloseShopDetails}
         />
       )}
@@ -1635,6 +2055,190 @@ const SearchStatusText = styled.p`
   padding: 0.45rem 0.75rem;
   color: #555;
   font-size: 0.85rem;
+`;
+
+const DiscoveryOverlay = styled.div`
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  width: min(90vw, 360px);
+  pointer-events: none;
+`;
+
+const DiscoveryCard = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  background: rgba(255, 251, 237, 0.96);
+  padding: 0.75rem;
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(96, 62, 0, 0.12);
+  pointer-events: auto;
+`;
+
+const DiscoveryHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+`;
+
+const DiscoveryTitle = styled.h3`
+  margin: 0;
+  color: #503000;
+  font-size: 1rem;
+`;
+
+const DiscoveryText = styled.p`
+  margin: 0;
+  color: rgba(80, 48, 0, 0.78);
+  font-size: 0.84rem;
+  line-height: 1.35;
+`;
+
+const DiscoverySlotText = styled.p`
+  margin: 0;
+  color: #1652b8;
+  font-size: 0.84rem;
+  font-weight: 700;
+`;
+
+const DiscoveryInfoBox = styled.details`
+  border: 1px solid rgba(22, 82, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.1rem 0.65rem 0.5rem;
+`;
+
+const DiscoveryInfoSummary = styled.summary`
+  cursor: pointer;
+  color: #1652b8;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.45rem 0 0.25rem;
+`;
+
+const DiscoveryInfoContent = styled.ul`
+  margin: 0.1rem 0 0;
+  padding-left: 1rem;
+  color: rgba(80, 48, 0, 0.78);
+  font-size: 0.82rem;
+  line-height: 1.4;
+`;
+
+const DiscoveryPrimaryButton = styled.button`
+  border: none;
+  border-radius: 12px;
+  padding: 0.65rem 0.9rem;
+  background: linear-gradient(180deg, #2d7ff9 0%, #1652b8 100%);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const DiscoveryClearButton = styled.button`
+  border: none;
+  background: transparent;
+  color: #1652b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const DiscoveryStatusText = styled.p`
+  margin: 0;
+  color: #1f6f43;
+  font-size: 0.84rem;
+  font-weight: 600;
+`;
+
+const DiscoveryErrorText = styled.p`
+  margin: 0;
+  color: #b00020;
+  font-size: 0.84rem;
+  font-weight: 600;
+`;
+
+const DiscoveryPopup = styled.div`
+  min-width: 220px;
+  display: grid;
+  gap: 0.35rem;
+`;
+
+const DiscoveryPopupTitle = styled.h3`
+  margin: 0;
+  font-size: 1rem;
+  color: #2d2d2d;
+`;
+
+const DiscoveryPopupMeta = styled.p`
+  margin: 0;
+  font-size: 0.84rem;
+  color: #555;
+
+  a {
+    color: #1652b8;
+    word-break: break-word;
+  }
+`;
+
+const DiscoveryPopupWarning = styled.p`
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(182, 188, 200, 0.22);
+  color: #4e5868;
+  font-size: 0.82rem;
+  line-height: 1.35;
+`;
+
+const DiscoveryPopupActions = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+`;
+
+const DiscoveryPopupButton = styled.button`
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  background: #ffb522;
+  color: #2d2200;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+`;
+
+const DiscoveryPopupSecondaryButton = styled.button`
+  border: 1px solid rgba(45, 45, 45, 0.14);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  background: #fff;
+  color: #5a3c00;
+  font-weight: 600;
+  cursor: pointer;
+`;
+
+const DiscoveryPopupLink = styled.a`
+  display: block;
+  text-align: center;
+  border: 1px solid rgba(22, 82, 184, 0.18);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  background: #f7faff;
+  color: #1652b8;
+  font-weight: 600;
+  text-decoration: none;
 `;
 
 const FilterModalOverlay = styled.div`

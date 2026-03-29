@@ -50,23 +50,26 @@ try {
         (float)$locations[(int)$challenge['inviter_user_id']]['lat'],
         (float)$locations[(int)$challenge['inviter_user_id']]['lon'],
         $lat,
-        $lon
+        $lon,
+        (string)($challenge['mode'] ?? 'midpoint')
     );
 
     if (count($calculated['shops']) < 4) {
         $update = $pdo->prepare("
             UPDATE team_challenges
-            SET accepted_at = NOW(),
-                center_lat = :center_lat,
-                center_lon = :center_lon,
-                radius_m = :radius_m,
-                status = 'failed_no_shops',
-                failed_reason = 'not_enough_shops'
+        SET accepted_at = NOW(),
+            center_lat = :center_lat,
+            center_lon = :center_lon,
+            min_radius_m = :min_radius_m,
+            radius_m = :radius_m,
+            status = 'failed_no_shops',
+            failed_reason = 'not_enough_shops'
             WHERE id = :id
         ");
         $update->execute([
             'center_lat' => $calculated['center_lat'],
             'center_lon' => $calculated['center_lon'],
+            'min_radius_m' => $calculated['min_radius_m'],
             'radius_m' => $calculated['radius_m'],
             'id' => $challengeId,
         ]);
@@ -89,6 +92,7 @@ try {
         SET accepted_at = NOW(),
             center_lat = :center_lat,
             center_lon = :center_lon,
+            min_radius_m = :min_radius_m,
             radius_m = :radius_m,
             status = 'proposal_open'
         WHERE id = :id
@@ -96,6 +100,7 @@ try {
     $update->execute([
         'center_lat' => $calculated['center_lat'],
         'center_lon' => $calculated['center_lon'],
+        'min_radius_m' => $calculated['min_radius_m'],
         'radius_m' => $calculated['radius_m'],
         'id' => $challengeId,
     ]);

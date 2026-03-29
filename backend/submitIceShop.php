@@ -5,6 +5,8 @@ require_once  __DIR__ . '/evaluators/IceShopSubmitCountEvaluator.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/currency.php';
+require_once __DIR__ . '/lib/shop_maintenance.php';
+require_once __DIR__ . '/lib/external_shop_discovery.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -168,6 +170,24 @@ if (!is_array($structuredPayload) && array_key_exists('openingHours', $data)) {
 }
 $normalizedHours = normalize_structured_opening_hours($structuredPayload);
 $openingHoursText = build_opening_hours_display($normalizedHours['rows'], $normalizedHours['note']);
+$externalSource = is_array($data['external_source'] ?? null) ? $data['external_source'] : null;
+$externalEntry = null;
+
+if ($externalSource && !empty($externalSource['provider']) && !empty($externalSource['external_id'])) {
+    $externalEntry = externalShopLoadStoredMapping(
+        $pdo,
+        (string)$externalSource['provider'],
+        (string)$externalSource['external_id']
+    );
+    if ($externalEntry && in_array((string)$externalEntry['status'], ['matched_existing', 'imported_as_shop'], true) && !empty($externalEntry['shop_id'])) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Dieser Discovery-Treffer ist bereits einer bestehenden Eisdiele zugeordnet."
+        ]);
+        exit;
+    }
+    externalShopAssertDiscoverySlotsAvailable($pdo, $currentUserId);
+}
 
 $sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, opening_hours_note, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :openingHoursNote, :userId, :landkreisId, :bundeslandId, :landId)";
 $stmt = $pdo->prepare($sql);
@@ -205,7 +225,37 @@ if ($location) {
         ]);
         $newShopId = (int)$pdo->lastInsertId();
         replace_opening_hours($pdo, $newShopId, $normalizedHours['rows']);
+        if ($externalSource && !empty($externalSource['provider']) && !empty($externalSource['external_id'])) {
+            externalShopStoreMapping($pdo, [
+                'provider' => (string)$externalSource['provider'],
+                'external_id' => (string)$externalSource['external_id'],
+                'osm_type' => $externalEntry['osm_type'] ?? null,
+                'osm_numeric_id' => $externalEntry['osm_numeric_id'] ?? null,
+                'shop_id' => $newShopId,
+                'status' => 'imported_as_shop',
+                'external_name' => (string)($externalSource['name'] ?? $data['name']),
+                'external_address' => (string)($externalSource['address'] ?? $data['adresse']),
+                'external_lat' => isset($externalSource['lat']) ? (float)$externalSource['lat'] : (float)$data['latitude'],
+                'external_lon' => isset($externalSource['lon']) ? (float)$externalSource['lon'] : (float)$data['longitude'],
+                'website' => (string)($externalSource['website'] ?? ($data['website'] ?? '')),
+                'tags_json' => $externalEntry['tags_json'] ?? null,
+                'payload_json' => json_encode($externalSource, JSON_UNESCAPED_UNICODE),
+                'created_by_user_id' => $currentUserId,
+            ]);
+            $storedEntry = externalShopLoadStoredMapping(
+                $pdo,
+                (string)$externalSource['provider'],
+                (string)$externalSource['external_id']
+            );
+            externalShopCreateDiscoveryOrigin(
+                $pdo,
+                $newShopId,
+                $currentUserId,
+                $storedEntry ? (int)$storedEntry['id'] : null
+            );
+        }
         $pdo->commit();
+        shopMaintenanceSyncTaskForShop($pdo, $newShopId);
         // Evaluate Awards
         $evaluators = [
             new IceShopSubmitCountEvaluator()
@@ -223,7 +273,8 @@ if ($location) {
             'new_awards' => $newAwards,
             'level_up' => $levelChange['level_up'] ?? false,
             'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
-            'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
+            'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
+            'discovery_slots' => $externalSource ? externalShopGetDiscoverySlotStatus($pdo, $currentUserId) : null
         ]);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
