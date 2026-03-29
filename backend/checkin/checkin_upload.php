@@ -5,6 +5,7 @@ require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
+require_once __DIR__ . '/../lib/external_shop_discovery.php';
 require_once __DIR__ . '/../lib/user_notification_settings.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
@@ -295,6 +296,7 @@ try {
     if (!$checkinId) {
         throw new Exception("Checkin konnte nicht gespeichert werden.");
     }
+    externalShopReleaseDiscoverySlotForShop($pdo, (int)$shopId);
 
     // Bilder-Tabelle füllen (falls Bilder hochgeladen wurden)
     if (!empty($bildUrls)) {

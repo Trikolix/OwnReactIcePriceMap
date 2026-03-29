@@ -4,6 +4,7 @@ require_once __DIR__ . '/lib/levelsystem.php';
 require_once __DIR__ . '/evaluators/PriceSubmitCountEvaluator.php';
 require_once __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/shop_maintenance.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -13,6 +14,8 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
     $response = [];
 
     try {
+        shopMaintenanceSyncTaskForShop($pdo, (int)$shopId);
+
         if ($kugelPreis !== null) {
             $sql = $additionalInfoKugelPreis != null ?
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
@@ -68,6 +71,8 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
         }
 
         // Evaluatoren
+    $resolvedMaintenanceTask = shopMaintenanceResolveActiveTask($pdo, (int)$shopId, 'price_stale', (int)$userId);
+
     $evaluators = [
         new PriceSubmitCountEvaluator(),
         new AwardCollectorEvaluator()
@@ -83,6 +88,17 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
         }
     }
     $response[] = ['new_awards' => $newAwards];
+
+    if ($resolvedMaintenanceTask) {
+        $response[] = [
+            'maintenance_task_resolved' => [
+                'id' => (int)$resolvedMaintenanceTask['id'],
+                'task_type' => 'price_stale',
+                'task_label' => shopMaintenanceGetTaskLabel('price_stale'),
+                'bonus_ep' => (int)$resolvedMaintenanceTask['bonus_ep_awarded'],
+            ],
+        ];
+    }
 
     $levelChange = updateUserLevelIfChanged($pdo, $userId);
     $response[] = [

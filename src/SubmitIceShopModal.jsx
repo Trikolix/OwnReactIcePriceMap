@@ -15,7 +15,14 @@ const SubmitIceShopModal = ({
   userLongitude = null,
   existingIceShop = null,
   initialLatitude = null,
-  initialLongitude = null
+  initialLongitude = null,
+  initialName = "",
+  initialAddress = "",
+  initialWebsite = "",
+  initialExternalSource = null,
+  initialOpeningHoursStructured = null,
+  initialOpeningHoursNote = "",
+  onSubmitSuccess = null
 }) => {
   const [name, setName] = useState(existingIceShop?.name || "");
   const [adresse, setAdresse] = useState(existingIceShop?.adresse || "");
@@ -32,6 +39,7 @@ const SubmitIceShopModal = ({
   const [awards, setAwards] = useState([]);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
   const [closingDate, setClosingDate] = useState(existingIceShop?.closing_date || "");
+  const [selectedExternalSource, setSelectedExternalSource] = useState(initialExternalSource || null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const isEditMode = Boolean(existingIceShop);
   const isAdmin = Number(userId) === 1;
@@ -53,7 +61,27 @@ const SubmitIceShopModal = ({
     ? (autoApproveChanges ? "Aktualisieren" : "Vorschlag senden")
     : "Einreichen";
 
+  const formatCoordinate = (value) => {
+    const number = typeof value === 'number' ? value : Number(value);
+    if (Number.isNaN(number)) {
+      return '';
+    }
+    return number.toFixed(6);
+  };
+
   useEffect(() => {
+    if (!existingIceShop) {
+      return;
+    }
+    setName(existingIceShop.name || "");
+    setAdresse(existingIceShop.adresse || "");
+    setWebsite(existingIceShop.website || "");
+    setLatitude(existingIceShop.latitude || "");
+    setLongitude(existingIceShop.longitude || "");
+    setStatus(existingIceShop.status || 'open');
+    setReopeningDate(existingIceShop.reopening_date || '');
+    setClosingDate(existingIceShop.closing_date || '');
+    setSelectedExternalSource(null);
     setOpeningHoursData(
       hydrateOpeningHours(
         existingIceShop?.openingHoursStructured,
@@ -66,19 +94,30 @@ const SubmitIceShopModal = ({
     if (!showForm || existingIceShop) {
       return;
     }
-    if (initialLatitude === null || initialLongitude === null) {
-      return;
-    }
-    const formatCoordinate = (value) => {
-      const number = typeof value === 'number' ? value : Number(value);
-      if (Number.isNaN(number)) {
-        return '';
-      }
-      return number.toFixed(6);
-    };
-    setLatitude(formatCoordinate(initialLatitude));
-    setLongitude(formatCoordinate(initialLongitude));
-  }, [showForm, existingIceShop, initialLatitude, initialLongitude]);
+    setName(initialName || "");
+    setAdresse(initialAddress || "");
+    setWebsite(initialWebsite || "");
+    setLatitude(initialLatitude === null ? "" : formatCoordinate(initialLatitude));
+    setLongitude(initialLongitude === null ? "" : formatCoordinate(initialLongitude));
+    setOpeningHoursData(
+      hydrateOpeningHours(initialOpeningHoursStructured, initialOpeningHoursNote || "")
+    );
+    setStatus('open');
+    setReopeningDate('');
+    setClosingDate('');
+    setSelectedExternalSource(initialExternalSource || null);
+  }, [
+    showForm,
+    existingIceShop,
+    initialLatitude,
+    initialLongitude,
+    initialName,
+    initialAddress,
+    initialWebsite,
+    initialExternalSource,
+    initialOpeningHoursStructured,
+    initialOpeningHoursNote,
+  ]);
 
   const submit = async () => {
     try {
@@ -99,6 +138,10 @@ const SubmitIceShopModal = ({
         closing_date: closingDate || null
       };
 
+      if (!existingIceShop && selectedExternalSource) {
+        body.external_source = selectedExternalSource;
+      }
+
       if (existingIceShop) {
         body.shopId = existingIceShop.id;
         // Status, Reopening-Date und Closing-Date nur beim Update mitsenden
@@ -117,13 +160,19 @@ const SubmitIceShopModal = ({
 
       if (data.status === "success" || data.status === "pending") {
         const isPending = data.status === "pending";
+        const maintenanceHint = data?.maintenance_task_resolved?.bonus_ep
+          ? ` +${data.maintenance_task_resolved.bonus_ep} Pflege-EP`
+          : "";
         const fallbackMessage = existingIceShop
           ? (isPending ? "Änderungsvorschlag gespeichert – wir prüfen ihn zeitnah." : "Eisdiele erfolgreich aktualisiert!")
           : "Eisdiele erfolgreich hinzugefügt!";
-        setMessage(data.message || fallbackMessage);
+        setMessage((data.message || fallbackMessage) + maintenanceHint);
         setSubmitted(true);
         if (!isPending && refreshShops) {
           refreshShops();
+        }
+        if (!isPending && onSubmitSuccess) {
+          onSubmitSuccess(body, data);
         }
 
         setName("");
@@ -132,6 +181,7 @@ const SubmitIceShopModal = ({
         setLatitude("");
         setLongitude("");
         setOpeningHoursData(createEmptyOpeningHours());
+        setSelectedExternalSource(null);
 
         if (!isPending) {
           if (data.level_up || data.new_awards && data.new_awards.length > 0) {
@@ -237,10 +287,24 @@ const SubmitIceShopModal = ({
           e.preventDefault();
           submit();
         }}>
+          {!existingIceShop && selectedExternalSource && (
+            <SectionCard>
+              <SearchHeading>Discovery-Import</SearchHeading>
+              <SearchHint>
+                Dieser Eintrag stammt aus der Karten-Discovery. Bitte prüfe Name, Position und Öffnungszeiten vor dem Speichern.
+              </SearchHint>
+              {selectedExternalSource && (
+                <SelectedExternalSource>
+                  Externer Treffer verknüpft: <strong>{selectedExternalSource.name}</strong>
+                </SelectedExternalSource>
+              )}
+            </SectionCard>
+          )}
+
           <SectionCard>
           <Group>
             <label>Name:</label>
-            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required="true" />
+            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
           </Group>
 
           <Group>
@@ -287,7 +351,7 @@ const SubmitIceShopModal = ({
                 step="0.000001"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
-                required="true"
+                required
                 disabled={coordinatesLocked}
               />
             </Group>
@@ -298,7 +362,7 @@ const SubmitIceShopModal = ({
                 step="0.000001"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
-                required="true"
+                required
                 disabled={coordinatesLocked}
               />
             </Group>
@@ -405,6 +469,88 @@ const IntroText = styled.p`
   margin: -0.2rem 0 0.8rem;
   color: rgba(47, 33, 0, 0.72);
   font-size: 0.92rem;
+`;
+
+const SearchHeading = styled.h3`
+  margin: 0 0 0.35rem;
+  color: #4f3800;
+  font-size: 1rem;
+`;
+
+const SearchHint = styled.p`
+  margin: 0 0 0.75rem;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.9rem;
+`;
+
+const SearchRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  gap: 0.6rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const SearchMeta = styled.p`
+  margin: 0 0 0.7rem;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.86rem;
+`;
+
+const SelectedExternalSource = styled.p`
+  margin: 0.75rem 0 0;
+  color: #6b4b00;
+  font-size: 0.9rem;
+`;
+
+const ExternalResultList = styled.div`
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+`;
+
+const ExternalResultItem = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(47, 33, 0, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ExternalResultTitle = styled.div`
+  color: #2f2100;
+  font-weight: 700;
+`;
+
+const ExternalResultMeta = styled.div`
+  margin-top: 0.2rem;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.88rem;
+`;
+
+const ExternalActions = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+`;
+
+const ExternalBadge = styled.span`
+  display: inline-flex;
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: ${({ $tone }) => $tone === 'new' ? '#e8f7e9' : $tone === 'existing' ? '#e7efff' : '#fff2d9'};
+  color: ${({ $tone }) => $tone === 'new' ? '#1f6f43' : $tone === 'existing' ? '#2453c2' : '#9a5a00'};
 `;
 
 const SectionCard = styled.div`

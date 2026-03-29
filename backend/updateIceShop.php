@@ -4,6 +4,8 @@ require_once __DIR__ . '/lib/mail.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/currency.php';
+require_once __DIR__ . '/lib/levelsystem.php';
+require_once __DIR__ . '/lib/shop_maintenance.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -324,12 +326,29 @@ if ($location) {
     $params[':id'] = intval($data['shopId']);
 
     try {
+        shopMaintenanceSyncTaskForShop($pdo, $eisdieleId);
         $pdo->beginTransaction();
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         replace_opening_hours($pdo, $eisdieleId, $normalizedHours['rows']);
         $pdo->commit();
-        echo json_encode(["status" => "success"]);
+        $resolvedMaintenanceTask = null;
+        if (shopMaintenanceHasMeaningfulOpeningHours(['openingHours' => $openingHoursText], $normalizedHours['rows'])) {
+            $resolvedMaintenanceTask = shopMaintenanceResolveActiveTask($pdo, $eisdieleId, 'opening_hours_missing', $currentUserId);
+        }
+        $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
+        echo json_encode([
+            "status" => "success",
+            'maintenance_task_resolved' => $resolvedMaintenanceTask ? [
+                'id' => (int)$resolvedMaintenanceTask['id'],
+                'task_type' => 'opening_hours_missing',
+                'task_label' => shopMaintenanceGetTaskLabel('opening_hours_missing'),
+                'bonus_ep' => (int)$resolvedMaintenanceTask['bonus_ep_awarded'],
+            ] : null,
+            'level_up' => $levelChange['level_up'] ?? false,
+            'new_level' => !empty($levelChange['level_up']) ? $levelChange['new_level'] : null,
+            'level_name' => !empty($levelChange['level_up']) ? $levelChange['level_name'] : null,
+        ]);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();

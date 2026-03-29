@@ -406,6 +406,11 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                   ? "Weeklys laufen bis Sonntag 23:59 Uhr."
                   : "Dailys laufen bis Mitternacht, nach 18 Uhr bis morgen 23:59 Uhr."}
               </HintText>
+              <HintText>
+                {inviteMode === "midpoint"
+                  ? "Mittelpunkt sucht wie bisher rund um den Treffpunkt beider Personen."
+                  : "Expedition sucht bewusst weiter entfernte Ziele außerhalb eines inneren Rings um euren Treffpunkt."}
+              </HintText>
               <ActionRow>
                 <PrimaryButton type="button" onClick={handleInvite} disabled={busyAction !== null || loadingLocation || !location}>
                   <Send size={16} />
