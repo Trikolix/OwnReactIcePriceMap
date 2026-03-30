@@ -26,7 +26,7 @@ const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
-  const { userId, username, isLoggedIn, userPosition, login, logout } = useUser();
+  const { userId, username, isLoggedIn, userPosition, authToken, login, logout } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -45,6 +45,7 @@ const Header = ({ refreshShops }) => {
   const promoIconAlt = featuredCampaign
     ? `${featuredCampaign.title} öffnen`
     : 'Aktionen & Ergebnisse öffnen';
+  const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
@@ -205,89 +206,179 @@ const Header = ({ refreshShops }) => {
     }
 
     if (scanCode) {
-      // ✅ QR-Code erkannt – weiterverarbeiten
-      console.log("Scan-Code erkannt:", scanCode);
+      const persistEventPendingScan = (code) => {
+        localStorage.setItem(EVENT_PENDING_SCAN_KEY, JSON.stringify({
+          code,
+          mode: 'live',
+          checkpointId: null,
+          savedAt: new Date().toISOString(),
+        }));
+      };
 
-      // Asuwertung: Falls User eingeloggt ist: direkt in Datenbank speichern, falls nicht in LocalStorage speichern
-      // Anfrage vorbereiten
-      const payload = { code: scanCode };
-      if (userId) { payload["nutzer_id"] = userId; }
+      const cleanupScanParams = () => {
+        params.delete("scan");
+        const newSearch = params.toString();
+        navigate(
+          {
+            pathname: location.pathname,
+            search: newSearch ? `?${newSearch}` : "",
+          },
+          { replace: true }
+        );
 
-      fetch(`${apiUrl}/api/qr_scan.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("Antwort von API:", data);
-          if (data.status === "success") {
-            if (data.already_scanned) {
-              console.log("QR-Code wurde bereits gescannt. Kein Popup.");
+        if (rootParams.has("scan")) {
+          rootParams.delete("scan");
+          const nextRootSearch = rootParams.toString();
+          window.history.replaceState(
+            {},
+            "",
+            `${window.location.pathname}${nextRootSearch ? `?${nextRootSearch}` : ""}${window.location.hash}`
+          );
+        }
+      };
+
+      const processScan = async () => {
+        let redirectTarget = null;
+        try {
+          const payload = { code: scanCode };
+          if (userId) payload["nutzer_id"] = userId;
+
+          const scanResponse = await fetch(`${apiUrl}/api/qr_scan.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await scanResponse.json();
+          if (data.status !== "success") {
+            console.error("Scan fehlgeschlagen:", data.message);
+            return;
+          }
+
+          if (data.award_type === "event_stamp_card") {
+            if (!userId) {
+              persistEventPendingScan(scanCode);
+              setModalData({
+                icon: data.icon,
+                name: data.name || "Ice-Tour QR-Code",
+                description: "Du hast einen QR-Code der Ice-Tour gescannt. Wenn du Teilnehmer bist, logge dich bitte ein, damit der Checkpoint automatisch übertragen wird. Wenn nicht, schau dir gern die Ice-App und das Spendenprojekt Ice-Tour an.",
+                statusMessage: "Scan erkannt. Nach dem Login wird der Event-Scan automatisch weiterverarbeitet.",
+                needsLogin: true,
+              });
               return;
             }
 
-            // 🧠 Wenn nicht eingeloggt → lokal speichern
-            if (!userId) {
-              const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
-              if (stored.includes(scanCode)) {
-                console.log("QR-Code ist bereits lokal vorgemerkt. Kein Popup.");
-                return;
-              }
-              if (!stored.includes(scanCode)) {
-                stored.push(scanCode);
-                localStorage.setItem("pendingQrScans", JSON.stringify(stored));
-              }
+            const lookupResponse = await fetch(`${apiUrl}/event2026/qr_lookup.php?code=${encodeURIComponent(scanCode)}`, {
+              headers: {
+                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+              },
+            });
+            const lookup = await lookupResponse.json();
+            if (!lookupResponse.ok || lookup.status !== "success") {
+              throw new Error(lookup.message || "Ice-Tour QR-Code konnte nicht ausgewertet werden.");
             }
 
-            // ✅ Modal anzeigen
-            console.log("setModalData", {
-              icon: data.icon,
-              name: data.name,
-              description: data.description,
-              needsLogin: !data.saved,
-              userId: userId,
-            });
+            if (lookup.user?.has_event_registration) {
+              localStorage.removeItem(EVENT_PENDING_SCAN_KEY);
+              redirectTarget = `/event-stamp-card?mode=${lookup.checkpoint.mode}&scan=${encodeURIComponent(lookup.checkpoint.qr_code)}&checkpoint=${lookup.checkpoint.id}`;
+              return;
+            }
+
+            localStorage.removeItem(EVENT_PENDING_SCAN_KEY);
             setModalData({
               icon: data.icon,
-              name: data.name,
-              description: data.description,
-              needsLogin: !data.saved,
+              name: lookup.checkpoint?.shop_name || data.name || "Ice-Tour QR-Code",
+              description: "Dieser QR-Code gehört zur Ice-Tour. Dein Account ist aktuell nicht als Teilnehmer registriert. Du kannst die Ice-App natürlich trotzdem weiter nutzen und ganz normal Eis einchecken.",
+              statusMessage: "Kein Event-Stempel, da keine Ice-Tour Registrierung für diesen Account gefunden wurde.",
+              needsLogin: false,
             });
-          } else {
-            console.error("Scan fehlgeschlagen:", data.message);
+            return;
           }
-        })
-        .catch((err) => {
-          console.error("Fehler beim Senden des QR-Codes:", err);
-        })
-        .finally(() => {
-          // ✅ Parameter aus URL entfernen, ohne Reload
-          params.delete("scan");
-          const newSearch = params.toString();
-          navigate(
-            {
-              pathname: location.pathname,
-              search: newSearch ? `?${newSearch}` : "",
-            },
-            { replace: true }
-          );
 
-          // Also cleanup root query in case scan came as /?scan=...
-          if (rootParams.has("scan")) {
-            rootParams.delete("scan");
-            const nextRootSearch = rootParams.toString();
-            window.history.replaceState(
-              {},
-              "",
-              `${window.location.pathname}${nextRootSearch ? `?${nextRootSearch}` : ""}${window.location.hash}`
-            );
+          if (data.already_scanned) {
+            console.log("QR-Code wurde bereits gescannt. Kein Popup.");
+            return;
           }
-        });
+
+          if (!userId) {
+            const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
+            if (stored.includes(scanCode)) {
+              console.log("QR-Code ist bereits lokal vorgemerkt. Kein Popup.");
+              return;
+            }
+            if (!stored.includes(scanCode)) {
+              stored.push(scanCode);
+              localStorage.setItem("pendingQrScans", JSON.stringify(stored));
+            }
+          }
+
+          setModalData({
+            icon: data.icon,
+            name: data.name,
+            description: data.description,
+            needsLogin: !data.saved,
+          });
+        } catch (err) {
+          console.error("Fehler beim Senden des QR-Codes:", err);
+        } finally {
+          if (redirectTarget) {
+            navigate(redirectTarget, { replace: true });
+          } else {
+            cleanupScanParams();
+          }
+        }
+      };
+
+      processScan();
     }
-  }, [location, userId, apiUrl, navigate]);
+  }, [location, userId, apiUrl, navigate, authToken]);
+
+  useEffect(() => {
+    if (!userId || !apiUrl || !authToken) return;
+
+    let pendingEventScan = null;
+    try {
+      pendingEventScan = JSON.parse(localStorage.getItem(EVENT_PENDING_SCAN_KEY) || "null");
+    } catch {
+      pendingEventScan = null;
+    }
+
+    const pendingCode = typeof pendingEventScan?.code === 'string' ? pendingEventScan.code.trim() : '';
+    if (!pendingCode) return;
+
+    const resolvePendingEventScan = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/event2026/qr_lookup.php?code=${encodeURIComponent(pendingCode)}`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+        const data = await response.json();
+        if (!response.ok || data.status !== 'success') {
+          return;
+        }
+
+        localStorage.removeItem(EVENT_PENDING_SCAN_KEY);
+
+        if (data.user?.has_event_registration) {
+          navigate(`/event-stamp-card?mode=${data.checkpoint.mode}&scan=${encodeURIComponent(data.checkpoint.qr_code)}&checkpoint=${data.checkpoint.id}`, { replace: true });
+          return;
+        }
+
+        setModalData({
+          name: data.checkpoint?.shop_name || 'Ice-Tour QR-Code',
+          description: 'Dieser QR-Code gehört zur Ice-Tour. Dein Account ist aktuell nicht als Teilnehmer registriert. Du kannst die Ice-App trotzdem ganz normal weiter nutzen und Eis einchecken.',
+          statusMessage: 'Kein Event-Stempel, da keine Ice-Tour Registrierung für diesen Account gefunden wurde.',
+          needsLogin: false,
+        });
+      } catch (error) {
+        console.error('Fehler beim Verarbeiten des vorgemerkten Ice-Tour QR-Codes:', error);
+      }
+    };
+
+    resolvePendingEventScan();
+  }, [userId, apiUrl, authToken, navigate]);
 
   useEffect(() => {
     if (!userId || !apiUrl) return;

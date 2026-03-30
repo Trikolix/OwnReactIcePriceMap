@@ -70,6 +70,53 @@ try {
         throw new RuntimeException('Dieser Checkpoint gehört nicht zu deiner Route.');
     }
 
+    $isFinishCheckpoint = (int) ($checkpoint['shop_id'] ?? 0) === event2026_start_finish_shop_id($mode);
+    if ($isFinishCheckpoint) {
+        $mandatoryStmt = $pdo->prepare("SELECT
+                c.id,
+                c.shop_id,
+                c.route_keys_csv,
+                p.passed_at
+            FROM event2026_checkpoints c
+            LEFT JOIN event2026_checkpoint_passages p
+                ON p.checkpoint_id = c.id
+                AND p.event_id = c.event_id
+                AND p.slot_id = :slot_id
+            WHERE c.event_id = :event_id
+              AND c.stamp_card_mode = :stamp_card_mode
+              AND c.is_mandatory = 1
+              AND (c.shop_id IS NULL OR c.shop_id <> :finish_shop_id)
+            ORDER BY c.order_index ASC, c.id ASC");
+        $mandatoryStmt->execute([
+            ':slot_id' => (int) $slot['id'],
+            ':event_id' => $eventId,
+            ':stamp_card_mode' => $mode,
+            ':finish_shop_id' => event2026_start_finish_shop_id($mode),
+        ]);
+
+        $remainingMandatory = 0;
+        foreach ($mandatoryStmt->fetchAll(PDO::FETCH_ASSOC) as $mandatoryCheckpoint) {
+            if (!event2026_route_applies_to_checkpoint(
+                event2026_normalize_route_key($slot['route_key'] ?? ''),
+                (string) ($mandatoryCheckpoint['route_keys_csv'] ?? '')
+            )) {
+                continue;
+            }
+            if ($mandatoryCheckpoint['passed_at'] === null) {
+                $remainingMandatory++;
+            }
+        }
+
+        if ($remainingMandatory > 0) {
+            http_response_code(403);
+            throw new RuntimeException(sprintf(
+                'Dieser Abschluss-Checkpoint wird erst nach %d weiteren Pflichtstopp%s freigeschaltet.',
+                $remainingMandatory,
+                $remainingMandatory === 1 ? '' : 's'
+            ));
+        }
+    }
+
     $distanceMeters = null;
     if ($source === 'gps_click') {
         if ($lat === null || $lng === null) {

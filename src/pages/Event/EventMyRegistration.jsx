@@ -7,13 +7,18 @@ import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import Seo from "../../components/Seo";
+import route175GpxFile from "./Ice-Tour_175km.gpx?url";
+import route140GpxFile from "./Ice-Tour_140km.gpx?url";
+import route70GpxFile from "./Ice-Tour_70km.gpx?url";
 import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
   EVENT_COMMUNITY_RIDE_CLAIM,
+  EVENT_DATE,
   EVENT_ENTRY_FEE_NOTICE,
   EVENT_PAYMENT_CONTACT_EMAIL,
   EVENT_PAYMENT_PROVIDER_NAME,
+  EVENT_RACE_DAY_INFO_ENABLED,
   EVENT_START_FINISH,
   KIT_DISPLAY_PRICE,
   TSHIRT_SIZES,
@@ -309,6 +314,246 @@ const RoutePill = styled.span`
   font-size: 0.8rem;
 `;
 
+const RaceDayCard = styled(Card)`
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(255, 214, 133, 0.3), transparent 32%),
+    linear-gradient(180deg, #fffdf8 0%, #fff6e6 100%);
+`;
+
+const RaceDayHero = styled.div`
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  @media (min-width: 920px) {
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+    align-items: start;
+  }
+`;
+
+const HeroEyebrow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  background: rgba(138, 87, 0, 0.12);
+  color: #8a5700;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+const RaceDayHeading = styled.h2`
+  margin: 0.6rem 0 0;
+  color: #3a2600;
+  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+`;
+
+const RaceDayLead = styled.p`
+  margin: 0.55rem 0 0;
+  color: #6f4a00;
+  line-height: 1.6;
+  max-width: 58ch;
+`;
+
+const RaceDayMetaGrid = styled.div`
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+`;
+
+const RaceDayMetaCard = styled.div`
+  border-radius: 14px;
+  border: 1px solid rgba(138, 87, 0, 0.14);
+  background: rgba(255, 252, 245, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 0.8rem 0.9rem;
+`;
+
+const RaceDayMetaLabel = styled.div`
+  color: #9a6a00;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+`;
+
+const RaceDayMetaValue = styled.div`
+  margin-top: 0.32rem;
+  color: #2d1d00;
+  font-weight: 800;
+  line-height: 1.4;
+`;
+
+const ActionRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+`;
+
+const PrimaryActionLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0.78rem 1.1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #b45309 0%, #8a5700 100%);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(138, 87, 0, 0.24);
+`;
+
+const SecondaryActionLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0.78rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(255, 249, 237, 0.92);
+  border: 1px solid rgba(138, 87, 0, 0.16);
+  color: #6a4300;
+  font-weight: 800;
+  text-decoration: none;
+`;
+
+const PhaseGrid = styled.div`
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 920px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const PhaseCard = styled.section`
+  border-radius: 16px;
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  border-top: 4px solid ${({ $accent }) => $accent};
+  background: rgba(255, 253, 249, 0.94);
+  padding: 1rem;
+`;
+
+const PhaseHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+`;
+
+const PhaseIndex = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: ${({ $accent }) => $accent};
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.92rem;
+`;
+
+const PhaseTitle = styled.h3`
+  margin: 0;
+  color: #3a2600;
+  font-size: 1.04rem;
+`;
+
+const PhaseList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.72rem;
+`;
+
+const PhaseItem = styled.li`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  color: #5f3f00;
+  line-height: 1.55;
+`;
+
+const PhaseBullet = styled.span`
+  width: 0.68rem;
+  height: 0.68rem;
+  border-radius: 999px;
+  background: ${({ $accent }) => $accent};
+  margin-top: 0.42rem;
+  box-shadow: 0 0 0 4px rgba(138, 87, 0, 0.08);
+`;
+
+const PreviewNote = styled.div`
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 244, 214, 0.88);
+  border: 1px solid rgba(214, 158, 46, 0.24);
+  color: #7a5200;
+  line-height: 1.45;
+`;
+
+const EVENT_STAMP_CARD_PUBLIC_URL = "https://ice-app.de/event-stamp-card";
+const EVENT_PARKING = {
+  coordinates: "50.84228, 12.92685",
+  mapUrl: "https://www.openstreetmap.org/?mlat=50.84228&mlon=12.92685#map=19/50.84228/12.92685",
+};
+
+const ROUTE_GPX_DOWNLOADS = {
+  epic_4: { href: route175GpxFile, filename: "Ice-Tour_175km.gpx" },
+  classic_3: { href: route140GpxFile, filename: "Ice-Tour_140km.gpx" },
+  family_2: { href: route70GpxFile, filename: "Ice-Tour_70km.gpx" },
+};
+
+const RACE_DAY_PHASES = [
+  {
+    title: "Vor dem Renntag",
+    accent: "#b45309",
+    items: [
+      "Lade dir die GPX-Datei deiner Runde auf den Radcomputer und prüfe die Navigation in Ruhe.",
+      "Mach dein Fahrrad und deine Ausrüstung fit, damit am Tour-Tag nichts unnötig bremst.",
+      "Packe Ersatzschlauch, Werkzeug, Trinkflaschen, Radschuhe, Helm, Riegel, Gels und alles ein, was du sonst unterwegs brauchst.",
+      "Nimm etwas Bargeld mit, falls du mehr als die eine Kugel Eis möchtest. Nicht bei allen Eisdielen ist Kartenzahlung möglich.",
+    ],
+  },
+  {
+    title: "Am Tour-Tag",
+    accent: "#0f766e",
+    items: [
+      "Reise per Auto, Öffis oder Rad an. Mit dem Auto kannst du bei 50.84228, 12.92685 parken.",
+      "Finde dich bei Karl mag's süß etwa 10 Minuten vor deiner zugeteilten Startwelle abfahrbereit mit Rad und Ausrüstung ein.",
+      "Wenn du magst, komm etwas eher und starte entspannt mit einem Kaffee.",
+    ],
+  },
+  {
+    title: "Die Tour selbst",
+    accent: "#2563eb",
+    items: [
+      "Fahre die Checkpoints selbstständig per Navigation entlang deiner Strecke an.",
+      "Checke an jeder Eisdiele über die digitale Stempelkarte ein und zeige sie bei Bedarf vor, um deine Kugel Eis zu bekommen.",
+      "Unterstütze die Eisdiele oder Bäckerei gern zusätzlich mit einer zweiten oder dritten Kugel Eis oder etwas anderem.",
+      "Checke dein Eis ein und fülle Trinkflaschen bei Bedarf mit Carbs und Wasser nach.",
+    ],
+  },
+  {
+    title: "Abschluss der Tour",
+    accent: "#9333ea",
+    items: [
+      "Die Strecke endet wieder bei Karl mag's süß.",
+      "Bleib dort gern noch auf etwas zu essen, zu trinken, zum Verweilen und Quatschen.",
+    ],
+  },
+];
+
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
@@ -402,6 +647,9 @@ export default function EventMyRegistration() {
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
   const isPaid = paymentStatus === "paid";
   const isAdmin = Number(userId) === 1;
+  const routeGpxDownload = useMemo(() => (ownSlot?.route_key ? ROUTE_GPX_DOWNLOADS[ownSlot.route_key] || null : null), [ownSlot?.route_key]);
+  const showRaceDayInfo = isPaid && (EVENT_RACE_DAY_INFO_ENABLED || isAdmin);
+  const isRaceDayInfoPreview = showRaceDayInfo && !EVENT_RACE_DAY_INFO_ENABLED;
   const stampCardMode = useMemo(() => {
     if (typeof window === "undefined") return "live";
     const host = window.location.hostname;
@@ -610,6 +858,92 @@ export default function EventMyRegistration() {
 
         {data && ownSlot && (
           <CardGrid>
+            {showRaceDayInfo && (
+              <FullWidth>
+                <RaceDayCard>
+                  <RaceDayHero>
+                    <div>
+                      <HeroEyebrow>{isRaceDayInfoPreview ? "Renntag-Vorschau" : "Renntag auf einen Blick"}</HeroEyebrow>
+                      <RaceDayHeading>Alles Wichtige für deinen Tour-Tag auf einer Seite</RaceDayHeading>
+                      <RaceDayLead>
+                        Von der GPX-Datei bis zur Zielankunft bei {EVENT_START_FINISH.name}: Hier findest du die wichtigsten Infos für deinen Event-Tag kompakt und übersichtlich gesammelt.
+                      </RaceDayLead>
+                    </div>
+
+                    <RaceDayMetaGrid>
+                      <RaceDayMetaCard>
+                        <RaceDayMetaLabel>Termin</RaceDayMetaLabel>
+                        <RaceDayMetaValue>{EVENT_DATE}</RaceDayMetaValue>
+                      </RaceDayMetaCard>
+                      <RaceDayMetaCard>
+                        <RaceDayMetaLabel>Treffpunkt</RaceDayMetaLabel>
+                        <RaceDayMetaValue>{EVENT_START_FINISH.name}</RaceDayMetaValue>
+                      </RaceDayMetaCard>
+                      <RaceDayMetaCard>
+                        <RaceDayMetaLabel>Deine Route</RaceDayMetaLabel>
+                        <RaceDayMetaValue>
+                          <RoutePill
+                            $bg={getRouteTheme(ownSlot.route_key).background}
+                            $border={getRouteTheme(ownSlot.route_key).border}
+                            $color={getRouteTheme(ownSlot.route_key).text}
+                          >
+                            {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)}
+                          </RoutePill>
+                        </RaceDayMetaValue>
+                      </RaceDayMetaCard>
+                      <RaceDayMetaCard>
+                        <RaceDayMetaLabel>Startwelle</RaceDayMetaLabel>
+                        <RaceDayMetaValue>{ownSlot.wave_code || "folgt"}</RaceDayMetaValue>
+                      </RaceDayMetaCard>
+                    </RaceDayMetaGrid>
+                  </RaceDayHero>
+
+                  {isRaceDayInfoPreview && (
+                    <PreviewNote>
+                      Dieser Bereich ist aktuell nur als Vorschau sichtbar. Nach der Freischaltung sehen ihn ausschließlich vollständig bezahlte Starter.
+                    </PreviewNote>
+                  )}
+
+                  <ActionRow>
+                    {routeGpxDownload && (
+                      <PrimaryActionLink href={routeGpxDownload.href} download={routeGpxDownload.filename}>
+                        GPX für {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)} herunterladen
+                      </PrimaryActionLink>
+                    )}
+                    <SecondaryActionLink href={EVENT_STAMP_CARD_PUBLIC_URL} target="_blank" rel="noreferrer">
+                      Stempelkarte öffnen
+                    </SecondaryActionLink>
+                    <SecondaryActionLink href={EVENT_PARKING.mapUrl} target="_blank" rel="noreferrer">
+                      Parkplatz in Karte öffnen
+                    </SecondaryActionLink>
+                  </ActionRow>
+
+                  <PhaseGrid>
+                    {RACE_DAY_PHASES.map((phase, index) => (
+                      <PhaseCard key={phase.title} $accent={phase.accent}>
+                        <PhaseHeader>
+                          <PhaseIndex $accent={phase.accent}>{String(index + 1).padStart(2, "0")}</PhaseIndex>
+                          <PhaseTitle>{phase.title}</PhaseTitle>
+                        </PhaseHeader>
+                        <PhaseList>
+                          {phase.items.map((item) => (
+                            <PhaseItem key={item}>
+                              <PhaseBullet $accent={phase.accent} />
+                              <span>{item}</span>
+                            </PhaseItem>
+                          ))}
+                        </PhaseList>
+                      </PhaseCard>
+                    ))}
+                  </PhaseGrid>
+
+                  <Notice style={{ marginTop: "1rem" }}>
+                    Treffpunkt und Ziel ist <strong>{EVENT_START_FINISH.name}</strong> in <strong>{EVENT_START_FINISH.fullAddress}</strong>. Für die Anreise mit dem Auto liegt der empfohlene Parkplatz bei <strong>{EVENT_PARKING.coordinates}</strong>.
+                  </Notice>
+                </RaceDayCard>
+              </FullWidth>
+            )}
+
             <Card>
               <CardTitle>Mein Startplatz</CardTitle>
               <SectionStack>

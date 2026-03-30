@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import QRCode from "qrcode";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
@@ -185,6 +186,53 @@ const AccountLink = styled(Link)`
   }
 `;
 
+const QrGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
+`;
+
+const QrCard = styled.div`
+  border: 1px solid #f3e5bd;
+  border-radius: 14px;
+  background: #fffaf0;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.75rem;
+`;
+
+const QrImage = styled.img`
+  width: min(100%, 220px);
+  aspect-ratio: 1 / 1;
+  justify-self: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 79, 0, 0.12);
+  padding: 0.55rem;
+  box-sizing: border-box;
+`;
+
+const MonoField = styled.input`
+  width: 100%;
+  border: 1px solid #ead7ab;
+  border-radius: 10px;
+  padding: 0.62rem 0.75rem;
+  font: inherit;
+  color: #2d1d00;
+  background: #fffef9;
+  box-sizing: border-box;
+`;
+
+const CopyButton = styled.button`
+  border: 1px solid #ecd49b;
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  background: #fff5df;
+  color: #7c4f00;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
@@ -214,6 +262,8 @@ export default function EventAdminOverview() {
   const [loading, setLoading] = useState(true);
   const [selectedRegistrationId, setSelectedRegistrationId] = useState(null);
   const [selectedAddonId, setSelectedAddonId] = useState(null);
+  const [checkpointQrs, setCheckpointQrs] = useState([]);
+  const [qrImageMap, setQrImageMap] = useState({});
 
   const load = async () => {
     if (!apiUrl) return;
@@ -242,6 +292,74 @@ export default function EventAdminOverview() {
   useEffect(() => {
     load();
   }, [apiUrl, authToken]);
+
+  useEffect(() => {
+    if (!apiUrl) return;
+
+    let cancelled = false;
+    fetch(`${apiUrl}/event2026/admin_checkpoint_qrs.php`, {
+      headers: {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok || json.status !== "success") {
+          throw new Error(json.message || "Checkpoint-QR-Codes konnten nicht geladen werden.");
+        }
+        if (!cancelled) {
+          setCheckpointQrs(json.checkpoints || []);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError((current) => current || err.message || "Checkpoint-QR-Codes konnten nicht geladen werden.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authToken]);
+
+  useEffect(() => {
+    if (!checkpointQrs.length) {
+      setQrImageMap({});
+      return;
+    }
+
+    let cancelled = false;
+    const origin = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
+
+    Promise.all(
+      checkpointQrs.map(async (checkpoint) => {
+        const imageUrl = await QRCode.toDataURL(`${origin}${checkpoint.scan_path}`, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 512,
+          color: {
+            dark: "#2f2100",
+            light: "#ffffff",
+          },
+        });
+        return [checkpoint.checkpoint_id, imageUrl];
+      })
+    )
+      .then((entries) => {
+        if (!cancelled) {
+          setQrImageMap(Object.fromEntries(entries));
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError((current) => current || err.message || "QR-Bilder konnten nicht erzeugt werden.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkpointQrs]);
 
   const confirmRegistrationPayment = async (registration) => {
     if (!apiUrl) return;
@@ -305,6 +423,23 @@ export default function EventAdminOverview() {
     () => selectedRegistration?.slots?.[0] || null,
     [selectedRegistration]
   );
+  const liveCheckpointQrs = useMemo(
+    () => checkpointQrs.filter((checkpoint) => checkpoint.mode === "live"),
+    [checkpointQrs]
+  );
+  const testCheckpointQrs = useMemo(
+    () => checkpointQrs.filter((checkpoint) => checkpoint.mode === "test"),
+    [checkpointQrs]
+  );
+
+  const copyToClipboard = async (value, label) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (err) {
+      setError(`${label} konnte nicht kopiert werden.`);
+    }
+  };
 
   return (
     <Page>
@@ -320,6 +455,82 @@ export default function EventAdminOverview() {
           <p style={{ margin: 0, color: "#7c4f00" }}>
             Kompakte Listen mit Auswahlansicht für Registrierungen, Zahlungen und Gutschein-Codes.
           </p>
+        </Card>
+
+        <Card>
+          <SectionHeader>
+            <div>
+              <h2 style={{ margin: 0 }}>Checkpoint-QR-Codes</h2>
+              <SectionText>
+                Hier bekommst du die Live-QR-Codes für die fünf Ice-Tour Checkpoints. Sie öffnen die Ice-App-Startseite mit dem passenden Scan-Link. Teilnehmer werden von dort automatisch in die Event-Stempelkarte weitergeleitet, alle anderen bleiben auf der Startseite.
+              </SectionText>
+            </div>
+            <Badge>{liveCheckpointQrs.length} Live-Codes</Badge>
+          </SectionHeader>
+
+          <QrGrid>
+            {liveCheckpointQrs.map((checkpoint) => {
+              const origin = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
+              const targetUrl = `${origin}${checkpoint.scan_path}`;
+              return (
+                <QrCard key={`live-${checkpoint.checkpoint_id}`}>
+                  <div>
+                    <strong>{checkpoint.shop_name}</strong>
+                    <SectionText style={{ marginTop: "0.25rem" }}>
+                      Checkpoint {checkpoint.order_index} · {checkpoint.route_labels.join(", ")}
+                    </SectionText>
+                  </div>
+                  {qrImageMap[checkpoint.checkpoint_id] && (
+                    <QrImage src={qrImageMap[checkpoint.checkpoint_id]} alt={`QR-Code für ${checkpoint.shop_name}`} />
+                  )}
+                  <div>
+                    <InfoLabel>Scan-Link</InfoLabel>
+                    <MonoField value={targetUrl} readOnly />
+                  </div>
+                  <div>
+                    <InfoLabel>Interner QR-Code</InfoLabel>
+                    <MonoField value={checkpoint.qr_code} readOnly />
+                  </div>
+                  <ActionRow style={{ marginBottom: 0 }}>
+                    <CopyButton type="button" onClick={() => copyToClipboard(targetUrl, "Scan-Link")}>Link kopieren</CopyButton>
+                    <CopyButton type="button" onClick={() => copyToClipboard(checkpoint.qr_code, "QR-Code")}>Code kopieren</CopyButton>
+                  </ActionRow>
+                </QrCard>
+              );
+            })}
+          </QrGrid>
+
+          {testCheckpointQrs.length > 0 && (
+            <>
+              <SectionHeader style={{ marginTop: "1rem" }}>
+                <div>
+                  <h2 style={{ margin: 0 }}>Test-QR-Codes</h2>
+                  <SectionText>Zusätzliche Test-Checkpoints für Admin und lokale Prüfung.</SectionText>
+                </div>
+                <Badge>{testCheckpointQrs.length} Test-Codes</Badge>
+              </SectionHeader>
+              <QrGrid>
+                {testCheckpointQrs.map((checkpoint) => {
+                  const origin = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
+                  const targetUrl = `${origin}${checkpoint.scan_path}`;
+                  return (
+                    <QrCard key={`test-${checkpoint.checkpoint_id}`}>
+                      <div>
+                        <strong>{checkpoint.shop_name}</strong>
+                        <SectionText style={{ marginTop: "0.25rem" }}>
+                          Checkpoint {checkpoint.order_index} · Testmodus
+                        </SectionText>
+                      </div>
+                      {qrImageMap[checkpoint.checkpoint_id] && (
+                        <QrImage src={qrImageMap[checkpoint.checkpoint_id]} alt={`Test-QR-Code für ${checkpoint.shop_name}`} />
+                      )}
+                      <MonoField value={targetUrl} readOnly />
+                    </QrCard>
+                  );
+                })}
+              </QrGrid>
+            </>
+          )}
         </Card>
 
         {loading && <Card>Daten werden geladen…</Card>}
