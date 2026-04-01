@@ -1320,7 +1320,7 @@ function PhotoChallengeAdmin() {
                       <div>Direkt weiter: {derivedPlan.directAdvancers} · Lucky-Loser nutzbar: {derivedPlan.luckyUsed}</div>
                       <div>
                         KO-Teilnehmer: {derivedPlan.koParticipants || '—'}{' '}
-                        {derivedPlan.koParticipants ? `(nächste 2er-Potenz: ${derivedPlan.nextPower || '—'})` : null}
+                        {derivedPlan.koParticipants ? `(klassische 2er-Potenz: ${derivedPlan.nextPower || '—'})` : null}
                       </div>
                       {derivedPlan.limitedLucky && (
                         <PlanSummaryNote>
@@ -1328,9 +1328,10 @@ function PhotoChallengeAdmin() {
                         </PlanSummaryNote>
                       )}
                       {derivedPlan.needsExpansion && (
-                        <PlanSummaryWarning>
-                          Für ein KO-Feld mit {derivedPlan.nextPower} Teilnehmern fehlen noch {derivedPlan.nextPower - derivedPlan.koParticipants} Plätze.
-                        </PlanSummaryWarning>
+                        <PlanSummaryNote>
+                          Eine 2er-Potenz ist optional. Falls in einer späteren KO-Runde eine ungerade Zahl an Siegern entsteht,
+                          wird automatisch ein Lucky Loser aus dieser Runde ergänzt.
+                        </PlanSummaryNote>
                       )}
                     </PlanSummary>
                     <FieldGroup>
