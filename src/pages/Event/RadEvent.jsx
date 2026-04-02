@@ -687,7 +687,7 @@ export default function RadEvent() {
         title="Ice-Tour 2026 in Chemnitz | Eis-Tour, Spendenfahrt und Eisdielen-Stopps"
         description={seoDescription}
         keywords={seoKeywords}
-        canonical="/ice-tour-2026.html"
+        canonical="/ice-tour"
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Event",
@@ -696,7 +696,7 @@ export default function RadEvent() {
           eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
           eventStatus: "https://schema.org/EventScheduled",
           description: seoDescription,
-          url: "https://ice-app.de/ice-tour-2026.html",
+          url: "https://ice-app.de/ice-tour",
           location: {
             "@type": "Place",
             name: EVENT_START_FINISH.name,

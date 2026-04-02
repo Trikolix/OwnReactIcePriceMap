@@ -19,8 +19,9 @@ import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
 import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
 import Seo from './components/Seo';
-import { CAMPAIGN_STATUS, getCampaignStatus } from './features/seasonal/campaigns';
+import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 const MIN_CONTEXT_MENU_ZOOM = 13;
+const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
 const DEFAULT_CONTEXT_MENU_STATE = {
   isVisible: false,
   x: 0,
@@ -36,6 +37,93 @@ const toNumberOrNull = (value) => {
   }
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
+};
+
+const EASTER_CLUSTER_PALETTES = [
+  { shell: 'linear-gradient(180deg, #ffb7c8 0%, #ff8ba7 100%)', stripeA: '#fff7b8', stripeB: '#f35b8c' },
+  { shell: 'linear-gradient(180deg, #b9f3ff 0%, #72d6ff 100%)', stripeA: '#ffffff', stripeB: '#2aa9d9' },
+  { shell: 'linear-gradient(180deg, #ffe08a 0%, #ffc44d 100%)', stripeA: '#ffffff', stripeB: '#ff7a59' },
+  { shell: 'linear-gradient(180deg, #d8c6ff 0%, #b48cff 100%)', stripeA: '#fff6a8', stripeB: '#7b5ed8' },
+  { shell: 'linear-gradient(180deg, #c8f7bf 0%, #91dc7b 100%)', stripeA: '#fff7cc', stripeB: '#3c9c68' },
+];
+const EASTER_CLUSTER_BUNNY_ASSET = '/assets/easter-marker-bunny.png';
+const EASTER_CLUSTER_BUNNY_FALLBACK_ASSET = '/assets/easter-bunny.png';
+
+const createClusterEggHtml = ({ left, top, width, height, rotate, palette, zIndex }) => `
+  <div style="position:absolute; left:${left}px; top:${top}px; width:${width}px; height:${height}px; transform:rotate(${rotate}deg); z-index:${zIndex};">
+    <div style="position:absolute; inset:0; border-radius:54% 54% 48% 48% / 63% 63% 38% 38%; background:${palette.shell}; border:3px solid #ffffff; box-shadow:0 6px 14px rgba(0,0,0,0.2); box-sizing:border-box;"></div>
+    <div style="position:absolute; left:10%; top:32%; width:80%; height:11%; border-radius:999px; background:${palette.stripeA}; opacity:0.96;"></div>
+    <div style="position:absolute; left:16%; top:50%; width:68%; height:10%; border-radius:999px; background:${palette.stripeB}; opacity:0.96;"></div>
+    <div style="position:absolute; left:23%; top:20%; width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.92);"></div>
+    <div style="position:absolute; right:22%; top:23%; width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.88);"></div>
+  </div>
+`;
+
+const createClusterBunnyHtml = (size) => `
+  <img
+    src="${EASTER_CLUSTER_BUNNY_ASSET}"
+    alt=""
+    aria-hidden="true"
+    onerror="if(this.dataset.fallbackApplied==='1'){this.style.display='none';}else{this.dataset.fallbackApplied='1';this.src='${EASTER_CLUSTER_BUNNY_FALLBACK_ASSET}';}"
+    style="position:absolute; top:${Math.round(size * -0.18)}px; left:50%; transform:translateX(-50%) rotate(-3deg); width:${Math.round(size * 0.72)}px; height:auto; z-index:0; pointer-events:none; filter:drop-shadow(0 7px 14px rgba(0,0,0,0.28));"
+  />
+`;
+
+const createEasterClusterIcon = (bunnyTargetShopId = null) => (cluster) => {
+  const count = cluster.getChildCount();
+  const size = count < 10 ? 58 : count < 100 ? 66 : 74;
+  const fontSize = count < 10 ? 16 : count < 100 ? 17 : 18;
+  const badgeMinWidth = count < 10 ? 28 : count < 100 ? 32 : 36;
+  const paletteOffset = count % EASTER_CLUSTER_PALETTES.length;
+  const showClusterBunny = bunnyTargetShopId !== null && cluster.getAllChildMarkers().some(
+    (marker) => Number(marker.options?.shopId) === Number(bunnyTargetShopId)
+  );
+  const palettes = [
+    EASTER_CLUSTER_PALETTES[paletteOffset],
+    EASTER_CLUSTER_PALETTES[(paletteOffset + 1) % EASTER_CLUSTER_PALETTES.length],
+    EASTER_CLUSTER_PALETTES[(paletteOffset + 2) % EASTER_CLUSTER_PALETTES.length],
+  ];
+
+  return L.divIcon({
+    className: 'easter-marker-cluster',
+    html: `
+      <div style="position:relative; width:${size}px; height:${size}px;">
+        ${showClusterBunny ? createClusterBunnyHtml(size) : ''}
+        ${createClusterEggHtml({
+          left: Math.round(size * 0.02),
+          top: Math.round(size * 0.18),
+          width: Math.round(size * 0.4),
+          height: Math.round(size * 0.52),
+          rotate: -18,
+          palette: palettes[0],
+          zIndex: 1,
+        })}
+        ${createClusterEggHtml({
+          left: Math.round(size * 0.56),
+          top: Math.round(size * 0.16),
+          width: Math.round(size * 0.34),
+          height: Math.round(size * 0.46),
+          rotate: 16,
+          palette: palettes[1],
+          zIndex: 2,
+        })}
+        ${createClusterEggHtml({
+          left: Math.round(size * 0.22),
+          top: Math.round(size * 0.06),
+          width: Math.round(size * 0.56),
+          height: Math.round(size * 0.7),
+          rotate: 3,
+          palette: palettes[2],
+          zIndex: 3,
+        })}
+        <div style="position:absolute; left:50%; bottom:${Math.round(size * 0.06)}px; transform:translateX(-50%); min-width:${badgeMinWidth}px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,0.92); color:#5f1833; border:2px solid rgba(255,255,255,0.98); box-shadow:0 4px 10px rgba(0,0,0,0.18); text-align:center; font-weight:800; font-size:${fontSize}px; line-height:1; z-index:4;">
+          ${count}
+        </div>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [Math.round(size / 2), Math.round(size / 2)],
+  });
 };
 
 const DISPLAY_OPTIONS = [
@@ -265,6 +353,58 @@ const ClusteringToggleControl = ({ clustering, onToggle }) => {
   return null;
 };
 
+const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
+  const map = useMap();
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !enabled) return undefined;
+
+    const seasonalControl = L.control({ position: 'topright' });
+    seasonalControl.onAdd = () => {
+      const container = L.DomUtil.create('div', 'leaflet-bar');
+      const button = L.DomUtil.create('a', 'leaflet-control-seasonal-toggle', container);
+      button.href = '#';
+      button.textContent = 'Ei';
+      button.style.fontWeight = '800';
+      button.style.fontSize = '12px';
+      buttonRef.current = button;
+
+      const handleClick = (event) => {
+        L.DomEvent.stopPropagation(event);
+        L.DomEvent.preventDefault(event);
+        onToggle();
+      };
+
+      L.DomEvent.on(button, 'click', handleClick);
+      L.DomEvent.disableClickPropagation(container);
+
+      return container;
+    };
+
+    seasonalControl.addTo(map);
+
+    return () => {
+      buttonRef.current = null;
+      seasonalControl.remove();
+    };
+  }, [enabled, map, onToggle]);
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    button.title = active ? 'Osteransicht ausblenden' : 'Osteransicht einblenden';
+    if (active) {
+      L.DomUtil.addClass(button, 'leaflet-active');
+    } else {
+      L.DomUtil.removeClass(button, 'leaflet-active');
+    }
+  }, [active]);
+
+  return null;
+};
+
 const MapContextMenuListener = ({ onOpen, onDismiss, onUserInteraction }) => {
   const map = useMapEvents({
     contextmenu(event) {
@@ -331,7 +471,29 @@ const IceCreamRadar = () => {
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalCoordinates, setSubmitModalCoordinates] = useState(null);
   const [currentZoom, setCurrentZoom] = useState(14);
+  const [seasonalMapEnabled, setSeasonalMapEnabled] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    return window.localStorage.getItem(EASTER_MAP_TOGGLE_STORAGE_KEY) !== 'false';
+  });
+  const [easterEncounterState, setEasterEncounterState] = useState({
+    bunnyShopId: null,
+    bunnyVisible: false,
+    currentTarget: null,
+    workshop: null,
+    completed: false,
+    loading: false,
+    error: null,
+  });
   const activeShopRequestRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(EASTER_MAP_TOGGLE_STORAGE_KEY, seasonalMapEnabled ? 'true' : 'false');
+  }, [seasonalMapEnabled]);
 
   const handleMapInteraction = useCallback(() => {
     setHasInteractedWithMap(true);
@@ -842,7 +1004,18 @@ const IceCreamRadar = () => {
     }
   }, [userId, openFilterQueryString]);
 
+  const mapDisplayShops = useMemo(
+    () => shopsWithDisplayValue.map(({ shop }) => shop),
+    [shopsWithDisplayValue]
+  );
+  const easterCampaignDefinition = getCampaignDefinition('easter_2026');
   const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
+  const easterMapRules = easterCampaignDefinition?.mapRules || {};
+  const seasonalMapVisible = easterCampaignActive && seasonalMapEnabled;
+  const seasonalMarkerVariant = seasonalMapVisible ? 'easter' : null;
+  const clusterIconCreateFunction = seasonalMarkerVariant === 'easter'
+    ? createEasterClusterIcon(easterEncounterState.bunnyShopId ?? null)
+    : undefined;
   const seoKeywords = [
     'Ice-App',
     'Eispreise Deutschland',
@@ -993,6 +1166,11 @@ const IceCreamRadar = () => {
           />
           <SearchToggleControl isSearchVisible={isSearchVisible} onToggle={toggleSearchVisibility} />
           <ClusteringToggleControl clustering={clustering} onToggle={() => setClustering((prev) => !prev)} />
+          <SeasonalViewToggleControl
+            enabled={easterCampaignActive}
+            active={seasonalMapVisible}
+            onToggle={() => setSeasonalMapEnabled((previous) => !previous)}
+          />
           <ZoomControl position="topright" />
           <LocateControl userPosition={userPosition} />
           <TileLayer
@@ -1001,15 +1179,25 @@ const IceCreamRadar = () => {
             maxZoom={19}
           />
           {activeShop && <MapCenterOnShop shop={activeShop} />}
-          {easterCampaignActive && currentZoom > 5 && (
+          {easterCampaignActive && (
             <EasterMapEncounter
               enabled={easterCampaignActive}
+              visible={seasonalMapVisible}
+              shops={mapDisplayShops}
+              currentZoom={currentZoom}
+              bunnyMinZoom={easterMapRules.bunnyMinZoom ?? 9}
+              workshopMinZoom={easterMapRules.workshopMinZoom ?? 6}
               isLoggedIn={isLoggedIn}
               setShowLoginModal={setShowLoginModal}
+              onStateChange={setEasterEncounterState}
             />
           )}
           {clustering ? ( // show the clustered
-            <MarkerClusterGroup maxClusterRadius={25}>
+            <MarkerClusterGroup
+              key={`${seasonalMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
+              maxClusterRadius={25}
+              iconCreateFunction={clusterIconCreateFunction}
+            >
               {shopsWithDisplayValue.map(({ shop, value }) => {
                 return (
                   <ShopMarker
@@ -1023,6 +1211,11 @@ const IceCreamRadar = () => {
                     fetchShopDetails={fetchShopDetails}
                     fetchAndCenterShop={fetchAndCenterShop}
                     isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
+                    seasonalVariant={seasonalMarkerVariant}
+                    encounterBunny={
+                      seasonalMapVisible
+                      && Number(easterEncounterState.bunnyShopId) === Number(shop.eisdielen_id)
+                    }
                   />
                 );
               })}
@@ -1041,6 +1234,11 @@ const IceCreamRadar = () => {
                   fetchShopDetails={fetchShopDetails}
                   fetchAndCenterShop={fetchAndCenterShop}
                   isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
+                  seasonalVariant={seasonalMarkerVariant}
+                  encounterBunny={
+                    seasonalMapVisible
+                    && Number(easterEncounterState.bunnyShopId) === Number(shop.eisdielen_id)
+                  }
                 />
               );
             })

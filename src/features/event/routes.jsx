@@ -12,6 +12,7 @@ import EventSupportPage from "../../pages/Event/EventSupportPage";
 
 export const eventRoutes = [
   { path: "/ice-tour", element: <RadEvent /> },
+  { path: "/ice-tour-2026.html", element: <Navigate to="/ice-tour" replace /> },
   { path: "/ice-tour-unterstuetzen", element: <EventSupportPage /> },
   { path: "/rad-event", element: <Navigate to="/ice-tour" replace /> },
   { path: "/eis-tour", element: <Navigate to="/ice-tour" replace /> },

@@ -1054,7 +1054,7 @@ export default function EventLiveMap() {
           "Eis-Tour Live",
           "Radtour Live Chemnitz",
         ]}
-        canonical="/ice-tour-2026.html"
+        canonical="/event-live"
       />
       <Header />
       <MapShell>

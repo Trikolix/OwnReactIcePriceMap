@@ -1,8 +1,11 @@
 CREATE TABLE IF NOT EXISTS `easter_bunny_progress` (
   `user_id` int NOT NULL,
   `path_json` longtext DEFAULT NULL,
+  `current_location_json` longtext DEFAULT NULL,
   `current_index` int NOT NULL DEFAULT '0',
+  `hop_count` int NOT NULL DEFAULT '0',
   `total_hops` int NOT NULL DEFAULT '5',
+  `workshop_hint_claims` int NOT NULL DEFAULT '0',
   `daily_hint_claims` int NOT NULL DEFAULT '0',
   `last_hint_claimed_on` date DEFAULT NULL,
   `completed_at` datetime DEFAULT NULL,

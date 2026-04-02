@@ -23,7 +23,7 @@ if ($phase !== 'active') {
     echo json_encode([
         'success' => false,
         'phase' => $phase,
-        'message' => 'Tageshinweise sind nur waehrend der Osteraktion verfuegbar.',
+        'message' => 'Die Osterwerkstatt kann nur waehrend der Osteraktion entdeckt werden.',
     ]);
     exit;
 }
@@ -31,44 +31,35 @@ if ($phase !== 'active') {
 $auth = requireAuth($pdo);
 $userId = (int)$auth['user_id'];
 $normalized = normalizeEasterProgressRow($pdo, $userId, $config, false);
-$row = $normalized['row'];
-$today = (new DateTimeImmutable('now', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
-$currentTotalHints = (int)($normalized['progress']['total_hints_found'] ?? 0);
-$hint = getDailyHintForUser($userId, $today, (int)($row['hop_count'] ?? 0), $currentTotalHints);
 
-if (($row['last_hint_claimed_on'] ?? null) === $today) {
+if (!empty($normalized['progress']['completed'])) {
     echo json_encode([
         'success' => true,
         'phase' => $phase,
-        'message' => 'Der heutige Hinweis wurde bereits abgeholt.',
-        'hint' => $hint,
+        'message' => 'Die Osterhasenwerkstatt hast du bereits entdeckt.',
         'progress' => $normalized['progress'],
         'rules' => $normalized['rules'],
+        'achievements' => [],
     ]);
     exit;
 }
 
 $stmt = $pdo->prepare(
     "UPDATE easter_bunny_progress
-     SET daily_hint_claims = daily_hint_claims + 1,
-         last_hint_claimed_on = :today
+     SET completed_at = NOW()
      WHERE user_id = :user_id"
 );
-$stmt->execute([
-    'today' => $today,
-    'user_id' => $userId,
-]);
+$stmt->execute(['user_id' => $userId]);
 
+$achievements = grantSeasonalActionAward($pdo, 'easter_2026', 'hideout_found', $userId);
 $normalized = normalizeEasterProgressRow($pdo, $userId, $config, false);
-$updatedTotalHints = (int)($normalized['progress']['total_hints_found'] ?? $currentTotalHints + 1);
-$hint = getDailyHintForUser($userId, $today, (int)($normalized['row']['hop_count'] ?? $row['hop_count'] ?? 0), $updatedTotalHints);
 
 echo json_encode([
     'success' => true,
     'phase' => $phase,
-    'message' => $hint['text'] ?? 'Der Osterhase hinterlaesst heute nur sehr leise Spuren.',
-    'hint' => $hint,
+    'message' => 'Du hast die Osterhasenwerkstatt auf der Osterinsel gefunden und den Secret Award freigeschaltet.',
     'progress' => $normalized['progress'],
     'rules' => $normalized['rules'],
+    'achievements' => $achievements,
 ]);
 ?>
