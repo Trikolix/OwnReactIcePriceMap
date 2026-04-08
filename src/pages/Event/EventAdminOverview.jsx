@@ -233,6 +233,16 @@ const CopyButton = styled.button`
   cursor: pointer;
 `;
 
+const SectionToggle = styled.button`
+  border: 1px solid #ecd49b;
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  background: #fff5df;
+  color: #7c4f00;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
@@ -264,6 +274,7 @@ export default function EventAdminOverview() {
   const [selectedAddonId, setSelectedAddonId] = useState(null);
   const [checkpointQrs, setCheckpointQrs] = useState([]);
   const [qrImageMap, setQrImageMap] = useState({});
+  const [showCheckpointQrs, setShowCheckpointQrs] = useState(false);
 
   const load = async () => {
     if (!apiUrl) return;
@@ -465,70 +476,79 @@ export default function EventAdminOverview() {
                 Hier bekommst du die Live-QR-Codes für die fünf Ice-Tour Checkpoints. Sie öffnen die Ice-App-Startseite mit dem passenden Scan-Link. Teilnehmer werden von dort automatisch in die Event-Stempelkarte weitergeleitet, alle anderen bleiben auf der Startseite.
               </SectionText>
             </div>
-            <Badge>{liveCheckpointQrs.length} Live-Codes</Badge>
+            <div style={{ display: "flex", gap: "0.65rem", alignItems: "center", flexWrap: "wrap" }}>
+              <Badge>{liveCheckpointQrs.length} Live-Codes</Badge>
+              <SectionToggle type="button" onClick={() => setShowCheckpointQrs((current) => !current)}>
+                {showCheckpointQrs ? "QR-Codes einklappen" : "QR-Codes anzeigen"}
+              </SectionToggle>
+            </div>
           </SectionHeader>
 
-          <QrGrid>
-            {liveCheckpointQrs.map((checkpoint) => {
-              const origin = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
-              const targetUrl = `${origin}${checkpoint.scan_path}`;
-              return (
-                <QrCard key={`live-${checkpoint.checkpoint_id}`}>
-                  <div>
-                    <strong>{checkpoint.shop_name}</strong>
-                    <SectionText style={{ marginTop: "0.25rem" }}>
-                      Checkpoint {checkpoint.order_index} · {checkpoint.route_labels.join(", ")}
-                    </SectionText>
-                  </div>
-                  {qrImageMap[checkpoint.checkpoint_id] && (
-                    <QrImage src={qrImageMap[checkpoint.checkpoint_id]} alt={`QR-Code für ${checkpoint.shop_name}`} />
-                  )}
-                  <div>
-                    <InfoLabel>Scan-Link</InfoLabel>
-                    <MonoField value={targetUrl} readOnly />
-                  </div>
-                  <div>
-                    <InfoLabel>Interner QR-Code</InfoLabel>
-                    <MonoField value={checkpoint.qr_code} readOnly />
-                  </div>
-                  <ActionRow style={{ marginBottom: 0 }}>
-                    <CopyButton type="button" onClick={() => copyToClipboard(targetUrl, "Scan-Link")}>Link kopieren</CopyButton>
-                    <CopyButton type="button" onClick={() => copyToClipboard(checkpoint.qr_code, "QR-Code")}>Code kopieren</CopyButton>
-                  </ActionRow>
-                </QrCard>
-              );
-            })}
-          </QrGrid>
-
-          {testCheckpointQrs.length > 0 && (
+          {showCheckpointQrs && (
             <>
-              <SectionHeader style={{ marginTop: "1rem" }}>
-                <div>
-                  <h2 style={{ margin: 0 }}>Test-QR-Codes</h2>
-                  <SectionText>Zusätzliche Test-Checkpoints für Admin und lokale Prüfung.</SectionText>
-                </div>
-                <Badge>{testCheckpointQrs.length} Test-Codes</Badge>
-              </SectionHeader>
               <QrGrid>
-                {testCheckpointQrs.map((checkpoint) => {
+                {liveCheckpointQrs.map((checkpoint) => {
                   const origin = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
                   const targetUrl = `${origin}${checkpoint.scan_path}`;
                   return (
-                    <QrCard key={`test-${checkpoint.checkpoint_id}`}>
+                    <QrCard key={`live-${checkpoint.checkpoint_id}`}>
                       <div>
                         <strong>{checkpoint.shop_name}</strong>
                         <SectionText style={{ marginTop: "0.25rem" }}>
-                          Checkpoint {checkpoint.order_index} · Testmodus
+                          Checkpoint {checkpoint.order_index} · {checkpoint.route_labels.join(", ")}
                         </SectionText>
                       </div>
                       {qrImageMap[checkpoint.checkpoint_id] && (
-                        <QrImage src={qrImageMap[checkpoint.checkpoint_id]} alt={`Test-QR-Code für ${checkpoint.shop_name}`} />
+                        <QrImage src={qrImageMap[checkpoint.checkpoint_id]} alt={`QR-Code für ${checkpoint.shop_name}`} />
                       )}
-                      <MonoField value={targetUrl} readOnly />
+                      <div>
+                        <InfoLabel>Scan-Link</InfoLabel>
+                        <MonoField value={targetUrl} readOnly />
+                      </div>
+                      <div>
+                        <InfoLabel>Interner QR-Code</InfoLabel>
+                        <MonoField value={checkpoint.qr_code} readOnly />
+                      </div>
+                      <ActionRow style={{ marginBottom: 0 }}>
+                        <CopyButton type="button" onClick={() => copyToClipboard(targetUrl, "Scan-Link")}>Link kopieren</CopyButton>
+                        <CopyButton type="button" onClick={() => copyToClipboard(checkpoint.qr_code, "QR-Code")}>Code kopieren</CopyButton>
+                      </ActionRow>
                     </QrCard>
                   );
                 })}
               </QrGrid>
+
+              {testCheckpointQrs.length > 0 && (
+                <>
+                  <SectionHeader style={{ marginTop: "1rem" }}>
+                    <div>
+                      <h2 style={{ margin: 0 }}>Test-QR-Codes</h2>
+                      <SectionText>Zusätzliche Test-Checkpoints für Admin und lokale Prüfung.</SectionText>
+                    </div>
+                    <Badge>{testCheckpointQrs.length} Test-Codes</Badge>
+                  </SectionHeader>
+                  <QrGrid>
+                    {testCheckpointQrs.map((checkpoint) => {
+                      const origin = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
+                      const targetUrl = `${origin}${checkpoint.scan_path}`;
+                      return (
+                        <QrCard key={`test-${checkpoint.checkpoint_id}`}>
+                          <div>
+                            <strong>{checkpoint.shop_name}</strong>
+                            <SectionText style={{ marginTop: "0.25rem" }}>
+                              Checkpoint {checkpoint.order_index} · Testmodus
+                            </SectionText>
+                          </div>
+                          {qrImageMap[checkpoint.checkpoint_id] && (
+                            <QrImage src={qrImageMap[checkpoint.checkpoint_id]} alt={`Test-QR-Code für ${checkpoint.shop_name}`} />
+                          )}
+                          <MonoField value={targetUrl} readOnly />
+                        </QrCard>
+                      );
+                    })}
+                  </QrGrid>
+                </>
+              )}
             </>
           )}
         </Card>
