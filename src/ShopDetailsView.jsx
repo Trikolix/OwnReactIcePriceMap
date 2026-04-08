@@ -21,6 +21,9 @@ import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 
+const hasValue = (value) => value !== null && value !== undefined;
+const hasPriceEntry = (entry) => hasValue(entry?.preis);
+
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
   const headerRef = useRef(null);
@@ -350,12 +353,12 @@ const ShopDetailsContent = ({
     return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
   };
 
-  const hasPriceData = shopData.preise.kugel != null || shopData.preise.softeis != null;
+  const hasPriceData = hasPriceEntry(shopData.preise.kugel) || hasPriceEntry(shopData.preise.softeis);
   const hasRatingData = Boolean(
-    shopData.bewertungen.auswahl ||
-    shopData.scores.kugel ||
-    shopData.scores.softeis ||
-    shopData.scores.eisbecher ||
+    hasValue(shopData.bewertungen.auswahl) ||
+    hasValue(shopData.scores.kugel) ||
+    hasValue(shopData.scores.softeis) ||
+    hasValue(shopData.scores.eisbecher) ||
     shopData.attribute?.length > 0
   );
 
@@ -403,7 +406,7 @@ const ShopDetailsContent = ({
             <TableScroll>
               <Table>
                 <tbody>
-                  {shopData.preise.kugel != null && (
+                  {hasPriceEntry(shopData.preise.kugel) && (
                     <tr>
                       <th>Kugelpreis</th>
                       <td>
@@ -415,7 +418,7 @@ const ShopDetailsContent = ({
                       </td>
                     </tr>
                   )}
-                  {shopData.preise.softeis != null && (
+                  {hasPriceEntry(shopData.preise.softeis) && (
                     <tr>
                       <th>Softeispreis</th>
                       <td>
@@ -452,25 +455,25 @@ const ShopDetailsContent = ({
             <TableScroll>
               <Table>
                 <tbody>
-                  {shopData.scores.kugel !== null && (
+                  {hasValue(shopData.scores.kugel) && (
                     <tr>
                       <th>Kugeleis</th>
                       <td><Rating stars={shopData.scores.kugel} /> <strong>{shopData.scores.kugel}</strong></td>
                     </tr>
                   )}
-                  {shopData.scores.softeis !== null && (
+                  {hasValue(shopData.scores.softeis) && (
                     <tr>
                       <th>Softeis</th>
                       <td><Rating stars={shopData.scores.softeis} /> <strong>{shopData.scores.softeis}</strong></td>
                     </tr>
                   )}
-                  {shopData.scores.eisbecher !== null && (
+                  {hasValue(shopData.scores.eisbecher) && (
                     <tr>
                       <th>Eisbecher</th>
                       <td><Rating stars={shopData.scores.eisbecher} /> <strong>{shopData.scores.eisbecher}</strong></td>
                     </tr>
                   )}
-                  {shopData.bewertungen.auswahl !== null && (
+                  {hasValue(shopData.bewertungen.auswahl) && (
                     <tr>
                       <th>Auswahl</th>
                       <td>~ <strong>{shopData.bewertungen.auswahl}</strong> Sorten</td>

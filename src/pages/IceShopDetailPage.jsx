@@ -212,6 +212,15 @@ const aggregateTopVisitors = (checkins) => {
 
 const buildGalleryPreview = (gallery) => (gallery || []).slice(0, 8);
 
+const hasValue = (value) => value !== null && value !== undefined;
+const hasPriceEntry = (entry) => hasValue(entry?.preis);
+
+const scoreMeta = {
+  kugel: { label: 'Kugeleis', shortLabel: 'Ø Kugelwertung' },
+  softeis: { label: 'Softeis', shortLabel: 'Ø Softeiswertung' },
+  eisbecher: { label: 'Eisbecher', shortLabel: 'Ø Eisbecherwertung' },
+};
+
 const IceShopDetailPage = () => {
   const { shopId } = useParams();
   const { isLoggedIn, userId } = useUser();
@@ -395,18 +404,34 @@ const IceShopDetailPage = () => {
   const priceCards = [
     { title: 'Kugelpreis', entry: preise.kugel, icon: <IceCream size={18} /> },
     { title: 'Softeispreis', entry: preise.softeis, icon: <Sparkles size={18} /> },
-  ];
+  ].filter(({ entry }) => hasPriceEntry(entry));
+
+  const ratingItems = [
+    hasValue(scores.kugel) ? { key: 'kugel', label: scoreMeta.kugel.label, value: scores.kugel } : null,
+    hasValue(scores.softeis) ? { key: 'softeis', label: scoreMeta.softeis.label, value: scores.softeis } : null,
+    hasValue(scores.eisbecher) ? { key: 'eisbecher', label: scoreMeta.eisbecher.label, value: scores.eisbecher } : null,
+    hasValue(shopData?.bewertungen?.auswahl)
+      ? { key: 'auswahl', label: 'Auswahl', text: `~ ${shopData.bewertungen.auswahl} Sorten` }
+      : null,
+  ].filter(Boolean);
+
+  const primaryPriceCard = priceCards[0] || null;
+  const primaryScoreEntry = ratingItems.find((item) => item.key !== 'auswahl') || null;
 
   const heroSummaryItems = [
     {
-      label: 'Kugelpreis',
-      value: preise.kugel?.preis != null ? `${Number(preise.kugel.preis).toFixed(2)} ${preise.kugel.waehrung_symbol || 'EUR'}` : 'Noch nicht gemeldet',
-      subline: preise.kugel?.letztes_update ? `Zuletzt gemeldet ${calculateTimeDifference(preise.kugel.letztes_update)}` : 'Noch keine aktuelle Meldung',
+      label: primaryPriceCard?.title || 'Preis',
+      value: primaryPriceCard?.entry?.preis != null
+        ? `${Number(primaryPriceCard.entry.preis).toFixed(2)} ${primaryPriceCard.entry.waehrung_symbol || 'EUR'}`
+        : 'Noch nicht gemeldet',
+      subline: primaryPriceCard?.entry?.letztes_update
+        ? `Zuletzt gemeldet ${calculateTimeDifference(primaryPriceCard.entry.letztes_update)}`
+        : 'Noch keine aktuelle Meldung',
     },
     {
-      label: 'Ø Kugelwertung',
-      value: scores.kugel !== null && scores.kugel !== undefined ? formatRating(scores.kugel) : '–',
-      subline: scores.kugel !== null && scores.kugel !== undefined ? 'Community-Score' : 'Noch keine Wertung',
+      label: primaryScoreEntry?.key ? scoreMeta[primaryScoreEntry.key]?.shortLabel || 'Ø Bewertung' : 'Ø Bewertung',
+      value: primaryScoreEntry?.value != null ? formatRating(primaryScoreEntry.value) : '–',
+      subline: primaryScoreEntry?.value != null ? 'Community-Score' : 'Noch keine Wertung',
     },
     {
       label: 'Check-ins',
@@ -572,28 +597,41 @@ const IceShopDetailPage = () => {
                   <SectionSubline>Aktuelle Preismeldungen, Durchschnittswerte und wahrgenommene Stärken.</SectionSubline>
                 </div>
               </SectionHeader>
-              <SplitCards>
-                {priceCards.map(({ title, entry, icon }) => (
-                  <MiniPanel key={title}>
-                    <MiniPanelTitle>{icon}{title}</MiniPanelTitle>
-                    <MiniPanelValue>
-                      {entry?.preis != null ? `${Number(entry.preis).toFixed(2)} ${entry.waehrung_symbol || 'EUR'}` : 'Noch nicht gemeldet'}
-                    </MiniPanelValue>
-                    <MiniPanelSubline>
-                      {entry?.beschreibung || (entry?.letztes_update ? `Zuletzt aktualisiert ${calculateTimeDifference(entry.letztes_update)}` : 'Community-Meldung fehlt noch')}
-                    </MiniPanelSubline>
-                  </MiniPanel>
-                ))}
-                <MiniPanel>
-                  <MiniPanelTitle><Star size={18} />Bewertungen</MiniPanelTitle>
-                  <RatingsList>
-                    <li>Kugeleis: <Rating stars={scores.kugel} /> <strong>{formatRating(scores.kugel)}</strong></li>
-                    <li>Softeis: <Rating stars={scores.softeis} /> <strong>{formatRating(scores.softeis)}</strong></li>
-                    <li>Eisbecher: <Rating stars={scores.eisbecher} /> <strong>{formatRating(scores.eisbecher)}</strong></li>
-                    <li>Auswahl: <strong>{shopData?.bewertungen?.auswahl != null ? `~ ${shopData.bewertungen.auswahl} Sorten` : 'Keine Daten'}</strong></li>
-                  </RatingsList>
-                </MiniPanel>
-              </SplitCards>
+              {(priceCards.length > 0 || ratingItems.length > 0) ? (
+                <SplitCards>
+                  {priceCards.map(({ title, entry, icon }) => (
+                    <MiniPanel key={title}>
+                      <MiniPanelTitle>{icon}{title}</MiniPanelTitle>
+                      <MiniPanelValue>{`${Number(entry.preis).toFixed(2)} ${entry.waehrung_symbol || 'EUR'}`}</MiniPanelValue>
+                      <MiniPanelSubline>
+                        {entry?.beschreibung || (entry?.letztes_update ? `Zuletzt aktualisiert ${calculateTimeDifference(entry.letztes_update)}` : 'Preis gemeldet')}
+                      </MiniPanelSubline>
+                    </MiniPanel>
+                  ))}
+                  {ratingItems.length > 0 && (
+                    <MiniPanel>
+                        <MiniPanelTitle><Star size={18} />Bewertungen</MiniPanelTitle>
+                      <RatingsList>
+                        {ratingItems.map((item) => (
+                          <li key={item.key} data-text-only={item.value == null ? 'true' : undefined}>
+                            {item.label}:
+                            {item.value != null ? (
+                              <>
+                                <Rating stars={item.value} />
+                                <strong>{formatRating(item.value)}</strong>
+                              </>
+                            ) : (
+                              <strong>{item.text}</strong>
+                            )}
+                          </li>
+                        ))}
+                      </RatingsList>
+                    </MiniPanel>
+                  )}
+                </SplitCards>
+              ) : (
+                <EmptyState>Für diese Eisdiele liegen noch keine Preis- oder Bewertungsdaten vor.</EmptyState>
+              )}
               {attribute.length > 0 && (
                 <TagCloud>
                   {attribute.map((attr) => (
@@ -1385,6 +1423,10 @@ const RatingsList = styled.ul`
 
   li strong {
     justify-self: start;
+  }
+
+  li[data-text-only='true'] strong {
+    grid-column: 2 / span 2;
   }
 
   @media (max-width: 420px) {

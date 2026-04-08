@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { searchUsers } from "../utils/searchUsers";
 
 function UserMentionMultiSelect({ onChange }) {
   const [query, setQuery] = useState("");
@@ -19,10 +20,7 @@ function UserMentionMultiSelect({ onChange }) {
     }
 
     const timer = setTimeout(async () => {
-      const res = await fetch(
-        `${apiUrl}/api/search_user.php?q=${encodeURIComponent(value)}`
-      );
-      const data = await res.json();
+      const data = await searchUsers(apiUrl, value);
       setResults(data);
     }, 300);
 

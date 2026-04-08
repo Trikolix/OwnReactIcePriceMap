@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { MapPinned, RefreshCcw, Sparkles, Target, Timer, Trophy as TrophyGlyph } from "lucide-react";
 import Header from "../Header";
@@ -169,13 +169,20 @@ function Challenges() {
   const [expandedOpeningHours, setExpandedOpeningHours] = useState({});
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [locationUpdatedAt, setLocationUpdatedAt] = useState(null);
   const [mapZoom, setMapZoom] = useState(12);
   const [mapFocusTarget, setMapFocusTarget] = useState(null);
   const [countdownNowTs, setCountdownNowTs] = useState(Date.now());
   const newChallengeModalButtonRef = useRef(null);
   const trophyModalButtonRef = useRef(null);
+  const locationRef = useRef(null);
   const activeTab = searchParams.get("tab") === "team" ? "team" : "solo";
   const focusTeamChallengeId = searchParams.get("teamChallengeId");
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setCountdownNowTs(Date.now()), 60000);
@@ -185,6 +192,58 @@ function Challenges() {
   useEffect(() => {
     setMapZoom(difficulty === "schwer" ? 8 : difficulty === "mittel" ? 10 : 11);
   }, [difficulty]);
+
+  const applyLocationUpdate = useCallback((position) => {
+    setLocation({
+      lat: position.coords.latitude,
+      lon: position.coords.longitude,
+    });
+    setLocationAccuracy(Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null);
+    setLocationUpdatedAt(Date.now());
+    setLoadingLocation(false);
+    setLocationNotice(null);
+  }, []);
+
+  const handleLocationFailure = useCallback((geoError) => {
+    const hasKnownLocation = Boolean(locationRef.current);
+    const permissionDenied = Number(geoError?.code) === 1;
+
+    setLoadingLocation(false);
+    if (!hasKnownLocation) {
+      setLocation(null);
+      setLocationAccuracy(null);
+      setLocationUpdatedAt(null);
+    }
+
+    setLocationNotice({
+      type: permissionDenied ? "error" : "info",
+      message: permissionDenied
+        ? "Standortzugriff ist blockiert. Erlaube den Zugriff im Browser und prüfe den Standort erneut."
+        : hasKnownLocation
+          ? "Standort konnte gerade nicht aktualisiert werden. Die letzte bekannte Position wird weiter genutzt."
+          : "Standort konnte noch nicht ermittelt werden. Erlaube den Standortzugriff und prüfe den Standort erneut.",
+    });
+  }, []);
+
+  const refreshLocation = useCallback(({ silent = false } = {}) => {
+    if (!navigator.geolocation) {
+      setLoadingLocation(false);
+      setLocationNotice({
+        type: "error",
+        message: "Dein Browser unterstützt keinen Standortzugriff. Challenges können ohne Standort nicht generiert werden.",
+      });
+      return;
+    }
+
+    setLoadingLocation(true);
+    if (!silent) setLocationNotice(null);
+
+    navigator.geolocation.getCurrentPosition(
+      applyLocationUpdate,
+      handleLocationFailure,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [applyLocationUpdate, handleLocationFailure]);
 
   useEffect(() => {
     let watchId;
@@ -197,35 +256,28 @@ function Challenges() {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        setLoadingLocation(false);
-        setLocationNotice(null);
-      },
-      () => {
-        setLoadingLocation(false);
-        setLocationNotice({
-          type: "info",
-          message: "Standort konnte noch nicht ermittelt werden. Erlaube den Standortzugriff, um Challenges zu generieren.",
-        });
-      },
-      { enableHighAccuracy: false, timeout: 5000 }
-    );
+    refreshLocation({ silent: true });
 
     watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        setLocationNotice(null);
+      applyLocationUpdate,
+      (geoError) => {
+        if (!locationRef.current) handleLocationFailure(geoError);
       },
-      () => {},
-      { enableHighAccuracy: false, maximumAge: 0 }
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: 15000 }
     );
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshLocation({ silent: true });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
-  }, []);
+  }, [applyLocationUpdate, handleLocationFailure, refreshLocation]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId || !apiUrl) {
@@ -454,6 +506,10 @@ function Challenges() {
     }));
   };
 
+  const locationUpdatedLabel = locationUpdatedAt
+    ? new Date(locationUpdatedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+    : null;
+
   const activeChallenges = useMemo(() => sortChallenges(challenges.filter((challenge) => !challenge.completed)), [challenges]);
   const completedChallenges = useMemo(
     () => challenges.filter((challenge) => challenge.completed).sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0)),
@@ -555,6 +611,7 @@ function Challenges() {
             location={location}
             loadingLocation={loadingLocation}
             locationNotice={locationNotice}
+            onRefreshLocation={refreshLocation}
             focusChallengeId={focusTeamChallengeId}
             onFocusChallengeHandled={handleFocusChallengeHandled}
           />
@@ -741,7 +798,14 @@ function Challenges() {
                       </SummaryIcon>
                       <div>
                         <SummaryValue>{loadingLocation ? "Wird geladen" : location ? "Bereit" : "Fehlt"}</SummaryValue>
-                        <SummaryHint>{location ? "Challenge kann erzeugt werden" : "Browser-Freigabe nötig"}</SummaryHint>
+                        <SummaryHint>
+                          {location
+                            ? locationAccuracy != null
+                              ? `Genauigkeit ca. ${Math.round(locationAccuracy)} m`
+                              : "Challenge kann erzeugt werden"
+                            : "Browser-Freigabe nötig"}
+                        </SummaryHint>
+                        {locationUpdatedLabel && <SummaryMeta>Zuletzt aktualisiert um {locationUpdatedLabel}</SummaryMeta>}
                       </div>
                     </StatusCard>
                   </SelectionGroup>
@@ -749,6 +813,11 @@ function Challenges() {
 
                 <ActionArea>
                   {loadingLocation && <SmallText>Standort wird geladen...</SmallText>}
+                  {!loadingLocation && location && (
+                    <SmallText>
+                      Standort bereit{locationAccuracy != null ? `, Genauigkeit ca. ${Math.round(locationAccuracy)} m` : ""}.
+                    </SmallText>
+                  )}
                   <ButtonRow>
                     <GenerateButton
                       type="button"
@@ -775,6 +844,10 @@ function Challenges() {
                           : missingCombinations.length === 0
                             ? "Alles aktiv"
                             : "Alle fehlenden generieren"}
+                    </SecondaryButton>
+                    <SecondaryButton type="button" onClick={() => refreshLocation()} disabled={loadingLocation}>
+                      <RefreshCcw size={15} />
+                      {loadingLocation ? "Prüfe Standort..." : location ? "Standort aktualisieren" : "Standort prüfen"}
                     </SecondaryButton>
                   </ButtonRow>
                 </ActionArea>
@@ -1449,6 +1522,13 @@ const SummaryHint = styled.div`
     font-size: 0.76rem;
     line-height: 1.25;
   }
+`;
+
+const SummaryMeta = styled.div`
+  color: rgba(47, 33, 0, 0.54);
+  font-size: 0.76rem;
+  margin-top: 0.2rem;
+  line-height: 1.3;
 `;
 
 const LegendContainer = styled.div`

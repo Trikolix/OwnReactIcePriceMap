@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-import { Bell, Check, Clock3, MapPinned, Send, Target, Trophy, Users, X } from "lucide-react";
+import { Bell, Check, Clock3, MapPinned, RefreshCcw, Send, Target, Trophy, Users, X } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
+import { searchUsers } from "../utils/searchUsers";
 
 const defaultIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
@@ -80,7 +81,7 @@ async function readJsonResponse(res) {
   return data;
 }
 
-function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locationNotice, focusChallengeId, onFocusChallengeHandled }) {
+function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locationNotice, onRefreshLocation, focusChallengeId, onFocusChallengeHandled }) {
   const [listState, setListState] = useState({ active: null, active_challenges: [], received_invitations: [], sent_invitations: [], history: [] });
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -167,8 +168,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
     setSearchingUsers(true);
     const timerId = window.setTimeout(async () => {
       try {
-        const res = await fetch(`${apiUrl}/api/search_user.php?q=${encodeURIComponent(userQuery.trim())}`, { signal: controller.signal });
-        const data = await res.json();
+        const data = await searchUsers(apiUrl, userQuery, { signal: controller.signal });
         setSearchResults(Array.isArray(data) ? data.filter((entry) => Number(entry.id) !== Number(userId)) : []);
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -357,7 +357,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
               <SubtleText>Wähle einen anderen Nutzer aus. Beim Senden wird dein aktueller Standort für die Mittelpunkt-Berechnung gespeichert.</SubtleText>
               <SearchInput
                 type="text"
-                placeholder="Nutzername suchen..."
+                placeholder="Nutzername oder E-Mail eingeben..."
                 value={selectedUser ? selectedUser.username : userQuery}
                 onChange={(event) => {
                   setSelectedUser(null);
@@ -378,7 +378,6 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                       }}
                     >
                       <span>{user.username}</span>
-                      {user.email && <SearchMeta>{user.email}</SearchMeta>}
                     </SearchItem>
                   ))}
                 </SearchList>
@@ -407,10 +406,16 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                   ? "Weeklys laufen bis Sonntag 23:59 Uhr."
                   : "Dailys laufen bis Mitternacht, nach 18 Uhr bis morgen 23:59 Uhr."}
               </HintText>
-              <PrimaryButton type="button" onClick={handleInvite} disabled={busyAction !== null || loadingLocation || !location}>
-                <Send size={16} />
-                Einladung senden
-              </PrimaryButton>
+              <ActionRow>
+                <PrimaryButton type="button" onClick={handleInvite} disabled={busyAction !== null || loadingLocation || !location}>
+                  <Send size={16} />
+                  Einladung senden
+                </PrimaryButton>
+                <SecondaryButton type="button" onClick={() => onRefreshLocation?.()} disabled={loadingLocation}>
+                  <RefreshCcw size={16} />
+                  {loadingLocation ? "Prüfe Standort..." : location ? "Standort aktualisieren" : "Standort prüfen"}
+                </SecondaryButton>
+              </ActionRow>
             </InviteBox>
           </InviteLayout>
         </SectionCard>
@@ -934,12 +939,6 @@ const SearchItem = styled.button`
   &:hover {
     background: #fff6e6;
   }
-`;
-
-const SearchMeta = styled.div`
-  color: rgba(47, 33, 0, 0.55);
-  font-size: 0.78rem;
-  margin-top: 0.2rem;
 `;
 
 const SelectedUserChip = styled.div`
