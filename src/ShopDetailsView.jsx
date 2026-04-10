@@ -209,9 +209,9 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           </HeaderCtaBar>
         )}
         <Tabs>
-          <Tab type="button" onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-          <Tab type="button" onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
-          <Tab type="button" onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
+          <Tab type="button" onClick={() => setActiveTab('info')} $active={activeTab === 'info'}>Allgemein</Tab>
+          <Tab type="button" onClick={() => setActiveTab('checkins')} $active={activeTab === 'checkins'}>Check-ins</Tab>
+          <Tab type="button" onClick={() => setActiveTab('reviews')} $active={activeTab === 'reviews'}>Bewertungen</Tab>
         </Tabs>
 
         <Content>
@@ -770,17 +770,17 @@ const Tab = styled.button`
   flex: 1;
   min-width: 0;
   padding: 0.5rem 0.65rem;
-  background: ${({ active }) => (active ? '#ffb522' : 'transparent')};
-  color: ${({ active }) => (active ? '#2f2100' : '#5c4a25')};
-  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
+  background: ${({ $active }) => ($active ? '#ffb522' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#2f2100' : '#5c4a25')};
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
   border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: ${({ active }) => (active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+  box-shadow: ${({ $active }) => ($active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
 
   &:hover {
-    background: ${({ active }) => (active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
+    background: ${({ $active }) => ($active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
   }
 `;
 

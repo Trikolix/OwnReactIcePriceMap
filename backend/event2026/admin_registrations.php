@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/reminders.php';
 
 try {
     event2026_ensure_schema($pdo);
@@ -12,6 +13,7 @@ try {
     event2026_require_admin($pdo);
     $event = event2026_current_event($pdo, true);
     $eventId = (int) $event['id'];
+    $reminderOverviewMap = event2026_fetch_reminder_overview_map($pdo, $eventId);
 
     $registrationStmt = $pdo->prepare("SELECT
             r.id,
@@ -96,6 +98,32 @@ try {
     $addonStmt->execute([':event_id' => $eventId]);
     $addonRows = $addonStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $addonTotalsByRegistration = [];
+    foreach ($addonRows as $addonRow) {
+        $registrationId = $addonRow['registration_id'] !== null ? (int) $addonRow['registration_id'] : 0;
+        if ($registrationId <= 0 || (string) ($addonRow['status'] ?? '') === 'cancelled') {
+            continue;
+        }
+
+        if (!isset($addonTotalsByRegistration[$registrationId])) {
+            $addonTotalsByRegistration[$registrationId] = [
+                'purchase_count' => 0,
+                'gift_voucher_quantity' => 0,
+                'expected_amount' => 0.0,
+                'paid_amount' => 0.0,
+                'outstanding_amount' => 0.0,
+            ];
+        }
+
+        $addonExpectedAmount = (float) ($addonRow['expected_amount'] ?? 0);
+        $addonPaidAmount = (float) ($addonRow['paid_amount'] ?? 0);
+        $addonTotalsByRegistration[$registrationId]['purchase_count']++;
+        $addonTotalsByRegistration[$registrationId]['gift_voucher_quantity'] += (int) ($addonRow['gift_voucher_quantity'] ?? 0);
+        $addonTotalsByRegistration[$registrationId]['expected_amount'] += $addonExpectedAmount;
+        $addonTotalsByRegistration[$registrationId]['paid_amount'] += $addonPaidAmount;
+        $addonTotalsByRegistration[$registrationId]['outstanding_amount'] += max(0, $addonExpectedAmount - $addonPaidAmount);
+    }
+
     $slotsByRegistration = [];
     foreach ($slotRows as $slotRow) {
         $registrationId = (int) $slotRow['registration_id'];
@@ -179,6 +207,16 @@ try {
         $donationAmount = (float) ($registration['donation_amount'] ?? 0);
         $voucherDiscountAmount = (float) ($registration['voucher_discount_amount'] ?? 0);
         $outstandingAmount = max(0, $expectedAmount - $paidAmount);
+        $addonTotals = $addonTotalsByRegistration[$registrationId] ?? [
+            'purchase_count' => 0,
+            'gift_voucher_quantity' => 0,
+            'expected_amount' => 0.0,
+            'paid_amount' => 0.0,
+            'outstanding_amount' => 0.0,
+        ];
+        $totalExpectedAmount = $expectedAmount + (float) $addonTotals['expected_amount'];
+        $totalPaidAmount = $paidAmount + (float) $addonTotals['paid_amount'];
+        $totalOutstandingAmount = $outstandingAmount + (float) $addonTotals['outstanding_amount'];
 
         $summary['registration_count']++;
         $summary['participant_count'] += count($slots);
@@ -195,6 +233,11 @@ try {
         } else {
             $summary['open_registration_count']++;
         }
+
+        $openVoucherCount = count(array_filter($vouchers, static function (array $voucher): bool {
+            return ($voucher['status'] ?? '') === 'open';
+        }));
+        $registrationReminderKey = 'registration:' . $registrationId;
 
         $resultRows[] = [
             'id' => $registrationId,
@@ -219,11 +262,24 @@ try {
                 'donation_amount' => $donationAmount,
                 'voucher_discount_amount' => $voucherDiscountAmount,
                 'outstanding_amount' => $outstandingAmount,
+                'addon_purchase_count' => (int) $addonTotals['purchase_count'],
+                'addon_gift_voucher_quantity' => (int) $addonTotals['gift_voucher_quantity'],
+                'addon_expected_amount' => round((float) $addonTotals['expected_amount'], 2),
+                'addon_paid_amount' => round((float) $addonTotals['paid_amount'], 2),
+                'addon_outstanding_amount' => round((float) $addonTotals['outstanding_amount'], 2),
+                'total_expected_amount' => round($totalExpectedAmount, 2),
+                'total_paid_amount' => round($totalPaidAmount, 2),
+                'total_outstanding_amount' => round($totalOutstandingAmount, 2),
                 'confirmed_at' => $registration['confirmed_at'],
                 'confirmed_by_admin' => $registration['confirmed_by_admin'] !== null ? (int) $registration['confirmed_by_admin'] : null,
             ],
             'slots' => $slots,
             'gift_vouchers' => $vouchers,
+            'open_voucher_count' => $openVoucherCount,
+            'reminders' => [
+                'payment' => $reminderOverviewMap[$registrationReminderKey]['payment'] ?? null,
+                'voucher' => $reminderOverviewMap[$registrationReminderKey]['voucher'] ?? null,
+            ],
         ];
     }
 
@@ -233,8 +289,14 @@ try {
         if ((string) $addonRow['status'] !== 'paid') {
             $summary['open_addon_purchase_count']++;
         }
+        $purchaseId = (int) $addonRow['id'];
+        $giftVouchers = $vouchersByAddonPurchase[$purchaseId] ?? [];
+        $openVoucherCount = count(array_filter($giftVouchers, static function (array $voucher): bool {
+            return ($voucher['status'] ?? '') === 'open';
+        }));
+        $addonReminderKey = 'addon_purchase:' . $purchaseId;
         $addonResults[] = [
-            'id' => (int) $addonRow['id'],
+            'id' => $purchaseId,
             'registration_id' => (int) $addonRow['registration_id'],
             'buyer' => [
                 'user_id' => $addonRow['buyer_user_id'] !== null ? (int) $addonRow['buyer_user_id'] : null,
@@ -250,9 +312,20 @@ try {
             'payment_method' => (string) $addonRow['payment_method'],
             'confirmed_at' => $addonRow['confirmed_at'],
             'created_at' => $addonRow['created_at'],
-            'gift_vouchers' => $vouchersByAddonPurchase[(int) $addonRow['id']] ?? [],
+            'gift_vouchers' => $giftVouchers,
+            'open_voucher_count' => $openVoucherCount,
+            'reminders' => [
+                'voucher' => $reminderOverviewMap[$addonReminderKey]['voucher'] ?? null,
+            ],
         ];
     }
+
+    $summary['registration_payment_reminder_candidate_count'] = count(
+        event2026_filter_registration_payment_candidates($pdo, $event, EVENT2026_REMINDER_KIND_MANUAL_REGISTRATION_PAYMENT, true)
+    );
+    $summary['unused_voucher_reminder_candidate_count'] = count(
+        event2026_filter_unused_voucher_candidates($pdo, $event, EVENT2026_REMINDER_KIND_MANUAL_UNUSED_VOUCHER, true)
+    );
 
     echo json_encode([
         'status' => 'success',

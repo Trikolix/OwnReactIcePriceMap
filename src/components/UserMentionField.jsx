@@ -1,30 +1,44 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import { searchUsers } from "../utils/searchUsers";
+import { searchUsers as searchUsersApi } from "../utils/searchUsers";
 
 function UserMentionMultiSelect({ onChange }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [debounceTimer, setDebounceTimer] = useState(null);
+  const debounceTimerRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-  const searchUsers = (value) => {
-    setQuery(value);
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
-    if (debounceTimer) clearTimeout(debounceTimer);
+  const handleSearchChange = (value = "") => {
+    const nextQuery = String(value ?? "");
+    setQuery(nextQuery);
 
-    if (value.length < 2) {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (nextQuery.length < 2) {
       setResults([]);
       return;
     }
 
-    const timer = setTimeout(async () => {
-      const data = await searchUsers(apiUrl, value);
-      setResults(data);
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        const data = await searchUsersApi(apiUrl, nextQuery);
+        setResults(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Fehler bei der Nutzersuche:", error);
+        setResults([]);
+      }
     }, 300);
-
-    setDebounceTimer(timer);
   };
 
   const addUser = (user) => {
@@ -48,11 +62,11 @@ function UserMentionMultiSelect({ onChange }) {
       <Input
         type="text"
         value={query}
-        onChange={(e) => searchUsers(e.target.value)}
+        onChange={(e) => handleSearchChange(e.target.value)}
         placeholder="Nutzername oder E-Mail eingeben..."
       />
 
-      {results.length > 0 && (
+      {Array.isArray(results) && results.length > 0 && (
         <ResultList>
           {results.map((user) => (
             <ResultItem key={user.id} onClick={() => addUser(user)}>

@@ -45,15 +45,20 @@ const ARRIVAL_OPTIONS = [
 ];
 
 const ARRIVAL_ICON_MAP = Object.fromEntries(ARRIVAL_OPTIONS.map((option) => [option.value, option.icon]));
+const normalizeScoreInputValue = (value) => (value == null ? "" : value);
+const normalizeRatingStars = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+};
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId, initialLocation = null }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
-    const [geschmackbewertung, setGeschmackbewertung] = useState(null);
-    const [waffelbewertung, setWaffelbewertung] = useState(null);
+    const [geschmackbewertung, setGeschmackbewertung] = useState("");
+    const [waffelbewertung, setWaffelbewertung] = useState("");
     const [größenbewertung, setGrößenbewertung] = useState(null);
-    const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
+    const [preisleistungsbewertung, setPreisleistungsbewertung] = useState("");
     const [kommentar, setKommentar] = useState("");
     const [anreise, setAnreise] = useState("");
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
@@ -174,12 +179,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 setType(checkin.typ);
-                setGeschmackbewertung(checkin.geschmackbewertung);
-                setWaffelbewertung(checkin.waffelbewertung);
+                setGeschmackbewertung(normalizeScoreInputValue(checkin.geschmackbewertung));
+                setWaffelbewertung(normalizeScoreInputValue(checkin.waffelbewertung));
                 if (checkin.preisleistungsbewertung == null && checkin.größenbewertung != null) {
                     setPreisleistungsbewertung(checkin.größenbewertung);
                 } else {
-                    setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                    setPreisleistungsbewertung(normalizeScoreInputValue(checkin.preisleistungsbewertung));
                 }
                 setKommentar(checkin.kommentar);
                 setAnreise(checkin.anreise || "");
@@ -189,7 +194,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     beschreibung: b.beschreibung || "",
                     isExisting: true
                 })));
-                setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
+                setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: normalizeScoreInputValue(sorte.bewertung) })));
             } catch (err) {
                 console.error("Fehler beim Laden des Checkins:", err);
             }
@@ -577,12 +582,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             step="0.1"
                                             min="1.0"
                                             max="5.0"
-                                            value={sorte.bewertung}
+                                            value={normalizeScoreInputValue(sorte.bewertung)}
                                             placeholder="Bewertung"
                                             onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
                                         />
                                         <InlineSortenRating>
-                                            <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(sorte.bewertung)} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
                                         </InlineSortenRating>
                                     </>
                                     )}
@@ -617,13 +622,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             min="1.0"
                                             max="5.0"
                                             placeholder="1.0 - 5.0"
-                                            value={geschmackbewertung}
+                                            value={normalizeScoreInputValue(geschmackbewertung)}
                                             onChange={(e) => setGeschmackbewertung(e.target.value)}
                                         />
                                     </td>
                                     <td>
                                         <TableRatingWrap>
-                                            <Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(geschmackbewertung)} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} />
                                         </TableRatingWrap>
                                     </td>
                                 </tr>
@@ -636,13 +641,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             min="1.0"
                                             max="5.0"
                                             placeholder="1.0 - 5.0"
-                                            value={preisleistungsbewertung}
+                                            value={normalizeScoreInputValue(preisleistungsbewertung)}
                                             onChange={(e) => setPreisleistungsbewertung(e.target.value)}
                                         />
                                     </td>
                                     <td>
                                         <TableRatingWrap>
-                                            <Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(preisleistungsbewertung)} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} />
                                         </TableRatingWrap>
                                     </td>
                                 </tr>
@@ -665,13 +670,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             min="1.0"
                                             max="5.0"
                                             placeholder="1.0 - 5.0"
-                                            value={waffelbewertung}
+                                            value={normalizeScoreInputValue(waffelbewertung)}
                                             onChange={(e) => setWaffelbewertung(e.target.value)}
                                         />
                                     </td>
                                     <td>
                                         <TableRatingWrap>
-                                            <Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(waffelbewertung)} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} />
                                         </TableRatingWrap>
                                     </td>
                                 </tr>)}

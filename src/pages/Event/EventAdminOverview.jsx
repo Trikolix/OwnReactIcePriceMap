@@ -176,6 +176,16 @@ const ActionButton = styled.button`
   cursor: pointer;
 `;
 
+const SecondaryButton = styled.button`
+  border: 1px solid #ecd49b;
+  border-radius: 8px;
+  padding: 0.65rem 0.95rem;
+  background: #fff5df;
+  color: #7c4f00;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
 const AccountLink = styled(Link)`
   color: #d97706;
   font-weight: 700;
@@ -258,6 +268,32 @@ function statusTone(status) {
   return status === "paid" ? "success" : undefined;
 }
 
+function formatReminderKind(kind) {
+  switch (kind) {
+    case "registration_payment_14d":
+      return "Auto nach 14 Tagen";
+    case "registration_payment_pre_event":
+      return "Auto vor Event";
+    case "voucher_unused_7d":
+      return "Auto nach 7 Tagen";
+    case "voucher_unused_pre_event":
+      return "Auto vor Event";
+    case "manual_registration_payment":
+      return "Manuell Zahlung";
+    case "manual_unused_voucher":
+      return "Manuell Gutschein";
+    default:
+      return kind || "-";
+  }
+}
+
+function formatReminderSummary(reminder) {
+  if (!reminder?.last_sent_at) return "Noch kein Reminder gesendet";
+  const count = reminder.count || 0;
+  const lastKind = formatReminderKind(reminder.last_kind);
+  return `${formatDateTime(reminder.last_sent_at)} • ${lastKind}${count > 1 ? ` • ${count}x` : ""}`;
+}
+
 function formatWomenWavePreference(slot) {
   if (!slot) return "-";
   if (!routeSupportsPace(slot.route_key)) return "nicht relevant";
@@ -275,6 +311,8 @@ export default function EventAdminOverview() {
   const [checkpointQrs, setCheckpointQrs] = useState([]);
   const [qrImageMap, setQrImageMap] = useState({});
   const [showCheckpointQrs, setShowCheckpointQrs] = useState(false);
+  const [busyAction, setBusyAction] = useState("");
+  const [notice, setNotice] = useState("");
 
   const load = async () => {
     if (!apiUrl) return;
@@ -374,6 +412,7 @@ export default function EventAdminOverview() {
 
   const confirmRegistrationPayment = async (registration) => {
     if (!apiUrl) return;
+    setBusyAction(`confirm-registration-${registration.id}`);
     try {
       const res = await fetch(`${apiUrl}/event2026/payments_manual_confirm.php`, {
         method: "POST",
@@ -390,14 +429,19 @@ export default function EventAdminOverview() {
       if (!res.ok || json.status !== "success") {
         throw new Error(json.message || "Zahlung konnte nicht bestätigt werden.");
       }
+      setNotice("Zahlung wurde als bezahlt markiert.");
+      setError("");
       await load();
     } catch (err) {
       setError(err.message || "Zahlung konnte nicht bestätigt werden.");
+    } finally {
+      setBusyAction("");
     }
   };
 
   const confirmAddonPayment = async (purchase) => {
     if (!apiUrl) return;
+    setBusyAction(`confirm-addon-${purchase.id}`);
     try {
       const res = await fetch(`${apiUrl}/event2026/payments_manual_confirm.php`, {
         method: "POST",
@@ -414,9 +458,43 @@ export default function EventAdminOverview() {
       if (!res.ok || json.status !== "success") {
         throw new Error(json.message || "Zusatzbestellung konnte nicht bestätigt werden.");
       }
+      setNotice("Zusatzbestellung wurde als bezahlt markiert.");
+      setError("");
       await load();
     } catch (err) {
       setError(err.message || "Zusatzbestellung konnte nicht bestätigt werden.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const sendReminder = async ({ scope, entityType = null, entityId = null, busyKey, successMessage }) => {
+    if (!apiUrl) return;
+    setBusyAction(busyKey);
+    try {
+      const res = await fetch(`${apiUrl}/event2026/reminder_send_manual.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          scope,
+          entity_type: entityType,
+          entity_id: entityId,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.status !== "success") {
+        throw new Error(json.message || "Reminder konnte nicht gesendet werden.");
+      }
+      setNotice(json.message || successMessage || "Reminder wurde gesendet.");
+      setError("");
+      await load();
+    } catch (err) {
+      setError(err.message || "Reminder konnte nicht gesendet werden.");
+    } finally {
+      setBusyAction("");
     }
   };
 
@@ -555,6 +633,7 @@ export default function EventAdminOverview() {
 
         {loading && <Card>Daten werden geladen…</Card>}
         {error && <Card style={{ color: "#9f1239" }}>{error}</Card>}
+        {notice && <Card style={{ color: "#166534" }}>{notice}</Card>}
 
         {data && (
           <>
@@ -572,6 +651,8 @@ export default function EventAdminOverview() {
                 <SummaryBox><strong>Gutschein-Verkäufe</strong><div>{formatEuro(data.summary.gift_voucher_purchase_amount_total)}</div></SummaryBox>
                 <SummaryBox><strong>Gutschein-Abzüge</strong><div>{formatEuro(data.summary.voucher_discount_amount_total)}</div></SummaryBox>
                 <SummaryBox><strong>Zusätzliche Spenden</strong><div>{formatEuro(data.summary.donation_amount_total)}</div></SummaryBox>
+                <SummaryBox><strong>Offene Zahlungs-Reminder</strong><div>{data.summary.registration_payment_reminder_candidate_count || 0}</div></SummaryBox>
+                <SummaryBox><strong>Offene Gutschein-Reminder</strong><div>{data.summary.unused_voucher_reminder_candidate_count || 0}</div></SummaryBox>
               </Grid>
             </Card>
 
@@ -583,7 +664,22 @@ export default function EventAdminOverview() {
                     Standardansicht als Tabelle. Klicke auf eine Zeile, um rechts darunter die vollständigen Details zu sehen.
                   </SectionText>
                 </div>
-                <Badge>{data.registrations.length} Einträge</Badge>
+                <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "center" }}>
+                  <Badge>{data.registrations.length} Einträge</Badge>
+                  <SecondaryButton
+                    type="button"
+                    disabled={busyAction !== ""}
+                    onClick={() =>
+                      sendReminder({
+                        scope: "registration_payment",
+                        busyKey: "bulk-registration-reminder",
+                        successMessage: "Zahlungs-Reminder wurden gesendet.",
+                      })
+                    }
+                  >
+                    Offene Zahlungen erinnern
+                  </SecondaryButton>
+                </div>
               </SectionHeader>
 
               <TableWrap>
@@ -616,8 +712,8 @@ export default function EventAdminOverview() {
                           <td>{primarySlot?.full_name || "-"}</td>
                           <td>{registration.payment.reference_code}</td>
                           <td><Badge $tone={statusTone(registration.payment.status)}>{registration.payment.status}</Badge></td>
-                          <td>{formatEuro(registration.payment.expected_amount)}</td>
-                          <td>{formatEuro(registration.payment.outstanding_amount)}</td>
+                          <td>{formatEuro(registration.payment.total_expected_amount ?? registration.payment.expected_amount)}</td>
+                          <td>{formatEuro(registration.payment.total_outstanding_amount ?? registration.payment.outstanding_amount)}</td>
                           <td>{primarySlot ? formatRouteShortWithDistance(primarySlot.route_key, primarySlot.distance_km) : "-"}</td>
                           <td>{primarySlot ? getPaceLabel(primarySlot.pace_group) : "-"}</td>
                           <td>{formatWomenWavePreference(primarySlot)}</td>
@@ -638,11 +734,51 @@ export default function EventAdminOverview() {
                       Account: <strong>{selectedRegistration.registered_by.username || "-"}</strong> · Referenz: <strong>{selectedRegistration.payment.reference_code}</strong>
                     </SectionText>
                   </div>
-                  {selectedRegistration.payment.status !== "paid" && (
-                    <ActionButton onClick={() => confirmRegistrationPayment(selectedRegistration)}>
-                      Zahlung als bezahlt markieren
-                    </ActionButton>
-                  )}
+                  <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
+                    {selectedRegistration.payment.status !== "paid" && (
+                      <>
+                        <SecondaryButton
+                          type="button"
+                          disabled={busyAction !== ""}
+                          onClick={() =>
+                            sendReminder({
+                              scope: "registration_payment",
+                              entityType: "registration",
+                              entityId: selectedRegistration.id,
+                              busyKey: `registration-reminder-${selectedRegistration.id}`,
+                              successMessage: "Zahlungs-Reminder wurde gesendet.",
+                            })
+                          }
+                        >
+                          Zahlungs-Reminder senden
+                        </SecondaryButton>
+                        <ActionButton
+                          type="button"
+                          disabled={busyAction !== ""}
+                          onClick={() => confirmRegistrationPayment(selectedRegistration)}
+                        >
+                          Zahlung als bezahlt markieren
+                        </ActionButton>
+                      </>
+                    )}
+                    {selectedRegistration.open_voucher_count > 0 && (
+                      <SecondaryButton
+                        type="button"
+                        disabled={busyAction !== ""}
+                        onClick={() =>
+                          sendReminder({
+                            scope: "unused_vouchers",
+                            entityType: "registration",
+                            entityId: selectedRegistration.id,
+                            busyKey: `registration-voucher-reminder-${selectedRegistration.id}`,
+                            successMessage: "Gutschein-Reminder wurde gesendet.",
+                          })
+                        }
+                      >
+                        Gutschein-Reminder senden
+                      </SecondaryButton>
+                    )}
+                  </div>
                 </ActionRow>
 
                 <DetailGrid>
@@ -654,7 +790,10 @@ export default function EventAdminOverview() {
                       <InfoRow><InfoLabel>Gutschein-Käufe</InfoLabel><InfoValue>{formatEuro(selectedRegistration.payment.gift_voucher_purchase_amount)} ({selectedRegistration.payment.gift_voucher_quantity} Codes)</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Gutschein-Abzug</InfoLabel><InfoValue>-{formatEuro(selectedRegistration.payment.voucher_discount_amount)}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Zusätzliche Spende</InfoLabel><InfoValue>{formatEuro(selectedRegistration.payment.donation_amount)}</InfoValue></InfoRow>
-                      <InfoRow><InfoLabel>Soll / Ist / Offen</InfoLabel><InfoValue>{formatEuro(selectedRegistration.payment.expected_amount)} / {formatEuro(selectedRegistration.payment.paid_amount)} / {formatEuro(selectedRegistration.payment.outstanding_amount)}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Spätere Zusatzbestellungen</InfoLabel><InfoValue>{selectedRegistration.payment.addon_purchase_count || 0} Bestellungen, {selectedRegistration.payment.addon_gift_voucher_quantity || 0} Codes, {formatEuro(selectedRegistration.payment.addon_expected_amount || 0)}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Soll / Ist / Offen gesamt</InfoLabel><InfoValue>{formatEuro(selectedRegistration.payment.total_expected_amount ?? selectedRegistration.payment.expected_amount)} / {formatEuro(selectedRegistration.payment.total_paid_amount ?? selectedRegistration.payment.paid_amount)} / {formatEuro(selectedRegistration.payment.total_outstanding_amount ?? selectedRegistration.payment.outstanding_amount)}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Letzter Zahlungs-Reminder</InfoLabel><InfoValue>{formatReminderSummary(selectedRegistration.reminders?.payment)}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Letzter Gutschein-Reminder</InfoLabel><InfoValue>{formatReminderSummary(selectedRegistration.reminders?.voucher)}</InfoValue></InfoRow>
                     </InfoList>
                   </DetailSection>
 
@@ -671,6 +810,7 @@ export default function EventAdminOverview() {
                       <InfoRow><InfoLabel>Bekleidung</InfoLabel><InfoValue>{selectedPrimarySlot ? `${selectedPrimarySlot.clothing_interest_label}${selectedPrimarySlot.jersey_size ? `, Trikot ${selectedPrimarySlot.jersey_size}` : ""}${selectedPrimarySlot.bib_size ? `, Hose ${selectedPrimarySlot.bib_size}` : ""}` : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Live-Karte</InfoLabel><InfoValue>{selectedPrimarySlot ? (selectedPrimarySlot.public_name_consent ? "Name sichtbar" : "Name verborgen") : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Starter-Status</InfoLabel><InfoValue>{selectedPrimarySlot?.license_status || "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Offene Geschenk-Codes</InfoLabel><InfoValue>{selectedRegistration.open_voucher_count || 0}</InfoValue></InfoRow>
                     </InfoList>
                   </DetailSection>
 
@@ -713,7 +853,22 @@ export default function EventAdminOverview() {
                     Ebenfalls kompakt als Tabelle. Die Detailansicht erscheint erst nach Auswahl einer Bestellung.
                   </SectionText>
                 </div>
-                <Badge>{data.addon_purchases?.length || 0} Einträge</Badge>
+                <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "center" }}>
+                  <Badge>{data.addon_purchases?.length || 0} Einträge</Badge>
+                  <SecondaryButton
+                    type="button"
+                    disabled={busyAction !== ""}
+                    onClick={() =>
+                      sendReminder({
+                        scope: "unused_vouchers",
+                        busyKey: "bulk-voucher-reminder",
+                        successMessage: "Gutschein-Reminder wurden gesendet.",
+                      })
+                    }
+                  >
+                    Ungenutzte Gutscheine erinnern
+                  </SecondaryButton>
+                </div>
               </SectionHeader>
 
               <TableWrap>
@@ -759,11 +914,34 @@ export default function EventAdminOverview() {
                       Käufer: <strong>{selectedAddon.buyer.username || selectedAddon.buyer.name || "-"}</strong> · Referenz: <strong>{selectedAddon.payment_reference_code}</strong>
                     </SectionText>
                   </div>
-                  {selectedAddon.status !== "paid" && (
-                    <ActionButton onClick={() => confirmAddonPayment(selectedAddon)}>
-                      Zusatzbestellung als bezahlt markieren
-                    </ActionButton>
-                  )}
+                  <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
+                    {selectedAddon.open_voucher_count > 0 && (
+                      <SecondaryButton
+                        type="button"
+                        disabled={busyAction !== ""}
+                        onClick={() =>
+                          sendReminder({
+                            scope: "unused_vouchers",
+                            entityType: "addon_purchase",
+                            entityId: selectedAddon.id,
+                            busyKey: `addon-voucher-reminder-${selectedAddon.id}`,
+                            successMessage: "Gutschein-Reminder wurde gesendet.",
+                          })
+                        }
+                      >
+                        Gutschein-Reminder senden
+                      </SecondaryButton>
+                    )}
+                    {selectedAddon.status !== "paid" && (
+                      <ActionButton
+                        type="button"
+                        disabled={busyAction !== ""}
+                        onClick={() => confirmAddonPayment(selectedAddon)}
+                      >
+                        Zusatzbestellung als bezahlt markieren
+                      </ActionButton>
+                    )}
+                  </div>
                 </ActionRow>
 
                 <DetailGrid>
@@ -774,7 +952,9 @@ export default function EventAdminOverview() {
                       <InfoRow><InfoLabel>E-Mail</InfoLabel><InfoValue>{selectedAddon.buyer.email || "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Registrierung</InfoLabel><InfoValue>{selectedAddon.registration_id ? `#${selectedAddon.registration_id}` : "ohne eigene Teilnahme"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Gutschein-Codes</InfoLabel><InfoValue>{selectedAddon.gift_voucher_quantity}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Offene Gutschein-Codes</InfoLabel><InfoValue>{selectedAddon.open_voucher_count || 0}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Soll / Ist</InfoLabel><InfoValue>{formatEuro(selectedAddon.expected_amount)} / {formatEuro(selectedAddon.paid_amount)}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Letzter Gutschein-Reminder</InfoLabel><InfoValue>{formatReminderSummary(selectedAddon.reminders?.voucher)}</InfoValue></InfoRow>
                     </InfoList>
                   </DetailSection>
 
