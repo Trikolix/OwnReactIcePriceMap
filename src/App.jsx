@@ -8,6 +8,7 @@ import { challengeRoutes } from './features/challenges/routes';
 import { photoChallengeRoutes } from './features/photoChallenge/routes';
 import { userRoutes } from './features/user/routes';
 import AppUpdateBanner from './components/AppUpdateBanner';
+import PushBootstrap from './components/PushBootstrap';
 
 const allRoutes = [
   ...coreRoutes,
@@ -33,6 +34,7 @@ const App = () => {
     <Router>
       <UserProvider>
         <ScrollToTopOnRouteChange />
+        <PushBootstrap />
         <AppUpdateBanner />
         <Routes>
           {allRoutes.map((routeDef) => (

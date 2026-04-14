@@ -6,7 +6,10 @@ $allowed_origins = [
     'https://ice-app.4lima.de',
     'http://www.ice-app.de/',
     'https://www.ice-app.de/',
-    'www.ice-app.de'
+    'www.ice-app.de',
+    'capacitor://localhost',
+    'http://localhost',
+    'http://localhost:5173'
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? null;

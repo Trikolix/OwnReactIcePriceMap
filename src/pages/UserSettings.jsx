@@ -5,6 +5,13 @@ import getCroppedImg from "../utils/cropImage";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { SubmitButton } from "../styles/SharedStyles";
+import {
+  disableBrowserPush,
+  disableNativePush,
+  enableBrowserPush,
+  getBrowserPushStatus,
+  initializeNativePush,
+} from "../services/pushNotifications";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -25,6 +32,8 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_comment_participated: 1,
     notify_news: 0,
     notify_team_challenge: 1,
+    push_enabled_web: 0,
+    push_enabled_android: 0,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,6 +51,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [presetAvatars, setPresetAvatars] = useState([]);
   const [selectedPresetId, setSelectedPresetId] = useState(null);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const [browserPushStatus, setBrowserPushStatus] = useState({ supported: false, permission: "default", subscribed: false });
   const selectedPreset = selectedPresetId
     ? presetAvatars.find((preset) => preset.id === selectedPresetId) || null
     : null;
@@ -64,6 +74,14 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
     fetchSettings();
   }, [userId]);
+
+  useEffect(() => {
+    getBrowserPushStatus()
+      .then(setBrowserPushStatus)
+      .catch(() => {
+        setBrowserPushStatus({ supported: false, permission: "unsupported", subscribed: false });
+      });
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -297,6 +315,17 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     try {
       await persistAvatarChange();
       await persistNotificationSettings();
+      if (settings.push_enabled_web) {
+        await enableBrowserPush(userId);
+      } else {
+        await disableBrowserPush(userId);
+      }
+      if (settings.push_enabled_android) {
+        await initializeNativePush(userId);
+      } else {
+        await disableNativePush(userId);
+      }
+      setBrowserPushStatus(await getBrowserPushStatus());
       setSuccess(true);
     } catch (e) {
       setError(e.message || "Fehler beim Speichern.");
@@ -446,6 +475,35 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           />
           Team-Challenges (Einladungen, Annahmen, Abbrüche, Abschlüsse)
         </Label>
+        <Divider />
+        <h3>Native Push-Benachrichtigungen</h3>
+        <PushStatusCard>
+          <strong>Browser-Push</strong>
+          <span>
+            {browserPushStatus.supported
+              ? `Unterstuetzt ? Berechtigung: ${browserPushStatus.permission}`
+              : "Auf diesem Browser nicht verfuegbar"}
+          </span>
+        </PushStatusCard>
+        <Label style={{ opacity: browserPushStatus.supported ? 1 : 0.5 }}>
+          <input
+            type="checkbox"
+            name="push_enabled_web"
+            checked={!!settings.push_enabled_web}
+            onChange={handleChange}
+            disabled={!browserPushStatus.supported}
+          />
+          Browser Push per Service Worker aktivieren
+        </Label>
+        <Label>
+          <input
+            type="checkbox"
+            name="push_enabled_android"
+            checked={!!settings.push_enabled_android}
+            onChange={handleChange}
+          />
+          Android Push in der nativen App aktivieren
+        </Label>
         {error && <ErrorMsg>{error}</ErrorMsg>}
         {success && <SuccessMsg>Gespeichert!</SuccessMsg>}
         <ButtonRow>
@@ -554,6 +612,26 @@ const ErrorMsg = styled.div`
 const SuccessMsg = styled.div`
   color: #388e3c;
   margin-bottom: 1rem;
+`;
+
+const PushStatusCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+
+  strong {
+    color: #2f2100;
+  }
+
+  span {
+    color: #5b4520;
+    font-size: 0.9rem;
+  }
 `;
 
 const AvatarSection = styled.div`

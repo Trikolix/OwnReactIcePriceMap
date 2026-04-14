@@ -1,16 +1,14 @@
 <?php
-require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/db_connect.php';
 
-// Helferfunktion zur JSON-Ausgabe
-function respond($data) {
+function respond($data)
+{
     echo json_encode($data);
     exit;
 }
 
-// Aktion ermitteln
 $action = $_GET['action'] ?? null;
 
-// 1. Benachrichtigungen auflisten
 if ($action === 'list' && isset($_GET['nutzer_id'])) {
     $nutzerId = (int)$_GET['nutzer_id'];
 
@@ -27,7 +25,6 @@ if ($action === 'list' && isset($_GET['nutzer_id'])) {
     respond(['status' => 'success', 'notifications' => $notifs]);
 }
 
-// 2. Als gelesen markieren
 if ($action === 'markAsRead') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!isset($input['id'], $input['nutzer_id'])) {
@@ -41,13 +38,31 @@ if ($action === 'markAsRead') {
     ");
     $stmt->execute([
         'id' => $input['id'],
-        'uid' => $input['nutzer_id']
+        'uid' => $input['nutzer_id'],
     ]);
 
     respond(['status' => 'success']);
 }
 
-// Keine passende Aktion gefunden
-respond(['status' => 'error', 'message' => 'Ungültige Anfrage']);
+if ($action === 'get' && isset($_GET['id'], $_GET['nutzer_id'])) {
+    $stmt = $pdo->prepare("
+        SELECT id, typ, referenz_id, text, ist_gelesen, erstellt_am, zusatzdaten
+        FROM benachrichtigungen
+        WHERE id = :id AND empfaenger_id = :uid
+        LIMIT 1
+    ");
+    $stmt->execute([
+        'id' => (int)$_GET['id'],
+        'uid' => (int)$_GET['nutzer_id'],
+    ]);
+    $notification = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    if (!$notification) {
+        respond(['status' => 'error', 'message' => 'Benachrichtigung nicht gefunden']);
+    }
+
+    respond(['status' => 'success', 'notification' => $notification]);
+}
+
+respond(['status' => 'error', 'message' => 'Ungueltige Anfrage']);
 ?>

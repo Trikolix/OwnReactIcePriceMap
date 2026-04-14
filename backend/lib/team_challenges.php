@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/email_notification.php';
+require_once __DIR__ . '/notification_dispatcher.php';
 
 function teamChallengeColumnExists(PDO $pdo, string $table, string $column): bool
 {
@@ -484,18 +484,18 @@ function teamChallengeFetchDetail(PDO $pdo, int $challengeId, int $viewerId): ar
 
 function teamChallengeInsertNotification(PDO $pdo, int $recipientId, int $challengeId, string $text, string $action, string $status): void
 {
-    $stmt = $pdo->prepare("
-        INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-        VALUES (:recipient_id, 'team_challenge', :reference_id, :text, JSON_OBJECT('team_challenge_id', :json_challenge_id, 'action', :action_name, 'status', :status_name))
-    ");
-    $stmt->execute([
-        'recipient_id' => $recipientId,
-        'reference_id' => $challengeId,
-        'text' => $text,
-        'json_challenge_id' => $challengeId,
-        'action_name' => $action,
-        'status_name' => $status,
-    ]);
+    createNotification(
+        $pdo,
+        $recipientId,
+        'team_challenge',
+        $challengeId,
+        $text,
+        [
+            'team_challenge_id' => $challengeId,
+            'action' => $action,
+            'status' => $status,
+        ]
+    );
 }
 
 function teamChallengeSendEmail(PDO $pdo, int $recipientId, string $senderName, string $action, int $challengeId, array $extra = []): void

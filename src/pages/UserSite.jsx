@@ -10,6 +10,8 @@ import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recha
 import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
+import SystemModal from '../components/SystemModal';
+import MentionInviteModal from '../components/MentionInviteModal';
 import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
@@ -47,6 +49,8 @@ function UserSite() {
   const [awardColumns, setAwardColumns] = useState(1);
   const [routePage, setRoutePage] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
+  const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+  const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
   const [activityLevel, setActivityLevel] = useState('land');
   const PREVIEW_COUNT = 5;
   const location = useLocation();
@@ -73,6 +77,60 @@ function UserSite() {
       setActiveTab('stats');
     }
   }, [location.search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const systemmeldungId = params.get('systemmeldungId');
+    const mentionNotificationId = params.get('mentionNotificationId');
+    const notificationId = params.get('notificationId');
+
+    if (systemmeldungId) {
+      fetch(`${API_BASE}/systemmeldung.php?action=get&id=${systemmeldungId}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.status === 'success') {
+            setSystemModal({
+              isOpen: true,
+              title: json.systemmeldung.titel,
+              message: json.systemmeldung.nachricht,
+            });
+          }
+        })
+        .catch((error) => {
+          console.error('Systemmeldung konnte nicht geladen werden', error);
+        });
+    }
+
+    if (mentionNotificationId && userIdFromContext) {
+      fetch(`${API_BASE}/benachrichtigungen.php?action=get&id=${mentionNotificationId}&nutzer_id=${userIdFromContext}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.status !== 'success' || !json.notification) return;
+          const data = JSON.parse(json.notification.zusatzdaten || '{}');
+          setMentionModal({
+            isOpen: true,
+            data: {
+              checkinId: data.checkin_id,
+              shopId: data.shop_id,
+              inviterName: data.username || 'Unbekannt',
+              shopName: data.shop_name || data.shop || 'Eisdiele',
+              date: json.notification.erstellt_am,
+              userId: userIdFromContext,
+            },
+          });
+          if (notificationId) {
+            fetch(`${API_BASE}/benachrichtigungen.php?action=markAsRead`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: Number(notificationId), nutzer_id: Number(userIdFromContext) }),
+            }).catch(() => {});
+          }
+        })
+        .catch((error) => {
+          console.error('Mention-Benachrichtigung konnte nicht geladen werden', error);
+        });
+    }
+  }, [location.search, userIdFromContext]);
 
   useEffect(() => {
     if (Number(finalUserId) !== 156) return;
@@ -595,6 +653,17 @@ function UserSite() {
                 onAvatarUpdated={handleAvatarUpdated}
               />
             )}
+            <SystemModal
+              isOpen={systemModal.isOpen}
+              onClose={() => setSystemModal((prev) => ({ ...prev, isOpen: false }))}
+              title={systemModal.title}
+              message={systemModal.message}
+            />
+            <MentionInviteModal
+              open={mentionModal.isOpen}
+              onClose={() => setMentionModal({ isOpen: false, data: null })}
+              {...(mentionModal.data || {})}
+            />
             <HighlightGrid>
               <HighlightCard>
                 <StatIconWrap><Calendar size={18} /></StatIconWrap>
