@@ -109,7 +109,9 @@ function pushEnv(string $key, ?string $default = null): ?string
         return $default;
     }
 
-    return str_replace('\n', "\n", $value);
+    return str_replace('
+', "
+", $value);
 }
 
 function pushHttpRequest(string $url, string $method = 'POST', array $headers = [], ?string $body = null): array
@@ -122,7 +124,8 @@ function pushHttpRequest(string $url, string $method = 'POST', array $headers = 
     $context = stream_context_create([
         'http' => [
             'method' => $method,
-            'header' => implode("\r\n", $headerLines),
+            'header' => implode("
+", $headerLines),
             'content' => $body ?? '',
             'ignore_errors' => true,
             'timeout' => 15,
@@ -741,7 +744,7 @@ function buildVapidJwt(string $audience, string $subject, string $publicKey, str
 
     $signatureDer = '';
     $success = openssl_sign($signingInput, $signatureDer, $privateKey, OPENSSL_ALGO_SHA256);
-    openssl_free_key($privateKey);
+    // openssl_free_key($privateKey); // Deprecated in PHP 8.0+
     if (!$success) {
         return null;
     }
@@ -912,7 +915,7 @@ function fetchGoogleAccessToken(string $clientEmail, string $privateKeyPem): ?st
 
     $signature = '';
     $success = openssl_sign($signingInput, $signature, $privateKey, OPENSSL_ALGO_SHA256);
-    openssl_free_key($privateKey);
+    // openssl_free_key($privateKey); // Deprecated in PHP 8.0+
     if (!$success) {
         return null;
     }
