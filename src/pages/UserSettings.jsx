@@ -334,6 +334,24 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
   };
 
+  const handleSendTest = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/push/send-test.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        alert(`Senden fehlgeschlagen: ${json.message}`);
+      } else {
+        alert("Test-Benachrichtigung wurde versendet.");
+      }
+    } catch (e) {
+      alert(`Fehler: ${e.message}`);
+    }
+  };
+
   const modalContent = (
     <ModalOverlay>
       <ModalBox>
@@ -478,12 +496,25 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         <Divider />
         <h3>Native Push-Benachrichtigungen</h3>
         <PushStatusCard>
-          <strong>Browser-Push</strong>
-          <span>
-            {browserPushStatus.supported
-              ? `Unterstuetzt ? Berechtigung: ${browserPushStatus.permission}`
-              : "Auf diesem Browser nicht verfuegbar"}
-          </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <strong>Browser-Push</strong>
+              <span>
+                {!browserPushStatus.supported
+                  ? "Dieser Browser wird nicht unterstützt"
+                  : browserPushStatus.permission === 'granted'
+                  ? "Aktiviert"
+                  : browserPushStatus.permission === 'denied'
+                  ? "Blockiert (in den Browser-Einstellungen ändern)"
+                  : "Noch nicht aktiviert"}
+              </span>
+            </div>
+            {Number(userId) === 1 && browserPushStatus.permission === 'granted' && (
+              <MiniButton type="button" onClick={handleSendTest} style={{ color: '#0277bd' }}>
+                Test senden
+              </MiniButton>
+            )}
+          </div>
         </PushStatusCard>
         <Label style={{ opacity: browserPushStatus.supported ? 1 : 0.5 }}>
           <input
