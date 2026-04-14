@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
+import { disableBrowserPush, disableNativePush } from '../services/pushNotifications';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -100,11 +101,26 @@ export const UserProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     const storedToken = localStorage.getItem('authToken');
+    const currentUserId = localStorage.getItem('userId');
     if (storedToken && API_BASE) {
       try {
         await fetch(`${API_BASE}/userManagement/logout.php`, { method: 'POST' });
       } catch (error) {
         console.warn('Logout request failed', error);
+      }
+    }
+
+    if (currentUserId) {
+      try {
+        await disableBrowserPush(currentUserId);
+      } catch (error) {
+        console.warn('Browser push cleanup failed', error);
+      }
+
+      try {
+        await disableNativePush(currentUserId);
+      } catch (error) {
+        console.warn('Native push cleanup failed', error);
       }
     }
 
