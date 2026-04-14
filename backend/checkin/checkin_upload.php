@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
-require_once __DIR__ . '/../lib/email_notification.php';
+require_once __DIR__ . '/../lib/notification_dispatcher.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
@@ -336,41 +336,32 @@ try {
         // Mentions einfügen + Notifications
         $createdMentionByUser = [];
         $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
-        $stmtNotif = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_mention_id', ?,'checkin_id', ?, 'by_user', ?, 'shop_id', ?, 'username', ?, 'shop_name', ?))");
-        $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
-
-        foreach ($mentionedUsers as $mentionedUserId) {
-            // Nutzer existiert?
-            $stmtCheckUser = $pdo->prepare("SELECT id FROM nutzer WHERE id = ?");
-            $stmtCheckUser->execute([$mentionedUserId]);
-            $userRow = $stmtCheckUser->fetch(PDO::FETCH_ASSOC);
-            if (!$userRow) continue;
-
-            $stmtMentionExists = $pdo->prepare("SELECT id FROM checkin_mentions WHERE checkin_id = ? AND mentioned_user_id = ? LIMIT 1");
-            $stmtMentionExists->execute([$checkinId, $mentionedUserId]);
-            $existingMentionId = (int)$stmtMentionExists->fetchColumn();
-            if ($existingMentionId > 0) {
-                $createdMentionByUser[$mentionedUserId] = $existingMentionId;
-                continue;
-            }
-
-            $stmtMention->execute([$checkinId, $mentionedUserId]);
-            $mentionId = (int)$pdo->lastInsertId();
-            $createdMentionByUser[$mentionedUserId] = $mentionId;
-            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $mentionId, $checkinId, $userId, $shopId, $inviterName, $meta['shop_name'] ?? 'einer Eisdiele']);
-
-            // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed(
+        createNotification(
                 $pdo,
-                $mentionedUserId,
+                (int)$mentionedUserId,
                 'checkin_mention',
-                $inviterName,
+                (int)$checkinId,
+                $notifText,
                 [
-                    'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
-                    'shopId' => $shopId,
-                    'checkinId' => $checkinId,
-                    'mentionId' => $mentionId,
-                    'byUserId' => $userId
+                    'checkin_mention_id' => $mentionId,
+                    'checkin_id' => $checkinId,
+                    'by_user' => $userId,
+                    'shop_id' => $shopId,
+                    'username' => $inviterName,
+                    'shop_name' => $meta['shop_name'] ?? 'einer Eisdiele',
+                ],
+                [
+                    'email' => [
+                        'type' => 'checkin_mention',
+                        'senderName' => $inviterName,
+                        'extra' => [
+                            'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
+                            'shopId' => $shopId,
+                            'checkinId' => $checkinId,
+                            'mentionId' => $mentionId,
+                            'byUserId' => $userId,
+                        ],
+                    ],
                 ]
             );
         }

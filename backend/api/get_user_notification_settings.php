@@ -12,7 +12,7 @@ if ($user_id <= 0) {
 }
 
 
-$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge FROM user_notification_settings WHERE user_id = :user_id";
+$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, push_enabled_web, push_enabled_android FROM user_notification_settings WHERE user_id = :user_id";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['user_id' => $user_id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -26,7 +26,9 @@ if ($row) {
         'notify_comment' => 1,
         'notify_comment_participated' => 1,
         'notify_news' => 0,
-        'notify_team_challenge' => 1
+        'notify_team_challenge' => 1,
+        'push_enabled_web' => 0,
+        'push_enabled_android' => 0,
     ]);
 }
 ?>
