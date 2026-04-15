@@ -35,18 +35,31 @@ try {
 
     $provider = (string) ($state['provider'] ?? '');
     $identity = socialAuthFetchIdentity($provider, $code, socialAuthCallbackUrl());
-    $user = socialAuthResolveUser(
-        $pdo,
-        $identity,
-        $state['mode'] === 'register' ? ($state['inviteCode'] ?? null) : null,
-        $state['mode'] === 'register' ? ($state['desiredUsername'] ?? null) : null
-    );
-    $loginPayload = socialAuthIssueAppLogin($pdo, $user);
+    $existingUser = socialAuthFindResolvedUser($pdo, $identity);
 
-    socialAuthRenderPopupResult($origin, array_merge($loginPayload, [
-        'type' => 'ice-social-auth',
-        'provider' => $provider,
-    ]));
+    if ($existingUser) {
+        $user = socialAuthResolveUser(
+            $pdo,
+            $identity,
+            $state['mode'] === 'register' ? ($state['inviteCode'] ?? null) : null,
+            $state['mode'] === 'register' ? ($state['desiredUsername'] ?? null) : null
+        );
+        $loginPayload = socialAuthIssueAppLogin($pdo, $user);
+
+        socialAuthRenderPopupResult($origin, array_merge($loginPayload, [
+            'type' => 'ice-social-auth',
+            'provider' => $provider,
+        ]));
+    }
+
+    socialAuthRenderPopupResult($origin, array_merge(
+        socialAuthBuildPendingRegistration(
+            $identity,
+            $state['mode'] === 'register' ? ($state['inviteCode'] ?? null) : null,
+            $state['mode'] === 'register' ? ($state['desiredUsername'] ?? null) : null
+        ),
+        ['type' => 'ice-social-auth']
+    ));
 } catch (Throwable $e) {
     socialAuthRenderPopupResult($origin, [
         'type' => 'ice-social-auth',

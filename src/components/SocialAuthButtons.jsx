@@ -15,6 +15,7 @@ const SocialAuthButtons = ({
   acceptedTerms = false,
   requireAcceptedTerms = false,
   onRequireTerms = null,
+  onRequiresCompletion = null,
   onSuccess = null,
 }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -33,6 +34,15 @@ const SocialAuthButtons = ({
 
       setPendingProvider("");
 
+      if (payload.status === "requires_completion") {
+        setMessage("");
+        if (popupRef.current && !popupRef.current.closed) {
+          popupRef.current.close();
+        }
+        if (onRequiresCompletion) onRequiresCompletion(payload);
+        return;
+      }
+
       if (payload.status === "success") {
         login(payload.userId, payload.username, payload.token, payload.expires_at);
         setMessage("");
@@ -48,7 +58,7 @@ const SocialAuthButtons = ({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [apiOrigin, login, onSuccess]);
+  }, [apiOrigin, login, onRequiresCompletion, onSuccess]);
 
   const startAuth = (provider) => {
     if (!apiUrl) {

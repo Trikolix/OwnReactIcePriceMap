@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import SocialAuthButtons from "./SocialAuthButtons";
+import { useUser } from "../context/UserContext";
 
 const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
     const [username, setUsername] = useState('');
@@ -10,9 +11,21 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
     const [message, setMessage] = useState('');
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [termsError, setTermsError] = useState(false);
+    const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+    const [pendingSocialRegistration, setPendingSocialRegistration] = useState(null);
+    const { login } = useUser();
 
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    console.log("inviteCode", inviteCode);
+
+    const resetForm = () => {
+        setUsername('');
+        setEmail('');
+        setPassword('');
+        setAcceptedTerms(false);
+        setTermsError(false);
+        setNewsletterOptIn(false);
+        setPendingSocialRegistration(null);
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -30,7 +43,8 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
                     username,
                     email,
                     password,
-                    inviteCode
+                    inviteCode,
+                    newsletterOptIn: newsletterOptIn ? 1 : 0,
                 })
             });
 
@@ -38,13 +52,9 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
             setMessage(data.message);
 
             if (data.status === 'success') {
-                // Formular zurücksetzen
-                setUsername('');
-                setEmail('');
-                setPassword('');
-                setAcceptedTerms(false);
-
-                if (onSuccess) onSuccess();
+                login(data.userId, data.username, data.token, data.expires_at);
+                resetForm();
+                if (onSuccess) onSuccess(data);
             }
         } catch (error) {
             console.error('Registrierung fehlgeschlagen:', error);
@@ -52,9 +62,52 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
         }
     };
 
+    const handleCompleteSocialRegistration = async (e) => {
+        e.preventDefault();
+
+        if (!pendingSocialRegistration) return;
+        if (!acceptedTerms) {
+            setTermsError(true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/userManagement/complete_social_registration.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pendingRegistrationToken: pendingSocialRegistration.pending_registration_token,
+                    username,
+                    acceptedTerms,
+                    newsletterOptIn: newsletterOptIn ? 1 : 0,
+                })
+            });
+
+            const data = await response.json();
+            setMessage(data.message);
+
+            if (data.status === 'success') {
+                resetForm();
+                if (onSuccess) onSuccess(data);
+            }
+        } catch (error) {
+            console.error('Google-Registrierung fehlgeschlagen:', error);
+            setMessage('Ein Fehler ist aufgetreten. Bitte erneut versuchen.');
+        }
+    };
+
+    const isSocialCompletion = Boolean(pendingSocialRegistration);
+
     return (
-        <Form onSubmit={handleRegister}>
-            <h1>Registrieren</h1>
+        <Form onSubmit={isSocialCompletion ? handleCompleteSocialRegistration : handleRegister}>
+            <h1>{isSocialCompletion ? 'Google-Registrierung abschließen' : 'Registrieren'}</h1>
+
+            {isSocialCompletion && (
+                <InfoBox>
+                    <strong>Fast geschafft.</strong> Prüfe Benutzername und E-Mail und schließe danach deine Registrierung ab.
+                </InfoBox>
+            )}
+
             <Input
                 type="text"
                 placeholder="Benutzername"
@@ -67,15 +120,19 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
                 placeholder="E-Mail-Adresse"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                readOnly={isSocialCompletion}
                 required
             />
-            <Input
-                type="password"
-                placeholder="Passwort"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-            />
+
+            {!isSocialCompletion && (
+                <Input
+                    type="password"
+                    placeholder="Passwort"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                />
+            )}
 
             <div style={{ margin: '1rem 0' }}>
                 <label>
@@ -94,22 +151,43 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
                     <StyledLink to="/community" target="_blank">Community-Richtlinien</StyledLink>.
                 </label>
                 {termsError && <ErrorText>Bitte bestätige die Bedingungen.</ErrorText>}
+                <NewsletterLabel>
+                    <input
+                        type="checkbox"
+                        checked={newsletterOptIn}
+                        onChange={() => setNewsletterOptIn(!newsletterOptIn)}
+                        style={{ marginRight: '0.5rem' }}
+                    />
+                    Ich möchte Systemmeldungen & News per E-Mail erhalten.
+                </NewsletterLabel>
             </div>
 
-            <SubmitButton type="submit">Registrieren</SubmitButton>
+            <SubmitButton type="submit">
+                {isSocialCompletion ? 'Google-Registrierung abschließen' : 'Registrieren'}
+            </SubmitButton>
 
-            <SocialAuthButtons
-                mode="register"
-                inviteCode={inviteCode}
-                desiredUsername={username}
-                acceptedTerms={acceptedTerms}
-                requireAcceptedTerms
-                onRequireTerms={() => setTermsError(true)}
-                onSuccess={() => {
-                    setMessage('Registrierung über externen Account erfolgreich.');
-                    if (onSuccess) onSuccess();
-                }}
-            />
+            {!isSocialCompletion && (
+                <SocialAuthButtons
+                    mode="register"
+                    inviteCode={inviteCode}
+                    desiredUsername={username}
+                    acceptedTerms={acceptedTerms}
+                    requireAcceptedTerms={false}
+                    onRequiresCompletion={(payload) => {
+                        setPendingSocialRegistration(payload);
+                        setUsername(payload.suggested_username || '');
+                        setEmail(payload.email || '');
+                        setAcceptedTerms(false);
+                        setTermsError(false);
+                        setNewsletterOptIn(false);
+                        setMessage('');
+                    }}
+                    onSuccess={(data) => {
+                        setMessage('Registrierung über externen Account erfolgreich.');
+                        if (onSuccess) onSuccess(data);
+                    }}
+                />
+            )}
 
             {message && <p>{message}</p>}
 
@@ -128,16 +206,15 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-`
+`;
 
 const Input = styled.input`
   padding: 0.75rem;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 1rem;
-`
+`;
 
-// Styled Components
 const SubmitButton = styled.button`
   padding: 0.75rem 1.5rem;
   margin-top: 0.5rem;
@@ -172,4 +249,18 @@ const ErrorText = styled.p`
   color: red;
   font-size: 0.9rem;
   margin-top: 0.25rem;
+`;
+
+const NewsletterLabel = styled.label`
+  display: block;
+  margin-top: 0.75rem;
+`;
+
+const InfoBox = styled.div`
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #f6f8fb;
+  color: #1f2937;
+  text-align: left;
+  line-height: 1.4;
 `;

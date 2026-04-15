@@ -86,6 +86,10 @@ function socialAuthBase64UrlDecode(string $value): string {
     return $decoded;
 }
 
+function socialAuthPendingRegistrationTtl(): int {
+    return 15 * 60;
+}
+
 function socialAuthEncodeState(array $payload): string {
     $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
     if ($json === false) {
@@ -328,6 +332,42 @@ function socialAuthRenderPopupResult(string $origin, array $payload, int $status
     exit;
 }
 
+function socialAuthEncodePendingRegistration(array $payload): string {
+    $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        throw new RuntimeException('Pending Registration konnte nicht serialisiert werden.');
+    }
+
+    $base = socialAuthBase64UrlEncode($json);
+    $signature = socialAuthBase64UrlEncode(hash_hmac('sha256', $base, socialAuthStateSecret(), true));
+
+    return $base . '.' . $signature;
+}
+
+function socialAuthDecodePendingRegistration(string $token): array {
+    $parts = explode('.', $token, 2);
+    if (count($parts) !== 2) {
+        throw new RuntimeException('Pending Registration Token ist ungültig.');
+    }
+
+    [$base, $signature] = $parts;
+    $expected = socialAuthBase64UrlEncode(hash_hmac('sha256', $base, socialAuthStateSecret(), true));
+    if (!hash_equals($expected, $signature)) {
+        throw new RuntimeException('Pending Registration Token Signatur ungültig.');
+    }
+
+    $payload = json_decode(socialAuthBase64UrlDecode($base), true);
+    if (!is_array($payload)) {
+        throw new RuntimeException('Pending Registration Token Inhalt ungültig.');
+    }
+
+    if (empty($payload['issuedAt']) || (time() - (int) $payload['issuedAt']) > socialAuthPendingRegistrationTtl()) {
+        throw new RuntimeException('Die Google-Registrierung ist abgelaufen. Bitte erneut mit Google fortfahren.');
+    }
+
+    return $payload;
+}
+
 function socialAuthEnsureTable(PDO $pdo): void {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS social_auth_identities (
@@ -351,6 +391,10 @@ function socialAuthEnsureTable(PDO $pdo): void {
 
 function socialAuthGenerateInviteCode(int $length = 10): string {
     return bin2hex(random_bytes((int) max(1, $length / 2)));
+}
+
+function socialAuthSuggestedUsername(string $preferred, string $email): string {
+    return socialAuthSlugifyUsername($preferred !== '' ? $preferred : explode('@', $email)[0]);
 }
 
 function socialAuthSlugifyUsername(string $value): string {
@@ -396,7 +440,7 @@ function socialAuthAssertUsernameAvailable(PDO $pdo, string $username): void {
 }
 
 function socialAuthCreateUniqueUsername(PDO $pdo, string $preferred, string $email): string {
-    $base = socialAuthSlugifyUsername($preferred !== '' ? $preferred : explode('@', $email)[0]);
+    $base = socialAuthSuggestedUsername($preferred, $email);
     $candidate = $base;
     $counter = 1;
 
@@ -437,6 +481,15 @@ function socialAuthFindUserByEmail(PDO $pdo, string $email): ?array {
     return $row ?: null;
 }
 
+function socialAuthFindResolvedUser(PDO $pdo, array $identity): ?array {
+    $user = socialAuthFindIdentity($pdo, $identity['provider'], $identity['provider_user_id']);
+    if ($user) {
+        return $user;
+    }
+
+    return socialAuthFindUserByEmail($pdo, $identity['email']);
+}
+
 function socialAuthUpsertIdentity(PDO $pdo, int $userId, array $identity): void {
     $stmt = $pdo->prepare("
         INSERT INTO social_auth_identities (user_id, provider, provider_user_id, email, display_name, linked_at, last_login_at)
@@ -456,7 +509,7 @@ function socialAuthUpsertIdentity(PDO $pdo, int $userId, array $identity): void 
     ]);
 }
 
-function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null): array {
+function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null, int $newsletterOptIn = 0): array {
     $invitedById = null;
     if ($inviteCode) {
         $stmt = $pdo->prepare('SELECT id FROM nutzer WHERE invite_code = ? LIMIT 1');
@@ -497,9 +550,9 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
     $stmt = $pdo->prepare("
         INSERT INTO user_notification_settings
             (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge)
-        VALUES (?, 1, 1, 1, 0, 1)
+        VALUES (?, 1, 1, 1, ?, 1)
     ");
-    $stmt->execute([$userId]);
+    $stmt->execute([$userId, $newsletterOptIn ? 1 : 0]);
 
     return [
         'id' => $userId,
@@ -509,7 +562,7 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
     ];
 }
 
-function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null): array {
+function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null, int $newsletterOptIn = 0): array {
     socialAuthEnsureTable($pdo);
 
     $pdo->beginTransaction();
@@ -521,7 +574,7 @@ function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = 
             $user = socialAuthFindUserByEmail($pdo, $identity['email']);
 
             if (!$user) {
-                $user = socialAuthCreateUser($pdo, $identity, $inviteCode, $desiredUsername);
+                $user = socialAuthCreateUser($pdo, $identity, $inviteCode, $desiredUsername, $newsletterOptIn);
             } elseif (!empty($identity['email_verified']) && (int) ($user['is_verified'] ?? 0) !== 1) {
                 $stmt = $pdo->prepare('UPDATE nutzer SET is_verified = 1, verification_token = NULL WHERE id = ?');
                 $stmt->execute([(int) $user['id']]);
@@ -568,5 +621,32 @@ function socialAuthIssueAppLogin(PDO $pdo, array $user): array {
         'username' => $user['username'],
         'token' => $tokenData['token'],
         'expires_at' => $tokenData['expires_at'],
+    ];
+}
+
+function socialAuthBuildPendingRegistration(array $identity, ?string $inviteCode = null, ?string $desiredUsername = null): array {
+    $suggestedUsername = trim((string) $desiredUsername);
+    if ($suggestedUsername === '') {
+        $suggestedUsername = socialAuthSuggestedUsername((string) ($identity['display_name'] ?? ''), (string) $identity['email']);
+    }
+
+    $token = socialAuthEncodePendingRegistration([
+        'provider' => $identity['provider'],
+        'provider_user_id' => $identity['provider_user_id'],
+        'email' => $identity['email'],
+        'email_verified' => !empty($identity['email_verified']) ? 1 : 0,
+        'display_name' => $identity['display_name'],
+        'inviteCode' => $inviteCode,
+        'issuedAt' => time(),
+    ]);
+
+    return [
+        'status' => 'requires_completion',
+        'message' => 'Bitte schließe deine Registrierung noch ab.',
+        'pending_registration_token' => $token,
+        'email' => $identity['email'],
+        'suggested_username' => $suggestedUsername,
+        'provider' => $identity['provider'],
+        'display_name' => $identity['display_name'],
     ];
 }

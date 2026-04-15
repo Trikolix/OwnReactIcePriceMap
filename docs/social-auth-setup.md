@@ -6,8 +6,10 @@ Diese Implementierung nutzt Google nur für den externen Identitätsnachweis. Nu
 
 - Das Frontend öffnet ein Popup zu `backend/userManagement/oauth_start.php`.
 - Das Backend steuert den OAuth-Code-Flow direkt selbst.
-- Nach erfolgreichem Google-Callback wird in `social_auth_identities` nur die minimale Verknüpfung gespeichert.
-- Danach vergibt die App wie bisher ihr eigenes `user_api_token`.
+- Bei bereits bekannten Google- oder E-Mail-Konten wird direkt verknüpft und eingeloggt.
+- Bei neuen Google-Konten wird noch kein App-Konto angelegt.
+- Stattdessen muss der Nutzer danach erst Benutzername, Bedingungen und optional Systemmeldungen bestätigen.
+- Erst dann wird in `social_auth_identities` die Verknüpfung gespeichert und die App vergibt ihr eigenes `user_api_token`.
 
 ## Was Google von dir bekommt
 
@@ -233,6 +235,16 @@ Wenn Google stabil läuft, kannst du Facebook später wieder ergänzen. Für den
 
 ## Benutzername bei Google-Registrierung
 
-- Wenn der Nutzer vor dem Klick auf `Mit Google fortfahren` einen Benutzernamen ins Formular einträgt, wird genau dieser Name verwendet.
-- Wenn das Feld leer bleibt, erzeugt das Backend wie bisher einen Vorschlag aus dem Google-Anzeigenamen.
-- Wenn der gewünschte Benutzername ungültig oder schon vergeben ist, bricht die Registrierung mit einer klaren Fehlermeldung ab.
+- Wenn der Nutzer vor dem Klick auf `Mit Google fortfahren` einen Benutzernamen ins Formular einträgt, wird dieser als Vorschlag übernommen.
+- Wenn das Feld leer bleibt, erzeugt das Backend einen Vorschlag aus dem Google-Anzeigenamen.
+- Nach der Google-Anmeldung kann der Nutzer den vorgeschlagenen Namen noch ändern.
+- Erst beim Abschluss der Registrierung wird geprüft, ob der gewünschte Benutzername gültig und frei ist.
+
+## Bedingungen bei Google-Registrierung
+
+- Neue Google-Nutzer werden nicht mehr sofort als App-Konto angelegt.
+- Nach der Google-Anmeldung muss die Registrierung erst mit diesen Angaben abgeschlossen werden:
+  - Benutzername bestätigen oder ändern
+  - AGB, Datenschutzerklärung und Community-Richtlinien akzeptieren
+  - optional Systemmeldungen & News aktivieren
+- Ohne akzeptierte Bedingungen wird kein neues App-Konto angelegt.
