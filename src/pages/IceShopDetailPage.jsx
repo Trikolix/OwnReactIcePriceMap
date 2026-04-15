@@ -693,7 +693,7 @@ const IceShopDetailPage = () => {
 
           {activeTab === 'routen' && (
             <RoutesTabContent>
-              <h2>Komoot Routen</h2>
+              <h2>Routen</h2>
               {routen.length < 1 && <p>Es sind noch keine öffentlichen Routen für die Eisdiele vorhanden.</p>}
               {isLoggedIn && (
                 <ButtonContainer>

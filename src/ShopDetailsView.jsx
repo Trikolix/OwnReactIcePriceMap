@@ -475,8 +475,8 @@ const ShopDetailsContent = ({
         <SectionCard>
           <SectionHead>
             <div>
-              <SectionTitle>Komoot Routen</SectionTitle>
-              <SectionSubline>Öffentliche Routen mit Stopps bei dieser Eisdiele.</SectionSubline>
+              <SectionTitle>Routen</SectionTitle>
+              <SectionSubline>Öffentliche Routen (Komoot, Strava, etc.) mit Stopps bei dieser Eisdiele.</SectionSubline>
             </div>
             <CountPill>{routes.length}</CountPill>
           </SectionHead>
