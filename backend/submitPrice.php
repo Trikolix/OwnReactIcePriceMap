@@ -101,11 +101,10 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
 $inputData = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($inputData) || !is_array($inputData) || empty($inputData["shopId"]) || !is_numeric($inputData["shopId"]) || (!array_key_exists("kugelPreis", $inputData) && !array_key_exists("softeisPreis", $inputData))) {
-    http_response_code(400);
+if (!isset($inputData) || !is_array($inputData) || !isset($inputData["shopId"]) || (!array_key_exists("kugelPreis", $inputData) && !array_key_exists("softeisPreis", $inputData))) {
     echo json_encode([
         "status" => "error",
-        "message" => "Ungültige Parameter: shopId muss gesetzt und numerisch sein, und mindestens einer der Preise muss gesetzt sein.",
+        "message" => "Fehlende Parameter: shopId und mindestens einer der Preise müssen gesetzt sein.",
         "shopId" => $inputData["shopId"] ?? null,
         "kugelPreis" => $inputData["kugelPreis"] ?? null,
         "softeisPreis" => $inputData["softeisPreis"] ?? null
@@ -115,28 +114,10 @@ if (!isset($inputData) || !is_array($inputData) || empty($inputData["shopId"]) |
 
 $shopId = $inputData['shopId'];
 $kugelPreis = array_key_exists('kugelPreis', $inputData) ? $inputData['kugelPreis'] : null;
-if ($kugelPreis !== null && (!is_numeric($kugelPreis) || $kugelPreis < 0)) {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Ungültiger kugelPreis"]);
-    exit;
-}
-
-$softeisPreis = array_key_exists('softeisPreis', $inputData) ? $inputData['softeisPreis'] : null;
-if ($softeisPreis !== null && $softeisPreis !== '' && (!is_numeric($softeisPreis) || $softeisPreis < 0)) {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Ungültiger softeisPreis"]);
-    exit;
-}
-
-$waehrung = $inputData['waehrung'] ?? 1;
-if (!is_numeric($waehrung)) {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Ungültige waehrung"]);
-    exit;
-}
-
 $additionalInfoKugelPreis = $inputData['additionalInfoKugelPreis'] ?? null;
+$softeisPreis = array_key_exists('softeisPreis', $inputData) ? $inputData['softeisPreis'] : null;
 $additionalInfoSofteisPreis = $inputData['additionalInfoSofteisPreis'] ?? null;
+$waehrung = $inputData['waehrung'] ?? 1;
 
 submitPrice($pdo, $shopId, $currentUserId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung);
 ?>

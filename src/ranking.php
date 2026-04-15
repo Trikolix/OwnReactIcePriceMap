@@ -2,8 +2,8 @@
 $host = "localhost";
 $dbname = "db_439770_2";
 $username = "USER439770_wed";
-$password = "K8RYTP23y8kWSdt";
- 
+$password = getenv('DB_PASS') ?: '';
+
 // Verbindung zur Datenbank
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
@@ -14,7 +14,7 @@ try {
     echo json_encode(["error" => "Datenbankverbindung fehlgeschlagen"]);
     exit();
 }
- 
+
 // alte PLV-Formel:
 // (SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) AS min_preis,
 // ROUND(
@@ -23,7 +23,7 @@ try {
 //         * (0.65 + 0.35 * ( ( SELECT MAX(preis) AS preis FROM preise WHERE typ = 'kugel' GROUP BY eisdiele_id ORDER BY preis LIMIT 1) / p.preis ))
 //     ), 2
 // ) AS PLV
-$sql = "SELECT 
+$sql = "SELECT
     e.id AS eisdielen_id,
     e.name AS eisdielen_name,
     e.adresse,
@@ -45,7 +45,7 @@ $sql = "SELECT
 FROM eisdielen e
 -- Durchschnittliche Bewertungen pro Eisdiele berechnen
 JOIN (
-    SELECT 
+    SELECT
         eisdiele_id,
         AVG(geschmack) AS avg_geschmack,
         AVG(kugelgroesse) AS avg_kugelgroesse,
@@ -55,17 +55,17 @@ JOIN (
     GROUP BY eisdiele_id
 ) b ON e.id = b.eisdiele_id
 -- Aktuellsten Preis für Kugel pro Eisdiele finden
-JOIN preise p ON e.id = p.eisdiele_id 
+JOIN preise p ON e.id = p.eisdiele_id
 WHERE p.typ = 'kugel'
 AND p.gemeldet_am = (
-    SELECT MAX(p2.gemeldet_am) 
-    FROM preise p2 
-    WHERE p2.eisdiele_id = p.eisdiele_id 
+    SELECT MAX(p2.gemeldet_am)
+    FROM preise p2
+    WHERE p2.eisdiele_id = p.eisdiele_id
     AND p2.typ = 'kugel'
 )
 HAVING PLV IS NOT NULL
 ORDER BY PLV DESC;";
- 
+
 // SQL ausführen
 $stmt = $pdo->query($sql);
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -161,7 +161,7 @@ $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </tr>
             </thead>
             <tbody id="rankingTable">
-                <?php 
+                <?php
                 foreach ($eisdielen as $index => $eisdiele): ?>
                 <tr class="main-row" data-index="<?= $index ?>" style="cursor:pointer;">
                     <td><?= htmlspecialchars($eisdiele['eisdielen_name']) ?></td>

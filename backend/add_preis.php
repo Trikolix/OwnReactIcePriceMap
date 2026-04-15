@@ -7,35 +7,12 @@ $currentUserId = (int)$authData['user_id'];
 
 // Eingabedaten einlesen
 $data = json_decode(file_get_contents("php://input"), true);
+$eisdiele_id = $data['eisdiele_id'];
+$preis = $data['preis'];
+$typ = $data['typ'];
+$beschreibung = $data['beschreibung'];
 
-if (!is_array($data)) {
-    http_response_code(400);
-    echo json_encode(["error" => "Ungültige Eingabedaten"]);
-    exit;
-}
-
-$eisdiele_id = $data['eisdiele_id'] ?? null;
-$preis = $data['preis'] ?? null;
-$typ = $data['typ'] ?? null;
-$beschreibung = $data['beschreibung'] ?? null;
-
-$errors = [];
-
-if (empty($eisdiele_id) || !is_numeric($eisdiele_id)) {
-    $errors[] = "eisdiele_id ist ungültig oder fehlt.";
-}
-if (!isset($preis) || !is_numeric($preis) || $preis < 0) {
-    $errors[] = "preis ist ungültig oder fehlt.";
-}
-if (empty($typ) || !is_string($typ)) {
-    $errors[] = "typ ist ungültig oder fehlt.";
-}
-
-if (!empty($errors)) {
-    http_response_code(400);
-    echo json_encode(["error" => "Validierungsfehler", "details" => $errors]);
-    exit;
-}
+// TODO: Input validieren
 
 try {
     $stmt = $pdo->prepare("INSERT INTO preise (eisdiele_id, preis, gemeldet_von, beschreibung, typ) VALUES (:eisdiele_id, :preis, :nutzer_id, :beschreibung, :typ)");
