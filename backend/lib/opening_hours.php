@@ -188,19 +188,22 @@ function replace_opening_hours(\PDO $pdo, int $shopId, array $rows): void
         return;
     }
 
-    $insert = $pdo->prepare("
-        INSERT INTO eisdiele_opening_hours (eisdiele_id, weekday, opens_at, closes_at, overnight, sort_order)
-        VALUES (:eisdiele_id, :weekday, :opens_at, :closes_at, :overnight, :sort_order)
-    ");
-    foreach ($rows as $row) {
-        $insert->execute([
-            ':eisdiele_id' => $shopId,
-            ':weekday' => $row['weekday'],
-            ':opens_at' => $row['opens_at'],
-            ':closes_at' => $row['closes_at'],
-            ':overnight' => $row['overnight'] ?? 0,
-            ':sort_order' => $row['sort_order'] ?? 0,
-        ]);
+    $chunks = array_chunk($rows, 100);
+    foreach ($chunks as $chunk) {
+        $values = [];
+        $params = [];
+        foreach ($chunk as $row) {
+            $values[] = '(?, ?, ?, ?, ?, ?)';
+            $params[] = $shopId;
+            $params[] = $row['weekday'];
+            $params[] = $row['opens_at'];
+            $params[] = $row['closes_at'];
+            $params[] = $row['overnight'] ?? 0;
+            $params[] = $row['sort_order'] ?? 0;
+        }
+
+        $query = "INSERT INTO eisdiele_opening_hours (eisdiele_id, weekday, opens_at, closes_at, overnight, sort_order) VALUES " . implode(', ', $values);
+        $pdo->prepare($query)->execute($params);
     }
 }
 
