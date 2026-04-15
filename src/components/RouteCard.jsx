@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import styled, { css } from "styled-components";
 import { useUser } from "../context/UserContext";
 import { Link } from "react-router-dom";
@@ -75,7 +75,21 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
 
   const toggleEmbed = () => setShowEmbed((prev) => !prev);
 
-  return (
+  useEffect(() => {
+    if (showEmbed && route.embed_code?.includes('strava-embed-placeholder')) {
+      const existingScript = document.getElementById('strava-embed-script');
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      const script = document.createElement('script');
+      script.id = 'strava-embed-script';
+      script.src = 'https://strava-embeds.com/embed.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, [showEmbed, route.embed_code]);
+return (
     <>
       <StyledCard>
         <CardMetaRow>
@@ -215,7 +229,9 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
         </ActionsRow>
 
         {showEmbed && hasEmbed && (
-          <EmbedWrapper dangerouslySetInnerHTML={{ __html: route.embed_code }} />
+          <EmbedWrapper
+            dangerouslySetInnerHTML={{ __html: route.embed_code }}
+          />
         )}
         <CommentToggle
           title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
@@ -428,7 +444,7 @@ const EmbedWrapper = styled.div`
   overflow: hidden;
   border: 1px solid ${BORDER};
 
-  iframe {
+  iframe, .strava-embed-placeholder {
     width: 100%;
     min-height: 320px;
     border: none;
