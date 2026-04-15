@@ -20,6 +20,7 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
 import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
+import { canUseExternalDiscovery } from './utils/featureAccess';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
 const DEFAULT_CONTEXT_MENU_STATE = {
@@ -573,6 +574,7 @@ const IceCreamRadar = () => {
   const [isDiscoveryLoading, setIsDiscoveryLoading] = useState(false);
   const [discoverySlots, setDiscoverySlots] = useState(null);
   const activeShopRequestRef = useRef(0);
+  const canAccessExternalDiscovery = useMemo(() => canUseExternalDiscovery(userId), [userId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -772,7 +774,7 @@ const IceCreamRadar = () => {
   }, []);
 
   const fetchDiscoverySlots = useCallback(async () => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !canAccessExternalDiscovery) {
       setDiscoverySlots(null);
       return;
     }
@@ -786,7 +788,7 @@ const IceCreamRadar = () => {
     } catch (error) {
       console.error('Fehler beim Laden der Discovery-Slots:', error);
     }
-  }, [apiUrl, isLoggedIn]);
+  }, [apiUrl, canAccessExternalDiscovery, isLoggedIn]);
 
   const refreshShopsAndDiscovery = useCallback(() => {
     refreshShops();
@@ -875,8 +877,11 @@ const IceCreamRadar = () => {
   }, []);
 
   const toggleDiscoveryVisibility = useCallback(() => {
+    if (!canAccessExternalDiscovery) {
+      return;
+    }
     setIsDiscoveryVisible((prev) => !prev);
-  }, []);
+  }, [canAccessExternalDiscovery]);
 
   const closeContextMenu = useCallback(() => {
     setContextMenuState((prev) => (prev.isVisible ? { ...DEFAULT_CONTEXT_MENU_STATE } : prev));
@@ -941,6 +946,11 @@ const IceCreamRadar = () => {
   );
 
   const handleDiscoverySearch = useCallback(async () => {
+    if (!canAccessExternalDiscovery) {
+      setDiscoveryError('Die Discovery-Funktion ist aktuell nur für freigeschaltete Admin-Nutzer verfügbar.');
+      return;
+    }
+
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
@@ -1021,9 +1031,14 @@ const IceCreamRadar = () => {
     } finally {
       setIsDiscoveryLoading(false);
     }
-  }, [apiUrl, clearDiscoveryResults, currentZoom, discoverySlots, isLoggedIn, setShowLoginModal]);
+  }, [apiUrl, canAccessExternalDiscovery, clearDiscoveryResults, currentZoom, discoverySlots, isLoggedIn, setShowLoginModal]);
 
   const handleOpenDiscoveryImport = useCallback((result) => {
+    if (!canAccessExternalDiscovery) {
+      setDiscoveryError('Discovery-Import ist aktuell nur für freigeschaltete Admin-Nutzer verfügbar.');
+      return;
+    }
+
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
@@ -1055,9 +1070,14 @@ const IceCreamRadar = () => {
       },
     });
     setIsSubmitIceShopModalOpen(true);
-  }, [discoverySlots?.remaining_slots, isLoggedIn, setShowLoginModal]);
+  }, [canAccessExternalDiscovery, discoverySlots?.remaining_slots, isLoggedIn, setShowLoginModal]);
 
   const handleDiscoveryFeedback = useCallback(async (entryId) => {
+    if (!canAccessExternalDiscovery) {
+      setDiscoveryError('Discovery-Feedback ist aktuell nur für freigeschaltete Admin-Nutzer verfügbar.');
+      return;
+    }
+
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
@@ -1123,7 +1143,7 @@ const IceCreamRadar = () => {
     } else if (isLoggedIn) {
       fetchDiscoverySlots();
     }
-  }, [fetchDiscoverySlots, isLoggedIn]);
+  }, [canAccessExternalDiscovery, fetchDiscoverySlots, isLoggedIn]);
   const handleFilterToggle = (filterKey) => {
     setFilters((prev) => {
       const nextValue = !prev[filterKey];
@@ -1310,13 +1330,14 @@ const IceCreamRadar = () => {
   }, [userId, openFilterQueryString]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !canAccessExternalDiscovery) {
+      setIsDiscoveryVisible(false);
       setDiscoverySlots(null);
       clearDiscoveryResults();
       return;
     }
     fetchDiscoverySlots();
-  }, [isLoggedIn, fetchDiscoverySlots, clearDiscoveryResults]);
+  }, [isLoggedIn, canAccessExternalDiscovery, fetchDiscoverySlots, clearDiscoveryResults]);
 
   const mapDisplayShops = useMemo(
     () => shopsWithDisplayValue.map(({ shop }) => shop),
@@ -1439,7 +1460,7 @@ const IceCreamRadar = () => {
             )}
             </SearchOverlay>
         )}
-        {isDiscoveryVisible && (
+        {canAccessExternalDiscovery && isDiscoveryVisible && (
           <DiscoveryOverlay>
             <DiscoveryCard>
               <DiscoveryHeader>
@@ -1526,7 +1547,9 @@ const IceCreamRadar = () => {
             onUserInteraction={handleMapInteraction}
           />
           <SearchToggleControl isSearchVisible={isSearchVisible} onToggle={toggleSearchVisibility} />
-          <DiscoveryToggleControl isDiscoveryVisible={isDiscoveryVisible} onToggle={toggleDiscoveryVisibility} />
+          {canAccessExternalDiscovery && (
+            <DiscoveryToggleControl isDiscoveryVisible={isDiscoveryVisible} onToggle={toggleDiscoveryVisibility} />
+          )}
           <ClusteringToggleControl clustering={clustering} onToggle={() => setClustering((prev) => !prev)} />
           <SeasonalViewToggleControl
             enabled={easterCampaignActive}
@@ -1605,7 +1628,7 @@ const IceCreamRadar = () => {
               );
             })
           )}
-          {isDiscoveryVisible && discoveryResults.map((result) => (
+          {canAccessExternalDiscovery && isDiscoveryVisible && discoveryResults.map((result) => (
             <Marker
               key={`${result.provider}-${result.external_id}`}
               position={[result.lat, result.lon]}

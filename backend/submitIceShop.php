@@ -7,6 +7,7 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/currency.php';
 require_once __DIR__ . '/lib/shop_maintenance.php';
 require_once __DIR__ . '/lib/external_shop_discovery.php';
+require_once __DIR__ . '/lib/feature_access.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -172,6 +173,15 @@ $normalizedHours = normalize_structured_opening_hours($structuredPayload);
 $openingHoursText = build_opening_hours_display($normalizedHours['rows'], $normalizedHours['note']);
 $externalSource = is_array($data['external_source'] ?? null) ? $data['external_source'] : null;
 $externalEntry = null;
+
+if ($externalSource && !featureAccessCanUse('external_discovery', $currentUserId)) {
+    http_response_code(403);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Discovery-Import ist aktuell nur für freigeschaltete Admin-Nutzer verfügbar.",
+    ]);
+    exit;
+}
 
 if ($externalSource && !empty($externalSource['provider']) && !empty($externalSource['external_id'])) {
     $externalEntry = externalShopLoadStoredMapping(
