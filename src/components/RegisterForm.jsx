@@ -11,7 +11,6 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
     const [termsError, setTermsError] = useState(false);
 
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    console.log("inviteCode", inviteCode);
 
     const handleRegister = async (e) => {
         e.preventDefault();
