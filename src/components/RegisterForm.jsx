@@ -101,6 +101,7 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
             <SocialAuthButtons
                 mode="register"
                 inviteCode={inviteCode}
+                desiredUsername={username}
                 acceptedTerms={acceptedTerms}
                 requireAcceptedTerms
                 onRequireTerms={() => setTermsError(true)}

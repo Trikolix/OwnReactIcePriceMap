@@ -161,8 +161,9 @@ Vor dem Test die Migration ausführen:
 2. Frontend lokal starten
 3. Registrierungsseite öffnen
 4. `Mit Google fortfahren` klicken
-5. Mit einem als Test User eingetragenen Google-Konto anmelden
-6. Prüfen, ob:
+5. Optional vorher im Formular einen eigenen Benutzernamen eintragen
+6. Mit einem als Test User eingetragenen Google-Konto anmelden
+7. Prüfen, ob:
    - ein Datensatz in `nutzer` angelegt oder zugeordnet wurde
    - ein Datensatz in `social_auth_identities` angelegt wurde
    - du danach in der App eingeloggt bist
@@ -229,3 +230,9 @@ Dann sind meist diese Variablen nicht sauber gesetzt:
 ## Später optional
 
 Wenn Google stabil läuft, kannst du Facebook später wieder ergänzen. Für den ersten produktiven Test würde ich bewusst nur Google aktiv lassen.
+
+## Benutzername bei Google-Registrierung
+
+- Wenn der Nutzer vor dem Klick auf `Mit Google fortfahren` einen Benutzernamen ins Formular einträgt, wird genau dieser Name verwendet.
+- Wenn das Feld leer bleibt, erzeugt das Backend wie bisher einen Vorschlag aus dem Google-Anzeigenamen.
+- Wenn der gewünschte Benutzername ungültig oder schon vergeben ist, bricht die Registrierung mit einer klaren Fehlermeldung ab.

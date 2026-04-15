@@ -236,6 +236,7 @@ const LoginModal = ({ setShowLoginModal }) => {
             {!isResetMode && (
               <SocialAuthButtons
                 mode={isRegisterMode ? "register" : "login"}
+                desiredUsername={isRegisterMode ? username : ""}
                 acceptedTerms={acceptedTerms}
                 requireAcceptedTerms={isRegisterMode}
                 onRequireTerms={() => setTermsError(true)}

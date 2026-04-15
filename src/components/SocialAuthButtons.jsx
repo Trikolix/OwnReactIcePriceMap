@@ -11,6 +11,7 @@ const providerLabels = {
 const SocialAuthButtons = ({
   mode = "register",
   inviteCode = null,
+  desiredUsername = "",
   acceptedTerms = false,
   requireAcceptedTerms = false,
   onRequireTerms = null,
@@ -61,6 +62,14 @@ const SocialAuthButtons = ({
       return;
     }
 
+    if (mode === "register" && desiredUsername.trim() !== "") {
+      const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
+      if (!usernameRegex.test(desiredUsername.trim())) {
+        setMessage("Benutzername: 3-20 Zeichen, nur Buchstaben, Zahlen, _ und -, muss mit Buchstabe beginnen.");
+        return;
+      }
+    }
+
     setMessage("");
     setPendingProvider(provider);
 
@@ -68,6 +77,9 @@ const SocialAuthButtons = ({
     url.searchParams.set("provider", provider);
     url.searchParams.set("mode", mode);
     url.searchParams.set("origin", window.location.origin);
+    if (desiredUsername.trim()) {
+      url.searchParams.set("desiredUsername", desiredUsername.trim());
+    }
     if (inviteCode) {
       url.searchParams.set("inviteCode", inviteCode);
     }

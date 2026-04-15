@@ -7,6 +7,7 @@ $provider = strtolower(trim((string) ($_GET['provider'] ?? '')));
 $origin = rtrim(trim((string) ($_GET['origin'] ?? '')), '/');
 $mode = strtolower(trim((string) ($_GET['mode'] ?? 'register')));
 $inviteCode = trim((string) ($_GET['inviteCode'] ?? ''));
+$desiredUsername = trim((string) ($_GET['desiredUsername'] ?? ''));
 
 try {
     if ($origin === '' || !socialAuthValidateFrontendOrigin($origin)) {
@@ -27,6 +28,7 @@ try {
         'origin' => $origin,
         'mode' => $mode,
         'inviteCode' => $inviteCode !== '' ? $inviteCode : null,
+        'desiredUsername' => $desiredUsername !== '' ? $desiredUsername : null,
         'issuedAt' => time(),
         'nonce' => bin2hex(random_bytes(16)),
     ]);

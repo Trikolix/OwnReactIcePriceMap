@@ -376,16 +376,35 @@ function socialAuthSlugifyUsername(string $value): string {
     return $slug;
 }
 
+function socialAuthValidateDesiredUsername(string $username): void {
+    $trimmed = trim($username);
+    if ($trimmed === '') {
+        return;
+    }
+
+    if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/', $trimmed)) {
+        throw new RuntimeException('Benutzername: 3-20 Zeichen, nur Buchstaben, Zahlen, _ und -, muss mit Buchstabe beginnen.');
+    }
+}
+
+function socialAuthAssertUsernameAvailable(PDO $pdo, string $username): void {
+    $stmt = $pdo->prepare('SELECT id FROM nutzer WHERE username = ? LIMIT 1');
+    $stmt->execute([$username]);
+    if ($stmt->fetch()) {
+        throw new RuntimeException('Dieser Benutzername ist bereits vergeben.');
+    }
+}
+
 function socialAuthCreateUniqueUsername(PDO $pdo, string $preferred, string $email): string {
     $base = socialAuthSlugifyUsername($preferred !== '' ? $preferred : explode('@', $email)[0]);
     $candidate = $base;
     $counter = 1;
 
     while (true) {
-        $stmt = $pdo->prepare('SELECT id FROM nutzer WHERE username = ? LIMIT 1');
-        $stmt->execute([$candidate]);
-        if (!$stmt->fetch()) {
+        try {
+            socialAuthAssertUsernameAvailable($pdo, $candidate);
             return $candidate;
+        } catch (RuntimeException $e) {
         }
 
         $suffix = (string) $counter;
@@ -437,7 +456,7 @@ function socialAuthUpsertIdentity(PDO $pdo, int $userId, array $identity): void 
     ]);
 }
 
-function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = null): array {
+function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null): array {
     $invitedById = null;
     if ($inviteCode) {
         $stmt = $pdo->prepare('SELECT id FROM nutzer WHERE invite_code = ? LIMIT 1');
@@ -448,7 +467,16 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
         }
     }
 
-    $username = socialAuthCreateUniqueUsername($pdo, (string) ($identity['display_name'] ?? ''), (string) $identity['email']);
+    $desiredUsername = trim((string) $desiredUsername);
+    socialAuthValidateDesiredUsername($desiredUsername);
+
+    if ($desiredUsername !== '') {
+        socialAuthAssertUsernameAvailable($pdo, $desiredUsername);
+        $username = $desiredUsername;
+    } else {
+        $username = socialAuthCreateUniqueUsername($pdo, (string) ($identity['display_name'] ?? ''), (string) $identity['email']);
+    }
+
     $passwordHash = password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT);
 
     $stmt = $pdo->prepare("
@@ -481,7 +509,7 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
     ];
 }
 
-function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = null): array {
+function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null): array {
     socialAuthEnsureTable($pdo);
 
     $pdo->beginTransaction();
@@ -493,7 +521,7 @@ function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = 
             $user = socialAuthFindUserByEmail($pdo, $identity['email']);
 
             if (!$user) {
-                $user = socialAuthCreateUser($pdo, $identity, $inviteCode);
+                $user = socialAuthCreateUser($pdo, $identity, $inviteCode, $desiredUsername);
             } elseif (!empty($identity['email_verified']) && (int) ($user['is_verified'] ?? 0) !== 1) {
                 $stmt = $pdo->prepare('UPDATE nutzer SET is_verified = 1, verification_token = NULL WHERE id = ?');
                 $stmt->execute([(int) $user['id']]);

@@ -35,7 +35,12 @@ try {
 
     $provider = (string) ($state['provider'] ?? '');
     $identity = socialAuthFetchIdentity($provider, $code, socialAuthCallbackUrl());
-    $user = socialAuthResolveUser($pdo, $identity, $state['mode'] === 'register' ? ($state['inviteCode'] ?? null) : null);
+    $user = socialAuthResolveUser(
+        $pdo,
+        $identity,
+        $state['mode'] === 'register' ? ($state['inviteCode'] ?? null) : null,
+        $state['mode'] === 'register' ? ($state['desiredUsername'] ?? null) : null
+    );
     $loginPayload = socialAuthIssueAppLogin($pdo, $user);
 
     socialAuthRenderPopupResult($origin, array_merge($loginPayload, [
