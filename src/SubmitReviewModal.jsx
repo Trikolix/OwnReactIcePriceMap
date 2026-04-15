@@ -21,6 +21,7 @@ import {
 } from './styles/SharedStyles';
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
+import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
 
 const MAX_REVIEW_ATTRIBUTES = 5;
 
@@ -249,6 +250,12 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 })
             });
             const data = await response.json();
+            const errorMessage = getSubmitPriceErrorMessage(response, data);
+            if (errorMessage) {
+                setMessage(`Fehler bei Meldung von Preis: ${errorMessage}`);
+                return;
+            }
+
             let localAwards = null;
             let maintenanceBonus = 0;
             data.forEach(element => {
@@ -277,7 +284,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 }, 2000);
             }
         } catch (error) {
-
+            setMessage(`Fehler bei Meldung von Preis: ${error.message || 'Ein Fehler ist aufgetreten.'}`);
         }
     }
 

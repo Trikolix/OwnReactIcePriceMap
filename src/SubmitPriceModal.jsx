@@ -2,6 +2,7 @@ import { useState } from "react";
 import styled from 'styled-components';
 import { Overlay, Modal, CloseButton, Heading, Label, Input, Textarea, ButtonGroup, SubmitButton, Message, LevelInfo } from './styles/SharedStyles';
 import NewAwards from './components/NewAwards.jsx'
+import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
 const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuccess }) => {
 
     const [kugelPreis, setKugelPreis] = useState(shop.preise?.kugel?.preis ? shop.preise.kugel.preis : null);
@@ -52,6 +53,12 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 })
             });
             const data = await response.json();
+            const errorMessage = getSubmitPriceErrorMessage(response, data);
+            if (errorMessage) {
+                setMessage(`Fehler bei Meldung von Preis: ${errorMessage}`);
+                return;
+            }
+
             let localAwards = null;
             let maintenanceBonus = 0;
             data.forEach(element => {
@@ -90,7 +97,7 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 }, 2000);
             }
         } catch (error) {
-
+            setMessage(`Fehler bei Meldung von Preis: ${error.message || 'Ein Fehler ist aufgetreten.'}`);
         }
     }
     return showPriceForm ? (

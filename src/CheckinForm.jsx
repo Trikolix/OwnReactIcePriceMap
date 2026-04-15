@@ -27,6 +27,7 @@ import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
+import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
 import { Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin } from "lucide-react";
 
 const TYPE_OPTIONS = [
@@ -504,6 +505,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 })
             });
             const data = await response.json();
+            const errorMessage = getSubmitPriceErrorMessage(response, data);
+            if (errorMessage) {
+                setMessage(`Fehler bei Meldung von Preis: ${errorMessage}`);
+                return;
+            }
+
             let localAwards = null;
             let maintenanceBonus = 0;
             data.forEach(element => {
@@ -532,7 +539,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }, 2000);
             }
         } catch (error) {
-
+            setMessage(`Fehler bei Meldung von Preis: ${error.message || 'Ein Fehler ist aufgetreten.'}`);
         }
     }
 
