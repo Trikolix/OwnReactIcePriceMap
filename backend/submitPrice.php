@@ -17,14 +17,14 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
             $sql = $additionalInfoKugelPreis != null ?
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
                 VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE 
-                beschreibung = VALUES(beschreibung), 
+                ON DUPLICATE KEY UPDATE
+                beschreibung = VALUES(beschreibung),
                 preis = VALUES(preis),
-                gemeldet_am = NOW();" 
-                : 
+                gemeldet_am = NOW();"
+                :
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
                 VALUES (:userId, :shopId, 'kugel', :kugelPreis, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE 
+                ON DUPLICATE KEY UPDATE
                 preis = VALUES(preis),
                 gemeldet_am = NOW();";
 
@@ -41,17 +41,17 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
         }
 
         if ($softeisPreis !== null && $softeisPreis !== '') {
-            $sql = $additionalInfoSofteisPreis != null ? 
+            $sql = $additionalInfoSofteisPreis != null ?
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
                 VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE 
-                beschreibung = VALUES(beschreibung), 
+                ON DUPLICATE KEY UPDATE
+                beschreibung = VALUES(beschreibung),
                 preis = VALUES(preis),
-                gemeldet_am = NOW();" 
-                : 
+                gemeldet_am = NOW();"
+                :
                 "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
                 VALUES (:userId, :shopId, 'softeis', :softeisPreis, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE 
+                ON DUPLICATE KEY UPDATE
                 preis = VALUES(preis),
                 gemeldet_am = NOW();";
 
@@ -101,10 +101,11 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
 $inputData = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($inputData) || !is_array($inputData) || !isset($inputData["shopId"]) || (!array_key_exists("kugelPreis", $inputData) && !array_key_exists("softeisPreis", $inputData))) {
+if (!isset($inputData) || !is_array($inputData) || empty($inputData["shopId"]) || !is_numeric($inputData["shopId"]) || (!array_key_exists("kugelPreis", $inputData) && !array_key_exists("softeisPreis", $inputData))) {
+    http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "Fehlende Parameter: shopId und mindestens einer der Preise müssen gesetzt sein.",
+        "message" => "Ungültige Parameter: shopId muss gesetzt und numerisch sein, und mindestens einer der Preise muss gesetzt sein.",
         "shopId" => $inputData["shopId"] ?? null,
         "kugelPreis" => $inputData["kugelPreis"] ?? null,
         "softeisPreis" => $inputData["softeisPreis"] ?? null
@@ -114,10 +115,28 @@ if (!isset($inputData) || !is_array($inputData) || !isset($inputData["shopId"]) 
 
 $shopId = $inputData['shopId'];
 $kugelPreis = array_key_exists('kugelPreis', $inputData) ? $inputData['kugelPreis'] : null;
-$additionalInfoKugelPreis = $inputData['additionalInfoKugelPreis'] ?? null;
+if ($kugelPreis !== null && (!is_numeric($kugelPreis) || $kugelPreis < 0)) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Ungültiger kugelPreis"]);
+    exit;
+}
+
 $softeisPreis = array_key_exists('softeisPreis', $inputData) ? $inputData['softeisPreis'] : null;
-$additionalInfoSofteisPreis = $inputData['additionalInfoSofteisPreis'] ?? null;
+if ($softeisPreis !== null && $softeisPreis !== '' && (!is_numeric($softeisPreis) || $softeisPreis < 0)) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Ungültiger softeisPreis"]);
+    exit;
+}
+
 $waehrung = $inputData['waehrung'] ?? 1;
+if (!is_numeric($waehrung)) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Ungültige waehrung"]);
+    exit;
+}
+
+$additionalInfoKugelPreis = $inputData['additionalInfoKugelPreis'] ?? null;
+$additionalInfoSofteisPreis = $inputData['additionalInfoSofteisPreis'] ?? null;
 
 submitPrice($pdo, $shopId, $currentUserId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung);
 ?>

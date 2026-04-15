@@ -3,6 +3,9 @@ import styled from "styled-components";
 import { SubmitButton, Input } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import { Link } from 'react-router-dom';
+import SocialAuthButtons from "./components/SocialAuthButtons";
+
+const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
 
 const LoginModal = ({ setShowLoginModal }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -19,6 +22,18 @@ const LoginModal = ({ setShowLoginModal }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [pendingSocialRegistration, setPendingSocialRegistration] = useState(null);
+
+  const resetForm = () => {
+    setMessage('');
+    setUsername('');
+    setPassword('');
+    setEmail('');
+    setAcceptedTerms(false);
+    setTermsError(false);
+    setNewsletterOptIn(false);
+    setPendingSocialRegistration(null);
+  };
 
   const handleLogin = async () => {
     try {
@@ -35,8 +50,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
       const data = await response.json();
       if (data.status === 'success') {
-        const actualUsername = data.username;
-        login(data.userId, actualUsername, data.token, data.expires_at);
+        login(data.userId, data.username, data.token, data.expires_at);
         setMessage('Login erfolgreich!');
         setLoginSuccess(true);
         setTimeout(() => {
@@ -49,7 +63,7 @@ const LoginModal = ({ setShowLoginModal }) => {
         setMessage(`Login fehlgeschlagen: ${data.message}`);
       }
     } catch (error) {
-      console.error("Error during login:", error); // Debugging
+      console.error("Error during login:", error);
       setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
     }
   };
@@ -60,12 +74,6 @@ const LoginModal = ({ setShowLoginModal }) => {
       return;
     }
 
-    // Username-Regeln:
-    // - 3-20 Zeichen
-    // - Nur Buchstaben, Zahlen, _ und -
-    // - Muss mit Buchstabe beginnen
-    // - Keine Leerzeichen, Sonderzeichen, Umlaute, Emojis
-    const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
     if (!usernameRegex.test(username)) {
       setMessage('Benutzername: 3-20 Zeichen, nur Buchstaben, Zahlen, _ und -, muss mit Buchstabe beginnen.');
       return;
@@ -95,6 +103,49 @@ const LoginModal = ({ setShowLoginModal }) => {
     }
   };
 
+  const handleCompleteSocialRegistration = async () => {
+    if (!pendingSocialRegistration) return;
+
+    if (!acceptedTerms) {
+      setTermsError(true);
+      return;
+    }
+
+    if (!usernameRegex.test(username)) {
+      setMessage('Benutzername: 3-20 Zeichen, nur Buchstaben, Zahlen, _ und -, muss mit Buchstabe beginnen.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/userManagement/complete_social_registration.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pendingRegistrationToken: pendingSocialRegistration.pending_registration_token,
+          username,
+          acceptedTerms,
+          newsletterOptIn: newsletterOptIn ? 1 : 0
+        })
+      });
+
+      const data = await response.json();
+      setMessage(data.message);
+      if (data.status === 'success') {
+        login(data.userId, data.username, data.token, data.expires_at);
+        resetForm();
+        setLoginSuccess(true);
+        setTimeout(() => {
+          setShowLoginModal(false);
+          setMessage('');
+          setPassword('');
+          setLoginSuccess(false);
+        }, 1200);
+      }
+    } catch (error) {
+      setMessage('Ein Fehler ist aufgetreten. Bitte erneut versuchen.');
+    }
+  };
+
   const handlePasswordReset = async () => {
     try {
       const response = await fetch(`${apiUrl}/userManagement/reset_password_request.php`, {
@@ -114,19 +165,13 @@ const LoginModal = ({ setShowLoginModal }) => {
     }
   };
 
-  const resetForm = () => {
-    setMessage('');
-    setUsername('');
-    setPassword('');
-    setEmail('');
-  };
-
   const closeLoginForm = () => {
     setShowLoginModal(false);
     resetForm();
     setIsRegisterMode(false);
   };
 
+  const isSocialCompletion = Boolean(pendingSocialRegistration);
   const modalTitle = isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login";
   const resetHint = resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen.";
   const loginHint = isLoggedIn && !isRegisterMode ? `Willkommen zurück, ${username}!` : "";
@@ -148,44 +193,59 @@ const LoginModal = ({ setShowLoginModal }) => {
               e.preventDefault();
               if (isResetMode) {
                 handlePasswordReset();
+              } else if (isSocialCompletion) {
+                handleCompleteSocialRegistration();
               } else if (isRegisterMode) {
                 handleRegister();
               } else {
                 handleLogin();
               }
             }}>
-              {!isResetMode && (<ModalInput
-                type="text"
-                placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />)}
-              {isRegisterMode && (<ModalInput
+              {isSocialCompletion && (
+                <HintText>Fast geschafft. Bitte bestätige die Bedingungen und schließe deine Google-Registrierung ab.</HintText>
+              )}
+
+              {!isResetMode && (
+                <ModalInput
+                  type="text"
+                  placeholder={isRegisterMode ? "Benutzername (ohne Leerzeichen)" : "Benutzername oder E-Mail"}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              )}
+
+              {isRegisterMode && (
+                <ModalInput
                   type="email"
                   placeholder="E-Mail"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  readOnly={isSocialCompletion}
                   required
                 />
               )}
-              {!isResetMode && (<><ModalInput
-                type="password"
-                placeholder="Passwort"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              /></>)}
+
+              {!isResetMode && !isSocialCompletion && (
+                <ModalInput
+                  type="password"
+                  placeholder="Passwort"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              )}
+
               {!isRegisterMode && !isResetMode && (
-                    <InlineRow>
-                      <InlineTextButton
-                        type="button"
-                        onClick={() => setIsResetMode(true)}
-                      >
-                        Passwort vergessen?
-                      </InlineTextButton>
-                    </InlineRow>
-                  )}
+                <InlineRow>
+                  <InlineTextButton
+                    type="button"
+                    onClick={() => setIsResetMode(true)}
+                  >
+                    Passwort vergessen?
+                  </InlineTextButton>
+                </InlineRow>
+              )}
 
               {isResetMode && (
                 <>
@@ -199,6 +259,7 @@ const LoginModal = ({ setShowLoginModal }) => {
                   <HintText>{resetHint}</HintText>
                 </>
               )}
+
               {isRegisterMode && (
                 <CheckboxGroup>
                   <CheckboxLabel>
@@ -229,8 +290,46 @@ const LoginModal = ({ setShowLoginModal }) => {
                 </CheckboxGroup>
               )}
 
-              <PrimaryAction type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</PrimaryAction>
+              <PrimaryAction type="submit">
+                {isResetMode ? "Passwort zurücksetzen" : isSocialCompletion ? "Google-Registrierung abschließen" : isRegisterMode ? "Registrieren" : "Login"}
+              </PrimaryAction>
             </Form>
+
+            {!isResetMode && !isSocialCompletion && (
+              <SocialAuthButtons
+                mode={isRegisterMode ? "register" : "login"}
+                desiredUsername={isRegisterMode ? username : ""}
+                acceptedTerms={acceptedTerms}
+                requireAcceptedTerms={false}
+                onRequiresCompletion={(payload) => {
+                  setPendingSocialRegistration(payload);
+                  setIsRegisterMode(true);
+                  setUsername(payload.suggested_username || '');
+                  setEmail(payload.email || '');
+                  setAcceptedTerms(false);
+                  setTermsError(false);
+                  setNewsletterOptIn(false);
+                  setPassword('');
+                  setMessage('');
+                }}
+                onSuccess={() => {
+                  setMessage(isRegisterMode ? "Registrierung erfolgreich." : "Login erfolgreich!");
+                  if (isRegisterMode) {
+                    setIsRegisterMode(false);
+                    resetForm();
+                    return;
+                  }
+
+                  setLoginSuccess(true);
+                  setTimeout(() => {
+                    setShowLoginModal(false);
+                    setMessage('');
+                    setPassword('');
+                    setLoginSuccess(false);
+                  }, 1200);
+                }}
+              />
+            )}
 
             {message && <StatusText>{message}</StatusText>}
             {loginHint && <SubtleText>{loginHint}</SubtleText>}
@@ -242,7 +341,10 @@ const LoginModal = ({ setShowLoginModal }) => {
             ) : !isRegisterMode ? (
               <SwitchLine>Noch keinen Account? <SwitchTextButton onClick={() => setIsRegisterMode(true)}>Registrieren</SwitchTextButton></SwitchLine>
             ) : (
-              <SwitchLine>Bereits registriert? <SwitchTextButton onClick={() => setIsRegisterMode(false)}>Zurück zum Login</SwitchTextButton></SwitchLine>
+              <SwitchLine>Bereits registriert? <SwitchTextButton onClick={() => {
+                setIsRegisterMode(false);
+                setPendingSocialRegistration(null);
+              }}>Zurück zum Login</SwitchTextButton></SwitchLine>
             )}
 
             <FooterAction onClick={closeLoginForm}>Schließen</FooterAction>
@@ -443,5 +545,3 @@ const ErrorText = styled.p`
   color: #c62828;
   font-size: 0.86rem;
 `;
-
-// SubmitButton and Input are imported from SharedStyles
