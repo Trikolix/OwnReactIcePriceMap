@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { SubmitButton, Input } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import { Link } from 'react-router-dom';
+import SocialAuthButtons from "./components/SocialAuthButtons";
 
 const LoginModal = ({ setShowLoginModal }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -231,6 +232,31 @@ const LoginModal = ({ setShowLoginModal }) => {
 
               <PrimaryAction type="submit">{isResetMode ? "Passwort zurücksetzen" : isRegisterMode ? "Registrieren" : "Login"}</PrimaryAction>
             </Form>
+
+            {!isResetMode && (
+              <SocialAuthButtons
+                mode={isRegisterMode ? "register" : "login"}
+                acceptedTerms={acceptedTerms}
+                requireAcceptedTerms={isRegisterMode}
+                onRequireTerms={() => setTermsError(true)}
+                onSuccess={() => {
+                  setMessage(isRegisterMode ? "Registrierung erfolgreich." : "Login erfolgreich!");
+                  if (isRegisterMode) {
+                    setIsRegisterMode(false);
+                    resetForm();
+                    return;
+                  }
+
+                  setLoginSuccess(true);
+                  setTimeout(() => {
+                    setShowLoginModal(false);
+                    setMessage('');
+                    setPassword('');
+                    setLoginSuccess(false);
+                  }, 1200);
+                }}
+              />
+            )}
 
             {message && <StatusText>{message}</StatusText>}
             {loginHint && <SubtleText>{loginHint}</SubtleText>}

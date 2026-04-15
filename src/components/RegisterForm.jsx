@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import SocialAuthButtons from "./SocialAuthButtons";
 
 const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
     const [username, setUsername] = useState('');
@@ -96,6 +97,18 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
             </div>
 
             <SubmitButton type="submit">Registrieren</SubmitButton>
+
+            <SocialAuthButtons
+                mode="register"
+                inviteCode={inviteCode}
+                acceptedTerms={acceptedTerms}
+                requireAcceptedTerms
+                onRequireTerms={() => setTermsError(true)}
+                onSuccess={() => {
+                    setMessage('Registrierung über externen Account erfolgreich.');
+                    if (onSuccess) onSuccess();
+                }}
+            />
 
             {message && <p>{message}</p>}
 
