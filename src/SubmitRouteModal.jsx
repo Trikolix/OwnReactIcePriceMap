@@ -17,6 +17,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const [embedCode, setEmbedCode] = useState("");
     const { userId } = useUser();
     const [message, setMessage] = useState("");
+    const [visibilityWarning, setVisibilityWarning] = useState("");
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -132,6 +133,30 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     };
 
     const showShopSuggestions = shopSearch.trim().length > 0 && filteredShops.length > 0;
+
+    const checkVisibility = async (checkUrl) => {
+        if (!checkUrl) {
+            setVisibilityWarning("");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/routen/checkRouteVisibility.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: checkUrl })
+            });
+            const data = await response.json();
+            if (data.status === 'success' && data.visibility === 'private') {
+                setVisibilityWarning("Achtung: Diese Route scheint privat oder nicht erreichbar zu sein. Bitte überprüfe die Sichtbarkeitseinstellungen bei " + (checkUrl.includes("strava") ? "Strava" : checkUrl.includes("outdooractive") ? "Outdooractive" : "Komoot") + ".");
+            } else {
+                setVisibilityWarning("");
+            }
+        } catch (err) {
+            // Error silently, just don't show warning
+            setVisibilityWarning("");
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -348,9 +373,13 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                                 type="url"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
+                                onBlur={(e) => checkVisibility(e.target.value)}
                                 placeholder="URL zur Komoot / Strava / Outdooractive Route"
                                 required
                             />
+                            {visibilityWarning && (
+                                <Message style={{ marginTop: '5px', color: '#856404', backgroundColor: '#fff3cd', borderColor: '#ffeeba' }}>{visibilityWarning}</Message>
+                            )}
                         </InlineControl>
                     </InlineField>
 

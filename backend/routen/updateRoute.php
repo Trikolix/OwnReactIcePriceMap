@@ -10,7 +10,7 @@ function validateAndCleanUrl(string $url): ?string {
     $allowedHosts = [
         'komoot.com' => '#https:\/\/www\.komoot\.(com|de)\/(?:de-de\/)?tour\/\d+#',
         'strava.com' => '#https:\/\/www\.strava\.com\/routes\/\d+#',
-        'outdooractive.com' => '#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)?[a-z]+\/\d+#'
+        'outdooractive.com' => '#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)+(\d+)#'
     ];
 
     foreach ($allowedHosts as $pattern) {
@@ -21,35 +21,38 @@ function validateAndCleanUrl(string $url): ?string {
     return null;
 }
 
-function generateKomootEmbedCode($url) {
-    $parsedUrl = parse_url($url);
-
-    if (
-        !isset($parsedUrl['host']) ||
-        !preg_match('/komoot\.(com|de)$/', $parsedUrl['host'])
-    ) {
-        return null;
+function generateEmbedCode($url) {
+    // Komoot
+    if (preg_match('#https:\/\/www\.komoot\.(com|de)\/(?:de-de\/)?tour\/(\d+)#', $url, $matches)) {
+        $tourId = $matches[2];
+        $parsedUrl = parse_url($url);
+        $shareToken = '';
+        if (isset($parsedUrl['query'])) {
+            parse_str($parsedUrl['query'], $queryParams);
+            if (isset($queryParams['share_token'])) {
+                $shareToken = htmlspecialchars($queryParams['share_token'], ENT_QUOTES, 'UTF-8');
+            }
+        }
+        $src = 'https://www.komoot.com/de-de/tour/' . $tourId . '/embed';
+        if ($shareToken) {
+            $src .= '?share_token=' . $shareToken;
+        }
+        return '<iframe src="' . $src . '" width="640" height="440" frameborder="0" scrolling="no"></iframe>';
     }
 
-    // Pfad extrahieren, z.B. "/de-de/tour/12345678"
-    $path = $parsedUrl['path'] ?? '';
-    if (!preg_match('#/tour/(\d+)#', $path, $matches)) {
-        return null;
+    // Strava
+    if (preg_match('#https:\/\/www\.strava\.com\/routes\/(\d+)#', $url, $matches)) {
+        $routeId = $matches[1];
+        return '<div class="strava-embed-placeholder" data-embed-type="route" data-embed-id="' . $routeId . '"></div><script src="https://strava-embeds.com/embed.js"></script>';
     }
-    $tourId = $matches[1];
 
-    // share_token aus den Query-Parametern extrahieren
-    if (!isset($parsedUrl['query'])) {
-        return null;
+    // Outdooractive
+    if (preg_match('#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)+(\d+)#', $url, $matches)) {
+        $routeId = $matches[1];
+        return '<iframe src="https://www.outdooractive.com/en/embed/' . $routeId . '/" width="100%" height="440" frameborder="0" scrolling="no"></iframe>';
     }
-    parse_str($parsedUrl['query'], $queryParams);
-    if (!isset($queryParams['share_token'])) {
-        return null;
-    }
-    $shareToken = htmlspecialchars($queryParams['share_token'], ENT_QUOTES, 'UTF-8');
 
-    // Embed-Code erzeugen
-    return '<iframe src="https://www.komoot.com/de-de/tour/' . $tourId . '/embed?share_token=' . $shareToken . '" width="640" height="440" frameborder="0" scrolling="no"></iframe>';
+    return null;
 }
 
 function nullIfEmpty($value) {
@@ -76,17 +79,17 @@ try {
     $newEisdieleIds = null;
     if ($is_admin) {
         if (!isset($data['embed_code']) || $data['embed_code'] === '') {
-            $embed_code = generateKomootEmbedCode($url);
+            $embed_code = generateEmbedCode($url);
         } else {
             $embed_code = $data['embed_code'];
         }
     } else {
-        $embed_code = generateKomootEmbedCode($url);
+        $embed_code = generateEmbedCode($url);
     }
 
     if (!$route_id || !$currentUserId) {
         echo json_encode(['status' => 'error', 'message' => 'Fehlende erforderliche Daten']);
-        exit;
+        die();
     }
 
     // Wenn URL angegeben, validieren und kürzen
@@ -95,7 +98,7 @@ try {
         $cleanUrl = validateAndCleanUrl($url);
         if (!$cleanUrl) {
             echo json_encode(['status' => 'error', 'message' => 'Ungültige oder nicht unterstützte URL']);
-            exit;
+            die();
         }
     }
 
@@ -143,7 +146,7 @@ try {
     if ($incomingEisdieleIds !== null) {
         if (!is_array($incomingEisdieleIds)) {
             echo json_encode(['status' => 'error', 'message' => 'Ungültiges Format für Eisdielen.']);
-            exit;
+            die();
         }
         $newEisdieleIds = [];
         foreach ($incomingEisdieleIds as $rawId) {
@@ -154,7 +157,7 @@ try {
         }
         if (empty($newEisdieleIds)) {
             echo json_encode(['status' => 'error', 'message' => 'Bitte mindestens eine Eisdiele auswählen.']);
-            exit;
+            die();
         }
         $fields[] = "eisdiele_id = :primary_eisdiele";
         $params['primary_eisdiele'] = $newEisdieleIds[0];
@@ -162,7 +165,7 @@ try {
 
     if (count($fields) === 0) {
         echo json_encode(['status' => 'error', 'message' => 'Keine Felder zum Aktualisieren übergeben']);
-        exit;
+        die();
     }
 
     $sql = "UPDATE routen SET " . implode(", ", $fields) . " WHERE id = :id AND nutzer_id = :nutzer_id";

@@ -157,7 +157,7 @@ const Sidebar = ({  shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId
                 {isLoggedIn && (<button onClick={() => setShowReviewForm(true)}>Eisdiele bewerten</button>)}
                 {shopDetails?.eisdiele?.komoot && isLoggedIn && (
                   <>
-                    <h3>Komoot</h3>
+                    <h3>Routen</h3>
                     <div dangerouslySetInnerHTML={{ __html: shopDetails.eisdiele.komoot }} />
                   </>
                 )}
