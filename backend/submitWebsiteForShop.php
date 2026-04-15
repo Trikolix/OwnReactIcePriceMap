@@ -1,5 +1,9 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/auth.php';
+
+// Authentifizierung prüfen
+requireAuth($pdo);
 
 // Daten aus dem POST-Request abrufen
 $shopId = isset($_POST['shopId']) ? $_POST['shopId'] : '';
@@ -16,7 +20,7 @@ if ($shopId && $website) {
 
     if ($stmt->rowCount() > 0) {
         echo json_encode(['status' => 'success', 'message' => 'Website erfolgreich aktualisiert.']);
-        } else {
+    } else {
         echo json_encode(['status' => 'error', 'message' => 'Fehler beim Aktualisieren der Website.']);
     }
 } else {
