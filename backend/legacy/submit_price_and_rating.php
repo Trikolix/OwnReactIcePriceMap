@@ -56,6 +56,7 @@ try {
 
     // 3️⃣ **Attribute speichern**
     if (!empty($attribute)) {
+        $attr_ids = [];
         foreach ($attribute as $attr) {
             // Prüfen, ob Attribut bereits existiert
             $stmt = $pdo->prepare("SELECT id FROM attribute WHERE name = ?");
@@ -68,14 +69,25 @@ try {
                 $stmt->execute([$attr]);
                 $attr_id = $pdo->lastInsertId();
             }
+            $attr_ids[] = $attr_id;
+        }
 
-            // Eintrag in die Zuordnungstabelle setzen oder updaten
+        if (!empty($attr_ids)) {
+            $attr_counts = array_count_values($attr_ids);
+            $placeholders = [];
+            $values = [];
+            foreach ($attr_counts as $attr_id => $count) {
+                $placeholders[] = "(?, ?, ?)";
+                $values[] = $eisdiele_id;
+                $values[] = $attr_id;
+                $values[] = $count;
+            }
             $stmt = $pdo->prepare("
                 INSERT INTO eisdiele_attribute (eisdiele_id, attribute_id, anzahl)
-                VALUES (?, ?, 1)
-                ON DUPLICATE KEY UPDATE anzahl = anzahl + 1
+                VALUES " . implode(', ', $placeholders) . "
+                ON DUPLICATE KEY UPDATE anzahl = anzahl + VALUES(anzahl)
             ");
-            $stmt->execute([$eisdiele_id, $attr_id]);
+            $stmt->execute($values);
         }
     }
 
