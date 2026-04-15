@@ -15,6 +15,38 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
     const [levelUpInfo, setLevelUpInfo] = useState(null);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
+    const normalizePriceValue = (value) => {
+        if (value === '' || value === null || value === undefined) {
+            return null;
+        }
+        return value;
+    };
+
+    const getFrontendValidationMessage = (kugel, softeis) => {
+        const normalizedKugel = normalizePriceValue(kugel);
+        const normalizedSofteis = normalizePriceValue(softeis);
+
+        if (normalizedKugel === null && normalizedSofteis === null) {
+            return 'Bitte trage mindestens einen Preis ein.';
+        }
+
+        if (normalizedKugel !== null) {
+            const parsedKugel = Number(normalizedKugel);
+            if (Number.isNaN(parsedKugel) || parsedKugel <= 0) {
+                return 'Bitte gib einen gültigen Kugelpreis größer als 0 ein.';
+            }
+        }
+
+        if (normalizedSofteis !== null) {
+            const parsedSofteis = Number(normalizedSofteis);
+            if (Number.isNaN(parsedSofteis) || parsedSofteis <= 0) {
+                return 'Bitte gib einen gültigen Softeispreis größer als 0 ein.';
+            }
+        }
+
+        return null;
+    };
+
     const [waehrung, setWaehrung] = useState(shop.eisdiele.waehrung_id ?? 1);
     const [waehrungSymbol, setWaehrungSymbol] = useState(shop.eisdiele.waehrung_symbol ?? '€');
     const hasSecondCurrency = shop.eisdiele.waehrung_symbol && shop.eisdiele.waehrung_symbol !== '€';
@@ -36,6 +68,15 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
     };
 
     const submit = async () => {
+        const validationMessage = getFrontendValidationMessage(kugelPreis, softeisPreis);
+        if (validationMessage) {
+            setMessage(validationMessage);
+            return;
+        }
+
+        const normalizedKugelPreis = normalizePriceValue(kugelPreis);
+        const normalizedSofteisPreis = normalizePriceValue(softeisPreis);
+
         try {
             const response = await fetch(`${apiUrl}/submitPrice.php`, {
                 method: 'POST',
@@ -45,9 +86,9 @@ const SubmitPriceModal = ({ shop, userId, showPriceForm, setShowPriceForm, onSuc
                 body: JSON.stringify({
                     shopId: shop.eisdiele.id,
                     userId: userId,
-                    kugelPreis,
+                    kugelPreis: normalizedKugelPreis,
                     additionalInfoKugelPreis,
-                    softeisPreis,
+                    softeisPreis: normalizedSofteisPreis,
                     additionalInfoSofteisPreis,
                     waehrung
                 })
