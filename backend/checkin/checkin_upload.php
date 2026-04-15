@@ -4,6 +4,8 @@ require_once __DIR__ . '/../lib/email_notification.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
+require_once __DIR__ . '/../lib/team_challenges.php';
+require_once __DIR__ . '/../lib/user_notification_settings.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
@@ -40,6 +42,7 @@ require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/TheTasteOfChemnitzEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/TeamChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
 require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
 
@@ -244,6 +247,11 @@ try {
     }
 
     $__profiling['after_picturehandling'] = microtime(true);
+
+    // Schema-Checks koennen implizite Commits ausloesen (z. B. ALTER TABLE).
+    // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
+    ensureTeamChallengeSchema($pdo);
+    ensureUserNotificationSettingsSchema($pdo);
 
     // -------------------------
     // Datenbank-Transaktion starten
@@ -452,6 +460,7 @@ try {
         new DetailedCheckinCountEvaluator(),
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
+        new TeamChallengeCountEvaluator(),
         new MultipleVehicleEvaluator(),
         new SeasonalPresentEvaluator(),
     ];
@@ -471,6 +480,7 @@ try {
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
     elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
 
+    $completedTeamChallenge = null;
     if ($isOnSite) {
         // Aktive Challenge suchen
         $stmt = $pdo->prepare("
@@ -510,6 +520,7 @@ try {
             ];
             $evaluators[] = new ChallengeCountEvaluator();
         }
+        $completedTeamChallenge = teamChallengeCompleteFromCheckin($pdo, (int)$userId, (int)$shopId, (int)$checkinId);
         $evaluators[] = new OnSiteEvaluator();
     }
 
@@ -612,7 +623,8 @@ try {
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
-        'completed_challenge' => $completedChallenge ?? null
+        'completed_challenge' => $completedChallenge ?? null,
+        'completed_team_challenge' => $completedTeamChallenge
     ]);
 
 } catch (Exception $e) {

@@ -11,6 +11,7 @@ import RouteCard from '../components/RouteCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
+import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -551,17 +552,19 @@ function UserSite() {
       <WhiteBackground>
         <DashboardWrapper>
             <ProfileHeader>
-              <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
-                {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
-              </AvatarCircle>
               <ProfileMainColumn>
-                <ProfileInfo>
-                  <h1>{data.nutzername}</h1>
+                <ProfileIdentity>
+                  <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
+                    {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
+                  </AvatarCircle>
+                  <ProfileInfo>
+                    <h1>{data.nutzername}</h1>
+                  </ProfileInfo>
                   <MetaRow>
                     <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
                     {isOwnProfile && <Chip>Dein Profil</Chip>}
                   </MetaRow>
-                </ProfileInfo>
+                </ProfileIdentity>
                 <LevelInlineCard>
                   <LevelDisplay levelInfo={data.level_info} />
                 </LevelInlineCard>
@@ -637,11 +640,13 @@ function UserSite() {
                 <AwardsGrid ref={awardsGridRef}>
                   {displayedAwards.map((award, index) => {
                     const iconSources = getAwardIconSources(award?.icon_path, 512);
+                    const epicTier = getActiveAwardEffectTier(award?.ep);
 
                     return (
                       <AwardCard key={index}>
                         <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
                         <AwardImageButton
+                          $epicTier={epicTier}
                           type="button"
                           onClick={() => setSelectedAward({
                             src: iconSources.src || '',
@@ -649,11 +654,13 @@ function UserSite() {
                             title: award.title_de || 'Award',
                             description: award.description_de || '',
                             ep: award.ep ?? 0,
+                            epicTier,
                             awardedAt: award.awarded_at || null,
                           })}
                           aria-label={`Award ${award.title_de || ''} groß anzeigen`}
                         >
                           <AwardImage
+                            $epicTier={epicTier}
                             src={iconSources.src || ''}
                             data-fallback-src={iconSources.fallbackSrc || ''}
                             onError={handleAwardIconFallback}
@@ -718,6 +725,7 @@ function UserSite() {
                     Schließen
                   </AwardLightboxClose>
                   <AwardLightboxImage
+                    $epicTier={selectedAward.epicTier || getActiveAwardEffectTier(selectedAward.ep)}
                     src={selectedAward.src}
                     data-fallback-src={selectedAward.fallbackSrc || ''}
                     onError={handleAwardIconFallback}
@@ -912,7 +920,7 @@ function UserSite() {
                     <EmptyState>Noch keine Reviews vorhanden.</EmptyState>
                   )}
                   {displayedReviews.map((review, index) => (
-                    <ReviewCard key={index} review={review} />
+                    <ReviewCard key={index} review={review} onSuccess={refreshUser} />
                   ))}
                   {displayedReviews.length < reviews.length && (
                     <LoadMoreButton onClick={loadMoreReviews}>Mehr Reviews laden</LoadMoreButton>
@@ -1011,8 +1019,8 @@ const LoadingCard = styled.div`
 
 const ProfileHeader = styled.div`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 1rem 1.2rem;
   background: rgba(255, 252, 243, 0.96);
   border: 1px solid rgba(47, 33, 0, 0.08);
@@ -1026,9 +1034,29 @@ const ProfileHeader = styled.div`
   }
 `;
 
+const ProfileIdentity = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem 1rem;
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+`;
+
 const AvatarCircle = styled.div`
-  width: 120px;
-  height: 120px;
+  width: 128px;
+  height: 128px;
+  min-width: 128px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   border-radius: 50%;
   background: linear-gradient(180deg, #ffe2b5, #ffd08a);
   border: 3px solid rgba(255, 255, 255, 0.9);
@@ -1046,15 +1074,38 @@ const AvatarCircle = styled.div`
     height: 100%;
     object-fit: cover;
   }
+
+  @media (max-width: 640px) {
+    width: 104px;
+    height: 104px;
+    min-width: 104px;
+    font-size: 1.7rem;
+  }
+
+  @media (max-width: 480px) {
+    width: 88px;
+    height: 88px;
+    min-width: 88px;
+    font-size: 1.45rem;
+  }
 `;
 
 const ProfileInfo = styled.div`
   flex: 1;
-  min-width: 240px;
+  min-width: 0;
+  width: 100%;
+
   h1 {
     margin: 0;
-    font-size: clamp(1.35rem, 2vw, 2rem);
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.02;
     color: #2f2100;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  @media (max-width: 480px) {
+    text-align: center;
   }
 `;
 
@@ -1063,7 +1114,7 @@ const ProfileMainColumn = styled.div`
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.85rem;
 `;
 
 const LevelInlineCard = styled.div`
@@ -1132,7 +1183,7 @@ const LevelInlineCard = styled.div`
 
 const ProfileActions = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-end;
 
   @media (max-width: 980px) {
@@ -1144,7 +1195,7 @@ const MetaRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  grid-column: 1 / -1;
 `;
 
 const Chip = styled.span`
@@ -1699,6 +1750,22 @@ const AwardsGrid = styled.div`
   }
 `;
 
+const AWARD_SHIMMER_KEYFRAMES = `
+  @keyframes awardShimmerSweep {
+    0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+    18% { opacity: 0.22; }
+    45% { opacity: 0.52; }
+    100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+  }
+
+  @keyframes awardShimmerSweepSecondary {
+    0% { transform: translateX(-180%) skewX(16deg); opacity: 0; }
+    28% { opacity: 0.12; }
+    52% { opacity: 0.3; }
+    100% { transform: translateX(240%) skewX(16deg); opacity: 0; }
+  }
+`;
+
 const AwardCard = styled.div`
   background-color: rgba(255, 252, 243, 0.95);
   border-radius: 14px;
@@ -1715,6 +1782,20 @@ const AwardImage = styled.img`
   max-width: 140px;
   height: 140px;
   object-fit: contain;
+  position: relative;
+  z-index: 1;
+  transition: filter 220ms ease;
+  ${({ $epicTier }) => $epicTier !== 'base' && `
+    filter: drop-shadow(0 0 12px rgba(255, 214, 122, 0.34)) saturate(1.06) contrast(1.03);
+  `}
+  ${({ $epicTier }) => $epicTier === 'legendary' && `
+    filter: drop-shadow(0 0 18px rgba(255, 197, 86, 0.44)) drop-shadow(0 0 28px rgba(255, 176, 58, 0.18)) saturate(1.12) contrast(1.05);
+  `}
+  ${({ $epicTier }) => $epicTier === 'mythic' && `
+    filter: drop-shadow(0 0 24px rgba(255, 196, 92, 0.52)) drop-shadow(0 0 44px rgba(255, 166, 48, 0.28)) brightness(1.08) saturate(1.18) contrast(1.08);
+  `}
+
+  ${AWARD_SHIMMER_KEYFRAMES}
 `;
 
 const AwardImageButton = styled.button`
@@ -1727,6 +1808,54 @@ const AwardImageButton = styled.button`
   padding: 0;
   cursor: zoom-in;
   border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -18%;
+    pointer-events: none;
+    opacity: ${({ $epicTier }) => ($epicTier === 'base' ? 0 : 1)};
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      transparent 30%,
+      rgba(255, 255, 255, ${({ $epicTier }) => ($epicTier === 'mythic' ? 0.22 : $epicTier === 'legendary' ? 0.14 : 0.1)}) 42%,
+      rgba(255, 246, 205, ${({ $epicTier }) => ($epicTier === 'mythic' ? 0.96 : $epicTier === 'legendary' ? 0.8 : 0.58)}) 50%,
+      rgba(255, 255, 255, ${({ $epicTier }) => ($epicTier === 'mythic' ? 0.3 : $epicTier === 'legendary' ? 0.18 : 0.12)}) 58%,
+      transparent 66%,
+      transparent 100%
+    );
+    animation: ${({ $epicTier }) =>
+      $epicTier === 'base'
+        ? 'none'
+        : $epicTier === 'mythic'
+          ? 'awardShimmerSweep 2.7s linear infinite'
+          : $epicTier === 'legendary'
+            ? 'awardShimmerSweep 3.2s linear infinite'
+            : 'awardShimmerSweep 4.2s linear infinite'};
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -22%;
+    pointer-events: none;
+    opacity: ${({ $epicTier }) => ($epicTier === 'mythic' ? 1 : 0)};
+    background:
+      linear-gradient(
+        72deg,
+        transparent 0%,
+        transparent 40%,
+        rgba(255, 255, 255, 0.14) 47%,
+        rgba(255, 230, 160, 0.44) 52%,
+        rgba(255, 255, 255, 0.08) 58%,
+        transparent 68%,
+        transparent 100%
+      );
+    animation: ${({ $epicTier }) => ($epicTier === 'mythic' ? 'awardShimmerSweepSecondary 1.9s linear infinite' : 'none')};
+  }
 `;
 
 const AwardTitle = styled.h3`
@@ -1758,6 +1887,7 @@ const EPBadge = styled.div`
   padding: 4px 8px;
   border-radius: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 4;
 `;
 
 const AwardLightboxOverlay = styled.div`
@@ -1789,12 +1919,27 @@ const AwardLightboxImage = styled.img`
   height: auto;
   border-radius: 8px;
   object-fit: contain;
+  position: relative;
+  z-index: 1;
+  transition: filter 220ms ease;
+  ${({ $epicTier }) => $epicTier !== 'base' && `
+    filter: drop-shadow(0 0 18px rgba(255, 214, 122, 0.36)) saturate(1.06) contrast(1.03);
+  `}
+  ${({ $epicTier }) => $epicTier === 'legendary' && `
+    filter: drop-shadow(0 0 24px rgba(255, 197, 86, 0.46)) drop-shadow(0 0 34px rgba(255, 176, 58, 0.2)) saturate(1.12) contrast(1.05);
+  `}
+  ${({ $epicTier }) => $epicTier === 'mythic' && `
+    filter: drop-shadow(0 0 30px rgba(255, 196, 92, 0.56)) drop-shadow(0 0 56px rgba(255, 166, 48, 0.3)) brightness(1.1) saturate(1.2) contrast(1.08);
+  `}
+
+  ${AWARD_SHIMMER_KEYFRAMES}
 `;
 
 const AwardLightboxClose = styled.button`
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 3;
   border: none;
   border-radius: 8px;
   background: #111827;

@@ -16,6 +16,7 @@ require_once __DIR__ . '/../evaluators/UserOfTheMonthEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotoChallengeWinnerEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/TeamChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceSeasonEvaluator.php';
 require_once __DIR__ . '/../evaluators/GroupCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
@@ -55,6 +56,7 @@ try {
         new PhotoChallengeWinnerEvaluator(),
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
+        new TeamChallengeCountEvaluator(),
         new IceSeasonEvaluator(),
         new GroupCheckinEvaluator(),
         new MultipleVehicleEvaluator(),

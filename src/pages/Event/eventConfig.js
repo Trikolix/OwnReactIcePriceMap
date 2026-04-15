@@ -28,6 +28,7 @@ export const EVENT_ORGANIZER_FULL_ADDRESS = `${EVENT_ORGANIZER_STREET}, ${EVENT_
 export const EVENT_WITHDRAWAL_NOTICE = "Kein Widerrufsrecht bei dieser Anmeldung, da es sich um eine Freizeitveranstaltung mit festem Termin handelt.";
 export const EVENT_COMMUNITY_RIDE_CLAIM = "Die Ice-Tour ist eine privat organisierte, nicht-kommerzielle Community-Ausfahrt und ausdrücklich kein Rennen.";
 export const EVENT_ENTRY_FEE_NOTICE = "Der Teilnahmebeitrag dient ausschließlich zur Deckung der Organisationskosten. Überschüsse werden gespendet.";
+export const EVENT_RACE_DAY_INFO_ENABLED = true;
 
 export const ROUTE_OPTIONS = [
   {

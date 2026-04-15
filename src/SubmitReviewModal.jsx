@@ -122,7 +122,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
         fetchReview();
     }, [userId, shop.eisdiele.id, apiUrl]);
 
-    const askForPriceUpdate = (preise) => {
+    const askForPriceUpdate = (preise = {}) => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -181,7 +181,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 onSuccess && onSuccess();
                 setSubmitted(true);
                 setTimeout(() => {
-                    if (askForPriceUpdate(shop.preise)) {
+                    if (setShowPriceForm && askForPriceUpdate(shop?.preise)) {
                         setPreisfrage(true);
                     } else {
                         setShowForm(false);
@@ -224,6 +224,10 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     };
 
     const openSubmitPriceForm = () => {
+        if (!setShowPriceForm) {
+            setShowForm(false);
+            return;
+        }
         setShowForm(false);
         setShowPriceForm(true);
     };

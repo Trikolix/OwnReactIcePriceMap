@@ -256,6 +256,48 @@ function event2026_ensure_schema(PDO $pdo): void
             KEY idx_event2026_passage_checkpoint (checkpoint_id, passed_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+        "CREATE TABLE IF NOT EXISTS event2026_contact_requests (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            submitted_by_user_id INT DEFAULT NULL,
+            source_page VARCHAR(64) NOT NULL DEFAULT 'ice-tour',
+            name VARCHAR(120) NOT NULL,
+            email VARCHAR(190) NOT NULL,
+            organisation VARCHAR(160) DEFAULT NULL,
+            phone VARCHAR(40) DEFAULT NULL,
+            message TEXT NOT NULL,
+            status ENUM('new','reviewed','archived') NOT NULL DEFAULT 'new',
+            ip_hash VARCHAR(128) DEFAULT NULL,
+            user_agent_hash VARCHAR(128) DEFAULT NULL,
+            spam_score INT NOT NULL DEFAULT 0,
+            is_flagged TINYINT(1) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_contact_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            KEY idx_event2026_contact_created (event_id, created_at),
+            KEY idx_event2026_contact_status (event_id, status, created_at),
+            KEY idx_event2026_contact_flagged (event_id, is_flagged, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS event2026_reminder_mail_log (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            entity_type VARCHAR(32) NOT NULL,
+            entity_id INT NOT NULL,
+            recipient_email VARCHAR(255) NOT NULL,
+            reminder_kind VARCHAR(64) NOT NULL,
+            trigger_source VARCHAR(32) NOT NULL DEFAULT 'cron',
+            sent_by_user_id INT DEFAULT NULL,
+            mail_subject VARCHAR(255) DEFAULT NULL,
+            meta_json JSON DEFAULT NULL,
+            sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_reminder_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            KEY idx_event2026_reminder_entity (event_id, entity_type, entity_id, sent_at),
+            KEY idx_event2026_reminder_kind (event_id, reminder_kind, sent_at),
+            KEY idx_event2026_reminder_source (trigger_source, sent_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
         "CREATE TABLE IF NOT EXISTS event2026_audit_log (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             event_id INT NOT NULL,

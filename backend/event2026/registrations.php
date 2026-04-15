@@ -1,6 +1,7 @@
 ﻿<?php
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../lib/mail.php';
+require_once __DIR__ . '/../lib/user_notification_settings.php';
 
 const EVENT2026_PAYMENT_CONTACT = 'admin@ice-app.de';
 const EVENT2026_ENTRY_FEE = 15.0;
@@ -77,8 +78,9 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
     ]);
     $userId = (int) $pdo->lastInsertId();
 
-    $notifyStmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news)
-        VALUES (:user_id, 1, 1, 1, :notify_news)");
+    ensureUserNotificationSettingsSchema($pdo);
+    $notifyStmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge)
+        VALUES (:user_id, 1, 1, 1, :notify_news, 1)");
     $notifyStmt->execute([
         ':user_id' => $userId,
         ':notify_news' => $newsletterOptIn ? 1 : 0,

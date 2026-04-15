@@ -17,6 +17,14 @@ const NotificationBell = () => {
         setSystemModal({ isOpen: true, title, message });
     };
 
+    const navigateToTeamChallenge = (notification) => {
+        const data = JSON.parse(notification.zusatzdaten || '{}');
+        const challengeId = data.team_challenge_id || notification.referenz_id;
+        window.location.href = challengeId
+            ? `/challenge?tab=team&teamChallengeId=${challengeId}`
+            : '/challenge?tab=team';
+    };
+
     const loadNotifications = async () => {
         const res = await fetch(
             `${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=list&nutzer_id=${userId}`
@@ -75,6 +83,8 @@ const NotificationBell = () => {
                 const url = `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
                 window.location.href = url;
             }
+        } else if (notification.typ === 'team_challenge') {
+            navigateToTeamChallenge(notification);
         } else if (notification.typ === 'kommentar_bewertung') {
             const data = JSON.parse(notification.zusatzdaten || '{}');
             if (data.bewertung_id && data.eisdiele_id) {

@@ -9,6 +9,7 @@ import Rating from './components/Rating';
 import { useUser } from './context/UserContext';
 import ReviewCard from './components/ReviewCard';
 import CheckinCard from './components/CheckinCard';
+import MetaPill from './components/RegionMetaPill';
 import FavoritenButton from './components/FavoritButton';
 import OpeningHours from './components/OpeningHours';
 import ShopWebsite from './components/ShopWebsite';
@@ -19,6 +20,9 @@ import CheckinFrom from './CheckinForm';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
+
+const hasValue = (value) => value !== null && value !== undefined;
+const hasPriceEntry = (entry) => hasValue(entry?.preis);
 
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -33,6 +37,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const [showEditModal, setShowEditModal] = useState(false);
   const [shopData, setShopData] = useState(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const shopRequestRef = useRef(0);
+  const routesRequestRef = useRef(0);
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const [currentHeight, setCurrentHeight] = useState(window.innerHeight * 0.5);
   const [{ height }, api] = useSpring(() => ({ height: currentHeight }));
@@ -70,18 +76,26 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   };
 
   const fetchShopData = useCallback(async (id) => {
+    const requestId = ++shopRequestRef.current;
     try {
       const referenceQuery = openAtParam ? `&open_at=${encodeURIComponent(openAtParam)}` : '';
       const userQuery = userId ? `&nutzer_id=${userId}` : '';
       const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${id}${userQuery}${referenceQuery}`);
       const data = await response.json();
+      if (requestId !== shopRequestRef.current) {
+        return;
+      }
       setShopData(data);
     } catch (err) {
+      if (requestId !== shopRequestRef.current) {
+        return;
+      }
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
   }, [apiUrl, openAtParam, userId]);
 
   const fetchRoutes = useCallback(async (id, currentUserId) => {
+    const requestId = ++routesRequestRef.current;
     try {
       let url = `${apiUrl}/routen/getRoutes.php?eisdiele_id=${id}`;
       if (currentUserId) {
@@ -89,14 +103,22 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
       }
       const response = await fetch(url);
       const data = await response.json();
+      if (requestId !== routesRequestRef.current) {
+        return;
+      }
       setRoutes(data);
     } catch (err) {
+      if (requestId !== routesRequestRef.current) {
+        return;
+      }
       console.error('Fehler beim Abrufen der Routen via URL:', err);
     }
   }, [apiUrl]);
 
   useEffect(() => {
     if (!shopId) return;
+    setShopData(null);
+    setRoutes([]);
     fetchShopData(shopId);
     fetchRoutes(shopId, userId);
   }, [shopId, userId, fetchShopData, fetchRoutes]);
@@ -187,9 +209,9 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           </HeaderCtaBar>
         )}
         <Tabs>
-          <Tab type="button" onClick={() => setActiveTab('info')} active={activeTab === 'info'}>Allgemein</Tab>
-          <Tab type="button" onClick={() => setActiveTab('checkins')} active={activeTab === 'checkins'}>Check-ins</Tab>
-          <Tab type="button" onClick={() => setActiveTab('reviews')} active={activeTab === 'reviews'}>Bewertungen</Tab>
+          <Tab type="button" onClick={() => setActiveTab('info')} $active={activeTab === 'info'}>Allgemein</Tab>
+          <Tab type="button" onClick={() => setActiveTab('checkins')} $active={activeTab === 'checkins'}>Check-ins</Tab>
+          <Tab type="button" onClick={() => setActiveTab('reviews')} $active={activeTab === 'reviews'}>Bewertungen</Tab>
         </Tabs>
 
         <Content>
@@ -331,12 +353,12 @@ const ShopDetailsContent = ({
     return `Vor ${diffInDays} Tag${diffInDays > 1 ? 'en' : ''}`;
   };
 
-  const hasPriceData = shopData.preise.kugel != null || shopData.preise.softeis != null;
+  const hasPriceData = hasPriceEntry(shopData.preise.kugel) || hasPriceEntry(shopData.preise.softeis);
   const hasRatingData = Boolean(
-    shopData.bewertungen.auswahl ||
-    shopData.scores.kugel ||
-    shopData.scores.softeis ||
-    shopData.scores.eisbecher ||
+    hasValue(shopData.bewertungen.auswahl) ||
+    hasValue(shopData.scores.kugel) ||
+    hasValue(shopData.scores.softeis) ||
+    hasValue(shopData.scores.eisbecher) ||
     shopData.attribute?.length > 0
   );
 
@@ -361,6 +383,11 @@ const ShopDetailsContent = ({
               </SuggestionButton>
             </SecondaryActionRow>
           )}
+          <SecondaryActionRow>
+            <FullscreenLink to={`/shop/${shopData.eisdiele.id}`}>
+              Zur Vollansicht
+            </FullscreenLink>
+          </SecondaryActionRow>
         </SectionCard>
 
         <SectionCard>
@@ -379,7 +406,7 @@ const ShopDetailsContent = ({
             <TableScroll>
               <Table>
                 <tbody>
-                  {shopData.preise.kugel != null && (
+                  {hasPriceEntry(shopData.preise.kugel) && (
                     <tr>
                       <th>Kugelpreis</th>
                       <td>
@@ -391,7 +418,7 @@ const ShopDetailsContent = ({
                       </td>
                     </tr>
                   )}
-                  {shopData.preise.softeis != null && (
+                  {hasPriceEntry(shopData.preise.softeis) && (
                     <tr>
                       <th>Softeispreis</th>
                       <td>
@@ -428,25 +455,25 @@ const ShopDetailsContent = ({
             <TableScroll>
               <Table>
                 <tbody>
-                  {shopData.scores.kugel !== null && (
+                  {hasValue(shopData.scores.kugel) && (
                     <tr>
                       <th>Kugeleis</th>
                       <td><Rating stars={shopData.scores.kugel} /> <strong>{shopData.scores.kugel}</strong></td>
                     </tr>
                   )}
-                  {shopData.scores.softeis !== null && (
+                  {hasValue(shopData.scores.softeis) && (
                     <tr>
                       <th>Softeis</th>
                       <td><Rating stars={shopData.scores.softeis} /> <strong>{shopData.scores.softeis}</strong></td>
                     </tr>
                   )}
-                  {shopData.scores.eisbecher !== null && (
+                  {hasValue(shopData.scores.eisbecher) && (
                     <tr>
                       <th>Eisbecher</th>
                       <td><Rating stars={shopData.scores.eisbecher} /> <strong>{shopData.scores.eisbecher}</strong></td>
                     </tr>
                   )}
-                  {shopData.bewertungen.auswahl !== null && (
+                  {hasValue(shopData.bewertungen.auswahl) && (
                     <tr>
                       <th>Auswahl</th>
                       <td>~ <strong>{shopData.bewertungen.auswahl}</strong> Sorten</td>
@@ -743,17 +770,17 @@ const Tab = styled.button`
   flex: 1;
   min-width: 0;
   padding: 0.5rem 0.65rem;
-  background: ${({ active }) => (active ? '#ffb522' : 'transparent')};
-  color: ${({ active }) => (active ? '#2f2100' : '#5c4a25')};
-  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
+  background: ${({ $active }) => ($active ? '#ffb522' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#2f2100' : '#5c4a25')};
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
   border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: ${({ active }) => (active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
+  box-shadow: ${({ $active }) => ($active ? '0 2px 8px rgba(255,181,34,0.25)' : 'none')};
 
   &:hover {
-    background: ${({ active }) => (active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
+    background: ${({ $active }) => ($active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
   }
 `;
 
@@ -785,24 +812,6 @@ const HeaderCtaBar = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.4rem;
   margin: 0.55rem;
-`;
-
-const MetaPill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(47, 33, 0, 0.04);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  color: #5b4520;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-decoration: none;
-
-  &:hover {
-    background: rgba(255, 181, 34, 0.14);
-    color: #2f2100;
-  }
 `;
 
 const IceShopHeader = styled.h2`
@@ -1052,6 +1061,27 @@ const SuggestionButton = styled.button`
 
   &:hover {
     color: #6f4300;
+  }
+`;
+
+const FullscreenLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #7a4a00;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.92rem;
+  padding: 0.1rem 0;
+
+  &:hover {
+    color: #5a3900;
+  }
+
+  &::after {
+    content: '›';
+    font-size: 1rem;
+    line-height: 1;
   }
 `;
 

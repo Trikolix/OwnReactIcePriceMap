@@ -1,13 +1,35 @@
 <?php
 
-function getPeriodWindow(string $period): array
+function getPeriodWindow(string $period, ?string $periodKey = null): array
 {
     date_default_timezone_set('Europe/Berlin');
-    $now = new DateTimeImmutable('now');
+    $timezone = new DateTimeZone('Europe/Berlin');
+    $now = new DateTimeImmutable('now', $timezone);
+
+    if ($period === 'overall') {
+        $start = new DateTimeImmutable('2000-01-01 00:00:00', $timezone);
+        return [
+            'period' => 'overall',
+            'label' => 'Gesamt',
+            'start' => $start,
+            'end' => $now,
+            'key' => 'overall',
+        ];
+    }
 
     if ($period === 'month') {
-        $start = $now->modify('first day of this month')->setTime(0, 0, 0);
+        if ($periodKey && preg_match('/^\d{4}-\d{2}$/', $periodKey) === 1) {
+            $start = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $periodKey . '-01 00:00:00', $timezone);
+            if (!$start) {
+                throw new InvalidArgumentException('Ungültiger period_key');
+            }
+        } else {
+            $start = $now->modify('first day of this month')->setTime(0, 0, 0);
+        }
         $end = $now->modify('last day of this month')->setTime(23, 59, 59);
+        if ($start < $now->modify('first day of this month')->setTime(0, 0, 0)) {
+            $end = $start->modify('last day of this month')->setTime(23, 59, 59);
+        }
         return [
             'period' => 'month',
             'label' => 'Monat',
@@ -17,7 +39,13 @@ function getPeriodWindow(string $period): array
         ];
     }
 
-    $start = $now->modify('monday this week')->setTime(0, 0, 0);
+    if ($periodKey && preg_match('/^(\d{4})-W(\d{2})$/', $periodKey, $matches) === 1) {
+        $start = (new DateTimeImmutable('now', $timezone))
+            ->setISODate((int)$matches[1], (int)$matches[2], 1)
+            ->setTime(0, 0, 0);
+    } else {
+        $start = $now->modify('monday this week')->setTime(0, 0, 0);
+    }
     $end = $start->modify('+6 days')->setTime(23, 59, 59);
     return [
         'period' => 'week',
@@ -26,6 +54,44 @@ function getPeriodWindow(string $period): array
         'end' => $end,
         'key' => $start->format('o-\WW'),
     ];
+}
+
+function listLeaderboardPeriods(string $period, int $limit = 16): array
+{
+    date_default_timezone_set('Europe/Berlin');
+    $timezone = new DateTimeZone('Europe/Berlin');
+    $now = new DateTimeImmutable('now', $timezone);
+
+    if ($period === 'month') {
+        $cursor = $now->modify('first day of this month')->setTime(0, 0, 0);
+        $items = [];
+        for ($i = 0; $i < $limit; $i += 1) {
+            $items[] = [
+                'key' => $cursor->format('Y-m'),
+                'label' => $i === 0 ? 'Aktueller Monat' : $cursor->format('m/Y'),
+            ];
+            $cursor = $cursor->modify('-1 month');
+        }
+        return $items;
+    }
+
+    if ($period === 'week') {
+        $cursor = $now->modify('monday this week')->setTime(0, 0, 0);
+        $items = [];
+        for ($i = 0; $i < $limit; $i += 1) {
+            $weekEnd = $cursor->modify('+6 days');
+            $items[] = [
+                'key' => $cursor->format('o-\WW'),
+                'label' => $i === 0
+                    ? 'Aktuelle Woche'
+                    : sprintf('%s - %s', $cursor->format('d.m.'), $weekEnd->format('d.m.Y')),
+            ];
+            $cursor = $cursor->modify('-7 days');
+        }
+        return $items;
+    }
+
+    return [];
 }
 
 function normalizeLeaderboardScope(?string $scope, ?int $scopeId): array
@@ -370,7 +436,7 @@ function buildLeaderboardResponse(array $rows, ?int $userId, DateTimeImmutable $
     }
 
     $now = new DateTimeImmutable('now', new DateTimeZone('Europe/Berlin'));
-    $secondsUntilEnd = max(0, $end->getTimestamp() - $now->getTimestamp());
+    $secondsUntilEnd = $period === 'overall' ? null : max(0, $end->getTimestamp() - $now->getTimestamp());
 
     return [
         'leaderboard' => $topRows,
@@ -381,6 +447,10 @@ function buildLeaderboardResponse(array $rows, ?int $userId, DateTimeImmutable $
             'scope_id' => $scopeId,
             'start' => $start->format(DateTimeInterface::ATOM),
             'end' => $end->format(DateTimeInterface::ATOM),
+            'key' => $period === 'overall'
+                ? 'overall'
+                : ($period === 'month' ? $start->format('Y-m') : $start->format('o-\WW')),
+            'archives' => listLeaderboardPeriods($period),
         ],
         'progress_to_next_rank' => $progressToNext,
         'countdown' => [

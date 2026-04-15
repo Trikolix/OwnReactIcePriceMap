@@ -714,7 +714,7 @@ export default function EventRegistration() {
           "Spendenfahrt Chemnitz Anmeldung",
           "Fahrrad Event Chemnitz Anmeldung",
         ]}
-        canonical="/ice-tour-2026.html"
+        canonical="/event-registration"
       />
       {error && (
         <ErrorOverlay role="presentation" onClick={() => setError(null)}>

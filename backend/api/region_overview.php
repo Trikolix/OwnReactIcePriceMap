@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $level = strtolower(trim((string)($_GET['level'] ?? '')));
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$activeUserPeriod = strtolower(trim((string)($_GET['active_user_period'] ?? 'overall')));
 
 if (!in_array($level, ['bundesland', 'landkreis'], true) || $id <= 0) {
     http_response_code(400);
@@ -22,14 +23,14 @@ try {
         exit;
     }
 
-    $lifetimeStart = new DateTimeImmutable('2000-01-01 00:00:00', new DateTimeZone('Europe/Berlin'));
-    $now = new DateTimeImmutable('now', new DateTimeZone('Europe/Berlin'));
-    $activeUsers = calculatePeriodLeaderboard($pdo, $lifetimeStart, $now, $level, $id);
+    $window = getPeriodWindow($activeUserPeriod);
+    $activeUsers = calculatePeriodLeaderboard($pdo, $window['start'], $window['end'], $level, $id);
 
     echo json_encode([
         'region_meta' => $regionMeta,
         'top_shops' => getRegionTopShops($pdo, $level, $id),
         'active_users' => array_slice($activeUsers, 0, 20),
+        'active_users_period' => $window['period'],
         'price_summary' => getRegionPriceSummary($pdo, $level, $id),
         'price_trend' => getRegionPriceTrend($pdo, $level, $id),
         'related_regions' => [],

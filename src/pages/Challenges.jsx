@@ -1,13 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { MapPinned, RefreshCcw, Sparkles, Target, Timer, Trophy as TrophyGlyph } from "lucide-react";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Seo from "../components/Seo";
 import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import TeamChallengesPanel from "../components/TeamChallengesPanel";
+import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 
 const greenIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
@@ -55,6 +57,31 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const formatDistance = (from, to) => {
+  if (!from || !to) return null;
+  const lat1 = toNumberOrNull(from.lat);
+  const lon1 = toNumberOrNull(from.lon);
+  const lat2 = toNumberOrNull(to.lat);
+  const lon2 = toNumberOrNull(to.lon);
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null;
+
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const earthRadius = 6371000;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const distanceMeters = 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  if (!Number.isFinite(distanceMeters)) return null;
+  if (distanceMeters < 1000) {
+    return `${Math.round(distanceMeters)} m entfernt`;
+  }
+  return `${(distanceMeters / 1000).toFixed(1).replace(".", ",")} km entfernt`;
+};
+
 const sortChallenges = (challengeList) =>
   [...challengeList].sort((a, b) => {
     if (a.type !== b.type) return a.type === "daily" ? -1 : 1;
@@ -79,6 +106,10 @@ const normalizeChallenge = (raw) => {
     shop_address: source.shop_address ?? shop.adresse ?? shop.address ?? "",
     shop_lat: toNumberOrNull(source.shop_lat ?? shop.shop_lat ?? shop.lat ?? shop.latitude),
     shop_lon: toNumberOrNull(source.shop_lon ?? shop.shop_lon ?? shop.lon ?? shop.longitude),
+    openingHours: source.openingHours ?? shop.openingHours ?? "",
+    openingHoursStructured: source.openingHoursStructured ?? shop.openingHoursStructured ?? null,
+    opening_hours_note: source.opening_hours_note ?? shop.opening_hours_note ?? "",
+    is_open_now: source.is_open_now ?? shop.is_open_now ?? null,
   };
 };
 
@@ -118,6 +149,7 @@ function FlyToMapTarget({ target }) {
 }
 
 function Challenges() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTrophy, setSelectedTrophy] = useState(null);
   const [showTypeInfo, setShowTypeInfo] = useState(false);
   const { userId, isLoggedIn } = useUser();
@@ -134,13 +166,23 @@ function Challenges() {
   const [generating, setGenerating] = useState(false);
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [recreatingChallengeId, setRecreatingChallengeId] = useState(null);
+  const [expandedOpeningHours, setExpandedOpeningHours] = useState({});
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [locationUpdatedAt, setLocationUpdatedAt] = useState(null);
   const [mapZoom, setMapZoom] = useState(12);
   const [mapFocusTarget, setMapFocusTarget] = useState(null);
   const [countdownNowTs, setCountdownNowTs] = useState(Date.now());
   const newChallengeModalButtonRef = useRef(null);
   const trophyModalButtonRef = useRef(null);
+  const locationRef = useRef(null);
+  const activeTab = searchParams.get("tab") === "team" ? "team" : "solo";
+  const focusTeamChallengeId = searchParams.get("teamChallengeId");
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setCountdownNowTs(Date.now()), 60000);
@@ -150,6 +192,58 @@ function Challenges() {
   useEffect(() => {
     setMapZoom(difficulty === "schwer" ? 8 : difficulty === "mittel" ? 10 : 11);
   }, [difficulty]);
+
+  const applyLocationUpdate = useCallback((position) => {
+    setLocation({
+      lat: position.coords.latitude,
+      lon: position.coords.longitude,
+    });
+    setLocationAccuracy(Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null);
+    setLocationUpdatedAt(Date.now());
+    setLoadingLocation(false);
+    setLocationNotice(null);
+  }, []);
+
+  const handleLocationFailure = useCallback((geoError) => {
+    const hasKnownLocation = Boolean(locationRef.current);
+    const permissionDenied = Number(geoError?.code) === 1;
+
+    setLoadingLocation(false);
+    if (!hasKnownLocation) {
+      setLocation(null);
+      setLocationAccuracy(null);
+      setLocationUpdatedAt(null);
+    }
+
+    setLocationNotice({
+      type: permissionDenied ? "error" : "info",
+      message: permissionDenied
+        ? "Standortzugriff ist blockiert. Erlaube den Zugriff im Browser und prüfe den Standort erneut."
+        : hasKnownLocation
+          ? "Standort konnte gerade nicht aktualisiert werden. Die letzte bekannte Position wird weiter genutzt."
+          : "Standort konnte noch nicht ermittelt werden. Erlaube den Standortzugriff und prüfe den Standort erneut.",
+    });
+  }, []);
+
+  const refreshLocation = useCallback(({ silent = false } = {}) => {
+    if (!navigator.geolocation) {
+      setLoadingLocation(false);
+      setLocationNotice({
+        type: "error",
+        message: "Dein Browser unterstützt keinen Standortzugriff. Challenges können ohne Standort nicht generiert werden.",
+      });
+      return;
+    }
+
+    setLoadingLocation(true);
+    if (!silent) setLocationNotice(null);
+
+    navigator.geolocation.getCurrentPosition(
+      applyLocationUpdate,
+      handleLocationFailure,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [applyLocationUpdate, handleLocationFailure]);
 
   useEffect(() => {
     let watchId;
@@ -162,35 +256,28 @@ function Challenges() {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        setLoadingLocation(false);
-        setLocationNotice(null);
-      },
-      () => {
-        setLoadingLocation(false);
-        setLocationNotice({
-          type: "info",
-          message: "Standort konnte noch nicht ermittelt werden. Erlaube den Standortzugriff, um Challenges zu generieren.",
-        });
-      },
-      { enableHighAccuracy: false, timeout: 5000 }
-    );
+    refreshLocation({ silent: true });
 
     watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        setLocationNotice(null);
+      applyLocationUpdate,
+      (geoError) => {
+        if (!locationRef.current) handleLocationFailure(geoError);
       },
-      () => {},
-      { enableHighAccuracy: false, maximumAge: 0 }
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: 15000 }
     );
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshLocation({ silent: true });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
-  }, []);
+  }, [applyLocationUpdate, handleLocationFailure, refreshLocation]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId || !apiUrl) {
@@ -389,6 +476,40 @@ function Challenges() {
     return `${diffHours}h ${diffMinutes}min`;
   };
 
+  const getChallengeOpeningLines = (challenge) => {
+    if (!challenge) return [];
+    const structured = hydrateOpeningHours(
+      challenge.openingHoursStructured,
+      challenge.opening_hours_note || ""
+    );
+    let lines = formatOpeningHoursLines(structured);
+    if (!lines.length && challenge.openingHours) {
+      lines = challenge.openingHours.split(";").map((part) => part.trim()).filter(Boolean);
+    }
+    return lines;
+  };
+
+  const getOpeningStatus = (challenge, openingLines) => {
+    if (!openingLines.length) {
+      return { label: "Keine Öffnungszeiten", tone: "unknown" };
+    }
+    if (challenge?.is_open_now === true) {
+      return { label: "Jetzt geöffnet", tone: "open" };
+    }
+    return { label: "Geschlossen", tone: "closed" };
+  };
+
+  const toggleOpeningHours = (challengeId) => {
+    setExpandedOpeningHours((prev) => ({
+      ...prev,
+      [challengeId]: !prev[challengeId],
+    }));
+  };
+
+  const locationUpdatedLabel = locationUpdatedAt
+    ? new Date(locationUpdatedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+    : null;
+
   const activeChallenges = useMemo(() => sortChallenges(challenges.filter((challenge) => !challenge.completed)), [challenges]);
   const completedChallenges = useMemo(
     () => challenges.filter((challenge) => challenge.completed).sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0)),
@@ -407,10 +528,20 @@ function Challenges() {
   const selectedCombinationExists = activeChallenges.some(
     (challenge) => challenge.difficulty === difficulty && challenge.type === challengeType
   );
-  const stats = useMemo(
-    () => ({ active: activeChallenges.length, completed: completedChallenges.length, missing: missingCombinations.length }),
-    [activeChallenges.length, completedChallenges.length, missingCombinations.length]
-  );
+  const handleTabChange = (nextTab) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextTab === "team") nextParams.set("tab", "team");
+    else nextParams.delete("tab");
+    if (nextTab !== "team") nextParams.delete("teamChallengeId");
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleFocusChallengeHandled = () => {
+    if (!focusTeamChallengeId) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("teamChallengeId");
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <Page>
@@ -424,14 +555,18 @@ function Challenges() {
         <HeroCard>
           <HeroTitle>Challenges</HeroTitle>
           <HeroSubtitle>
-            Tägliche und wöchentliche Eis-Ziele im Stil der restlichen Ice-App: klarere Struktur, bessere Statusanzeige und direktere Aktionen.
+            Challenges schicken dich zu neuen Eisdielen und geben dir kleine Extra-Ziele für deinen nächsten Eis-Stopp. In Solo-Challenges ziehst du allein los, bei Team-Challenges lädst du andere ein und meistert die Aufgabe gemeinsam.
           </HeroSubtitle>
-          <MetaRow>
-            <MetaChip>{stats.active} aktiv</MetaChip>
-            <MetaChip>{stats.completed} abgeschlossen</MetaChip>
-            <MetaChip>{stats.missing} Kombinationen frei</MetaChip>
-          </MetaRow>
         </HeroCard>
+
+        <TabRow>
+          <TabButton type="button" $active={activeTab === "solo"} onClick={() => handleTabChange("solo")}>
+            Solo
+          </TabButton>
+          <TabButton type="button" $active={activeTab === "team"} onClick={() => handleTabChange("team")}>
+            Team
+          </TabButton>
+        </TabRow>
 
         {showNewChallengeModal && newChallenge && (
           <ModalOverlay onClick={() => setShowNewChallengeModal(false)}>
@@ -469,6 +604,17 @@ function Challenges() {
               Melde dich an, um aktive Challenges zu sehen, neue Aufgaben zu generieren und abgeschlossene Challenges als Erfolge zu sammeln.
             </BodyText>
           </SectionCard>
+        ) : activeTab === "team" ? (
+          <TeamChallengesPanel
+            userId={userId}
+            apiUrl={apiUrl}
+            location={location}
+            loadingLocation={loadingLocation}
+            locationNotice={locationNotice}
+            onRefreshLocation={refreshLocation}
+            focusChallengeId={focusTeamChallengeId}
+            onFocusChallengeHandled={handleFocusChallengeHandled}
+          />
         ) : (
           <LayoutGrid>
             <MainColumn>
@@ -493,6 +639,14 @@ function Challenges() {
                       const isExpired = new Date(ch.valid_until) <= new Date();
                       const canRecreate = !ch.recreated && !isExpired;
                       const isRecreatingThis = recreatingChallengeId != null && String(recreatingChallengeId) === String(ch.id);
+                      const openingLines = getChallengeOpeningLines(ch);
+                      const openingStatus = getOpeningStatus(ch, openingLines);
+                      const isOpeningExpanded = Boolean(expandedOpeningHours[ch.id]);
+                      const canToggleOpeningHours = openingLines.length > 0;
+                      const distanceLabel = formatDistance(
+                        location,
+                        { lat: ch.shop_lat, lon: ch.shop_lon }
+                      );
 
                       return (
                         <ChallengeCard key={ch.id} $accent={meta.color}>
@@ -507,21 +661,32 @@ function Challenges() {
                             <CleanLink to={`/map/activeShop/${ch.shop_id}`}>{ch.shop_name}</CleanLink>
                           </ChallengeName>
                           <ChallengeAddress>{ch.shop_address}</ChallengeAddress>
+                          <ChallengeOpeningHours>
+                            <OpeningHoursHeader>
+                              <OpeningStatusBadge $tone={openingStatus.tone}>
+                                {openingStatus.label}
+                              </OpeningStatusBadge>
+                              {canToggleOpeningHours && (
+                                <OpeningHoursToggle
+                                  type="button"
+                                  onClick={() => toggleOpeningHours(ch.id)}
+                                  aria-expanded={isOpeningExpanded}
+                                >
+                                  {isOpeningExpanded ? "Details ausblenden" : "Öffnungszeiten anzeigen"}
+                                </OpeningHoursToggle>
+                              )}
+                            </OpeningHoursHeader>
+                            {isOpeningExpanded && canToggleOpeningHours && (
+                              <OpeningHoursDetails>
+                                <OpeningHoursLabel>Öffnungszeiten</OpeningHoursLabel>
+                                {openingLines.map((line, index) => (
+                                  <OpeningHoursLine key={`${ch.id}-opening-${index}`}>{line}</OpeningHoursLine>
+                                ))}
+                              </OpeningHoursDetails>
+                            )}
+                          </ChallengeOpeningHours>
 
-                          <ChallengeTiles>
-                            <InfoTile>
-                              <InfoLabel>Reichweite</InfoLabel>
-                              <InfoValue>{meta.range}</InfoValue>
-                            </InfoTile>
-                            <InfoTile>
-                              <InfoLabel>Ablauf</InfoLabel>
-                              <InfoValue>{typeMeta[ch.type]?.helper || "-"}</InfoValue>
-                            </InfoTile>
-                            <InfoTile>
-                              <InfoLabel>Status</InfoLabel>
-                              <InfoValue>{isExpired ? "Abgelaufen" : "Aktiv"}</InfoValue>
-                            </InfoTile>
-                          </ChallengeTiles>
+                          {distanceLabel && <DistanceHint>{distanceLabel}</DistanceHint>}
 
                           <ChallengeBottomRow>
                             <Countdown>
@@ -633,7 +798,14 @@ function Challenges() {
                       </SummaryIcon>
                       <div>
                         <SummaryValue>{loadingLocation ? "Wird geladen" : location ? "Bereit" : "Fehlt"}</SummaryValue>
-                        <SummaryHint>{location ? "Challenge kann erzeugt werden" : "Browser-Freigabe nötig"}</SummaryHint>
+                        <SummaryHint>
+                          {location
+                            ? locationAccuracy != null
+                              ? `Genauigkeit ca. ${Math.round(locationAccuracy)} m`
+                              : "Challenge kann erzeugt werden"
+                            : "Browser-Freigabe nötig"}
+                        </SummaryHint>
+                        {locationUpdatedLabel && <SummaryMeta>Zuletzt aktualisiert um {locationUpdatedLabel}</SummaryMeta>}
                       </div>
                     </StatusCard>
                   </SelectionGroup>
@@ -641,6 +813,11 @@ function Challenges() {
 
                 <ActionArea>
                   {loadingLocation && <SmallText>Standort wird geladen...</SmallText>}
+                  {!loadingLocation && location && (
+                    <SmallText>
+                      Standort bereit{locationAccuracy != null ? `, Genauigkeit ca. ${Math.round(locationAccuracy)} m` : ""}.
+                    </SmallText>
+                  )}
                   <ButtonRow>
                     <GenerateButton
                       type="button"
@@ -667,6 +844,10 @@ function Challenges() {
                           : missingCombinations.length === 0
                             ? "Alles aktiv"
                             : "Alle fehlenden generieren"}
+                    </SecondaryButton>
+                    <SecondaryButton type="button" onClick={() => refreshLocation()} disabled={loadingLocation}>
+                      <RefreshCcw size={15} />
+                      {loadingLocation ? "Prüfe Standort..." : location ? "Standort aktualisieren" : "Standort prüfen"}
                     </SecondaryButton>
                   </ButtonRow>
                 </ActionArea>
@@ -840,11 +1021,22 @@ const HeroSubtitle = styled.p`
   line-height: 1.5;
 `;
 
-const MetaRow = styled.div`
-  margin-top: 0.8rem;
+const TabRow = styled.div`
   display: flex;
-  gap: 0.45rem;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
+`;
+
+const TabButton = styled.button`
+  padding: 0.72rem 1rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $active }) => ($active ? "rgba(255, 181, 34, 0.45)" : "rgba(47, 33, 0, 0.1)")};
+  background: ${({ $active }) => ($active ? "rgba(255, 181, 34, 0.16)" : "rgba(255, 252, 243, 0.8)")};
+  color: #2f2100;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
 `;
 
 const MetaChip = styled.span`
@@ -1021,37 +1213,84 @@ const ChallengeAddress = styled.p`
   line-height: 1.45;
 `;
 
-const ChallengeTiles = styled.div`
-  display: grid;
-  gap: 0.6rem;
-  margin-top: 0.9rem;
+const ChallengeOpeningHours = styled.div`
+  margin-top: 0.7rem;
+`;
 
-  @media (min-width: 720px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+const OpeningHoursHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+`;
+
+const OpeningStatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.68rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: ${({ $tone }) =>
+    $tone === "open" ? "#0f5132" : $tone === "closed" ? "#5f6368" : "#7a4a00"};
+  background: ${({ $tone }) =>
+    $tone === "open"
+      ? "rgba(63, 177, 117, 0.2)"
+      : $tone === "closed"
+        ? "rgba(108, 117, 125, 0.15)"
+        : "rgba(255, 181, 34, 0.18)"};
+  border: 1px solid ${({ $tone }) =>
+    $tone === "open"
+      ? "rgba(63, 177, 117, 0.32)"
+      : $tone === "closed"
+        ? "rgba(108, 117, 125, 0.22)"
+        : "rgba(255, 181, 34, 0.35)"};
+`;
+
+const OpeningHoursToggle = styled.button`
+  border: none;
+  background: transparent;
+  color: #7a4a00;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+
+  &:hover {
+    color: #5b3600;
   }
 `;
 
-const InfoTile = styled.div`
-  border-radius: 14px;
-  padding: 0.7rem 0.8rem;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(47, 33, 0, 0.08);
+const OpeningHoursDetails = styled.div`
+  margin-top: 0.55rem;
+  padding-left: 0.2rem;
 `;
 
-const InfoLabel = styled.div`
+const OpeningHoursLabel = styled.div`
   color: rgba(47, 33, 0, 0.62);
   font-size: 0.74rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
 `;
 
-const InfoValue = styled.div`
+const OpeningHoursLine = styled.div`
   color: #2f2100;
-  font-size: 0.92rem;
-  font-weight: 800;
-  margin-top: 0.2rem;
-  line-height: 1.35;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding-left: 0.65rem;
+  border-left: 2px solid rgba(255, 181, 34, 0.22);
+  margin-top: 0.28rem;
+`;
+
+const DistanceHint = styled.div`
+  margin-top: 0.7rem;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.88rem;
+  font-weight: 700;
 `;
 
 const ChallengeBottomRow = styled.div`
@@ -1283,6 +1522,13 @@ const SummaryHint = styled.div`
     font-size: 0.76rem;
     line-height: 1.25;
   }
+`;
+
+const SummaryMeta = styled.div`
+  color: rgba(47, 33, 0, 0.54);
+  font-size: 0.76rem;
+  margin-top: 0.2rem;
+  line-height: 1.3;
 `;
 
 const LegendContainer = styled.div`

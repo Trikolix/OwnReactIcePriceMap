@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/../evaluators/PhotoChallengeVoteCountEvaluator.php';
 
 $userId = isset($_POST['nutzer_id']) ? (int)$_POST['nutzer_id'] : 0;
 $matchId = isset($_POST['match_id']) ? (int)$_POST['match_id'] : 0;
@@ -79,6 +80,7 @@ try {
                 'status' => 'success',
                 'message' => 'Diese Stimme ist bereits aktiv.',
                 'vote_action' => 'unchanged',
+                'new_awards' => [],
                 'match' => [
                     'id' => $matchId,
                     'image_a_id' => $imageA,
@@ -114,11 +116,13 @@ try {
 
     $votes = getMatchVoteSummary($pdo, [$matchId]);
     $summary = summarizeMatchVotes($match, $votes);
+    $newAwards = (new PhotoChallengeVoteCountEvaluator())->evaluate($userId);
 
     echo json_encode([
         'status' => 'success',
         'message' => $voteAction === 'updated' ? 'Stimme wurde geändert.' : 'Stimme wurde gezählt.',
         'vote_action' => $voteAction,
+        'new_awards' => $newAwards,
         'match' => [
             'id' => $matchId,
             'votes_a' => $summary['votes_a'],

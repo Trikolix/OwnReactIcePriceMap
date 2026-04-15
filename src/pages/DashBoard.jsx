@@ -8,6 +8,7 @@ import RouteCard from '../components/RouteCard';
 import ShopCard from '../components/ShopCard';
 import AwardCard from '../components/AwardCard';
 import AwardBundleCard from '../components/AwardBundleCard';
+import AwardWaveCard from '../components/AwardWaveCard';
 import NewUserCard from '../components/NewUserCard';
 import { useUser } from '../context/UserContext';
 import {
@@ -145,13 +146,15 @@ function DashBoard() {
               case "group_checkin":
                 return <GroupCheckinCard key={id} checkins={data} onSuccess={reload} />;
               case 'bewertung':
-                return <ReviewCard key={`bewertung-${id}`} review={data} />;
+                return <ReviewCard key={`bewertung-${id}`} review={data} onSuccess={reload} />;
               case 'route':
                 return <RouteCard key={`route-${id}`} route={data} onSuccess={reload} />;
               case 'eisdiele':
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
               case 'award':
                 return <AwardCard key={`award-${id}`} award={data} />;
+              case 'award_wave':
+                return <AwardWaveCard key={`award-wave-${id}`} wave={data} />;
               case 'new_user':
                 return <NewUserCard key={`new-user-${id}`} user={data} />;
               case 'award_bundle': {

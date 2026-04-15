@@ -45,15 +45,20 @@ const ARRIVAL_OPTIONS = [
 ];
 
 const ARRIVAL_ICON_MAP = Object.fromEntries(ARRIVAL_OPTIONS.map((option) => [option.value, option.icon]));
+const normalizeScoreInputValue = (value) => (value == null ? "" : value);
+const normalizeRatingStars = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+};
 
 const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId, initialLocation = null }) => {
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
-    const [geschmackbewertung, setGeschmackbewertung] = useState(null);
-    const [waffelbewertung, setWaffelbewertung] = useState(null);
+    const [geschmackbewertung, setGeschmackbewertung] = useState("");
+    const [waffelbewertung, setWaffelbewertung] = useState("");
     const [größenbewertung, setGrößenbewertung] = useState(null);
-    const [preisleistungsbewertung, setPreisleistungsbewertung] = useState(null);
+    const [preisleistungsbewertung, setPreisleistungsbewertung] = useState("");
     const [kommentar, setKommentar] = useState("");
     const [anreise, setAnreise] = useState("");
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
@@ -62,6 +67,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
     const [challenges, setChallenges] = useState([]);
+    const [teamChallengeCompletion, setTeamChallengeCompletion] = useState(null);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -173,12 +179,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 setType(checkin.typ);
-                setGeschmackbewertung(checkin.geschmackbewertung);
-                setWaffelbewertung(checkin.waffelbewertung);
+                setGeschmackbewertung(normalizeScoreInputValue(checkin.geschmackbewertung));
+                setWaffelbewertung(normalizeScoreInputValue(checkin.waffelbewertung));
                 if (checkin.preisleistungsbewertung == null && checkin.größenbewertung != null) {
                     setPreisleistungsbewertung(checkin.größenbewertung);
                 } else {
-                    setPreisleistungsbewertung(checkin.preisleistungsbewertung);
+                    setPreisleistungsbewertung(normalizeScoreInputValue(checkin.preisleistungsbewertung));
                 }
                 setKommentar(checkin.kommentar);
                 setAnreise(checkin.anreise || "");
@@ -188,7 +194,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     beschreibung: b.beschreibung || "",
                     isExisting: true
                 })));
-                setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: sorte.bewertung })));
+                setSorten(checkin.eissorten.map(sorte => ({ name: sorte.sortenname, bewertung: normalizeScoreInputValue(sorte.bewertung) })));
             } catch (err) {
                 console.error("Fehler beim Laden des Checkins:", err);
             }
@@ -285,7 +291,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 if (!checkinId && !referencedCheckinId && data.checkin_id) {
                     suggestionsFound = await loadGroupSuggestions(data.checkin_id);
                 }
-                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null)) {
+                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
                             level: data.new_level,
@@ -297,6 +303,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     }
                     if (data.completed_challenge !== null) {
                         setChallenges(data.completed_challenge);
+                    }
+                    if (data.completed_team_challenge !== null) {
+                        setTeamChallengeCompletion(data.completed_team_challenge);
                     }
 
                     if (!checkinId && shouldAskForPriceUpdate(shop)) {
@@ -573,12 +582,12 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             step="0.1"
                                             min="1.0"
                                             max="5.0"
-                                            value={sorte.bewertung}
+                                            value={normalizeScoreInputValue(sorte.bewertung)}
                                             placeholder="Bewertung"
                                             onChange={(e) => handleSortenChange(index, "bewertung", e.target.value)}
                                         />
                                         <InlineSortenRating>
-                                            <Rating stars={sorte.bewertung} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(sorte.bewertung)} onRatingSelect={(value) => handleSortenChange(index, "bewertung", value.toFixed(1))} />
                                         </InlineSortenRating>
                                     </>
                                     )}
@@ -613,13 +622,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             min="1.0"
                                             max="5.0"
                                             placeholder="1.0 - 5.0"
-                                            value={geschmackbewertung}
+                                            value={normalizeScoreInputValue(geschmackbewertung)}
                                             onChange={(e) => setGeschmackbewertung(e.target.value)}
                                         />
                                     </td>
                                     <td>
                                         <TableRatingWrap>
-                                            <Rating stars={geschmackbewertung} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(geschmackbewertung)} onRatingSelect={(value) => setGeschmackbewertung(value.toFixed(1))} />
                                         </TableRatingWrap>
                                     </td>
                                 </tr>
@@ -632,13 +641,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             min="1.0"
                                             max="5.0"
                                             placeholder="1.0 - 5.0"
-                                            value={preisleistungsbewertung}
+                                            value={normalizeScoreInputValue(preisleistungsbewertung)}
                                             onChange={(e) => setPreisleistungsbewertung(e.target.value)}
                                         />
                                     </td>
                                     <td>
                                         <TableRatingWrap>
-                                            <Rating stars={preisleistungsbewertung} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(preisleistungsbewertung)} onRatingSelect={(value) => setPreisleistungsbewertung(value.toFixed(1))} />
                                         </TableRatingWrap>
                                     </td>
                                 </tr>
@@ -661,13 +670,13 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                             min="1.0"
                                             max="5.0"
                                             placeholder="1.0 - 5.0"
-                                            value={waffelbewertung}
+                                            value={normalizeScoreInputValue(waffelbewertung)}
                                             onChange={(e) => setWaffelbewertung(e.target.value)}
                                         />
                                     </td>
                                     <td>
                                         <TableRatingWrap>
-                                            <Rating stars={waffelbewertung} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} />
+                                            <Rating stars={normalizeRatingStars(waffelbewertung)} onRatingSelect={(value) => setWaffelbewertung(value.toFixed(1))} />
                                         </TableRatingWrap>
                                     </td>
                                 </tr>)}
@@ -817,6 +826,20 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 )}
                 <NewAwards awards={awards} />
                 <ChallengesAwarded challenge={challenges} />
+                {teamChallengeCompletion && (
+                    <TeamChallengeSuccessBox>
+                        <h3>Team-Challenge</h3>
+                        {teamChallengeCompletion.status === 'completed' ? (
+                            <p>
+                                Ihr habt eure Team-Challenge bei <strong>{teamChallengeCompletion.shop_name}</strong> erfolgreich abgeschlossen.
+                            </p>
+                        ) : (
+                            <p>
+                                Dein Check-in bei <strong>{teamChallengeCompletion.shop_name}</strong> wurde für die Team-Challenge gespeichert.
+                            </p>
+                        )}
+                    </TeamChallengeSuccessBox>
+                )}
             </Modal>
         </Overlay>) : null
     );
@@ -1322,4 +1345,23 @@ const SuggestionList = styled.ul`
     padding-left: 1.1rem;
     color: #4a3400;
     font-size: 0.9rem;
+`;
+
+const TeamChallengeSuccessBox = styled.div`
+    margin-top: 1rem;
+    border: 1px solid rgba(35, 165, 90, 0.25);
+    background: rgba(232, 247, 236, 0.85);
+    border-radius: 14px;
+    padding: 0.85rem 0.95rem;
+    color: #1d4d2a;
+
+    h3 {
+        margin: 0 0 0.35rem;
+        color: #185c2b;
+    }
+
+    p {
+        margin: 0;
+        line-height: 1.45;
+    }
 `;

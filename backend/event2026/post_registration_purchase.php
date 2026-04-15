@@ -143,7 +143,7 @@ try {
     $mailSent = false;
     if (!empty($owner['email'])) {
         $mailBody = "Hallo {$owner['username']},\n\n";
-        $mailBody .= "deine Zusatzbestellung fuer die Ice-Tour 2026 wurde gespeichert.\n\n";
+        $mailBody .= "deine Zusatzbestellung für die Ice-Tour 2026 wurde gespeichert.\n\n";
         $mailBody .= "Bestellung: #{$purchaseId}\n";
         $mailBody .= "Referenzcode: {$paymentRef}\n";
         $mailBody .= "Gutschein-Codes: {$giftVoucherQuantity}\n";

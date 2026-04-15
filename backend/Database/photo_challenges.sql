@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 10.35.233.205:3306
--- Erstellungszeit: 20. Mrz 2026 um 06:45
+-- Erstellungszeit: 01. Apr 2026 um 06:45
 -- Server-Version: 8.0.44
 -- PHP-Version: 8.4.17
 
@@ -50,7 +50,7 @@ CREATE TABLE `photo_challenges` (
 --
 
 INSERT INTO `photo_challenges` (`id`, `title`, `description`, `status`, `group_size`, `start_at`, `submission_deadline`, `submission_limit_per_user`, `group_schedule`, `group_advancers`, `lucky_loser_slots`, `ko_bracket_size`, `created_by`, `created_at`, `updated_at`) VALUES
-(3, 'Ice-App Fotochallenge – 1 Jahr Ice-App!', 'Ein Jahr voller Eis-Momente liegt hinter uns – jetzt suchen wir die besten Eisfotos aus der Ice-App! 🎉\r\n\r\nWähle einfach deine schönsten Bilder aus deinen bisherigen Ice-App Posts aus und reiche sie für die Challenge ein. Egal ob perfekte Kugel, beeindruckender Eisbecher oder dein Lieblingsmoment mit Eis. 🍨\r\n\r\n🏆 Es wird tolle Preise zu gewinnen geben! Auch wer nur abstimmt hat eine Chance zu gewinnen.\r\n\r\nAlso stöbere durch deine bisherigen Beiträge, reiche deine Favoriten ein und lade Freunde ein, ebenfalls mitzumachen.\r\n\r\nViel Spaß bei der Fotochallenge! 📷🍦', 'group_running', 4, '2026-03-06 09:00:00', '2026-03-14 12:00:00', 3, NULL, 2, 2, NULL, 1, '2026-03-06 08:30:41', '2026-03-14 11:36:41');
+(3, 'Ice-App Fotochallenge – 1 Jahr Ice-App!', 'Ein Jahr voller Eis-Momente liegt hinter uns – jetzt suchen wir die besten Eisfotos aus der Ice-App! 🎉\r\n\r\nWähle einfach deine schönsten Bilder aus deinen bisherigen Ice-App Posts aus und reiche sie für die Challenge ein. Egal ob perfekte Kugel, beeindruckender Eisbecher oder dein Lieblingsmoment mit Eis. 🍨\r\n\r\n🏆 Es wird tolle Preise zu gewinnen geben! Auch wer nur abstimmt hat eine Chance zu gewinnen.\r\n\r\nAlso stöbere durch deine bisherigen Beiträge, reiche deine Favoriten ein und lade Freunde ein, ebenfalls mitzumachen.\r\n\r\nViel Spaß bei der Fotochallenge! 📷🍦', 'ko_running', 4, '2026-03-06 09:00:00', '2026-03-14 12:00:00', 3, NULL, 2, 2, NULL, 1, '2026-03-06 08:30:41', '2026-03-31 23:26:10');
 
 --
 -- Indizes der exportierten Tabellen

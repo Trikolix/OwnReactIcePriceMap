@@ -30,7 +30,7 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
 
     let isCancelled = false;
     const load = async () => {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
+      setState((previous) => ({ ...previous, loading: true, error: null }));
       try {
         const data = await fetchEasterCampaignProgress();
         if (!isCancelled) {
@@ -64,14 +64,19 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
   }, [campaign, isLoggedIn]);
 
   const progress = state.data?.progress || null;
+  const totalHintsFound = progress
+    ? Number(progress.total_hints_found ?? ((progress.workshop_hint_claims || 0) + (progress.daily_hint_claims || 0)))
+    : 0;
+  const trackedHops = Number(progress?.hop_count || 0);
   const infoText = useMemo(() => {
     if (!progress) {
       return null;
     }
     if (progress.completed) {
-      return 'Das Versteck ist gefunden. Der Osterhase ist gestellt.';
+      return 'Die Werkstatt auf der Osterinsel ist gefunden. Der Secret Award ist gesichert.';
     }
-    return `Schritt ${progress.current_step} von ${progress.total_steps}. Folge dem Hasen über die Karte bis zu seinem Versteck.`;
+
+    return `Du hast den Hasen bereits ${Number(progress.hop_count || 0)} Mal aufgescheucht. Suche auf der Karte nach einem Hasen, der hinter einem Osterei hervorblinzelt, und folge seinen Spuren zur geheimen Osterwerkstatt.`;
   }, [progress]);
 
   const handleDailyHintClaim = async () => {
@@ -97,12 +102,12 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
       {campaign?.status === CAMPAIGN_STATUS.UPCOMING && (
         <>
           <Lead>
-            Der Osterhase steht schon in den Startlöchern. In der Aktion taucht er immer wieder auf der Karte auf und
-            hopst nach jedem Klick weiter. Nach fünf Stationen findest du sein Versteck und sicherst dir einen Award.
+            Der Osterhase versteckt sich waehrend der Aktion hinter Osterei-Markern auf der Karte. Wenn du ihn erwischst,
+            hopst er weiter und hinterlaesst neue Richtungs- oder Werkstatthinweise.
           </Lead>
           <SmallCard>
-            <strong>Zusatzmechanik</strong>
-            <p>Ein täglicher Hasenhinweis begleitet die Jagd und macht die Aktion auch zwischen zwei Verfolgungen interessant.</p>
+            <strong>Ziel der Jagd</strong>
+            <p>Folge den Spuren bis zur Osterinsel. Dort wartet die Osterhasenwerkstatt mit einem Secret Award.</p>
           </SmallCard>
         </>
       )}
@@ -110,7 +115,7 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
       {campaign?.status === CAMPAIGN_STATUS.ACTIVE && !isLoggedIn && (
         <>
           <Lead>
-            Der Osterhase ist aktiv. Melde dich an, damit du seine Spur auf der Karte verfolgen und den Award freischalten kannst.
+            Der Osterhase ist aktiv. Melde dich an, damit du seine Spur auf der Karte verfolgen und den Secret Award freischalten kannst.
           </Lead>
           <ActionButton type="button" onClick={onLogin}>Login / Registrieren</ActionButton>
         </>
@@ -123,28 +128,24 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
           {progress && (
             <>
               <ProgressCard $done={progress.completed}>
-                <ProgressEyebrow>{progress.completed ? 'Abgeschlossen' : 'Hasenjagd läuft'}</ProgressEyebrow>
+                <ProgressEyebrow>{progress.completed ? 'Abgeschlossen' : 'Hasenjagd laeuft'}</ProgressEyebrow>
                 <ProgressHeadline>
                   {progress.completed
-                    ? 'Das Versteck wurde gefunden'
-                    : `Schritt ${progress.current_step} von ${progress.total_steps}`}
+                    ? 'Die Osterhasenwerkstatt wurde gefunden'
+                    : `${trackedHops} Hasensprünge verfolgt`}
                 </ProgressHeadline>
                 {infoText && <Lead>{infoText}</Lead>}
                 <ProgressMeta>
-                  <span>Gefundene Hinweise: {Number(progress.daily_hint_claims || 0)}</span>
+                  <span>Hasenspruenge verfolgt: {trackedHops}</span>
+                  <span>Gefundene Hinweise: {totalHintsFound}</span>
                   <span>{progress.daily_hint_available ? 'Tageshinweis verfügbar' : 'Tageshinweis heute schon geholt'}</span>
                 </ProgressMeta>
-                {!progress.completed && (
-                  <MapCta to="/">
-                    Zur Karte und den Hasen verfolgen
-                  </MapCta>
-                )}
               </ProgressCard>
 
               <SmallCard>
                 <strong>Tageshinweis</strong>
                 <p>
-                  Ein zusätzlicher Tipp pro Tag unterstützt die Jagd. Er ist bewusst leicht gehalten und ergänzt die Verfolgung auf der Karte.
+                  Ein weiterer Tipp pro Tag hilft dir bei der Jagd. Mal führt er dich zu einer Hoppelrichtung, mal näher an die Werkstatt.
                 </p>
                 <ActionButton
                   type="button"
@@ -163,8 +164,7 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
 
       {campaign?.status === CAMPAIGN_STATUS.RESULTS && (
         <Lead>
-          Die Osteraktion ist abgeschlossen. Historische Ergebnisse oder ein Rückblick können hier später ergänzt werden,
-          die aktive Spiellogik bleibt aber aus den regulären Produktpfaden entfernt.
+          Die Osteraktion ist abgeschlossen. Die Werkstatt ist wieder im Feiertagsnebel verschwunden und die Karte laeuft ohne aktive Hasenjagd weiter.
         </Lead>
       )}
     </PanelSection>

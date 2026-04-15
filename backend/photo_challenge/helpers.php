@@ -549,6 +549,90 @@ function summarizeMatchVotes(array $match, array $voteSummary): array
     ];
 }
 
+function buildKoRoundAdvancers(array $matches, array $voteSummary): array
+{
+    $winners = [];
+    $losers = [];
+
+    foreach ($matches as $match) {
+        $summary = summarizeMatchVotes($match, $voteSummary);
+        $imageA = (int)$match['image_a_id'];
+        $imageB = (int)$match['image_b_id'];
+        $winner = $summary['winner'];
+        if ($winner === null) {
+            $winner = min($imageA, $imageB);
+        }
+
+        $loser = $winner === $imageA ? $imageB : $imageA;
+        $winnerVotes = $winner === $imageA ? $summary['votes_a'] : $summary['votes_b'];
+        $loserVotes = $winner === $imageA ? $summary['votes_b'] : $summary['votes_a'];
+
+        $winners[] = [
+            'image_id' => $winner,
+            'position' => (int)$match['position'],
+            'match_id' => (int)$match['id'],
+        ];
+        $losers[] = [
+            'image_id' => $loser,
+            'position' => (int)$match['position'],
+            'match_id' => (int)$match['id'],
+            'votes' => $loserVotes,
+            'opponent_votes' => $winnerVotes,
+            'vote_margin' => $winnerVotes - $loserVotes,
+        ];
+    }
+
+    usort($winners, fn($a, $b) => $a['position'] <=> $b['position']);
+
+    $participants = array_map(static function (array $winner): array {
+        return [
+            'image_id' => $winner['image_id'],
+            'source_position' => $winner['position'],
+            'is_lucky_loser' => false,
+        ];
+    }, $winners);
+
+    $luckyLoser = null;
+    if (count($participants) > 1 && count($participants) % 2 !== 0 && !empty($losers)) {
+        usort($losers, static function (array $a, array $b): int {
+            if ($a['votes'] !== $b['votes']) {
+                return $b['votes'] <=> $a['votes'];
+            }
+            if ($a['vote_margin'] !== $b['vote_margin']) {
+                return $a['vote_margin'] <=> $b['vote_margin'];
+            }
+            if ($a['position'] !== $b['position']) {
+                return $a['position'] <=> $b['position'];
+            }
+            return $a['image_id'] <=> $b['image_id'];
+        });
+
+        $luckyLoser = $losers[0];
+        $luckyLoserParticipant = [
+            'image_id' => $luckyLoser['image_id'],
+            'source_position' => $luckyLoser['position'],
+            'is_lucky_loser' => true,
+        ];
+
+        $winnerCount = count($winners);
+        if ($luckyLoser['position'] > (int)ceil($winnerCount / 2)) {
+            array_unshift($participants, $luckyLoserParticipant);
+        } else {
+            $participants[] = $luckyLoserParticipant;
+        }
+    }
+
+    if (count($participants) % 2 !== 0) {
+        throw new RuntimeException('Ungültige Anzahl an Teilnehmern für die nächste KO-Runde.');
+    }
+
+    return [
+        'winners' => $winners,
+        'participants' => $participants,
+        'lucky_loser' => $luckyLoser,
+    ];
+}
+
 function fetchGroupStandings(PDO $pdo, int $challengeId): array
 {
     $stmt = $pdo->prepare("

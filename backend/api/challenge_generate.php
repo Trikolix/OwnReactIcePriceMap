@@ -1,5 +1,6 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
+require_once  __DIR__ . '/../lib/opening_hours.php';
 
 try {
     $userId = $_POST['nutzer_id'] ?? null;
@@ -82,7 +83,7 @@ try {
     // Alle Eisdielen im Radius laden (inkl. Distance) und gleichzeitig prüfen, ob sie schon eine offene Challenge haben
     $stmt = $pdo->prepare("
         SELECT 
-            e.id, e.name, e.latitude, e.longitude, e.adresse,
+            e.id, e.name, e.latitude, e.longitude, e.adresse, e.openingHours, e.opening_hours_note, e.status,
             (6371000 * ACOS(
                 COS(RADIANS(:lat)) * COS(RADIANS(e.latitude)) *
                 COS(RADIANS(e.longitude) - RADIANS(:lon)) +
@@ -174,12 +175,26 @@ try {
     // Response
     // Shop-Objekt umbenennen/erweitern für Frontend-Kompatibilität
     $shopOut = $randomShop;
+    $openingRows = fetch_opening_hours_rows($pdo, (int)$randomShop['id']);
+    $openingNote = $randomShop['opening_hours_note'] ?? null;
+    if (empty($openingRows) && !empty($randomShop['openingHours'])) {
+        $parsed = parse_legacy_opening_hours($randomShop['openingHours']);
+        $openingRows = $parsed['rows'];
+        if ($openingNote === null && $parsed['note']) {
+            $openingNote = $parsed['note'];
+        }
+    }
+    $openingStructured = build_structured_opening_hours($openingRows, $openingNote);
+    $isOpenNow = is_shop_open($openingRows, null, $randomShop['status'] ?? null);
     if (isset($shopOut['latitude'])) {
         $shopOut['shop_lat'] = $shopOut['latitude'];
     }
     if (isset($shopOut['longitude'])) {
         $shopOut['shop_lon'] = $shopOut['longitude'];
     }
+    $shopOut['openingHoursStructured'] = $openingStructured;
+    $shopOut['opening_hours_note'] = $openingNote;
+    $shopOut['is_open_now'] = $isOpenNow;
     $challengeOut = [
         "id" => (int)$newChallengeId,
         "challenge_id" => (int)$newChallengeId,
@@ -193,6 +208,10 @@ try {
         "shop_address" => $randomShop['adresse'] ?? null,
         "shop_lat" => isset($randomShop['latitude']) ? (float)$randomShop['latitude'] : null,
         "shop_lon" => isset($randomShop['longitude']) ? (float)$randomShop['longitude'] : null,
+        "openingHours" => $randomShop['openingHours'] ?? null,
+        "openingHoursStructured" => $openingStructured,
+        "opening_hours_note" => $openingNote,
+        "is_open_now" => $isOpenNow,
     ];
     echo json_encode([
         "status" => "success",

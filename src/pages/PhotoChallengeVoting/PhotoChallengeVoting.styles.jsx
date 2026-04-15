@@ -117,6 +117,66 @@ export const PhasePill = styled.button`
   }
 `;
 
+export const AwardOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1400;
+  background: rgba(14, 17, 42, 0.42);
+
+  @media (max-width: 720px) {
+    padding: 0.75rem;
+  }
+`;
+
+export const AwardOverlayCard = styled.div`
+  position: relative;
+  width: min(92vw, 760px);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(255, 181, 34, 0.35);
+  border-radius: 24px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 24px 60px rgba(15, 18, 63, 0.24);
+
+  @media (max-width: 720px) {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1.5rem);
+    max-height: calc(100dvh - 1.5rem);
+    padding: 0.85rem 1rem;
+    border-radius: 20px;
+  }
+`;
+
+export const AwardOverlayClose = styled.button`
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 18, 32, 0.08);
+  color: #343248;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    background: rgba(15, 18, 32, 0.14);
+    transform: scale(1.03);
+  }
+`;
+
 export const GroupsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

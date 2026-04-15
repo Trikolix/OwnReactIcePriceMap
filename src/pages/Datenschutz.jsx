@@ -41,18 +41,34 @@ export default function Datenschutz() {
         <li>Nutzerverwaltung</li>
         <li>Darstellung von Bewertungen und Standorten</li>
         <li>Verbesserung der App</li>
+        <li>Bearbeitung von Kontaktanfragen zur Ice-Tour und zu Unterstützungsangeboten</li>
       </ul>
 
-      <SubHeading>4. Cookies & Drittanbieter</SubHeading>
+      <SubHeading>4. Kontaktformular zur Ice-Tour</SubHeading>
+      <p>
+        Wenn du uns über das Kontaktformular zur Ice-Tour schreibst, speichern wir die von dir eingegebenen Angaben
+        wie Name, E-Mail-Adresse, optionale Organisations- oder Telefonnummer und deine Nachricht, damit wir dein
+        Anliegen bearbeiten und dir antworten können.
+      </p>
+      <p>
+        Zusätzlich verarbeiten wir technische Angaben zum Schutz vor Missbrauch, insbesondere gekürzte oder gehashte
+        Informationen zu IP-Adresse und Browser sowie Sicherheitsprotokolle bei auffälligen Anfragen.
+      </p>
+      <p>
+        Die Verarbeitung erfolgt ausschließlich für die Kommunikation rund um die Ice-Tour, mögliche Partnerschaften,
+        Unterstützungsangebote und organisatorische Rückfragen.
+      </p>
+
+      <SubHeading>5. Cookies & Drittanbieter</SubHeading>
       <p>Wir verwenden Dienste wie OpenStreetMap. Dabei können Cookies eingesetzt und Daten an OpenStreetMap übermittelt werden.</p>
 
-      <SubHeading>5. Deine Rechte</SubHeading>
+      <SubHeading>6. Deine Rechte</SubHeading>
       <p>Du hast das Recht auf Auskunft, Löschung, Berichtigung und Einschränkung der Verarbeitung deiner Daten. Kontaktiere uns jederzeit unter der oben genannten E-Mail-Adresse.</p>
 
-      <SubHeading>6. Speicherung</SubHeading>
+      <SubHeading>7. Speicherung</SubHeading>
       <p>Wir speichern deine Daten nur so lange, wie es für die Nutzung der App erforderlich ist oder gesetzlich vorgeschrieben.</p>
 
-      <SubHeading>7. Einwilligung</SubHeading>
+      <SubHeading>8. Einwilligung</SubHeading>
       <p>Mit der Nutzung der App willigst du in diese Datenschutzerklärung ein.</p>
     </Container>
   );

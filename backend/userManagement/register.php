@@ -1,6 +1,7 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
 require_once  __DIR__ . '/../lib/mail.php';
+require_once  __DIR__ . '/../lib/user_notification_settings.php';
 
 // 1. Rate-Limiting prüfen
 $ipAddress = $_SERVER['REMOTE_ADDR'];
@@ -84,7 +85,8 @@ $stmt->execute([
 ]);
 // 7. Notification Settings anlegen
 $userId = $pdo->lastInsertId();
-$stmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news) VALUES (?, 1, 1, 1, ?)");
+ensureUserNotificationSettingsSchema($pdo);
+$stmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge) VALUES (?, 1, 1, 1, ?, 1)");
 $stmt->execute([$userId, $newsletterOptIn]);
 
 // 8. Bestätigungs-E-Mail senden (Multipart)

@@ -21,6 +21,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import CheckinForm from "../../CheckinForm";
+import LoginModal from "../../LoginModal";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
 import Seo from "../../components/Seo";
@@ -316,6 +317,7 @@ const MessageBox = styled.div`
 `;
 
 const PENDING_KEY = "event2026_pending_stamp_actions_v1";
+const PENDING_SCAN_KEY = "event2026_pending_qr_scan_v1";
 
 function readPendingActions() {
   try {
@@ -328,6 +330,76 @@ function readPendingActions() {
 
 function writePendingActions(actions) {
   localStorage.setItem(PENDING_KEY, JSON.stringify(actions));
+}
+
+function readPendingScan() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PENDING_SCAN_KEY) || "null");
+    if (!parsed || typeof parsed !== "object") return null;
+    const code = String(parsed.code || "").trim();
+    if (!code) return null;
+    return {
+      code,
+      mode: String(parsed.mode || "") === "test" ? "test" : "live",
+      checkpointId: Number(parsed.checkpointId || 0) || null,
+      savedAt: String(parsed.savedAt || ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writePendingScan(scan) {
+  if (!scan?.code) {
+    localStorage.removeItem(PENDING_SCAN_KEY);
+    return;
+  }
+  localStorage.setItem(PENDING_SCAN_KEY, JSON.stringify({
+    code: String(scan.code).trim(),
+    mode: String(scan.mode || "") === "test" ? "test" : "live",
+    checkpointId: Number(scan.checkpointId || 0) || null,
+    savedAt: scan.savedAt || new Date().toISOString(),
+  }));
+}
+
+function normalizeScanMode(mode) {
+  return String(mode || "") === "test" ? "test" : "live";
+}
+
+function buildEventScanKey(scan) {
+  if (!scan?.code) return "";
+  return `${normalizeScanMode(scan.mode)}:${Number(scan.checkpointId || 0)}:${String(scan.code).trim()}`;
+}
+
+function normalizeEventScanPayload(input, fallbackMode = "live") {
+  const raw = String(input || "").trim();
+  if (!raw) return null;
+
+  const buildPayload = (codeValue, modeValue, checkpointValue) => {
+    const normalizedCode = String(codeValue || "").trim();
+    if (!normalizedCode) return null;
+    return {
+      code: normalizedCode,
+      mode: normalizeScanMode(modeValue || fallbackMode),
+      checkpointId: Number(checkpointValue || 0) || null,
+    };
+  };
+
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) {
+    try {
+      const baseUrl = typeof window === "undefined" ? "https://ice-app.de" : window.location.origin;
+      const url = new URL(raw, baseUrl);
+      return buildPayload(
+        url.searchParams.get("scan") || url.searchParams.get("code") || "",
+        url.searchParams.get("mode") || fallbackMode,
+        url.searchParams.get("checkpoint") || ""
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  return buildPayload(raw, fallbackMode, null);
 }
 
 function checkpointStatus(checkpoint, pendingMap) {
@@ -626,6 +698,20 @@ export default function EventStampCard() {
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingScan, setPendingScan] = useState(() => readPendingScan());
+  const [scanContext, setScanContext] = useState(null);
+  const queryScanKeyRef = useRef("");
+  const pendingScanKeyRef = useRef("");
+
+  const queryScan = useMemo(() => {
+    if (!searchParams.get("scan")) return null;
+    return normalizeEventScanPayload(
+      `/event-stamp-card?${searchParams.toString()}`,
+      requestedMode
+    );
+  }, [requestedMode, searchParams]);
+  const hasExternalScanContext = Boolean(queryScan || pendingScan);
 
   useEffect(() => {
     if (requestedMode === "test" && !isAdmin) {
@@ -658,7 +744,9 @@ export default function EventStampCard() {
             setSearchParams({ mode: "live" }, { replace: true });
             return;
           }
-          navigate("/event-me");
+          if (!hasExternalScanContext) {
+            navigate("/event-me");
+          }
           return;
         }
         if (!response.ok || json.status !== "success") {
@@ -682,7 +770,7 @@ export default function EventStampCard() {
     return () => {
       cancelled = true;
     };
-  }, [apiBase, authToken, isLoggedIn, mode, navigate, refreshNonce, setSearchParams]);
+  }, [apiBase, authToken, hasExternalScanContext, isLoggedIn, mode, navigate, refreshNonce, setSearchParams]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -756,6 +844,22 @@ export default function EventStampCard() {
   const startFinishDistance = locationState.coords
     ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, startFinish.lat, startFinish.lng)
     : null;
+
+  const storePendingQrScan = (scan) => {
+    const nextScan = {
+      code: String(scan.code || "").trim(),
+      mode: normalizeScanMode(scan.mode || mode),
+      checkpointId: Number(scan.checkpointId || 0) || null,
+      savedAt: scan.savedAt || new Date().toISOString(),
+    };
+    writePendingScan(nextScan);
+    setPendingScan(nextScan);
+  };
+
+  const clearPendingQrScan = () => {
+    writePendingScan(null);
+    setPendingScan(null);
+  };
 
   const updateCheckpointLocally = (checkpointId, nextValues) => {
     setData((current) => {
@@ -852,6 +956,23 @@ export default function EventStampCard() {
     }
   };
 
+  const openCheckinFromScan = (checkpointLike) => {
+    if (!checkpointLike?.shop_id) {
+      setMessage({ tone: "error", text: "Für diesen Ice-Tour QR-Code ist keine Eisdiele hinterlegt." });
+      return;
+    }
+    setCheckinTarget({
+      checkpointId: checkpointLike.id || null,
+      shopId: checkpointLike.shop_id,
+      shopName: checkpointLike.shop_name || checkpointLike.name,
+      checkinId: null,
+      initialLocation: locationState.coords
+        ? { lat: locationState.coords.lat, lon: locationState.coords.lng }
+        : null,
+    });
+    setShowCheckinForm(true);
+  };
+
   const refreshLocation = () => {
     if (!navigator.geolocation) {
       setLocationState((current) => ({ ...current, error: "Dein Browser unterstützt keine Standortfreigabe." }));
@@ -936,11 +1057,16 @@ export default function EventStampCard() {
       setMessage({ tone: "info", text: "Dieser Abschluss-Checkpoint wird erst nach allen Pflichtstopps freigeschaltet." });
       return;
     }
+    const normalizedScan = normalizeEventScanPayload(qrCode, mode);
+    if (!normalizedScan?.code) {
+      setMessage({ tone: "error", text: "QR-Code konnte nicht verarbeitet werden." });
+      return;
+    }
     const action = {
       checkpoint_id: checkpoint.id,
       mode,
       source: "qr_scan",
-      qr_code: qrCode,
+      qr_code: normalizedScan.code,
       qr_code_id: checkpoint.qr_code_id,
       shop_id: checkpoint.shop_id,
       queued_at: new Date().toISOString(),
@@ -960,6 +1086,109 @@ export default function EventStampCard() {
       };
       setCheckinTarget(nextTarget);
       setStampSuccessPrompt(nextTarget);
+    }
+  };
+
+  const resolveExternalScan = async (scan) => {
+    if (!apiBase || !scan?.code) return null;
+
+    const params = new URLSearchParams({ code: scan.code });
+    if (scan.mode) {
+      params.set("mode", normalizeScanMode(scan.mode));
+    }
+
+    const response = await fetch(`${apiBase}/event2026/qr_lookup.php?${params.toString()}`, {
+      headers: {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+    });
+    const json = await response.json();
+    if (!response.ok || json.status !== "success") {
+      throw new Error(json.message || "QR-Code konnte nicht aufgelöst werden.");
+    }
+    return json;
+  };
+
+  const processExternalScan = async (incomingScan) => {
+    const normalizedScan = normalizeEventScanPayload(incomingScan?.code ? incomingScan.code : incomingScan, incomingScan?.mode || mode);
+    const scan = normalizedScan
+      ? {
+        ...normalizedScan,
+        checkpointId: Number(incomingScan?.checkpointId || normalizedScan.checkpointId || 0) || null,
+      }
+      : null;
+
+    if (!scan?.code) {
+      setMessage({ tone: "error", text: "QR-Code konnte nicht verarbeitet werden." });
+      return;
+    }
+
+    try {
+      const lookup = await resolveExternalScan(scan);
+      const checkpoint = lookup?.checkpoint || null;
+      if (!checkpoint) {
+        throw new Error("Checkpoint zum QR-Code konnte nicht geladen werden.");
+      }
+
+      setScanContext({
+        checkpointId: checkpoint.id,
+        shopId: checkpoint.shop_id,
+        shopName: checkpoint.shop_name,
+        checkpointName: checkpoint.name,
+        mode: checkpoint.mode,
+        qrCode: checkpoint.qr_code,
+      });
+
+      if (!isLoggedIn) {
+        storePendingQrScan({
+          code: checkpoint.qr_code,
+          mode: checkpoint.mode,
+          checkpointId: checkpoint.id,
+        });
+        setMessage({
+          tone: "info",
+          text: `Du hast einen QR-Code der Ice-Tour bei ${checkpoint.shop_name} gescannt. Wenn du Teilnehmer bist, logge dich bitte ein, damit der Checkpoint direkt übertragen wird. Wenn nicht, schau dir gern die Ice-App und das Spendenprojekt Ice-Tour an.`,
+        });
+        return;
+      }
+
+      if (lookup.user?.has_event_registration) {
+        clearPendingQrScan();
+        const action = {
+          checkpoint_id: checkpoint.id,
+          mode: checkpoint.mode,
+          source: "qr_scan",
+          qr_code: checkpoint.qr_code,
+          qr_code_id: checkpoint.qr_code_id,
+          shop_id: checkpoint.shop_id,
+          queued_at: new Date().toISOString(),
+          lat: locationState.coords?.lat || null,
+          lng: locationState.coords?.lng || null,
+        };
+        const result = await submitStampAction(action);
+        if (result?.success) {
+          const nextTarget = {
+            checkpointId: checkpoint.id,
+            shopId: checkpoint.shop_id,
+            shopName: checkpoint.shop_name || checkpoint.name,
+            checkinId: null,
+            initialLocation: locationState.coords
+              ? { lat: locationState.coords.lat, lon: locationState.coords.lng }
+              : null,
+          };
+          setCheckinTarget(nextTarget);
+          setStampSuccessPrompt(nextTarget);
+        }
+        return;
+      }
+
+      clearPendingQrScan();
+      setMessage({
+        tone: "info",
+        text: `Du hast einen Ice-Tour Checkpoint bei ${checkpoint.shop_name} gescannt, bist aber nicht für die Ice-Tour registriert. Du kannst trotzdem gern einen normalen Eis-Check-in anlegen.`,
+      });
+    } catch (scanError) {
+      setMessage({ tone: "error", text: scanError.message || "QR-Code konnte nicht verarbeitet werden." });
     }
   };
 
@@ -986,6 +1215,27 @@ export default function EventStampCard() {
     if (syncing || !pendingActions.some((item) => item.mode === mode)) return;
     syncPending();
   }, [mode, pendingActions, syncing]);
+
+  useEffect(() => {
+    if (!queryScan) return;
+    const key = buildEventScanKey(queryScan);
+    if (!key || queryScanKeyRef.current === key) return;
+    queryScanKeyRef.current = key;
+    processExternalScan(queryScan).finally(() => {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("scan");
+      nextParams.delete("checkpoint");
+      setSearchParams(nextParams, { replace: true });
+    });
+  }, [queryScan, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !pendingScan) return;
+    const key = buildEventScanKey(pendingScan);
+    if (!key || pendingScanKeyRef.current === key) return;
+    pendingScanKeyRef.current = key;
+    processExternalScan(pendingScan);
+  }, [isLoggedIn, pendingScan]);
 
   const renderCheckpointCard = (checkpoint, options = {}) => {
     const passed = isCheckpointComplete(checkpoint);
@@ -1139,10 +1389,18 @@ export default function EventStampCard() {
             <div>
               <VerifyBadge>
                 <ShieldCheck size={16} />
-                Offizieller Teilnehmer
+                {data ? "Offizieller Teilnehmer" : "Ice-Tour QR-Scan"}
               </VerifyBadge>
-              <Title>{mode === "test" ? "Test-Stempelkarte" : "Event-Stempelkarte"}</Title>
-              <Intro>Zum Vorzeigen bei der Eisdiele und als kompakte Übersicht für deine Tour.</Intro>
+              <Title>
+                {data
+                  ? (mode === "test" ? "Test-Stempelkarte" : "Event-Stempelkarte")
+                  : "Ice-Tour Checkpoint"}
+              </Title>
+              <Intro>
+                {data
+                  ? "Zum Vorzeigen bei der Eisdiele und als kompakte Übersicht für deine Tour."
+                  : "QR-Scans der Ice-Tour werden hier verarbeitet, bestätigt oder nach dem Login automatisch nachgereicht."}
+              </Intro>
             </div>
             {isAdmin && (
               <CompactRow style={{ justifyContent: "flex-end" }}>
@@ -1152,41 +1410,92 @@ export default function EventStampCard() {
             )}
           </CompactRow>
 
-          <IdentityGrid>
-            <IdentityCard>
-              <Label>Nutzername</Label>
-              <Value><UserRound size={17} />{username || "-"}</Value>
-            </IdentityCard>
-            <IdentityCard>
-              <Label>Teilnehmer</Label>
-              <Value>{data?.slot?.full_name || "-"}</Value>
-            </IdentityCard>
-            <IdentityCard>
-              <Label>Strecke</Label>
-              <Value>
-                <Flag size={17} />
-                {data?.slot ? formatRouteLabelWithDistance(data.slot.route_key, data.slot.distance_km) : "-"}
-              </Value>
-            </IdentityCard>
-          </IdentityGrid>
+          {data ? (
+            <>
+              <IdentityGrid>
+                <IdentityCard>
+                  <Label>Nutzername</Label>
+                  <Value><UserRound size={17} />{username || "-"}</Value>
+                </IdentityCard>
+                <IdentityCard>
+                  <Label>Teilnehmer</Label>
+                  <Value>{data?.slot?.full_name || "-"}</Value>
+                </IdentityCard>
+                <IdentityCard>
+                  <Label>Strecke</Label>
+                  <Value>
+                    <Flag size={17} />
+                    {data?.slot ? formatRouteLabelWithDistance(data.slot.route_key, data.slot.distance_km) : "-"}
+                  </Value>
+                </IdentityCard>
+              </IdentityGrid>
 
-          <ProgressBar>
-            <ProgressTrack>
-              <ProgressFill $value={progressRatio} />
-            </ProgressTrack>
-            <ProgressText>{completedMandatoryCount} / {mandatoryPrimaryCheckpoints.length} Pflichtstopps</ProgressText>
-          </ProgressBar>
+              <ProgressBar>
+                <ProgressTrack>
+                  <ProgressFill $value={progressRatio} />
+                </ProgressTrack>
+                <ProgressText>{completedMandatoryCount} / {mandatoryPrimaryCheckpoints.length} Pflichtstopps</ProgressText>
+              </ProgressBar>
+            </>
+          ) : (
+            <IdentityGrid>
+              <IdentityCard>
+                <Label>Scan-Status</Label>
+                <Value>{scanContext ? "Ice-Tour QR erkannt" : "Bereit für QR-Scans"}</Value>
+              </IdentityCard>
+              <IdentityCard>
+                <Label>Nutzerkonto</Label>
+                <Value><UserRound size={17} />{isLoggedIn ? (username || `Nutzer ${userId}`) : "Nicht eingeloggt"}</Value>
+              </IdentityCard>
+              <IdentityCard>
+                <Label>Checkpoint</Label>
+                <Value>{scanContext?.shopName || "Wird nach dem Scan angezeigt"}</Value>
+              </IdentityCard>
+            </IdentityGrid>
+          )}
 
           <ActionRow>
-            <Button type="button" $secondary onClick={() => setShowInfoSheet(true)}>
-              <Info size={16} />
-              Infos
-              <ChevronDown size={16} />
-            </Button>
-            <Button type="button" onClick={refreshLocation} disabled={locationState.loading}>
-              {locationState.loading ? <LoaderCircle size={16} /> : <Compass size={16} />}
-              Standort prüfen
-            </Button>
+            {data ? (
+              <>
+                <Button type="button" $secondary onClick={() => setShowInfoSheet(true)}>
+                  <Info size={16} />
+                  Infos
+                  <ChevronDown size={16} />
+                </Button>
+                <Button type="button" onClick={refreshLocation} disabled={locationState.loading}>
+                  {locationState.loading ? <LoaderCircle size={16} /> : <Compass size={16} />}
+                  Standort prüfen
+                </Button>
+              </>
+            ) : (
+              <>
+                {!isLoggedIn && (
+                  <Button type="button" onClick={() => setShowLoginModal(true)}>
+                    Einloggen
+                  </Button>
+                )}
+                {scanContext?.shopId && (
+                  <Button
+                    type="button"
+                    $secondary
+                    onClick={() => openCheckinFromScan({
+                      id: scanContext.checkpointId,
+                      shop_id: scanContext.shopId,
+                      shop_name: scanContext.shopName,
+                      name: scanContext.checkpointName,
+                    })}
+                    disabled={!isLoggedIn}
+                  >
+                    <Plus size={16} />
+                    Eis einchecken
+                  </Button>
+                )}
+                <InlineLink to="/ice-tour">
+                  <ExternalLink size={15} />
+                  Zur Ice-Tour
+                </InlineLink>
+              </>
+            )}
           </ActionRow>
 
           {locationState.error && <MessageBox $tone="error">{locationState.error}</MessageBox>}
@@ -1194,11 +1503,11 @@ export default function EventStampCard() {
           {message && <MessageBox $tone={message.tone}>{message.text}</MessageBox>}
         </PassCard>
 
-        {!isLoggedIn && <Card><SectionText style={{ margin: 0 }}>Bitte logge dich ein, um deine Event-Stempelkarte zu öffnen.</SectionText></Card>}
+        {!isLoggedIn && !scanContext && <Card><SectionText style={{ margin: 0 }}>Bitte logge dich ein, um deine Event-Stempelkarte zu öffnen.</SectionText></Card>}
         {loading && <Card><SectionText style={{ margin: 0 }}>Stempelkarte wird geladen...</SectionText></Card>}
         {error && <Card><MessageBox $tone="error" style={{ marginTop: 0 }}>{error}</MessageBox></Card>}
 
-        {!loading && !error && (
+        {!loading && !error && data && (
           <Card>
             <SectionTitle>Deine Tour-Checkpoints</SectionTitle>
             <SectionText>
@@ -1330,6 +1639,10 @@ export default function EventStampCard() {
             });
           }}
         />
+      )}
+
+      {showLoginModal && (
+        <LoginModal setShowLoginModal={setShowLoginModal} />
       )}
 
       <Footer />

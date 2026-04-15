@@ -44,7 +44,8 @@ try {
     $round = (int)$roundRow;
 
     $stmt = $pdo->prepare("
-        SELECT * FROM photo_challenge_matches
+        SELECT *
+        FROM photo_challenge_matches
         WHERE challenge_id = :challenge_id AND phase = 'ko' AND round = :round
         ORDER BY position ASC
     ");
@@ -68,28 +69,27 @@ try {
         WHERE id = :id
     ");
 
-    $winners = [];
     foreach ($matches as $match) {
         if ($match['status'] !== 'open') {
             throw new RuntimeException('Mindestens ein Match dieser Runde ist bereits geschlossen.');
         }
+
         $summary = summarizeMatchVotes($match, $voteSummary);
         $winner = $summary['winner'];
         if ($winner === null) {
             $winner = min((int)$match['image_a_id'], (int)$match['image_b_id']);
         }
+
         $updateMatch->execute([
             'winner' => $winner,
             'id' => $match['id'],
         ]);
-        $winners[] = [
-            'image_id' => $winner,
-            'position' => (int)$match['position'],
-        ];
     }
 
-    usort($winners, fn($a, $b) => $a['position'] <=> $b['position']);
-    $winnerIds = array_column($winners, 'image_id');
+    $advancement = buildKoRoundAdvancers($matches, $voteSummary);
+    $winnerIds = array_column($advancement['winners'], 'image_id');
+    $nextRoundParticipants = $advancement['participants'];
+    $luckyLoser = $advancement['lucky_loser'];
     $nextRound = $round + 1;
 
     if (count($winnerIds) < 2) {
@@ -105,10 +105,6 @@ try {
         return;
     }
 
-    if (count($winnerIds) % 2 !== 0) {
-        throw new RuntimeException('Ungültige Anzahl an Gewinnern – KO-Raster nicht fortsetzbar.');
-    }
-
     $insertMatch = $pdo->prepare("
         INSERT INTO photo_challenge_matches
             (challenge_id, phase, round, group_id, position, image_a_id, image_b_id, status)
@@ -116,24 +112,39 @@ try {
             (:challenge_id, 'ko', :round, NULL, :position, :image_a, :image_b, 'open')
     ");
     $position = 1;
-    for ($i = 0; $i < count($winnerIds); $i += 2) {
+    for ($i = 0; $i < count($nextRoundParticipants); $i += 2) {
         $insertMatch->execute([
             'challenge_id' => $challengeId,
             'round' => $nextRound,
             'position' => $position++,
-            'image_a' => $winnerIds[$i],
-            'image_b' => $winnerIds[$i + 1],
+            'image_a' => $nextRoundParticipants[$i]['image_id'],
+            'image_b' => $nextRoundParticipants[$i + 1]['image_id'],
         ]);
     }
 
     $pdo->commit();
 
+    $message = 'KO-Runde abgeschlossen und nächste Runde angelegt.';
+    if ($luckyLoser) {
+        $message = sprintf(
+            'KO-Runde abgeschlossen. Bild #%d zieht als Lucky Loser in Runde %d ein.',
+            (int)$luckyLoser['image_id'],
+            $nextRound
+        );
+    }
+
     echo json_encode([
         'status' => 'success',
-        'message' => 'KO-Runde abgeschlossen und nächste Runde angelegt.',
+        'message' => $message,
         'next_round_created' => true,
         'round_closed' => $round,
         'next_round' => $nextRound,
+        'lucky_loser' => $luckyLoser ? [
+            'image_id' => (int)$luckyLoser['image_id'],
+            'votes' => (int)$luckyLoser['votes'],
+            'opponent_votes' => (int)$luckyLoser['opponent_votes'],
+            'source_position' => (int)$luckyLoser['position'],
+        ] : null,
     ]);
 } catch (RuntimeException $e) {
     if ($pdo->inTransaction()) {
@@ -155,4 +166,3 @@ try {
         'details' => $e->getMessage(),
     ]);
 }
-

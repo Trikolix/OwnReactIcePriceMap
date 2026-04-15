@@ -12,19 +12,23 @@ export const describeRoundByParticipants = (count) => {
 };
 
 export const useKoRoundLabel = (overview) => {
-  const firstRoundParticipants = useMemo(() => {
-    const firstRoundMatches = (overview?.ko_matches || []).filter((match) => (Number(match.round) || 0) === 1);
-    return firstRoundMatches.length * 2;
+  const participantsByRound = useMemo(() => {
+    const map = new Map();
+    (overview?.ko_matches || []).forEach((match) => {
+      const round = Number(match.round) || 0;
+      if (round <= 0) return;
+      map.set(round, (map.get(round) || 0) + 2);
+    });
+    return map;
   }, [overview?.ko_matches]);
 
   return useCallback(
     (roundNumber) => {
-      if (!firstRoundParticipants) return `KO-Runde ${roundNumber}`;
-      const divisor = Math.max(0, roundNumber - 1);
-      const participants = Math.max(1, Math.floor(firstRoundParticipants / 2 ** divisor));
+      const participants = participantsByRound.get(roundNumber);
+      if (!participants) return `KO-Runde ${roundNumber}`;
       return describeRoundByParticipants(participants) || `KO-Runde ${roundNumber}`;
     },
-    [firstRoundParticipants]
+    [participantsByRound]
   );
 };
 

@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
@@ -7,90 +7,118 @@ import CommentSection from "./CommentSection";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from "../styles/SharedStyles";
 import UserAvatar from "./UserAvatar";
 import { MessageCircle } from "lucide-react";
+import SubmitReviewModal from "../SubmitReviewModal";
 
-const ReviewCard = ({ review, setShowReviewForm, showComments = false }) => {
+const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false }) => {
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
+  const [showEditModal, setShowEditModal] = useState(false);
   const activityDate = review.aktivitaet_am || review.erstellt_am;
   const isEditedActivity = review.activity_type === "edit";
   const parsedActivityDate = new Date(activityDate);
   const hasValidActivityDate = !Number.isNaN(parsedActivityDate.getTime());
+  const isOwner = Number(review.nutzer_id) === Number(userId);
+  const reviewShop = useMemo(() => ({
+    eisdiele: {
+      id: review.eisdiele_id,
+      name: review.eisdiele_name,
+    },
+    preise: review.preise ?? {},
+  }), [review.eisdiele_id, review.eisdiele_name, review.preise]);
 
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString("de-DE");
+  const handleEditClick = () => {
+    if (setShowReviewForm) {
+      setShowReviewForm(true);
+      return;
+    }
+
+    setShowEditModal(true);
+  };
 
   return (
-    <Card>
-      <CardMetaRow>
-        <DateText dateTime={activityDate}>
-          {isEditedActivity ? "Bearbeitet: " : ""}
-          {hasValidActivityDate ? parsedActivityDate.toLocaleDateString("de-DE", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          }) : "Unbekannt"}
-        </DateText>
-      </CardMetaRow>
-      <Header>
-        <UserAvatar
-          userId={review.nutzer_id}
-          name={review.nutzer_name}
-          avatarUrl={review.avatar_url}
-        />
-        <HeaderText>
-          <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
-          <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
-        </HeaderText>
-      </Header>
-      <StyledContentWrapper>
-        <LeftContent>
-          <Table>
-            {review.auswahl !== null && (
-              <tr>
-                <th>Auswahl:</th>
-                <td>
-                  ~<strong>{review.auswahl}</strong> Sorten
-                </td>
-              </tr>
+    <>
+      <Card>
+        <CardMetaRow>
+          <DateText dateTime={activityDate}>
+            {isEditedActivity ? "Bearbeitet: " : ""}
+            {hasValidActivityDate ? parsedActivityDate.toLocaleDateString("de-DE", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            }) : "Unbekannt"}
+          </DateText>
+        </CardMetaRow>
+        <Header>
+          <UserAvatar
+            userId={review.nutzer_id}
+            name={review.nutzer_name}
+            avatarUrl={review.avatar_url}
+          />
+          <HeaderText>
+            <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}
+            <strong><CleanLink to={`/map/activeShop/${review.eisdiele_id}`}>{review.eisdiele_name}</CleanLink></strong> bewertet.{" "}
+          </HeaderText>
+        </Header>
+        <StyledContentWrapper>
+          <LeftContent>
+            <Table>
+              {review.auswahl !== null && (
+                <tr>
+                  <th>Auswahl:</th>
+                  <td>
+                    ~<strong>{review.auswahl}</strong> Sorten
+                  </td>
+                </tr>
+              )}
+            </Table>
+
+            {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
+
+            {review.attributes?.length > 0 && (
+              <AttributeSection>
+                {review.attributes.map((attr, i) => (
+                  <AttributeBadge key={i}>{attr}</AttributeBadge>
+                ))}
+              </AttributeSection>
             )}
-          </Table>
+            {isOwner && (
+              <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
+            )}
+          </LeftContent>
+          <MediaColumn>
+            {review.bilder?.length > 0 && (
+              <ImageGalleryWithLightbox
+                images={review.bilder.map(b => ({
+                  url: `https://ice-app.de/${b.url}`,
+                  beschreibung: b.beschreibung
+                }))}
+                fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
+              />
+            )}
 
-          {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
+          </MediaColumn>
+        </StyledContentWrapper>
+        <CommentToggle
+          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+        >
+          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {review.commentCount || 0} Kommentar(e)
+        </CommentToggle>
+        {areCommentsVisible && <CommentSection bewertungId={review.id} />}
+      </Card>
 
-          {review.attributes?.length > 0 && (
-            <AttributeSection>
-              {review.attributes.map((attr, i) => (
-                <AttributeBadge key={i}>{attr}</AttributeBadge>
-              ))}
-            </AttributeSection>
-          )}
-          {Number(review.nutzer_id) === Number(userId) && setShowReviewForm && (
-            <SamllerSubmitButton onClick={() => setShowReviewForm(true)}>Bearbeiten</SamllerSubmitButton>
-          )}
-        </LeftContent>
-        <MediaColumn>
-          {review.bilder?.length > 0 && (
-            <ImageGalleryWithLightbox
-              images={review.bilder.map(b => ({
-                url: `https://ice-app.de/${b.url}`,
-                beschreibung: b.beschreibung
-              }))}
-              fallbackTitle={`Bild von ${review.nutzer_name} für ${review.eisdiele_name}`}
-            />
-          )}
-
-        </MediaColumn>
-      </StyledContentWrapper>
-      <CommentToggle
-        title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-        onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-      >
-        <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {review.commentCount || 0} Kommentar(e)
-      </CommentToggle>
-      {areCommentsVisible && <CommentSection bewertungId={review.id} />}
-    </Card>
+      {showEditModal && (
+        <SubmitReviewModal
+          shop={reviewShop}
+          userId={userId}
+          showForm={showEditModal}
+          setShowForm={setShowEditModal}
+          onSuccess={onSuccess}
+        />
+      )}
+    </>
   );
 };
 

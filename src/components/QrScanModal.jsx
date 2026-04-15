@@ -46,13 +46,13 @@ export default function QrScanModal({ open, onClose, data, needsLogin }) {
   return (
     <Overlay>
       <ModalBox>
-        <Icon src={`https://ice-app.de/${data.icon}`} alt={data.name} />
+        {data.icon && <Icon src={`https://ice-app.de/${data.icon}`} alt={data.name} />}
         <Title>{data.name}</Title>
         <Description>{data.description}</Description>
         <StatusMessage $needsLogin={needsLogin}>
-          {needsLogin
+          {data.statusMessage || (needsLogin
             ? "Bitte logge dich ein oder registriere dich, um den Scan zu speichern."
-            : "Scan erfolgreich gespeichert!"}
+            : "Scan erfolgreich gespeichert!")}
         </StatusMessage>
         <CloseButton onClick={onClose}>Schließen</CloseButton>
       </ModalBox>

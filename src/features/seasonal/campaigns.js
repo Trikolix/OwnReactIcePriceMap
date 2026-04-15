@@ -79,10 +79,15 @@ export const seasonalCampaignDefinitions = [
     teaserIcon: '/assets/easter-bunny.png',
     headerLogo: headerWideEaster,
     schedule: EASTER_WINDOWS[2026],
+    mapRules: {
+      bunnyMinZoom: 11,
+      workshopMinZoom: 6,
+    },
     api: {
       progress: '/api/easter_bunny_progress.php',
       hop: '/api/easter_bunny_hop.php',
       dailyHint: '/api/easter_bunny_daily_hint.php',
+      workshopDiscover: '/api/easter_workshop_discover.php',
     },
     getStatus(now = new Date()) {
       const yearWindow = EASTER_WINDOWS[now.getFullYear()];

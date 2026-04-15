@@ -8,9 +8,12 @@ import EventMyRegistration from "../../pages/Event/EventMyRegistration";
 import EventRegistrationSummary from "../../pages/Event/EventRegistrationSummary";
 import EventStampCard from "../../pages/Event/EventStampCard";
 import EventAdminOverview from "../../pages/Event/EventAdminOverview";
+import EventSupportPage from "../../pages/Event/EventSupportPage";
 
 export const eventRoutes = [
   { path: "/ice-tour", element: <RadEvent /> },
+  { path: "/ice-tour-2026.html", element: <Navigate to="/ice-tour" replace /> },
+  { path: "/ice-tour-unterstuetzen", element: <EventSupportPage /> },
   { path: "/rad-event", element: <Navigate to="/ice-tour" replace /> },
   { path: "/eis-tour", element: <Navigate to="/ice-tour" replace /> },
   { path: "/event-registration", element: <EventRegistration /> },

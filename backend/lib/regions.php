@@ -225,7 +225,7 @@ function getRegionPriceSummary(PDO $pdo, string $level, int $id): array
             'id' => (int)$row['eisdiele_id'],
             'name' => $row['name'],
             'preis' => (float)$row['preis'],
-        ], array_slice($rows, 0, 3)),
+        ], array_slice($rows, 0, 50)),
         'popular_shops' => getRegionPopularShops($pdo, $level, $id),
     ];
 }
@@ -243,7 +243,7 @@ function getRegionPopularShops(PDO $pdo, string $level, int $id): array
          GROUP BY e.id, e.name
          HAVING checkin_count > 0
          ORDER BY checkin_count DESC, e.name ASC
-         LIMIT 3"
+         LIMIT 50"
     );
 
     return array_map(static fn(array $row): array => [

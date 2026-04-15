@@ -56,14 +56,39 @@ const formatDistributionLabel = (entry, fallbackKey, fallbackValue) => ({
   value: Number(entry?.anzahl) || 0,
 });
 
+const renderPieValueLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
+  if (!value) {
+    return null;
+  }
+
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+  const x = cx + radius * Math.cos((-midAngle * Math.PI) / 180);
+  const y = cy + radius * Math.sin((-midAngle * Math.PI) / 180);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#2d2118"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={800}
+    >
+      {value}
+    </text>
+  );
+};
+
 function AdminWeeklyStats() {
   const { userId, isLoggedIn } = useUser();
   const [weeks, setWeeks] = useState([]);
+  const [selectedWeekKey, setSelectedWeekKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
-  const isAdmin = Number(userId) === 1;
+  const isAdmin = [1, 2].includes(Number(userId));
 
   useEffect(() => {
     if (!isLoggedIn || !isAdmin || !apiUrl) {
@@ -118,34 +143,65 @@ function AdminWeeklyStats() {
       gesamt_eisdielen: Number(week.gesamt_eisdielen) || 0,
       gesamt_checkins: Number(week.gesamt_checkins) || 0,
       gesamt_nutzer: Number(week.gesamt_nutzer) || 0,
+      laender_mit_checkins: Number(week.laender_mit_checkins) || 0,
     }))
   ), [weeks]);
 
-  const latestWeek = weeks.length > 0 ? weeks[weeks.length - 1] : null;
+  useEffect(() => {
+    if (!weeks.length) {
+      setSelectedWeekKey('');
+      return;
+    }
 
-  const latestCheckinTypeData = useMemo(() => (
-    parseDistribution(latestWeek?.verteilung_checkins_typ).map((entry) =>
+    setSelectedWeekKey((current) => {
+      if (current && weeks.some((week) => String(week.id) === current)) {
+        return current;
+      }
+      return String(weeks[weeks.length - 1].id);
+    });
+  }, [weeks]);
+
+  const selectedWeek = useMemo(() => {
+    if (!weeks.length) return null;
+    return weeks.find((week) => String(week.id) === selectedWeekKey) || weeks[weeks.length - 1];
+  }, [selectedWeekKey, weeks]);
+
+  const selectedCheckinTypeData = useMemo(() => (
+    parseDistribution(selectedWeek?.verteilung_checkins_typ).map((entry) =>
       formatDistributionLabel(entry, 'typ', 'Unbekannt')
     )
-  ), [latestWeek]);
+  ), [selectedWeek]);
 
-  const latestTravelData = useMemo(() => (
-    parseDistribution(latestWeek?.verteilung_anreise).map((entry) =>
+  const selectedTravelData = useMemo(() => (
+    parseDistribution(selectedWeek?.verteilung_anreise).map((entry) =>
       formatDistributionLabel(entry, 'anreise', 'Unbekannt')
     )
-  ), [latestWeek]);
+  ), [selectedWeek]);
 
-  const latestImageData = useMemo(() => (
-    parseDistribution(latestWeek?.verteilung_bild).map((entry) =>
+  const selectedImageData = useMemo(() => (
+    parseDistribution(selectedWeek?.verteilung_bild).map((entry) =>
       formatDistributionLabel(entry, 'bild_status', 'Unbekannt')
     )
-  ), [latestWeek]);
+  ), [selectedWeek]);
+
+  const selectedOnSiteData = useMemo(() => (
+    parseDistribution(selectedWeek?.verteilung_ort).map((entry) =>
+      formatDistributionLabel(entry, 'ort_status', 'Unbekannt')
+    )
+  ), [selectedWeek]);
+
+  const selectedCountryData = useMemo(() => (
+    parseDistribution(selectedWeek?.verteilung_laender).map((entry) =>
+      formatDistributionLabel(entry, 'land_name', 'Unbekannt')
+    )
+  ), [selectedWeek]);
 
   const summary = [
-    { label: 'Neue Nutzer', value: Number(latestWeek?.neue_nutzer) || 0 },
-    { label: 'Check-ins', value: Number(latestWeek?.checkins) || 0 },
-    { label: 'Aktive Nutzer', value: Number(latestWeek?.aktive_nutzer) || 0 },
-    { label: 'Gesamt Nutzer', value: Number(latestWeek?.gesamt_nutzer) || 0 },
+    { label: 'Neue Nutzer', value: Number(selectedWeek?.neue_nutzer) || 0 },
+    { label: 'Check-ins', value: Number(selectedWeek?.checkins) || 0 },
+    { label: 'Aktive Nutzer', value: Number(selectedWeek?.aktive_nutzer) || 0 },
+    { label: 'Gesamt Nutzer', value: Number(selectedWeek?.gesamt_nutzer) || 0 },
+    { label: 'Länder mit Check-ins', value: Number(selectedWeek?.laender_mit_checkins) || 0 },
   ];
 
   const renderTrendChart = (title, color, dataKey, type = 'bar') => (
@@ -188,13 +244,15 @@ function AdminWeeklyStats() {
               innerRadius={52}
               outerRadius={88}
               paddingAngle={2}
+              label={renderPieValueLabel}
+              labelLine={false}
             >
               {data.map((entry, index) => (
                 <Cell key={`${entry.label}-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => [value, 'Anzahl']} />
-            <Legend />
+            <Tooltip formatter={(value, _name, props) => [`${value}`, `${props?.payload?.label || 'Anzahl'}`]} />
+            <Legend formatter={(value, entry) => `${value} (${entry?.payload?.value ?? 0})`} />
           </PieChart>
         </ResponsiveContainer>
       </ChartWrap>
@@ -223,13 +281,18 @@ function AdminWeeklyStats() {
           <HeroEyebrow>Nur Admin</HeroEyebrow>
           <HeroTitle>Wochenstatistik</HeroTitle>
           <HeroText>
-            Verlauf der Community-Aktivität und Verteilungen der letzten erfassten Woche.
+            Verlauf der Community-Aktivität und Verteilungen pro ausgewählter Woche.
           </HeroText>
-          {latestWeek && (
-            <HeroMeta>
-              Letzte Woche: {formatDateLabel(latestWeek.start_datum)} bis {formatDateLabel(latestWeek.end_datum)}
-            </HeroMeta>
-          )}
+          <WeekSelectorWrap>
+                <WeekMetaLabel>Woche auswählen:</WeekMetaLabel>
+                <WeekSelect value={selectedWeekKey} onChange={(event) => setSelectedWeekKey(event.target.value)}>
+                  {[...weeks].reverse().map((week) => (
+                    <option key={week.id} value={String(week.id)}>
+                      {formatDateLabel(week.start_datum)} bis {formatDateLabel(week.end_datum)}
+                    </option>
+                  ))}
+                </WeekSelect>
+              </WeekSelectorWrap>
         </HeroCard>
 
         {loading ? (
@@ -249,21 +312,27 @@ function AdminWeeklyStats() {
               ))}
             </SummaryGrid>
 
+            <SectionHeaderRow>
+              <SectionTitle style={{ margin: 0 }}>Wochendetails</SectionTitle>
+              
+            </SectionHeaderRow>
+            <ChartGrid>
+              {renderPieChart('Verteilung nach Check-in-Typ', selectedCheckinTypeData)}
+              {renderPieChart('Verteilung der Anreise', selectedTravelData)}
+              {renderPieChart('Mit oder ohne Bild', selectedImageData)}
+              {renderPieChart('Vor Ort vs. nicht Vor Ort', selectedOnSiteData)}
+              {renderPieChart('Check-ins nach Ländern', selectedCountryData)}
+            </ChartGrid>
+
             <SectionTitle>Verlauf</SectionTitle>
             <ChartGrid>
               {renderTrendChart('Neue Nutzer pro Woche', '#2563eb', 'neue_nutzer')}
               {renderTrendChart('Check-ins pro Woche', '#16a34a', 'checkins')}
               {renderTrendChart('Aktive Nutzer pro Woche', '#f59e0b', 'aktive_nutzer')}
+              {renderTrendChart('Unterschiedliche Länder pro Woche', '#ea580c', 'laender_mit_checkins')}
               {renderTrendChart('Gesamtanzahl Eisdielen', '#db2777', 'gesamt_eisdielen', 'line')}
               {renderTrendChart('Gesamtanzahl Check-ins', '#7c3aed', 'gesamt_checkins', 'line')}
               {renderTrendChart('Gesamtanzahl Nutzer', '#0f766e', 'gesamt_nutzer', 'line')}
-            </ChartGrid>
-
-            <SectionTitle>Letzte Woche</SectionTitle>
-            <ChartGrid>
-              {renderPieChart('Verteilung nach Check-in-Typ', latestCheckinTypeData)}
-              {renderPieChart('Verteilung der Anreise', latestTravelData)}
-              {renderPieChart('Mit oder ohne Bild', latestImageData)}
             </ChartGrid>
           </>
         )}
@@ -316,12 +385,6 @@ const HeroText = styled.p`
   font-size: 1rem;
 `;
 
-const HeroMeta = styled.p`
-  margin: 0.8rem 0 0;
-  color: #8b6f47;
-  font-weight: 700;
-`;
-
 const StateCard = styled.div`
   margin-top: 1.25rem;
   background: rgba(255, 255, 255, 0.9);
@@ -362,6 +425,40 @@ const SectionTitle = styled.h2`
   margin: 1.8rem 0 0.9rem;
   color: #33251a;
   font-size: 1.35rem;
+`;
+
+const SectionHeaderRow = styled.div`
+  margin: 1.8rem 0 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+`;
+
+const WeekSelectorWrap = styled.div`
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`;
+
+const WeekMetaLabel = styled.div`
+  color: #8b6f47;
+  font-weight: 700;
+  font-size: 0.95rem;
+`;
+
+const WeekSelect = styled.select`
+  border: 1px solid rgba(124, 111, 99, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #33251a;
+  padding: 0.6rem 0.8rem;
+  font-weight: 600;
+  min-width: min(100%, 320px);
 `;
 
 const ChartGrid = styled.section`
