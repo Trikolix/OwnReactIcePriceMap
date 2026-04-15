@@ -157,7 +157,10 @@ function notificationTypeToSettingField(string $type): string
         case 'team_challenge':
             return 'notify_team_challenge';
         case 'systemmeldung':
+        case 'engagement':
             return 'notify_news';
+        case 'photo_challenge':
+            return 'notify_photo_challenge';
         case 'kommentar':
         case 'kommentar_bewertung':
         case 'kommentar_route':
@@ -179,6 +182,13 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
             notify_comment_participated,
             notify_news,
             notify_team_challenge,
+            notify_checkin_mention_push,
+            notify_comment_push,
+            notify_comment_participated_push,
+            notify_news_push,
+            notify_team_challenge_push,
+            notify_photo_challenge,
+            notify_photo_challenge_push,
             push_enabled_web,
             push_enabled_android
         FROM user_notification_settings
@@ -198,15 +208,25 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
         'notify_comment_participated' => 1,
         'notify_news' => 0,
         'notify_team_challenge' => 1,
+        'notify_checkin_mention_push' => 1,
+        'notify_comment_push' => 1,
+        'notify_comment_participated_push' => 1,
+        'notify_news_push' => 0,
+        'notify_team_challenge_push' => 1,
+        'notify_photo_challenge' => 1,
+        'notify_photo_challenge_push' => 1,
         'push_enabled_web' => 0,
         'push_enabled_android' => 0,
     ];
 }
 
-function isNotificationAllowedForUser(PDO $pdo, int $userId, string $notificationType): bool
+function isNotificationAllowedForUser(PDO $pdo, int $userId, string $notificationType, string $channel = 'push'): bool
 {
     $settings = fetchUserNotificationSettings($pdo, $userId);
     $field = notificationTypeToSettingField($notificationType);
+    if ($channel === 'push') {
+        $field .= '_push';
+    }
     return (int)($settings[$field] ?? 1) === 1;
 }
 
@@ -292,6 +312,10 @@ function buildNotificationDeeplink(array $notification): ?string
             return $recipientId > 0
                 ? '/user/' . $recipientId . '?systemmeldungId=' . (int)$notification['referenz_id'] . '&notificationId=' . (int)$notification['id']
                 : null;
+        case 'engagement':
+            return '/challenge';
+        case 'photo_challenge':
+            return '/photo-challenge/' . (int)$notification['referenz_id'];
         case 'checkin_mention':
             return $recipientId > 0
                 ? '/user/' . $recipientId . '?mentionNotificationId=' . (int)$notification['id']
@@ -338,7 +362,7 @@ function dispatchNotification(PDO $pdo, array $notificationRecord, array $contex
         );
     }
 
-    if (!isNotificationAllowedForUser($pdo, $recipientId, (string)$notificationRecord['typ'])) {
+    if (!isNotificationAllowedForUser($pdo, $recipientId, (string)$notificationRecord['typ'], 'push')) {
         return;
     }
 

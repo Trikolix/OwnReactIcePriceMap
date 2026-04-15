@@ -150,15 +150,30 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
 
   const handleChange = (e) => {
     const { name, checked } = e.target;
-    // Wenn notify_comment_participated aktiviert wird, auch notify_comment aktivieren
-    if (name === 'notify_comment_participated' && checked) {
-      setSettings({ ...settings, notify_comment: 1, notify_comment_participated: 1 });
-    } else if (name === 'notify_comment' && !checked) {
+
+    setSettings((prev) => {
+      const nextSettings = { ...prev, [name]: checked ? 1 : 0 };
+
+      // Wenn notify_comment_participated aktiviert wird, auch notify_comment aktivieren
+      if (name === 'notify_comment_participated' && checked) {
+        nextSettings.notify_comment = 1;
+      }
+      // Wenn notify_comment_participated_push aktiviert wird, auch notify_comment_push aktivieren
+      if (name === 'notify_comment_participated_push' && checked) {
+        nextSettings.notify_comment_push = 1;
+      }
+
       // Wenn notify_comment deaktiviert wird, auch participated deaktivieren
-      setSettings({ ...settings, notify_comment: 0, notify_comment_participated: 0 });
-    } else {
-      setSettings({ ...settings, [name]: checked ? 1 : 0 });
-    }
+      if (name === 'notify_comment' && !checked) {
+        nextSettings.notify_comment_participated = 0;
+      }
+      // Wenn notify_comment_push deaktiviert wird, auch participated_push deaktivieren
+      if (name === 'notify_comment_push' && !checked) {
+        nextSettings.notify_comment_participated_push = 0;
+      }
+
+      return nextSettings;
+    });
   };
 
   const handleAvatarSelect = (event) => {
@@ -916,5 +931,30 @@ const CropModalActions = styled.div`
     padding: 0.5rem 1.2rem;
     min-width: 0;
     border-radius: 8px;
+  }
+`;
+
+const NotificationGroup = styled.div`
+  margin-bottom: 1.25rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+
+  > strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2f2100;
+  }
+`;
+
+const NotificationOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    gap: 1.5rem;
   }
 `;

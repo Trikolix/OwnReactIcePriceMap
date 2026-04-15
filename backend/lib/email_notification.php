@@ -68,10 +68,17 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $settingField = 'notify_checkin_mention';
     } elseif ($notificationType === 'comment_participated') {
         $settingField = 'notify_comment_participated';
+    } elseif ($notificationType === 'engagement') {
+        $mailSubject = "Ice-App: Zeit für ein Eis!";
+        $mailBody .= "<p>Du warst schon länger nicht mehr in der Ice-App aktiv.</p>";
+        $mailBody .= "<p>Starte eine neue Challenge oder checke in deiner Lieblings-Eisdiele ein!</p>";
+        $mailBody .= "<p>Wir freuen uns auf dich.</p>";
     } elseif ($notificationType === 'news') {
         $settingField = 'notify_news';
     } elseif ($notificationType === 'team_challenge') {
         $settingField = 'notify_team_challenge';
+    } elseif ($notificationType === 'photo_challenge') {
+        $settingField = 'notify_photo_challenge';
     } else {
         $settingField = 'notify_comment';
     }
@@ -172,6 +179,12 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
 
         $mailBody .= "<p>Details findest du direkt im Bereich Challenges der Ice-App.</p>";
 
+    } elseif ($notificationType === 'photo_challenge') {
+        $mailSubject = "Ice-App: Neue Foto-Challenge!";
+        $mailBody .= "<p>Eine neue Foto-Challenge hat begonnen. Zeige uns deine besten Eis-Bilder und stimme für deine Favoriten ab!</p>";
+        $challengeLink = "https://ice-app.de/photo-challenge/" . (isset($extra['challengeId']) ? (int)$extra['challengeId'] : '');
+        $mailBody .= "<p>Direkter Link: <a href='" . $challengeLink . "' style='color:#0077b6;'>" . $challengeLink . "</a></p>";
+        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
      } else {
         // Unbekannter Typ
         return;
