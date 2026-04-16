@@ -4,59 +4,10 @@ require_once  __DIR__ . '/../lib/levelsystem.php';
 require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
+require_once __DIR__ . '/../lib/route_utils.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
-
-// Validiert eine URL auf erlaubte Routenanbieter und extrahiert die Basis-URL
-function validateAndCleanUrl(string $url): ?string {
-    $allowedHosts = [
-        'komoot.com' => '#https:\/\/www\.komoot\.(com|de)\/(?:de-de\/)?tour\/\d+#',
-        'strava.com' => '#https:\/\/www\.strava\.com\/routes\/\d+#',
-        'outdooractive.com' => '#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)+(\d+)#'
-    ];
-
-    foreach ($allowedHosts as $host => $pattern) {
-        if (preg_match($pattern, $url, $matches)) {
-            return rtrim($matches[0], '/') . '/';
-        }
-    }
-    return null;
-}
-
-function generateEmbedCode($url) {
-    // Komoot
-    if (preg_match('#https:\/\/www\.komoot\.(com|de)\/(?:de-de\/)?tour\/(\d+)#', $url, $matches)) {
-        $tourId = $matches[2];
-        $parsedUrl = parse_url($url);
-        $shareToken = '';
-        if (isset($parsedUrl['query'])) {
-            parse_str($parsedUrl['query'], $queryParams);
-            if (isset($queryParams['share_token'])) {
-                $shareToken = htmlspecialchars($queryParams['share_token'], ENT_QUOTES, 'UTF-8');
-            }
-        }
-        $src = 'https://www.komoot.com/de-de/tour/' . $tourId . '/embed';
-        if ($shareToken) {
-            $src .= '?share_token=' . $shareToken;
-        }
-        return '<iframe src="' . $src . '" width="640" height="440" frameborder="0" scrolling="no"></iframe>';
-    }
-
-    // Strava
-    if (preg_match('#https:\/\/www\.strava\.com\/routes\/(\d+)#', $url, $matches)) {
-        $routeId = $matches[1];
-        return '<div class="strava-embed-placeholder" data-embed-type="route" data-embed-id="' . $routeId . '"></div><script src="https://strava-embeds.com/embed.js"></script>';
-    }
-
-    // Outdooractive
-    if (preg_match('#https:\/\/www\.outdooractive\.com\/(?:[a-z-]+\/)+(\d+)#', $url, $matches)) {
-        $routeId = $matches[1];
-        return '<iframe src="https://www.outdooractive.com/en/embed/' . $routeId . '/" width="100%" height="440" frameborder="0" scrolling="no"></iframe>';
-    }
-
-    return null;
-}
 
 function nullIfEmpty($value) {
     return ($value === '' || !isset($value)) ? null : $value;
