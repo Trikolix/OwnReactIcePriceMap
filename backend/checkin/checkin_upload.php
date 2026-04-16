@@ -486,13 +486,14 @@ try {
     if ($isOnSite) {
         // Aktive Challenge suchen
         $stmt = $pdo->prepare("
-            SELECT c.id, c.nutzer_id, c.eisdiele_id, c.type, c.difficulty, c.created_at, c.valid_until, c.completed, e.name AS shop_name, e.adresse AS shop_address
+            SELECT c.id, c.nutzer_id, c.eisdiele_id, c.type, c.difficulty, c.created_at, c.valid_until, c.valid_from, c.completed, e.name AS shop_name, e.adresse AS shop_address
             FROM challenges c
             JOIN eisdielen e ON c.eisdiele_id = e.id
             WHERE nutzer_id = :userId
               AND c.eisdiele_id = :shopId
               AND c.completed = 0
               AND c.valid_until >= NOW()
+              AND (c.valid_from IS NULL OR c.valid_from <= NOW())
             ORDER BY c.created_at ASC
             LIMIT 1
         ");
@@ -515,6 +516,7 @@ try {
                 'difficulty' => $challenge['difficulty'],
                 'created_at' => $challenge['created_at'],
                 'valid_until' => $challenge['valid_until'],
+                'valid_from' => $challenge['valid_from'],
                 'eisdiele_id' => $challenge['eisdiele_id'],
                 'shop_name' => $challenge['shop_name'],
                 'shop_address' => $challenge['shop_address'],
