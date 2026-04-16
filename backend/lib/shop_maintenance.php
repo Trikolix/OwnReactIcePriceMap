@@ -11,10 +11,10 @@ const SHOP_MAINTENANCE_BONUS_EP = [
 
 function ensureShopMaintenanceSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__shop_maintenance_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__shop_maintenance_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS shop_maintenance_tasks (

@@ -4,10 +4,10 @@ require_once __DIR__ . '/user_notification_settings.php';
 
 function ensurePushInfrastructureSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__push_infrastructure_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__push_infrastructure_schema_initialized'] = true;
 
     ensureUserNotificationSettingsSchema($pdo);
 

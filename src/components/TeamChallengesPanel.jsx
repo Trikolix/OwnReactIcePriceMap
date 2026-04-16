@@ -27,7 +27,7 @@ const finalShopIcon = new L.Icon({
 const statusLabels = {
   pending_acceptance: "Wartet auf Annahme",
   accepted: "Angenommen",
-  proposal_open: "Vorschläge offen",
+  proposal_open: "Ziel wählen",
   proposal_submitted: "Vorschläge gesendet",
   shop_finalized: "Ziel bestätigt",
   completed: "Abgeschlossen",
@@ -41,7 +41,7 @@ const typeLabels = {
   weekly: "Weekly",
 };
 
-const activeStatuses = ["pending_acceptance", "accepted", "proposal_open", "proposal_submitted", "shop_finalized"];
+const activeStatuses = ["pending_acceptance", "accepted", "proposal_open", "shop_finalized"];
 
 const formatChallengeDate = (value) => {
   if (!value) return "–";
@@ -93,7 +93,6 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [inviteType, setInviteType] = useState("weekly");
   const [busyAction, setBusyAction] = useState(null);
-  const [selectedProposalIds, setSelectedProposalIds] = useState([]);
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
   const [selectedCompletedChallenge, setSelectedCompletedChallenge] = useState(null);
 
@@ -216,14 +215,6 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
     }
   }, [activeOrFocusedId, userId, apiUrl]);
 
-  useEffect(() => {
-    if (!detail) {
-      setSelectedProposalIds([]);
-      return;
-    }
-    setSelectedProposalIds(detail.proposals?.map((proposal) => proposal.shop_id) || []);
-  }, [detail?.id, detail?.status]);
-
   const postJson = async (url, payload, successMessage = null) => {
     if (!apiUrl) return null;
     setBusyAction(url);
@@ -292,15 +283,6 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
     await postJson("/api/team_challenge_decline.php", { user_id: userId, team_challenge_id: challengeId }, "Einladung abgelehnt.");
   };
 
-  const handleSubmitProposals = async () => {
-    if (!detail?.id) return;
-    if (selectedProposalIds.length < 1 || selectedProposalIds.length > 3) {
-      setActionNotice({ type: "error", message: "Bitte wähle 1 bis 3 Eisdielen aus." });
-      return;
-    }
-    await postJson("/api/team_challenge_submit_proposals.php", { user_id: userId, team_challenge_id: detail.id, shop_ids: selectedProposalIds }, "Vorschläge wurden gespeichert.");
-  };
-
   const handleFinalize = async (shopId) => {
     if (!detail?.id) return;
     await postJson("/api/team_challenge_finalize_shop.php", { user_id: userId, team_challenge_id: detail.id, shop_id: shopId }, "Ziel-Eisdiele bestätigt.");
@@ -308,14 +290,6 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
 
   const handleCancel = async (challengeId) => {
     await postJson("/api/team_challenge_cancel.php", { user_id: userId, team_challenge_id: challengeId }, "Team-Challenge wurde abgebrochen.");
-  };
-
-  const toggleProposal = (shopId) => {
-    setSelectedProposalIds((prev) => {
-      if (prev.includes(shopId)) return prev.filter((id) => id !== shopId);
-      if (prev.length >= 3) return prev;
-      return [...prev, shopId];
-    });
   };
 
   const renderNotice = (notice) => {
@@ -406,11 +380,6 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                   ? "Weeklys laufen bis Sonntag 23:59 Uhr."
                   : "Dailys laufen bis Mitternacht, nach 18 Uhr bis morgen 23:59 Uhr."}
               </HintText>
-              <HintText>
-                {inviteMode === "midpoint"
-                  ? "Mittelpunkt sucht wie bisher rund um den Treffpunkt beider Personen."
-                  : "Expedition sucht bewusst weiter entfernte Ziele außerhalb eines inneren Rings um euren Treffpunkt."}
-              </HintText>
               <ActionRow>
                 <PrimaryButton type="button" onClick={handleInvite} disabled={busyAction !== null || loadingLocation || !location}>
                   <Send size={16} />
@@ -475,68 +444,30 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
                   </ActionRow>
                 )}
 
-                {(currentChallenge.status === "proposal_open" || currentChallenge.status === "proposal_submitted") && (
+                {currentChallenge.status === "proposal_open" && (
                   <>
-                    <SubSectionHeading><Target size={16} /> Kandidaten und Vorschläge</SubSectionHeading>
-                    <HintText>Der gemeinsame Radius wurde so weit erweitert, bis mindestens 4 offene Eisdielen gefunden wurden.</HintText>
+                    <SubSectionHeading><Target size={16} /> Ziel wählen</SubSectionHeading>
+                    <HintText>
+                      {currentChallenge.viewer_role === "invitee" 
+                        ? "Wähle eine der folgenden Eisdielen als Ziel für eure Team-Challenge aus."
+                        : "Warte auf die Auswahl der Ziel-Eisdiele durch deinen Partner."}
+                    </HintText>
                     <CandidateList>
-                      {currentChallenge.candidates.map((candidate) => {
-                        const selected = selectedProposalIds.includes(candidate.shop_id);
-                        const alreadyProposed = currentChallenge.proposals.some((proposal) => proposal.shop_id === candidate.shop_id);
-                        return (
-                          <CandidateItem key={candidate.shop_id} $selected={selected || alreadyProposed}>
-                            <div>
-                              <CandidateName>{candidate.name}</CandidateName>
-                              <CandidateMeta>{candidate.address}</CandidateMeta>
-                              <CandidateMeta>{Math.round(candidate.distance_to_center)} m vom Mittelpunkt</CandidateMeta>
-                            </div>
-                            {currentChallenge.can_submit_proposals ? (
-                              <ProposalToggle
-                                type="button"
-                                $selected={selected}
-                                onClick={() => toggleProposal(candidate.shop_id)}
-                                disabled={!selected && selectedProposalIds.length >= 3}
-                              >
-                                {selected ? "Ausgewählt" : "Wählen"}
-                              </ProposalToggle>
-                            ) : (
-                              <ProposalState>{alreadyProposed ? "Vorgeschlagen" : "Verfügbar"}</ProposalState>
-                            )}
-                          </CandidateItem>
-                        );
-                      })}
+                      {currentChallenge.candidates.map((candidate) => (
+                        <CandidateItem key={candidate.shop_id}>
+                          <div>
+                            <CandidateName>{candidate.name}</CandidateName>
+                            <CandidateMeta>{candidate.address}</CandidateMeta>
+                            <CandidateMeta>{Math.round(candidate.distance_to_center)} m vom Mittelpunkt</CandidateMeta>
+                          </div>
+                          {currentChallenge.can_finalize && (
+                            <PrimaryButton type="button" onClick={() => handleFinalize(candidate.shop_id)} disabled={busyAction !== null}>
+                              Wählen
+                            </PrimaryButton>
+                          )}
+                        </CandidateItem>
+                      ))}
                     </CandidateList>
-
-                    {currentChallenge.can_submit_proposals && (
-                      <ActionRow>
-                        <MutedText>{selectedProposalIds.length}/3 Vorschläge gewählt.</MutedText>
-                        <PrimaryButton type="button" onClick={handleSubmitProposals} disabled={busyAction !== null || selectedProposalIds.length < 1}>
-                          Vorschläge senden
-                        </PrimaryButton>
-                      </ActionRow>
-                    )}
-
-                    {currentChallenge.proposals.length > 0 && (
-                      <>
-                        <SubSectionHeading><Bell size={16} /> Aktuelle Vorschläge</SubSectionHeading>
-                        <CandidateList>
-                          {currentChallenge.proposals.map((proposal) => (
-                            <CandidateItem key={proposal.id} $selected>
-                              <div>
-                                <CandidateName>{proposal.shop.name}</CandidateName>
-                                <CandidateMeta>{proposal.shop.address}</CandidateMeta>
-                                <CandidateMeta>Vorgeschlagen von {proposal.proposed_by.username}</CandidateMeta>
-                              </div>
-                              {currentChallenge.can_finalize && (
-                                <PrimaryButton type="button" onClick={() => handleFinalize(proposal.shop_id)} disabled={busyAction !== null}>
-                                  Bestätigen
-                                </PrimaryButton>
-                              )}
-                            </CandidateItem>
-                          ))}
-                        </CandidateList>
-                      </>
-                    )}
                   </>
                 )}
 
@@ -672,11 +603,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
             </InfoRow>
             <InfoRow>
               <InfoIcon><Target size={16} /></InfoIcon>
-              <span>Im Radius um den gemeinsamen Mittelpunkt werden Eisdielen gesucht. Die eingeladene Person wählt daraus 1 bis 3 Vorschläge aus.</span>
-            </InfoRow>
-            <InfoRow>
-              <InfoIcon><MapPinned size={16} /></InfoIcon>
-              <span>Die einladende Person bestätigt anschließend eine Ziel-Eisdiele aus den Vorschlägen.</span>
+              <span>Im Radius um den gemeinsamen Mittelpunkt werden Eisdielen gesucht. Die eingeladene Person wählt daraus direkt das Ziel aus.</span>
             </InfoRow>
             <InfoRow>
               <InfoIcon><Clock3 size={16} /></InfoIcon>
@@ -1145,27 +1072,6 @@ const CandidateMeta = styled.div`
   font-size: 0.82rem;
   margin-top: 0.14rem;
   line-height: 1.35;
-`;
-
-const ProposalToggle = styled.button`
-  border: 1px solid ${({ $selected }) => ($selected ? "rgba(35,165,90,0.35)" : "rgba(47, 33, 0, 0.12)")};
-  background: ${({ $selected }) => ($selected ? "#e8f7ec" : "#fff")};
-  color: ${({ $selected }) => ($selected ? "#185c2b" : "#5b4520")};
-  border-radius: 10px;
-  padding: 0.58rem 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const ProposalState = styled.div`
-  color: #7a4a00;
-  font-size: 0.82rem;
-  font-weight: 800;
 `;
 
 const FinalShopCard = styled.div`

@@ -30,7 +30,7 @@ if ($row) {
         'notify_checkin_mention_push' => 1,
         'notify_comment_push' => 1,
         'notify_comment_participated_push' => 1,
-        'notify_news_push' => 0,
+        'notify_news_push' => 1,
         'notify_team_challenge_push' => 1,
         'notify_photo_challenge' => 1,
         'notify_photo_challenge_push' => 1,

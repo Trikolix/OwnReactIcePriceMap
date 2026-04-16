@@ -39,10 +39,10 @@ function externalShopTableHasColumn(PDO $pdo, string $table, string $column): bo
 
 function ensureExternalShopDiscoverySchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__external_shop_discovery_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__external_shop_discovery_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS external_shop_mappings (

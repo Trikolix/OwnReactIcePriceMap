@@ -2,10 +2,10 @@
 
 function ensureUserNotificationSettingsSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__user_notification_settings_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__user_notification_settings_schema_initialized'] = true;
 
     $stmt = $pdo->query("SHOW COLUMNS FROM user_notification_settings LIKE 'notify_team_challenge'");
     $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;

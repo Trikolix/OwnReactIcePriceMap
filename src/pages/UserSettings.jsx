@@ -28,12 +28,19 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const { userId } = useUser();
   const [settings, setSettings] = useState({
     notify_checkin_mention: 1,
+    notify_checkin_mention_push: 1,
     notify_comment: 1,
+    notify_comment_push: 1,
     notify_comment_participated: 1,
-    notify_news: 0,
+    notify_comment_participated_push: 1,
+    notify_news: 1,
+    notify_news_push: 1,
     notify_team_challenge: 1,
-    push_enabled_web: 0,
-    push_enabled_android: 0,
+    notify_team_challenge_push: 1,
+    notify_photo_challenge: 1,
+    notify_photo_challenge_push: 1,
+    push_enabled_web: 1,
+    push_enabled_android: 1,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -154,20 +161,16 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setSettings((prev) => {
       const nextSettings = { ...prev, [name]: checked ? 1 : 0 };
 
-      // Wenn notify_comment_participated aktiviert wird, auch notify_comment aktivieren
       if (name === 'notify_comment_participated' && checked) {
         nextSettings.notify_comment = 1;
       }
-      // Wenn notify_comment_participated_push aktiviert wird, auch notify_comment_push aktivieren
       if (name === 'notify_comment_participated_push' && checked) {
         nextSettings.notify_comment_push = 1;
       }
 
-      // Wenn notify_comment deaktiviert wird, auch participated deaktivieren
       if (name === 'notify_comment' && !checked) {
         nextSettings.notify_comment_participated = 0;
       }
-      // Wenn notify_comment_push deaktiviert wird, auch participated_push deaktivieren
       if (name === 'notify_comment_push' && !checked) {
         nextSettings.notify_comment_participated_push = 0;
       }
@@ -311,11 +314,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     return newPath;
   };
 
-  const persistNotificationSettings = async () => {
+  const persistNotificationSettings = async (targetSettings = settings) => {
     const res = await fetch(`${API_BASE}/api/update_user_notification_settings.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, ...settings }),
+      body: JSON.stringify({ user_id: userId, ...targetSettings }),
     });
     const json = await res.json();
     if (!json.success) {
@@ -329,17 +332,28 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setSuccess(false);
     try {
       await persistAvatarChange();
-      await persistNotificationSettings();
-      if (settings.push_enabled_web) {
+      
+      const hasAnyPushEnabled = Object.keys(settings).some(key => key.endsWith('_push') && settings[key] === 1);
+      const updatedSettings = {
+        ...settings,
+        push_enabled_web: hasAnyPushEnabled ? 1 : 0,
+        push_enabled_android: hasAnyPushEnabled ? 1 : 0,
+      };
+
+      await persistNotificationSettings(updatedSettings);
+
+      if (updatedSettings.push_enabled_web) {
         await enableBrowserPush(userId);
       } else {
         await disableBrowserPush(userId);
       }
-      if (settings.push_enabled_android) {
+      
+      if (updatedSettings.push_enabled_android) {
         await initializeNativePush(userId);
       } else {
         await disableNativePush(userId);
       }
+      
       setBrowserPushStatus(await getBrowserPushStatus());
       setSuccess(true);
     } catch (e) {
@@ -461,95 +475,62 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         )}
         <Divider />
         <h3>Benachrichtigungseinstellungen</h3>
-        {/* ...existing code... */}
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_checkin_mention"
-            checked={!!settings.notify_checkin_mention}
-            onChange={handleChange}
-          />
-          Benachrichtigung bei Verlinkung in Checkins
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_comment"
-            checked={!!settings.notify_comment}
-            onChange={handleChange}
-          />
-          Benachrichtigung bei neuen Kommentaren an eigenen Checkins/Bewertungen
-        </Label>
-        <Label style={{ marginLeft: '2rem', opacity: settings.notify_comment ? 1 : 0.5 }}>
-          <input
-            type="checkbox"
-            name="notify_comment_participated"
-            checked={!!settings.notify_comment_participated}
-            onChange={handleChange}
-            disabled={!settings.notify_comment}
-          />
-          Benachrichtigung bei neuen Kommentaren an Checkins, die du auch kommentiert hast
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_news"
-            checked={!!settings.notify_news}
-            onChange={handleChange}
-          />
-          Systemmeldungen & News (Newsletter, Aktionen, wichtige Infos)
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_team_challenge"
-            checked={!!settings.notify_team_challenge}
-            onChange={handleChange}
-          />
-          Team-Challenges (Einladungen, Annahmen, Abbrüche, Abschlüsse)
-        </Label>
-        <Divider />
-        <h3>Native Push-Benachrichtigungen</h3>
-        <PushStatusCard>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <strong>Browser-Push</strong>
-              <span>
-                {!browserPushStatus.supported
-                  ? "Dieser Browser wird nicht unterstützt"
-                  : browserPushStatus.permission === 'granted'
-                  ? "Aktiviert"
-                  : browserPushStatus.permission === 'denied'
-                  ? "Blockiert (in den Browser-Einstellungen ändern)"
-                  : "Noch nicht aktiviert"}
-              </span>
-            </div>
-            {Number(userId) === 1 && browserPushStatus.permission === 'granted' && (
-              <MiniButton type="button" onClick={handleSendTest} style={{ color: '#0277bd' }}>
-                Test senden
-              </MiniButton>
-            )}
-          </div>
-        </PushStatusCard>
-        <Label style={{ opacity: browserPushStatus.supported ? 1 : 0.5 }}>
-          <input
-            type="checkbox"
-            name="push_enabled_web"
-            checked={!!settings.push_enabled_web}
-            onChange={handleChange}
-            disabled={!browserPushStatus.supported}
-          />
-          Browser Push per Service Worker aktivieren
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="push_enabled_android"
-            checked={!!settings.push_enabled_android}
-            onChange={handleChange}
-          />
-          Android Push in der nativen App aktivieren
-        </Label>
+        
+        <SettingsTable>
+          <thead>
+            <tr>
+              <th>Ereignis</th>
+              <th>E-Mail</th>
+              <th>
+                Push
+                {Number(userId) === 1 && browserPushStatus.permission === 'granted' && (
+                  <MiniButton type="button" onClick={handleSendTest} style={{ color: '#0277bd', fontSize: '0.7rem', marginLeft: '0.5rem' }}>
+                    (Test)
+                  </MiniButton>
+                )}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Verlinkung in Checkins</td>
+              <td><input type="checkbox" name="notify_checkin_mention" checked={!!settings.notify_checkin_mention} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_checkin_mention_push" checked={!!settings.notify_checkin_mention_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Kommentare an eigenen Checkins</td>
+              <td><input type="checkbox" name="notify_comment" checked={!!settings.notify_comment} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_comment_push" checked={!!settings.notify_comment_push} onChange={handleChange} /></td>
+            </tr>
+            <tr style={{ opacity: (settings.notify_comment || settings.notify_comment_push) ? 1 : 0.5 }}>
+              <td style={{ paddingLeft: '1.5rem', fontSize: '0.85rem' }}>↳ auch wenn nur mitkommentiert</td>
+              <td><input type="checkbox" name="notify_comment_participated" checked={!!settings.notify_comment_participated} onChange={handleChange} disabled={!settings.notify_comment && !settings.notify_comment_push} /></td>
+              <td><input type="checkbox" name="notify_comment_participated_push" checked={!!settings.notify_comment_participated_push} onChange={handleChange} disabled={!settings.notify_comment && !settings.notify_comment_push} /></td>
+            </tr>
+            <tr>
+              <td>Systemmeldungen & News</td>
+              <td><input type="checkbox" name="notify_news" checked={!!settings.notify_news} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_news_push" checked={!!settings.notify_news_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Team-Challenges</td>
+              <td><input type="checkbox" name="notify_team_challenge" checked={!!settings.notify_team_challenge} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_team_challenge_push" checked={!!settings.notify_team_challenge_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Photo-Challenges</td>
+              <td><input type="checkbox" name="notify_photo_challenge" checked={!!settings.notify_photo_challenge} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_photo_challenge_push" checked={!!settings.notify_photo_challenge_push} onChange={handleChange} /></td>
+            </tr>
+          </tbody>
+        </SettingsTable>
+
+        {browserPushStatus.supported && browserPushStatus.permission === 'denied' && (
+          <SmallNote style={{ color: '#c62828', marginTop: '0.5rem' }}>
+            Hinweis: Push-Benachrichtigungen sind im Browser blockiert. Bitte in den Browsereinstellungen freigeben.
+          </SmallNote>
+        )}
+
         {error && <ErrorMsg>{error}</ErrorMsg>}
         {success && <SuccessMsg>Gespeichert!</SuccessMsg>}
         <ButtonRow>
@@ -603,13 +584,6 @@ const ModalBox = styled.div`
   }
 `;
 
-const Label = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-`;
-
 const ButtonRow = styled.div`
   display: flex;
   justify-content: center;
@@ -652,32 +626,12 @@ const TopCloseButton = styled.button`
 
 const ErrorMsg = styled.div`
   color: #d32f2f;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
 `;
 
 const SuccessMsg = styled.div`
   color: #388e3c;
-  margin-bottom: 1rem;
-`;
-
-const PushStatusCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-
-  strong {
-    color: #2f2100;
-  }
-
-  span {
-    color: #5b4520;
-    font-size: 0.9rem;
-  }
+  margin-top: 1rem;
 `;
 
 const AvatarSection = styled.div`
@@ -934,27 +888,36 @@ const CropModalActions = styled.div`
   }
 `;
 
-const NotificationGroup = styled.div`
-  margin-bottom: 1.25rem;
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-
-  > strong {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #2f2100;
+const SettingsTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  
+  th, td {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
   }
-`;
+  
+  th {
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  
+  td:first-child {
+    font-weight: 500;
+    color: #333;
+  }
+  
+  td:not(:first-child) {
+    text-align: center;
+  }
 
-const NotificationOptions = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  @media (min-width: 600px) {
-    flex-direction: row;
-    gap: 1.5rem;
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
   }
 `;

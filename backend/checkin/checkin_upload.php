@@ -253,6 +253,9 @@ try {
     // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
     ensureTeamChallengeSchema($pdo);
     ensureUserNotificationSettingsSchema($pdo);
+    ensurePushInfrastructureSchema($pdo);
+    ensureExternalShopDiscoverySchema($pdo);
+    ensureShopMaintenanceSchema($pdo);
 
     // -------------------------
     // Datenbank-Transaktion starten
@@ -338,7 +341,13 @@ try {
         // Mentions einfügen + Notifications
         $createdMentionByUser = [];
         $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
-        createNotification(
+        foreach ($mentionedUsers as $mentionedUserId) {
+            $stmtMention->execute([(int)$checkinId, (int)$mentionedUserId]);
+            $mentionId = (int)$pdo->lastInsertId();
+            $createdMentionByUser[$mentionedUserId] = $mentionId;
+
+            $notifText = "{$inviterName} hat dich bei einem Checkin erwähnt.";
+            createNotification(
                 $pdo,
                 (int)$mentionedUserId,
                 'checkin_mention',
@@ -587,6 +596,10 @@ try {
         ");
         $acceptReferencedStmt->execute([(int)$checkinId, (int)$referencedCheckinId, (int)$userId]);
         resolveOrMergeCheckinGroup($pdo, [(int)$checkinId, (int)$referencedCheckinId]);
+    }
+
+    if (!$pdo->inTransaction()) {
+        throw new Exception("Transaktion wurde vor dem Commit unerwartet beendet (impliziter Commit?).");
     }
 
     // Alle DB-Operationen erfolgreich -> Commit

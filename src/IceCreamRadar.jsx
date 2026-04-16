@@ -548,6 +548,8 @@ const IceCreamRadar = () => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
+  const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(true);
+
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalPrefill, setSubmitModalPrefill] = useState(null);
@@ -1464,45 +1466,66 @@ const IceCreamRadar = () => {
           <DiscoveryOverlay>
             <DiscoveryCard>
               <DiscoveryHeader>
-                <DiscoveryTitle>Neue Eisdielen entdecken</DiscoveryTitle>
-                {discoveryResults.length > 0 && (
-                  <DiscoveryClearButton type="button" onClick={clearDiscoveryResults}>
-                    Treffer ausblenden
-                  </DiscoveryClearButton>
-                )}
+                <DiscoveryTitle 
+                  onClick={() => setIsDiscoveryExpanded(!isDiscoveryExpanded)} 
+                  style={{ cursor: 'pointer', flex: 1 }}
+                >
+                  Neue Eisdielen entdecken
+                </DiscoveryTitle>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  {discoveryResults.length > 0 && isDiscoveryExpanded && (
+                    <DiscoveryClearButton type="button" onClick={clearDiscoveryResults}>
+                      Treffer ausblenden
+                    </DiscoveryClearButton>
+                  )}
+                  <DiscoveryToggleButton 
+                    type="button" 
+                    onClick={() => setIsDiscoveryExpanded(!isDiscoveryExpanded)}
+                    $isExpanded={isDiscoveryExpanded}
+                    aria-label={isDiscoveryExpanded ? "Zuklappen" : "Aufklappen"}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </DiscoveryToggleButton>
+                </div>
               </DiscoveryHeader>
-              <DiscoveryText>
-                {isLoggedIn
-                  ? 'Mit diesem Modus kannst du Eisdielen finden und eintragen, die im aktuellen Kartenausschnitt liegen und noch nicht in der Ice-App vorhanden sind.'
-                  : 'Melde dich an, um im aktuellen Kartenausschnitt nach Eisdielen zu suchen, die noch nicht in der Ice-App eingetragen sind.'}
-              </DiscoveryText>
-              {isLoggedIn && discoverySlots && (
-                <DiscoverySlotText>
-                  Freie Discovery-Slots: {discoverySlots.remaining_slots ?? 0}/{discoverySlots.limit ?? DISCOVERY_SLOT_LIMIT}
-                </DiscoverySlotText>
-              )}
-              <DiscoveryInfoBox>
-                <DiscoveryInfoSummary>Was macht Discovery?</DiscoveryInfoSummary>
-                <DiscoveryInfoContent>
-                  <li>Die Suche nutzt den aktuellen Kartenausschnitt und blendet bereits bekannte oder sehr ähnliche Treffer aus.</li>
-                  <li>Falsche Treffer kannst du direkt markieren, damit sie künftig zurückhaltender oder gar nicht mehr angezeigt werden.</li>
-                  <li>Neue Treffer lassen sich direkt mit vorausgefülltem Formular als Eisdiele eintragen.</li>
-                </DiscoveryInfoContent>
-              </DiscoveryInfoBox>
-              <DiscoveryPrimaryButton type="button" onClick={handleDiscoverySearch} disabled={isDiscoveryLoading}>
-                {isDiscoveryLoading ? 'Suche läuft…' : 'Kartenausschnitt durchsuchen'}
-              </DiscoveryPrimaryButton>
-              {discoveryMessage && <DiscoveryStatusText>{discoveryMessage}</DiscoveryStatusText>}
-              {discoveryError && <DiscoveryErrorText>{discoveryError}</DiscoveryErrorText>}
-              {(discoveryMeta.hiddenExisting > 0 || discoveryMeta.hiddenDuplicate > 0 || discoveryMeta.hiddenFalsePositive > 0 || discoveryMeta.truncated) && (
-                <DiscoveryText>
-                  {[
-                    discoveryMeta.hiddenExisting > 0 ? `${discoveryMeta.hiddenExisting} bereits bekannte Treffer` : null,
-                    discoveryMeta.hiddenDuplicate > 0 ? `${discoveryMeta.hiddenDuplicate} ähnliche Dubletten` : null,
-                    discoveryMeta.hiddenFalsePositive > 0 ? `${discoveryMeta.hiddenFalsePositive} bereits gemeldete Treffer` : null,
-                    discoveryMeta.truncated ? 'weitere Treffer wurden gekürzt' : null,
-                  ].filter(Boolean).join(' · ')}
-                </DiscoveryText>
+              {isDiscoveryExpanded && (
+                <>
+                  {isLoggedIn && discoverySlots && (
+                    <DiscoverySlotText>
+                      Freie Discovery-Slots: {discoverySlots.remaining_slots ?? 0}/{discoverySlots.limit ?? DISCOVERY_SLOT_LIMIT}
+                    </DiscoverySlotText>
+                  )}
+                  <DiscoveryInfoBox>
+                    <DiscoveryInfoSummary>Was macht Discovery?</DiscoveryInfoSummary>
+                    <DiscoveryInfoContent>
+                      <p style={{ margin: '0 0 0.5rem -1rem', listStyle: 'none' }}>
+                        {isLoggedIn
+                          ? 'Mit diesem Modus kannst du Eisdielen finden und eintragen, die im aktuellen Kartenausschnitt liegen und noch nicht in der Ice-App vorhanden sind.'
+                          : 'Melde dich an, um im aktuellen Kartenausschnitt nach Eisdielen zu suchen, die noch nicht in der Ice-App eingetragen sind.'}
+                      </p>
+                      <li>Die Suche nutzt den aktuellen Kartenausschnitt und blendet bereits bekannte oder sehr ähnliche Treffer aus.</li>
+                      <li>Falsche Treffer kannst du direkt markieren, damit sie künftig zurückhaltender oder gar nicht mehr angezeigt werden.</li>
+                      <li>Neue Treffer lassen sich direkt mit vorausgefülltem Formular als Eisdiele eintragen.</li>
+                    </DiscoveryInfoContent>
+                  </DiscoveryInfoBox>
+                  <DiscoveryPrimaryButton type="button" onClick={handleDiscoverySearch} disabled={isDiscoveryLoading}>
+                    {isDiscoveryLoading ? 'Suche läuft…' : 'Kartenausschnitt durchsuchen'}
+                  </DiscoveryPrimaryButton>
+                  {discoveryMessage && <DiscoveryStatusText>{discoveryMessage}</DiscoveryStatusText>}
+                  {discoveryError && <DiscoveryErrorText>{discoveryError}</DiscoveryErrorText>}
+                  {(discoveryMeta.hiddenExisting > 0 || discoveryMeta.hiddenDuplicate > 0 || discoveryMeta.hiddenFalsePositive > 0 || discoveryMeta.truncated) && (
+                    <DiscoveryText>
+                      {[
+                        discoveryMeta.hiddenExisting > 0 ? `${discoveryMeta.hiddenExisting} bereits bekannte Treffer` : null,
+                        discoveryMeta.hiddenDuplicate > 0 ? `${discoveryMeta.hiddenDuplicate} ähnliche Dubletten` : null,
+                        discoveryMeta.hiddenFalsePositive > 0 ? `${discoveryMeta.hiddenFalsePositive} bereits gemeldete Treffer` : null,
+                        discoveryMeta.truncated ? 'weitere Treffer wurden gekürzt' : null,
+                      ].filter(Boolean).join(' · ')}
+                    </DiscoveryText>
+                  )}
+                </>
               )}
             </DiscoveryCard>
           </DiscoveryOverlay>
@@ -2172,6 +2195,19 @@ const DiscoveryClearButton = styled.button`
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
+`;
+
+const DiscoveryToggleButton = styled.button`
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #503000;
+  transition: transform 0.2s ease-in-out;
+  transform: ${props => props.$isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'};
 `;
 
 const DiscoveryStatusText = styled.p`

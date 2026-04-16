@@ -193,7 +193,12 @@ try {
 
         // Mentions einfügen + Notifications
         $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
-        createNotification(
+        foreach ($mentionedUsers as $mentionedUserId) {
+            $stmtMention->execute([(int)$checkinId, (int)$mentionedUserId]);
+            $mentionId = (int)$pdo->lastInsertId();
+
+            $notifText = "{$inviterName} hat dich bei einem Checkin erwähnt.";
+            createNotification(
                 $pdo,
                 (int)$mentionedUserId,
                 'checkin_mention',

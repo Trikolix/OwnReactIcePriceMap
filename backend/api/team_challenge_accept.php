@@ -3,6 +3,7 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
 
 ensureTeamChallengeSchema($pdo);
+ensurePushInfrastructureSchema($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -26,44 +27,76 @@ try {
     teamChallengeSyncExpired($pdo);
     $pdo->beginTransaction();
 
-    $challenge = teamChallengeGetBaseRow($pdo, $challengeId);
-    if (!$challenge) {
-        throw new RuntimeException('Team-Challenge nicht gefunden.');
-    }
-    if ((int)$challenge['invitee_user_id'] !== $userId) {
-        throw new RuntimeException('Nur der eingeladene Nutzer kann annehmen.');
-    }
-    if ($challenge['status'] !== 'pending_acceptance') {
-        throw new RuntimeException('Diese Einladung kann nicht mehr angenommen werden.');
-    }
+    try {
+        $challenge = teamChallengeGetBaseRow($pdo, $challengeId);
+        if (!$challenge) {
+            throw new RuntimeException('Team-Challenge nicht gefunden.');
+        }
+        if ((int)$challenge['invitee_user_id'] !== $userId) {
+            throw new RuntimeException('Nur der eingeladene Nutzer kann annehmen.');
+        }
+        if ($challenge['status'] !== 'pending_acceptance') {
+            throw new RuntimeException('Diese Einladung kann nicht mehr angenommen werden.');
+        }
 
-    teamChallengeRequireNoOtherActive($pdo, $userId, $challengeId);
+        teamChallengeRequireNoOtherActive($pdo, $userId, $challengeId);
 
-    teamChallengeStoreLocation($pdo, $challengeId, $userId, $lat, $lon);
-    $locations = teamChallengeFetchLocationsByUsers($pdo, $challengeId);
-    if (empty($locations[(int)$challenge['inviter_user_id']])) {
-        throw new RuntimeException('Standort des einladenden Nutzers fehlt.');
-    }
+        teamChallengeStoreLocation($pdo, $challengeId, $userId, $lat, $lon);
+        $locations = teamChallengeFetchLocationsByUsers($pdo, $challengeId);
+        if (empty($locations[(int)$challenge['inviter_user_id']])) {
+            throw new RuntimeException('Standort des einladenden Nutzers fehlt.');
+        }
 
-    $calculated = teamChallengeCalculateCandidateShops(
-        $pdo,
-        (float)$locations[(int)$challenge['inviter_user_id']]['lat'],
-        (float)$locations[(int)$challenge['inviter_user_id']]['lon'],
-        $lat,
-        $lon,
-        (string)($challenge['mode'] ?? 'midpoint')
-    );
+        $calculated = teamChallengeCalculateCandidateShops(
+            $pdo,
+            (float)$locations[(int)$challenge['inviter_user_id']]['lat'],
+            (float)$locations[(int)$challenge['inviter_user_id']]['lon'],
+            $lat,
+            $lon,
+            (string)($challenge['mode'] ?? 'midpoint')
+        );
 
-    if (count($calculated['shops']) < 4) {
+        if (count($calculated['shops']) < 4) {
+            $update = $pdo->prepare("
+                UPDATE team_challenges
+            SET accepted_at = NOW(),
+                center_lat = :center_lat,
+                center_lon = :center_lon,
+                min_radius_m = :min_radius_m,
+                radius_m = :radius_m,
+                status = 'failed_no_shops',
+                failed_reason = 'not_enough_shops'
+                WHERE id = :id
+            ");
+            $update->execute([
+                'center_lat' => $calculated['center_lat'],
+                'center_lon' => $calculated['center_lon'],
+                'min_radius_m' => $calculated['min_radius_m'],
+                'radius_m' => $calculated['radius_m'],
+                'id' => $challengeId,
+            ]);
+
+            teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], $challengeId, 'Für diese Team-Challenge wurden im gemeinsamen Umkreis nicht genug Eisdielen gefunden.', 'failed_no_shops', 'failed_no_shops');
+            teamChallengeInsertNotification($pdo, $userId, $challengeId, 'Für diese Team-Challenge wurden im gemeinsamen Umkreis nicht genug Eisdielen gefunden.', 'failed_no_shops', 'failed_no_shops');
+            $pdo->commit();
+
+            echo json_encode([
+                'status' => 'success',
+                'team_challenge' => teamChallengeFetchDetail($pdo, $challengeId, $userId),
+            ]);
+            exit;
+        }
+
+        teamChallengeReplaceCandidates($pdo, $challengeId, $calculated['shops']);
+
         $update = $pdo->prepare("
             UPDATE team_challenges
-        SET accepted_at = NOW(),
-            center_lat = :center_lat,
-            center_lon = :center_lon,
-            min_radius_m = :min_radius_m,
-            radius_m = :radius_m,
-            status = 'failed_no_shops',
-            failed_reason = 'not_enough_shops'
+            SET accepted_at = NOW(),
+                center_lat = :center_lat,
+                center_lon = :center_lon,
+                min_radius_m = :min_radius_m,
+                radius_m = :radius_m,
+                status = 'proposal_open'
             WHERE id = :id
         ");
         $update->execute([
@@ -74,49 +107,21 @@ try {
             'id' => $challengeId,
         ]);
 
-        teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], $challengeId, 'Für diese Team-Challenge wurden im gemeinsamen Umkreis nicht genug Eisdielen gefunden.', 'failed_no_shops', 'failed_no_shops');
-        teamChallengeInsertNotification($pdo, $userId, $challengeId, 'Für diese Team-Challenge wurden im gemeinsamen Umkreis nicht genug Eisdielen gefunden.', 'failed_no_shops', 'failed_no_shops');
         $pdo->commit();
-
-        echo json_encode([
-            'status' => 'success',
-            'team_challenge' => teamChallengeFetchDetail($pdo, $challengeId, $userId),
-        ]);
-        exit;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
     }
 
-    teamChallengeReplaceCandidates($pdo, $challengeId, $calculated['shops']);
-
-    $update = $pdo->prepare("
-        UPDATE team_challenges
-        SET accepted_at = NOW(),
-            center_lat = :center_lat,
-            center_lon = :center_lon,
-            min_radius_m = :min_radius_m,
-            radius_m = :radius_m,
-            status = 'proposal_open'
-        WHERE id = :id
-    ");
-    $update->execute([
-        'center_lat' => $calculated['center_lat'],
-        'center_lon' => $calculated['center_lon'],
-        'min_radius_m' => $calculated['min_radius_m'],
-        'radius_m' => $calculated['radius_m'],
-        'id' => $challengeId,
-    ]);
-
-    teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], $challengeId, "{$challenge['invitee_username']} hat deine Team-Challenge angenommen.", 'accepted', 'proposal_open');
-    teamChallengeSendEmail($pdo, (int)$challenge['inviter_user_id'], $challenge['invitee_username'], 'accepted', $challengeId);
-    $pdo->commit();
+    $detail = teamChallengeFetchDetail($pdo, $challengeId, $userId);
 
     echo json_encode([
         'status' => 'success',
-        'team_challenge' => teamChallengeFetchDetail($pdo, $challengeId, $userId),
+        'team_challenge' => $detail,
     ]);
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

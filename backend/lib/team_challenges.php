@@ -19,10 +19,10 @@ function teamChallengeEnsureColumn(PDO $pdo, string $table, string $column, stri
 
 function ensureTeamChallengeSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__team_challenge_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__team_challenge_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS team_challenges (
@@ -343,8 +343,8 @@ function teamChallengeBuildSummary(array $row, int $viewerId): array
         'viewer_role' => $isInviter ? 'inviter' : ($isInvitee ? 'invitee' : null),
         'can_accept' => $isInvitee && $row['status'] === 'pending_acceptance',
         'can_decline' => $isInvitee && $row['status'] === 'pending_acceptance',
-        'can_submit_proposals' => $isInvitee && in_array($row['status'], ['proposal_open', 'proposal_submitted'], true),
-        'can_finalize' => $isInviter && in_array($row['status'], ['proposal_open', 'proposal_submitted'], true),
+        'can_submit_proposals' => false, // Deprecated in simplified workflow
+        'can_finalize' => $isInvitee && $row['status'] === 'proposal_open',
         'can_cancel' => in_array($row['status'], teamChallengeActiveStatuses(), true),
     ];
 }
