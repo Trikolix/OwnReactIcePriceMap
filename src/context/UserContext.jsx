@@ -143,8 +143,14 @@ export const UserProvider = ({ children }) => {
 
     try {
       const response = await fetch(`${API_BASE}/userManagement/session.php`);
+      if (response.status === 401) {
+        await logout();
+        return;
+      }
       if (!response.ok) {
-        throw new Error('Session invalid');
+        console.warn(`Session validation skipped due to HTTP ${response.status}`);
+        sessionValidatedRef.current = false;
+        return;
       }
       const data = await response.json();
       if (data.status === 'success') {
@@ -153,7 +159,8 @@ export const UserProvider = ({ children }) => {
         await logout();
       }
     } catch (error) {
-      await logout();
+      console.warn('Session validation failed without explicit unauthorized response', error);
+      sessionValidatedRef.current = false;
     }
   }, [authToken, login, logout]);
 
