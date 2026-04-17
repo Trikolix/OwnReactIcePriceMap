@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/email_notification.php';
+require_once __DIR__ . '/notification_dispatcher.php';
 
 function teamChallengeColumnExists(PDO $pdo, string $table, string $column): bool
 {
@@ -19,10 +19,10 @@ function teamChallengeEnsureColumn(PDO $pdo, string $table, string $column, stri
 
 function ensureTeamChallengeSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__team_challenge_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__team_challenge_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS team_challenges (
@@ -343,8 +343,8 @@ function teamChallengeBuildSummary(array $row, int $viewerId): array
         'viewer_role' => $isInviter ? 'inviter' : ($isInvitee ? 'invitee' : null),
         'can_accept' => $isInvitee && $row['status'] === 'pending_acceptance',
         'can_decline' => $isInvitee && $row['status'] === 'pending_acceptance',
-        'can_submit_proposals' => $isInvitee && in_array($row['status'], ['proposal_open', 'proposal_submitted'], true),
-        'can_finalize' => $isInviter && in_array($row['status'], ['proposal_open', 'proposal_submitted'], true),
+        'can_submit_proposals' => false, // Deprecated in simplified workflow
+        'can_finalize' => $isInvitee && $row['status'] === 'proposal_open',
         'can_cancel' => in_array($row['status'], teamChallengeActiveStatuses(), true),
     ];
 }
@@ -484,18 +484,18 @@ function teamChallengeFetchDetail(PDO $pdo, int $challengeId, int $viewerId): ar
 
 function teamChallengeInsertNotification(PDO $pdo, int $recipientId, int $challengeId, string $text, string $action, string $status): void
 {
-    $stmt = $pdo->prepare("
-        INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-        VALUES (:recipient_id, 'team_challenge', :reference_id, :text, JSON_OBJECT('team_challenge_id', :json_challenge_id, 'action', :action_name, 'status', :status_name))
-    ");
-    $stmt->execute([
-        'recipient_id' => $recipientId,
-        'reference_id' => $challengeId,
-        'text' => $text,
-        'json_challenge_id' => $challengeId,
-        'action_name' => $action,
-        'status_name' => $status,
-    ]);
+    createNotification(
+        $pdo,
+        $recipientId,
+        'team_challenge',
+        $challengeId,
+        $text,
+        [
+            'team_challenge_id' => $challengeId,
+            'action' => $action,
+            'status' => $status,
+        ]
+    );
 }
 
 function teamChallengeSendEmail(PDO $pdo, int $recipientId, string $senderName, string $action, int $challengeId, array $extra = []): void

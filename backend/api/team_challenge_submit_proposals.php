@@ -3,6 +3,7 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
 
 ensureTeamChallengeSchema($pdo);
+ensurePushInfrastructureSchema($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -68,15 +69,24 @@ try {
         ->execute(['id' => $challengeId]);
 
     teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], $challengeId, "{$challenge['invitee_username']} hat Eisdielen für eure Team-Challenge vorgeschlagen.", 'proposal_submitted', 'proposal_submitted');
+    
     $pdo->commit();
+
+    $detail = teamChallengeFetchDetail($pdo, $challengeId, $userId);
 
     echo json_encode([
         'status' => 'success',
-        'team_challenge' => teamChallengeFetchDetail($pdo, $challengeId, $userId),
+        'team_challenge' => $detail,
     ]);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
-        $pdo->rollBack();
+        try {
+            $pdo->rollBack();
+        } catch (PDOException $rollbackEx) {
+            if (stripos($rollbackEx->getMessage(), 'active transaction') === false) {
+                throw $rollbackEx;
+            }
+        }
     }
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

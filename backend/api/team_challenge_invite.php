@@ -3,6 +3,7 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
 
 ensureTeamChallengeSchema($pdo);
+ensurePushInfrastructureSchema($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -46,56 +47,62 @@ try {
 
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare("
-        INSERT INTO team_challenges (
-            inviter_user_id,
-            invitee_user_id,
-            type,
-            mode,
-            status,
-            proposal_deadline,
-            valid_until,
-            completion_window_minutes,
-            created_by_user_id
-        ) VALUES (
-            :inviter_user_id,
-            :invitee_user_id,
-            :type,
-            :mode,
-            'pending_acceptance',
-            :proposal_deadline,
-            :valid_until,
-            90,
-            :created_by_user_id
-        )
-    ");
-    $stmt->execute([
-        'inviter_user_id' => $userId,
-        'invitee_user_id' => $inviteeUserId,
-        'type' => $type,
-        'mode' => $mode,
-        'proposal_deadline' => $proposalDeadline,
-        'valid_until' => $validUntil,
-        'created_by_user_id' => $userId,
-    ]);
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO team_challenges (
+                inviter_user_id,
+                invitee_user_id,
+                type,
+                mode,
+                status,
+                proposal_deadline,
+                valid_until,
+                completion_window_minutes,
+                created_by_user_id
+            ) VALUES (
+                :inviter_user_id,
+                :invitee_user_id,
+                :type,
+                :mode,
+                'pending_acceptance',
+                :proposal_deadline,
+                :valid_until,
+                90,
+                :created_by_user_id
+            )
+        ");
+        $stmt->execute([
+            'inviter_user_id' => $userId,
+            'invitee_user_id' => $inviteeUserId,
+            'type' => $type,
+            'mode' => $mode,
+            'proposal_deadline' => $proposalDeadline,
+            'valid_until' => $validUntil,
+            'created_by_user_id' => $userId,
+        ]);
 
-    $challengeId = (int)$pdo->lastInsertId();
-    teamChallengeStoreLocation($pdo, $challengeId, $userId, $lat, $lon);
+        $challengeId = (int)$pdo->lastInsertId();
+        teamChallengeStoreLocation($pdo, $challengeId, $userId, $lat, $lon);
 
-    $text = "{$inviter['username']} hat dich zu einer Team-Challenge eingeladen.";
-    teamChallengeInsertNotification($pdo, $inviteeUserId, $challengeId, $text, 'invite', 'pending_acceptance');
-    teamChallengeSendEmail($pdo, $inviteeUserId, $inviter['username'], 'invite', $challengeId);
+        $text = "{$inviter['username']} hat dich zu einer Team-Challenge eingeladen.";
+        teamChallengeInsertNotification($pdo, $inviteeUserId, $challengeId, $text, 'invite', 'pending_acceptance');
+        teamChallengeSendEmail($pdo, $inviteeUserId, $inviter['username'], 'invite', $challengeId);
 
-    $pdo->commit();
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $detail = teamChallengeFetchDetail($pdo, $challengeId, $userId);
 
     echo json_encode([
         'status' => 'success',
-        'team_challenge' => teamChallengeFetchDetail($pdo, $challengeId, $userId),
+        'team_challenge' => $detail,
     ]);
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
