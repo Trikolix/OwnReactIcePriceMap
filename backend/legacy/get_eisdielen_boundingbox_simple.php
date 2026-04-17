@@ -10,7 +10,7 @@ require_once 'db_connect.php';
 $host = "localhost";
 $dbname = "db_439770_2";
 $username = "USER439770_wed";
-$password = "K8RYTP23y8kWSdt";
+$password = getenv('DB_PASS') ?: '';
 
 // Verbindung zur Datenbank
 try {
