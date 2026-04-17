@@ -137,10 +137,10 @@ Die brauchst du für dein Backend.
 Folgende Umgebungsvariablen im Backend setzen:
 
 ```bash
-SOCIAL_AUTH_STATE_SECRET=hier-einen-langen-zufaelligen-geheimen-string-setzen
+SOCIAL_AUTH_STATE_SECRET=<DEIN_GEHEIMER_STRING>
 SOCIAL_AUTH_ALLOWED_ORIGINS=https://ice-app.de,http://localhost:5173
 GOOGLE_OAUTH_CLIENT_ID=deine-google-client-id
-GOOGLE_OAUTH_CLIENT_SECRET=dein-google-client-secret
+GOOGLE_OAUTH_CLIENT_SECRET=<DEIN_CLIENT_SECRET>
 ```
 
 Hinweise:
