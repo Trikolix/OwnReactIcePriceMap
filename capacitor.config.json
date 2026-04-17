@@ -3,6 +3,7 @@
   "appName": "The Gourmet Cyclists Ice Radar",
   "webDir": "build",
   "server": {
-    "cleartext": true
+    "cleartext": true,
+    "androidScheme": "https"
   }
 }

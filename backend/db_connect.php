@@ -9,6 +9,7 @@ $allowed_origins = [
     'www.ice-app.de',
     'capacitor://localhost',
     'http://localhost',
+    'https://localhost',
     'http://localhost:5173'
 ];
 
