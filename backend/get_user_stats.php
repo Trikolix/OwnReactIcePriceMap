@@ -310,6 +310,9 @@ try {
     $stats["reviews"] = $reviews; // Reviews hinzufügen
     $stats["routen"] = $routen; // Routen hinzufügen
     $stats["level_info"] = $levelInfo; // Level Info hinzufügen
+    if ($curUserId == 1) {
+        $stats["ep_breakdown"] = getEpBreakdownForUser($pdo, $nutzerId); // EP Breakdown hinzufügen
+    }
     $stats["review_count"] = count($reviews);
     $stats["route_count"] = count($routen);
     

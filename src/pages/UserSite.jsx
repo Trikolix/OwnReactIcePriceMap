@@ -823,7 +823,22 @@ function UserSite() {
               <h2>Deine Statistiken</h2>
               <span>Ein Überblick über deine Eis-Abenteuer</span>
             </SectionHeader>
-            <ContentGrid>
+                        <ContentGrid>
+              {userIdFromContext == 1 && data.ep_breakdown && (
+                <ContentCard>
+                  <CardTitle>EP-Analyse (Admin)</CardTitle>
+                  <CardSubtitle>Gesamt-EP: {data.ep_breakdown.ep_gesamt}</CardSubtitle>
+                  <PortionRow><span>Check-ins ohne Bild</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_checkins_ohne_bild / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_checkins_ohne_bild}</span></PortionRow>
+                  <PortionRow><span>Check-ins mit Bild</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_checkins_mit_bild / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_checkins_mit_bild}</span></PortionRow>
+                  <PortionRow><span>Bewertungen</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_bewertungen / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_bewertungen}</span></PortionRow>
+                  <PortionRow><span>Preismeldungen</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_preismeldungen / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_preismeldungen}</span></PortionRow>
+                  <PortionRow><span>Routen</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_routen / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_routen}</span></PortionRow>
+                  <PortionRow><span>Awards</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_awards / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_awards}</span></PortionRow>
+                  <PortionRow><span>Eisdielen</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_eisdielen / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_eisdielen}</span></PortionRow>
+                  <PortionRow><span>Geworbene Nutzer</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_geworbene_nutzer / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_geworbene_nutzer}</span></PortionRow>
+                  <PortionRow><span>Pflegeaufgaben</span><PortionBar><PortionFill style={{ width: `${(data.ep_breakdown.ep_pflege / Math.max(1, data.ep_breakdown.ep_gesamt)) * 100}%` }} /></PortionBar><span>{data.ep_breakdown.ep_pflege}</span></PortionRow>
+                </ContentCard>
+              )}
               <ContentCard>
                 <CardTitle>Portionen & Verteilung</CardTitle>
                 <CardSubtitle>Gesamt: {totalIcePortions}</CardSubtitle>

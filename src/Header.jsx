@@ -567,7 +567,7 @@ const Header = ({ refreshShops }) => {
                   <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
                   <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
-                  <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>
+                  {userId == 1 && (<MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>)}
                   {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
                   <MenuActionButton
                     type="button"

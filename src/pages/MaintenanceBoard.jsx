@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { MapPinned, RefreshCw, Wrench } from "lucide-react";
 import Header from "../Header";
 import Seo from "../components/Seo";
+import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import SubmitPriceModal from "../SubmitPriceModal";
 import SubmitIceShopModal from "../SubmitIceShopModal";
@@ -30,6 +31,7 @@ const formatTaskType = (taskType) => {
 
 const MaintenanceBoard = () => {
   const { userId, isLoggedIn, userPosition, setUserPosition } = useUser();
+  const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [radiusM, setRadiusM] = useState(25000);
   const [location, setLocation] = useState(() => (
@@ -42,6 +44,12 @@ const MaintenanceBoard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeShopDetail, setActiveShopDetail] = useState(null);
+
+  useEffect(() => {
+    if (isLoggedIn && userId != 1) {
+      navigate("/");
+    }
+  }, [isLoggedIn, userId, navigate]);
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
 
