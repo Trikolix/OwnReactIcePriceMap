@@ -51,10 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$host = "10.35.233.205:3306";
-$dbname = "k320202_iceapp";
-$username = "k320202_iceapp";
-$password = "@i5w647cU";
+$host = "localhost";
+$dbname = "db_439770_2";
+$username = "USER439770_wed";
+$password = getenv('DB_PASS') ?: '';
 
 // Verbindung zur Datenbank
 try {

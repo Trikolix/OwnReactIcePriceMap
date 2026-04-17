@@ -526,7 +526,6 @@ const MapContextMenuListener = ({ onOpen, onDismiss, onUserInteraction }) => {
 const IceCreamRadar = () => {
   const location = useLocation();
   const [iceCreamShops, setIceCreamShops] = useState([]);
-  const normalizedIceCreamShops = useMemo(() => (Array.isArray(iceCreamShops) ? iceCreamShops : []), [iceCreamShops]);
   const [activeShop, setActiveShop] = useState(null);
   const [clustering, setClustering] = useState(true);
   const [displayMode, setDisplayMode] = useState('price');
@@ -663,7 +662,7 @@ const IceCreamRadar = () => {
   const fetchAndCenterShop = useCallback(async (id, shopPreview = null) => {
     const requestId = ++activeShopRequestRef.current;
     const preview = buildActiveShopPreview(shopPreview)
-      || buildActiveShopPreview(normalizedIceCreamShops.find((shop) => String(shop.eisdielen_id) === String(id)));
+      || buildActiveShopPreview(iceCreamShops.find((shop) => String(shop.eisdielen_id) === String(id)));
 
     if (preview) {
       setActiveShop(preview);
@@ -685,7 +684,7 @@ const IceCreamRadar = () => {
       }
       console.error('Fehler beim Abrufen der Shop-Details via URL:', err);
     }
-  }, [apiUrl, buildActiveShopPreview, normalizedIceCreamShops, openFilterQueryString]);
+  }, [apiUrl, buildActiveShopPreview, iceCreamShops, openFilterQueryString]);
 
   useEffect(() => {
     if (shopId) {
@@ -706,7 +705,7 @@ const IceCreamRadar = () => {
     }
 
     const normalized = searchQuery.toLowerCase();
-    const matches = normalizedIceCreamShops
+    const matches = iceCreamShops
       .filter((shop) => getShopDisplayName(shop)?.toLowerCase().includes(normalized))
       .slice(0, 5)
       .map((shop) => ({
@@ -719,7 +718,7 @@ const IceCreamRadar = () => {
 
     setShopMatches(matches);
     setPlaceMatches([]);
-  }, [searchQuery, normalizedIceCreamShops]);
+  }, [searchQuery, iceCreamShops]);
 
   const loadIceCreamShops = useCallback(async () => {
     const cacheKey = getShopCacheKey(openFilterQueryString);
@@ -752,12 +751,6 @@ const IceCreamRadar = () => {
       const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
       const response = await fetch(query);
       const data = await response.json();
-      if (!Array.isArray(data)) {
-        console.warn('Unerwartete Eisdielen-Antwort erhalten:', data);
-        const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
-        setIceCreamShops(cachedShops ?? []);
-        return;
-      }
       setIceCreamShops(data);
 
       if (Array.isArray(data)) {
@@ -1213,7 +1206,7 @@ const IceCreamRadar = () => {
     if (!activeDisplayConfig?.getValue) {
       return [];
     }
-    const filteredShops = normalizedIceCreamShops.reduce((acc, shop) => {
+    const filteredShops = iceCreamShops.reduce((acc, shop) => {
       if (favoritesFilterActive && shop.is_favorit !== 1) {
         return acc;
       }
@@ -1250,7 +1243,7 @@ const IceCreamRadar = () => {
       return filteredShops;
     }
 
-    const focusedShop = normalizedIceCreamShops.find(
+    const focusedShop = iceCreamShops.find(
       (shop) => String(shop.eisdielen_id) === String(activeShopId)
     );
     if (!focusedShop || focusedShop.status !== 'permanent_closed') {
@@ -1262,7 +1255,7 @@ const IceCreamRadar = () => {
       { shop: focusedShop, value: activeDisplayConfig.getValue(focusedShop) },
     ];
   }, [
-    normalizedIceCreamShops,
+    iceCreamShops,
     activeDisplayConfig,
     activeShopId,
     favoritesFilterActive,
