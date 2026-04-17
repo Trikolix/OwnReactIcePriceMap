@@ -102,16 +102,26 @@ try {
         } elseif ($age == ($deletionThreshold - 1)) {
             // Final warning (1 month before deletion)
             $text = "Letzte Warnung! Deine Eisdiele '$storeName' ist komplett inaktiv und wird in 30 Tagen gelöscht. Füge Check-Ins oder Preise hinzu, um sie zu retten!";
-            createNotification($pdo, $userId, 'systemmeldung', $storeId, $text);
-            sendEmailNotification($pdo, $userId, "Letzte Warnung für $storeName", $text);
+            $emailText = $text . "\n\nZur Eisdiele: https://ice-app.de/eisdiele/$storeId";
+
+            // Notification wird intern per referenz_id $storeId ohnehin verknüpft (abhängig von App-Logik), aber wir können die URL auch anhängen:
+            // Da der Nutzer auch in der In-App Benachrichtigung den Link anklicken will:
+            $appText = $text . " (https://ice-app.de/eisdiele/$storeId)";
+            createNotification($pdo, $userId, 'systemmeldung', $storeId, $appText);
+
+            sendEmailNotification($pdo, $userId, "Letzte Warnung für $storeName", $emailText);
 
             $warningCount++;
             echo "Warned store ID $storeId ('$storeName')\n";
         } elseif ($age == 1) {
             // Gentle nudge (Exactly 1 month old)
             $text = "Erinnerung: Du hast '$storeName' vor einem Monat hinzugefügt, aber es gibt noch keine Check-Ins oder Preise. Sei der Erste!";
-            createNotification($pdo, $userId, 'systemmeldung', $storeId, $text);
-            sendEmailNotification($pdo, $userId, "Erinnerung für $storeName", $text);
+            $emailText = $text . "\n\nZur Eisdiele: https://ice-app.de/eisdiele/$storeId";
+
+            $appText = $text . " (https://ice-app.de/eisdiele/$storeId)";
+            createNotification($pdo, $userId, 'systemmeldung', $storeId, $appText);
+
+            sendEmailNotification($pdo, $userId, "Erinnerung für $storeName", $emailText);
 
             $nudgeCount++;
             echo "Nudged store ID $storeId ('$storeName')\n";
