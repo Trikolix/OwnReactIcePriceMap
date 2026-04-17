@@ -6,12 +6,6 @@ require_once __DIR__ . '/../lib/shop_maintenance.php';
 
 $auth = requireAuth($pdo);
 $userId = (int)$auth['user_id'];
-
-if ($userId !== 1) {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
-    die();
-}
 $lat = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
 $lon = isset($_GET['lon']) ? (float)$_GET['lon'] : null;
 $radiusM = isset($_GET['radius_m']) ? (int)$_GET['radius_m'] : SHOP_MAINTENANCE_DEFAULT_RADIUS_M;
