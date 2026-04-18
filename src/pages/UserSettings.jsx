@@ -12,6 +12,7 @@ import {
   getBrowserPushStatus,
   initializeNativePush,
 } from "../services/pushNotifications";
+import { Capacitor } from "@capacitor/core";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -342,19 +343,20 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
 
       await persistNotificationSettings(updatedSettings);
 
-      if (updatedSettings.push_enabled_web) {
-        await enableBrowserPush(userId);
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
+        if (updatedSettings.push_enabled_android) {
+          await initializeNativePush(userId);
+        } else {
+          await disableNativePush(userId);
+        }
       } else {
-        await disableBrowserPush(userId);
+        if (updatedSettings.push_enabled_web) {
+          await enableBrowserPush(userId);
+        } else {
+          await disableBrowserPush(userId);
+        }
+        setBrowserPushStatus(await getBrowserPushStatus());
       }
-      
-      if (updatedSettings.push_enabled_android) {
-        await initializeNativePush(userId);
-      } else {
-        await disableNativePush(userId);
-      }
-      
-      setBrowserPushStatus(await getBrowserPushStatus());
       setSuccess(true);
     } catch (e) {
       setError(e.message || "Fehler beim Speichern.");

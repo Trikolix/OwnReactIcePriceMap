@@ -208,7 +208,7 @@ function PhotoChallengeList() {
                 </SpotlightFooter>
               </SpotlightCard>
             ) : (
-              <HeroEmptyState>Noch keine oeffentliche Challenge verfuegbar.</HeroEmptyState>
+              <HeroEmptyState>Noch keine öffentliche Challenge verfügbar.</HeroEmptyState>
             )}
           </HeroSpotlight>
         </HeroSection>

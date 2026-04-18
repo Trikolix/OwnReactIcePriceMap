@@ -186,7 +186,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
           </HeaderMain>
           <HeaderActions>
-            <CloseButton onClick={onClose} aria-label="Details schliessen">
+            <CloseButton onClick={onClose} aria-label="Details schließen">
               <X size={16} />
             </CloseButton>
             <HeaderUtilityRow>

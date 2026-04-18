@@ -59,7 +59,7 @@ const fetchWebPushPublicKey = async () => {
   const response = await fetch(`${API_BASE}/api/push/web-subscriptions/index.php`);
   const json = await response.json();
   if (!response.ok || !json.success) {
-    throw new Error(json.message || "Web Push ist derzeit nicht verfuegbar.");
+    throw new Error(json.message || "Web Push ist derzeit nicht verfügbar.");
   }
   return json.public_key;
 };
@@ -67,7 +67,7 @@ const fetchWebPushPublicKey = async () => {
 export const enableBrowserPush = async (userId) => {
   ensureApiBase();
   if (!userId) throw new Error("Nutzer nicht gefunden.");
-  if (!isWebPushSupported()) throw new Error("Browser-Push wird auf diesem Geraet nicht unterstuetzt.");
+  if (!isWebPushSupported()) throw new Error("Browser-Push wird auf diesem Gerät nicht unterstützt.");
 
   const registration = await registerPushServiceWorker();
   const permission = await Notification.requestPermission();
