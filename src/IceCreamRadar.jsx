@@ -18,6 +18,7 @@ import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
 import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
+import { Capacitor } from "@capacitor/core";
 import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 import { canUseExternalDiscovery } from './utils/featureAccess';
@@ -1302,10 +1303,24 @@ const IceCreamRadar = () => {
 
   // Geoposition des Nutzers laden
   useEffect(() => {
-    if (!userPosition && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
+    const fetchPosition = async () => {
+      if (!userPosition && navigator.geolocation) {
+        try {
+          if (Capacitor.isNativePlatform()) {
+            const { Geolocation } = await import('@capacitor/geolocation');
+            const permissions = await Geolocation.checkPermissions();
+            if (permissions.location !== 'granted') {
+              const request = await Geolocation.requestPermissions();
+              if (request.location !== 'granted') return;
+            }
+          }
+        } catch (e) {
+          console.error("Geolocation init error:", e);
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
           const newPos = [latitude, longitude];
           setUserPosition(newPos); // speichert im localStorage
           setInitialCenter(newPos); // nur einmal fürs initiale Laden
@@ -1313,8 +1328,10 @@ const IceCreamRadar = () => {
         (error) => {
           console.error('Fehler beim Abrufen der Position:', error);
         }
-      );
-    }
+        );
+      }
+    };
+    fetchPosition();
   }, [userPosition, setUserPosition]);
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
@@ -1466,8 +1483,8 @@ const IceCreamRadar = () => {
           <DiscoveryOverlay>
             <DiscoveryCard>
               <DiscoveryHeader>
-                <DiscoveryTitle 
-                  onClick={() => setIsDiscoveryExpanded(!isDiscoveryExpanded)} 
+                <DiscoveryTitle
+                  onClick={() => setIsDiscoveryExpanded(!isDiscoveryExpanded)}
                   style={{ cursor: 'pointer', flex: 1 }}
                 >
                   Neue Eisdielen entdecken
@@ -1478,8 +1495,8 @@ const IceCreamRadar = () => {
                       Treffer ausblenden
                     </DiscoveryClearButton>
                   )}
-                  <DiscoveryToggleButton 
-                    type="button" 
+                  <DiscoveryToggleButton
+                    type="button"
                     onClick={() => setIsDiscoveryExpanded(!isDiscoveryExpanded)}
                     $isExpanded={isDiscoveryExpanded}
                     aria-label={isDiscoveryExpanded ? "Zuklappen" : "Aufklappen"}

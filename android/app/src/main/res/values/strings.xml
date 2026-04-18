@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">The Gourmet Cyclists Ice Radar</string>
+    <string name="title_activity_main">The Gourmet Cyclists Ice Radar</string>
+    <string name="package_name">de.iceapp.mobile</string>
+    <string name="custom_url_scheme">de.iceapp.mobile</string>
+</resources>
