@@ -187,7 +187,11 @@ export const initializeNativePush = async (userId) => {
     throw new Error("Android-Benachrichtigungen wurden nicht freigegeben.");
   }
 
-  await PushNotifications.register();
+  try {
+    await PushNotifications.register();
+  } catch (error) {
+    console.error("PushNotifications.register() failed. This is expected if google-services.json is missing:", error);
+  }
 };
 
 export const disableNativePush = async (userId) => {
