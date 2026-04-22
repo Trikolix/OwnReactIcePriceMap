@@ -1326,10 +1326,12 @@ const IceCreamRadar = () => {
 
 
   useEffect(() => {
-    if (userId !== undefined) {
-      fetchIceCreamShops();
+    // Avoid guest reloads during transient auth-state remounts while a logged-in user is still being restored.
+    if (isLoggedIn && userId == null) {
+      return;
     }
-  }, [userId, openFilterQueryString]);
+    fetchIceCreamShops();
+  }, [userId, isLoggedIn, openFilterQueryString, fetchIceCreamShops]);
 
   useEffect(() => {
     if (!isLoggedIn || !canAccessExternalDiscovery) {

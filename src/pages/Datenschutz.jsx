@@ -31,6 +31,7 @@ export default function Datenschutz() {
       <SubHeading>2. Erhobene Daten</SubHeading>
       <ul>
         <li>Registrierungsdaten (z. B. Nutzername, E-Mail)</li>
+        <li>Single Sign-On (SSO): Wenn du dich über Google registrierst/anmeldest, erhalten wir von Google grundlegende Profildaten wie deine E-Mail-Adresse und ggf. deinen Namen sowie Profilbild, um deinen Account zu erstellen und zu verwalten.</li>
         <li>Standortdaten (für das Finden von Eisdielen – nur mit Zustimmung - werden nicht gespeichert)</li>
         <li>Inhalte, die du teilst (Bewertungen, Bilder)</li>
       </ul>
@@ -60,7 +61,7 @@ export default function Datenschutz() {
       </p>
 
       <SubHeading>5. Cookies & Drittanbieter</SubHeading>
-      <p>Wir verwenden Dienste wie OpenStreetMap. Dabei können Cookies eingesetzt und Daten an OpenStreetMap übermittelt werden.</p>
+      <p>Wir verwenden essentielle Technologien wie Local Storage zur Speicherung von Anmeldeinformationen und Einstellungen (z. B. Cookie-Banner-Zustimmung). Weiterhin nutzen wir Dienste wie OpenStreetMap. Dabei können Cookies eingesetzt und Daten an OpenStreetMap übermittelt werden. Für den Login via Google werden ebenfalls Cookies des Drittanbieters gesetzt.</p>
 
       <SubHeading>6. Deine Rechte</SubHeading>
       <p>Du hast das Recht auf Auskunft, Löschung, Berichtigung und Einschränkung der Verarbeitung deiner Daten. Kontaktiere uns jederzeit unter der oben genannten E-Mail-Adresse.</p>

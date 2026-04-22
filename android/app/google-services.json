@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "602941630393",
+    "project_id": "iceapp-787d8",
+    "storage_bucket": "iceapp-787d8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602941630393:android:708d5feb186e6e15523868",
+        "android_client_info": {
+          "package_name": "de.iceapp.radar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "602941630393-cgmenhid3r88il1dn5dm1rtee6imuoiu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcMg1X2_n2q0QrqyPzbTOxOtbWcUB0pWU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "602941630393-cgmenhid3r88il1dn5dm1rtee6imuoiu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

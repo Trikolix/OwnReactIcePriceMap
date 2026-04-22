@@ -1,9 +1,14 @@
 {
-  "appId": "de.iceapp.mobile",
+  "appId": "de.iceapp.radar",
   "appName": "The Gourmet Cyclists Ice Radar",
   "webDir": "build",
   "server": {
     "cleartext": true,
     "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
   }
 }
