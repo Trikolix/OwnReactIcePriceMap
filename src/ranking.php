@@ -2,7 +2,7 @@
 $host = "localhost";
 $dbname = "db_439770_2";
 $username = "USER439770_wed";
-$password = getenv('DB_PASS') ?: '';
+$password = "K8RYTP23y8kWSdt";
  
 // Verbindung zur Datenbank
 try {

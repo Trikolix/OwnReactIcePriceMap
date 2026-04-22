@@ -32,8 +32,8 @@ try {
     // Eine Test-Benachrichtigung erstellen und versenden
     createNotification(
         $pdo,
-        1, // Empfaenger ist immer der Admin mit ID 1
-        'systemmeldung', // Wir koennen den vorhandenen Typ "systemmeldung" nutzen
+        1, // Empfänger ist immer der Admin mit ID 1
+        'systemmeldung', // Wir können den vorhandenen Typ "systemmeldung" nutzen
         time(), // Eindeutige Referenz-ID
         'Dies ist eine Test-Benachrichtigung von deiner Ice App!',
         ['is_test' => true]

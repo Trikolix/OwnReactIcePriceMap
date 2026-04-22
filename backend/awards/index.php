@@ -2,7 +2,7 @@
 session_start();
 
 // Login-Logik verarbeiten
-$correctPassword = getenv("ADMIN_PASS") ?: "";
+$correctPassword = "deinSicheresPasswort123";
 if (isset($_POST['password'])) {
     if ($_POST['password'] === $correctPassword) {
         $_SESSION['admin'] = true;

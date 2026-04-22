@@ -9,8 +9,6 @@ import { photoChallengeRoutes } from './features/photoChallenge/routes';
 import { userRoutes } from './features/user/routes';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import PushBootstrap from './components/PushBootstrap';
-import CookieBanner from './components/CookieBanner';
-import GuestMotivation from './components/GuestMotivation';
 
 const allRoutes = [
   ...coreRoutes,
@@ -38,8 +36,6 @@ const App = () => {
         <ScrollToTopOnRouteChange />
         <PushBootstrap />
         <AppUpdateBanner />
-        <CookieBanner />
-        <GuestMotivation />
         <Routes>
           {allRoutes.map((routeDef) => (
             <Route key={routeDef.path} path={routeDef.path} element={routeDef.element} />
