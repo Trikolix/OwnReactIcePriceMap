@@ -10,6 +10,11 @@ const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev";
 
 let nativeListenersRegistered = false;
 let activeNativeUserId = null;
+let navigationHandler = null;
+
+export const setPushNavigationHandler = (handler) => {
+  navigationHandler = handler;
+};
 
 const ensureApiBase = () => {
   if (!API_BASE) {
@@ -157,7 +162,11 @@ const installNativeListeners = () => {
   PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
     const deeplink = event?.notification?.data?.deeplink;
     if (deeplink) {
-      window.location.href = deeplink;
+      if (navigationHandler) {
+        navigationHandler(deeplink);
+      } else {
+        window.location.href = deeplink;
+      }
     }
   });
 

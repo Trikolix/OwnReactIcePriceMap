@@ -1,14 +1,29 @@
 apply plugin: 'com.android.application'
 
+def computeVersionName() {
+    def inputFile = new File(project.rootDir, '../package.json')
+    def packageJson = new groovy.json.JsonSlurper().parseText(inputFile.text)
+    return packageJson.version
+}
+
+def computeVersionCode() {
+    def version = computeVersionName()
+    def parts = version.tokenize('.')
+    def major = parts[0].toInteger()
+    def minor = parts[1].toInteger()
+    def patch = parts[2].toInteger()
+    return (major * 10000) + (minor * 100) + patch
+}
+
 android {
-    namespace = "de.iceapp.mobile"
-    compileSdk = rootProject.ext.compileSdkVersion
+    namespace "de.iceapp.mobile"
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "de.iceapp.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode computeVersionCode()
+        versionName computeVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config.php';
 $DEBUG_MODE = false;
 
 $allowed_origins = [
@@ -55,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $host = "localhost";
 $dbname = "db_439770_2";
 $username = "USER439770_wed";
-$password = "K8RYTP23y8kWSdt";
+$password = getenv('DB_PASS') ?: '';
 
 // Verbindung zur Datenbank
 try {

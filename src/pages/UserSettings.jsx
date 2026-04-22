@@ -5,6 +5,7 @@ import getCroppedImg from "../utils/cropImage";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { SubmitButton } from "../styles/SharedStyles";
+import { Capacitor } from "@capacitor/core";
 import {
   disableBrowserPush,
   disableNativePush,
@@ -12,7 +13,6 @@ import {
   getBrowserPushStatus,
   initializeNativePush,
 } from "../services/pushNotifications";
-import { Capacitor } from "@capacitor/core";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -335,28 +335,33 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       await persistAvatarChange();
       
       const hasAnyPushEnabled = Object.keys(settings).some(key => key.endsWith('_push') && settings[key] === 1);
+      const isNative = Capacitor.isNativePlatform();
+      
       const updatedSettings = {
         ...settings,
-        push_enabled_web: hasAnyPushEnabled ? 1 : 0,
-        push_enabled_android: hasAnyPushEnabled ? 1 : 0,
+        push_enabled_web: (!isNative && hasAnyPushEnabled) ? 1 : (isNative ? settings.push_enabled_web : 0),
+        push_enabled_android: (isNative && hasAnyPushEnabled) ? 1 : (!isNative ? settings.push_enabled_android : 0),
       };
 
       await persistNotificationSettings(updatedSettings);
 
-      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
-        if (updatedSettings.push_enabled_android) {
+      if (isNative) {
+        // Native Plattform (Android)
+        if (hasAnyPushEnabled) {
           await initializeNativePush(userId);
         } else {
           await disableNativePush(userId);
         }
       } else {
-        if (updatedSettings.push_enabled_web) {
+        // Web Plattform
+        if (hasAnyPushEnabled) {
           await enableBrowserPush(userId);
         } else {
           await disableBrowserPush(userId);
         }
-        setBrowserPushStatus(await getBrowserPushStatus());
       }
+      
+      setBrowserPushStatus(await getBrowserPushStatus());
       setSuccess(true);
     } catch (e) {
       setError(e.message || "Fehler beim Speichern.");
@@ -366,6 +371,13 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   };
 
   const handleSendTest = async () => {
+    const isNative = Capacitor.isNativePlatform();
+    
+    if (!isNative && browserPushStatus.permission !== 'granted') {
+      alert("Push-Berechtigung ist nicht erteilt. Bitte aktiviere Push zuerst in den Browsereinstellungen oder speichere die Einstellungen.");
+      return;
+    }
+    
     try {
       const res = await fetch(`${API_BASE}/api/push/send-test.php`, {
         method: "POST",
@@ -376,7 +388,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       if (!json.success) {
         alert(`Senden fehlgeschlagen: ${json.message}`);
       } else {
-        alert("Test-Benachrichtigung wurde versendet.");
+        alert("Test-Benachrichtigung wurde versendet. Schau mal auf dein Handy!");
       }
     } catch (e) {
       alert(`Fehler: ${e.message}`);
@@ -485,7 +497,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <th>E-Mail</th>
               <th>
                 Push
-                {Number(userId) === 1 && browserPushStatus.permission === 'granted' && (
+                {Number(userId) === 1 && (
                   <MiniButton type="button" onClick={handleSendTest} style={{ color: '#0277bd', fontSize: '0.7rem', marginLeft: '0.5rem' }}>
                     (Test)
                   </MiniButton>

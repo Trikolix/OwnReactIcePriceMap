@@ -877,13 +877,14 @@ function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
 
         $status = (int)$response['status'];
         if ($status >= 200 && $status < 300) {
-            $pdo->prepare("UPDATE mobile_push_devices SET last_success_at = NOW() WHERE id = :id")
+            $pdo->prepare("UPDATE mobile_push_devices SET last_success_at = NOW(), last_failure_at = NULL WHERE id = :id")
                 ->execute(['id' => (int)$device['id']]);
             continue;
         }
 
         $responseBody = json_decode((string)$response['body'], true);
-        $errorCode = $responseBody['error']['status'] ?? '';
+        $errorCode = $responseBody['error']['status'] ?? 'UNKNOWN';
+        $errorMessage = $responseBody['error']['message'] ?? (string)$response['body'];
         $invalidate = in_array($errorCode, ['UNREGISTERED', 'INVALID_ARGUMENT'], true);
 
         $pdo->prepare("
@@ -895,6 +896,9 @@ function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
             'invalidate' => $invalidate ? 1 : 0,
             'id' => (int)$device['id'],
         ]);
+
+        // Hier den Fehler für den Admin-Test protokollieren (optional in ein Log-File oder eine separate Spalte)
+        error_log("FCM Error for User $userId: $status - $errorMessage");
     }
 }
 

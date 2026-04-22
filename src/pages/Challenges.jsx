@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { MapPinned, RefreshCcw, Sparkles, Target, Timer, Trophy as TrophyGlyph } from "lucide-react";
+import { MapPinned, RefreshCcw, Sparkles, Target, Timer, Trophy as TrophyGlyph, CalendarDays } from "lucide-react";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
 import { Link, useSearchParams } from "react-router-dom";
@@ -38,13 +38,24 @@ const orangeIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const DIFFICULTIES = ["leicht", "mittel", "schwer"];
+const blueIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const PRESET_DIFFICULTIES = ["leicht", "mittel", "schwer"];
+const DIFFICULTIES = [...PRESET_DIFFICULTIES, "individuell"];
 const CHALLENGE_TYPES = ["daily", "weekly"];
-const difficultyOrder = { leicht: 0, mittel: 1, schwer: 2 };
+const difficultyOrder = { leicht: 0, mittel: 1, schwer: 2, individuell: 3 };
 const difficultyMeta = {
   leicht: { color: "#23a55a", label: "Leicht", range: "0-5 km" },
   mittel: { color: "#d97706", label: "Mittel", range: "5-15 km" },
   schwer: { color: "#dc2626", label: "Schwer", range: "15-45 km" },
+  individuell: { color: "#2563eb", label: "Individuell", range: "Frei wählbar" },
 };
 const typeMeta = {
   daily: { label: "Daily", helper: "bis Mitternacht" },
@@ -82,6 +93,56 @@ const formatDistance = (from, to) => {
   return `${(distanceMeters / 1000).toFixed(1).replace(".", ",")} km entfernt`;
 };
 
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const getChallengeDistanceRangeKm = (challenge) => {
+  const minMeters = toNumberOrNull(challenge?.custom_min_distance_m);
+  const maxMeters = toNumberOrNull(challenge?.custom_max_distance_m);
+  if (minMeters == null || maxMeters == null) return null;
+  return {
+    minKm: Math.round(minMeters / 1000),
+    maxKm: Math.round(maxMeters / 1000),
+  };
+};
+
+const getDifficultyRangeLabel = (difficulty, challenge = null, customRange = null) => {
+  if (difficulty !== "individuell") {
+    return difficultyMeta[difficulty]?.range || "";
+  }
+
+  const range = customRange || getChallengeDistanceRangeKm(challenge);
+  if (!range) {
+    return difficultyMeta.individuell.range;
+  }
+
+  return `${range.minKm}-${range.maxKm} km`;
+};
+
+const getMapZoomForDifficulty = (difficulty, customMaxKm) => {
+  if (difficulty === "individuell") {
+    if (customMaxKm >= 80) return 7;
+    if (customMaxKm >= 60) return 8;
+    return 9;
+  }
+  if (difficulty === "schwer") return 8;
+  if (difficulty === "mittel") return 10;
+  return 11;
+};
+
+const getChallengeSlotKey = (challenge, nowTs = Date.now()) => {
+  if (!challenge) return "unknown";
+  if (challenge.type === "weekly") return `weekly|${challenge.difficulty}`;
+
+  const validFromTs = challenge.valid_from ? new Date(challenge.valid_from).getTime() : null;
+  const dailyBucket = validFromTs != null && !Number.isNaN(validFromTs) && validFromTs > nowTs ? "tomorrow" : "today";
+  return `daily:${dailyBucket}|${challenge.difficulty}`;
+};
+
+const getRequestedSlotKey = (difficulty, type, forTomorrow) => {
+  if (type === "weekly") return `weekly|${difficulty}`;
+  return `daily:${forTomorrow ? "tomorrow" : "today"}|${difficulty}`;
+};
+
 const sortChallenges = (challengeList) =>
   [...challengeList].sort((a, b) => {
     if (a.type !== b.type) return a.type === "daily" ? -1 : 1;
@@ -101,6 +162,9 @@ const normalizeChallenge = (raw) => {
     challenge_id: normalizedId,
     completed: source.completed === true || Number(source.completed) === 1,
     recreated: source.recreated === true || Number(source.recreated) === 1,
+    valid_from: source.valid_from || source.created_at,
+    custom_min_distance_m: toNumberOrNull(source.custom_min_distance_m),
+    custom_max_distance_m: toNumberOrNull(source.custom_max_distance_m),
     shop_id: source.shop_id ?? shop.id ?? null,
     shop_name: source.shop_name ?? shop.name ?? "",
     shop_address: source.shop_address ?? shop.adresse ?? shop.address ?? "",
@@ -163,9 +227,13 @@ function Challenges() {
   const [locationNotice, setLocationNotice] = useState(null);
   const [difficulty, setDifficulty] = useState("leicht");
   const [challengeType, setChallengeType] = useState("daily");
+  const [forTomorrow, setForTomorrow] = useState(false);
+  const [customMinKm, setCustomMinKm] = useState(15);
+  const [customMaxKm, setCustomMaxKm] = useState(45);
   const [generating, setGenerating] = useState(false);
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [recreatingChallengeId, setRecreatingChallengeId] = useState(null);
+  const [soloChallengeView, setSoloChallengeView] = useState("active");
   const [expandedOpeningHours, setExpandedOpeningHours] = useState({});
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
@@ -190,8 +258,8 @@ function Challenges() {
   }, []);
 
   useEffect(() => {
-    setMapZoom(difficulty === "schwer" ? 8 : difficulty === "mittel" ? 10 : 11);
-  }, [difficulty]);
+    setMapZoom(getMapZoomForDifficulty(difficulty, customMaxKm));
+  }, [difficulty, customMaxKm]);
 
   const applyLocationUpdate = useCallback((position) => {
     setLocation({
@@ -340,7 +408,14 @@ function Challenges() {
     setActionNotice({ type, message, details: Array.isArray(details) ? details : [] });
   };
 
-  const buildChallengeRequest = async ({ requestedDifficulty, requestedType, existingChallengeId = null }) => {
+  const buildChallengeRequest = async ({
+    requestedDifficulty,
+    requestedType,
+    existingChallengeId = null,
+    requestForTomorrow = false,
+    requestedCustomMinKm = null,
+    requestedCustomMaxKm = null,
+  }) => {
     if (!location) throw new Error("Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff.");
     if (!userId || !apiUrl) throw new Error("Nutzer oder API-Konfiguration fehlt.");
     const form = new FormData();
@@ -349,6 +424,11 @@ function Challenges() {
     form.append("lon", String(location.lon));
     form.append("difficulty", requestedDifficulty);
     form.append("type", requestedType);
+    if (requestedDifficulty === "individuell") {
+      form.append("custom_min_km", String(requestedCustomMinKm));
+      form.append("custom_max_km", String(requestedCustomMaxKm));
+    }
+    if (requestForTomorrow) form.append("for_tomorrow", "true");
     if (existingChallengeId != null) form.append("challenge_id", String(existingChallengeId));
     const res = await fetch(`${apiUrl}/api/challenge_generate.php`, { method: "POST", body: form });
     const data = await readJsonResponse(res);
@@ -366,7 +446,13 @@ function Challenges() {
     setGenerating(true);
     setActionNotice(null);
     try {
-      const { challenge } = await buildChallengeRequest({ requestedDifficulty: difficulty, requestedType: challengeType });
+      const { challenge } = await buildChallengeRequest({
+        requestedDifficulty: difficulty,
+        requestedType: challengeType,
+        requestForTomorrow: forTomorrow,
+        requestedCustomMinKm: difficulty === "individuell" ? customMinKm : null,
+        requestedCustomMaxKm: difficulty === "individuell" ? customMaxKm : null,
+      });
       setChallenges((prev) => upsertChallenge(prev, challenge));
       setNewChallenge(challenge);
       setShowNewChallengeModal(true);
@@ -396,10 +482,16 @@ function Challenges() {
     try {
       for (const combo of missingCombinations) {
         try {
-          const { challenge } = await buildChallengeRequest({ requestedDifficulty: combo.difficulty, requestedType: combo.type });
+          const { challenge } = await buildChallengeRequest({
+            requestedDifficulty: combo.difficulty,
+            requestedType: combo.type,
+            requestForTomorrow: Boolean(combo.forTomorrow),
+          });
           createdChallenges.push(challenge);
         } catch (error) {
-          failedMessages.push(`${combo.difficulty}/${combo.type}: ${error.message || "Unbekannter Fehler"}`);
+          failedMessages.push(
+            `${combo.difficulty}/${combo.type}${combo.type === "daily" ? (combo.forTomorrow ? "/morgen" : "/heute") : ""}: ${error.message || "Unbekannter Fehler"}`
+          );
         }
       }
       if (createdChallenges.length > 0) {
@@ -418,18 +510,33 @@ function Challenges() {
     }
   };
 
-  const handleRecreateChallenge = async (challengeId, currentDifficulty, currentType) => {
+  const handleRecreateChallenge = async (
+    challengeId,
+    currentDifficulty,
+    currentType,
+    currentValidFrom,
+    currentCustomMinDistanceM,
+    currentCustomMaxDistanceM
+  ) => {
     if (!location) {
       setActionMessage("error", "Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff für einen Neuversuch.");
       return;
     }
     setRecreatingChallengeId(challengeId);
     setActionNotice(null);
+
+    // Determine if the original challenge was requested for tomorrow
+    // We check if valid_from is in the future.
+    const isFuture = currentValidFrom && new Date(currentValidFrom).getTime() > Date.now();
+
     try {
       const { challenge } = await buildChallengeRequest({
         requestedDifficulty: currentDifficulty,
         requestedType: currentType,
         existingChallengeId: challengeId,
+        requestForTomorrow: isFuture,
+        requestedCustomMinKm: currentDifficulty === "individuell" ? Math.round(Number(currentCustomMinDistanceM || 0) / 1000) : null,
+        requestedCustomMaxKm: currentDifficulty === "individuell" ? Math.round(Number(currentCustomMaxDistanceM || 0) / 1000) : null,
       });
       setChallenges((prev) => upsertChallenge(prev, challenge));
       setNewChallenge(challenge);
@@ -476,6 +583,21 @@ function Challenges() {
     return `${diffHours}h ${diffMinutes}min`;
   };
 
+  const isChallengeActive = (challenge) => {
+    if (!challenge.valid_from) return true;
+    return new Date(challenge.valid_from).getTime() <= countdownNowTs;
+  };
+
+  const formatStartsIn = (validFrom) => {
+    const start = new Date(validFrom);
+    if (Number.isNaN(start.getTime())) return "-";
+    const diffMs = start.getTime() - countdownNowTs;
+    if (diffMs <= 0) return "Aktiv";
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${diffHours}h ${diffMinutes}min`;
+  };
+
   const getChallengeOpeningLines = (challenge) => {
     if (!challenge) return [];
     const structured = hydrateOpeningHours(
@@ -510,30 +632,69 @@ function Challenges() {
     ? new Date(locationUpdatedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
     : null;
 
-  const activeChallenges = useMemo(() => sortChallenges(challenges.filter((challenge) => !challenge.completed)), [challenges]);
+  const openChallenges = useMemo(() => sortChallenges(challenges.filter((challenge) => !challenge.completed)), [challenges]);
+  const activeChallenges = useMemo(
+    () => sortChallenges(openChallenges.filter((challenge) => isChallengeActive(challenge))),
+    [openChallenges, countdownNowTs]
+  );
+  const upcomingChallenges = useMemo(
+    () => sortChallenges(openChallenges.filter((challenge) => !isChallengeActive(challenge))),
+    [openChallenges, countdownNowTs]
+  );
   const completedChallenges = useMemo(
     () => challenges.filter((challenge) => challenge.completed).sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0)),
     [challenges]
   );
   const missingCombinations = useMemo(() => {
-    const existing = new Set(activeChallenges.map((challenge) => `${challenge.difficulty}|${challenge.type}`));
+    const existing = new Set(openChallenges.map((challenge) => getChallengeSlotKey(challenge, countdownNowTs)));
     const missing = [];
-    for (const d of DIFFICULTIES) {
+    for (const d of PRESET_DIFFICULTIES) {
       for (const t of CHALLENGE_TYPES) {
-        if (!existing.has(`${d}|${t}`)) missing.push({ difficulty: d, type: t });
+        if (t === "daily") {
+          if (!existing.has(getRequestedSlotKey(d, t, false))) {
+            missing.push({ difficulty: d, type: t, forTomorrow: false });
+          }
+          if (!existing.has(getRequestedSlotKey(d, t, true))) {
+            missing.push({ difficulty: d, type: t, forTomorrow: true });
+          }
+          continue;
+        }
+        if (!existing.has(getRequestedSlotKey(d, t, false))) {
+          missing.push({ difficulty: d, type: t, forTomorrow: false });
+        }
       }
     }
     return missing;
-  }, [activeChallenges]);
-  const selectedCombinationExists = activeChallenges.some(
-    (challenge) => challenge.difficulty === difficulty && challenge.type === challengeType
+  }, [openChallenges, countdownNowTs]);
+  const selectedCombination = openChallenges.find(
+    (challenge) => getChallengeSlotKey(challenge, countdownNowTs) === getRequestedSlotKey(difficulty, challengeType, forTomorrow)
   );
+  const selectedCombinationExists = Boolean(selectedCombination);
+  const visibleChallenges = soloChallengeView === "upcoming" ? upcomingChallenges : activeChallenges;
+
+  useEffect(() => {
+    if (soloChallengeView === "upcoming" && upcomingChallenges.length === 0 && activeChallenges.length > 0) {
+      setSoloChallengeView("active");
+    }
+  }, [soloChallengeView, upcomingChallenges.length, activeChallenges.length]);
   const handleTabChange = (nextTab) => {
     const nextParams = new URLSearchParams(searchParams);
     if (nextTab === "team") nextParams.set("tab", "team");
     else nextParams.delete("tab");
     if (nextTab !== "team") nextParams.delete("teamChallengeId");
     setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleCustomMinChange = (event) => {
+    const nextMin = clamp(Number(event.target.value), 15, 60);
+    setCustomMinKm(nextMin);
+    setCustomMaxKm((prev) => clamp(Math.max(prev, nextMin + 5), 45, 100));
+  };
+
+  const handleCustomMaxChange = (event) => {
+    const nextMax = clamp(Number(event.target.value), 45, 100);
+    setCustomMaxKm(nextMax);
+    setCustomMinKm((prev) => clamp(Math.min(prev, nextMax - 5), 15, 60));
   };
 
   const handleFocusChallengeHandled = () => {
@@ -582,11 +743,19 @@ function Challenges() {
                   <CleanLink to={`/map/activeShop/${newChallenge.shop_id}`}>{newChallenge.shop_name}</CleanLink>
                 </ChallengeName>
                 <ChallengeAddress>{newChallenge.shop_address}</ChallengeAddress>
+                <DistanceHint>Zielbereich: {getDifficultyRangeLabel(newChallenge.difficulty, newChallenge)}</DistanceHint>
                 <ChallengeBottomRow>
-                  <Countdown>
-                    <Timer size={15} />
-                    <span>{formatCountdown(newChallenge.valid_until)}</span>
-                  </Countdown>
+                  {!isChallengeActive(newChallenge) ? (
+                    <Countdown>
+                      <Timer size={15} />
+                      <span>Startet in {formatStartsIn(newChallenge.valid_from)}</span>
+                    </Countdown>
+                  ) : (
+                    <Countdown>
+                      <Timer size={15} />
+                      <span>{formatCountdown(newChallenge.valid_until)}</span>
+                    </Countdown>
+                  )}
                   {newChallenge.shop_lat != null && newChallenge.shop_lon != null && <InlineHint>Marker wurde auf der Karte fokussiert.</InlineHint>}
                 </ChallengeBottomRow>
               </ChallengeCard>
@@ -621,21 +790,33 @@ function Challenges() {
               <SectionCard>
                 <SectionHead>
                   <div>
-                    <SectionTitle>Aktive Challenges</SectionTitle>
-                    <SectionSubline>Deine aktuellen Aufgaben mit Ziel-Eisdiele, Restzeit und möglichem Neuversuch.</SectionSubline>
+                    <SectionTitle>Offene Challenges</SectionTitle>
+                    <SectionSubline>Aktive und für morgen geplante Challenges sind getrennt, damit Restzeit und Startzeit klar bleiben.</SectionSubline>
                   </div>
-                  <MetaChip $muted>{activeChallenges.length} offen</MetaChip>
+                  <SelectionTabs>
+                    <TabButton type="button" $active={soloChallengeView === "active"} onClick={() => setSoloChallengeView("active")}>
+                      Aktiv ({activeChallenges.length})
+                    </TabButton>
+                    <TabButton type="button" $active={soloChallengeView === "upcoming"} onClick={() => setSoloChallengeView("upcoming")}>
+                      Morgen ({upcomingChallenges.length})
+                    </TabButton>
+                  </SelectionTabs>
                 </SectionHead>
 
                 {loadError && renderNotice({ type: "error", message: loadError }, "load-error")}
                 {loading ? (
                   <StateBox>Lade Challenges...</StateBox>
-                ) : activeChallenges.length === 0 ? (
-                  <StateBox>Du hast aktuell keine aktiven Challenges.</StateBox>
+                ) : visibleChallenges.length === 0 ? (
+                  <StateBox>
+                    {soloChallengeView === "upcoming"
+                      ? "Du hast aktuell keine für morgen geplanten Challenges."
+                      : "Du hast aktuell keine aktiven Challenges."}
+                  </StateBox>
                 ) : (
                   <ChallengeList>
-                    {activeChallenges.map((ch) => {
+                    {visibleChallenges.map((ch) => {
                       const meta = difficultyMeta[ch.difficulty] || difficultyMeta.leicht;
+                      const rangeLabel = getDifficultyRangeLabel(ch.difficulty, ch);
                       const isExpired = new Date(ch.valid_until) <= new Date();
                       const canRecreate = !ch.recreated && !isExpired;
                       const isRecreatingThis = recreatingChallengeId != null && String(recreatingChallengeId) === String(ch.id);
@@ -687,16 +868,31 @@ function Challenges() {
                           </ChallengeOpeningHours>
 
                           {distanceLabel && <DistanceHint>{distanceLabel}</DistanceHint>}
+                          {rangeLabel && <DistanceHint>Zielbereich: {rangeLabel}</DistanceHint>}
 
                           <ChallengeBottomRow>
-                            <Countdown>
-                              <Timer size={15} />
-                              <span>{formatCountdown(ch.valid_until)}</span>
-                            </Countdown>
+                            {!isChallengeActive(ch) ? (
+                              <Countdown>
+                                <Timer size={15} />
+                                <span>Startet in {formatStartsIn(ch.valid_from)}</span>
+                              </Countdown>
+                            ) : (
+                              <Countdown>
+                                <Timer size={15} />
+                                <span>{formatCountdown(ch.valid_until)}</span>
+                              </Countdown>
+                            )}
                             {canRecreate ? (
                               <RecreateButton
                                 type="button"
-                                onClick={() => handleRecreateChallenge(ch.id, ch.difficulty, ch.type)}
+                                onClick={() => handleRecreateChallenge(
+                                  ch.id,
+                                  ch.difficulty,
+                                  ch.type,
+                                  ch.valid_from,
+                                  ch.custom_min_distance_m,
+                                  ch.custom_max_distance_m
+                                )}
                                 disabled={isRecreatingThis || generating || bulkGenerating || !location}
                               >
                                 <RefreshCcw size={15} />
@@ -745,12 +941,85 @@ function Challenges() {
                           </SummaryIcon>
                           <div>
                             <SummaryValue>{difficultyMeta[entry].label}</SummaryValue>
-                            <SummaryHint>{difficultyMeta[entry].range}</SummaryHint>
+                            <SummaryHint>{getDifficultyRangeLabel(entry, null, { minKm: customMinKm, maxKm: customMaxKm })}</SummaryHint>
                           </div>
                         </SelectionCard>
                       ))}
                     </SelectionCards>
                   </SelectionGroup>
+
+                  {difficulty === "individuell" && (
+                    <SelectionGroup>
+                      <SelectionHeading>Distanzbereich</SelectionHeading>
+                      <SliderCard>
+                        <SliderRow>
+                          <SliderLabel>
+                            Untere Grenze
+                            <SliderValue>{customMinKm} km</SliderValue>
+                          </SliderLabel>
+                          <SliderInput
+                            type="range"
+                            min="15"
+                            max="60"
+                            step="1"
+                            value={customMinKm}
+                            onChange={handleCustomMinChange}
+                          />
+                        </SliderRow>
+                        <SliderRow>
+                          <SliderLabel>
+                            Obere Grenze
+                            <SliderValue>{customMaxKm} km</SliderValue>
+                          </SliderLabel>
+                          <SliderInput
+                            type="range"
+                            min="45"
+                            max="100"
+                            step="1"
+                            value={customMaxKm}
+                            onChange={handleCustomMaxChange}
+                          />
+                        </SliderRow>
+                        <SummaryMeta>Die obere Grenze bleibt immer mindestens 5 km über der unteren.</SummaryMeta>
+                      </SliderCard>
+                    </SelectionGroup>
+                  )}
+
+                  {challengeType === 'daily' && (
+                    <SelectionGroup>
+                      <SelectionHeading>Zeitpunkt</SelectionHeading>
+                      <SelectionCards style={{ gridTemplateColumns: '1fr 1fr' }}>
+                        <SelectionCard
+                          type="button"
+                          $active={!forTomorrow}
+                          $accent="#22c55e"
+                          onClick={() => setForTomorrow(false)}
+                        >
+                          <SummaryIcon>
+                            <Target size={18} />
+                          </SummaryIcon>
+                          <div>
+                            <SummaryValue>Für Heute</SummaryValue>
+                            <SummaryHint>Ab sofort gültig</SummaryHint>
+                          </div>
+                        </SelectionCard>
+                        <SelectionCard
+                          type="button"
+                          $active={forTomorrow}
+                          $accent="#3b82f6"
+                          onClick={() => setForTomorrow(true)}
+                        >
+                          <SummaryIcon>
+                            <CalendarDays size={18} />
+                          </SummaryIcon>
+                          <div>
+                            <SummaryValue>Für Morgen</SummaryValue>
+                            <SummaryHint>Startet um Mitternacht</SummaryHint>
+                          </div>
+                        </SelectionCard>
+                      </SelectionCards>
+                    </SelectionGroup>
+                  )}
 
                   <SelectionGroup>
                     <SelectionHeadingRow>
@@ -829,7 +1098,7 @@ function Challenges() {
                         : !location
                           ? "Standort erforderlich"
                           : selectedCombinationExists
-                            ? "Bereits aktiv"
+                            ? (selectedCombination && !isChallengeActive(selectedCombination) ? "Bereits geplant" : "Bereits aktiv")
                             : "Neue Challenge generieren"}
                     </GenerateButton>
                     <SecondaryButton
@@ -858,7 +1127,7 @@ function Challenges() {
                       {DIFFICULTIES.map((entry) => (
                         <LegendItem key={entry}>
                           <ColorDot style={{ backgroundColor: difficultyMeta[entry].color }} />
-                          <span>{difficultyMeta[entry].label} {difficultyMeta[entry].range}</span>
+                          <span>{difficultyMeta[entry].label} {getDifficultyRangeLabel(entry, null, { minKm: customMinKm, maxKm: customMaxKm })}</span>
                         </LegendItem>
                       ))}
                     </LegendContainer>
@@ -871,15 +1140,25 @@ function Challenges() {
                         <Marker position={[location.lat, location.lon]}>
                           <Popup>Dein Standort</Popup>
                         </Marker>
-                        <Circle center={[location.lat, location.lon]} radius={5000} pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }} />
-                        <Circle center={[location.lat, location.lon]} radius={15000} pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }} />
-                        <Circle center={[location.lat, location.lon]} radius={45000} pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.1 }} />
-                        {activeChallenges.map((ch, idx) => {
+                        {difficulty === "individuell" ? (
+                          <>
+                            <Circle center={[location.lat, location.lon]} radius={customMinKm * 1000} pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.08 }} />
+                            <Circle center={[location.lat, location.lon]} radius={customMaxKm * 1000} pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.14 }} />
+                          </>
+                        ) : (
+                          <>
+                            <Circle center={[location.lat, location.lon]} radius={5000} pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }} />
+                            <Circle center={[location.lat, location.lon]} radius={15000} pathOptions={{ color: "#eab308", fillColor: "#eab308", fillOpacity: 0.15 }} />
+                            <Circle center={[location.lat, location.lon]} radius={45000} pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.1 }} />
+                          </>
+                        )}
+                        {openChallenges.map((ch, idx) => {
                           const lat = toNumberOrNull(ch.shop_lat ?? ch.shop?.lat ?? ch.shop?.shop_lat ?? ch.shop?.latitude);
                           const lon = toNumberOrNull(ch.shop_lon ?? ch.shop?.lon ?? ch.shop?.shop_lon ?? ch.shop?.longitude);
                           let icon = greenIcon;
                           if (ch.difficulty === "mittel") icon = yellowIcon;
                           else if (ch.difficulty === "schwer") icon = orangeIcon;
+                          else if (ch.difficulty === "individuell") icon = blueIcon;
                           if (lat == null || lon == null) return null;
                           return (
                             <Marker key={ch.id || idx} position={[lat, lon]} icon={icon}>
@@ -1025,6 +1304,12 @@ const TabRow = styled.div`
   display: flex;
   gap: 0.65rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+`;
+
+const SelectionTabs = styled.div`
+  display: flex;
+  gap: 0.55rem;
   flex-wrap: wrap;
 `;
 
@@ -1348,6 +1633,40 @@ const SelectionSection = styled.div`
 const SelectionGroup = styled.div`
   display: grid;
   gap: 0.55rem;
+`;
+
+const SliderCard = styled.div`
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.95rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(242,247,255,0.92));
+  border: 1px solid rgba(37, 99, 235, 0.16);
+`;
+
+const SliderRow = styled.div`
+  display: grid;
+  gap: 0.45rem;
+`;
+
+const SliderLabel = styled.label`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  color: #2f2100;
+  font-size: 0.9rem;
+  font-weight: 700;
+`;
+
+const SliderValue = styled.span`
+  color: #2563eb;
+  font-weight: 800;
+`;
+
+const SliderInput = styled.input`
+  width: 100%;
+  accent-color: #2563eb;
 `;
 
 const SelectionHeadingRow = styled.div`

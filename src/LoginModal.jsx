@@ -7,8 +7,8 @@ import SocialAuthButtons from "./components/SocialAuthButtons";
 
 const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
 
-const LoginModal = ({ setShowLoginModal }) => {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
+  const [isRegisterMode, setIsRegisterMode] = useState(initialMode === 'register');
   const [isResetMode, setIsResetMode] = useState(false);
   const [message, setMessage] = useState('');
   const [username, setUsername] = useState('');
