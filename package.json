@@ -42,7 +42,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "start": "vite",
-    "build": "vite build",
+    "build": "vite build && bash ./scripts/build-apk.sh",
     "preview": "vite preview",
     "cap:sync": "npx cap sync",
     "android:open": "npx cap open android",
