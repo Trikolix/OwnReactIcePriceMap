@@ -35,7 +35,7 @@ function issueLoginResponse(PDO $pdo, array $user, string $inputPassword): array
 }
 
 function checkLogin(PDO $pdo, string $inputUsername, string $inputPassword): array {
-    $stmt = $pdo->prepare("SELECT id, username, password_hash, is_verified FROM nutzer WHERE username = :login OR email = :login LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, username, password_hash, is_verified, deletion_requested_at FROM nutzer WHERE username = :login OR email = :login LIMIT 1");
     $stmt->bindParam(':login', $inputUsername, PDO::PARAM_STR);
     $stmt->execute();
 
@@ -43,6 +43,13 @@ function checkLogin(PDO $pdo, string $inputUsername, string $inputPassword): arr
 
     if (!$user) {
         return ['status' => 'error', 'message' => "Benutzername \"$inputUsername\" nicht gefunden"];
+    }
+
+    if (!empty($user['deletion_requested_at'])) {
+        return [
+            'status' => 'error', 
+            'message' => 'Dieser Account wurde zur Löschung markiert. Bitte kontaktiere den Support, falls du dies rückgängig machen möchtest.'
+        ];
     }
 
     return issueLoginResponse($pdo, $user, $inputPassword);

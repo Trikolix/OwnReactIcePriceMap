@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../utils/cropImage";
@@ -395,6 +396,63 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('openDelete') === '1') {
+      setShowDeleteConfirm(true);
+      // Optional: Scroll to bottom after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        const modal = document.querySelector('[class*="ModalBox"]');
+        if (modal) modal.scrollTo({ top: modal.scrollHeight, behavior: 'smooth' });
+      }, 300);
+    }
+  }, [location.search]);
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    if (!deletePassword) {
+      setError("Bitte gib dein Passwort zur Bestätigung ein.");
+      return;
+    }
+
+    if (!deleteConfirmed) {
+      setError("Bitte bestätige, dass du die Konsequenzen verstehst.");
+      return;
+    }
+
+    if (!window.confirm("Bist du sicher? Dein Account wird zur Löschung markiert und du wirst sofort abgemeldet.")) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/userManagement/request_deletion.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || "Fehler beim Beantragen der Löschung.");
+      }
+
+      alert(json.message);
+      window.location.href = "/"; // Hartes Redirect zur Startseite
+    } catch (e) {
+      setError(e.message);
+      setDeleting(false);
+    }
+  };
+
   const modalContent = (
     <ModalOverlay>
       <ModalBox>
@@ -551,6 +609,45 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           <SubmitButton onClick={handleSave} disabled={saving}>Speichern</SubmitButton>
           <CancelButton onClick={onClose}>Schließen</CancelButton>
         </ButtonRow>
+
+        <Divider />
+        <DangerZone>
+          <h4>Account löschen</h4>
+          <p>Hier kannst du deinen Account dauerhaft löschen.</p>
+          {!showDeleteConfirm ? (
+            <DeleteTriggerButton type="button" onClick={() => setShowDeleteConfirm(true)}>
+              Account löschen beantragen
+            </DeleteTriggerButton>
+          ) : (
+            <DeleteForm onSubmit={handleDeleteAccount}>
+              <p>Bitte gib dein Passwort ein, um die Löschung zu bestätigen:</p>
+              <input 
+                type="password" 
+                placeholder="Dein Passwort" 
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                required
+                autoFocus
+              />
+              <ConfirmationLabel>
+                <input 
+                  type="checkbox" 
+                  checked={deleteConfirmed} 
+                  onChange={(e) => setDeleteConfirmed(e.target.checked)} 
+                />
+                <span>Ich verstehe, dass mein Profil dauerhaft anonymisiert wird. Persönliche Daten (Favoriten, Profilbild) werden gelöscht, während meine Beiträge (Preise, Kommentare) anonymisiert erhalten bleiben.</span>
+              </ConfirmationLabel>
+              <DeleteActions>
+                <ConfirmDeleteButton type="submit" disabled={deleting || !deleteConfirmed}>
+                  {deleting ? "Wird verarbeitet..." : "Löschung jetzt beantragen"}
+                </ConfirmDeleteButton>
+                <CancelButton type="button" onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); }}>
+                  Abbrechen
+                </CancelButton>
+              </DeleteActions>
+            </DeleteForm>
+          )}
+        </DangerZone>
       </ModalBox>
     </ModalOverlay>
   );
@@ -933,5 +1030,97 @@ const SettingsTable = styled.table`
     width: 18px;
     height: 18px;
     cursor: pointer;
+  }
+`;
+
+const DangerZone = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid #ffcdd2;
+  border-radius: 12px;
+  background: #fff8f8;
+
+  h4 {
+    margin: 0 0 0.5rem;
+    color: #c62828;
+  }
+
+  p {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+`;
+
+const DeleteTriggerButton = styled.button`
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+
+  &:hover {
+    background: #d32f2f;
+  }
+`;
+
+const DeleteForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+`;
+
+const DeleteActions = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`;
+
+const ConfirmationLabel = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: #555;
+  cursor: pointer;
+  margin: 0.5rem 0;
+  max-width: 450px;
+
+  input[type="checkbox"] {
+    margin-top: 0.2rem;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  span {
+    line-height: 1.4;
+  }
+`;
+
+const ConfirmDeleteButton = styled.button`
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+  min-width: 150px;
+
+  &:disabled {
+    background: #e57373;
+    cursor: not-allowed;
   }
 `;

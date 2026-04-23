@@ -86,7 +86,9 @@ $stmt->execute([
 // 7. Notification Settings anlegen
 $userId = $pdo->lastInsertId();
 ensureUserNotificationSettingsSchema($pdo);
-$stmt = $pdo->prepare("INSERT INTO user_notification_settings (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge) VALUES (?, 1, 1, 1, ?, 1)");
+$stmt = $pdo->prepare("INSERT INTO user_notification_settings 
+    (user_id, notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_news_push, notify_team_challenge, notify_photo_challenge) 
+    VALUES (?, 1, 1, 1, ?, 1, 1, 1)");
 $stmt->execute([$userId, $newsletterOptIn]);
 
 // 8. Bestätigungs-E-Mail senden (Multipart)

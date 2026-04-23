@@ -3,6 +3,7 @@ import RegisterPage from "../../pages/RegisterPage";
 import VerifyAccount from "../../pages/VerifyAccount";
 import UserSite from "../../pages/UserSite";
 import FavoritenListe from "../../pages/FavoritenListe";
+import AccountManagement from "../../pages/AccountManagement";
 
 export const userRoutes = [
   { path: "/register", element: <RegisterPage /> },
@@ -10,4 +11,7 @@ export const userRoutes = [
   { path: "/verify", element: <VerifyAccount /> },
   { path: "/user/:userId?", element: <UserSite /> },
   { path: "/favoriten", element: <FavoritenListe /> },
+  { path: "/account", element: <AccountManagement /> },
+  { path: "/account/settings", element: <AccountManagement /> },
+  { path: "/account/delete", element: <AccountManagement /> },
 ];

@@ -1,6 +1,6 @@
 {
-  "appId": "de.iceapp.mobile",
-  "appName": "The Gourmet Cyclists Ice Radar",
+  "appId": "de.thegourmetcyclists.iceapp",
+  "appName": "Ice-App",
   "webDir": "build",
   "server": {
     "cleartext": true,
