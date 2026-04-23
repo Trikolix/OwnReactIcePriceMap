@@ -1,4 +1,4 @@
-package de.iceapp.mobile;
+package de.thegourmetcyclists.iceapp;
 
 import com.getcapacitor.BridgeActivity;
 
