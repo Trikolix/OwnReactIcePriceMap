@@ -26,7 +26,7 @@ import SorteAutocomplete from "./components/SorteAutocomplete";
 import ChallengesAwarded from "./components/ChallengesAwarded";
 import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
-import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
+import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES, MAX_UPLOAD_BYTES } from "./utils/imageUtils";
 import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
 import { Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin } from "lucide-react";
 
@@ -279,7 +279,10 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
             );
 
-            const data = await response.json();
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data) {
+                throw new Error(data?.message || data?.error || `Upload fehlgeschlagen (${response.status})`);
+            }
             if (data.status === "success") {
                 if (checkinId) {
                     setMessage("Checkin erfolgreich aktualisiert!");
@@ -325,10 +328,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     }
                 }
             } else {
-                setMessage(`Fehler: ${data.message}`);
+                setMessage(`Fehler: ${data.message || data.error || 'Upload fehlgeschlagen.'}`);
+                setSubmitted(false);
             }
         } catch (error) {
-            setMessage(`Ein Fehler ist aufgetreten: ${error}`);
+            setMessage(`Ein Fehler ist aufgetreten: ${error.message || error}`);
             setSubmitted(false); // erneutes Absenden erlauben
         }
     };
@@ -443,12 +447,15 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             if (bilder.some(b => b.file?.name === file.name && b.file?.size === file.size)) continue;
             try {
                 const compressed = await sharedCompressImageFile(file);
+                if (compressed.size > MAX_UPLOAD_BYTES) {
+                    setMessage(`"${file.name}" ist auch nach der Verkleinerung noch zu gross.`);
+                    continue;
+                }
                 const previewUrl = URL.createObjectURL(compressed);
                 processed.push({ file: compressed, previewUrl, beschreibung: '' });
             } catch (err) {
-                console.warn('Bildkompression fehlgeschlagen, benutze Original', err);
-                const previewUrl = URL.createObjectURL(file);
-                processed.push({ file, previewUrl, beschreibung: '' });
+                console.warn('Bildkompression fehlgeschlagen', err);
+                setMessage(err.message || 'Bild konnte nicht vorbereitet werden.');
             }
         }
 

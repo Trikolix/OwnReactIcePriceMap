@@ -22,6 +22,7 @@ import { Capacitor } from "@capacitor/core";
 import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 import { canUseExternalDiscovery } from './utils/featureAccess';
+import { formatDateTimeLocalInputValue } from './utils/dateTimeLocal';
 const MIN_CONTEXT_MENU_ZOOM = 13;
 const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
 const DEFAULT_CONTEXT_MENU_STATE = {
@@ -603,10 +604,7 @@ const IceCreamRadar = () => {
   };
 
   const buildDefaultDateTimeValue = () => {
-    const date = new Date();
-    date.setMinutes(date.getMinutes() + 60);
-    date.setSeconds(0, 0);
-    return date.toISOString().slice(0, 16);
+    return formatDateTimeLocalInputValue();
   };
 
   const handleOpenFilterModeChange = (value) => {

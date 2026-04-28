@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../lib/levelsystem.php';
+require_once __DIR__ . '/../evaluators/Event2026CompletionEvaluator.php';
 
 try {
     event2026_ensure_schema($pdo);
@@ -216,6 +218,11 @@ try {
         'checkin_id' => $checkinId,
     ]);
 
+    $newAwards = (new Event2026CompletionEvaluator($mode))->evaluate((int) $auth['user_id']);
+    $levelChange = !empty($newAwards)
+        ? updateUserLevelIfChanged($pdo, (int) $auth['user_id'])
+        : ['level_up' => false];
+
     echo json_encode([
         'status' => 'success',
         'message' => $checkinId
@@ -237,6 +244,10 @@ try {
         'checkin_cta' => true,
         'shop_id' => $checkpoint['shop_id'] !== null ? (int) $checkpoint['shop_id'] : null,
         'shop_name' => $checkpoint['shop_name'] ?: $checkpoint['name'],
+        'new_awards' => $newAwards,
+        'level_up' => $levelChange['level_up'] ?? false,
+        'new_level' => !empty($levelChange['level_up']) ? $levelChange['new_level'] : null,
+        'level_name' => !empty($levelChange['level_up']) ? $levelChange['level_name'] : null,
     ]);
 } catch (Throwable $e) {
     if (http_response_code() < 400) {

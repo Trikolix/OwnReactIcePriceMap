@@ -2,6 +2,15 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 
+if (isMultipartBodyTooLarge()) {
+    http_response_code(413);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Die hochgeladenen Bilder sind zu gross. Bitte waehle weniger oder kleinere Bilder.'
+    ]);
+    exit;
+}
+
 // Hilfsfunktion für Bewertung
 function sanitizeRating($val) {
     return ($val !== '' && is_numeric($val)) ? floatval($val) : null;

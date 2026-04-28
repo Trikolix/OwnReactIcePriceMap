@@ -7,6 +7,7 @@ const NATIVE_DEVICE_TOKEN_KEY = "iceapp:native-device-token";
 const PUSH_SW_PATH = "/push-sw.js";
 const PUSH_CONFIG_CACHE_URL = "/__push_config__";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev";
+const ANDROID_NOTIFICATION_CHANNEL_ID = "ice_app_notifications";
 
 let nativeListenersRegistered = false;
 let activeNativeUserId = null;
@@ -194,6 +195,18 @@ export const initializeNativePush = async (userId) => {
 
   if (permissionState !== "granted") {
     throw new Error("Android-Benachrichtigungen wurden nicht freigegeben.");
+  }
+
+  if (typeof PushNotifications.createChannel === "function") {
+    await PushNotifications.createChannel({
+      id: ANDROID_NOTIFICATION_CHANNEL_ID,
+      name: "Ice App",
+      description: "Benachrichtigungen der Ice App",
+      importance: 5,
+      visibility: 1,
+      lights: true,
+      vibration: true,
+    });
   }
 
   try {

@@ -1,4 +1,12 @@
 <?php
+// Spoof HTTP variables for CLI/Cron execution
+if (PHP_SAPI === 'cli' || empty($_SERVER['HTTP_ORIGIN'])) {
+    $_SERVER['HTTP_ORIGIN'] = 'https://ice-app.de';
+}
+if (!isset($_SERVER['REQUEST_METHOD'])) {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+}
+
 require_once  __DIR__ . '/../db_connect.php';
 
 $empfaenger1 = 'ch_helbig@mail.de';
@@ -44,7 +52,7 @@ $checkinsNachAnreise = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 5. Verteilung der Check-ins mit oder ohne Bild
 $stmt = $pdo->prepare(
-    "SELECT 
+    "SELECT
         CASE WHEN b.id IS NOT NULL THEN 'Mit Bild' ELSE 'Ohne Bild' END AS bild_status,
         COUNT(DISTINCT c.id) AS anzahl
     FROM checkins c

@@ -168,8 +168,8 @@ try {
     $privacyAccepted = !empty($data['privacyAccepted']);
 
     $clientIp = getClientIpAddress() ?? ($_SERVER['REMOTE_ADDR'] ?? '');
-    $ipHash = event2026_hash_optional($clientIp);
-    $userAgentHash = event2026_hash_optional(getClientUserAgent());
+    $ipHash = event2026_hash_nullable($clientIp);
+    $userAgentHash = event2026_hash_nullable(getClientUserAgent());
 
     if ($clientIp !== '') {
         if (event2026_contact_is_rate_limited($pdo, $clientIp)) {
@@ -189,6 +189,9 @@ try {
     }
 
     if ($website !== '') {
+        $organisation = event2026_contact_normalize_nullable_string($organisationRaw, 160);
+        $phone = event2026_contact_normalize_nullable_string($phoneRaw, 40);
+
         $requestId = event2026_contact_store_request(
             $pdo,
             $eventId,

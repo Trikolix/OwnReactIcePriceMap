@@ -60,19 +60,41 @@ const AcceptButton = styled.button`
 `;
 
 const COOKIE_CONSENT_KEY = 'ice_app_cookie_consent';
+let inMemoryCookieConsent = false;
+
+const getCookieConsent = () => {
+  if (inMemoryCookieConsent) return true;
+
+  try {
+    return localStorage.getItem(COOKIE_CONSENT_KEY) === 'true';
+  } catch (error) {
+    console.warn('Cookie consent could not be read from localStorage:', error);
+    return false;
+  }
+};
+
+const setCookieConsent = () => {
+  inMemoryCookieConsent = true;
+
+  try {
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'true');
+  } catch (error) {
+    console.warn('Cookie consent could not be saved to localStorage:', error);
+  }
+};
 
 const CookieBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const hasConsented = localStorage.getItem(COOKIE_CONSENT_KEY);
+    const hasConsented = getCookieConsent();
     if (!hasConsented) {
       setIsVisible(true);
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'true');
+    setCookieConsent();
     setIsVisible(false);
   };
 

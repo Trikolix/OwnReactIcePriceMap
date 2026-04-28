@@ -827,11 +827,13 @@ function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
     $privateKeyPem = pushEnv('ICEAPP_FCM_PRIVATE_KEY_PEM');
 
     if (!$projectId || !$clientEmail || !$privateKeyPem) {
+        error_log('Android push skipped: missing FCM project id, service account email, or private key.');
         return;
     }
 
     $accessToken = fetchGoogleAccessToken($clientEmail, $privateKeyPem);
     if (!$accessToken) {
+        error_log('Android push skipped: could not fetch Google OAuth access token.');
         return;
     }
 
