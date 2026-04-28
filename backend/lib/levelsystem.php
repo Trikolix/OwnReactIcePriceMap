@@ -172,6 +172,115 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
     return isset($result['ep_gesamt']) ? (int)$result['ep_gesamt'] : 0;
 }
 
+function getEpBreakdownForUser(PDO $pdo, int $userId): array {
+    ensureShopMaintenanceSchema($pdo);
+    $stmt = $pdo->prepare("SELECT
+                n.id AS nutzer_id,
+                n.username,
+                COALESCE(ci_ohne_bild.count, 0) * 30 AS ep_checkins_ohne_bild,
+                COALESCE(ci_mit_bild.count, 0) * 45 AS ep_checkins_mit_bild,
+                COALESCE(bw.count, 0) * 20 AS ep_bewertungen,
+                COALESCE(pm.count, 0) * 15 AS ep_preismeldungen,
+                COALESCE(r.count, 0) * 20 AS ep_routen,
+                COALESCE(a.ep, 0) AS ep_awards,
+                COALESCE(e.ep, 0) AS ep_eisdielen,
+                COALESCE(gw.ep, 0) AS ep_geworbene_nutzer,
+                COALESCE(mt.ep, 0) AS ep_pflege,
+                (
+                    COALESCE(ci_ohne_bild.count, 0) * 30 +
+                    COALESCE(ci_mit_bild.count, 0) * 45 +
+                    COALESCE(bw.count, 0) * 20 +
+                    COALESCE(pm.count, 0) * 15 +
+                    COALESCE(r.count, 0) * 20 +
+                    COALESCE(a.ep, 0) +
+                    COALESCE(e.ep, 0) +
+                    COALESCE(gw.ep, 0) +
+                    COALESCE(mt.ep, 0)
+                ) AS ep_gesamt
+            FROM nutzer n
+            LEFT JOIN (
+                SELECT c.nutzer_id, COUNT(*) AS count
+                FROM checkins c
+                LEFT JOIN bilder b ON b.checkin_id = c.id
+                WHERE b.id IS NULL
+                GROUP BY c.nutzer_id
+            ) ci_ohne_bild ON ci_ohne_bild.nutzer_id = n.id
+            LEFT JOIN (
+                SELECT c.nutzer_id, COUNT(DISTINCT c.id) AS count
+                FROM checkins c
+                JOIN bilder b ON b.checkin_id = c.id
+                GROUP BY c.nutzer_id
+            ) ci_mit_bild ON ci_mit_bild.nutzer_id = n.id
+            LEFT JOIN (
+                SELECT nutzer_id, COUNT(*) AS count
+                FROM bewertungen
+                GROUP BY nutzer_id
+            ) bw ON bw.nutzer_id = n.id
+            LEFT JOIN (
+                SELECT gemeldet_von, COUNT(*) AS count
+                FROM preise
+                GROUP BY gemeldet_von
+            ) pm ON pm.gemeldet_von = n.id
+            LEFT JOIN (
+                SELECT nutzer_id, COUNT(*) AS count
+                FROM routen
+                GROUP BY nutzer_id
+            ) r ON r.nutzer_id = n.id
+            LEFT JOIN (
+                SELECT ua.user_id, SUM(al.ep) AS ep
+                FROM user_awards ua
+                JOIN award_levels al
+                    ON ua.award_id = al.award_id AND ua.level = al.level
+                GROUP BY ua.user_id
+            ) a ON a.user_id = n.id
+            LEFT JOIN (
+                SELECT
+                    e.user_id,
+                    SUM(
+                        CASE
+                            WHEN c.id IS NULL THEN 5
+                            ELSE 25
+                        END
+                    ) AS ep
+                FROM eisdielen e
+                LEFT JOIN checkins c ON c.eisdiele_id = e.id
+                GROUP BY e.user_id
+            ) e ON e.user_id = n.id
+            LEFT JOIN (
+                SELECT
+                    n.invited_by AS nutzer_id,
+                    SUM(
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM checkins c WHERE c.nutzer_id = n.id
+                            ) THEN 250
+                            ELSE 10
+                        END
+                    ) AS ep
+                FROM nutzer n
+                WHERE n.is_verified = 1 AND n.invited_by IS NOT NULL
+                GROUP BY n.invited_by
+            ) gw ON gw.nutzer_id = n.id
+            LEFT JOIN (
+                SELECT resolved_by_user_id AS nutzer_id, SUM(bonus_ep_awarded) AS ep
+                FROM shop_maintenance_tasks
+                WHERE status = 'resolved'
+                  AND resolved_by_user_id IS NOT NULL
+                GROUP BY resolved_by_user_id
+            ) mt ON mt.nutzer_id = n.id
+            WHERE n.id = :userid");
+    $stmt->execute(['userid' => $userId]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$result) {
+        return [];
+    }
+
+    return array_map(static function ($value) {
+        return is_numeric($value) ? (int)$value : $value;
+    }, $result);
+}
+
 function updateUserLevelIfChanged(PDO $pdo, int $userId): ?array {
     $levelInfo = getLevelInformationForUser($pdo, $userId);
 

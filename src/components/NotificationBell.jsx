@@ -11,11 +11,11 @@ const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [show, setShow] = useState(false);
     const dropdownRef = useRef(null);
-    const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+    const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "", linkUrl: "", linkLabel: "" });
     const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
 
-    const openSystemModal = ({ title, message }) => {
-        setSystemModal({ isOpen: true, title, message });
+    const openSystemModal = ({ title, message, linkUrl = "", linkLabel = "" }) => {
+        setSystemModal({ isOpen: true, title, message, linkUrl, linkLabel });
     };
 
     const loadNotifications = async () => {
@@ -78,24 +78,31 @@ const NotificationBell = () => {
                 if (data.status === 'success') {
                     openSystemModal({
                         title: data.systemmeldung.titel,
-                        message: data.systemmeldung.nachricht
+                        message: data.systemmeldung.nachricht,
+                        linkUrl: data.systemmeldung.link_url,
+                        linkLabel: data.systemmeldung.link_label
                     });
                 } else {
                     // Fallback auf zusatzdaten
                     const fallback = parseNotificationExtra(notification.zusatzdaten);
                     openSystemModal({
                         title: notification.text || "Systemmeldung",
-                        message: fallback.message || "Keine Nachricht verfügbar"
+                        message: fallback.message || "Keine Nachricht verfügbar",
+                        linkUrl: fallback.link_url,
+                        linkLabel: fallback.link_label
                     });
                 }
-            } catch (err) {
+                } catch (err) {
                 // Fallback bei Netzwerkfehler
                 const fallback = parseNotificationExtra(notification.zusatzdaten);
                 openSystemModal({
                     title: notification.text || "Systemmeldung",
-                    message: fallback.message || "Keine Nachricht verfügbar"
+                    message: fallback.message || "Keine Nachricht verfügbar",
+                    linkUrl: fallback.link_url,
+                    linkLabel: fallback.link_label
                 });
-            }        } else if (notification.typ === 'checkin_mention') {
+                }
+        } else if (notification.typ === 'checkin_mention') {
             // Modal öffnen mit Infos und Optionen
             const data = parseNotificationExtra(notification.zusatzdaten);
             setMentionModal({
@@ -166,6 +173,8 @@ const NotificationBell = () => {
             onClose={() => setSystemModal({ ...systemModal, isOpen: false })}
             title={systemModal.title}
             message={systemModal.message}
+            linkUrl={systemModal.linkUrl}
+            linkLabel={systemModal.linkLabel}
         />
         <MentionInviteModal
             open={mentionModal.isOpen}

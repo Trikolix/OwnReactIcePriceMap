@@ -41,6 +41,12 @@ const typeLabels = {
   weekly: "Weekly",
 };
 
+const difficultyLabels = {
+  leicht: "Leicht",
+  mittel: "Mittel",
+  schwer: "Schwer",
+};
+
 const activeStatuses = ["pending_acceptance", "accepted", "proposal_open", "shop_finalized"];
 
 const formatChallengeDate = (value) => {
@@ -92,6 +98,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
   const [searchResults, setSearchResults] = useState([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [inviteType, setInviteType] = useState("weekly");
+  const [inviteDifficulty, setInviteDifficulty] = useState("leicht");
   const [busyAction, setBusyAction] = useState(null);
   const [selectedChallengeId, setSelectedChallengeId] = useState(null);
   const [selectedCompletedChallenge, setSelectedCompletedChallenge] = useState(null);
@@ -260,7 +267,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
 
     const data = await postJson(
       "/api/team_challenge_invite.php",
-      { user_id: userId, invitee_user_id: selectedUser.id, type: inviteType, lat: location.lat, lon: location.lon },
+      { user_id: userId, invitee_user_id: selectedUser.id, type: inviteType, difficulty: inviteDifficulty, lat: location.lat, lon: location.lon },
       `Einladung an ${selectedUser.username} wurde verschickt.`
     );
 
@@ -300,6 +307,7 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
   const renderChallengeMeta = (challenge) => (
     <MetaRow>
       <MetaBadge>{typeLabels[challenge.type] || challenge.type}</MetaBadge>
+      <MetaBadge>{difficultyLabels[challenge.difficulty] || challenge.difficulty}</MetaBadge>
       <MetaBadge>{statusLabels[challenge.status] || challenge.status}</MetaBadge>
       {challenge.valid_until && <MetaBadge>Bis {new Date(challenge.valid_until).toLocaleString("de-DE")}</MetaBadge>}
       {challenge.radius_m && <MetaBadge>{Math.round(challenge.radius_m / 1000)} km Radius</MetaBadge>}
@@ -367,19 +375,32 @@ function TeamChallengesPanel({ userId, apiUrl, location, loadingLocation, locati
             </InviteBox>
 
             <InviteBox>
-              <SmallHeading>Challenge-Typ</SmallHeading>
+              <SmallHeading>Challenge-Einstellungen</SmallHeading>
+              
               <TypeRow>
+                <SubSectionHeading>Typ:</SubSectionHeading>
                 {["weekly", "daily"].map((type) => (
                   <TypeButton key={type} type="button" $active={inviteType === type} onClick={() => setInviteType(type)}>
                     {typeLabels[type]}
                   </TypeButton>
                 ))}
               </TypeRow>
+
+              <TypeRow>
+                <SubSectionHeading>Schwierigkeit:</SubSectionHeading>
+                {["leicht", "mittel", "schwer"].map((diff) => (
+                  <TypeButton key={diff} type="button" $active={inviteDifficulty === diff} onClick={() => setInviteDifficulty(diff)}>
+                    {difficultyLabels[diff]}
+                  </TypeButton>
+                ))}
+              </TypeRow>
+
               <HintText>
-                {inviteType === "weekly"
-                  ? "Weeklys laufen bis Sonntag 23:59 Uhr."
-                  : "Dailys laufen bis Mitternacht, nach 18 Uhr bis morgen 23:59 Uhr."}
+                {inviteDifficulty === "leicht" && "Eisdielen im Umkreis von 5km."}
+                {inviteDifficulty === "mittel" && "Eisdielen zwischen 5km und 15km Entfernung."}
+                {inviteDifficulty === "schwer" && "Herausforderung: Eisdielen 15km bis 45km entfernt!"}
               </HintText>
+              
               <ActionRow>
                 <PrimaryButton type="button" onClick={handleInvite} disabled={busyAction !== null || loadingLocation || !location}>
                   <Send size={16} />
@@ -903,6 +924,7 @@ const TypeRow = styled.div`
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
+  align-items: center;
 `;
 
 const TypeButton = styled.button`

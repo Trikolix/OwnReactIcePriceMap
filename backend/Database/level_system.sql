@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Host: trikolix.lima-db.de:3306
--- Erstellungszeit: 05. Nov 2025 um 08:18
--- Server-Version: 8.0.39-30
--- PHP-Version: 7.2.34
+-- Host: 10.35.233.205:3306
+-- Erstellungszeit: 26. Apr 2026 um 21:39
+-- Server-Version: 8.0.44
+-- PHP-Version: 8.4.19
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Datenbank: `db_439770_2`
+-- Datenbank: `k320202_iceapp_dev`
 --
 
 -- --------------------------------------------------------
@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `level_system` (
   `level` int NOT NULL,
   `ep_min` int NOT NULL,
-  `level_name` varchar(50) COLLATE utf8mb4_general_ci NOT NULL
+  `level_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

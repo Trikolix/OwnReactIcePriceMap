@@ -56,8 +56,9 @@ function ensureTeamChallengeSchema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
 
-    teamChallengeEnsureColumn($pdo, 'team_challenges', 'mode', "ENUM('midpoint', 'expedition') NOT NULL DEFAULT 'midpoint' AFTER `type`");
-    teamChallengeEnsureColumn($pdo, 'team_challenges', 'min_radius_m', "INT NULL DEFAULT NULL AFTER `center_lon`");
+    teamChallengeEnsureColumn($pdo, 'team_challenges', 'mode', "ENUM('midpoint', 'expedition') NOT NULL DEFAULT 'midpoint' AFTER `type` ");
+    teamChallengeEnsureColumn($pdo, 'team_challenges', 'difficulty', "ENUM('leicht', 'mittel', 'schwer') NOT NULL DEFAULT 'leicht' AFTER `type` ");
+    teamChallengeEnsureColumn($pdo, 'team_challenges', 'min_radius_m', "INT NULL DEFAULT NULL AFTER `center_lon` ");
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS team_challenge_locations (
@@ -155,9 +156,16 @@ function teamChallengeNormalizeMode(?string $mode): string
     return in_array($mode, ['midpoint', 'expedition'], true) ? $mode : 'midpoint';
 }
 
-function teamChallengeGetModeConfig(string $mode): array
+function teamChallengeNormalizeDifficulty(?string $difficulty): string
+{
+    return in_array($difficulty, ['leicht', 'mittel', 'schwer'], true) ? $difficulty : 'leicht';
+}
+
+function teamChallengeGetModeConfig(string $mode, string $difficulty = 'leicht'): array
 {
     $normalizedMode = teamChallengeNormalizeMode($mode);
+    $normalizedDifficulty = teamChallengeNormalizeDifficulty($difficulty);
+
     if ($normalizedMode === 'expedition') {
         return [
             'mode' => 'expedition',
@@ -166,11 +174,29 @@ function teamChallengeGetModeConfig(string $mode): array
         ];
     }
 
-    return [
+    // Radius configuration based on difficulty
+    $config = [
         'mode' => 'midpoint',
-        'min_radius_m' => 0,
-        'steps' => [1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000],
+        'difficulty' => $normalizedDifficulty,
     ];
+
+    switch ($normalizedDifficulty) {
+        case 'schwer':
+            $config['min_radius_m'] = 15000;
+            $config['steps'] = [20000, 25000, 30000, 35000, 45000];
+            break;
+        case 'mittel':
+            $config['min_radius_m'] = 5000;
+            $config['steps'] = [7500, 10000, 12500, 15000, 20000];
+            break;
+        case 'leicht':
+        default:
+            $config['min_radius_m'] = 0;
+            $config['steps'] = [1000, 2500, 5000, 7500, 10000];
+            break;
+    }
+
+    return $config;
 }
 
 function teamChallengeActiveStatuses(): array
@@ -299,13 +325,17 @@ function teamChallengeBuildSummary(array $row, int $viewerId): array
     $isInviter = (int)$row['inviter_user_id'] === $viewerId;
     $isInvitee = (int)$row['invitee_user_id'] === $viewerId;
     $mode = teamChallengeNormalizeMode($row['mode'] ?? 'midpoint');
-    $minRadius = $row['min_radius_m'] !== null ? (int)$row['min_radius_m'] : teamChallengeGetModeConfig($mode)['min_radius_m'];
+    $difficulty = teamChallengeNormalizeDifficulty($row['difficulty'] ?? 'leicht');
+    $config = teamChallengeGetModeConfig($mode, $difficulty);
+    
+    $minRadius = $row['min_radius_m'] !== null ? (int)$row['min_radius_m'] : $config['min_radius_m'];
     $outerRadius = $row['radius_m'] !== null ? (int)$row['radius_m'] : null;
 
     return [
         'id' => (int)$row['id'],
         'type' => $row['type'],
         'mode' => $mode,
+        'difficulty' => $difficulty,
         'status' => $row['status'],
         'created_at' => $row['created_at'],
         'accepted_at' => $row['accepted_at'],
@@ -538,12 +568,25 @@ function teamChallengeFetchLocationsByUsers(PDO $pdo, int $challengeId): array
     return $result;
 }
 
-function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA, float $latB, float $lonB, string $mode = 'midpoint'): array
+function teamChallengeHaversineDistanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+{
+    $earthRadius = 6371000;
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+    $a = sin($dLat / 2) * sin($dLat / 2) +
+        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+        sin($dLon / 2) * sin($dLon / 2);
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+    return $earthRadius * $c;
+}
+
+function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA, float $latB, float $lonB, string $mode = 'midpoint', string $difficulty = 'leicht'): array
 {
     $centerLat = ($latA + $latB) / 2;
     $centerLon = ($lonA + $lonB) / 2;
     $earthRadius = 6371000;
-    $config = teamChallengeGetModeConfig($mode);
+    
+    $config = teamChallengeGetModeConfig($mode, $difficulty);
     $steps = $config['steps'];
     $minRadius = (int)$config['min_radius_m'];
 
@@ -574,7 +617,8 @@ function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA
               AND e.longitude BETWEEN :min_lon AND :max_lon
               AND e.status = 'open'
             HAVING distance_to_center >= :min_radius AND distance_to_center <= :radius
-            ORDER BY distance_to_center ASC, e.name ASC
+            ORDER BY RAND()
+            LIMIT 5
         ");
         $stmt->execute([
             'lat' => $centerLat,
@@ -588,7 +632,7 @@ function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA
         ]);
 
         $shops = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if (count($shops) >= 4) {
+        if (count($shops) >= 5 || $radius === end($steps)) {
             return [
                 'center_lat' => $centerLat,
                 'center_lon' => $centerLon,

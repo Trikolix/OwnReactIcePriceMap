@@ -35,8 +35,9 @@ function UserSite() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { userId: userIdFromUrl } = useParams();
   const { userId: userIdFromContext } = useUser();
+  const viewerUserId = userIdFromContext || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
   const [activeTab, setActiveTab] = useState('checkins');
-  const isOwnProfile = userIdFromUrl === userIdFromContext;
+  const isOwnProfile = userIdFromUrl === viewerUserId;
   const [showToast, setShowToast] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,7 @@ function UserSite() {
   const [flavorErrors, setFlavorErrors] = useState({});
   const profile156AutoScanTriggeredRef = useRef(false);
   const awardsGridRef = useRef(null);
+  const userDataRequestRef = useRef(0);
   const PROFILE_156_SCAN_CODE = '3cb55cb87747d1ed4069e612cef2e75d';
   const [selectedAward, setSelectedAward] = useState(null);
 
@@ -93,6 +95,8 @@ function UserSite() {
               isOpen: true,
               title: json.systemmeldung.titel,
               message: json.systemmeldung.nachricht,
+              linkUrl: json.systemmeldung.link_url,
+              linkLabel: json.systemmeldung.link_label,
             });
           }
         })
@@ -101,8 +105,8 @@ function UserSite() {
         });
     }
 
-    if (mentionNotificationId && userIdFromContext) {
-      fetch(`${API_BASE}/benachrichtigungen.php?action=get&id=${mentionNotificationId}&nutzer_id=${userIdFromContext}`)
+    if (mentionNotificationId && viewerUserId) {
+      fetch(`${API_BASE}/benachrichtigungen.php?action=get&id=${mentionNotificationId}&nutzer_id=${viewerUserId}`)
         .then((res) => res.json())
         .then((json) => {
           if (json.status !== 'success' || !json.notification) return;
@@ -115,14 +119,14 @@ function UserSite() {
               inviterName: data.username || 'Unbekannt',
               shopName: data.shop_name || data.shop || 'Eisdiele',
               date: json.notification.erstellt_am,
-              userId: userIdFromContext,
+              userId: viewerUserId,
             },
           });
           if (notificationId) {
             fetch(`${API_BASE}/benachrichtigungen.php?action=markAsRead`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: Number(notificationId), nutzer_id: Number(userIdFromContext) }),
+              body: JSON.stringify({ id: Number(notificationId), nutzer_id: Number(viewerUserId) }),
             }).catch(() => {});
           }
         })
@@ -130,7 +134,7 @@ function UserSite() {
           console.error('Mention-Benachrichtigung konnte nicht geladen werden', error);
         });
     }
-  }, [location.search, userIdFromContext]);
+  }, [location.search, viewerUserId]);
 
   useEffect(() => {
     if (Number(finalUserId) !== 156) return;
@@ -158,14 +162,25 @@ function UserSite() {
   const loadMoreAwards = () => setAwardPage((prev) => prev + 1);
   const loadMoreRoutes = () => setRoutePage((prev) => prev + 1);
 
-  const fetchUserData = async (userIdToLoad) => {
+  const fetchUserData = async (userIdToLoad, viewerId = viewerUserId, signal) => {
+    const requestId = userDataRequestRef.current + 1;
+    userDataRequestRef.current = requestId;
+    const currentViewerId = viewerId || 0;
+
     try {
-      const response = await fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${userIdToLoad}&cur_user_id=${userIdFromContext}`);
+      setLoading(true);
+      const response = await fetch(
+        `${apiUrl}/get_user_stats.php?nutzer_id=${userIdToLoad}&cur_user_id=${currentViewerId}`,
+        { signal }
+      );
       if (!response.ok) throw new Error("Fehler beim Abruf der Daten");
       const json = await response.json();
+      if (requestId !== userDataRequestRef.current) return;
       setData(json);
+      setError(null);
       setLoading(false);
     } catch (err) {
+      if (err.name === 'AbortError' || requestId !== userDataRequestRef.current) return;
       setError(err);
       setLoading(false);
     }
@@ -173,8 +188,10 @@ function UserSite() {
 
   useEffect(() => {
     if (!finalUserId) return;
-    fetchUserData(finalUserId);
-  }, [finalUserId]);
+    const controller = new AbortController();
+    fetchUserData(finalUserId, viewerUserId, controller.signal);
+    return () => controller.abort();
+  }, [finalUserId, viewerUserId]);
 
   useEffect(() => {
     if (!selectedAward) return undefined;
@@ -217,7 +234,7 @@ function UserSite() {
     };
   }, [data?.user_awards?.length]);
 
-  const refreshUser = () => fetchUserData(finalUserId);
+  const refreshUser = () => fetchUserData(finalUserId, viewerUserId);
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -266,6 +283,22 @@ function UserSite() {
     { key: 'Eisbecher', label: 'Eisbecher', value: Number(data?.eisarten?.Eisbecher || 0) }
   ];
   const maxPortionValue = Math.max(1, ...portionBreakdown.map((item) => item.value));
+  const epBreakdown = data?.ep_breakdown || null;
+  const epBreakdownTotal = Math.max(1, Number(epBreakdown?.ep_gesamt || 0));
+  const epBreakdownRows = epBreakdown ? [
+    { key: 'ep_checkins_ohne_bild', label: 'Check-ins ohne Bild' },
+    { key: 'ep_checkins_mit_bild', label: 'Check-ins mit Bild' },
+    { key: 'ep_bewertungen', label: 'Bewertungen' },
+    { key: 'ep_preismeldungen', label: 'Preismeldungen' },
+    { key: 'ep_routen', label: 'Routen' },
+    { key: 'ep_awards', label: 'Awards' },
+    { key: 'ep_eisdielen', label: 'Eisdielen' },
+    { key: 'ep_geworbene_nutzer', label: 'Geworbene Nutzer' },
+    { key: 'ep_pflege', label: 'Pflegeaufgaben' }
+  ].map((item) => ({
+    ...item,
+    value: Number(epBreakdown[item.key] || 0)
+  })) : [];
   const avatarUrl = buildAssetUrl(data?.avatar_url);
   const userInitial = data?.nutzername?.charAt(0)?.toUpperCase() || '?';
   const activityData = {
@@ -658,6 +691,8 @@ function UserSite() {
               onClose={() => setSystemModal((prev) => ({ ...prev, isOpen: false }))}
               title={systemModal.title}
               message={systemModal.message}
+              linkUrl={systemModal.linkUrl}
+              linkLabel={systemModal.linkLabel}
             />
             <MentionInviteModal
               open={mentionModal.isOpen}
@@ -823,6 +858,23 @@ function UserSite() {
               <h2>Deine Statistiken</h2>
               <span>Ein Überblick über deine Eis-Abenteuer</span>
             </SectionHeader>
+            {Number(viewerUserId) === 1 && epBreakdown && (
+              <ContentGrid>
+                <ContentCard>
+                  <CardTitle>EP-Analyse (Admin)</CardTitle>
+                  <CardSubtitle>Gesamt-EP: {Number(epBreakdown.ep_gesamt || 0)}</CardSubtitle>
+                  {epBreakdownRows.map((item) => (
+                    <PortionRow key={item.key}>
+                      <span>{item.label}</span>
+                      <PortionBar>
+                        <PortionFill style={{ width: `${(item.value / epBreakdownTotal) * 100}%` }} />
+                      </PortionBar>
+                      <span>{item.value}</span>
+                    </PortionRow>
+                  ))}
+                </ContentCard>
+              </ContentGrid>
+            )}
             <ContentGrid>
               <ContentCard>
                 <CardTitle>Portionen & Verteilung</CardTitle>

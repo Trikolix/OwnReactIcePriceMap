@@ -53,7 +53,8 @@ try {
             (float)$locations[(int)$challenge['inviter_user_id']]['lon'],
             $lat,
             $lon,
-            (string)($challenge['mode'] ?? 'midpoint')
+            (string)($challenge['mode'] ?? 'midpoint'),
+            (string)($challenge['difficulty'] ?? 'leicht')
         );
 
         if (count($calculated['shops']) < 4) {

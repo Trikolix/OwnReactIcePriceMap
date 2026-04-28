@@ -90,6 +90,11 @@ const Header = ({ refreshShops }) => {
       return;
     }
 
+    if (!userId) {
+      setDashboardNewCount(0);
+      return;
+    }
+
     const cachedFeed = readActivityFeedCache(userId);
     const seenAt = readActivityFeedSeenAt(userId);
     if (cachedFeed?.activities?.length && seenAt) {
