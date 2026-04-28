@@ -5,20 +5,42 @@ import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { Overlay as SharedOverlay, Button as SharedButton } from '../styles/SharedStyles';
 
-function SystemModal({ isOpen, onClose, title, message }) {
-  if (typeof document === "undefined") return null;
+import { Link } from "react-router-dom";
+
+function SystemModal({ isOpen, onClose, title, message, linkUrl, linkLabel }) {
+  if (!isOpen || typeof document === "undefined") return null;
+
+  const isExternal = linkUrl?.startsWith("http");
 
   return createPortal(
     <Dialog open={isOpen} onClose={onClose}>
         <SharedOverlay aria-hidden="true" />
         <Wrapper>
           <Dialog.Panel as={Panel}>
+            <TopCloseButton type="button" onClick={onClose} aria-label="Systemmeldung schließen">
+              x
+            </TopCloseButton>
             <Dialog.Title as={Title}>{title}</Dialog.Title>
             <Dialog.Description as={Description}>{message}</Dialog.Description>
 
-            <ButtonRow>
-              <SharedButton onClick={onClose}>Verstanden</SharedButton>
-            </ButtonRow>
+            <ActionRow>
+              {linkUrl && linkUrl.trim() !== "" && (
+                isExternal ? (
+                  <ActionButton as="a" href={linkUrl} target="_blank" rel="noopener noreferrer" onClick={onClose}>
+                    {linkLabel || "Ansehen"}
+                  </ActionButton>
+                ) : (
+                  <ActionButton as={Link} to={linkUrl} onClick={onClose}>
+                    {linkLabel || "Ansehen"}
+                  </ActionButton>
+                )
+              )}
+            </ActionRow>
+            <CloseRow>
+              <SharedButton onClick={onClose}>
+                {linkUrl && linkUrl.trim() !== "" ? "Schließen" : "Verstanden"}
+              </SharedButton>
+            </CloseRow>
           </Dialog.Panel>
         </Wrapper>
       </Dialog>,
@@ -30,57 +52,84 @@ export default SystemModal;
 
 // Styled Components
 
-// uses SharedOverlay from SharedStyles
-
-const Wrapper = styled.div`
-  --modal-viewport-gap: 1rem;
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: var(--modal-viewport-gap);
-  overflow: hidden;
-  z-index: 9999;
-
-  @media (min-width: 640px) {
-    --modal-viewport-gap: 1.5rem;
+const ActionButton = styled(SharedButton)`
+  background: #ffb522;
+  color: #2f2100;
+  border: 1px solid rgba(255, 181, 34, 0.5);
+  &:hover {
+    background: #ffc34a;
   }
 `;
 
-const Panel = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  max-width: 420px;
-  width: 100%;
-  box-sizing: border-box;
-  max-height: calc(100vh - (var(--modal-viewport-gap) * 2));
-  max-height: calc(100dvh - (var(--modal-viewport-gap) * 2));
-  overflow-y: auto;
-  padding: 24px;
-  z-index: 10000;
-`;
-
-const Title = styled.h2`
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin: 0;
-`;
-
-const Description = styled.p`
-  margin-top: 12px;
-  color: #555;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  white-space: pre-line;
-`;
-
-const ButtonRow = styled.div`
+const ActionRow = styled.div`
   margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+`;
+
+const CloseRow = styled.div`
+  margin-top: 12px;
   display: flex;
   justify-content: center;
 `;
 
-// uses SharedButton
+const Wrapper = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 3001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+`;
+
+const Panel = styled.div`
+  position: relative;
+  width: min(100%, 520px);
+  background: #fffdf8;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 20px 48px rgba(47, 33, 0, 0.18);
+  padding: 1.65rem 1.4rem 1.4rem;
+  pointer-events: auto;
+`;
+
+const TopCloseButton = styled.button`
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(47, 33, 0, 0.08);
+  color: #2f2100;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(47, 33, 0, 0.14);
+  }
+`;
+
+const Title = styled.h2`
+  margin: 0;
+  padding-right: 2.25rem;
+  color: #2f2100;
+  font-size: 1.25rem;
+  line-height: 1.3;
+`;
+
+const Description = styled.p`
+  margin: 0.9rem 0 0;
+  color: #5f4a1f;
+  line-height: 1.55;
+  white-space: pre-wrap;
+`;

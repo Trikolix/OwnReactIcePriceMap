@@ -44,8 +44,11 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $lastActive = $userRow['last_active_at'];
     $lastEmail = $userRow['last_notification_email_at'];
     $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+    $skipRateLimit = !empty($extra['skipRateLimit']) || $notificationType === 'news';
     $sendEmail = false;
-    if ($lastEmail === null) {
+    if ($skipRateLimit) {
+        $sendEmail = true;
+    } elseif ($lastEmail === null) {
         $sendEmail = true; // Noch nie eine Email gesendet
     } else {
         $lastEmailDT = new DateTimeImmutable($lastEmail, new DateTimeZone('UTC'));
@@ -85,7 +88,8 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $stmtSetting = $pdo->prepare("SELECT $settingField FROM user_notification_settings WHERE user_id = ?");
     $stmtSetting->execute([$userId]);
     $setting = $stmtSetting->fetch(PDO::FETCH_ASSOC);
-    $notify = ($setting === false || $setting === null) ? 1 : (isset($setting[$settingField]) ? (int)$setting[$settingField] : 1);
+    $defaultNotify = $notificationType === 'news' ? 0 : 1;
+    $notify = ($setting === false || $setting === null) ? $defaultNotify : (isset($setting[$settingField]) ? (int)$setting[$settingField] : $defaultNotify);
     if ($notify !== 1) return;
 
     // E-Mail als HTML zusammenbauen
@@ -185,6 +189,26 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $challengeLink = "https://ice-app.de/photo-challenge/" . (isset($extra['challengeId']) ? (int)$extra['challengeId'] : '');
         $mailBody .= "<p>Direkter Link: <a href='" . $challengeLink . "' style='color:#0077b6;'>" . $challengeLink . "</a></p>";
         $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+    } elseif ($notificationType === 'news') {
+        $title = trim((string)($extra['title'] ?? 'Neue Systemmeldung'));
+        $message = trim((string)($extra['message'] ?? ''));
+        $linkUrl = trim((string)($extra['linkUrl'] ?? ''));
+        $linkLabel = trim((string)($extra['linkLabel'] ?? 'In der Ice-App ansehen'));
+
+        $mailSubject = "Ice-App: " . $title;
+        $mailBody .= "<h2 style='font-size:20px;margin:0 0 12px;color:#222;'>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</h2>";
+        if ($message !== '') {
+            $mailBody .= "<p style='white-space:pre-line;'>" . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . "</p>";
+        }
+
+        if ($linkUrl !== '') {
+            $absoluteLink = preg_match('~^https?://~i', $linkUrl) === 1
+                ? $linkUrl
+                : 'https://ice-app.de' . (strpos($linkUrl, '/') === 0 ? $linkUrl : '/' . $linkUrl);
+            $mailBody .= "<p><a href='" . htmlspecialchars($absoluteLink, ENT_QUOTES, 'UTF-8') . "' style='color:#0077b6;'>" .
+                htmlspecialchars($linkLabel !== '' ? $linkLabel : 'In der Ice-App ansehen', ENT_QUOTES, 'UTF-8') .
+                "</a></p>";
+        }
      } else {
         // Unbekannter Typ
         return;

@@ -8,6 +8,8 @@ export default function SystemmeldungForm() {
 
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
+    const [linkUrl, setLinkUrl] = useState("");
+    const [linkLabel, setLinkLabel] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
@@ -16,11 +18,6 @@ export default function SystemmeldungForm() {
 
     // Admin-Hook: nur für userId 1
     const isAdmin = parseInt(userId, 10) === 1;
-
-    // Hooks immer aufrufen
-    useEffect(() => {
-        if (isAdmin) loadHistory();
-    }, [userId]);
 
     const loadHistory = async () => {
         setLoading(true);
@@ -34,6 +31,11 @@ export default function SystemmeldungForm() {
         setLoading(false);
     };
 
+    // Hooks immer aufrufen
+    useEffect(() => {
+        if (isAdmin) loadHistory();
+    }, [userId]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -46,8 +48,14 @@ export default function SystemmeldungForm() {
                 : `${import.meta.env.VITE_API_BASE_URL}/systemmeldung.php?action=create`;
 
             const bodyData = editing
-                ? { id: editing.id, title: editing.title, message: editing.message }
-                : { title, message };
+                ? {
+                    id: editing.id,
+                    title: editing.title,
+                    message: editing.message,
+                    link_url: editing.link_url,
+                    link_label: editing.link_label
+                }
+                : { title, message, link_url: linkUrl, link_label: linkLabel };
 
             const res = await fetch(url, {
                 method: "POST",
@@ -60,6 +68,8 @@ export default function SystemmeldungForm() {
                 setSuccess(editing ? "Systemmeldung aktualisiert!" : "Systemmeldung erstellt!");
                 setTitle("");
                 setMessage("");
+                setLinkUrl("");
+                setLinkLabel("");
                 setEditing(null);
                 loadHistory();
             } else {
@@ -82,7 +92,9 @@ export default function SystemmeldungForm() {
         setEditing({
             id: m.id,
             title: m.titel,
-            message: m.nachricht
+            message: m.nachricht,
+            link_url: m.link_url || "",
+            link_label: m.link_label || ""
         });
     };
 
@@ -125,6 +137,33 @@ export default function SystemmeldungForm() {
                     />
                 </Field>
 
+                <FieldRow>
+                    <Field style={{ flex: 1 }}>
+                        <Label>Button-Text (optional)</Label>
+                        <Input
+                            type="text"
+                            placeholder="z.B. Jetzt ansehen"
+                            value={editing ? editing.link_label : linkLabel}
+                            onChange={(e) => editing
+                                ? setEditing({ ...editing, link_label: e.target.value })
+                                : setLinkLabel(e.target.value)
+                            }
+                        />
+                    </Field>
+                    <Field style={{ flex: 2 }}>
+                        <Label>Button-Link (optional)</Label>
+                        <Input
+                            type="text"
+                            placeholder="z.B. /challenges oder https://..."
+                            value={editing ? editing.link_url : linkUrl}
+                            onChange={(e) => editing
+                                ? setEditing({ ...editing, link_url: e.target.value })
+                                : setLinkUrl(e.target.value)
+                            }
+                        />
+                    </Field>
+                </FieldRow>
+
                 <Button type="submit" disabled={loading}>
                     {loading ? "Speichern..." : editing ? "Änderungen speichern" : "Systemmeldung erstellen"}
                 </Button>
@@ -137,34 +176,46 @@ export default function SystemmeldungForm() {
             </Form>
 
             <Heading>Systemmeldungen Historie</Heading>
-            <Table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Titel</th>
-                        <th>Nachricht</th>
-                        <th>Erstellt</th>
-                        <th>Benachricht</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {meldungen.map((m) => (
-                        <tr key={m.id}>
-                            <td>{m.id}</td>
-                            <td>{m.titel}</td>
-                            <td style={{ whiteSpace: "pre-line" }}>{m.nachricht}</td>
-                            <td>{m.erstellt_am}</td>
-                            <td>{m.benachrichtigungen_gelesen} / {m.benachrichtigungen_total} gelesen</td>
-                            <td>
-                                <ActionButton onClick={() => startEditing(m)}>Bearbeiten</ActionButton>
-                                <DeleteButton onClick={() => deleteMeldung(m.id)}>Löschen</DeleteButton>
-                            </td>
+            <div style={{ overflowX: "auto" }}>
+                <Table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titel</th>
+                            <th>Nachricht</th>
+                            <th>Link / Button</th>
+                            <th>Erstellt</th>
+                            <th>Status</th>
+                            <th>Aktionen</th>
                         </tr>
-                    ))}
-                </tbody>
-            </Table>
+                    </thead>
+                    <tbody>
+                        {meldungen.map((m) => (
+                            <tr key={m.id}>
+                                <td>{m.id}</td>
+                                <td>{m.titel}</td>
+                                <td style={{ whiteSpace: "pre-line" }}>{m.nachricht}</td>
+                                <td>
+                                    {m.link_url ? (
+                                        <div>
+                                            <strong>{m.link_label || "Kein Label"}</strong><br />
+                                            <small style={{ wordBreak: "break-all" }}>{m.link_url}</small>
+                                        </div>
+                                    ) : "–"}
+                                </td>
+                                <td>{m.erstellt_am}</td>
+                                <td>{m.benachrichtigungen_gelesen} / {m.benachrichtigungen_total} gelesen</td>
+                                <td>
+                                    <ActionButton onClick={() => startEditing(m)}>Bearbeiten</ActionButton>
+                                    <DeleteButton onClick={() => deleteMeldung(m.id)}>Löschen</DeleteButton>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </div>
         </Container>
+
         </>
     );
 }
@@ -172,7 +223,7 @@ export default function SystemmeldungForm() {
 /* ---------------- styled-components ---------------- */
 
 const Container = styled.div`
-    max-width: 700px;
+    max-width: 900px;
     margin: 2rem auto;
     padding: 2rem;
     background: #fff;
@@ -191,6 +242,14 @@ const Form = styled.form`
     display: flex;
     flex-direction: column;
     gap: 1rem;
+`;
+
+const FieldRow = styled.div`
+    display: flex;
+    gap: 1rem;
+    @media (max-width: 600px) {
+        flex-direction: column;
+    }
 `;
 
 const Field = styled.div`
