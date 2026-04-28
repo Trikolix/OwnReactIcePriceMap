@@ -31,3 +31,5 @@ yarn-error.log*
 uploads/
 backend/Database/restore_*.zip
 backend/event2026/stripe.local.php
+android/app/google-services.json
+backend/firebase-key.json

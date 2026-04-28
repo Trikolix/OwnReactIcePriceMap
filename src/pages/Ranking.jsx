@@ -4,6 +4,7 @@ import Header from "../Header";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
+import { formatDateTimeLocalInputValue } from "../utils/dateTimeLocal";
 import Seo from "../components/Seo";
 
 const EARTH_RADIUS_KM = 6371;
@@ -59,10 +60,7 @@ const Ranking = () => {
     const [areFiltersExpanded, setAreFiltersExpanded] = useState(() => !isCompactFilterViewport());
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const buildDefaultDateTimeValue = React.useCallback(() => {
-        const date = new Date();
-        date.setMinutes(date.getMinutes() + 60);
-        date.setSeconds(0, 0);
-        return date.toISOString().slice(0, 16);
+        return formatDateTimeLocalInputValue();
     }, []);
     const openFilterQueryString = React.useMemo(() => {
         if (openFilterMode === 'now') {

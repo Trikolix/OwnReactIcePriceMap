@@ -11,10 +11,10 @@
 
 ## Android release checklist
 
-- Place `google-services.json` in `android/app/`.
+- Place the real Firebase `google-services.json` in `android/app/`. This file is intentionally gitignored; do not commit dummy or production Firebase credentials.
 - Set signing config for the release build.
 - Create an Android notification channel with the id `ice_app_notifications`.
-- Publish `assetlinks.json` for `de.iceapp.mobile` with the release SHA-256 fingerprint under `https://ice-app.de/.well-known/assetlinks.json`.
+- Publish `assetlinks.json` for `de.thegourmetcyclists.iceapp` with the release SHA-256 fingerprint under `https://ice-app.de/.well-known/assetlinks.json`.
 - Run `npm run build` and `npm run cap:sync` before opening Android Studio.
 
 ## Notes

@@ -1,5 +1,33 @@
 <?php
 
+function uploadIniBytes(string $value): int {
+    $value = trim($value);
+    if ($value === '') {
+        return 0;
+    }
+
+    $unit = strtolower($value[strlen($value) - 1]);
+    $bytes = (int)$value;
+    switch ($unit) {
+        case 'g':
+            $bytes *= 1024;
+            // fall through
+        case 'm':
+            $bytes *= 1024;
+            // fall through
+        case 'k':
+            $bytes *= 1024;
+    }
+
+    return $bytes;
+}
+
+function isMultipartBodyTooLarge(): bool {
+    $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $postMaxSize = uploadIniBytes((string)ini_get('post_max_size'));
+    return $contentLength > 0 && $postMaxSize > 0 && $contentLength > $postMaxSize;
+}
+
 function resizeImage($sourcePath, $destinationPath, $maxDim = 1200, $quality = 75) {
     $imgInfo = getimagesize($sourcePath);
     if (!$imgInfo) {
@@ -39,19 +67,17 @@ function resizeImage($sourcePath, $destinationPath, $maxDim = 1200, $quality = 7
             throw new Exception('Nicht unterstützter Bildtyp: ' . $mime);
     }
 
-    $ratio = $width / $height;
-    if ($width > $height) {
-        $newWidth = $maxDim;
-        $newHeight = $maxDim / $ratio;
-    } else {
-        $newHeight = $maxDim;
-        $newWidth = $maxDim * $ratio;
+    $scale = min(1, $maxDim / max($width, $height));
+    $newWidth = (int) round($width * $scale);
+    $newHeight = (int) round($height * $scale);
+
+    if ($newWidth <= 0 || $newHeight <= 0) {
+        throw new Exception('Ungueltige Bildabmessungen.');
     }
 
-    $newWidth = (int) round($newWidth);
-    $newHeight = (int) round($newHeight);
-
     $newImage = imagecreatetruecolor($newWidth, $newHeight);
+    $white = imagecolorallocate($newImage, 255, 255, 255);
+    imagefill($newImage, 0, 0, $white);
     imagecopyresampled($newImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
 
     imagejpeg($newImage, $destinationPath, $quality);
@@ -83,6 +109,9 @@ function processUploadedImages(array $filesArray, string $zielVerzeichnis, strin
     foreach ($filesArray['tmp_name'] as $index => $tmpPath) {
         switch ($filesArray['error'][$index]) {
             case UPLOAD_ERR_OK:
+                if (!is_uploaded_file($tmpPath)) {
+                    throw new Exception('Ungueltiger Datei-Upload.');
+                }
                 $filename = uniqid($filenamePrefix, true) . '.jpg';
                 $destination = $zielVerzeichnis . $filename;
                 try {

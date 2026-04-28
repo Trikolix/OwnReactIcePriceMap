@@ -46,6 +46,7 @@ require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/TeamChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
 require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
+require_once __DIR__ . '/../evaluators/Event2026CompletionEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -57,6 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Nur POST erlaubt']);
+    exit;
+}
+
+if (isMultipartBodyTooLarge()) {
+    http_response_code(413);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Die hochgeladenen Bilder sind zu gross. Bitte waehle weniger oder kleinere Bilder.'
+    ]);
     exit;
 }
 
@@ -91,7 +101,7 @@ function respondWithError($message, $httpCode = 400, $exception = null) {
     } else {
         error_log("Fehler: $message");
     }
-    echo json_encode(['error' => $message]);
+    echo json_encode(['status' => 'error', 'message' => $message, 'error' => $message]);
     exit;
 }
 
@@ -453,11 +463,9 @@ try {
         new BundeslandExperteEvaluator(),
         new IceSeasonEvaluator(),
         new DifferentIceShopCountEvaluator(),
-        new GeschmacksvielfaltEvaluator(),
         new EarlyStarterEvaluator(),
         new AwardCollectorEvaluator(),
         new WeekStreakEvaluator(),
-        new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),
         new DetailedCheckinCountEvaluator(),
         new IceShopOneByOneEvaluator(),
@@ -468,10 +476,8 @@ try {
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
-    if (!empty($sorten)) $evaluators[] = new FuerstPuecklerEvaluator();
 
-    if ($type === "Kugel") $evaluators[] = new KugeleisCountEvaluator();
-    elseif ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
+    if ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
 
     if ($anreise === 'Fahrrad') {
@@ -481,6 +487,15 @@ try {
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
     elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
+
+    $postSortenEvaluators = [
+        new GeschmackstreueEvaluator(),
+        new GeschmacksvielfaltEvaluator(),
+        new IcePortionsPerWeekEvaluator(),
+        new Event2026CompletionEvaluator('live'),
+    ];
+    if (!empty($sorten)) $postSortenEvaluators[] = new FuerstPuecklerEvaluator();
+    if ($type === "Kugel") $postSortenEvaluators[] = new KugeleisCountEvaluator();
 
     $completedTeamChallenge = null;
     if ($isOnSite) {
@@ -585,6 +600,23 @@ try {
 
             $sorteStmt->execute([$checkinId, $name, $sBew]);
         }
+    }
+
+    foreach ($postSortenEvaluators as $evaluator) {
+        $t0 = microtime(true);
+        if ($evaluator instanceof MetadataAwardEvaluator) {
+            $evaluator->setCheckinMetadata($meta);
+        }
+
+        try {
+            $evaluated = $evaluator->evaluate($userId);
+            $newAwards = array_merge($newAwards, $evaluated);
+        } catch (Exception $e) {
+            error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
+        }
+
+        $t1 = microtime(true);
+        $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
     }
 
     // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.

@@ -25,6 +25,7 @@ import LoginModal from "../../LoginModal";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
 import Seo from "../../components/Seo";
+import NewAwards from "../../components/NewAwards";
 import { EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
 
 const Page = styled.div`
@@ -701,6 +702,8 @@ export default function EventStampCard() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingScan, setPendingScan] = useState(() => readPendingScan());
   const [scanContext, setScanContext] = useState(null);
+  const [newAwards, setNewAwards] = useState([]);
+  const [levelUpInfo, setLevelUpInfo] = useState(null);
   const queryScanKeyRef = useRef("");
   const pendingScanKeyRef = useRef("");
 
@@ -942,8 +945,23 @@ export default function EventStampCard() {
         checkin_id: action.checkin_id || null,
         pending_local: false,
       });
+      if (Array.isArray(json.new_awards) && json.new_awards.length > 0 && typeof window !== "undefined") {
+        setNewAwards(json.new_awards);
+        window.dispatchEvent(new CustomEvent("new-awards", { detail: json.new_awards }));
+      }
+      if (json.level_up) {
+        setLevelUpInfo({
+          level: json.new_level,
+          level_name: json.level_name,
+        });
+      }
       setRefreshNonce((current) => current + 1);
-      setMessage({ tone: "success", text: json.message || "Checkpoint erfolgreich abgestempelt." });
+      setMessage({
+        tone: "success",
+        text: Array.isArray(json.new_awards) && json.new_awards.length > 0
+          ? `${json.message || "Checkpoint erfolgreich abgestempelt."} Neuer Award freigeschaltet.`
+          : json.message || "Checkpoint erfolgreich abgestempelt.",
+      });
       return { success: true };
     } catch (submitError) {
       if (!options.forceNetwork && /Failed to fetch|NetworkError|Load failed/i.test(String(submitError.message || ""))) {
@@ -1643,6 +1661,34 @@ export default function EventStampCard() {
 
       {showLoginModal && (
         <LoginModal setShowLoginModal={setShowLoginModal} />
+      )}
+
+      {(newAwards.length > 0 || levelUpInfo) && (
+        <Overlay onClick={() => {
+          setNewAwards([]);
+          setLevelUpInfo(null);
+        }}>
+          <Modal onClick={(event) => event.stopPropagation()}>
+            {levelUpInfo && (
+              <>
+                <SectionTitle>Level {levelUpInfo.level} erreicht</SectionTitle>
+                <SectionText>{levelUpInfo.level_name}</SectionText>
+              </>
+            )}
+            <NewAwards awards={newAwards} />
+            <ActionRow>
+              <Button
+                type="button"
+                onClick={() => {
+                  setNewAwards([]);
+                  setLevelUpInfo(null);
+                }}
+              >
+                Schließen
+              </Button>
+            </ActionRow>
+          </Modal>
+        </Overlay>
       )}
 
       <Footer />

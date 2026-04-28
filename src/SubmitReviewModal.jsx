@@ -20,7 +20,7 @@ import {
     Message as SharedMessage,
 } from './styles/SharedStyles';
 import ImageChooserModal from "./components/ImageChooserModal";
-import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES } from "./utils/imageUtils";
+import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES, MAX_UPLOAD_BYTES } from "./utils/imageUtils";
 import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
 
 const MAX_REVIEW_ATTRIBUTES = 5;
@@ -46,6 +46,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
     const [showImageChooser, setShowImageChooser] = useState(false);
 
     const [submitted, setSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [preisfrage, setPreisfrage] = useState(false);
     const [showAllAttributes, setShowAllAttributes] = useState(false)
     const [awards, setAwards] = useState([]);
@@ -139,6 +140,10 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
 
 
     const submit = async () => {
+        if (submitted || isSubmitting) return;
+        setIsSubmitting(true);
+        setMessage("");
+
         try {
             const formData = new FormData();
             formData.append("userId", userId);
@@ -176,7 +181,10 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     body: formData
                 }
             );
-            const data = await response.json();
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data) {
+                throw new Error(data?.message || `Upload fehlgeschlagen (${response.status})`);
+            }
             if (data.status === "success") {
                 setMessage("Bewertung erfolgreich gespeichert!");
                 onSuccess && onSuccess();
@@ -189,10 +197,12 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                     }
                 }, 1000);
             } else {
-                setMessage(`Fehler: ${data.message}`);
+                setMessage(`Fehler: ${data.message || 'Upload fehlgeschlagen.'}`);
             }
         } catch (error) {
-            setMessage("Ein Fehler ist aufgetreten.");
+            setMessage(`Ein Fehler ist aufgetreten: ${error.message || error}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -316,12 +326,15 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
             if (bilder.some(b => b.file?.name === file.name && b.file?.size === file.size)) continue;
             try {
                 const compressed = await sharedCompressImageFile(file);
+                if (compressed.size > MAX_UPLOAD_BYTES) {
+                    setMessage(`"${file.name}" ist auch nach der Verkleinerung noch zu gross.`);
+                    continue;
+                }
                 const previewUrl = URL.createObjectURL(compressed);
                 processed.push({ file: compressed, previewUrl, beschreibung: '' });
             } catch (err) {
-                console.warn('Bildkompression fehlgeschlagen, benutze Original', err);
-                const previewUrl = URL.createObjectURL(file);
-                processed.push({ file, previewUrl, beschreibung: '' });
+                console.warn('Bildkompression fehlgeschlagen', err);
+                setMessage(err.message || 'Bild konnte nicht vorbereitet werden.');
             }
         }
 
@@ -467,7 +480,9 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                         </BilderContainer>
                     </SectionCard>
                     <ButtonGroup>
-                        <PrimarySubmit type="button" onClick={submit}>Einreichen</PrimarySubmit>
+                        <PrimarySubmit type="button" onClick={submit} disabled={isSubmitting}>
+                            {isSubmitting ? "Bilder werden hochgeladen..." : "Einreichen"}
+                        </PrimarySubmit>
                     </ButtonGroup>
                 </>)}
                 {(submitted && !preisfrage) ? (
