@@ -9,6 +9,8 @@ import {
   syncPushConfigToServiceWorker,
 } from "../services/pushNotifications";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 const PushBootstrap = () => {
   const { userId, isLoggedIn } = useUser();
   const navigate = useNavigate();
@@ -50,11 +52,27 @@ const PushBootstrap = () => {
     if (!isLoggedIn || !userId) return;
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") return;
     if (nativeInitializedForUserRef.current === userId) return;
+    if (!API_BASE) return;
 
-    nativeInitializedForUserRef.current = userId;
-    initializeNativePush(userId).catch((error) => {
-      console.error("Native push initialization failed", error);
-    });
+    let cancelled = false;
+
+    const initializeIfEnabled = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php?user_id=${userId}`);
+        const json = await response.json();
+        if (cancelled || Number(json?.push_enabled_android || 0) !== 1) return;
+
+        nativeInitializedForUserRef.current = userId;
+        await initializeNativePush(userId);
+      } catch (error) {
+        console.error("Native push initialization failed", error);
+      }
+    };
+
+    initializeIfEnabled();
+    return () => {
+      cancelled = true;
+    };
   }, [isLoggedIn, userId]);
 
   return null;

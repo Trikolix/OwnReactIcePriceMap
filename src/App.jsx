@@ -9,6 +9,7 @@ import { photoChallengeRoutes } from './features/photoChallenge/routes';
 import { userRoutes } from './features/user/routes';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import PushBootstrap from './components/PushBootstrap';
+import PushOptInOverlay from './components/PushOptInOverlay';
 import CookieBanner from './components/CookieBanner';
 import GuestMotivation from './components/GuestMotivation';
 
@@ -37,6 +38,7 @@ const App = () => {
       <UserProvider>
         <ScrollToTopOnRouteChange />
         <PushBootstrap />
+        <PushOptInOverlay />
         <AppUpdateBanner />
         <CookieBanner />
         <GuestMotivation />

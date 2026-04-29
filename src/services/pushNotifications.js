@@ -8,6 +8,7 @@ const PUSH_SW_PATH = "/push-sw.js";
 const PUSH_CONFIG_CACHE_URL = "/__push_config__";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev";
 const ANDROID_NOTIFICATION_CHANNEL_ID = "ice_app_notifications";
+const SUBSCRIPTION_TOKEN_PATTERN = /^[a-f0-9]{32,64}$/i;
 
 let nativeListenersRegistered = false;
 let activeNativeUserId = null;
@@ -51,6 +52,20 @@ const persistServiceWorkerToken = async (subscriptionToken) => {
   await cache.put(PUSH_CONFIG_CACHE_URL, new Response(body, {
     headers: { "Content-Type": "application/json" },
   }));
+};
+
+const persistBrowserSubscriptionToken = async (subscriptionToken) => {
+  if (!SUBSCRIPTION_TOKEN_PATTERN.test(String(subscriptionToken || ""))) {
+    throw new Error("Ungueltiger Web-Push-Subscription-Token vom Server.");
+  }
+
+  await persistServiceWorkerToken(subscriptionToken);
+
+  try {
+    localStorage.setItem(WEB_SUBSCRIPTION_TOKEN_KEY, subscriptionToken);
+  } catch (error) {
+    console.warn("Web push token could not be stored in localStorage. Service worker cache was updated instead.", error);
+  }
 };
 
 export const syncPushConfigToServiceWorker = async () => {
@@ -103,8 +118,7 @@ export const enableBrowserPush = async (userId) => {
     throw new Error(json.message || "Web-Push-Subscription konnte nicht gespeichert werden.");
   }
 
-  localStorage.setItem(WEB_SUBSCRIPTION_TOKEN_KEY, json.subscription_token);
-  await persistServiceWorkerToken(json.subscription_token);
+  await persistBrowserSubscriptionToken(json.subscription_token);
   return { permission };
 };
 
