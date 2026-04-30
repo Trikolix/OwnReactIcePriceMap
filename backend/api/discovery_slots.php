@@ -21,6 +21,10 @@ try {
     echo json_encode([
         'status' => 'success',
         'slots' => externalShopGetDiscoverySlotStatus($pdo, $currentUserId),
+        'config' => [
+            'min_zoom' => EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM,
+            'max_bbox_diagonal_m' => EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M,
+        ],
     ]);
 } catch (Throwable $e) {
     http_response_code(500);

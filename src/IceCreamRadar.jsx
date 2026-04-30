@@ -23,7 +23,8 @@ import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 import { canUseExternalDiscovery } from './utils/featureAccess';
 import { formatDateTimeLocalInputValue } from './utils/dateTimeLocal';
-const MIN_CONTEXT_MENU_ZOOM = 13;
+const MIN_CONTEXT_MENU_ZOOM = 7;
+const EXTERNAL_DISCOVERY_MIN_ZOOM_FALLBACK = 9;
 const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
 const DEFAULT_CONTEXT_MENU_STATE = {
   isVisible: false,
@@ -577,6 +578,7 @@ const IceCreamRadar = () => {
   const [discoveryError, setDiscoveryError] = useState('');
   const [isDiscoveryLoading, setIsDiscoveryLoading] = useState(false);
   const [discoverySlots, setDiscoverySlots] = useState(null);
+  const [externalDiscoveryMinZoom, setExternalDiscoveryMinZoom] = useState(EXTERNAL_DISCOVERY_MIN_ZOOM_FALLBACK);
   const activeShopRequestRef = useRef(0);
   const canAccessExternalDiscovery = useMemo(() => canUseExternalDiscovery(userId), [userId]);
 
@@ -785,6 +787,10 @@ const IceCreamRadar = () => {
       const data = await response.json();
       if (data.status === 'success' && data.slots) {
         setDiscoverySlots(data.slots);
+        const minZoom = Number(data.config?.min_zoom ?? data.slots?.min_zoom);
+        if (Number.isFinite(minZoom)) {
+          setExternalDiscoveryMinZoom(minZoom);
+        }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Discovery-Slots:', error);
@@ -968,8 +974,8 @@ const IceCreamRadar = () => {
       setDiscoveryError('Aktuell sind keine freien Discovery-Slots verfügbar.');
       return;
     }
-    if (zoom < MIN_CONTEXT_MENU_ZOOM) {
-      setDiscoveryError(`Bitte zoome mindestens auf Stufe ${MIN_CONTEXT_MENU_ZOOM}, bevor du den Kartenausschnitt durchsuchst.`);
+    if (zoom < externalDiscoveryMinZoom) {
+      setDiscoveryError(`Bitte zoome mindestens auf Stufe ${externalDiscoveryMinZoom}, bevor du den Kartenausschnitt durchsuchst.`);
       return;
     }
 
@@ -1010,6 +1016,10 @@ const IceCreamRadar = () => {
         });
         if (data.meta?.slots) {
           setDiscoverySlots(data.meta.slots);
+          const minZoom = Number(data.meta.slots?.min_zoom);
+          if (Number.isFinite(minZoom)) {
+            setExternalDiscoveryMinZoom(minZoom);
+          }
         }
         if (results.length > 0) {
           setDiscoveryMessage(`${results.length} neue Treffer im aktuellen Kartenausschnitt gefunden.`);
@@ -1023,6 +1033,10 @@ const IceCreamRadar = () => {
         setDiscoveryError(data.message || 'Discovery-Suche fehlgeschlagen.');
         if (data.slots) {
           setDiscoverySlots(data.slots);
+          const minZoom = Number(data.config?.min_zoom ?? data.slots?.min_zoom);
+          if (Number.isFinite(minZoom)) {
+            setExternalDiscoveryMinZoom(minZoom);
+          }
         }
       }
     } catch (error) {
@@ -1032,7 +1046,7 @@ const IceCreamRadar = () => {
     } finally {
       setIsDiscoveryLoading(false);
     }
-  }, [apiUrl, canAccessExternalDiscovery, clearDiscoveryResults, currentZoom, discoverySlots, isLoggedIn, setShowLoginModal]);
+  }, [apiUrl, canAccessExternalDiscovery, clearDiscoveryResults, currentZoom, discoverySlots, externalDiscoveryMinZoom, isLoggedIn, setShowLoginModal]);
 
   const handleOpenDiscoveryImport = useCallback((result) => {
     if (!canAccessExternalDiscovery) {
