@@ -124,6 +124,49 @@ $sql = "SELECT
             WHERE c.eisdiele_id = e.id
               AND c.nutzer_id = :userId
               AND c.completed = 0
+              AND (c.valid_from IS NULL OR c.valid_from <= NOW())
+              AND (c.valid_until IS NULL OR c.valid_until >= NOW())
+        ) THEN 1
+        ELSE 0
+    END AS has_active_personal_challenge,
+
+    -- Kommende Challenge dieses Nutzers für die Eisdiele
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM challenges c
+            WHERE c.eisdiele_id = e.id
+              AND c.nutzer_id = :userId
+              AND c.completed = 0
+              AND c.valid_from IS NOT NULL
+              AND c.valid_from > NOW()
+              AND (c.valid_until IS NULL OR c.valid_until >= NOW())
+        ) THEN 1
+        ELSE 0
+    END AS has_upcoming_personal_challenge,
+
+    -- Aktive Team-Challenge dieses Nutzers für die Eisdiele
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM team_challenges tc
+            WHERE tc.final_shop_id = e.id
+              AND (tc.inviter_user_id = :userId OR tc.invitee_user_id = :userId)
+              AND tc.status = 'shop_finalized'
+              AND (tc.valid_until IS NULL OR tc.valid_until >= NOW())
+        ) THEN 1
+        ELSE 0
+    END AS has_active_team_challenge,
+
+    -- Legacy-Sammelflag fuer bestehende Frontend-Stellen
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM challenges c
+            WHERE c.eisdiele_id = e.id
+              AND c.nutzer_id = :userId
+              AND c.completed = 0
+              AND (c.valid_from IS NULL OR c.valid_from <= NOW())
               AND (c.valid_until IS NULL OR c.valid_until >= NOW())
         ) OR EXISTS (
             SELECT 1

@@ -61,6 +61,7 @@ try {
             s.license_status,
             s.created_at,
             n.username AS linked_username,
+            n.is_verified AS linked_user_is_verified,
             w.wave_code,
             w.start_time
         FROM event2026_participant_slots s
@@ -127,6 +128,8 @@ try {
     $slotsByRegistration = [];
     foreach ($slotRows as $slotRow) {
         $registrationId = (int) $slotRow['registration_id'];
+        $linkedUserId = $slotRow['user_id'] !== null ? (int) $slotRow['user_id'] : null;
+        $accountReminderKey = $linkedUserId !== null ? 'account:' . $linkedUserId : null;
         $slotsByRegistration[$registrationId][] = [
             'id' => (int) $slotRow['id'],
             'full_name' => (string) $slotRow['full_name'],
@@ -142,8 +145,10 @@ try {
             'jersey_size' => $slotRow['jersey_size'],
             'bib_size' => $slotRow['bib_size'],
             'license_status' => (string) $slotRow['license_status'],
-            'linked_user_id' => $slotRow['user_id'] !== null ? (int) $slotRow['user_id'] : null,
+            'linked_user_id' => $linkedUserId,
             'linked_username' => $slotRow['linked_username'] ?: null,
+            'linked_user_is_verified' => $slotRow['linked_user_is_verified'] !== null ? (int) $slotRow['linked_user_is_verified'] === 1 : null,
+            'account_verification_reminder' => $accountReminderKey !== null ? ($reminderOverviewMap[$accountReminderKey]['account_verification'] ?? null) : null,
             'wave_code' => $slotRow['wave_code'] ?: null,
             'start_time' => $slotRow['start_time'] ?: null,
         ];
@@ -325,6 +330,9 @@ try {
     );
     $summary['unused_voucher_reminder_candidate_count'] = count(
         event2026_filter_unused_voucher_candidates($pdo, $event, EVENT2026_REMINDER_KIND_MANUAL_UNUSED_VOUCHER, true)
+    );
+    $summary['account_verification_reminder_candidate_count'] = count(
+        event2026_filter_account_verification_candidates($pdo, $event, true)
     );
 
     echo json_encode([

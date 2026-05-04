@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <gpx version="1.1" creator="https://www.komoot.de" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
-    <name>Ice-Tour Königsrunde 175km 4 Eis-Stopps</name>
+    <name>Ice-Tour Königsrunde 180km 4 Eis-Stopps</name>
     <author>
       <link href="https://www.komoot.de">
         <text>komoot</text>
@@ -30,7 +30,7 @@
     <sym>Restaurant</sym>
   </wpt>
   <trk>
-    <name>Ice-Tour Königsrunde 175km 4 Eis-Stopps</name>
+    <name>Ice-Tour Königsrunde 180km 4 Eis-Stopps</name>
     <trkseg>
       <trkpt lat="50.841755" lon="12.924020">
         <ele>295.177929</ele>

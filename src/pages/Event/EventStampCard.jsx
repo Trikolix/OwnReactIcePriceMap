@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import CheckinForm from "../../CheckinForm";
@@ -27,6 +27,7 @@ import { getApiBaseUrl } from "../../shared/api/client";
 import Seo from "../../components/Seo";
 import NewAwards from "../../components/NewAwards";
 import { EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
+import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -678,7 +679,6 @@ const InlineLink = styled(Link)`
 `;
 
 export default function EventStampCard() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, authToken, userId, username } = useUser();
   const apiBase = getApiBaseUrl();
@@ -741,19 +741,19 @@ export default function EventStampCard() {
       },
     })
       .then(async (response) => {
-        const json = await response.json();
+        const json = await readEventApiJson(response);
         if (response.status === 403) {
           if (json?.message?.includes("Test-Stempelkarte")) {
             setSearchParams({ mode: "live" }, { replace: true });
             return;
           }
           if (!hasExternalScanContext) {
-            navigate("/event-me");
+            setError(getEventAccessErrorMessage(response.status, json?.message || "Stempelkarte konnte nicht geladen werden."));
           }
           return;
         }
-        if (!response.ok || json.status !== "success") {
-          throw new Error(json.message || "Stempelkarte konnte nicht geladen werden.");
+        if (!response.ok || json?.status !== "success") {
+          throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Stempelkarte konnte nicht geladen werden."));
         }
         if (!cancelled) {
           setData(json);
@@ -773,7 +773,7 @@ export default function EventStampCard() {
     return () => {
       cancelled = true;
     };
-  }, [apiBase, authToken, hasExternalScanContext, isLoggedIn, mode, navigate, refreshNonce, setSearchParams]);
+  }, [apiBase, authToken, hasExternalScanContext, isLoggedIn, mode, refreshNonce, setSearchParams]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -926,15 +926,15 @@ export default function EventStampCard() {
         },
         body: JSON.stringify(action),
       });
-      const json = await response.json();
-      if (!response.ok || json.status !== "success") {
+      const json = await readEventApiJson(response);
+      if (!response.ok || json?.status !== "success") {
         const shouldQueue = response.status >= 500 || response.status === 0;
         if (shouldQueue && !options.forceNetwork) {
           storePendingAction(action);
           setMessage({ tone: "info", text: "Server gerade nicht erreichbar. Die Aktion wurde lokal vorgemerkt und wird später synchronisiert." });
           return { queued: true };
         }
-        throw new Error(json.message || "Stempel konnte nicht gespeichert werden.");
+        throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Stempel konnte nicht gespeichert werden."));
       }
 
       removePendingAction(action.checkpoint_id, action.mode);
@@ -1120,9 +1120,9 @@ export default function EventStampCard() {
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
     });
-    const json = await response.json();
-    if (!response.ok || json.status !== "success") {
-      throw new Error(json.message || "QR-Code konnte nicht aufgelöst werden.");
+    const json = await readEventApiJson(response);
+    if (!response.ok || json?.status !== "success") {
+      throw new Error(getEventAccessErrorMessage(response.status, json?.message || "QR-Code konnte nicht aufgelöst werden."));
     }
     return json;
   };

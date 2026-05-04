@@ -9497,7 +9497,7 @@ CREATE TABLE `event2026_legal_versions` (
 --
 
 INSERT INTO `event2026_legal_versions` (`id`, `event_id`, `version`, `content_md`, `is_active`, `created_at`) VALUES
-(1, 1, '2026.1', '## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 150 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.', 1, '2026-03-11 21:48:18');
+(1, 1, '2026.1', '## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 100 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.', 1, '2026-03-11 21:48:18');
 
 -- --------------------------------------------------------
 
@@ -9696,7 +9696,7 @@ CREATE TABLE `event2026_seasons` (
   `name` varchar(255) NOT NULL,
   `event_date` date DEFAULT NULL,
   `status` enum('draft','open','closed','cancelled','confirmed') NOT NULL DEFAULT 'open',
-  `max_participants` int NOT NULL DEFAULT '150',
+  `max_participants` int NOT NULL DEFAULT '100',
   `min_participants_for_go` int NOT NULL DEFAULT '60',
   `cancellation_deadline` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -9708,7 +9708,7 @@ CREATE TABLE `event2026_seasons` (
 --
 
 INSERT INTO `event2026_seasons` (`id`, `slug`, `name`, `event_date`, `status`, `max_participants`, `min_participants_for_go`, `cancellation_deadline`, `created_at`, `updated_at`) VALUES
-(1, 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59', '2026-03-11 21:48:18', '2026-03-11 21:48:18');
+(1, 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 100, 60, '2026-05-01 23:59:59', '2026-03-11 21:48:18', '2026-03-11 21:48:18');
 
 -- --------------------------------------------------------
 

@@ -15,7 +15,7 @@ try {
     $entityType = trim((string) ($data['entity_type'] ?? ''));
     $entityId = (int) ($data['entity_id'] ?? 0);
 
-    if (!in_array($scope, ['registration_payment', 'unused_vouchers'], true)) {
+    if (!in_array($scope, ['registration_payment', 'unused_vouchers', 'account_verification'], true)) {
         throw new InvalidArgumentException('Ungueltiger Reminder-Bereich.');
     }
 
@@ -97,6 +97,65 @@ try {
                 (int) $admin['user_id'],
                 'admin_manual'
             );
+            $results[] = $run;
+            $sentCount += (int) $run['sent_count'];
+            $failedCount += (int) $run['failed_count'];
+        }
+    }
+
+    if ($scope === 'account_verification') {
+        if ($entityId > 0) {
+            $candidate = event2026_find_manual_account_verification_candidate($pdo, $event, $entityId);
+            if (!$candidate) {
+                throw new RuntimeException('Kein unverifizierter Ice-Tour Account fuer diesen Reminder gefunden.');
+            }
+            $sent = event2026_send_account_verification_reminder(
+                $pdo,
+                $event,
+                $candidate,
+                'admin_manual',
+                (int) $admin['user_id']
+            );
+            $results[] = [
+                'scope' => $scope,
+                'entity_type' => 'account',
+                'entity_id' => $entityId,
+                'sent' => $sent,
+                'recipient_email' => $candidate['recipient']['email'] ?? null,
+            ];
+            $sent ? $sentCount++ : $failedCount++;
+        } else {
+            $candidates = event2026_filter_account_verification_candidates($pdo, $event, true);
+            $run = [
+                'kind' => EVENT2026_REMINDER_KIND_MANUAL_ACCOUNT_VERIFICATION,
+                'candidate_count' => count($candidates),
+                'sent_count' => 0,
+                'failed_count' => 0,
+                'dry_run' => false,
+                'candidates' => [],
+            ];
+
+            foreach ($candidates as $candidate) {
+                $sent = event2026_send_account_verification_reminder(
+                    $pdo,
+                    $event,
+                    $candidate,
+                    'admin_manual',
+                    (int) $admin['user_id']
+                );
+                $run['candidates'][] = [
+                    'entity_type' => 'account',
+                    'entity_id' => (int) $candidate['entity_id'],
+                    'recipient_email' => (string) ($candidate['recipient']['email'] ?? ''),
+                    'recipient_name' => (string) ($candidate['recipient']['name'] ?? ''),
+                ];
+                if ($sent) {
+                    $run['sent_count']++;
+                } else {
+                    $run['failed_count']++;
+                }
+            }
+
             $results[] = $run;
             $sentCount += (int) $run['sent_count'];
             $failedCount += (int) $run['failed_count'];

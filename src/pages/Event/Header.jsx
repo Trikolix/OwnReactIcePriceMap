@@ -146,7 +146,10 @@ export default function Header() {
                 <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>
               )}
               {isAdmin && (
-                <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+                <>
+                  <MenuItemLink to="/event-info" onClick={() => setMenuOpen(false)}>Teilnehmerinfos</MenuItemLink>
+                  <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+                </>
               )}
               {isLoggedIn && hasEventRegistration && (
                 <>
@@ -174,7 +177,10 @@ export default function Header() {
                     </>
                   )}
                   {isAdmin && (
-                    <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                    <>
+                      <MenuItemLink to="/event-info" onClick={() => setMenuOpen(false)}>Teilnehmerinfos</MenuItemLink>
+                      <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                    </>
                   )}
                   <MenuActionButton
                     type="button"

@@ -18,6 +18,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
     const { userId } = useUser();
     const [message, setMessage] = useState("");
     const [visibilityWarning, setVisibilityWarning] = useState("");
+    const [checkingVisibility, setCheckingVisibility] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -134,13 +135,22 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
 
     const showShopSuggestions = shopSearch.trim().length > 0 && filteredShops.length > 0;
 
+    const getRouteProviderName = (checkUrl) => {
+        const normalizedUrl = String(checkUrl || "").toLowerCase();
+        if (normalizedUrl.includes("strava")) return "Strava";
+        if (normalizedUrl.includes("outdooractive")) return "Outdooractive";
+        if (normalizedUrl.includes("komoot")) return "Komoot";
+        return "dem Routenanbieter";
+    };
+
     const checkVisibility = async (checkUrl) => {
         if (!checkUrl) {
             setVisibilityWarning("");
-            return;
+            return "unknown";
         }
 
         try {
+            setCheckingVisibility(true);
             const response = await fetch(`${apiUrl}/routen/checkRouteVisibility.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -148,13 +158,18 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
             });
             const data = await response.json();
             if (data.status === 'success' && data.visibility === 'private') {
-                setVisibilityWarning("Achtung: Diese Route scheint privat oder nicht erreichbar zu sein. Bitte überprüfe die Sichtbarkeitseinstellungen bei " + (checkUrl.includes("strava") ? "Strava" : checkUrl.includes("outdooractive") ? "Outdooractive" : "Komoot") + ".");
+                setVisibilityWarning("Achtung: Diese Route scheint privat oder nicht erreichbar zu sein. Bitte überprüfe die Sichtbarkeitseinstellungen bei " + getRouteProviderName(checkUrl) + ".");
+                return "private";
             } else {
                 setVisibilityWarning("");
+                return data.visibility || "unknown";
             }
         } catch (err) {
             // Error silently, just don't show warning
             setVisibilityWarning("");
+            return "unknown";
+        } finally {
+            setCheckingVisibility(false);
         }
     };
 
@@ -164,6 +179,12 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
         const selectedIds = selectedShops.map((shop) => shop.id);
         if (selectedIds.length === 0) {
             setMessage("Bitte verknüpfe mindestens eine Eisdiele mit der Route.");
+            return;
+        }
+
+        const visibility = await checkVisibility(url);
+        if (visibility === "private") {
+            setMessage("Diese Route scheint privat oder nicht erreichbar zu sein. Bitte mache sie öffentlich oder reiche bei Komoot den Teilen-Link inklusive Freigabe-Token ein.");
             return;
         }
 
@@ -372,11 +393,17 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                             <Input
                                 type="url"
                                 value={url}
-                                onChange={(e) => setUrl(e.target.value)}
+                                onChange={(e) => {
+                                    setUrl(e.target.value);
+                                    setVisibilityWarning("");
+                                }}
                                 onBlur={(e) => checkVisibility(e.target.value)}
                                 placeholder="URL zur Komoot / Strava / Outdooractive Route"
                                 required
                             />
+                            {checkingVisibility && (
+                                <ShopHelperText>Route wird geprüft…</ShopHelperText>
+                            )}
                             {visibilityWarning && (
                                 <Message style={{ marginTop: '5px', color: '#856404', backgroundColor: '#fff3cd', borderColor: '#ffeeba' }}>{visibilityWarning}</Message>
                             )}
@@ -463,7 +490,7 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
                         </FieldLabel>
                     )}
                     <ButtonGroup>
-                        <PrimarySubmit type="submit" onClick={handleSubmit}>
+                        <PrimarySubmit type="submit" onClick={handleSubmit} disabled={checkingVisibility}>
                             {existingRoute ? "Änderungen speichern" : "Route einreichen"}
                         </PrimarySubmit>
                         <SecondarySubmit type="button" onClick={() => setShowForm(false)}>

@@ -16,7 +16,7 @@ function event2026_ensure_schema(PDO $pdo): void
             name VARCHAR(255) NOT NULL,
             event_date DATE DEFAULT NULL,
             status ENUM('draft','open','closed','cancelled','confirmed') NOT NULL DEFAULT 'open',
-            max_participants INT NOT NULL DEFAULT 150,
+            max_participants INT NOT NULL DEFAULT 100,
             min_participants_for_go INT NOT NULL DEFAULT 60,
             cancellation_deadline DATETIME DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -590,15 +590,19 @@ function event2026_ensure_schema(PDO $pdo): void
         WHERE stamp_card_mode IS NULL OR stamp_card_mode = ''");
 
     $pdo->exec("INSERT INTO event2026_seasons (slug, name, event_date, status, max_participants, min_participants_for_go, cancellation_deadline)
-        SELECT 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 150, 60, '2026-05-01 23:59:59'
+        SELECT 'event-2026', 'Ice-Tour 2026', '2026-05-16', 'open', 100, 60, '2026-05-01 23:59:59'
         WHERE NOT EXISTS (SELECT 1 FROM event2026_seasons WHERE slug = 'event-2026')");
+
+    $pdo->exec("UPDATE event2026_seasons
+        SET max_participants = 100
+        WHERE slug = 'event-2026'");
 
     $eventIdStmt = $pdo->prepare("SELECT id FROM event2026_seasons WHERE slug = 'event-2026' LIMIT 1");
     $eventIdStmt->execute();
     $eventId = (int) ($eventIdStmt->fetchColumn() ?: 0);
 
     if ($eventId > 0) {
-        $defaultLegal = "## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 150 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.";
+        $defaultLegal = "## Teilnahmebedingungen Ice-Tour 2026\n\n- Teilnahme auf eigene Gefahr und eigene Kosten.\n- Es gilt die StVO.\n- Dies ist kein Rennen und keine Zeitfahrveranstaltung.\n- Maximal 100 Teilnehmer.\n- Bei zu geringer Teilnehmerzahl behalten wir uns eine Absage vor.";
 
         $legalStmt = $pdo->prepare("INSERT INTO event2026_legal_versions (event_id, version, content_md, is_active)
             SELECT :event_id, '2026.1', :content_md, 1
@@ -610,6 +614,10 @@ function event2026_ensure_schema(PDO $pdo): void
             ':event_id2' => $eventId,
             ':content_md' => $defaultLegal,
         ]);
+
+        $pdo->exec("UPDATE event2026_legal_versions
+            SET content_md = REPLACE(content_md, 'Maximal 150 Teilnehmer.', 'Maximal 100 Teilnehmer.')
+            WHERE event_id = " . (int) $eventId);
 
         $shopStmt = $pdo->prepare("SELECT id, name, latitude, longitude FROM eisdielen WHERE id = :id LIMIT 1");
         $checkpointStmt = $pdo->prepare("INSERT INTO event2026_checkpoints (event_id, shop_id, name, lat, lng, order_index, stamp_card_mode, is_mandatory, min_distance_km, route_keys_csv, qr_code_id)

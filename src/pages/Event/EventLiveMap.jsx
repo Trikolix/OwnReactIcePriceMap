@@ -17,9 +17,10 @@ import {
   getRouteThemeByLabel,
 } from "./eventConfig";
 import { useUser } from "../../context/UserContext";
-import route175Gpx from "./Ice-Tour_175km.gpx?raw";
+import route180Gpx from "./Ice-Tour_180km.gpx?raw";
 import route140Gpx from "./Ice-Tour_140km.gpx?raw";
 import route70Gpx from "./Ice-Tour_70km.gpx?raw";
+import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
 
 const makeSvgIcon = (svgMarkup) =>
   L.divIcon({
@@ -603,25 +604,25 @@ const CHECKPOINT_PROGRESS_BY_ROUTE = {
     { shopId: 145, distanceKm: 82 },
     { shopId: 111, distanceKm: 112 },
     { shopId: 22, distanceKm: 137 },
-    { shopId: 293, distanceKm: 175 },
+    { shopId: 293, distanceKm: 180 },
   ],
   classic_3: [
     { shopId: 314, distanceKm: 55 },
     { shopId: 145, distanceKm: 82 },
     { shopId: 111, distanceKm: 112 },
-    { shopId: 293, distanceKm: 140 },
+    { shopId: 293, distanceKm: 145 },
   ],
   family_2: [
     { shopId: 145, distanceKm: 17 },
     { shopId: 111, distanceKm: 40 },
-    { shopId: 293, distanceKm: 73 },
+    { shopId: 293, distanceKm: 70 },
   ],
 };
 
 const ROUTE_OVERLAYS = [
-  { id: "route-175", label: "König (175 km)", color: "#dc2626", offsetPx: 4, gpx: route175Gpx },
-  { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
-  { id: "route-70", label: "Genuss (75 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
+  { id: "route-180", label: "König (180 km)", color: "#dc2626", offsetPx: 4, gpx: route180Gpx },
+  { id: "route-140", label: "Sport (145 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
+  { id: "route-70", label: "Genuss (70 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
 ];
 
 const OFFSET_ZOOM_THRESHOLD = 12;
@@ -887,9 +888,9 @@ export default function EventLiveMap() {
       },
     })
       .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok || json.status !== "success") {
-          throw new Error(json.message || "Checkpointdaten konnten nicht geladen werden.");
+        const json = await readEventApiJson(res);
+        if (!res.ok || json?.status !== "success") {
+          throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Checkpointdaten konnten nicht geladen werden."));
         }
         if (!canceled) {
           setItems(json.items || []);
@@ -983,9 +984,9 @@ export default function EventLiveMap() {
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
       });
-      const json = await res.json();
-      if (!res.ok || json.status !== "success") {
-        throw new Error(json.message || "Details konnten nicht geladen werden.");
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Details konnten nicht geladen werden."));
       }
       const sortedItems = [...(json.items || [])].sort((a, b) => {
         const aTime = a.checkin_time ? new Date(a.checkin_time).getTime() : 0;
@@ -1024,9 +1025,9 @@ export default function EventLiveMap() {
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
       });
-      const json = await res.json();
+      const json = await readEventApiJson(res);
       if (!res.ok || json?.error) {
-        throw new Error(json?.error || "Check-in konnte nicht geladen werden.");
+        throw new Error(getEventAccessErrorMessage(res.status, json?.error || "Check-in konnte nicht geladen werden."));
       }
       setLinkedCheckins((prev) => ({
         ...prev,

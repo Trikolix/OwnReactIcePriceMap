@@ -21,6 +21,24 @@ function isBackendDevNotificationContext() {
     return false;
 }
 
+function iceapp_notification_absolute_url(string $pathOrUrl): string
+{
+    $value = trim($pathOrUrl);
+    if ($value === '') {
+        return 'https://ice-app.de';
+    }
+    if (preg_match('~^https?://~i', $value) === 1) {
+        return $value;
+    }
+    return 'https://ice-app.de' . (strpos($value, '/') === 0 ? $value : '/' . $value);
+}
+
+function iceapp_notification_append_settings_hint(array $paragraphs, int $userId): array
+{
+    $paragraphs[] = "Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter Einstellungen ändern: https://ice-app.de/user/{$userId}?openSettings=1";
+    return $paragraphs;
+}
+
 /**
  * Send a notification email to a user if their settings allow it (or no settings exist).
  *
@@ -72,10 +90,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     } elseif ($notificationType === 'comment_participated') {
         $settingField = 'notify_comment_participated';
     } elseif ($notificationType === 'engagement') {
-        $mailSubject = "Ice-App: Zeit für ein Eis!";
-        $mailBody .= "<p>Du warst schon länger nicht mehr in der Ice-App aktiv.</p>";
-        $mailBody .= "<p>Starte eine neue Challenge oder checke in deiner Lieblings-Eisdiele ein!</p>";
-        $mailBody .= "<p>Wir freuen uns auf dich.</p>";
+        $settingField = 'notify_news';
     } elseif ($notificationType === 'news') {
         $settingField = 'notify_news';
     } elseif ($notificationType === 'team_challenge') {
@@ -92,59 +107,67 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
     $notify = ($setting === false || $setting === null) ? $defaultNotify : (isset($setting[$settingField]) ? (int)$setting[$settingField] : $defaultNotify);
     if ($notify !== 1) return;
 
-    // E-Mail als HTML zusammenbauen
+    // E-Mail im gemeinsamen Ice-App Design zusammenbauen
     $mailTo = $userRow['email'];
     $mailSubject = '';
-    $mailBody = "<html><body style='font-family:sans-serif;color:#222;'>";
-    $mailBody .= "<p>Hallo <strong>" . htmlspecialchars($userRow['username']) . "</strong>,</p>";
+    $mailHeading = 'Neue Benachrichtigung';
+    $mailGreeting = 'Hallo ' . (string)$userRow['username'] . ',';
+    $mailParagraphs = [];
+    $buttonLabel = 'In der Ice-App ansehen';
+    $buttonUrl = 'https://ice-app.de';
+
     if ($notificationType === 'checkin_mention') {
         $mailSubject = "Ice-App: Du wurdest bei einem Checkin erwähnt";
-        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat dich in der Ice-App bei einem Checkin erwähnt und angegeben, mit dir Eis gegessen zu haben.</p>";
-        $mailBody .= "<p>Du kannst jetzt selbst deinen Checkin eintragen und EP sammeln!</p>";
+        $mailHeading = 'Du wurdest erwähnt';
+        $mailParagraphs[] = "{$senderName} hat dich in der Ice-App bei einem Checkin erwähnt und angegeben, mit dir Eis gegessen zu haben.";
+        $mailParagraphs[] = 'Du kannst jetzt selbst deinen Checkin eintragen und EP sammeln.';
         if (!empty($extra['shopName'])) {
-            $mailBody .= "<p>Eisdiele: <strong>" . htmlspecialchars($extra['shopName']) . "</strong></p>";
+            $mailParagraphs[] = 'Eisdiele: ' . (string)$extra['shopName'];
         }
-        $mailBody .= "<p>Details zum Checkin findest du direkt in der Ice-App.</p>";
+        $mailParagraphs[] = 'Details zum Checkin findest du direkt in der Ice-App.';
+        if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
+            $buttonUrl = "https://ice-app.de/map/activeShop/" . urlencode((string)$extra['shopId']) . "?tab=checkins&focusCheckin=" . urlencode((string)$extra['checkinId']);
+        }
     } elseif ($notificationType === 'comment') {
         $mailSubject = "Ice-App: Neuer Kommentar zu deinem Checkin";
-        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deinen Checkin kommentiert.</p>";
-        // Link generieren
+        $mailHeading = 'Neuer Kommentar';
+        $mailParagraphs[] = "{$senderName} hat deinen Checkin kommentiert.";
         $link = '';
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
-            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
+            $link = "https://ice-app.de/map/activeShop/" . urlencode((string)$extra['shopId']) . "?tab=checkins&focusCheckin=" . urlencode((string)$extra['checkinId']);
         } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
-            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
+            $link = "https://ice-app.de/map/activeShop/" . urlencode((string)$extra['shopId']) . "?tab=reviews&focusReview=" . urlencode((string)$extra['bewertungId']);
         }
         if ($link) {
-            $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
+            $buttonUrl = $link;
         }
-        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+        $mailParagraphs[] = 'Details findest du direkt in der Ice-App.';
     } elseif ($notificationType === 'comment_participated') {
-        $mailSubject = "Ice-App: " . htmlspecialchars($senderName) . " hat einen Check-in kommentiert, den du auch kommentiert hast.";
-        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat einen Check-in kommentiert, den du auch kommentiert hast.</p>";
-        // Link generieren
+        $mailSubject = "Ice-App: {$senderName} hat einen Check-in kommentiert, den du auch kommentiert hast.";
+        $mailHeading = 'Neuer Kommentar in deiner Unterhaltung';
+        $mailParagraphs[] = "{$senderName} hat einen Check-in kommentiert, den du auch kommentiert hast.";
         $link = '';
         if (!empty($extra['shopId']) && !empty($extra['checkinId'])) {
-            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=checkins&focusCheckin=" . $extra['checkinId'];
+            $link = "https://ice-app.de/map/activeShop/" . urlencode((string)$extra['shopId']) . "?tab=checkins&focusCheckin=" . urlencode((string)$extra['checkinId']);
         } elseif (!empty($extra['shopId']) && !empty($extra['bewertungId'])) {
-            $link = "https://ice-app.de/map/activeShop/" . $extra['shopId'] . "?tab=reviews&focusReview=" . $extra['bewertungId'];
+            $link = "https://ice-app.de/map/activeShop/" . urlencode((string)$extra['shopId']) . "?tab=reviews&focusReview=" . urlencode((string)$extra['bewertungId']);
         }
         if ($link) {
-            $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
+            $buttonUrl = $link;
         }
-        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+        $mailParagraphs[] = 'Details findest du direkt in der Ice-App.';
     } elseif ($notificationType === 'comment_participated_route') {
-        $mailSubject = "Ice-App: " . htmlspecialchars($senderName) . " hat einen Kommentar zu einer Route geschrieben, die du auch kommentiert hast.";
-        $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat einen Kommentar zu einer Route geschrieben, die du auch kommentiert hast.</p>";
-        // Link generieren
+        $mailSubject = "Ice-App: {$senderName} hat einen Kommentar zu einer Route geschrieben, die du auch kommentiert hast.";
+        $mailHeading = 'Neuer Routen-Kommentar';
+        $mailParagraphs[] = "{$senderName} hat einen Kommentar zu einer Route geschrieben, die du auch kommentiert hast.";
         $link = '';
         if (!empty($extra['routeId']) && !empty($extra['route_autor_id'])) {
-            $link = "https://ice-app.de/user/" . $extra['route_autor_id'] . "?tab=routes&focusRoute=" . $extra['routeId'];
+            $link = "https://ice-app.de/user/" . urlencode((string)$extra['route_autor_id']) . "?tab=routes&focusRoute=" . urlencode((string)$extra['routeId']);
         }
         if ($link) {
-            $mailBody .= "<p>Direkter Link zum Kommentar: <a href='" . $link . "' style='color:#0077b6;'>" . $link . "</a></p>";
+            $buttonUrl = $link;
         }
-        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+        $mailParagraphs[] = 'Details findest du direkt in der Ice-App.';
 
     } elseif ($notificationType === 'team_challenge') {
         $action = (string)($extra['teamChallengeAction'] ?? 'update');
@@ -155,40 +178,47 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
 
         if ($action === 'invite') {
             $mailSubject = "Ice-App: Neue Team-Challenge-Einladung";
-            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat dich zu einer Team-Challenge eingeladen.</p>";
+            $mailHeading = 'Team-Challenge Einladung';
+            $mailParagraphs[] = "{$senderName} hat dich zu einer Team-Challenge eingeladen.";
         } elseif ($action === 'accepted') {
             $mailSubject = "Ice-App: Deine Team-Challenge wurde angenommen";
-            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deine Team-Challenge angenommen.</p>";
+            $mailHeading = 'Team-Challenge angenommen';
+            $mailParagraphs[] = "{$senderName} hat deine Team-Challenge angenommen.";
         } elseif ($action === 'declined') {
             $mailSubject = "Ice-App: Deine Team-Challenge wurde abgelehnt";
-            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat deine Team-Challenge abgelehnt.</p>";
+            $mailHeading = 'Team-Challenge abgelehnt';
+            $mailParagraphs[] = "{$senderName} hat deine Team-Challenge abgelehnt.";
         } elseif ($action === 'cancelled') {
             $mailSubject = "Ice-App: Team-Challenge abgebrochen";
-            $mailBody .= "<p>" . htmlspecialchars($senderName) . " hat die Team-Challenge abgebrochen.</p>";
+            $mailHeading = 'Team-Challenge abgebrochen';
+            $mailParagraphs[] = "{$senderName} hat die Team-Challenge abgebrochen.";
         } elseif ($action === 'completed') {
             $mailSubject = "Ice-App: Team-Challenge erfolgreich abgeschlossen";
-            $mailBody .= "<p>Eure Team-Challenge wurde erfolgreich abgeschlossen.</p>";
+            $mailHeading = 'Team-Challenge abgeschlossen';
+            $mailParagraphs[] = 'Eure Team-Challenge wurde erfolgreich abgeschlossen.';
         } else {
             $mailSubject = "Ice-App: Update zu deiner Team-Challenge";
-            $mailBody .= "<p>Es gibt ein Update zu deiner Team-Challenge.</p>";
+            $mailHeading = 'Team-Challenge Update';
+            $mailParagraphs[] = 'Es gibt ein Update zu deiner Team-Challenge.';
         }
 
         if (!empty($extra['shopName'])) {
-            $mailBody .= "<p>Ziel-Eisdiele: <strong>" . htmlspecialchars((string)$extra['shopName']) . "</strong></p>";
+            $mailParagraphs[] = 'Ziel-Eisdiele: ' . (string)$extra['shopName'];
         }
 
         if ($challengeLink) {
-            $mailBody .= "<p>Direkter Link: <a href='" . $challengeLink . "' style='color:#0077b6;'>" . $challengeLink . "</a></p>";
+            $buttonUrl = $challengeLink;
         }
 
-        $mailBody .= "<p>Details findest du direkt im Bereich Challenges der Ice-App.</p>";
+        $mailParagraphs[] = 'Details findest du direkt im Bereich Challenges der Ice-App.';
 
     } elseif ($notificationType === 'photo_challenge') {
         $mailSubject = "Ice-App: Neue Foto-Challenge!";
-        $mailBody .= "<p>Eine neue Foto-Challenge hat begonnen. Zeige uns deine besten Eis-Bilder und stimme für deine Favoriten ab!</p>";
+        $mailHeading = 'Neue Foto-Challenge';
+        $mailParagraphs[] = 'Eine neue Foto-Challenge hat begonnen. Zeige uns deine besten Eis-Bilder und stimme für deine Favoriten ab.';
         $challengeLink = "https://ice-app.de/photo-challenge/" . (isset($extra['challengeId']) ? (int)$extra['challengeId'] : '');
-        $mailBody .= "<p>Direkter Link: <a href='" . $challengeLink . "' style='color:#0077b6;'>" . $challengeLink . "</a></p>";
-        $mailBody .= "<p>Details findest du direkt in der Ice-App.</p>";
+        $buttonUrl = $challengeLink;
+        $mailParagraphs[] = 'Details findest du direkt in der Ice-App.';
     } elseif ($notificationType === 'news') {
         $title = trim((string)($extra['title'] ?? 'Neue Systemmeldung'));
         $message = trim((string)($extra['message'] ?? ''));
@@ -196,29 +226,29 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $linkLabel = trim((string)($extra['linkLabel'] ?? 'In der Ice-App ansehen'));
 
         $mailSubject = "Ice-App: " . $title;
-        $mailBody .= "<h2 style='font-size:20px;margin:0 0 12px;color:#222;'>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</h2>";
+        $mailHeading = $title;
         if ($message !== '') {
-            $mailBody .= "<p style='white-space:pre-line;'>" . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . "</p>";
+            $mailParagraphs[] = $message;
         }
 
         if ($linkUrl !== '') {
-            $absoluteLink = preg_match('~^https?://~i', $linkUrl) === 1
-                ? $linkUrl
-                : 'https://ice-app.de' . (strpos($linkUrl, '/') === 0 ? $linkUrl : '/' . $linkUrl);
-            $mailBody .= "<p><a href='" . htmlspecialchars($absoluteLink, ENT_QUOTES, 'UTF-8') . "' style='color:#0077b6;'>" .
-                htmlspecialchars($linkLabel !== '' ? $linkLabel : 'In der Ice-App ansehen', ENT_QUOTES, 'UTF-8') .
-                "</a></p>";
+            $buttonUrl = iceapp_notification_absolute_url($linkUrl);
+            $buttonLabel = $linkLabel !== '' ? $linkLabel : 'In der Ice-App ansehen';
         }
-     } else {
+    } elseif ($notificationType === 'engagement') {
+        $mailSubject = "Ice-App: Zeit für ein Eis!";
+        $mailHeading = 'Zeit für ein Eis!';
+        $mailParagraphs[] = 'Du warst schon länger nicht mehr in der Ice-App aktiv.';
+        $mailParagraphs[] = 'Starte eine neue Challenge oder checke in deiner Lieblings-Eisdiele ein.';
+        $mailParagraphs[] = 'Wir freuen uns auf dich.';
+        $buttonLabel = 'Challenges ansehen';
+        $buttonUrl = 'https://ice-app.de/challenge';
+    } else {
         // Unbekannter Typ
         return;
     }
-    $mailBody .= "<p>Hier geht's zur <a href='https://ice-app.de' style='color:#0077b6;'>Ice-App</a>.</p>";
-    $mailBody .= "<p>Viel Spaß beim Eis essen und Punkte sammeln!<br>Dein Ice-App Team</p>";
-    $mailBody .= "<hr style='margin:24px 0;'>";
-    $mailBody .= "<small>Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter 'Einstellungen' ändern.<br>";
-    $mailBody .= "Profil-Link: <a href='https://ice-app.de/user/" . $userId . "?openSettings=1' style='color:#0077b6;'>https://ice-app.de/user/" . $userId . "?openSettings=1</a></small>";
-    $mailBody .= "</body></html>";
+
+    $mailParagraphs = iceapp_notification_append_settings_hint($mailParagraphs, (int)$userId);
 
     // Im backend_dev werden Mails nur real an user_id=1 gesendet.
     // Alle anderen Mails werden an die Dev-Adresse umgeleitet.
@@ -226,19 +256,20 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $originalMailTo = $mailTo;
         $mailTo = 'ch_helbig@mail';
         $mailSubject = '[DEV-Weiterleitung] ' . $mailSubject;
-        $devNotice = "<p style='background:#fff3cd;color:#664d03;border:1px solid #ffecb5;padding:12px;border-radius:6px;'>" .
-            "<strong>Hinweis (backend_dev):</strong> Diese E-Mail waere eigentlich an <strong>" .
-            htmlspecialchars($originalMailTo, ENT_QUOTES, 'UTF-8') .
-            "</strong> (user_id=" . (int)$userId . ") gesendet worden." .
-            "</p>";
-        $mailBody = str_replace(
-            "<html><body style='font-family:sans-serif;color:#222;'>",
-            "<html><body style='font-family:sans-serif;color:#222;'>" . $devNotice,
-            $mailBody
-        );
+        array_unshift($mailParagraphs, "Hinweis backend_dev: Diese E-Mail waere eigentlich an {$originalMailTo} (user_id=" . (int)$userId . ") gesendet worden.");
     }
 
-    iceapp_send_utf8_html_mail($mailTo, $mailSubject, $mailBody, 'noreply@ice-app.de');
+    iceapp_send_branded_action_mail(
+        $mailTo,
+        $mailSubject,
+        $mailHeading,
+        $mailGreeting,
+        $mailParagraphs,
+        $buttonLabel,
+        $buttonUrl,
+        'Direkter Link',
+        'noreply@ice-app.de'
+    );
 
     // Nach erfolgreichem Versand: Timestamp aktualisieren
     $stmtUpdate = $pdo->prepare("UPDATE nutzer SET last_notification_email_at = ? WHERE id = ?");

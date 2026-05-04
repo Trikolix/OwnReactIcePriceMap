@@ -65,7 +65,7 @@ const ShopCard = ({ iceShop, onSuccess }) => {
       </Header>
       <strong>Adresse:</strong> {iceShop.adresse || "keine Adresse eingetagen"}<br />
       <OpeningHours eisdiele={iceShop} />
-      <ShopWebsite eisdiele={iceShop} />
+      <ShopWebsite eisdiele={iceShop} showSubmitAction={false} />
       {isLoggedIn && (
         <SuggestionLink type="button" onClick={handleEditClick} disabled={isLoadingEditShop}>
           {isLoadingEditShop ? "Lade Details..." : "Änderung vorschlagen"}

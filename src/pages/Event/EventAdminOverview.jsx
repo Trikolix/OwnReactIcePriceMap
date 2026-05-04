@@ -7,7 +7,12 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
-import { formatRouteShortWithDistance, getPaceLabel, routeSupportsPace } from "./eventConfig";
+import { formatRouteShortWithDistance, getPaceLabel } from "./eventConfig";
+import {
+  EVENT_LOGIN_REQUIRED_MESSAGE,
+  getEventAccessErrorMessage,
+  readEventApiJson,
+} from "./eventAuthMessages";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -233,6 +238,11 @@ const MonoField = styled.input`
   box-sizing: border-box;
 `;
 
+const NumberField = styled(MonoField)`
+  width: 120px;
+  margin-top: 0.25rem;
+`;
+
 const CopyButton = styled.button`
   border: 1px solid #ecd49b;
   border-radius: 10px;
@@ -282,6 +292,8 @@ function formatReminderKind(kind) {
       return "Manuell Zahlung";
     case "manual_unused_voucher":
       return "Manuell Gutschein";
+    case "manual_account_verification":
+      return "Manuell Account";
     default:
       return kind || "-";
   }
@@ -294,15 +306,9 @@ function formatReminderSummary(reminder) {
   return `${formatDateTime(reminder.last_sent_at)} • ${lastKind}${count > 1 ? ` • ${count}x` : ""}`;
 }
 
-function formatWomenWavePreference(slot) {
-  if (!slot) return "-";
-  if (!routeSupportsPace(slot.route_key)) return "nicht relevant";
-  return slot.women_wave_opt_in ? "gewünscht" : "nein";
-}
-
 export default function EventAdminOverview() {
   const apiUrl = getApiBaseUrl();
-  const { authToken } = useUser();
+  const { authToken, authReady } = useUser();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -313,19 +319,26 @@ export default function EventAdminOverview() {
   const [showCheckpointQrs, setShowCheckpointQrs] = useState(false);
   const [busyAction, setBusyAction] = useState("");
   const [notice, setNotice] = useState("");
+  const [waveCapacity, setWaveCapacity] = useState(20);
 
   const load = async () => {
-    if (!apiUrl) return;
+    if (!apiUrl || !authReady) return;
+    if (!authToken) {
+      setData(null);
+      setError(EVENT_LOGIN_REQUIRED_MESSAGE);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${apiUrl}/event2026/admin_registrations.php`, {
         headers: {
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          Authorization: `Bearer ${authToken}`,
         },
       });
-      const json = await res.json();
-      if (!res.ok || json.status !== "success") {
-        throw new Error(json.message || "Admin-Daten konnten nicht geladen werden.");
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Admin-Daten konnten nicht geladen werden."));
       }
       setData(json);
       setSelectedRegistrationId((prev) => prev ?? json.registrations?.[0]?.id ?? null);
@@ -340,21 +353,21 @@ export default function EventAdminOverview() {
 
   useEffect(() => {
     load();
-  }, [apiUrl, authToken]);
+  }, [apiUrl, authReady, authToken]);
 
   useEffect(() => {
-    if (!apiUrl) return;
+    if (!apiUrl || !authReady || !authToken) return;
 
     let cancelled = false;
     fetch(`${apiUrl}/event2026/admin_checkpoint_qrs.php`, {
       headers: {
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        Authorization: `Bearer ${authToken}`,
       },
     })
       .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok || json.status !== "success") {
-          throw new Error(json.message || "Checkpoint-QR-Codes konnten nicht geladen werden.");
+        const json = await readEventApiJson(res);
+        if (!res.ok || json?.status !== "success") {
+          throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Checkpoint-QR-Codes konnten nicht geladen werden."));
         }
         if (!cancelled) {
           setCheckpointQrs(json.checkpoints || []);
@@ -369,7 +382,7 @@ export default function EventAdminOverview() {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, authToken]);
+  }, [apiUrl, authReady, authToken]);
 
   useEffect(() => {
     if (!checkpointQrs.length) {
@@ -425,9 +438,9 @@ export default function EventAdminOverview() {
           paid_amount: registration.payment.expected_amount,
         }),
       });
-      const json = await res.json();
-      if (!res.ok || json.status !== "success") {
-        throw new Error(json.message || "Zahlung konnte nicht bestätigt werden.");
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Zahlung konnte nicht bestätigt werden."));
       }
       setNotice("Zahlung wurde als bezahlt markiert.");
       setError("");
@@ -454,9 +467,9 @@ export default function EventAdminOverview() {
           paid_amount: purchase.expected_amount,
         }),
       });
-      const json = await res.json();
-      if (!res.ok || json.status !== "success") {
-        throw new Error(json.message || "Zusatzbestellung konnte nicht bestätigt werden.");
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Zusatzbestellung konnte nicht bestätigt werden."));
       }
       setNotice("Zusatzbestellung wurde als bezahlt markiert.");
       setError("");
@@ -484,15 +497,43 @@ export default function EventAdminOverview() {
           entity_id: entityId,
         }),
       });
-      const json = await res.json();
-      if (!res.ok || json.status !== "success") {
-        throw new Error(json.message || "Reminder konnte nicht gesendet werden.");
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Reminder konnte nicht gesendet werden."));
       }
       setNotice(json.message || successMessage || "Reminder wurde gesendet.");
       setError("");
       await load();
     } catch (err) {
       setError(err.message || "Reminder konnte nicht gesendet werden.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const recomputeWaves = async () => {
+    if (!apiUrl) return;
+    setBusyAction("recompute-waves");
+    try {
+      const res = await fetch(`${apiUrl}/event2026/waves_recompute.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          capacity: Number(waveCapacity) || 20,
+        }),
+      });
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Startwellen konnten nicht berechnet werden."));
+      }
+      setNotice(json.message || "Startwellen wurden neu berechnet.");
+      setError("");
+      await load();
+    } catch (err) {
+      setError(err.message || "Startwellen konnten nicht berechnet werden.");
     } finally {
       setBusyAction("");
     }
@@ -507,6 +548,26 @@ export default function EventAdminOverview() {
     () => data?.addon_purchases?.find((purchase) => purchase.id === selectedAddonId) || null,
     [data, selectedAddonId]
   );
+
+  const waveSummary = useMemo(() => {
+    const map = new Map();
+    (data?.registrations || []).forEach((registration) => {
+      (registration.slots || []).forEach((slot) => {
+        const key = slot.wave_code || "Noch nicht zugeteilt";
+        const current = map.get(key) || {
+          code: key,
+          route: slot.route_key,
+          routeLabel: slot.route_name || slot.route_key,
+          pace: slot.pace_group,
+          count: 0,
+        };
+        current.count += 1;
+        map.set(key, current);
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code, "de-DE"));
+  }, [data?.registrations]);
 
   const selectedPrimarySlot = useMemo(
     () => selectedRegistration?.slots?.[0] || null,
@@ -653,7 +714,57 @@ export default function EventAdminOverview() {
                 <SummaryBox><strong>Zusätzliche Spenden</strong><div>{formatEuro(data.summary.donation_amount_total)}</div></SummaryBox>
                 <SummaryBox><strong>Offene Zahlungs-Reminder</strong><div>{data.summary.registration_payment_reminder_candidate_count || 0}</div></SummaryBox>
                 <SummaryBox><strong>Offene Gutschein-Reminder</strong><div>{data.summary.unused_voucher_reminder_candidate_count || 0}</div></SummaryBox>
+                <SummaryBox><strong>Unverifizierte Accounts</strong><div>{data.summary.account_verification_reminder_candidate_count || 0}</div></SummaryBox>
               </Grid>
+            </Card>
+
+            <Card>
+              <SectionHeader>
+                <div>
+                  <h2 style={{ margin: 0 }}>Startwellen</h2>
+                  <SectionText>
+                    Berechnet Startwellen aus bezahlten/freigeschalteten Teilnehmern nach Strecke und Tempo.
+                  </SectionText>
+                </div>
+                <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+                  <div>
+                    <InfoLabel>Max. Personen pro Welle</InfoLabel>
+                    <NumberField
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={waveCapacity}
+                      onChange={(event) => setWaveCapacity(event.target.value)}
+                    />
+                  </div>
+                  <ActionButton type="button" disabled={busyAction !== ""} onClick={recomputeWaves}>
+                    Startwellen neu berechnen
+                  </ActionButton>
+                </div>
+              </SectionHeader>
+
+              <TableWrap>
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>Welle</th>
+                      <th>Route</th>
+                      <th>Tempo</th>
+                      <th>Teilnehmer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {waveSummary.map((wave) => (
+                      <tr key={wave.code}>
+                        <td>{wave.code}</td>
+                        <td>{wave.route ? formatRouteShortWithDistance(wave.route) : "-"}</td>
+                        <td>{getPaceLabel(wave.pace)}</td>
+                        <td>{wave.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </TableWrap>
             </Card>
 
             <Card>
@@ -679,6 +790,19 @@ export default function EventAdminOverview() {
                   >
                     Offene Zahlungen erinnern
                   </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    disabled={busyAction !== ""}
+                    onClick={() =>
+                      sendReminder({
+                        scope: "account_verification",
+                        busyKey: "bulk-account-verification-reminder",
+                        successMessage: "Account-Verifizierungs-Reminder wurden gesendet.",
+                      })
+                    }
+                  >
+                    Unverifizierte Accounts erinnern
+                  </SecondaryButton>
                 </div>
               </SectionHeader>
 
@@ -695,7 +819,6 @@ export default function EventAdminOverview() {
                       <th>Offen</th>
                       <th>Route</th>
                       <th>Tempo</th>
-                      <th>Frauenwelle</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -716,7 +839,6 @@ export default function EventAdminOverview() {
                           <td>{formatEuro(registration.payment.total_outstanding_amount ?? registration.payment.outstanding_amount)}</td>
                           <td>{primarySlot ? formatRouteShortWithDistance(primarySlot.route_key, primarySlot.distance_km) : "-"}</td>
                           <td>{primarySlot ? getPaceLabel(primarySlot.pace_group) : "-"}</td>
-                          <td>{formatWomenWavePreference(primarySlot)}</td>
                         </ClickableRow>
                       );
                     })}
@@ -778,6 +900,23 @@ export default function EventAdminOverview() {
                         Gutschein-Reminder senden
                       </SecondaryButton>
                     )}
+                    {selectedPrimarySlot?.linked_user_id && selectedPrimarySlot.linked_user_is_verified === false && (
+                      <SecondaryButton
+                        type="button"
+                        disabled={busyAction !== ""}
+                        onClick={() =>
+                          sendReminder({
+                            scope: "account_verification",
+                            entityType: "account",
+                            entityId: selectedPrimarySlot.linked_user_id,
+                            busyKey: `account-verification-reminder-${selectedPrimarySlot.linked_user_id}`,
+                            successMessage: "Account-Verifizierungs-Reminder wurde gesendet.",
+                          })
+                        }
+                      >
+                        Verifizierungs-Mail senden
+                      </SecondaryButton>
+                    )}
                   </div>
                 </ActionRow>
 
@@ -805,8 +944,9 @@ export default function EventAdminOverview() {
                       <InfoRow><InfoLabel>Name / E-Mail</InfoLabel><InfoValue>{selectedPrimarySlot ? <>{selectedPrimarySlot.full_name}<br />{selectedPrimarySlot.email}</> : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Route</InfoLabel><InfoValue>{selectedPrimarySlot ? `${selectedPrimarySlot.route_name} (${selectedPrimarySlot.distance_km} km)` : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Tempo</InfoLabel><InfoValue>{selectedPrimarySlot ? getPaceLabel(selectedPrimarySlot.pace_group) : "-"}</InfoValue></InfoRow>
-                      <InfoRow><InfoLabel>Frauenwelle</InfoLabel><InfoValue>{formatWomenWavePreference(selectedPrimarySlot)}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Linked Account</InfoLabel><InfoValue>{selectedPrimarySlot?.linked_user_id ? <AccountLink to={`/user/${selectedPrimarySlot.linked_user_id}`}>{selectedPrimarySlot.linked_username || `User #${selectedPrimarySlot.linked_user_id}`}</AccountLink> : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Account-Verifizierung</InfoLabel><InfoValue>{selectedPrimarySlot?.linked_user_id ? (selectedPrimarySlot.linked_user_is_verified ? "verifiziert" : "nicht verifiziert") : "-"}</InfoValue></InfoRow>
+                      <InfoRow><InfoLabel>Letzter Verifizierungs-Reminder</InfoLabel><InfoValue>{formatReminderSummary(selectedPrimarySlot?.account_verification_reminder)}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Bekleidung</InfoLabel><InfoValue>{selectedPrimarySlot ? `${selectedPrimarySlot.clothing_interest_label}${selectedPrimarySlot.jersey_size ? `, Trikot ${selectedPrimarySlot.jersey_size}` : ""}${selectedPrimarySlot.bib_size ? `, Hose ${selectedPrimarySlot.bib_size}` : ""}` : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Live-Karte</InfoLabel><InfoValue>{selectedPrimarySlot ? (selectedPrimarySlot.public_name_consent ? "Name sichtbar" : "Name verborgen") : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Starter-Status</InfoLabel><InfoValue>{selectedPrimarySlot?.license_status || "-"}</InfoValue></InfoRow>

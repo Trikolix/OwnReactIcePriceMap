@@ -177,16 +177,15 @@ function sendChangeRequestStatusEmail($email, $username, $shopName, $shopId, $st
         'reopening_date' => 'Wiedereröffnungsdatum'
     ];
 
-    $body = "<html><body style='font-family:Arial, sans-serif;color:#1f1f1f;'>";
-    $body .= "<p>Hallo <strong>" . htmlspecialchars($username) . "</strong>,</p>";
+    $paragraphs = [];
     if ($isApproved) {
-        $body .= "<p>dein Änderungsvorschlag für <strong>" . htmlspecialchars($shopName) . "</strong> wurde soeben freigeschaltet.</p>";
+        $paragraphs[] = "dein Änderungsvorschlag für {$shopName} wurde soeben freigeschaltet.";
     } else {
-        $body .= "<p>dein Änderungsvorschlag für <strong>" . htmlspecialchars($shopName) . "</strong> wurde leider nicht übernommen.</p>";
+        $paragraphs[] = "dein Änderungsvorschlag für {$shopName} wurde leider nicht übernommen.";
     }
 
     if (!empty($changes)) {
-        $body .= "<p>Folgende Felder waren Teil deines Vorschlags:</p><ul>";
+        $changedFields = [];
         foreach ($changes as $field => $value) {
             if (!array_key_exists($field, $prettyFields)) {
                 continue;
@@ -199,18 +198,28 @@ function sendChangeRequestStatusEmail($email, $username, $shopName, $shopId, $st
             } elseif ($value === null || $value === '') {
                 $asString = '—';
             }
-            $body .= "<li><strong>{$prettyFields[$field]}:</strong> " . nl2br(htmlspecialchars((string)$asString)) . "</li>";
+            $changedFields[] = "{$prettyFields[$field]}: " . (string)$asString;
         }
-        $body .= "</ul>";
+        if (!empty($changedFields)) {
+            $paragraphs[] = 'Folgende Felder waren Teil deines Vorschlags: ' . implode('; ', $changedFields);
+        }
     }
 
     if (!empty($adminMessage)) {
-        $body .= "<p><strong>Hinweis vom Team:</strong><br>" . nl2br(htmlspecialchars($adminMessage)) . "</p>";
+        $paragraphs[] = 'Hinweis vom Team: ' . $adminMessage;
     }
 
-    $body .= "<p>Zur Eisdiele: <a href='https://ice-app.de/map/activeShop/" . intval($shopId) . "' style='color:#0077b6;'>Direktlink öffnen</a></p>";
-    $body .= "<p>Vielen Dank für deinen Beitrag zur Ice-App!<br>Dein Ice-App Team</p>";
-    $body .= "</body></html>";
+    $paragraphs[] = 'Vielen Dank für deinen Beitrag zur Ice-App.';
 
-    iceapp_send_utf8_html_mail($email, $subject, $body, 'noreply@ice-app.de');
+    iceapp_send_branded_action_mail(
+        $email,
+        $subject,
+        $isApproved ? 'Änderung freigeschaltet' : 'Änderung nicht übernommen',
+        "Hallo {$username},",
+        $paragraphs,
+        'Zur Eisdiele',
+        'https://ice-app.de/map/activeShop/' . intval($shopId),
+        'Direkter Link',
+        'noreply@ice-app.de'
+    );
 }

@@ -14,7 +14,15 @@ export const UserProvider = ({ children }) => {
   const [userPosition, setUserPosition] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const [tokenExpiresAt, setTokenExpiresAt] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
   const sessionValidatedRef = useRef(false);
+
+  const reloadCurrentPage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 0);
+  }, []);
 
   // Beim Laden schauen, ob userId schon gespeichert ist
   useEffect(() => {
@@ -48,6 +56,8 @@ export const UserProvider = ({ children }) => {
         console.error("Fehler beim Parsen der gespeicherten Position:", e);
       }
     }
+
+    setAuthReady(true);
   }, []);
 
   // Erweiterte Setter-Funktion, die gleich speichert
@@ -56,13 +66,15 @@ export const UserProvider = ({ children }) => {
     localStorage.setItem('userPosition', JSON.stringify(positionArray));
   };
 
-  const login = useCallback((id, name, token, expiresAt) => {
+  const login = useCallback((id, name, token, expiresAt, options = {}) => {
+    const { reload = true } = options;
     const idAsString = id != null ? String(id) : null;
     const previousUserId = localStorage.getItem('userId');
 
     // Reset avatar cache when switching accounts to avoid showing the previous user's picture.
     if (previousUserId && idAsString && previousUserId !== idAsString) {
       localStorage.removeItem('avatarUrl');
+      localStorage.removeItem('event2026_has_registration');
     }
 
     setUserId(idAsString);
@@ -97,9 +109,14 @@ export const UserProvider = ({ children }) => {
     }
 
     sessionValidatedRef.current = true;
-  }, []);
 
-  const logout = useCallback(async () => {
+    if (reload) {
+      reloadCurrentPage();
+    }
+  }, [reloadCurrentPage]);
+
+  const logout = useCallback(async (options = {}) => {
+    const { reload = true } = options;
     const storedToken = localStorage.getItem('authToken');
     const currentUserId = localStorage.getItem('userId');
     if (storedToken && API_BASE) {
@@ -135,8 +152,13 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem('tokenExpiresAt');
     localStorage.removeItem('userPosition');
     localStorage.removeItem('avatarUrl');
+    localStorage.removeItem('event2026_has_registration');
     sessionValidatedRef.current = false;
-  }, []);
+
+    if (reload) {
+      reloadCurrentPage();
+    }
+  }, [reloadCurrentPage]);
 
   const validateSession = useCallback(async () => {
     if (!API_BASE || !authToken) return;
@@ -148,12 +170,12 @@ export const UserProvider = ({ children }) => {
       }
       const data = await response.json();
       if (data.status === 'success') {
-        login(data.userId, data.username, authToken, data.expires_at);
+        login(data.userId, data.username, authToken, data.expires_at, { reload: false });
       } else {
-        await logout();
+        await logout({ reload: false });
       }
     } catch (error) {
-      await logout();
+      await logout({ reload: false });
     }
   }, [authToken, login, logout]);
 
@@ -183,6 +205,7 @@ export const UserProvider = ({ children }) => {
         userPosition,
         authToken,
         tokenExpiresAt,
+        authReady,
         login,
         logout,
         setUserPosition: updateUserPosition

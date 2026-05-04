@@ -80,8 +80,76 @@ const createClusterBunnyHtml = (size) => `
   />
 `;
 
+const getClusterMarkerSummary = (cluster) => {
+  const markers = cluster.getAllChildMarkers();
+  return markers.reduce((summary, marker) => {
+    const options = marker.options || {};
+    return {
+      total: summary.total + 1,
+      favorites: summary.favorites + (options.isFavorite ? 1 : 0),
+      personalChallenges: summary.personalChallenges + (options.hasActiveChallenge ? 1 : 0),
+      teamChallenges: summary.teamChallenges + (options.hasActiveTeamChallenge ? 1 : 0),
+      upcomingChallenges: summary.upcomingChallenges + (options.hasUpcomingChallenge ? 1 : 0),
+    };
+  }, {
+    total: 0,
+    favorites: 0,
+    personalChallenges: 0,
+    teamChallenges: 0,
+    upcomingChallenges: 0,
+  });
+};
+
+const createClusterStatusBadgeHtml = ({ label, count, title, background, color = '#ffffff' }) => {
+  if (!count) {
+    return '';
+  }
+
+  return `
+    <span title="${title}" style="display:inline-flex; align-items:center; gap:2px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:${background}; color:${color}; border:2px solid #ffffff; box-shadow:0 2px 8px rgba(0,0,0,0.2); font-size:10px; font-weight:800; line-height:1; box-sizing:border-box;">
+      ${label}${count > 1 ? count : ''}
+    </span>
+  `;
+};
+
+const createClusterStatusBadgesHtml = (summary) => {
+  const html = [
+    createClusterStatusBadgeHtml({
+      label: '*',
+      count: summary.favorites,
+      title: `${summary.favorites} Favorit${summary.favorites === 1 ? '' : 'en'} im Cluster`,
+      background: '#ffd54a',
+      color: '#4c3600',
+    }),
+    createClusterStatusBadgeHtml({
+      label: 'T',
+      count: summary.teamChallenges,
+      title: `${summary.teamChallenges} Team-Challenge${summary.teamChallenges === 1 ? '' : 's'} im Cluster`,
+      background: '#087f8c',
+    }),
+    createClusterStatusBadgeHtml({
+      label: 'C',
+      count: summary.personalChallenges,
+      title: `${summary.personalChallenges} aktive Challenge${summary.personalChallenges === 1 ? '' : 's'} im Cluster`,
+      background: '#ff6f00',
+    }),
+    createClusterStatusBadgeHtml({
+      label: 'C',
+      count: summary.upcomingChallenges,
+      title: `${summary.upcomingChallenges} kommende Challenge${summary.upcomingChallenges === 1 ? '' : 's'} im Cluster`,
+      background: '#d6d8dd',
+      color: '#636a75',
+    }),
+  ].join('');
+
+  return html
+    ? `<div style="position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); display:flex; gap:3px; justify-content:center; align-items:center; white-space:nowrap; z-index:8;">${html}</div>`
+    : '';
+};
+
 const createEasterClusterIcon = (bunnyTargetShopId = null) => (cluster) => {
   const count = cluster.getChildCount();
+  const summary = getClusterMarkerSummary(cluster);
   const size = count < 10 ? 58 : count < 100 ? 66 : 74;
   const fontSize = count < 10 ? 16 : count < 100 ? 17 : 18;
   const badgeMinWidth = count < 10 ? 28 : count < 100 ? 32 : 36;
@@ -130,12 +198,46 @@ const createEasterClusterIcon = (bunnyTargetShopId = null) => (cluster) => {
         <div style="position:absolute; left:50%; bottom:${Math.round(size * 0.06)}px; transform:translateX(-50%); min-width:${badgeMinWidth}px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,0.92); color:#5f1833; border:2px solid rgba(255,255,255,0.98); box-shadow:0 4px 10px rgba(0,0,0,0.18); text-align:center; font-weight:800; font-size:${fontSize}px; line-height:1; z-index:4;">
           ${count}
         </div>
+        ${createClusterStatusBadgesHtml(summary)}
       </div>
     `,
     iconSize: [size, size],
     iconAnchor: [Math.round(size / 2), Math.round(size / 2)],
   });
 };
+
+const createDefaultClusterIcon = (cluster) => {
+  const count = cluster.getChildCount();
+  const summary = getClusterMarkerSummary(cluster);
+  const size = count < 10 ? 46 : count < 100 ? 52 : 60;
+  const fontSize = count < 10 ? 17 : count < 100 ? 18 : 19;
+  const accentColor = summary.teamChallenges
+    ? '#087f8c'
+    : summary.personalChallenges
+      ? '#ff6f00'
+      : summary.upcomingChallenges
+        ? '#9aa1ad'
+        : summary.favorites
+          ? '#d59b00'
+          : '#25728a';
+
+  return L.divIcon({
+    className: 'ice-marker-cluster',
+    html: `
+      <div style="position:relative; width:${size}px; height:${size}px;">
+        <div style="position:absolute; inset:0; border-radius:50%; background:linear-gradient(145deg,#fff7df 0%,#f5b544 100%); border:3px solid #ffffff; box-shadow:0 8px 22px rgba(47,36,16,0.28), inset 0 0 0 4px rgba(255,255,255,0.35);"></div>
+        <div style="position:absolute; inset:5px; border-radius:50%; border:3px solid ${accentColor}; opacity:0.9;"></div>
+        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#3b2600; font-size:${fontSize}px; font-weight:900; font-family:'Segoe UI', Tahoma, Arial, sans-serif; line-height:1;">
+          ${count}
+        </div>
+        ${createClusterStatusBadgesHtml(summary)}
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [Math.round(size / 2), Math.round(size / 2)],
+  });
+};
+
 
 const DISPLAY_OPTIONS = [
   {
@@ -1381,7 +1483,7 @@ const IceCreamRadar = () => {
   const seasonalMarkerVariant = seasonalMapVisible ? 'easter' : null;
   const clusterIconCreateFunction = seasonalMarkerVariant === 'easter'
     ? createEasterClusterIcon(easterEncounterState.bunnyShopId ?? null)
-    : undefined;
+    : createDefaultClusterIcon;
   const seoKeywords = [
     'Ice-App',
     'Eispreise Deutschland',

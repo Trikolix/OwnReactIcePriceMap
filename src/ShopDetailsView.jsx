@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
-import { X } from 'lucide-react';
+import { Map, Navigation, X } from 'lucide-react';
 import { SubmitButton as SharedSubmitButton } from './styles/SharedStyles';
 import { Link, useSearchParams } from 'react-router-dom';
 import Rating from './components/Rating';
@@ -23,6 +23,36 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 
 const hasValue = (value) => value !== null && value !== undefined;
 const hasPriceEntry = (entry) => hasValue(entry?.preis);
+
+const getShopCoordinates = (shop) => {
+  const latitude = Number(shop?.latitude);
+  const longitude = Number(shop?.longitude);
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude }
+    : null;
+};
+
+const buildMapsUrl = (shop) => {
+  const coordinates = getShopCoordinates(shop);
+  if (coordinates) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${coordinates.latitude},${coordinates.longitude}`)}`;
+  }
+
+  return shop?.adresse
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.adresse)}`
+    : null;
+};
+
+const buildKomootUrl = (shop) => {
+  const coordinates = getShopCoordinates(shop);
+  if (coordinates) {
+    return `https://www.komoot.com/plan/@${coordinates.latitude},${coordinates.longitude},14z`;
+  }
+
+  return shop?.adresse
+    ? `https://www.komoot.com/discover/${encodeURIComponent(shop.adresse)}`
+    : null;
+};
 
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -361,6 +391,8 @@ const ShopDetailsContent = ({
     hasValue(shopData.scores.eisbecher) ||
     shopData.attribute?.length > 0
   );
+  const mapsUrl = buildMapsUrl(shopData.eisdiele);
+  const komootUrl = buildKomootUrl(shopData.eisdiele);
 
   if (activeTab === 'info') {
     return (
@@ -369,7 +401,27 @@ const ShopDetailsContent = ({
           <InfoList>
             <InfoRow>
               <InfoLabel>Adresse</InfoLabel>
-              <InfoValue>{shopData.eisdiele.adresse || 'Keine Adresse eingetragen'}</InfoValue>
+              <InfoValue>
+                <AddressContent>
+                  <AddressText>{shopData.eisdiele.adresse || 'Keine Adresse eingetragen'}</AddressText>
+                  {(mapsUrl || komootUrl) && (
+                    <AddressActionRow>
+                      {mapsUrl && (
+                        <AddressLink href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                          <Map size={14} />
+                          Maps
+                        </AddressLink>
+                      )}
+                      {komootUrl && (
+                        <AddressLink href={komootUrl} target="_blank" rel="noopener noreferrer">
+                          <Navigation size={14} />
+                          Komoot
+                        </AddressLink>
+                      )}
+                    </AddressActionRow>
+                  )}
+                </AddressContent>
+              </InfoValue>
             </InfoRow>
           </InfoList>
           <InlineContent>
@@ -902,6 +954,53 @@ const InfoValue = styled.span`
   color: #2f2100;
   font-size: 0.92rem;
   line-height: 1.35;
+`;
+
+const AddressContent = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+
+  @media (max-width: 520px) {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+`;
+
+const AddressText = styled.span`
+  min-width: 0;
+`;
+
+const AddressActionRow = styled.div`
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
+`;
+
+const AddressLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid rgba(138, 87, 0, 0.24);
+  background: rgba(255, 255, 255, 0.76);
+  color: #6f4300;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.14);
+    border-color: rgba(138, 87, 0, 0.36);
+    color: #4d3000;
+  }
 `;
 
 const InlineContent = styled.div`

@@ -52,23 +52,67 @@ function validateAndCleanUrl(string $url): ?string {
     ];
 
     // 1. Try matching the current URL
-    foreach ($allowedHosts as $pattern) {
+    foreach ($allowedHosts as $provider => $pattern) {
         if (preg_match($pattern, $url, $matches)) {
-            return rtrim($matches[0], '/') . '/';
+            return cleanMatchedRouteUrl($provider, $matches[0], $url);
         }
     }
 
     // 2. If no match, resolve (follow redirects) and try again
     $resolvedUrl = resolveRouteUrl($url);
     if ($resolvedUrl !== $url) {
-        foreach ($allowedHosts as $pattern) {
+        foreach ($allowedHosts as $provider => $pattern) {
             if (preg_match($pattern, $resolvedUrl, $matches)) {
-                return rtrim($matches[0], '/') . '/';
+                return cleanMatchedRouteUrl($provider, $matches[0], $resolvedUrl);
             }
         }
     }
     
     return null;
+}
+
+function cleanMatchedRouteUrl(string $provider, string $matchedUrl, string $sourceUrl): string {
+    $cleanUrl = rtrim($matchedUrl, '/') . '/';
+
+    if ($provider !== 'komoot') {
+        return $cleanUrl;
+    }
+
+    $parsedUrl = parse_url($sourceUrl);
+    if (empty($parsedUrl['query'])) {
+        return $cleanUrl;
+    }
+
+    parse_str($parsedUrl['query'], $queryParams);
+    if (empty($queryParams['share_token'])) {
+        return $cleanUrl;
+    }
+
+    return $cleanUrl . '?share_token=' . rawurlencode((string) $queryParams['share_token']);
+}
+
+function getKomootShareToken(string $url): string {
+    $parsedUrl = parse_url($url);
+    if (empty($parsedUrl['query'])) {
+        return '';
+    }
+
+    parse_str($parsedUrl['query'], $queryParams);
+    return isset($queryParams['share_token']) ? (string) $queryParams['share_token'] : '';
+}
+
+function buildKomootEmbedUrl(string $url): ?string {
+    if (!preg_match('#https?:\/\/(www\.)?komoot\.(com|de)\/(?:[a-z-]+\/)?tour\/(\d+)#', $url, $matches)) {
+        return null;
+    }
+
+    $src = 'https://www.komoot.com/de-de/tour/' . $matches[3] . '/embed';
+    $shareToken = getKomootShareToken($url);
+    if ($shareToken !== '') {
+        $src .= '?share_token=' . rawurlencode($shareToken);
+    }
+
+    return $src;
 }
 
 /**
@@ -81,20 +125,10 @@ function generateEmbedCode($url) {
     $cleanUrl = validateAndCleanUrl($url) ?: $url;
 
     // Komoot
-    if (preg_match('#https?:\/\/(www\.)?komoot\.(com|de)\/(?:[a-z-]+\/)?tour\/(\d+)#', $cleanUrl, $matches)) {
-        $tourId = $matches[3];
-        $parsedUrl = parse_url($cleanUrl);
-        $shareToken = '';
-        if (isset($parsedUrl['query'])) {
-            parse_str($parsedUrl['query'], $queryParams);
-            if (isset($queryParams['share_token'])) {
-                $shareToken = htmlspecialchars($queryParams['share_token'], ENT_QUOTES, 'UTF-8');
-            }
-        }
-        $src = 'https://www.komoot.com/de-de/tour/' . $tourId . '/embed';
-        if ($shareToken) {
-            $src .= '?share_token=' . $shareToken;
-        }
+    if (preg_match('#https?:\/\/(www\.)?komoot\.(com|de)\/(?:[a-z-]+\/)?tour\/(\d+)#', $cleanUrl)) {
+        $src = buildKomootEmbedUrl($cleanUrl);
+        if (!$src) return null;
+        $src = htmlspecialchars($src, ENT_QUOTES, 'UTF-8');
         return '<iframe src="' . $src . '" width="640" height="440" frameborder="0" scrolling="no"></iframe>';
     }
 
@@ -124,6 +158,16 @@ function checkRouteVisibility($url) {
     $cleanUrl = validateAndCleanUrl($url);
     if (!$cleanUrl) {
         return ['status' => 'unknown'];
+    }
+
+    if (stripos($cleanUrl, 'komoot.') !== false) {
+        $embedUrl = buildKomootEmbedUrl($cleanUrl);
+        if ($embedUrl) {
+            $embedCheck = checkRouteHttpStatus($embedUrl);
+            if (in_array($embedCheck['http_code'], [401, 403, 404, 410], true)) {
+                return ['status' => 'private'];
+            }
+        }
     }
 
     $ch = curl_init($cleanUrl);
@@ -165,4 +209,18 @@ function checkRouteVisibility($url) {
     }
 
     return ['status' => 'public'];
+}
+
+function checkRouteHttpStatus(string $url): array {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+    curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ['http_code' => $httpCode];
 }

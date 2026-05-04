@@ -5,9 +5,14 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
+import {
+  EVENT_LOGIN_REQUIRED_MESSAGE,
+  getEventAccessErrorMessage,
+  readEventApiJson,
+} from "./eventAuthMessages";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import Seo from "../../components/Seo";
-import route175GpxFile from "./Ice-Tour_175km.gpx?url";
+import route180GpxFile from "./Ice-Tour_180km.gpx?url";
 import route140GpxFile from "./Ice-Tour_140km.gpx?url";
 import route70GpxFile from "./Ice-Tour_70km.gpx?url";
 import {
@@ -509,7 +514,7 @@ const EVENT_PARKING = {
 };
 
 const ROUTE_GPX_DOWNLOADS = {
-  epic_4: { href: route175GpxFile, filename: "Ice-Tour_175km.gpx" },
+  epic_4: { href: route180GpxFile, filename: "Ice-Tour_180km.gpx" },
   classic_3: { href: route140GpxFile, filename: "Ice-Tour_140km.gpx" },
   family_2: { href: route70GpxFile, filename: "Ice-Tour_70km.gpx" },
 };
@@ -591,7 +596,7 @@ function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
 
 export default function EventMyRegistration() {
   const apiUrl = getApiBaseUrl();
-  const { authToken, userId } = useUser();
+  const { authToken, userId, authReady } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -610,18 +615,26 @@ export default function EventMyRegistration() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!apiUrl) return;
+    if (!apiUrl || !authReady) return;
+    if (!authToken) {
+      setData(null);
+      setError(EVENT_LOGIN_REQUIRED_MESSAGE);
+      setLoading(false);
+      localStorage.removeItem("event2026_has_registration");
+      return;
+    }
 
     setLoading(true);
+    setError("");
     fetch(`${apiUrl}/event2026/me.php`, {
       headers: {
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        Authorization: `Bearer ${authToken}`,
       },
     })
       .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok || json.status !== "success") {
-          throw new Error(json.message || "Daten konnten nicht geladen werden.");
+        const json = await readEventApiJson(res);
+        if (!res.ok || json?.status !== "success") {
+          throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Daten konnten nicht geladen werden."));
         }
         if (!cancelled) {
           setData(json);
@@ -641,7 +654,7 @@ export default function EventMyRegistration() {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, authToken]);
+  }, [apiUrl, authReady, authToken]);
 
   const ownSlot = useMemo(() => data?.slots?.[0] || null, [data]);
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
@@ -722,9 +735,9 @@ export default function EventMyRegistration() {
         },
         body: JSON.stringify({ registration_id: data.registration.id }),
       });
-      const json = await response.json();
-      if (!response.ok || json.status !== "success" || !json.checkout_url) {
-        throw new Error(json.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      const json = await readEventApiJson(response);
+      if (!response.ok || json?.status !== "success" || !json?.checkout_url) {
+        throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Stripe-Checkout konnte nicht gestartet werden."));
       }
       window.location.href = json.checkout_url;
     } catch (err) {
@@ -746,9 +759,9 @@ export default function EventMyRegistration() {
         },
         body: JSON.stringify({ addon_purchase_id: addonPurchaseId }),
       });
-      const json = await response.json();
-      if (!response.ok || json.status !== "success" || !json.checkout_url) {
-        throw new Error(json.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      const json = await readEventApiJson(response);
+      if (!response.ok || json?.status !== "success" || !json?.checkout_url) {
+        throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Stripe-Checkout konnte nicht gestartet werden."));
       }
       window.location.href = json.checkout_url;
     } catch (err) {
@@ -771,9 +784,9 @@ export default function EventMyRegistration() {
         },
         body: JSON.stringify({ clothingInterest, jerseySize, bibSize }),
       });
-      const json = await response.json();
-      if (!response.ok || json.status !== "success") {
-        throw new Error(json.message || "Bekleidungsinteresse konnte nicht gespeichert werden.");
+      const json = await readEventApiJson(response);
+      if (!response.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Bekleidungsinteresse konnte nicht gespeichert werden."));
       }
       setData((prev) => {
         if (!prev) return prev;
@@ -813,9 +826,9 @@ export default function EventMyRegistration() {
         },
         body: JSON.stringify({ teamName: normalizedTeamName }),
       });
-      const json = await response.json();
-      if (!response.ok || json.status !== "success") {
-        throw new Error(json.message || "Team / Verein konnte nicht gespeichert werden.");
+      const json = await readEventApiJson(response);
+      if (!response.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Team / Verein konnte nicht gespeichert werden."));
       }
       setData((prev) => {
         if (!prev) return prev;
