@@ -51,7 +51,7 @@ const getRouteHints = (routeKey) => {
   return generalRouteHints;
 };
 
-const scheduleItems = [
+const baseScheduleItems = [
   {
     time: "folgt",
     title: "Am Start sammeln",
@@ -68,6 +68,38 @@ const scheduleItems = [
     text: "Wenn du fertig bist, gibt es im Ziel nochmal ein Eis, aber auch andere herzhafte Leckereien. Danach ist gemütlicher Ausklang bei Essen, Trinken und Gesprächen.",
   },
 ];
+
+function parseEventDateTime(value) {
+  if (!value) return null;
+  const parsed = new Date(String(value).replace(" ", "T"));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatEventTime(value) {
+  const parsed = value instanceof Date ? value : parseEventDateTime(value);
+  if (!parsed) return "folgt";
+  return parsed.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+}
+
+function buildScheduleItems(startTime) {
+  const parsedStart = parseEventDateTime(startTime);
+  if (!parsedStart) return baseScheduleItems;
+
+  const gatherTime = new Date(parsedStart.getTime() - 20 * 60 * 1000);
+  return [
+    {
+      time: formatEventTime(gatherTime),
+      title: "Am Start sammeln",
+      text: "Bitte abfahrbereit mit Rad und Ausrüstung am Startbereich einfinden. Vor Ort gibt es ggf. noch ein kleines Frühstück und eine kurze Einweisung.",
+    },
+    {
+      time: formatEventTime(parsedStart),
+      title: "Start in deiner Gruppe",
+      text: "Startzeit deiner zugewiesenen Gruppe.",
+    },
+    baseScheduleItems[2],
+  ];
+}
 
 const packingItems = [
   "Straßentaugliches Rad",
@@ -114,6 +146,7 @@ export default function EventParticipantInfo() {
     () => ROUTE_OPTIONS.find((route) => route.key === ownSlot?.route_key) || null,
     [ownSlot?.route_key]
   );
+  const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time), [ownSlot?.start_time]);
 
   useEffect(() => {
     if (!authReady || !canView || !apiUrl) return;
@@ -218,7 +251,7 @@ export default function EventParticipantInfo() {
                   <RouteFacts>
                     <span>{selectedRoute.teaser}</span>
                     <span>{selectedRoute.stops} offizielle Stopps</span>
-                    <span>Startwelle: {ownSlot?.wave_code || "folgt"}</span>
+                    <span>Startzeit: {formatEventTime(ownSlot?.start_time)}</span>
                   </RouteFacts>
                   <p>{selectedRoute.description}</p>
                   <ButtonRow>

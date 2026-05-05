@@ -160,7 +160,8 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $event = event2026_current_event($pdo);
         $legal = event2026_active_legal($pdo, (int) $event['id']);
-        $reservedCount = event2026_reserved_count($pdo, (int) $event['id']);
+        $reservedBreakdown = event2026_reserved_slot_breakdown($pdo, (int) $event['id']);
+        $reservedCount = (int) $reservedBreakdown['total'];
         $auth = authenticateRequest($pdo);
         $accountEmail = null;
         $hasRegistration = false;
@@ -224,6 +225,7 @@ try {
                 'event_status' => $event['status'],
                 'max_participants' => (int) $event['max_participants'],
                 'reserved_slots' => $reservedCount,
+                'reserved_voucher_slots' => (int) $reservedBreakdown['voucher_slots'],
                 'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
                 'min_participants_for_go' => (int) $event['min_participants_for_go'],
                 'cancellation_deadline' => $event['cancellation_deadline'],
@@ -386,7 +388,8 @@ try {
         }
     }
 
-    $reservedCount = event2026_reserved_count($pdo, $eventId);
+    $reservedBreakdown = event2026_reserved_slot_breakdown($pdo, $eventId);
+    $reservedCount = (int) $reservedBreakdown['total'];
     $additionalReservedSlots = 1 + $giftVoucherQuantity - ($voucherRow !== null ? 1 : 0);
     if (($reservedCount + $additionalReservedSlots) > (int) $event['max_participants']) {
         $pdo->rollBack();
@@ -395,6 +398,7 @@ try {
             'status' => 'sold_out',
             'message' => 'Nicht genügend freie Startplätze verfügbar.',
             'reserved_slots' => $reservedCount,
+            'reserved_voucher_slots' => (int) $reservedBreakdown['voucher_slots'],
             'max_participants' => (int) $event['max_participants'],
             'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
         ]);
@@ -580,7 +584,8 @@ try {
 
     $pdo->commit();
 
-    $reservedAfter = event2026_reserved_count($pdo, $eventId);
+    $reservedBreakdownAfter = event2026_reserved_slot_breakdown($pdo, $eventId);
+    $reservedAfter = (int) $reservedBreakdownAfter['total'];
     $mailSent = false;
     if ($accountEmail) {
         $appBaseUrl = 'https://ice-app.de';
@@ -683,6 +688,7 @@ try {
         ] : null,
         'event' => [
             'reserved_slots' => $reservedAfter,
+            'reserved_voucher_slots' => (int) $reservedBreakdownAfter['voucher_slots'],
             'max_participants' => (int) $event['max_participants'],
             'available_slots' => max(0, (int) $event['max_participants'] - $reservedAfter),
         ],

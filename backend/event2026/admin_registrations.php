@@ -62,6 +62,7 @@ try {
             s.created_at,
             n.username AS linked_username,
             n.is_verified AS linked_user_is_verified,
+            w.id AS wave_id,
             w.wave_code,
             w.start_time
         FROM event2026_participant_slots s
@@ -72,6 +73,23 @@ try {
         ORDER BY s.registration_id ASC, s.id ASC");
     $slotStmt->execute([':event_id' => $eventId]);
     $slotRows = $slotStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $waveStmt = $pdo->prepare("SELECT
+            w.id,
+            w.wave_code,
+            w.distance_km,
+            w.pace_group,
+            w.start_time,
+            w.capacity,
+            w.is_women_wave,
+            COUNT(wa.slot_id) AS assigned_count
+        FROM event2026_waves w
+        LEFT JOIN event2026_wave_assignments wa ON wa.wave_id = w.id
+        WHERE w.event_id = :event_id
+        GROUP BY w.id
+        ORDER BY w.start_time IS NULL ASC, w.start_time ASC, w.wave_code ASC");
+    $waveStmt->execute([':event_id' => $eventId]);
+    $waveRows = $waveStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $voucherStmt = $pdo->prepare("SELECT
             id,
@@ -149,6 +167,7 @@ try {
             'linked_username' => $slotRow['linked_username'] ?: null,
             'linked_user_is_verified' => $slotRow['linked_user_is_verified'] !== null ? (int) $slotRow['linked_user_is_verified'] === 1 : null,
             'account_verification_reminder' => $accountReminderKey !== null ? ($reminderOverviewMap[$accountReminderKey]['account_verification'] ?? null) : null,
+            'wave_id' => $slotRow['wave_id'] !== null ? (int) $slotRow['wave_id'] : null,
             'wave_code' => $slotRow['wave_code'] ?: null,
             'start_time' => $slotRow['start_time'] ?: null,
         ];
@@ -346,6 +365,18 @@ try {
         'summary' => array_map(static function ($value) {
             return is_float($value) ? round($value, 2) : $value;
         }, $summary),
+        'waves' => array_map(static function (array $wave): array {
+            return [
+                'id' => (int) $wave['id'],
+                'wave_code' => (string) $wave['wave_code'],
+                'distance_km' => (int) $wave['distance_km'],
+                'pace_group' => (string) $wave['pace_group'],
+                'start_time' => $wave['start_time'],
+                'capacity' => (int) $wave['capacity'],
+                'is_women_wave' => (int) $wave['is_women_wave'] === 1,
+                'assigned_count' => (int) $wave['assigned_count'],
+            ];
+        }, $waveRows),
         'registrations' => $resultRows,
         'addon_purchases' => $addonResults,
     ]);

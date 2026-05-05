@@ -695,7 +695,8 @@ export default function EventRegistration() {
   };
 
   const availableSlots = eventMeta?.available_slots ?? 0;
-  const isSoldOut = eventMeta?.event_status === "cancelled" || availableSlots <= 0;
+  const hasValidVoucherReservation = Boolean(voucherLookup?.valid);
+  const isSoldOut = eventMeta?.event_status === "cancelled" || (availableSlots <= 0 && !hasValidVoucherReservation);
   const registrationMode = !existingRegistration;
   const selectedRoute = getRouteSummary(participant.routeKey);
   const registrationSubmitLabel = isSubmitting ? "Speichern..." : "Verbindlich anmelden und Teilnahmebeitrag zahlen";
@@ -743,6 +744,11 @@ export default function EventRegistration() {
                   <span>Verfügbare Startplätze</span>
                   <span>noch <strong>{eventMeta.available_slots} / {eventMeta.max_participants}</strong></span>
                 </Flex>
+                {availableSlots <= 0 && hasValidVoucherReservation && registrationMode && (
+                  <StatusBanner tone="success" style={{ marginTop: 12, marginBottom: 0 }}>
+                    Dein gültiger Gutschein-Code reserviert einen Startplatz. Du kannst die Anmeldung damit abschließen.
+                  </StatusBanner>
+                )}
                 {existingRegistration && (
                   <StatusBanner style={{ marginTop: 12, marginBottom: 0 }}>
                     <strong>Du bist bereits registriert.</strong>

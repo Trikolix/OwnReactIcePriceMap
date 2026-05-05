@@ -18,7 +18,7 @@ try {
     if ($slotId <= 0) {
         throw new InvalidArgumentException('slot_id fehlt.');
     }
-    if (!in_array($distanceKm, [140, 175], true)) {
+    if (!in_array($distanceKm, [140, 180], true)) {
         throw new InvalidArgumentException('Ungültige Distanz.');
     }
 

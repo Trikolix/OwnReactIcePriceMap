@@ -896,7 +896,7 @@ function event2026_route_catalog(): array
             'key' => 'epic_4',
             'label' => 'Königsrunde',
             'short_label' => 'König',
-            'distance_km' => 175,
+            'distance_km' => 180,
             'elevation_m' => 1950,
             'stops' => 4,
             'route_type' => 'sport',
@@ -1059,7 +1059,7 @@ function event2026_active_legal(PDO $pdo, int $eventId): array
     return $legal;
 }
 
-function event2026_reserved_count(PDO $pdo, int $eventId): int
+function event2026_reserved_slot_breakdown(PDO $pdo, int $eventId): array
 {
     $sql = "SELECT
             COALESCE((
@@ -1071,17 +1071,17 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
                     OR (
                       s.license_status = 'pending_payment'
                       AND s.created_at >= (NOW() - INTERVAL 72 HOUR)
-                    )
+                      )
                   )
             ), 0)
-            +
+            AS participant_slots,
             COALESCE((
                 SELECT COUNT(*)
                 FROM event2026_gift_vouchers gv
                 WHERE gv.event_id = :event_id_open_vouchers
                   AND gv.status NOT IN ('redeemed', 'cancelled')
             ), 0)
-            +
+            AS open_voucher_slots,
             COALESCE((
                 SELECT SUM(GREATEST(r.gift_voucher_quantity - COALESCE(v.created_count, 0), 0))
                 FROM event2026_registrations r
@@ -1101,7 +1101,7 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
                     )
                   )
             ), 0)
-            +
+            AS pending_registration_voucher_slots,
             COALESCE((
                 SELECT SUM(GREATEST(ap.gift_voucher_quantity - COALESCE(v.created_count, 0), 0))
                 FROM event2026_addon_purchases ap
@@ -1120,7 +1120,8 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
                       AND ap.created_at >= (NOW() - INTERVAL 72 HOUR)
                     )
                   )
-            ), 0) AS reserved_total";
+            ), 0)
+            AS pending_addon_voucher_slots";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
@@ -1131,7 +1132,25 @@ function event2026_reserved_count(PDO $pdo, int $eventId): int
         ':event_id_addon_voucher_created' => $eventId,
         ':event_id_addon' => $eventId,
     ]);
-    return (int) $stmt->fetchColumn();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $participantSlots = (int) ($row['participant_slots'] ?? 0);
+    $openVoucherSlots = (int) ($row['open_voucher_slots'] ?? 0);
+    $pendingRegistrationVoucherSlots = (int) ($row['pending_registration_voucher_slots'] ?? 0);
+    $pendingAddonVoucherSlots = (int) ($row['pending_addon_voucher_slots'] ?? 0);
+
+    return [
+        'participant_slots' => $participantSlots,
+        'open_voucher_slots' => $openVoucherSlots,
+        'pending_registration_voucher_slots' => $pendingRegistrationVoucherSlots,
+        'pending_addon_voucher_slots' => $pendingAddonVoucherSlots,
+        'voucher_slots' => $openVoucherSlots + $pendingRegistrationVoucherSlots + $pendingAddonVoucherSlots,
+        'total' => $participantSlots + $openVoucherSlots + $pendingRegistrationVoucherSlots + $pendingAddonVoucherSlots,
+    ];
+}
+
+function event2026_reserved_count(PDO $pdo, int $eventId): int
+{
+    return (int) event2026_reserved_slot_breakdown($pdo, $eventId)['total'];
 }
 
 function event2026_hash_nullable(?string $value): ?string

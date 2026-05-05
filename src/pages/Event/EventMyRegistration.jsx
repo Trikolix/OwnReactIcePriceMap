@@ -535,7 +535,7 @@ const RACE_DAY_PHASES = [
     accent: "#0f766e",
     items: [
       "Reise per Auto, Öffis oder Rad an. Mit dem Auto kannst du bei 50.84228, 12.92685 parken.",
-      "Finde dich bei Karl mag's süß etwa 10 Minuten vor deiner zugeteilten Startwelle abfahrbereit mit Rad und Ausrüstung ein.",
+      "Finde dich bei Karl mag's süß etwa 20 Minuten vor deiner Startzeit abfahrbereit mit Rad und Ausrüstung ein.",
       "Wenn du magst, komm etwas eher und starte entspannt mit einem Kaffee.",
     ],
   },
@@ -569,6 +569,18 @@ function formatPaymentStatus(status) {
   if (status === "partially_paid") return "Teilweise bezahlt";
   if (status === "cancelled") return "Storniert";
   return status || "-";
+}
+
+function parseEventDateTime(value) {
+  if (!value) return null;
+  const parsed = new Date(String(value).replace(" ", "T"));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatEventTime(value) {
+  const parsed = parseEventDateTime(value);
+  if (!parsed) return "folgt";
+  return parsed.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
 }
 
 function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
@@ -900,13 +912,13 @@ export default function EventMyRegistration() {
                             $border={getRouteTheme(ownSlot.route_key).border}
                             $color={getRouteTheme(ownSlot.route_key).text}
                           >
-                            {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)}
+                            {formatRouteLabelWithDistance(ownSlot.route_key)}
                           </RoutePill>
                         </RaceDayMetaValue>
                       </RaceDayMetaCard>
                       <RaceDayMetaCard>
-                        <RaceDayMetaLabel>Startwelle</RaceDayMetaLabel>
-                        <RaceDayMetaValue>{ownSlot.wave_code || "folgt"}</RaceDayMetaValue>
+                        <RaceDayMetaLabel>Startzeit</RaceDayMetaLabel>
+                        <RaceDayMetaValue>{formatEventTime(ownSlot.start_time)}</RaceDayMetaValue>
                       </RaceDayMetaCard>
                     </RaceDayMetaGrid>
                   </RaceDayHero>
@@ -920,7 +932,7 @@ export default function EventMyRegistration() {
                   <ActionRow>
                     {routeGpxDownload && (
                       <PrimaryActionLink href={routeGpxDownload.href} download={routeGpxDownload.filename}>
-                        GPX für {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)} herunterladen
+                        GPX für {formatRouteLabelWithDistance(ownSlot.route_key)} herunterladen
                       </PrimaryActionLink>
                     )}
                     <SecondaryActionLink href={EVENT_STAMP_CARD_PUBLIC_URL} target="_blank" rel="noreferrer">
@@ -977,7 +989,7 @@ export default function EventMyRegistration() {
                         $border={getRouteTheme(ownSlot.route_key).border}
                         $color={getRouteTheme(ownSlot.route_key).text}
                       >
-                        {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)}
+                        {formatRouteLabelWithDistance(ownSlot.route_key)}
                       </RoutePill>
                     </Value>
                   </FieldRow>
@@ -1204,17 +1216,13 @@ export default function EventMyRegistration() {
                       $border={getRouteTheme(ownSlot.route_key).border}
                       $color={getRouteTheme(ownSlot.route_key).text}
                     >
-                      {formatRouteLabelWithDistance(ownSlot.route_key, ownSlot.distance_km)}
+                      {formatRouteLabelWithDistance(ownSlot.route_key)}
                     </RoutePill>
                   </Value>
                 </FieldRow>
                 <FieldRow>
-                  <Label>Startgruppe</Label>
-                  <Value>{ownSlot.wave_code || "folgt"}</Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Uhrzeit</Label>
-                  <Value>folgt</Value>
+                  <Label>Startzeit</Label>
+                  <Value>{formatEventTime(ownSlot.start_time)}</Value>
                 </FieldRow>
               </FieldList>
             </Card>

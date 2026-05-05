@@ -7,7 +7,7 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
-import { formatRouteShortWithDistance, getPaceLabel } from "./eventConfig";
+import { formatRouteShortWithDistance, getPaceLabel, PACE_OPTIONS, ROUTE_OPTIONS } from "./eventConfig";
 import {
   EVENT_LOGIN_REQUIRED_MESSAGE,
   getEventAccessErrorMessage,
@@ -243,6 +243,17 @@ const NumberField = styled(MonoField)`
   margin-top: 0.25rem;
 `;
 
+const SelectField = styled.select`
+  width: 100%;
+  border: 1px solid #ead7ab;
+  border-radius: 10px;
+  padding: 0.62rem 0.75rem;
+  font: inherit;
+  color: #2d1d00;
+  background: #fffef9;
+  box-sizing: border-box;
+`;
+
 const CopyButton = styled.button`
   border: 1px solid #ecd49b;
   border-radius: 10px;
@@ -263,6 +274,73 @@ const SectionToggle = styled.button`
   cursor: pointer;
 `;
 
+const SortButton = styled.button`
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(45, 29, 0, 0.42);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4vh 1rem;
+  overflow-y: auto;
+`;
+
+const ModalDialog = styled.div`
+  width: min(100%, 1080px);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #fffdfa;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(45, 29, 0, 0.28);
+  padding: 1.1rem;
+`;
+
+const ModalHeader = styled.div`
+  position: sticky;
+  top: -1.1rem;
+  z-index: 1;
+  background: #fffdfa;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding-bottom: 0.9rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #f3e5bd;
+`;
+
+const CloseButton = styled.button`
+  border: 1px solid #ecd49b;
+  border-radius: 8px;
+  background: #fff5df;
+  color: #7c4f00;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0.45rem 0.7rem;
+`;
+
+const ADMIN_ROUTE_DISTANCE_BY_KEY = {
+  epic_4: 180,
+  classic_3: 140,
+  family_2: 75,
+};
+
 function formatEuro(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
@@ -272,6 +350,31 @@ function formatDateTime(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString("de-DE");
+}
+
+function formatDateTimeLocalInput(value) {
+  if (!value) return "";
+  return String(value).replace(" ", "T").slice(0, 16);
+}
+
+function routeKeyForDistance(distanceKm) {
+  const normalizedDistance = Number(distanceKm);
+  const match = Object.entries(ADMIN_ROUTE_DISTANCE_BY_KEY).find(([, routeDistance]) => routeDistance === normalizedDistance);
+  if (match) return match[0];
+  if (normalizedDistance >= 170) return "epic_4";
+  if (normalizedDistance <= 90) return "family_2";
+  return match?.key || "classic_3";
+}
+
+function emptyWaveForm() {
+  return {
+    waveId: null,
+    waveCode: "",
+    routeKey: "classic_3",
+    paceGroup: "24_27",
+    startTime: "",
+    capacity: 20,
+  };
 }
 
 function statusTone(status) {
@@ -306,6 +409,45 @@ function formatReminderSummary(reminder) {
   return `${formatDateTime(reminder.last_sent_at)} • ${lastKind}${count > 1 ? ` • ${count}x` : ""}`;
 }
 
+function registrationSortValue(registration, key) {
+  const slot = registration.slots?.[0] || {};
+  switch (key) {
+    case "id":
+      return registration.id;
+    case "account":
+      return registration.registered_by?.username || "";
+    case "participant":
+      return slot.full_name || "";
+    case "reference":
+      return registration.payment?.reference_code || "";
+    case "status":
+      return registration.payment?.status || "";
+    case "expected":
+      return Number(registration.payment?.total_expected_amount ?? registration.payment?.expected_amount ?? 0);
+    case "outstanding":
+      return Number(registration.payment?.total_outstanding_amount ?? registration.payment?.outstanding_amount ?? 0);
+    case "route":
+      return `${slot.distance_km || 0}-${slot.route_key || ""}`;
+    case "pace":
+      return slot.pace_group || "";
+    case "wave":
+      return slot.wave_code || "";
+    default:
+      return "";
+  }
+}
+
+function defaultRegistrationSortValue(registration) {
+  const slot = registration.slots?.[0] || {};
+  return [
+    Number(slot.distance_km || 0),
+    slot.route_key || "",
+    slot.pace_group || "",
+    slot.full_name || "",
+    registration.id || 0,
+  ].join("|");
+}
+
 export default function EventAdminOverview() {
   const apiUrl = getApiBaseUrl();
   const { authToken, authReady } = useUser();
@@ -320,6 +462,9 @@ export default function EventAdminOverview() {
   const [busyAction, setBusyAction] = useState("");
   const [notice, setNotice] = useState("");
   const [waveCapacity, setWaveCapacity] = useState(20);
+  const [waveForm, setWaveForm] = useState(() => emptyWaveForm());
+  const [registrationSort, setRegistrationSort] = useState({ key: "route_pace", direction: "asc" });
+  const [registrationDetailOpen, setRegistrationDetailOpen] = useState(false);
 
   const load = async () => {
     if (!apiUrl || !authReady) return;
@@ -539,6 +684,137 @@ export default function EventAdminOverview() {
     }
   };
 
+  const editWave = (wave) => {
+    setWaveForm({
+      waveId: wave.id,
+      waveCode: wave.wave_code || "",
+      routeKey: routeKeyForDistance(wave.distance_km),
+      paceGroup: wave.pace_group || "24_27",
+      startTime: formatDateTimeLocalInput(wave.start_time),
+      capacity: wave.capacity || 20,
+    });
+  };
+
+  const saveWave = async () => {
+    if (!apiUrl) return;
+    const route = ROUTE_OPTIONS.find((item) => item.key === waveForm.routeKey) || ROUTE_OPTIONS[1];
+    const action = waveForm.waveId ? "update" : "create";
+    setBusyAction("save-wave");
+    try {
+      const res = await fetch(`${apiUrl}/event2026/admin_waves.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          action,
+          wave_id: waveForm.waveId,
+          wave_code: waveForm.waveCode,
+          distance_km: ADMIN_ROUTE_DISTANCE_BY_KEY[route.key] || route.distanceKm,
+          pace_group: route.paceEnabled ? waveForm.paceGroup : "family",
+          start_time: waveForm.startTime,
+          capacity: Number(waveForm.capacity) || 20,
+        }),
+      });
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Startwelle konnte nicht gespeichert werden."));
+      }
+      setNotice(json.message || "Startwelle wurde gespeichert.");
+      setError("");
+      setWaveForm(emptyWaveForm());
+      await load();
+    } catch (err) {
+      setError(err.message || "Startwelle konnte nicht gespeichert werden.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const deleteWave = async (wave) => {
+    if (!apiUrl || !wave?.id) return;
+    setBusyAction(`delete-wave-${wave.id}`);
+    try {
+      const res = await fetch(`${apiUrl}/event2026/admin_waves.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ action: "delete", wave_id: wave.id }),
+      });
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Startwelle konnte nicht gelöscht werden."));
+      }
+      setNotice(json.message || "Startwelle wurde gelöscht.");
+      setError("");
+      if (waveForm.waveId === wave.id) setWaveForm(emptyWaveForm());
+      await load();
+    } catch (err) {
+      setError(err.message || "Startwelle konnte nicht gelöscht werden.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const assignSlotToWave = async (slotId, waveId) => {
+    if (!apiUrl || !slotId) return;
+    setBusyAction(`assign-wave-${slotId}`);
+    try {
+      const action = waveId ? "assign" : "unassign";
+      const res = await fetch(`${apiUrl}/event2026/admin_waves.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ action, slot_id: slotId, wave_id: waveId ? Number(waveId) : null }),
+      });
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Startwelle konnte nicht zugeordnet werden."));
+      }
+      setNotice(json.message || "Startwelle wurde zugeordnet.");
+      setError("");
+      await load();
+    } catch (err) {
+      setError(err.message || "Startwelle konnte nicht zugeordnet werden.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const requestRegistrationSort = (key) => {
+    setRegistrationSort((current) => ({
+      key,
+      direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const renderRegistrationSortHeader = (key, label) => (
+    <SortButton type="button" onClick={() => requestRegistrationSort(key)}>
+      <span>{label}</span>
+      <span>{registrationSort.key === key ? (registrationSort.direction === "asc" ? "▲" : "▼") : "↕"}</span>
+    </SortButton>
+  );
+
+  const sortedRegistrations = useMemo(() => {
+    const directionFactor = registrationSort.direction === "asc" ? 1 : -1;
+    return [...(data?.registrations || [])].sort((a, b) => {
+      const aValue = registrationSortValue(a, registrationSort.key);
+      const bValue = registrationSortValue(b, registrationSort.key);
+      if (registrationSort.key === "route_pace") {
+        return defaultRegistrationSortValue(a).localeCompare(defaultRegistrationSortValue(b), "de-DE", { numeric: true, sensitivity: "base" }) * directionFactor;
+      }
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return (aValue - bValue) * directionFactor;
+      }
+      return String(aValue).localeCompare(String(bValue), "de-DE", { numeric: true, sensitivity: "base" }) * directionFactor;
+    });
+  }, [data?.registrations, registrationSort]);
+
   const selectedRegistration = useMemo(
     () => data?.registrations?.find((registration) => registration.id === selectedRegistrationId) || null,
     [data, selectedRegistrationId]
@@ -550,24 +826,12 @@ export default function EventAdminOverview() {
   );
 
   const waveSummary = useMemo(() => {
-    const map = new Map();
-    (data?.registrations || []).forEach((registration) => {
-      (registration.slots || []).forEach((slot) => {
-        const key = slot.wave_code || "Noch nicht zugeteilt";
-        const current = map.get(key) || {
-          code: key,
-          route: slot.route_key,
-          routeLabel: slot.route_name || slot.route_key,
-          pace: slot.pace_group,
-          count: 0,
-        };
-        current.count += 1;
-        map.set(key, current);
-      });
-    });
-
-    return Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code, "de-DE"));
-  }, [data?.registrations]);
+    return (data?.waves || []).map((wave) => ({
+      ...wave,
+      routeKey: routeKeyForDistance(wave.distance_km),
+      count: wave.assigned_count || 0,
+    }));
+  }, [data?.waves]);
 
   const selectedPrimarySlot = useMemo(
     () => selectedRegistration?.slots?.[0] || null,
@@ -723,7 +987,7 @@ export default function EventAdminOverview() {
                 <div>
                   <h2 style={{ margin: 0 }}>Startwellen</h2>
                   <SectionText>
-                    Berechnet Startwellen aus bezahlten/freigeschalteten Teilnehmern nach Strecke und Tempo.
+                    Startwellen manuell anlegen, Startzeit setzen und Starter per Dropdown zuordnen. Die automatische Neuberechnung ersetzt die bestehenden Wellen.
                   </SectionText>
                 </div>
                 <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -743,6 +1007,82 @@ export default function EventAdminOverview() {
                 </div>
               </SectionHeader>
 
+              <DetailSection style={{ marginBottom: "1rem" }}>
+                <DetailTitle>{waveForm.waveId ? `Startwelle #${waveForm.waveId} bearbeiten` : "Startwelle anlegen"}</DetailTitle>
+                <Grid>
+                  <div>
+                    <InfoLabel>Wellencode</InfoLabel>
+                    <MonoField
+                      value={waveForm.waveCode}
+                      onChange={(event) => setWaveForm((current) => ({ ...current, waveCode: event.target.value }))}
+                      placeholder="z. B. 145-A-0830"
+                    />
+                  </div>
+                  <div>
+                    <InfoLabel>Route</InfoLabel>
+                    <SelectField
+                      value={waveForm.routeKey}
+                      onChange={(event) => {
+                        const nextRoute = ROUTE_OPTIONS.find((route) => route.key === event.target.value);
+                        setWaveForm((current) => ({
+                          ...current,
+                          routeKey: event.target.value,
+                          paceGroup: nextRoute?.paceEnabled ? current.paceGroup : "family",
+                        }));
+                      }}
+                    >
+                      {ROUTE_OPTIONS.map((route) => (
+                        <option key={route.key} value={route.key}>{route.label} ({ADMIN_ROUTE_DISTANCE_BY_KEY[route.key] || route.distanceKm} km)</option>
+                      ))}
+                    </SelectField>
+                  </div>
+                  <div>
+                    <InfoLabel>Tempo</InfoLabel>
+                    <SelectField
+                      value={ROUTE_OPTIONS.find((route) => route.key === waveForm.routeKey)?.paceEnabled ? waveForm.paceGroup : "family"}
+                      disabled={!ROUTE_OPTIONS.find((route) => route.key === waveForm.routeKey)?.paceEnabled}
+                      onChange={(event) => setWaveForm((current) => ({ ...current, paceGroup: event.target.value }))}
+                    >
+                      {ROUTE_OPTIONS.find((route) => route.key === waveForm.routeKey)?.paceEnabled ? (
+                        PACE_OPTIONS.map((pace) => <option key={pace.value} value={pace.value}>{pace.label}</option>)
+                      ) : (
+                        <option value="family">Freies Startfenster</option>
+                      )}
+                    </SelectField>
+                  </div>
+                  <div>
+                    <InfoLabel>Startzeit</InfoLabel>
+                    <MonoField
+                      type="datetime-local"
+                      value={waveForm.startTime}
+                      onChange={(event) => setWaveForm((current) => ({ ...current, startTime: event.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <InfoLabel>Kapazität</InfoLabel>
+                    <NumberField
+                      type="number"
+                      min="1"
+                      max="200"
+                      value={waveForm.capacity}
+                      onChange={(event) => setWaveForm((current) => ({ ...current, capacity: event.target.value }))}
+                    />
+                  </div>
+                </Grid>
+                <ActionRow style={{ marginTop: "0.9rem", marginBottom: 0 }}>
+                  <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
+                    <ActionButton type="button" disabled={busyAction !== ""} onClick={saveWave}>
+                      {waveForm.waveId ? "Startwelle speichern" : "Startwelle anlegen"}
+                    </ActionButton>
+                    {waveForm.waveId && (
+                      <SecondaryButton type="button" disabled={busyAction !== ""} onClick={() => setWaveForm(emptyWaveForm())}>
+                        Neue Startwelle
+                      </SecondaryButton>
+                    )}
+                  </div>
+                </ActionRow>
+              </DetailSection>
+
               <TableWrap>
                 <Table>
                   <thead>
@@ -750,18 +1090,34 @@ export default function EventAdminOverview() {
                       <th>Welle</th>
                       <th>Route</th>
                       <th>Tempo</th>
+                      <th>Startzeit</th>
                       <th>Teilnehmer</th>
+                      <th>Kapazität</th>
+                      <th>Aktion</th>
                     </tr>
                   </thead>
                   <tbody>
                     {waveSummary.map((wave) => (
-                      <tr key={wave.code}>
-                        <td>{wave.code}</td>
-                        <td>{wave.route ? formatRouteShortWithDistance(wave.route) : "-"}</td>
-                        <td>{getPaceLabel(wave.pace)}</td>
+                      <tr key={wave.id}>
+                        <td>{wave.wave_code}</td>
+                        <td>{formatRouteShortWithDistance(wave.routeKey, wave.distance_km)}</td>
+                        <td>{getPaceLabel(wave.pace_group)}</td>
+                        <td>{formatDateTime(wave.start_time)}</td>
                         <td>{wave.count}</td>
+                        <td>{wave.capacity}</td>
+                        <td>
+                          <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                            <SecondaryButton type="button" disabled={busyAction !== ""} onClick={() => editWave(wave)}>Bearbeiten</SecondaryButton>
+                            <SecondaryButton type="button" disabled={busyAction !== ""} onClick={() => deleteWave(wave)}>Löschen</SecondaryButton>
+                          </div>
+                        </td>
                       </tr>
                     ))}
+                    {waveSummary.length === 0 && (
+                      <tr>
+                        <td colSpan={7}>Noch keine Startwellen angelegt.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </Table>
               </TableWrap>
@@ -810,25 +1166,29 @@ export default function EventAdminOverview() {
                 <Table>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Account</th>
-                      <th>Teilnehmer</th>
-                      <th>Referenz</th>
-                      <th>Status</th>
-                      <th>Soll</th>
-                      <th>Offen</th>
-                      <th>Route</th>
-                      <th>Tempo</th>
+                      <th>{renderRegistrationSortHeader("id", "ID")}</th>
+                      <th>{renderRegistrationSortHeader("account", "Account")}</th>
+                      <th>{renderRegistrationSortHeader("participant", "Teilnehmer")}</th>
+                      <th>{renderRegistrationSortHeader("reference", "Referenz")}</th>
+                      <th>{renderRegistrationSortHeader("status", "Status")}</th>
+                      <th>{renderRegistrationSortHeader("expected", "Soll")}</th>
+                      <th>{renderRegistrationSortHeader("outstanding", "Offen")}</th>
+                      <th>{renderRegistrationSortHeader("route", "Route")}</th>
+                      <th>{renderRegistrationSortHeader("pace", "Tempo")}</th>
+                      <th>{renderRegistrationSortHeader("wave", "Welle")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.registrations.map((registration) => {
+                    {sortedRegistrations.map((registration) => {
                       const primarySlot = registration.slots?.[0];
                       return (
                         <ClickableRow
                           key={registration.id}
                           $selected={registration.id === selectedRegistrationId}
-                          onClick={() => setSelectedRegistrationId(registration.id)}
+                          onClick={() => {
+                            setSelectedRegistrationId(registration.id);
+                            setRegistrationDetailOpen(true);
+                          }}
                         >
                           <td>#{registration.id}</td>
                           <td>{registration.registered_by.username || "-"}</td>
@@ -839,6 +1199,7 @@ export default function EventAdminOverview() {
                           <td>{formatEuro(registration.payment.total_outstanding_amount ?? registration.payment.outstanding_amount)}</td>
                           <td>{primarySlot ? formatRouteShortWithDistance(primarySlot.route_key, primarySlot.distance_km) : "-"}</td>
                           <td>{primarySlot ? getPaceLabel(primarySlot.pace_group) : "-"}</td>
+                          <td>{primarySlot?.wave_code || "-"}</td>
                         </ClickableRow>
                       );
                     })}
@@ -847,15 +1208,20 @@ export default function EventAdminOverview() {
               </TableWrap>
             </Card>
 
-            {selectedRegistration && (
-              <Card>
-                <ActionRow>
+            {selectedRegistration && registrationDetailOpen && (
+              <ModalOverlay role="presentation" onClick={() => setRegistrationDetailOpen(false)}>
+                <ModalDialog role="dialog" aria-modal="true" aria-labelledby="registration-detail-title" onClick={(event) => event.stopPropagation()}>
+                <ModalHeader>
                   <div>
-                    <h2 style={{ margin: 0 }}>Details Registrierung #{selectedRegistration.id}</h2>
+                    <h2 id="registration-detail-title" style={{ margin: 0 }}>Details Registrierung #{selectedRegistration.id}</h2>
                     <SectionText>
                       Account: <strong>{selectedRegistration.registered_by.username || "-"}</strong> · Referenz: <strong>{selectedRegistration.payment.reference_code}</strong>
                     </SectionText>
                   </div>
+                  <CloseButton type="button" onClick={() => setRegistrationDetailOpen(false)}>Schließen</CloseButton>
+                </ModalHeader>
+                <ActionRow>
+                  <div />
                   <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
                     {selectedRegistration.payment.status !== "paid" && (
                       <>
@@ -950,6 +1316,25 @@ export default function EventAdminOverview() {
                       <InfoRow><InfoLabel>Bekleidung</InfoLabel><InfoValue>{selectedPrimarySlot ? `${selectedPrimarySlot.clothing_interest_label}${selectedPrimarySlot.jersey_size ? `, Trikot ${selectedPrimarySlot.jersey_size}` : ""}${selectedPrimarySlot.bib_size ? `, Hose ${selectedPrimarySlot.bib_size}` : ""}` : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Live-Karte</InfoLabel><InfoValue>{selectedPrimarySlot ? (selectedPrimarySlot.public_name_consent ? "Name sichtbar" : "Name verborgen") : "-"}</InfoValue></InfoRow>
                       <InfoRow><InfoLabel>Starter-Status</InfoLabel><InfoValue>{selectedPrimarySlot?.license_status || "-"}</InfoValue></InfoRow>
+                      <InfoRow>
+                        <InfoLabel>Startwelle</InfoLabel>
+                        <InfoValue style={{ minWidth: 260 }}>
+                          {selectedPrimarySlot ? (
+                            <SelectField
+                              value={selectedPrimarySlot.wave_id || ""}
+                              disabled={busyAction !== ""}
+                              onChange={(event) => assignSlotToWave(selectedPrimarySlot.id, event.target.value)}
+                            >
+                              <option value="">Noch nicht zugeteilt</option>
+                              {(data.waves || []).map((wave) => (
+                                <option key={wave.id} value={wave.id}>
+                                  {wave.wave_code} · {formatDateTime(wave.start_time)} · {wave.assigned_count}/{wave.capacity}
+                                </option>
+                              ))}
+                            </SelectField>
+                          ) : "-"}
+                        </InfoValue>
+                      </InfoRow>
                       <InfoRow><InfoLabel>Offene Geschenk-Codes</InfoLabel><InfoValue>{selectedRegistration.open_voucher_count || 0}</InfoValue></InfoRow>
                     </InfoList>
                   </DetailSection>
@@ -982,7 +1367,8 @@ export default function EventAdminOverview() {
                     </DetailSection>
                   )}
                 </DetailGrid>
-              </Card>
+                </ModalDialog>
+              </ModalOverlay>
             )}
 
             <Card>
