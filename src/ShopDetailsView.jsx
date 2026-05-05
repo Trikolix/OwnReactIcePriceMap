@@ -34,19 +34,22 @@ const getShopCoordinates = (shop) => {
 
 const buildMapsUrl = (shop) => {
   const coordinates = getShopCoordinates(shop);
-  if (coordinates) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${coordinates.latitude},${coordinates.longitude}`)}`;
+  const destination = coordinates
+    ? `${coordinates.latitude},${coordinates.longitude}`
+    : shop?.adresse;
+
+  if (!destination) {
+    return null;
   }
 
-  return shop?.adresse
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.adresse)}`
-    : null;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 };
 
 const buildKomootUrl = (shop) => {
   const coordinates = getShopCoordinates(shop);
   if (coordinates) {
-    return `https://www.komoot.com/plan/@${coordinates.latitude},${coordinates.longitude},14z`;
+    const { latitude, longitude } = coordinates;
+    return `https://www.komoot.com/de-de/plan/@${latitude},${longitude},13.500z?p[0]&p[1][loc]=${latitude},${longitude}&sport=racebike`;
   }
 
   return shop?.adresse
@@ -675,6 +678,7 @@ const AnimatedContainer = styled(animated.div)`
 const Container = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'isfullheight',
 })`
+  box-sizing: border-box;
   overscroll-behavior: none;
   position: fixed;
   bottom: 0;
@@ -715,6 +719,7 @@ const DragHandle = styled.div`
 `;
 
 const Header = styled.div`
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
@@ -808,6 +813,7 @@ const CloseButton = styled.button`
 `;
 
 const Tabs = styled.div`
+  box-sizing: border-box;
   display: flex;
   gap: 0.35rem;
   padding: 0.4rem 0.6rem;
@@ -837,9 +843,11 @@ const Tab = styled.button`
 `;
 
 const Content = styled.div`
+  box-sizing: border-box;
   flex: 1;
   padding: 0.85rem;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 
   &::-webkit-scrollbar {
@@ -887,6 +895,8 @@ const TabStack = styled.div`
 `;
 
 const SectionCard = styled.section`
+  box-sizing: border-box;
+  min-width: 0;
   background: rgba(255, 252, 243, 0.94);
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 18px;
@@ -957,26 +967,20 @@ const InfoValue = styled.span`
 `;
 
 const AddressContent = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.65rem;
-
-  @media (max-width: 520px) {
-    flex-direction: column;
-    gap: 0.45rem;
-  }
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
 `;
 
 const AddressText = styled.span`
   min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const AddressActionRow = styled.div`
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  flex-shrink: 0;
+  gap: 0.3rem;
 `;
 
 const AddressLink = styled.a`
@@ -984,13 +988,13 @@ const AddressLink = styled.a`
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  min-height: 2rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: 10px;
+  min-height: 1.8rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 9px;
   border: 1px solid rgba(138, 87, 0, 0.24);
   background: rgba(255, 255, 255, 0.76);
   color: #6f4300;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1;
   text-decoration: none;
@@ -1009,8 +1013,9 @@ const InlineContent = styled.div`
 `;
 
 const TableScroll = styled.div`
+  box-sizing: border-box;
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   border-radius: 14px;
   border: 1px solid rgba(47, 33, 0, 0.08);
   background: rgba(255, 255, 255, 0.8);
@@ -1024,14 +1029,16 @@ const Table = styled.table`
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 520px;
+  min-width: 0;
+  table-layout: fixed;
 
   th,
   td {
     text-align: left;
     vertical-align: top;
-    padding: 0.65rem 0.75rem;
+    padding: 0.58rem 0.6rem;
     border-bottom: 1px solid rgba(47, 33, 0, 0.07);
+    overflow-wrap: anywhere;
   }
 
   tr:last-child th,
@@ -1040,7 +1047,7 @@ const Table = styled.table`
   }
 
   th {
-    width: 120px;
+    width: 112px;
     color: #5f3f00;
     font-weight: 700;
     white-space: nowrap;

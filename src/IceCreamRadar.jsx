@@ -244,6 +244,8 @@ const DISPLAY_OPTIONS = [
     value: 'price',
     label: 'Preis',
     invertScale: false,
+    colorScaleMin: 1,
+    colorScaleMax: 4,
     getValue: (shop) => {
       const kugel = toNumberOrNull(shop.kugel_preis_eur ?? shop.kugel_preis);
       if (kugel !== null) {
@@ -258,6 +260,8 @@ const DISPLAY_OPTIONS = [
     value: 'kugelPrice',
     label: 'Kugelpreis',
     invertScale: false,
+    colorScaleMin: 1,
+    colorScaleMax: 4,
     getValue: (shop) => toNumberOrNull(shop.kugel_preis_eur ?? shop.kugel_preis),
     formatValue: (value) => `${value.toFixed(2)} €`,
   },
@@ -265,6 +269,8 @@ const DISPLAY_OPTIONS = [
     value: 'softeisPrice',
     label: 'Softeispreis',
     invertScale: false,
+    colorScaleMin: 1,
+    colorScaleMax: 4,
     getValue: (shop) => toNumberOrNull(shop.softeis_preis_eur ?? shop.softeis_preis),
     formatValue: (value) => `${value.toFixed(2)} €`,
   },
@@ -323,7 +329,33 @@ const createDefaultFilters = () => ({
     softeis: false,
     eisbecher: false,
   },
+  advanced: {
+    type: 'kugel',
+    rating: { min: 1, max: 5 },
+    price: { min: '', max: '' },
+  },
 });
+
+const ADVANCED_FILTER_TYPES = [
+  {
+    key: 'kugel',
+    label: 'Kugel',
+    getRating: (shop) => toNumberOrNull(shop.finaler_kugel_score ?? shop.finaler_score),
+    getPrice: (shop) => toNumberOrNull(shop.kugel_preis_eur ?? shop.kugel_preis),
+  },
+  {
+    key: 'softeis',
+    label: 'Softeis',
+    getRating: (shop) => toNumberOrNull(shop.finaler_softeis_score),
+    getPrice: (shop) => toNumberOrNull(shop.softeis_preis_eur ?? shop.softeis_preis),
+  },
+  {
+    key: 'eisbecher',
+    label: 'Eisbecher',
+    getRating: (shop) => toNumberOrNull(shop.finaler_eisbecher_score),
+    getPrice: (shop) => toNumberOrNull(shop.eisbecher_preis_eur ?? shop.eisbecher_preis),
+  },
+];
 
 const hasTypeData = (shop, type) => {
   switch (type) {
@@ -636,6 +668,7 @@ const IceCreamRadar = () => {
   const [displayMode, setDisplayMode] = useState('price');
   const [filters, setFilters] = useState(() => createDefaultFilters());
   const mapRef = useRef(null);
+  const shopListRequestRef = useRef(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
@@ -652,6 +685,7 @@ const IceCreamRadar = () => {
   const [searchLocation, setSearchLocation] = useState(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(true);
 
@@ -824,6 +858,7 @@ const IceCreamRadar = () => {
   }, [searchQuery, iceCreamShops]);
 
   const loadIceCreamShops = useCallback(async () => {
+    const requestId = ++shopListRequestRef.current;
     const cacheKey = getShopCacheKey(openFilterQueryString);
     const fallbackCacheKey = getShopCacheKey('');
     const parseCachedShops = (key) => {
@@ -840,12 +875,36 @@ const IceCreamRadar = () => {
         return null;
       }
     };
+    const safeWriteShopCache = (key, shops) => {
+      const serializedShops = JSON.stringify(shops);
+      const writeCache = () => localStorage.setItem(key, serializedShops);
+
+      try {
+        writeCache();
+        return;
+      } catch (storageError) {
+        if (storageError?.name !== 'QuotaExceededError') {
+          console.warn('Eisdielen-Cache konnte nicht gespeichert werden:', storageError);
+          return;
+        }
+      }
+
+      try {
+        Object.keys(localStorage)
+          .filter((storageKey) => storageKey.startsWith('iceCreamShopsCache::') && storageKey !== key)
+          .forEach((storageKey) => localStorage.removeItem(storageKey));
+        writeCache();
+      } catch (storageError) {
+        console.warn('Eisdielen-Cache ist zu groÃŸ und wurde nicht gespeichert:', storageError);
+      }
+    };
+
+    const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
+    if (cachedShops) {
+      setIceCreamShops(cachedShops);
+    }
 
     if (!navigator.onLine) {
-      const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
-      if (cachedShops) {
-        setIceCreamShops(cachedShops);
-      }
       return;
     }
 
@@ -853,19 +912,25 @@ const IceCreamRadar = () => {
       const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : '';
       const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
       const response = await fetch(query);
+      if (!response.ok) {
+        throw new Error(`Eisdielen-Request fehlgeschlagen: ${response.status}`);
+      }
       const data = await response.json();
+      if (requestId !== shopListRequestRef.current) {
+        return;
+      }
+      if (!Array.isArray(data)) {
+        throw new Error('Eisdielen-Response ist keine Liste.');
+      }
       setIceCreamShops(data);
 
-      if (Array.isArray(data)) {
         // Immer den Cache für den aktuellen Query-Stand komplett ersetzen.
-        localStorage.setItem(cacheKey, JSON.stringify(data));
-      }
+      safeWriteShopCache(cacheKey, data);
     } catch (error) {
-      console.error('Fehler beim Abrufen der Eisdielen:', error);
-      const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
-      if (cachedShops) {
-        setIceCreamShops(cachedShops);
+      if (requestId !== shopListRequestRef.current) {
+        return;
       }
+      console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
   }, [apiUrl, userId, openFilterQueryString, getShopCacheKey]);
 
@@ -1284,6 +1349,45 @@ const IceCreamRadar = () => {
     }));
   };
 
+  const handleAdvancedTypeChange = (value) => {
+    setFilters((prev) => ({
+      ...prev,
+      advanced: {
+        type: value,
+        rating: { min: 1, max: 5 },
+        price: { min: '', max: '' },
+      },
+    }));
+  };
+
+  const handleAdvancedRangeChange = (group, bound, value) => {
+    const numericValue = Number(value);
+    setFilters((prev) => {
+      const currentRange = group === 'rating'
+        ? (prev.advanced?.rating ?? { min: 1, max: 5 })
+        : {
+            min: prev.advanced?.price?.min === '' ? advancedPriceRange.min : prev.advanced?.price?.min,
+            max: prev.advanced?.price?.max === '' ? advancedPriceRange.max : prev.advanced?.price?.max,
+          };
+      const nextRange = { ...currentRange, [bound]: numericValue };
+
+      if (bound === 'min' && numericValue > Number(nextRange.max)) {
+        nextRange.max = numericValue;
+      }
+      if (bound === 'max' && numericValue < Number(nextRange.min)) {
+        nextRange.min = numericValue;
+      }
+
+      return {
+        ...prev,
+        advanced: {
+          ...(prev.advanced ?? createDefaultFilters().advanced),
+          [group]: nextRange,
+        },
+      };
+    });
+  };
+
   const handleResetFilters = () => {
     setFilters(createDefaultFilters());
     handleOpenFilterModeChange('all');
@@ -1316,6 +1420,48 @@ const IceCreamRadar = () => {
   const showPermanentClosedFilterActive = !!filters.showPermanentClosed;
   const typeFilters = filters.types ?? { kugel: false, softeis: false, eisbecher: false };
   const hasTypeFilter = Object.values(typeFilters).some(Boolean);
+  const advancedFilters = filters.advanced ?? createDefaultFilters().advanced;
+  const activeAdvancedType = ADVANCED_FILTER_TYPES.find((type) => type.key === advancedFilters.type) ?? ADVANCED_FILTER_TYPES[0];
+  const supportsAdvancedPriceFilter = activeAdvancedType.key !== 'eisbecher';
+  const isAdvancedRatingActive = Number(advancedFilters.rating?.min) > 1 || Number(advancedFilters.rating?.max) < 5;
+  const isAdvancedPriceActive = supportsAdvancedPriceFilter && (
+    advancedFilters.price?.min !== '' || advancedFilters.price?.max !== ''
+  );
+  const hasAdvancedFilter = isAdvancedRatingActive || isAdvancedPriceActive;
+
+  const advancedPriceBounds = useMemo(() => {
+    const values = iceCreamShops
+      .map((shop) => activeAdvancedType.getPrice(shop))
+      .filter((value) => value !== null && !Number.isNaN(value));
+
+    if (!values.length) {
+      return { min: 0, max: 10 };
+    }
+
+    return {
+      min: Math.floor(Math.min(...values) * 10) / 10,
+      max: Math.ceil(Math.max(...values) * 10) / 10,
+    };
+  }, [iceCreamShops, activeAdvancedType]);
+
+  const advancedPriceRange = {
+    min: advancedFilters.price?.min === '' ? advancedPriceBounds.min : Number(advancedFilters.price.min),
+    max: advancedFilters.price?.max === '' ? advancedPriceBounds.max : Number(advancedFilters.price.max),
+  };
+  const getRangePercent = (value, min, max) => {
+    if (max <= min) {
+      return 0;
+    }
+    return ((Number(value) - min) / (max - min)) * 100;
+  };
+  const ratingRangeStyle = {
+    '--range-min': `${getRangePercent(advancedFilters.rating.min, 1, 5)}%`,
+    '--range-max': `${getRangePercent(advancedFilters.rating.max, 1, 5)}%`,
+  };
+  const priceRangeStyle = {
+    '--range-min': `${getRangePercent(advancedPriceRange.min, advancedPriceBounds.min, advancedPriceBounds.max)}%`,
+    '--range-max': `${getRangePercent(advancedPriceRange.max, advancedPriceBounds.min, advancedPriceBounds.max)}%`,
+  };
 
   const shopsWithDisplayValue = useMemo(() => {
     if (!activeDisplayConfig?.getValue) {
@@ -1339,6 +1485,26 @@ const IceCreamRadar = () => {
           ([typeKey, isActive]) => isActive && hasTypeData(shop, typeKey)
         );
         if (!matchesType) {
+          return acc;
+        }
+      }
+      if (hasAdvancedFilter) {
+        const ratingValue = activeAdvancedType.getRating(shop);
+        const priceValue = activeAdvancedType.getPrice(shop);
+
+        if (isAdvancedRatingActive && (
+          ratingValue === null ||
+          ratingValue < Number(advancedFilters.rating.min) ||
+          ratingValue > Number(advancedFilters.rating.max)
+        )) {
+          return acc;
+        }
+
+        if (isAdvancedPriceActive && (
+          priceValue === null ||
+          priceValue < advancedPriceRange.min ||
+          priceValue > advancedPriceRange.max
+        )) {
           return acc;
         }
       }
@@ -1379,11 +1545,19 @@ const IceCreamRadar = () => {
     showPermanentClosedFilterActive,
     hasTypeFilter,
     typeFilters,
+    hasAdvancedFilter,
+    isAdvancedRatingActive,
+    isAdvancedPriceActive,
+    supportsAdvancedPriceFilter,
+    activeAdvancedType,
+    advancedFilters,
+    advancedPriceRange.min,
+    advancedPriceRange.max,
   ]);
 
   const { minValue, maxValue } = useMemo(() => {
-    const numericValues = shopsWithDisplayValue
-      .map(({ value }) => value)
+    const numericValues = iceCreamShops
+      .map((shop) => activeDisplayConfig.getValue(shop))
       .filter((value) => value !== null && value !== undefined && !Number.isNaN(value));
     if (!numericValues.length) {
       return { minValue: null, maxValue: null };
@@ -1392,7 +1566,7 @@ const IceCreamRadar = () => {
       minValue: Math.min(...numericValues),
       maxValue: Math.max(...numericValues),
     };
-  }, [shopsWithDisplayValue]);
+  }, [iceCreamShops, activeDisplayConfig]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -1402,6 +1576,7 @@ const IceCreamRadar = () => {
     if (showPermanentClosedFilterActive) count += 1;
     const typeCount = Object.values(typeFilters).filter(Boolean).length;
     count += typeCount;
+    if (hasAdvancedFilter) count += 1;
     if (openFilterMode === 'now') count += 1;
     if (openFilterMode === 'custom' && openFilterDateTime) count += 1;
     return count;
@@ -1411,6 +1586,7 @@ const IceCreamRadar = () => {
     notVisitedFilterActive,
     showPermanentClosedFilterActive,
     typeFilters,
+    hasAdvancedFilter,
     openFilterMode,
     openFilterDateTime,
   ]);
@@ -1460,7 +1636,7 @@ const IceCreamRadar = () => {
     if (userId !== undefined) {
       fetchIceCreamShops();
     }
-  }, [userId, openFilterQueryString]);
+  }, [userId, openFilterQueryString, fetchIceCreamShops]);
 
   useEffect(() => {
     if (!isLoggedIn || !canAccessExternalDiscovery) {
@@ -1746,6 +1922,8 @@ const IceCreamRadar = () => {
                     formatValue={activeDisplayConfig.formatValue}
                     minValue={minValue}
                     maxValue={maxValue}
+                    colorScaleMin={activeDisplayConfig.colorScaleMin}
+                    colorScaleMax={activeDisplayConfig.colorScaleMax}
                     invertScale={activeDisplayConfig.invertScale}
                     fetchShopDetails={fetchShopDetails}
                     fetchAndCenterShop={fetchAndCenterShop}
@@ -1769,6 +1947,8 @@ const IceCreamRadar = () => {
                   formatValue={activeDisplayConfig.formatValue}
                   minValue={minValue}
                   maxValue={maxValue}
+                  colorScaleMin={activeDisplayConfig.colorScaleMin}
+                  colorScaleMax={activeDisplayConfig.colorScaleMax}
                   invertScale={activeDisplayConfig.invertScale}
                   fetchShopDetails={fetchShopDetails}
                   fetchAndCenterShop={fetchAndCenterShop}
@@ -1935,6 +2115,96 @@ const IceCreamRadar = () => {
                 />
                 <span>Eisbecher</span>
               </FilterToggle>
+            </FilterSection>
+            <FilterSection>
+              <AdvancedFilterToggle
+                type="button"
+                onClick={() => setIsAdvancedFilterOpen((prev) => !prev)}
+                aria-expanded={isAdvancedFilterOpen}
+              >
+                <span>Erweiterte Filtereinstellungen</span>
+                <span>{isAdvancedFilterOpen ? '−' : '+'}</span>
+              </AdvancedFilterToggle>
+              {isAdvancedFilterOpen && (
+                <AdvancedFilterPanel>
+                  <FilterField>
+                    <FilterSectionTitle as="label" htmlFor="advanced-filter-type">Sorte</FilterSectionTitle>
+                    <AdvancedSelect
+                      id="advanced-filter-type"
+                      value={advancedFilters.type}
+                      onChange={(event) => handleAdvancedTypeChange(event.target.value)}
+                    >
+                      {ADVANCED_FILTER_TYPES.map((type) => (
+                        <option key={type.key} value={type.key}>{type.label}</option>
+                      ))}
+                    </AdvancedSelect>
+                  </FilterField>
+
+                  <RangeControl>
+                    <RangeControlHeader>
+                      <span>Rating</span>
+                      <strong>{Number(advancedFilters.rating.min).toFixed(1)} bis {Number(advancedFilters.rating.max).toFixed(1)}</strong>
+                    </RangeControlHeader>
+                    <RangeInputs style={ratingRangeStyle}>
+                      <RangeInput
+                        type="range"
+                        min="1"
+                        max="5"
+                        step="0.1"
+                        value={advancedFilters.rating.min}
+                        aria-label="Minimales Rating"
+                        onChange={(event) => handleAdvancedRangeChange('rating', 'min', event.target.value)}
+                      />
+                      <RangeInput
+                        type="range"
+                        min="1"
+                        max="5"
+                        step="0.1"
+                        value={advancedFilters.rating.max}
+                        aria-label="Maximales Rating"
+                        onChange={(event) => handleAdvancedRangeChange('rating', 'max', event.target.value)}
+                      />
+                    </RangeInputs>
+                    <RangeScale>
+                      <span>1.0</span>
+                      <span>5.0</span>
+                    </RangeScale>
+                  </RangeControl>
+
+                  {supportsAdvancedPriceFilter && (
+                  <RangeControl>
+                    <RangeControlHeader>
+                      <span>Preis</span>
+                      <strong>{advancedPriceRange.min.toFixed(2)} € bis {advancedPriceRange.max.toFixed(2)} €</strong>
+                    </RangeControlHeader>
+                    <RangeInputs style={priceRangeStyle}>
+                      <RangeInput
+                        type="range"
+                        min={advancedPriceBounds.min}
+                        max={advancedPriceBounds.max}
+                        step="0.1"
+                        value={advancedPriceRange.min}
+                        aria-label="Minimaler Preis"
+                        onChange={(event) => handleAdvancedRangeChange('price', 'min', event.target.value)}
+                      />
+                      <RangeInput
+                        type="range"
+                        min={advancedPriceBounds.min}
+                        max={advancedPriceBounds.max}
+                        step="0.1"
+                        value={advancedPriceRange.max}
+                        aria-label="Maximaler Preis"
+                        onChange={(event) => handleAdvancedRangeChange('price', 'max', event.target.value)}
+                      />
+                    </RangeInputs>
+                    <RangeScale>
+                      <span>{advancedPriceBounds.min.toFixed(2)} €</span>
+                      <span>{advancedPriceBounds.max.toFixed(2)} €</span>
+                    </RangeScale>
+                  </RangeControl>
+                  )}
+                </AdvancedFilterPanel>
+              )}
             </FilterSection>
             <FilterSection>
               <FilterSectionTitle>Status</FilterSectionTitle>
@@ -2438,7 +2708,7 @@ const FilterModalOverlay = styled.div`
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.35);
-  z-index: 1200;
+  z-index: 2200;
 `;
 
 const FilterModalContent = styled.div`
@@ -2446,6 +2716,8 @@ const FilterModalContent = styled.div`
   border-radius: 16px;
   padding: 1.5rem;
   width: min(480px, 90%);
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
 `;
 
@@ -2490,6 +2762,144 @@ const FilterToggle = styled.label`
   input {
     transform: scale(1.2);
   }
+`;
+
+const AdvancedFilterToggle = styled.button`
+  width: 100%;
+  border: 1px solid rgba(80, 48, 0, 0.22);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.72);
+  color: #503000;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const AdvancedFilterPanel = styled.div`
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(80, 48, 0, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.52);
+`;
+
+const FilterField = styled.div`
+  display: grid;
+  gap: 0.45rem;
+`;
+
+const AdvancedSelect = styled.select`
+  width: 100%;
+  border: 1px solid rgba(80, 48, 0, 0.28);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  color: #503000;
+  font: inherit;
+`;
+
+const RangeControl = styled.div`
+  display: grid;
+  gap: 0.45rem;
+`;
+
+const RangeControlHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #503000;
+  font-size: 0.95rem;
+
+  strong {
+    white-space: nowrap;
+  }
+`;
+
+const RangeInputs = styled.div`
+  position: relative;
+  height: 28px;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 12px;
+    height: 4px;
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  &::before {
+    background: rgba(80, 48, 0, 0.18);
+  }
+
+  &::after {
+    left: var(--range-min, 0%);
+    right: calc(100% - var(--range-max, 100%));
+    background: #ffb522;
+  }
+`;
+
+const RangeInput = styled.input`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    background: transparent;
+  }
+
+  &::-moz-range-track {
+    height: 4px;
+    background: transparent;
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #ffb522;
+    box-shadow: 0 1px 5px rgba(80, 48, 0, 0.32);
+    cursor: pointer;
+    pointer-events: auto;
+    margin-top: -7px;
+  }
+
+  &::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #ffb522;
+    box-shadow: 0 1px 5px rgba(80, 48, 0, 0.32);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+`;
+
+const RangeScale = styled.div`
+  display: flex;
+  justify-content: space-between;
+  color: #7a5a00;
+  font-size: 0.8rem;
 `;
 
 const FilterHint = styled.p`

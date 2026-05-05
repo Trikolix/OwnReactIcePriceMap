@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { Info, MapPinned, Navigation, Stamp } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
@@ -12,9 +13,6 @@ import {
 } from "./eventAuthMessages";
 import JerseyInfoDialog from "./JerseyInfoDialog";
 import Seo from "../../components/Seo";
-import route180GpxFile from "./Ice-Tour_180km.gpx?url";
-import route140GpxFile from "./Ice-Tour_140km.gpx?url";
-import route70GpxFile from "./Ice-Tour_70km.gpx?url";
 import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
@@ -26,6 +24,7 @@ import {
   EVENT_RACE_DAY_INFO_ENABLED,
   EVENT_START_FINISH,
   KIT_DISPLAY_PRICE,
+  ROUTE_OPTIONS,
   TSHIRT_SIZES,
   JERSEY_DISPLAY_PRICE,
   getClothingLabel,
@@ -33,6 +32,17 @@ import {
   formatRouteLabelWithDistance,
   getRouteTheme,
 } from "./eventConfig";
+import {
+  EVENT_PARKING,
+  EVENT_PARKING_DIRECTIONS_EMBED_URL,
+  EVENT_PARKING_DIRECTIONS_URL,
+  EVENT_ROUTE_RELEASE_NOTICE,
+  buildScheduleItems,
+  formatEventTime,
+  getRouteHints,
+  groupRules,
+  packingItems,
+} from "./eventParticipantInfoConfig";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -393,31 +403,29 @@ const RaceDayMetaValue = styled.div`
 `;
 
 const ActionRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 1rem;
-`;
 
-const PrimaryActionLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  padding: 0.78rem 1.1rem;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #b45309 0%, #8a5700 100%);
-  color: #fff;
-  font-weight: 800;
-  text-decoration: none;
-  box-shadow: 0 10px 24px rgba(138, 87, 0, 0.24);
+  @media (min-width: 920px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  > * {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+  }
 `;
 
 const SecondaryActionLink = styled.a`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   min-height: 46px;
+  height: 100%;
   padding: 0.78rem 1.1rem;
   border-radius: 12px;
   background: rgba(255, 249, 237, 0.92);
@@ -425,6 +433,11 @@ const SecondaryActionLink = styled.a`
   color: #6a4300;
   font-weight: 800;
   text-decoration: none;
+  text-align: center;
+
+  svg {
+    flex: 0 0 auto;
+  }
 `;
 
 const PhaseGrid = styled.div`
@@ -507,24 +520,219 @@ const PreviewNote = styled.div`
   line-height: 1.45;
 `;
 
-const EVENT_STAMP_CARD_PUBLIC_URL = "https://ice-app.de/event-stamp-card";
-const EVENT_PARKING = {
-  coordinates: "50.84228, 12.92685",
-  mapUrl: "https://www.openstreetmap.org/?mlat=50.84228&mlon=12.92685#map=19/50.84228/12.92685",
-};
+const ActionNotice = styled(PreviewNote)`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  margin-bottom: 0;
 
-const ROUTE_GPX_DOWNLOADS = {
-  epic_4: { href: route180GpxFile, filename: "Ice-Tour_180km.gpx" },
-  classic_3: { href: route140GpxFile, filename: "Ice-Tour_140km.gpx" },
-  family_2: { href: route70GpxFile, filename: "Ice-Tour_70km.gpx" },
-};
+  svg {
+    flex: 0 0 auto;
+  }
+`;
+
+const SectionNav = styled.nav`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+`;
+
+const SectionNavLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 87, 0, 0.18);
+  background: rgba(255, 253, 247, 0.9);
+  color: #6a4300;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 0.42rem 0.78rem;
+  text-decoration: none;
+`;
+
+const InfoGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+
+  @media (min-width: 880px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const InfoCard = styled(Card)`
+  h3 {
+    margin: 0 0 0.7rem;
+    color: #2d1d00;
+    font-size: 1rem;
+  }
+
+  p {
+    color: #5f4100;
+    line-height: 1.55;
+  }
+`;
+
+const RouteFacts = styled.div`
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin: 0.7rem 0;
+
+  span {
+    background: #fffdfa;
+    border: 1px solid #f0dcab;
+    border-radius: 999px;
+    color: #6d4a00;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 0.25rem 0.5rem;
+  }
+`;
+
+const CleanList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+
+  li {
+    border-bottom: 1px dashed rgba(138, 87, 0, 0.2);
+    color: #5f4100;
+    line-height: 1.45;
+    padding-bottom: 0.55rem;
+  }
+
+  li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+`;
+
+const WarningList = styled(CleanList)`
+  li {
+    display: grid;
+    grid-template-columns: 1.45rem 1fr;
+    gap: 0.55rem;
+    align-items: start;
+  }
+
+  li::before {
+    content: "!";
+    display: inline-grid;
+    place-items: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-top: 0.1rem;
+    border-radius: 999px;
+    background: #fff3c2;
+    border: 1px solid #eab308;
+    color: #8a5700;
+    font-size: 0.78rem;
+    font-weight: 950;
+    line-height: 1;
+  }
+`;
+
+const Checklist = styled(CleanList)`
+  @media (min-width: 540px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  li {
+    border: 1px solid #f0dcab;
+    border-radius: 10px;
+    background: #fffaf0;
+    padding: 0.55rem 0.65rem;
+    font-weight: 750;
+  }
+`;
+
+const Timeline = styled.div`
+  display: grid;
+  gap: 0.7rem;
+`;
+
+const TimelineItem = styled.div`
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 0.7rem;
+  align-items: start;
+
+  time {
+    border-radius: 999px;
+    background: #fff3c2;
+    color: #6a4300;
+    font-weight: 900;
+    text-align: center;
+    padding: 0.35rem 0.45rem;
+    font-size: 0.84rem;
+  }
+
+  strong {
+    color: #2d1d00;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: #6d4a00;
+  }
+`;
+
+const Split = styled.div`
+  display: grid;
+  gap: 1rem;
+  align-items: stretch;
+
+  @media (min-width: 860px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const AddressGrid = styled.div`
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+`;
+
+const AddressBox = styled.div`
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid #f0dcab;
+  background: #fffaf0;
+  border-radius: 12px;
+  padding: 0.8rem;
+  color: #5f4100;
+`;
+
+const MapFrameWrap = styled.div`
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid #f0dcab;
+  border-radius: 14px;
+  background: #fffaf0;
+  box-shadow: inset 0 0 0 1px rgba(255, 253, 250, 0.72);
+
+  iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+    border: 0;
+  }
+`;
+
+const EVENT_STAMP_CARD_PUBLIC_URL = "https://ice-app.de/event-stamp-card";
 
 const RACE_DAY_PHASES = [
   {
     title: "Vor dem Renntag",
     accent: "#b45309",
     items: [
-      "Lade dir die GPX-Datei deiner Runde auf den Radcomputer und prüfe die Navigation in Ruhe.",
+      "GPX-Datei und Komoot-Link werden rechtzeitig vor dem Event freigeschaltet.",
       "Mach dein Fahrrad und deine Ausrüstung fit, damit am Tour-Tag nichts unnötig bremst.",
       "Packe Ersatzschlauch, Werkzeug, Trinkflaschen, Radschuhe, Helm, Riegel, Gels und alles ein, was du sonst unterwegs brauchst.",
       "Nimm etwas Bargeld mit, falls du mehr als die eine Kugel Eis möchtest. Nicht bei allen Eisdielen ist Kartenzahlung möglich.",
@@ -571,18 +779,6 @@ function formatPaymentStatus(status) {
   return status || "-";
 }
 
-function parseEventDateTime(value) {
-  if (!value) return null;
-  const parsed = new Date(String(value).replace(" ", "T"));
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatEventTime(value) {
-  const parsed = parseEventDateTime(value);
-  if (!parsed) return "folgt";
-  return parsed.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
-}
-
 function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
   const normalizedTeamName = (teamName || "").trim();
   const normalizedInviteCode = (inviteCode || "").trim();
@@ -608,6 +804,7 @@ function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
 
 export default function EventMyRegistration() {
   const apiUrl = getApiBaseUrl();
+  const location = useLocation();
   const { authToken, userId, authReady } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -672,7 +869,11 @@ export default function EventMyRegistration() {
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
   const isPaid = paymentStatus === "paid";
   const isAdmin = Number(userId) === 1;
-  const routeGpxDownload = useMemo(() => (ownSlot?.route_key ? ROUTE_GPX_DOWNLOADS[ownSlot.route_key] || null : null), [ownSlot?.route_key]);
+  const selectedRoute = useMemo(
+    () => ROUTE_OPTIONS.find((route) => route.key === ownSlot?.route_key) || null,
+    [ownSlot?.route_key]
+  );
+  const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time), [ownSlot?.start_time]);
   const showRaceDayInfo = isPaid && (EVENT_RACE_DAY_INFO_ENABLED || isAdmin);
   const isRaceDayInfoPreview = showRaceDayInfo && !EVENT_RACE_DAY_INFO_ENABLED;
   const stampCardMode = useMemo(() => {
@@ -733,6 +934,15 @@ export default function EventMyRegistration() {
       setBibSize("");
     }
   }, [clothingInterest]);
+
+  useEffect(() => {
+    if (loading || !location.hash) return;
+    const target = document.getElementById(location.hash.slice(1));
+    if (!target) return;
+    window.requestAnimationFrame(() => {
+      target.scrollIntoView({ block: "start" });
+    });
+  }, [loading, location.hash, data]);
 
   const startStripeCheckout = async () => {
     if (!apiUrl || !data?.registration?.id) return;
@@ -871,11 +1081,18 @@ export default function EventMyRegistration() {
       <Header />
       <Container>
         <HeroCard>
-          <HeroTitle>Meine Anmeldung</HeroTitle>
+          <HeroTitle>Teilnehmerbereich</HeroTitle>
           <HeroSubtitle>
             Hier findest du deinen Teilnahmeplatz, Zahlungsstatus, Geschenk-Codes und deine Event-Infos auf einen Blick. {EVENT_COMMUNITY_RIDE_CLAIM}
           </HeroSubtitle>
         </HeroCard>
+
+        <SectionNav aria-label="Teilnehmerbereich Navigation">
+          <SectionNavLink href="#overview">Überblick</SectionNavLink>
+          <SectionNavLink href="#registration">Meine Anmeldung</SectionNavLink>
+          <SectionNavLink href="#info">Teilnehmerinfos</SectionNavLink>
+          <SectionNavLink href="#arrival">Anfahrt & Startbereich</SectionNavLink>
+        </SectionNav>
 
         {loading && <StateCard>Daten werden geladen…</StateCard>}
         {error && <StateCard $error>{error}</StateCard>}
@@ -883,15 +1100,15 @@ export default function EventMyRegistration() {
 
         {data && ownSlot && (
           <CardGrid>
-            {showRaceDayInfo && (
+            {ownSlot && (
               <FullWidth>
-                <RaceDayCard>
+                <RaceDayCard id="overview">
                   <RaceDayHero>
                     <div>
                       <HeroEyebrow>{isRaceDayInfoPreview ? "Renntag-Vorschau" : "Renntag auf einen Blick"}</HeroEyebrow>
                       <RaceDayHeading>Alles Wichtige für deinen Tour-Tag auf einer Seite</RaceDayHeading>
                       <RaceDayLead>
-                        Von der GPX-Datei bis zur Zielankunft bei {EVENT_START_FINISH.name}: Hier findest du die wichtigsten Infos für deinen Event-Tag kompakt und übersichtlich gesammelt.
+                        Von deiner Anmeldung bis zur Zielankunft bei {EVENT_START_FINISH.name}: Hier findest du die wichtigsten Infos für deinen Event-Tag kompakt und übersichtlich gesammelt.
                       </RaceDayLead>
                     </div>
 
@@ -917,7 +1134,7 @@ export default function EventMyRegistration() {
                         </RaceDayMetaValue>
                       </RaceDayMetaCard>
                       <RaceDayMetaCard>
-                        <RaceDayMetaLabel>Startzeit</RaceDayMetaLabel>
+                        <RaceDayMetaLabel>Deine Startzeit</RaceDayMetaLabel>
                         <RaceDayMetaValue>{formatEventTime(ownSlot.start_time)}</RaceDayMetaValue>
                       </RaceDayMetaCard>
                     </RaceDayMetaGrid>
@@ -930,16 +1147,21 @@ export default function EventMyRegistration() {
                   )}
 
                   <ActionRow>
-                    {routeGpxDownload && (
-                      <PrimaryActionLink href={routeGpxDownload.href} download={routeGpxDownload.filename}>
-                        GPX für {formatRouteLabelWithDistance(ownSlot.route_key)} herunterladen
-                      </PrimaryActionLink>
-                    )}
+                    <ActionNotice>
+                      <Info size={18} aria-hidden="true" />
+                      <span>{EVENT_ROUTE_RELEASE_NOTICE}</span>
+                    </ActionNotice>
                     <SecondaryActionLink href={EVENT_STAMP_CARD_PUBLIC_URL} target="_blank" rel="noreferrer">
-                      Stempelkarte öffnen
+                      <Stamp size={18} aria-hidden="true" />
+                      <span>Stempelkarte öffnen</span>
                     </SecondaryActionLink>
-                    <SecondaryActionLink href={EVENT_PARKING.mapUrl} target="_blank" rel="noreferrer">
-                      Parkplatz in Karte öffnen
+                    <SecondaryActionLink href={EVENT_START_FINISH.navigationUrl} target="_blank" rel="noreferrer">
+                      <Navigation size={18} aria-hidden="true" />
+                      <span>Navigation zu Start / Ziel</span>
+                    </SecondaryActionLink>
+                    <SecondaryActionLink href={EVENT_PARKING.mapsUrl} target="_blank" rel="noreferrer">
+                      <MapPinned size={18} aria-hidden="true" />
+                      <span>Navigation zum Parkplatz</span>
                     </SecondaryActionLink>
                   </ActionRow>
 
@@ -961,15 +1183,11 @@ export default function EventMyRegistration() {
                       </PhaseCard>
                     ))}
                   </PhaseGrid>
-
-                  <Notice style={{ marginTop: "1rem" }}>
-                    Treffpunkt und Ziel ist <strong>{EVENT_START_FINISH.name}</strong> in <strong>{EVENT_START_FINISH.fullAddress}</strong>. Für die Anreise mit dem Auto liegt der empfohlene Parkplatz bei <strong>{EVENT_PARKING.coordinates}</strong>.
-                  </Notice>
                 </RaceDayCard>
               </FullWidth>
             )}
 
-            <Card>
+            <Card id="registration">
               <CardTitle>Mein Startplatz</CardTitle>
               <SectionStack>
                 <FieldList>
@@ -1226,6 +1444,122 @@ export default function EventMyRegistration() {
                 </FieldRow>
               </FieldList>
             </Card>
+
+            <FullWidth id="info">
+              <InfoGrid>
+                <InfoCard>
+                  <CardTitle>Deine Route</CardTitle>
+                  {selectedRoute ? (
+                    <>
+                      <RoutePill
+                        $bg={selectedRoute.badgeTone.background}
+                        $border={selectedRoute.badgeTone.border}
+                        $color={selectedRoute.badgeTone.text}
+                      >
+                        {formatRouteLabelWithDistance(selectedRoute.key)}
+                      </RoutePill>
+                      <RouteFacts>
+                        <span>{selectedRoute.teaser}</span>
+                        <span>{selectedRoute.stops} offizielle Stopps</span>
+                        <span>Startzeit: {formatEventTime(ownSlot.start_time)}</span>
+                      </RouteFacts>
+                      <p>{selectedRoute.description}</p>
+                      <PreviewNote style={{ marginTop: "0.8rem", marginBottom: 0 }}>
+                        {EVENT_ROUTE_RELEASE_NOTICE}
+                      </PreviewNote>
+                    </>
+                  ) : (
+                    <Notice style={{ marginTop: 0 }}>Für dich wurde noch keine registrierte Strecke gefunden.</Notice>
+                  )}
+                </InfoCard>
+
+                <InfoCard>
+                  <CardTitle>Zeitplan</CardTitle>
+                  <Timeline>
+                    {scheduleItems.map((item) => (
+                      <TimelineItem key={`${item.time}-${item.title}`}>
+                        <time>{item.time}</time>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <p>{item.text}</p>
+                        </div>
+                      </TimelineItem>
+                    ))}
+                  </Timeline>
+                </InfoCard>
+
+                <InfoCard>
+                  <CardTitle>Wichtige Strecken-Hinweise</CardTitle>
+                  <WarningList>
+                    {getRouteHints(selectedRoute?.key).map((hint) => (
+                      <li key={hint}>{hint}</li>
+                    ))}
+                  </WarningList>
+                </InfoCard>
+
+                <InfoCard>
+                  <CardTitle>Packliste</CardTitle>
+                  <Checklist>
+                    {packingItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </Checklist>
+                </InfoCard>
+
+                <InfoCard>
+                  <CardTitle>Verhalten unterwegs</CardTitle>
+                  <CleanList>
+                    {groupRules.map((rule) => (
+                      <li key={rule}>{rule}</li>
+                    ))}
+                  </CleanList>
+                </InfoCard>
+              </InfoGrid>
+            </FullWidth>
+
+            <FullWidth id="arrival">
+              <InfoCard>
+                <Split>
+                  <div>
+                    <CardTitle>Anfahrt & Startbereich</CardTitle>
+                    <p>
+                      Wenn du mit dem Auto kommst, parke bitte auf dem ausgewiesenen Parkplatz an der Heinrich-Zille-Straße.
+                      Von dort sind es nur wenige Minuten bis zum Start-/Zielbereich bei {EVENT_START_FINISH.name}.
+                    </p>
+                    <AddressGrid>
+                      <AddressBox>
+                        <strong>Parken</strong>
+                        <span>{EVENT_PARKING.name}</span>
+                        <span>{EVENT_PARKING.coordinates}</span>
+                      </AddressBox>
+                      <AddressBox>
+                        <strong>Start & Ziel</strong>
+                        <span>{EVENT_START_FINISH.fullAddress}</span>
+                      </AddressBox>
+                    </AddressGrid>
+                    <ActionRow style={{ marginTop: "0.85rem", marginBottom: 0 }}>
+                      <SecondaryActionLink href={EVENT_PARKING_DIRECTIONS_URL} target="_blank" rel="noreferrer">
+                        <Navigation size={18} aria-hidden="true" />
+                        <span>Route öffnen</span>
+                      </SecondaryActionLink>
+                      <SecondaryActionLink href={EVENT_PARKING.mapsUrl} target="_blank" rel="noreferrer">
+                        <MapPinned size={18} aria-hidden="true" />
+                        <span>Parkplatz öffnen</span>
+                      </SecondaryActionLink>
+                    </ActionRow>
+                  </div>
+                  <MapFrameWrap>
+                    <iframe
+                      title="Anfahrtsweg vom Parkplatz an der Heinrich-Zille-Straße zur Unteren Aktienstraße 12"
+                      src={EVENT_PARKING_DIRECTIONS_EMBED_URL}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      allowFullScreen
+                    />
+                  </MapFrameWrap>
+                </Split>
+              </InfoCard>
+            </FullWidth>
 
             <Card>
               <CardTitle>Stempelkarte</CardTitle>

@@ -46,6 +46,8 @@ const ShopMarker = ({
   fetchAndCenterShop,
   minValue,
   maxValue,
+  colorScaleMin = null,
+  colorScaleMax = null,
   displayValue,
   formatValue,
   invertScale,
@@ -64,7 +66,15 @@ const ShopMarker = ({
     ) {
       return `rgba(128, 128, 128, ${iconOpacity})`;
     }
-    let ratio = maxValue === minValue ? 0.5 : (value - minValue) / (maxValue - minValue);
+    const effectiveMinValue = colorScaleMin ?? minValue;
+    const effectiveMaxValue = colorScaleMax ?? maxValue;
+    if (!invertScale && colorScaleMin !== null && value <= colorScaleMin) {
+      return `rgba(0, 200, 0, ${iconOpacity})`;
+    }
+    if (!invertScale && colorScaleMax !== null && value >= colorScaleMax) {
+      return `rgba(200, 0, 0, ${iconOpacity})`;
+    }
+    let ratio = effectiveMaxValue === effectiveMinValue ? 0.5 : (value - effectiveMinValue) / (effectiveMaxValue - effectiveMinValue);
     ratio = Math.min(Math.max(ratio, 0), 1);
     if (invertScale) {
       ratio = 1 - ratio;

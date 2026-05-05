@@ -13,6 +13,7 @@ export const EVENT_START_FINISH = {
   lat: 50.841892,
   lng: 12.923957,
   routeKeys: ["family_2", "classic_3", "epic_4"],
+  navigationUrl: "https://www.google.com/maps/dir//u.+Aktienstra%C3%9Fe+12,+09111+Chemnitz/@50.8419578,12.9228072,17z/",
 };
 export const EVENT_PAYMENT_PAYPAL_ADDRESS = "ch_helbig@mail.de";
 export const EVENT_PAYMENT_PAYPAL_URL = "https://paypal.me/ChristianHelbig451";

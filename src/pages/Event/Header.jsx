@@ -147,13 +147,12 @@ export default function Header() {
               )}
               {isAdmin && (
                 <>
-                  <MenuItemLink to="/event-info" onClick={() => setMenuOpen(false)}>Teilnehmerinfos</MenuItemLink>
                   <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
                 </>
               )}
               {isLoggedIn && hasEventRegistration && (
                 <>
-                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
                   <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                 </>
               )}
@@ -172,13 +171,12 @@ export default function Header() {
                 <>
                   {hasEventRegistration && (
                     <>
-                      <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                      <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
                       <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                     </>
                   )}
                   {isAdmin && (
                     <>
-                      <MenuItemLink to="/event-info" onClick={() => setMenuOpen(false)}>Teilnehmerinfos</MenuItemLink>
                       <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
                     </>
                   )}
