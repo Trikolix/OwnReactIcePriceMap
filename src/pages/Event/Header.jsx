@@ -148,6 +148,7 @@ export default function Header() {
               {isAdmin && (
                 <>
                   <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+                  <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
                 </>
               )}
               {isLoggedIn && hasEventRegistration && (
@@ -178,6 +179,7 @@ export default function Header() {
                   {isAdmin && (
                     <>
                       <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                      <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
                     </>
                   )}
                   <MenuActionButton

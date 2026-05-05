@@ -131,3 +131,327 @@ function iceapp_send_branded_action_mail(
         iceapp_build_multipart_headers($boundary, $from)
     );
 }
+
+function iceapp_build_branded_bulk_mail_html(
+    string $heading,
+    array $paragraphs,
+    array $buttons = [],
+    bool $includeNotificationSettingsHint = false,
+    string $settingsUrl = 'https://ice-app.de/settings'
+): string {
+    $safeHeading = iceapp_mail_escape($heading);
+    $safeSettingsUrl = iceapp_mail_escape($settingsUrl);
+
+    $body = "<!doctype html><html><body style=\"margin:0;background:#fff7e8;font-family:Arial,Helvetica,sans-serif;color:#2d1d00;\">";
+    $body .= "<div style=\"max-width:680px;margin:0 auto;padding:28px 16px;\">";
+    $body .= "<div style=\"background:#fffdfa;border:1px solid #f3dfad;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(124,79,0,0.10);\">";
+    $body .= "<div style=\"background:#ffb522;color:#2d1d00;padding:24px 28px;\">";
+    $body .= "<div style=\"font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;\">Ice-Tour</div>";
+    $body .= "<h1 style=\"margin:8px 0 0;font-size:28px;line-height:1.18;\">{$safeHeading}</h1>";
+    $body .= "</div>";
+    $body .= "<div style=\"padding:28px;line-height:1.6;font-size:16px;\">";
+
+    foreach ($paragraphs as $paragraph) {
+        $body .= "<p style=\"margin:0 0 16px;\">" . nl2br(iceapp_mail_escape((string) $paragraph), false) . "</p>";
+    }
+
+    if (!empty($buttons)) {
+        $body .= "<div style=\"display:block;margin:8px 0 22px;\">";
+        foreach ($buttons as $button) {
+            $label = iceapp_mail_escape((string) ($button['label'] ?? 'Link öffnen'));
+            $url = iceapp_mail_escape((string) ($button['url'] ?? ''));
+            if ($url === '') {
+                continue;
+            }
+            $body .= "<a href=\"{$url}\" style=\"display:inline-block;background:#2d1d00;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 18px;border-radius:10px;margin:0 8px 8px 0;\">{$label}</a>";
+        }
+        $body .= "</div>";
+    }
+
+    if (!empty($buttons)) {
+        $body .= "<div style=\"background:#fff4d6;border:1px solid #f3dfad;border-radius:12px;padding:14px 16px;margin:0 0 18px;\">";
+        $body .= "<div style=\"font-weight:700;margin-bottom:8px;\">Falls ein Button nicht funktioniert</div>";
+        foreach ($buttons as $button) {
+            $label = iceapp_mail_escape((string) ($button['label'] ?? 'Link'));
+            $url = iceapp_mail_escape((string) ($button['url'] ?? ''));
+            if ($url === '') {
+                continue;
+            }
+            $body .= "<div style=\"margin-top:6px;\"><span style=\"font-weight:700;\">{$label}:</span> <a href=\"{$url}\" style=\"color:#b45309;word-break:break-all;\">{$url}</a></div>";
+        }
+        $body .= "</div>";
+    }
+
+    if ($includeNotificationSettingsHint) {
+        $body .= "<p style=\"margin:0 0 18px;color:#7a5200;font-size:14px;line-height:1.5;\">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href=\"{$safeSettingsUrl}\" style=\"color:#b45309;\">Benachrichtigungseinstellungen öffnen</a>.</p>";
+    }
+
+    $body .= "<p style=\"margin:0;\">Viele Grüße<br>dein Ice-App Team</p>";
+    $body .= "</div></div></div></body></html>";
+
+    return $body;
+}
+
+function iceapp_build_bulk_mail_plain(
+    string $heading,
+    array $paragraphs,
+    array $buttons = [],
+    bool $includeNotificationSettingsHint = false,
+    string $settingsUrl = 'https://ice-app.de/settings'
+): string {
+    $body = $heading . "\n\n";
+    foreach ($paragraphs as $paragraph) {
+        $body .= (string) $paragraph . "\n\n";
+    }
+    foreach ($buttons as $button) {
+        $label = trim((string) ($button['label'] ?? 'Link öffnen'));
+        $url = trim((string) ($button['url'] ?? ''));
+        if ($url !== '') {
+            $body .= "{$label}: {$url}\n";
+        }
+    }
+    if (!empty($buttons)) {
+        $body .= "\n";
+    }
+    if ($includeNotificationSettingsHint) {
+        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit ändern: {$settingsUrl}\n\n";
+    }
+    $body .= "Viele Grüße\nDein Ice-App Team";
+
+    return $body;
+}
+
+function iceapp_send_branded_bulk_mail(
+    string $to,
+    string $subjectText,
+    string $heading,
+    array $paragraphs,
+    array $buttons = [],
+    bool $includeNotificationSettingsHint = false,
+    string $settingsUrl = 'https://ice-app.de/settings',
+    string $from = 'Ice-App <noreply@ice-app.de>'
+): bool {
+    $boundary = '----=' . md5(uniqid((string) mt_rand(), true));
+    $plainBody = iceapp_build_bulk_mail_plain($heading, $paragraphs, $buttons, $includeNotificationSettingsHint, $settingsUrl);
+    $htmlBody = iceapp_build_branded_bulk_mail_html($heading, $paragraphs, $buttons, $includeNotificationSettingsHint, $settingsUrl);
+
+    return mail(
+        $to,
+        iceapp_encode_mail_subject($subjectText),
+        iceapp_build_multipart_message($plainBody, $htmlBody, $boundary),
+        iceapp_build_multipart_headers($boundary, $from)
+    );
+}
+
+function iceapp_mail_is_safe_http_url(string $url): bool
+{
+    $scheme = parse_url($url, PHP_URL_SCHEME);
+    return filter_var($url, FILTER_VALIDATE_URL) !== false && in_array($scheme, ['http', 'https'], true);
+}
+
+function iceapp_render_admin_markdown_inline_html(string $text): string
+{
+    $tokens = [];
+    $text = preg_replace_callback('/\[button:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', static function (array $matches) use (&$tokens): string {
+        $url = trim($matches[2]);
+        if (!iceapp_mail_is_safe_http_url($url)) {
+            return iceapp_mail_escape($matches[0]);
+        }
+        $key = '%%ICEAPP_TOKEN_' . count($tokens) . '%%';
+        $tokens[$key] = '<a href="' . iceapp_mail_escape($url) . '" style="display:inline-block;background:#2d1d00;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 18px;border-radius:10px;margin:4px 0;">' . iceapp_mail_escape(trim($matches[1])) . '</a>';
+        return $key;
+    }, $text);
+    $text = preg_replace_callback('/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', static function (array $matches) use (&$tokens): string {
+        $url = trim($matches[2]);
+        if (!iceapp_mail_is_safe_http_url($url)) {
+            return iceapp_mail_escape($matches[0]);
+        }
+        $key = '%%ICEAPP_TOKEN_' . count($tokens) . '%%';
+        $tokens[$key] = '<a href="' . iceapp_mail_escape($url) . '" style="color:#b45309;text-decoration:underline;">' . iceapp_mail_escape(trim($matches[1])) . '</a>';
+        return $key;
+    }, $text);
+    $safe = iceapp_mail_escape($text);
+    $safe = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $safe);
+
+    return strtr($safe, $tokens);
+}
+
+function iceapp_render_admin_markdown_inline_plain(string $text): string
+{
+    $text = preg_replace('/\[button:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', '$1: $2', $text);
+    $text = preg_replace('/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', '$1: $2', $text);
+    return preg_replace('/\*\*([^*]+)\*\*/', '$1', $text);
+}
+
+function iceapp_parse_admin_mail_markdown_blocks(string $markdown): array
+{
+    $lines = preg_split("/\R/", trim($markdown)) ?: [];
+    $blocks = [];
+    $paragraph = [];
+    $listItems = [];
+
+    $flushParagraph = static function () use (&$blocks, &$paragraph): void {
+        if (!empty($paragraph)) {
+            $blocks[] = ['type' => 'paragraph', 'text' => implode("\n", $paragraph)];
+            $paragraph = [];
+        }
+    };
+    $flushList = static function () use (&$blocks, &$listItems): void {
+        if (!empty($listItems)) {
+            $blocks[] = ['type' => 'list', 'items' => $listItems];
+            $listItems = [];
+        }
+    };
+
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if ($trimmed === '') {
+            $flushParagraph();
+            $flushList();
+            continue;
+        }
+
+        if (preg_match('/^(#{1,3})\s+(.+)$/', $trimmed, $matches)) {
+            $flushParagraph();
+            $flushList();
+            $blocks[] = [
+                'type' => 'heading',
+                'level' => min(3, strlen($matches[1])),
+                'text' => trim($matches[2]),
+            ];
+            continue;
+        }
+
+        if (preg_match('/^-\s+(.+)$/', $trimmed, $matches)) {
+            $flushParagraph();
+            $listItems[] = trim($matches[1]);
+            continue;
+        }
+
+        $flushList();
+        $paragraph[] = $trimmed;
+    }
+
+    $flushParagraph();
+    $flushList();
+
+    return $blocks;
+}
+
+function iceapp_build_branded_admin_markdown_mail_html(
+    string $heading,
+    string $markdown,
+    array $fallbackButtons = [],
+    bool $includeNotificationSettingsHint = false,
+    string $settingsUrl = 'https://ice-app.de/settings'
+): string {
+    $safeHeading = iceapp_mail_escape($heading);
+    $safeSettingsUrl = iceapp_mail_escape($settingsUrl);
+    $blocks = iceapp_parse_admin_mail_markdown_blocks($markdown);
+
+    $body = "<!doctype html><html><body style=\"margin:0;background:#fff7e8;font-family:Arial,Helvetica,sans-serif;color:#2d1d00;\">";
+    $body .= "<div style=\"max-width:680px;margin:0 auto;padding:28px 16px;\">";
+    $body .= "<div style=\"background:#fffdfa;border:1px solid #f3dfad;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(124,79,0,0.10);\">";
+    $body .= "<div style=\"background:#ffb522;color:#2d1d00;padding:24px 28px;\">";
+    $body .= "<div style=\"font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;\">Ice-Tour</div>";
+    $body .= "<h1 style=\"margin:8px 0 0;font-size:28px;line-height:1.18;\">{$safeHeading}</h1>";
+    $body .= "</div>";
+    $body .= "<div style=\"padding:28px;line-height:1.6;font-size:16px;\">";
+
+    foreach ($blocks as $block) {
+        if ($block['type'] === 'heading') {
+            $fontSize = ((int) $block['level']) === 1 ? '23px' : (((int) $block['level']) === 2 ? '20px' : '18px');
+            $body .= "<h2 style=\"margin:22px 0 10px;font-size:{$fontSize};line-height:1.25;color:#2d1d00;\">" . iceapp_mail_escape((string) $block['text']) . "</h2>";
+        } elseif ($block['type'] === 'list') {
+            $body .= "<ul style=\"margin:0 0 18px;padding-left:22px;\">";
+            foreach ($block['items'] as $item) {
+                $body .= "<li style=\"margin:0 0 8px;\">" . iceapp_render_admin_markdown_inline_html((string) $item) . "</li>";
+            }
+            $body .= "</ul>";
+        } else {
+            $body .= "<p style=\"margin:0 0 16px;\">" . nl2br(iceapp_render_admin_markdown_inline_html((string) $block['text']), false) . "</p>";
+        }
+    }
+
+    if (!empty($fallbackButtons)) {
+        $body .= "<div style=\"display:block;margin:8px 0 22px;\">";
+        foreach ($fallbackButtons as $button) {
+            $label = iceapp_mail_escape((string) ($button['label'] ?? 'Link öffnen'));
+            $url = iceapp_mail_escape((string) ($button['url'] ?? ''));
+            if ($url !== '') {
+                $body .= "<a href=\"{$url}\" style=\"display:inline-block;background:#2d1d00;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 18px;border-radius:10px;margin:0 8px 8px 0;\">{$label}</a>";
+            }
+        }
+        $body .= "</div>";
+    }
+
+    if ($includeNotificationSettingsHint) {
+        $body .= "<p style=\"margin:0 0 18px;color:#7a5200;font-size:14px;line-height:1.5;\">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href=\"{$safeSettingsUrl}\" style=\"color:#b45309;\">Benachrichtigungseinstellungen öffnen</a>.</p>";
+    }
+
+    $body .= "<p style=\"margin:0;\">Viele Grüße<br>dein Ice-App Team</p>";
+    $body .= "</div></div></div></body></html>";
+
+    return $body;
+}
+
+function iceapp_build_admin_markdown_mail_plain(
+    string $heading,
+    string $markdown,
+    array $fallbackButtons = [],
+    bool $includeNotificationSettingsHint = false,
+    string $settingsUrl = 'https://ice-app.de/settings'
+): string {
+    $blocks = iceapp_parse_admin_mail_markdown_blocks($markdown);
+    $body = $heading . "\n\n";
+    foreach ($blocks as $block) {
+        if ($block['type'] === 'heading') {
+            $body .= strtoupper((string) $block['text']) . "\n\n";
+        } elseif ($block['type'] === 'list') {
+            foreach ($block['items'] as $item) {
+                $body .= "- " . iceapp_render_admin_markdown_inline_plain((string) $item) . "\n";
+            }
+            $body .= "\n";
+        } else {
+            $body .= iceapp_render_admin_markdown_inline_plain((string) $block['text']) . "\n\n";
+        }
+    }
+    foreach ($fallbackButtons as $button) {
+        $label = trim((string) ($button['label'] ?? 'Link öffnen'));
+        $url = trim((string) ($button['url'] ?? ''));
+        if ($url !== '') {
+            $body .= "{$label}: {$url}\n";
+        }
+    }
+    if (!empty($fallbackButtons)) {
+        $body .= "\n";
+    }
+    if ($includeNotificationSettingsHint) {
+        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit ändern: {$settingsUrl}\n\n";
+    }
+    $body .= "Viele Grüße\nDein Ice-App Team";
+
+    return $body;
+}
+
+function iceapp_send_branded_admin_markdown_mail(
+    string $to,
+    string $subjectText,
+    string $heading,
+    string $markdown,
+    array $fallbackButtons = [],
+    bool $includeNotificationSettingsHint = false,
+    string $settingsUrl = 'https://ice-app.de/settings',
+    string $from = 'Ice-App <noreply@ice-app.de>'
+): bool {
+    $boundary = '----=' . md5(uniqid((string) mt_rand(), true));
+    $plainBody = iceapp_build_admin_markdown_mail_plain($heading, $markdown, $fallbackButtons, $includeNotificationSettingsHint, $settingsUrl);
+    $htmlBody = iceapp_build_branded_admin_markdown_mail_html($heading, $markdown, $fallbackButtons, $includeNotificationSettingsHint, $settingsUrl);
+
+    return mail(
+        $to,
+        iceapp_encode_mail_subject($subjectText),
+        iceapp_build_multipart_message($plainBody, $htmlBody, $boundary),
+        iceapp_build_multipart_headers($boundary, $from)
+    );
+}

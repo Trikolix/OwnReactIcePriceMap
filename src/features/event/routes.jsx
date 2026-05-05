@@ -8,6 +8,7 @@ import EventMyRegistration from "../../pages/Event/EventMyRegistration";
 import EventRegistrationSummary from "../../pages/Event/EventRegistrationSummary";
 import EventStampCard from "../../pages/Event/EventStampCard";
 import EventAdminOverview from "../../pages/Event/EventAdminOverview";
+import EventAdminMail from "../../pages/Event/EventAdminMail";
 import EventSupportPage from "../../pages/Event/EventSupportPage";
 import EventParticipantInfo from "../../pages/Event/EventParticipantInfo";
 
@@ -24,5 +25,6 @@ export const eventRoutes = [
   { path: "/event-info", element: <EventParticipantInfo /> },
   { path: "/event-stamp-card", element: <EventStampCard /> },
   { path: "/event-admin", element: <EventAdminOverview /> },
+  { path: "/event-admin-mails", element: <EventAdminMail /> },
   { path: "/event-registration-summary", element: <EventRegistrationSummary /> },
 ];
