@@ -58,6 +58,12 @@ const SubmissionPanel = ({
           <strong>{new Date(overview.challenge.submission_deadline).toLocaleString('de-DE')}</strong>.
         </p>
       )}
+      {overview?.challenge?.min_image_created_at && (
+        <p>
+          Eingereicht werden koennen Bilder ab{' '}
+          <strong>{new Date(overview.challenge.min_image_created_at).toLocaleString('de-DE')}</strong>.
+        </p>
+      )}
       {submissionLimit ? (
         <p>
           Du kannst insgesamt {submissionLimit} Bild(er) einreichen. Verfügbar:{' '}
@@ -152,7 +158,13 @@ const SubmissionPanel = ({
           <S.SubmissionImagesWrapper>
             <h3>Deine Bilder</h3>
             {userImagesLoading && <S.PlaceholderText>Lade Bilder…</S.PlaceholderText>}
-            {!userImagesLoading && !userImages.length && <S.PlaceholderText>Du hast noch keine Bilder hochgeladen.</S.PlaceholderText>}
+            {!userImagesLoading && !userImages.length && (
+              <S.PlaceholderText>
+                {overview?.challenge?.min_image_created_at
+                  ? 'Keine deiner Bilder erfuellt den Zeitraum dieser Challenge.'
+                  : 'Du hast noch keine Bilder hochgeladen.'}
+              </S.PlaceholderText>
+            )}
             <S.SubmissionGrid>
               {userImages.map((image) => {
                 const alreadySubmitted = submittedImageIds.has(image.id);
@@ -174,6 +186,7 @@ const SubmissionPanel = ({
                       <S.SubmissionImageThumb src={buildAssetUrl(image.url)} alt={image.beschreibung || `Bild ${image.id}`} />
                     </S.ResultImageButton>
                     {image.beschreibung && <small>{image.beschreibung}</small>}
+                    {image.created_at && <small>Hochgeladen: {new Date(image.created_at).toLocaleString('de-DE')}</small>}
                     <input
                       type="text"
                       placeholder="Bild-Titel (optional)"

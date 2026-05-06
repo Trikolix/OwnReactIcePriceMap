@@ -39,13 +39,21 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT id FROM bilder WHERE id = :image_id AND nutzer_id = :nutzer_id");
+    $stmt = $pdo->prepare("SELECT id, erstellt_am FROM bilder WHERE id = :image_id AND nutzer_id = :nutzer_id");
     $stmt->execute([
         'image_id' => $imageId,
         'nutzer_id' => $userId,
     ]);
-    if (!$stmt->fetch()) {
+    $image = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$image) {
         throw new RuntimeException('Dieses Bild gehört nicht dir.');
+    }
+    if (!empty($challenge['min_image_created_at'])) {
+        $imageCreatedAt = strtotime((string)($image['erstellt_am'] ?? ''));
+        $minImageCreatedAt = strtotime((string)$challenge['min_image_created_at']);
+        if ($imageCreatedAt === false || $minImageCreatedAt === false || $imageCreatedAt < $minImageCreatedAt) {
+            throw new RuntimeException('Dieses Bild ist für diese Challenge zu alt.');
+        }
     }
 
     $stmt = $pdo->prepare("

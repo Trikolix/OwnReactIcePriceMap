@@ -68,6 +68,25 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const parseDateValue = (value) => {
+  if (!value) return null;
+  const parsed = new Date(typeof value === "string" ? value.replace(" ", "T") : value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const startOfLocalDay = (value) => {
+  const date = value instanceof Date ? value : parseDateValue(value);
+  if (!date) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+};
+
+const isAfterToday = (value, nowTs = Date.now()) => {
+  const valueDay = startOfLocalDay(value);
+  if (valueDay == null) return false;
+  const today = startOfLocalDay(new Date(nowTs));
+  return today != null && valueDay > today;
+};
+
 const formatDistance = (from, to) => {
   if (!from || !to) return null;
   const lat1 = toNumberOrNull(from.lat);
@@ -133,8 +152,7 @@ const getChallengeSlotKey = (challenge, nowTs = Date.now()) => {
   if (!challenge) return "unknown";
   if (challenge.type === "weekly") return `weekly|${challenge.difficulty}`;
 
-  const validFromTs = challenge.valid_from ? new Date(challenge.valid_from).getTime() : null;
-  const dailyBucket = validFromTs != null && !Number.isNaN(validFromTs) && validFromTs > nowTs ? "tomorrow" : "today";
+  const dailyBucket = isAfterToday(challenge.valid_from, nowTs) ? "tomorrow" : "today";
   return `daily:${dailyBucket}|${challenge.difficulty}`;
 };
 
@@ -525,9 +543,7 @@ function Challenges() {
     setRecreatingChallengeId(challengeId);
     setActionNotice(null);
 
-    // Determine if the original challenge was requested for tomorrow
-    // We check if valid_from is in the future.
-    const isFuture = currentValidFrom && new Date(currentValidFrom).getTime() > Date.now();
+    const isFuture = isAfterToday(currentValidFrom);
 
     try {
       const { challenge } = await buildChallengeRequest({
@@ -574,8 +590,8 @@ function Challenges() {
   };
 
   const formatCountdown = (validUntil) => {
-    const end = new Date(validUntil);
-    if (Number.isNaN(end.getTime())) return "-";
+    const end = parseDateValue(validUntil);
+    if (!end) return "-";
     const diffMs = end.getTime() - countdownNowTs;
     if (diffMs <= 0) return "Abgelaufen";
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -584,13 +600,12 @@ function Challenges() {
   };
 
   const isChallengeActive = (challenge) => {
-    if (!challenge.valid_from) return true;
-    return new Date(challenge.valid_from).getTime() <= countdownNowTs;
+    return !isAfterToday(challenge.valid_from, countdownNowTs);
   };
 
   const formatStartsIn = (validFrom) => {
-    const start = new Date(validFrom);
-    if (Number.isNaN(start.getTime())) return "-";
+    const start = parseDateValue(validFrom);
+    if (!start) return "-";
     const diffMs = start.getTime() - countdownNowTs;
     if (diffMs <= 0) return "Aktiv";
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));

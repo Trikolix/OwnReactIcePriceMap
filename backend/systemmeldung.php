@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/notification_dispatcher.php';
+require_once __DIR__ . '/lib/mail.php';
+require_once __DIR__ . '/lib/user_notification_settings.php';
 
 function ensureSystemmeldungSchema(PDO $pdo): void
 {
@@ -15,26 +17,216 @@ function ensureSystemmeldungSchema(PDO $pdo): void
     if (!$stmt->fetch()) {
         $pdo->exec("ALTER TABLE systemmeldungen ADD COLUMN link_label VARCHAR(100) NULL DEFAULT NULL");
     }
+
+    $columns = [
+        'email_subject' => "VARCHAR(180) NULL DEFAULT NULL",
+        'email_heading' => "VARCHAR(180) NULL DEFAULT NULL",
+        'email_body' => "MEDIUMTEXT NULL DEFAULT NULL",
+        'email_buttons' => "TEXT NULL DEFAULT NULL",
+    ];
+
+    foreach ($columns as $column => $definition) {
+        $stmt = $pdo->prepare("SHOW COLUMNS FROM systemmeldungen LIKE ?");
+        $stmt->execute([$column]);
+        if (!$stmt->fetch()) {
+            $pdo->exec("ALTER TABLE systemmeldungen ADD COLUMN {$column} {$definition}");
+        }
+    }
 }
 
 ensureSystemmeldungSchema($pdo);
+ensureUserNotificationSettingsSchema($pdo);
+
+function respondJson(array $data): void
+{
+    echo json_encode($data);
+    exit;
+}
+
+function absoluteIceAppUrl(?string $url): string
+{
+    $url = trim((string)$url);
+    if ($url === '') return '';
+    if (preg_match('/^https?:\/\//i', $url)) return $url;
+    if ($url[0] !== '/') $url = '/' . $url;
+    return 'https://ice-app.de' . $url;
+}
+
+function normalizeMailButtons(array $buttons, string $linkUrl = '', string $linkLabel = ''): array
+{
+    $normalized = [];
+    foreach ($buttons as $button) {
+        if (!is_array($button)) continue;
+        $label = trim((string)($button['label'] ?? ''));
+        $url = absoluteIceAppUrl((string)($button['url'] ?? ''));
+        if ($label !== '' && iceapp_mail_is_safe_http_url($url)) {
+            $normalized[] = ['label' => $label, 'url' => $url];
+        }
+        if (count($normalized) >= 5) break;
+    }
+
+    if (empty($normalized) && trim($linkUrl) !== '') {
+        $url = absoluteIceAppUrl($linkUrl);
+        if (iceapp_mail_is_safe_http_url($url)) {
+            $normalized[] = [
+                'label' => trim($linkLabel) !== '' ? trim($linkLabel) : 'In der Ice-App ansehen',
+                'url' => $url,
+            ];
+        }
+    }
+
+    return $normalized;
+}
+
+function fetchSystemMailRecipients(PDO $pdo, string $mode): array
+{
+    if ($mode === 'all') {
+        $stmt = $pdo->query("
+            SELECT id, email
+            FROM nutzer
+            WHERE email IS NOT NULL AND email <> ''
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    $stmt = $pdo->query("
+        SELECT n.id, n.email
+        FROM nutzer n
+        JOIN user_notification_settings s ON s.user_id = n.id
+        WHERE n.email IS NOT NULL
+          AND n.email <> ''
+          AND s.notify_news = 1
+    ");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function sendSystemMailBatch(array $recipients, string $subject, string $heading, string $body, array $buttons, bool $includeSettingsHint): array
+{
+    $sent = 0;
+    $failed = 0;
+    foreach ($recipients as $recipient) {
+        $email = trim((string)($recipient['email'] ?? ''));
+        if ($email === '') continue;
+        $ok = iceapp_send_branded_admin_markdown_mail(
+            $email,
+            $subject,
+            $heading,
+            $body,
+            $buttons,
+            $includeSettingsHint
+        );
+        if ($ok) $sent++;
+        else $failed++;
+    }
+    return ['sent' => $sent, 'failed' => $failed, 'total' => count($recipients)];
+}
+
+function fetchSystemmeldungMeta(PDO $pdo): array
+{
+    $allUsers = (int)$pdo->query("SELECT COUNT(*) FROM nutzer")->fetchColumn();
+    $mailAll = (int)$pdo->query("SELECT COUNT(*) FROM nutzer WHERE email IS NOT NULL AND email <> ''")->fetchColumn();
+    $mailSubscribers = (int)$pdo->query("
+        SELECT COUNT(*)
+        FROM nutzer n
+        JOIN user_notification_settings s ON s.user_id = n.id
+        WHERE n.email IS NOT NULL
+          AND n.email <> ''
+          AND s.notify_news = 1
+    ")->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT email FROM nutzer WHERE id = 1 LIMIT 1");
+    $stmt->execute();
+    $adminEmail = (string)($stmt->fetchColumn() ?: '');
+
+    return [
+        'all_users' => $allUsers,
+        'email_all' => $mailAll,
+        'email_subscribers' => $mailSubscribers,
+        'admin_email' => $adminEmail,
+    ];
+}
 
 $action = $_GET['action'] ?? '';
 
+if ($action === 'meta') {
+    respondJson(["status" => "success", "meta" => fetchSystemmeldungMeta($pdo)]);
+}
+
+if ($action === 'test_email') {
+    $input = json_decode(file_get_contents("php://input"), true) ?: [];
+    $title = trim((string)($input['title'] ?? 'Neue Systemmeldung'));
+    $subject = trim((string)($input['email_subject'] ?? ''));
+    $heading = trim((string)($input['email_heading'] ?? ''));
+    $body = trim((string)($input['email_body'] ?? ''));
+    $buttons = normalizeMailButtons((array)($input['email_buttons'] ?? []), (string)($input['link_url'] ?? ''), (string)($input['link_label'] ?? ''));
+
+    if ($subject === '') $subject = 'Ice-App: ' . $title;
+    if ($heading === '') $heading = $title;
+    if ($body === '') {
+        respondJson(["status" => "error", "message" => "Mailtext ist erforderlich"]);
+    }
+
+    $stmt = $pdo->prepare("SELECT email FROM nutzer WHERE id = 1 LIMIT 1");
+    $stmt->execute();
+    $adminEmail = trim((string)($stmt->fetchColumn() ?: ''));
+    if ($adminEmail === '') {
+        respondJson(["status" => "error", "message" => "Admin-E-Mail nicht gefunden"]);
+    }
+
+    $ok = iceapp_send_branded_admin_markdown_mail($adminEmail, '[Test] ' . $subject, $heading, $body, $buttons, true);
+    respondJson([
+        "status" => $ok ? "success" : "error",
+        "message" => $ok ? "Testmail wurde versendet" : "Testmail konnte nicht versendet werden",
+        "recipient" => $adminEmail,
+    ]);
+}
+
 if ($action === 'create') {
-    $input = json_decode(file_get_contents("php://input"), true);
+    $input = json_decode(file_get_contents("php://input"), true) ?: [];
     $title = trim((string)($input['title'] ?? ''));
     $message = trim((string)($input['message'] ?? ''));
     $linkUrl = trim((string)($input['link_url'] ?? ''));
     $linkLabel = trim((string)($input['link_label'] ?? ''));
+    $emailSubject = trim((string)($input['email_subject'] ?? ''));
+    $emailHeading = trim((string)($input['email_heading'] ?? ''));
+    $emailBody = trim((string)($input['email_body'] ?? ''));
+    $emailButtons = normalizeMailButtons((array)($input['email_buttons'] ?? []), $linkUrl, $linkLabel);
+    $mailMode = (string)($input['mail_send_mode'] ?? 'subscribers');
+    if (!in_array($mailMode, ['none', 'subscribers', 'all'], true)) $mailMode = 'subscribers';
 
     if ($title === '' || $message === '') {
-        echo json_encode(["status" => "error", "message" => "Titel und Nachricht sind erforderlich"]);
-        exit;
+        respondJson(["status" => "error", "message" => "Titel und Nachricht sind erforderlich"]);
     }
 
-    $stmt = $pdo->prepare("INSERT INTO systemmeldungen (titel, nachricht, link_url, link_label) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$title, $message, $linkUrl !== '' ? $linkUrl : null, $linkLabel !== '' ? $linkLabel : null]);
+    if ($mailMode !== 'none' && $emailBody === '') {
+        respondJson(["status" => "error", "message" => "Mailtext ist erforderlich"]);
+    }
+
+    if ($mailMode === 'all') {
+        $confirmed = !empty($input['force_mail_all_confirmed']);
+        $confirmText = trim((string)($input['force_mail_all_confirm_text'] ?? ''));
+        if (!$confirmed || $confirmText !== 'EMAIL AN ALLE') {
+            respondJson(["status" => "error", "message" => "E-Mail an alle muss doppelt bestaetigt werden"]);
+        }
+    }
+
+    if ($emailSubject === '') $emailSubject = 'Ice-App: ' . $title;
+    if ($emailHeading === '') $emailHeading = $title;
+
+    $stmt = $pdo->prepare("
+        INSERT INTO systemmeldungen (titel, nachricht, link_url, link_label, email_subject, email_heading, email_body, email_buttons)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $title,
+        $message,
+        $linkUrl !== '' ? $linkUrl : null,
+        $linkLabel !== '' ? $linkLabel : null,
+        $emailSubject,
+        $emailHeading,
+        $emailBody !== '' ? $emailBody : null,
+        !empty($emailButtons) ? json_encode($emailButtons) : null,
+    ]);
     $systemmeldungId = (int)$pdo->lastInsertId();
 
     $notificationExtra = [
@@ -51,25 +243,22 @@ if ($action === 'create') {
             'systemmeldung',
             $systemmeldungId,
             $title,
-            $notificationExtra,
-            [
-                'email' => [
-                    'type' => 'news',
-                    'senderName' => 'Ice App',
-                    'extra' => [
-                        'title' => $title,
-                        'message' => $message,
-                        'linkUrl' => $linkUrl !== '' ? $linkUrl : null,
-                        'linkLabel' => $linkLabel !== '' ? $linkLabel : null,
-                        'skipRateLimit' => true
-                    ]
-                ]
-            ]
+            $notificationExtra
         );
     }
 
-    echo json_encode(["status" => "success"]);
-    exit;
+    $mailResult = ['sent' => 0, 'failed' => 0, 'total' => 0];
+    if ($mailMode !== 'none') {
+        $recipients = fetchSystemMailRecipients($pdo, $mailMode);
+        $mailResult = sendSystemMailBatch($recipients, $emailSubject, $emailHeading, $emailBody, $emailButtons, $mailMode === 'subscribers');
+    }
+
+    respondJson([
+        "status" => "success",
+        "systemmeldung_id" => $systemmeldungId,
+        "notification_count" => count($nutzer),
+        "mail" => $mailResult,
+    ]);
 }
 
 if ($action === 'list') {
@@ -91,7 +280,7 @@ if ($action === 'list') {
         $meldung['benachrichtigungen_gelesen'] = (int)($countData['gelesen'] ?? 0);
     }
 
-    echo json_encode(["status" => "success", "systemmeldungen" => $systemmeldungen]);
+    echo json_encode(["status" => "success", "systemmeldungen" => $systemmeldungen, "meta" => fetchSystemmeldungMeta($pdo)]);
     exit;
 }
 
@@ -108,20 +297,41 @@ if ($action === 'delete') {
 }
 
 if ($action === 'update') {
-    $input = json_decode(file_get_contents("php://input"), true);
+    $input = json_decode(file_get_contents("php://input"), true) ?: [];
     $id = (int)($input['id'] ?? 0);
     $titel = trim((string)($input['title'] ?? ''));
     $nachricht = trim((string)($input['message'] ?? ''));
     $linkUrl = trim((string)($input['link_url'] ?? ''));
     $linkLabel = trim((string)($input['link_label'] ?? ''));
+    $emailSubject = trim((string)($input['email_subject'] ?? ''));
+    $emailHeading = trim((string)($input['email_heading'] ?? ''));
+    $emailBody = trim((string)($input['email_body'] ?? ''));
+    $emailButtons = normalizeMailButtons((array)($input['email_buttons'] ?? []), $linkUrl, $linkLabel);
 
     if ($id <= 0 || $titel === '' || $nachricht === '') {
         echo json_encode(["status" => "error", "message" => "Ungueltige Daten"]);
         exit;
     }
 
-    $stmt = $pdo->prepare("UPDATE systemmeldungen SET titel = ?, nachricht = ?, link_url = ?, link_label = ? WHERE id = ?");
-    $stmt->execute([$titel, $nachricht, $linkUrl !== '' ? $linkUrl : null, $linkLabel !== '' ? $linkLabel : null, $id]);
+    if ($emailSubject === '') $emailSubject = 'Ice-App: ' . $titel;
+    if ($emailHeading === '') $emailHeading = $titel;
+
+    $stmt = $pdo->prepare("
+        UPDATE systemmeldungen
+        SET titel = ?, nachricht = ?, link_url = ?, link_label = ?, email_subject = ?, email_heading = ?, email_body = ?, email_buttons = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([
+        $titel,
+        $nachricht,
+        $linkUrl !== '' ? $linkUrl : null,
+        $linkLabel !== '' ? $linkLabel : null,
+        $emailSubject,
+        $emailHeading,
+        $emailBody !== '' ? $emailBody : null,
+        !empty($emailButtons) ? json_encode($emailButtons) : null,
+        $id,
+    ]);
 
     $stmt2 = $pdo->prepare("UPDATE benachrichtigungen SET text = ?, zusatzdaten = ? WHERE referenz_id = ? AND typ = 'systemmeldung'");
     $stmt2->execute([
@@ -140,7 +350,7 @@ if ($action === 'update') {
 
 if ($action === 'get' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
-    $stmt = $pdo->prepare("SELECT id, titel, nachricht, link_url, link_label, erstellt_am FROM systemmeldungen WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, titel, nachricht, link_url, link_label, email_subject, email_heading, email_body, email_buttons, erstellt_am FROM systemmeldungen WHERE id = ?");
     $stmt->execute([$id]);
     $meldung = $stmt->fetch(PDO::FETCH_ASSOC);
 

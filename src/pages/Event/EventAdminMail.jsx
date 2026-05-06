@@ -112,7 +112,7 @@ function parseMailMarkdownBlocks(markdown) {
 function buildPreviewHtml({ heading, body, buttons, includeSettingsHint }) {
   const blocks = parseMailMarkdownBlocks(body);
   const safeHeading = escapeHtml(heading || "Mail-Überschrift");
-  const safeSettingsUrl = "https://ice-app.de/settings";
+  const safeSettingsUrl = "https://ice-app.de/account/settings";
   let content = "";
 
   blocks.forEach((block) => {
@@ -139,9 +139,9 @@ function buildPreviewHtml({ heading, body, buttons, includeSettingsHint }) {
     content += "</div>";
   }
 
-  if (includeSettingsHint) {
-    content += `<p style="margin:0 0 18px;color:#7a5200;font-size:14px;line-height:1.5;">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href="${safeSettingsUrl}" style="color:#b45309;">Benachrichtigungseinstellungen öffnen</a>.</p>`;
-  }
+  const settingsFooter = includeSettingsHint
+    ? `<div style="border-top:1px solid #f3dfad;background:#fff8e8;padding:18px 28px;color:#8a6a24;font-size:13px;line-height:1.45;">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href="${safeSettingsUrl}" style="color:#9a6500;text-decoration:underline;">Benachrichtigungseinstellungen öffnen</a>.</div>`
+    : "";
 
   return `<!doctype html><html><body style="margin:0;background:#fff7e8;font-family:Arial,Helvetica,sans-serif;color:#2d1d00;">
     <div style="max-width:680px;margin:0 auto;padding:28px 16px;">
@@ -152,8 +152,8 @@ function buildPreviewHtml({ heading, body, buttons, includeSettingsHint }) {
         </div>
         <div style="padding:28px;line-height:1.6;font-size:16px;">
           ${content || '<p style="margin:0 0 16px;color:#7a5200;">Mailtext erscheint hier.</p>'}
-          <p style="margin:0;">Viele Grüße<br>dein Ice-App Team</p>
         </div>
+        ${settingsFooter}
       </div>
     </div>
   </body></html>`;

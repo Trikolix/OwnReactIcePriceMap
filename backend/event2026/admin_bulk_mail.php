@@ -129,7 +129,7 @@ try {
     }
 
     $buttons = event2026_bulk_mail_buttons(is_array($data['buttons'] ?? null) ? $data['buttons'] : []);
-    $settingsUrl = 'https://ice-app.de/settings';
+    $settingsUrl = 'https://ice-app.de/account/settings';
     $includeSettingsHint = $sendMode === 'newsletter';
 
     if ($sendMode === 'test') {

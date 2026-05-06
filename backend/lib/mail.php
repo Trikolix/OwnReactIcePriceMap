@@ -137,7 +137,7 @@ function iceapp_build_branded_bulk_mail_html(
     array $paragraphs,
     array $buttons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/settings'
+    string $settingsUrl = 'https://ice-app.de/account/settings'
 ): string {
     $safeHeading = iceapp_mail_escape($heading);
     $safeSettingsUrl = iceapp_mail_escape($settingsUrl);
@@ -182,12 +182,15 @@ function iceapp_build_branded_bulk_mail_html(
         $body .= "</div>";
     }
 
+    $body .= "</div>";
+
     if ($includeNotificationSettingsHint) {
-        $body .= "<p style=\"margin:0 0 18px;color:#7a5200;font-size:14px;line-height:1.5;\">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href=\"{$safeSettingsUrl}\" style=\"color:#b45309;\">Benachrichtigungseinstellungen öffnen</a>.</p>";
+        $body .= "<div style=\"border-top:1px solid #f3dfad;background:#fff8e8;padding:18px 28px;color:#8a6a24;font-size:13px;line-height:1.45;\">";
+        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href=\"{$safeSettingsUrl}\" style=\"color:#9a6500;text-decoration:underline;\">Benachrichtigungseinstellungen öffnen</a>.";
+        $body .= "</div>";
     }
 
-    $body .= "<p style=\"margin:0;\">Viele Grüße<br>dein Ice-App Team</p>";
-    $body .= "</div></div></div></body></html>";
+    $body .= "</div></div></body></html>";
 
     return $body;
 }
@@ -197,7 +200,7 @@ function iceapp_build_bulk_mail_plain(
     array $paragraphs,
     array $buttons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/settings'
+    string $settingsUrl = 'https://ice-app.de/account/settings'
 ): string {
     $body = $heading . "\n\n";
     foreach ($paragraphs as $paragraph) {
@@ -214,11 +217,10 @@ function iceapp_build_bulk_mail_plain(
         $body .= "\n";
     }
     if ($includeNotificationSettingsHint) {
-        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit ändern: {$settingsUrl}\n\n";
+        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: {$settingsUrl}\n";
     }
-    $body .= "Viele Grüße\nDein Ice-App Team";
 
-    return $body;
+    return rtrim($body);
 }
 
 function iceapp_send_branded_bulk_mail(
@@ -228,7 +230,7 @@ function iceapp_send_branded_bulk_mail(
     array $paragraphs,
     array $buttons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/settings',
+    string $settingsUrl = 'https://ice-app.de/account/settings',
     string $from = 'Ice-App <noreply@ice-app.de>'
 ): bool {
     $boundary = '----=' . md5(uniqid((string) mt_rand(), true));
@@ -343,7 +345,7 @@ function iceapp_build_branded_admin_markdown_mail_html(
     string $markdown,
     array $fallbackButtons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/settings'
+    string $settingsUrl = 'https://ice-app.de/account/settings'
 ): string {
     $safeHeading = iceapp_mail_escape($heading);
     $safeSettingsUrl = iceapp_mail_escape($settingsUrl);
@@ -385,12 +387,15 @@ function iceapp_build_branded_admin_markdown_mail_html(
         $body .= "</div>";
     }
 
+    $body .= "</div>";
+
     if ($includeNotificationSettingsHint) {
-        $body .= "<p style=\"margin:0 0 18px;color:#7a5200;font-size:14px;line-height:1.5;\">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href=\"{$safeSettingsUrl}\" style=\"color:#b45309;\">Benachrichtigungseinstellungen öffnen</a>.</p>";
+        $body .= "<div style=\"border-top:1px solid #f3dfad;background:#fff8e8;padding:18px 28px;color:#8a6a24;font-size:13px;line-height:1.45;\">";
+        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href=\"{$safeSettingsUrl}\" style=\"color:#9a6500;text-decoration:underline;\">Benachrichtigungseinstellungen öffnen</a>.";
+        $body .= "</div>";
     }
 
-    $body .= "<p style=\"margin:0;\">Viele Grüße<br>dein Ice-App Team</p>";
-    $body .= "</div></div></div></body></html>";
+    $body .= "</div></div></body></html>";
 
     return $body;
 }
@@ -400,7 +405,7 @@ function iceapp_build_admin_markdown_mail_plain(
     string $markdown,
     array $fallbackButtons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/settings'
+    string $settingsUrl = 'https://ice-app.de/account/settings'
 ): string {
     $blocks = iceapp_parse_admin_mail_markdown_blocks($markdown);
     $body = $heading . "\n\n";
@@ -427,11 +432,10 @@ function iceapp_build_admin_markdown_mail_plain(
         $body .= "\n";
     }
     if ($includeNotificationSettingsHint) {
-        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit ändern: {$settingsUrl}\n\n";
+        $body .= "Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: {$settingsUrl}\n";
     }
-    $body .= "Viele Grüße\nDein Ice-App Team";
 
-    return $body;
+    return rtrim($body);
 }
 
 function iceapp_send_branded_admin_markdown_mail(
@@ -441,7 +445,7 @@ function iceapp_send_branded_admin_markdown_mail(
     string $markdown,
     array $fallbackButtons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/settings',
+    string $settingsUrl = 'https://ice-app.de/account/settings',
     string $from = 'Ice-App <noreply@ice-app.de>'
 ): bool {
     $boundary = '----=' . md5(uniqid((string) mt_rand(), true));

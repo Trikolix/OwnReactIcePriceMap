@@ -25,6 +25,7 @@ const createDefaultCreateForm = () => ({
   description: '',
   status: 'draft',
   startAt: '',
+  minImageCreatedAt: '',
   submissionDeadline: '',
   submissionLimitPerUser: 3,
 });
@@ -36,6 +37,7 @@ const createDefaultPlanningForm = () => ({
   luckyLoserSlots: 2,
   koBracketSize: '',
   startAt: '',
+  minImageCreatedAt: '',
   submissionDeadline: '',
   submissionLimitPerUser: 3,
   groupSchedule: [createScheduleSlot()],
@@ -89,6 +91,7 @@ const buildPlanningFormFromChallenge = (challenge) => {
     luckyLoserSlots: Number(challenge.lucky_loser_slots ?? 0) || 0,
     koBracketSize: challenge.ko_bracket_size ? Number(challenge.ko_bracket_size) : '',
     startAt: formatDateTimeLocal(challenge.start_at),
+    minImageCreatedAt: formatDateTimeLocal(challenge.min_image_created_at),
     submissionDeadline: formatDateTimeLocal(challenge.submission_deadline),
     submissionLimitPerUser:
       challenge.submission_limit_per_user !== null && challenge.submission_limit_per_user !== undefined
@@ -453,6 +456,9 @@ function PhotoChallengeAdmin() {
       if (createFormState.startAt) {
         formData.append('start_at', createFormState.startAt);
       }
+      if (createFormState.minImageCreatedAt) {
+        formData.append('min_image_created_at', createFormState.minImageCreatedAt);
+      }
       if (createFormState.submissionDeadline) {
         formData.append('submission_deadline', createFormState.submissionDeadline);
       }
@@ -722,6 +728,7 @@ function PhotoChallengeAdmin() {
       formData.append('lucky_loser_slots', formState.luckyLoserSlots);
       formData.append('ko_bracket_size', formState.koBracketSize ?? '');
       formData.append('start_at', formState.startAt || '');
+      formData.append('min_image_created_at', formState.minImageCreatedAt || '');
       formData.append('submission_deadline', formState.submissionDeadline || '');
       formData.append('submission_limit_per_user', formState.submissionLimitPerUser ?? '');
 
@@ -772,6 +779,7 @@ function PhotoChallengeAdmin() {
       formData.append('nutzer_id', userId);
       formData.append('challenge_id', selectedChallengeId);
       formData.append('start_at', formState.startAt || '');
+      formData.append('min_image_created_at', formState.minImageCreatedAt || '');
       formData.append('submission_deadline', formState.submissionDeadline || '');
       formData.append('submission_limit_per_user', formState.submissionLimitPerUser ?? '');
       if (nextStatus) {
@@ -1031,6 +1039,16 @@ function PhotoChallengeAdmin() {
                     />
                   </Field>
                   <Field>
+                    <label htmlFor="challenge-min-image-created-at">Bilder erlaubt ab</label>
+                    <input
+                      id="challenge-min-image-created-at"
+                      type="datetime-local"
+                      value={createFormState.minImageCreatedAt}
+                      onChange={handleCreateFormChange('minImageCreatedAt')}
+                    />
+                    <FormHint>Leer lassen, wenn auch ältere Bilder eingereicht werden dürfen.</FormHint>
+                  </Field>
+                  <Field>
                     <label htmlFor="challenge-submission-deadline">Einreichdeadline</label>
                     <input
                       id="challenge-submission-deadline"
@@ -1154,6 +1172,12 @@ function PhotoChallengeAdmin() {
                       <span>Raw-Status: {challengeRawStatus}</span>
                       <span>Deadline erreicht: {submissionDeadlinePassed ? 'ja' : 'nein'}</span>
                       <span>
+                        Bilder erlaubt ab:{' '}
+                        {challengeConfig?.min_image_created_at
+                          ? new Date(challengeConfig.min_image_created_at).toLocaleString('de-DE')
+                          : 'keine Einschränkung'}
+                      </span>
+                      <span>
                         Deadline:{' '}
                         {challengeConfig?.submission_deadline
                           ? new Date(challengeConfig.submission_deadline).toLocaleString('de-DE')
@@ -1173,6 +1197,17 @@ function PhotoChallengeAdmin() {
                           onChange={handleFormChange('startAt')}
                           disabled={!canEditChallengeImagePool}
                         />
+                      </Field>
+                      <Field>
+                        <label htmlFor="wizard-min-image-created-at">Bilder erlaubt ab</label>
+                        <input
+                          id="wizard-min-image-created-at"
+                          type="datetime-local"
+                          value={formState.minImageCreatedAt}
+                          onChange={handleFormChange('minImageCreatedAt')}
+                          disabled={!canEditChallengeImagePool}
+                        />
+                        <FormHint>Nur Bilder ab diesem Upload-Zeitpunkt können eingereicht werden.</FormHint>
                       </Field>
                       <Field>
                         <label htmlFor="wizard-submission-deadline">Einreichende</label>

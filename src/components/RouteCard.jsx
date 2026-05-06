@@ -60,31 +60,33 @@ const getKomootTourId = (value = "") => {
 };
 
 const getShareToken = (value = "") => {
+  const decoded = String(value || "").replace(/&amp;/g, "&");
   try {
-    const parsed = new URL(value);
+    const parsed = new URL(decoded);
     return parsed.searchParams.get("share_token") || "";
   } catch (error) {
-    return "";
+    const match = decoded.match(/[?&]share_token=([^&#"']+)/i);
+    return match?.[1] ? decodeURIComponent(match[1]) : "";
   }
 };
 
 const buildRouteEmbedMarkup = (route) => {
   const embedCode = route.embed_code?.trim() || "";
-  if (!embedCode) return "";
-
-  const isKomootEmbed = embedCode.includes("komoot.com") || String(route.url || "").includes("komoot.");
+  const routeUrl = String(route.url || "");
+  const isKomootEmbed = embedCode.includes("komoot.") || routeUrl.includes("komoot.");
+  if (!embedCode && !isKomootEmbed) return "";
   if (!isKomootEmbed) return embedCode;
 
   const iframeSrc = extractIframeSrc(embedCode);
-  const tourId = getKomootTourId(route.url) || getKomootTourId(iframeSrc);
-  const shareToken = getShareToken(route.url) || getShareToken(iframeSrc);
+  const tourId = getKomootTourId(routeUrl) || getKomootTourId(iframeSrc);
+  const shareToken = getShareToken(routeUrl) || getShareToken(iframeSrc) || getShareToken(embedCode);
 
   if (!tourId || !shareToken) {
     return "";
   }
 
-  const src = `https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}`;
-  return `<iframe src="${src}" width="640" height="440" frameborder="0" scrolling="no"></iframe>`;
+  const src = `https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}&layout=map`;
+  return `<iframe src="${src}" width="100%" height="360" frameborder="0" scrolling="no"></iframe>`;
 };
 
 const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
@@ -109,7 +111,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
   const embedMarkup = useMemo(() => buildRouteEmbedMarkup(route), [route]);
   const hasStoredEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
   const hasEmbed = Boolean(embedMarkup);
-  const komootEmbedSuppressed = hasStoredEmbed && !hasEmbed && (route.embed_code?.includes("komoot.com") || String(route.url || "").includes("komoot."));
+  const komootEmbedSuppressed = !hasEmbed && (route.embed_code?.includes("komoot.") || String(route.url || "").includes("komoot."));
   const [showEmbed, setShowEmbed] = useState(hasEmbed);
   const eisdielenCount = routeShops.length;
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
