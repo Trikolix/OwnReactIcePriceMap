@@ -538,6 +538,7 @@ function teamChallengeSendEmail(PDO $pdo, int $recipientId, string $senderName, 
         array_merge($extra, [
             'teamChallengeAction' => $action,
             'teamChallengeId' => $challengeId,
+            'skipRateLimit' => true,
         ])
     );
 }

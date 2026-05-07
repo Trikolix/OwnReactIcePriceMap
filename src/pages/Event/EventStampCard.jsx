@@ -1172,6 +1172,15 @@ export default function EventStampCard() {
 
       if (lookup.user?.has_event_registration) {
         clearPendingQrScan();
+        const lookupStampingEnabled = lookup.stamping?.enabled ?? stampingEnabled;
+        if (!lookupStampingEnabled) {
+          setMessage({
+            tone: "info",
+            text: lookup.stamping?.message || stampingMessage || "Die Stempelkarte kann erst am Event-Tag genutzt werden.",
+          });
+          return;
+        }
+
         const action = {
           checkpoint_id: checkpoint.id,
           mode: checkpoint.mode,

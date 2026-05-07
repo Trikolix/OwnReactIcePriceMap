@@ -17,6 +17,8 @@ try {
 
     $event = event2026_current_event($pdo);
     $eventId = (int) $event['id'];
+    $stampingEnabled = $requestedMode === 'test' ? true : event2026_is_live_stamping_open($event);
+    $stampingAvailableFrom = event2026_live_stamping_available_from($event);
     $checkpointStmt = $pdo->prepare("SELECT
             c.id,
             c.event_id,
@@ -110,6 +112,13 @@ try {
             'id' => $eventId,
             'name' => (string) $event['name'],
             'event_date' => (string) ($event['event_date'] ?? ''),
+        ],
+        'stamping' => [
+            'enabled' => $stampingEnabled,
+            'available_from' => $stampingAvailableFrom,
+            'message' => $stampingEnabled
+                ? null
+                : event2026_live_stamping_message($event),
         ],
         'checkpoint' => [
             'id' => (int) $checkpoint['id'],

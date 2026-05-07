@@ -212,9 +212,11 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
 
     $scopeWhere = '1=1';
     $scopeNotWhere = '0=1';
+    $activeShopStatusWhere = '1=1';
     if ($scope !== 'global' && $scopeId !== null) {
         $scopeWhere = buildShopScopeWhere($scope, $scopeId, 'e');
         $scopeNotWhere = buildShopScopeNotWhere($scope, $scopeId, 'e');
+        $activeShopStatusWhere = "COALESCE(e.status, 'open') <> 'permanent_closed'";
     }
 
     $checkinsStmt = $pdo->prepare(
@@ -230,6 +232,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
          ) img ON img.checkin_id = c.id
          WHERE c.datum BETWEEN :start AND :end
            AND $scopeWhere
+           AND $activeShopStatusWhere
          GROUP BY c.nutzer_id"
     );
     $checkinsStmt->execute($params);
@@ -251,6 +254,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
          JOIN eisdielen e ON e.id = b.eisdiele_id
          WHERE b.erstellt_am BETWEEN :start AND :end
            AND $scopeWhere
+           AND $activeShopStatusWhere
          GROUP BY b.nutzer_id"
     );
     $reviewsStmt->execute($params);
@@ -270,6 +274,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
          JOIN eisdielen e ON e.id = p.eisdiele_id
          WHERE p.gemeldet_am BETWEEN :start AND :end
            AND $scopeWhere
+           AND $activeShopStatusWhere
          GROUP BY p.gemeldet_von"
     );
     $pricesStmt->execute($params);
@@ -301,6 +306,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
                  JOIN eisdielen e ON e.id = re.eisdiele_id
                  WHERE re.route_id = r.id
                    AND $scopeWhere
+                   AND $activeShopStatusWhere
                )
                AND NOT EXISTS (
                  SELECT 1
@@ -308,6 +314,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
                  JOIN eisdielen e ON e.id = re2.eisdiele_id
                  WHERE re2.route_id = r.id
                    AND $scopeNotWhere
+                   AND $activeShopStatusWhere
                )
              GROUP BY r.nutzer_id"
         );
@@ -336,6 +343,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
          FROM eisdielen e
          WHERE e.erstellt_am BETWEEN :start AND :end
            AND $scopeWhere
+           AND $activeShopStatusWhere
          GROUP BY e.user_id"
     );
     $shopsStmt->execute($params);

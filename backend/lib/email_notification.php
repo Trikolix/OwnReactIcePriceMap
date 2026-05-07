@@ -33,10 +33,9 @@ function iceapp_notification_absolute_url(string $pathOrUrl): string
     return 'https://ice-app.de' . (strpos($value, '/') === 0 ? $value : '/' . $value);
 }
 
-function iceapp_notification_append_settings_hint(array $paragraphs, int $userId): array
+function iceapp_notification_settings_url(int $userId): string
 {
-    $paragraphs[] = "Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter Einstellungen ändern: https://ice-app.de/user/{$userId}?openSettings=1";
-    return $paragraphs;
+    return "https://ice-app.de/user/{$userId}?openSettings=1";
 }
 
 /**
@@ -248,7 +247,8 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         return;
     }
 
-    $mailParagraphs = iceapp_notification_append_settings_hint($mailParagraphs, (int)$userId);
+    $notificationSettingsFooterText = 'Du kannst deine E-Mail-Benachrichtigungen jederzeit im Profil unter Einstellungen ändern';
+    $notificationSettingsUrl = iceapp_notification_settings_url((int)$userId);
 
     // Im backend_dev werden Mails nur real an user_id=1 gesendet.
     // Alle anderen Mails werden an die Dev-Adresse umgeleitet.
@@ -259,7 +259,7 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         array_unshift($mailParagraphs, "Hinweis backend_dev: Diese E-Mail waere eigentlich an {$originalMailTo} (user_id=" . (int)$userId . ") gesendet worden.");
     }
 
-    iceapp_send_branded_action_mail(
+    $mailSent = iceapp_send_branded_action_mail(
         $mailTo,
         $mailSubject,
         $mailHeading,
@@ -268,8 +268,15 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $buttonLabel,
         $buttonUrl,
         'Direkter Link',
-        'noreply@ice-app.de'
+        'Ice-App <noreply@ice-app.de>',
+        $notificationSettingsFooterText,
+        $notificationSettingsUrl
     );
+
+    if (!$mailSent) {
+        error_log("Ice-App mail() failed for notification type {$notificationType} to user_id={$userId}");
+        return;
+    }
 
     // Nach erfolgreichem Versand: Timestamp aktualisieren
     $stmtUpdate = $pdo->prepare("UPDATE nutzer SET last_notification_email_at = ? WHERE id = ?");

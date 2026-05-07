@@ -85,6 +85,7 @@ const SecondaryButton = styled.button`
 `;
 
 const GUEST_MOTIVATION_KEY = 'ice_app_guest_motivation_dismissed';
+const GUEST_MOTIVATION_DELAY_MS = 3 * 60 * 1000;
 
 export default function GuestMotivation() {
   const { isLoggedIn } = useUser();
@@ -98,10 +99,10 @@ export default function GuestMotivation() {
     const hasDismissed = localStorage.getItem(GUEST_MOTIVATION_KEY);
     if (hasDismissed) return;
 
-    // Show after 45 seconds of viewing the page
+    // Show after 3 minutes of viewing the page.
     const timer = setTimeout(() => {
       setShowModal(true);
-    }, 45000);
+    }, GUEST_MOTIVATION_DELAY_MS);
 
     return () => clearTimeout(timer);
   }, [isLoggedIn]);
