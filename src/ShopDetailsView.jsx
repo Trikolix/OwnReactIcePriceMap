@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
 import { Map, Navigation, X } from 'lucide-react';
@@ -23,6 +22,11 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 
 const hasValue = (value) => value !== null && value !== undefined;
 const hasPriceEntry = (entry) => hasValue(entry?.preis);
+const MOBILE_SHEET_SNAP_POINTS = [0.25, 0.5, 0.75, 1];
+const MOBILE_SHEET_DEFAULT_SNAP_POINT = 0.5;
+const MOBILE_SHEET_DRAG_THRESHOLD = 8;
+
+const getMobileViewportHeight = () => window.visualViewport?.height || window.innerHeight;
 
 const getShopCoordinates = (shop) => {
   const latitude = Number(shop?.latitude);
@@ -73,8 +77,14 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const shopRequestRef = useRef(0);
   const routesRequestRef = useRef(0);
   const isMobile = useMediaQuery({ maxWidth: 767 });
-  const [currentHeight, setCurrentHeight] = useState(window.innerHeight * 0.5);
-  const [{ height }, api] = useSpring(() => ({ height: currentHeight }));
+  const [sheetHeight, setSheetHeight] = useState(() => getMobileViewportHeight() * MOBILE_SHEET_DEFAULT_SNAP_POINT);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+  const sheetSnapPointRef = useRef(MOBILE_SHEET_DEFAULT_SNAP_POINT);
+  const sheetHeightRef = useRef(sheetHeight);
+  const dragStartHeightRef = useRef(sheetHeight);
+  const lastYRef = useRef(0);
+  const hasDraggedSheetRef = useRef(false);
+  const isSheetDragActiveRef = useRef(false);
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const focusCheckinId = searchParams.get('focusCheckin');
@@ -90,22 +100,101 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
     if (tabParam) setActiveTab(tabParam);
   }, [tabParam]);
 
-  const minHeight = window.innerHeight * 0.3;
-  const maxHeight = window.innerHeight * 1;
+  useEffect(() => {
+    const handleResize = () => {
+      const nextHeight = getMobileViewportHeight() * sheetSnapPointRef.current;
 
-  const handleTouchStart = (e) => {
-    startYRef.current = e.touches[0].clientY;
+      sheetHeightRef.current = nextHeight;
+      dragStartHeightRef.current = nextHeight;
+      setSheetHeight(nextHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const getMobileSheetBounds = () => ({
+    minHeight: getMobileViewportHeight() * MOBILE_SHEET_SNAP_POINTS[0],
+    maxHeight: getMobileViewportHeight() * MOBILE_SHEET_SNAP_POINTS[MOBILE_SHEET_SNAP_POINTS.length - 1],
+  });
+
+  const getClosestMobileSheetSnapPoint = (rawHeight) => {
+    const viewportHeight = getMobileViewportHeight();
+    const currentRatio = rawHeight / viewportHeight;
+    return MOBILE_SHEET_SNAP_POINTS.reduce((nearest, snapPoint) => (
+      Math.abs(snapPoint - currentRatio) < Math.abs(nearest - currentRatio) ? snapPoint : nearest
+    ), MOBILE_SHEET_DEFAULT_SNAP_POINT);
   };
 
-  const handleTouchMove = (e) => {
-    const deltaY = e.touches[0].clientY - startYRef.current;
-    const newHeight = Math.max(minHeight, Math.min(maxHeight, currentHeight - deltaY));
-    api.start({ height: newHeight });
+  const handleSheetDragStart = (e) => {
+    if (e.target.closest('button, a, input, textarea, select, [role="button"]')) {
+      isSheetDragActiveRef.current = false;
+      return;
+    }
+
+    isSheetDragActiveRef.current = true;
+    setIsDraggingSheet(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    startYRef.current = e.clientY;
+    lastYRef.current = startYRef.current;
+    dragStartHeightRef.current = sheetHeightRef.current;
+    hasDraggedSheetRef.current = false;
   };
 
-  const handleTouchEnd = () => {
-    api.start({ height: height.get() });
-    setCurrentHeight(height.get());
+  const handleSheetDragMove = (e) => {
+    if (!isSheetDragActiveRef.current) {
+      return;
+    }
+
+    const nextY = e.clientY;
+    const deltaY = nextY - startYRef.current;
+    const { minHeight, maxHeight } = getMobileSheetBounds();
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeightRef.current - deltaY));
+
+    if (Math.abs(deltaY) > MOBILE_SHEET_DRAG_THRESHOLD) {
+      hasDraggedSheetRef.current = true;
+    }
+
+    lastYRef.current = nextY;
+    sheetHeightRef.current = newHeight;
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    setSheetHeight(newHeight);
+  };
+
+  const handleSheetDragEnd = (e) => {
+    if (!isSheetDragActiveRef.current) {
+      return;
+    }
+
+    const endY = Number.isFinite(e.clientY) ? e.clientY : lastYRef.current;
+    const deltaY = endY - startYRef.current;
+    isSheetDragActiveRef.current = false;
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setIsDraggingSheet(false);
+
+    if (!hasDraggedSheetRef.current && Math.abs(deltaY) <= MOBILE_SHEET_DRAG_THRESHOLD) {
+      return;
+    }
+
+    const { minHeight, maxHeight } = getMobileSheetBounds();
+    const rawHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeightRef.current - deltaY));
+    const snapPoint = getClosestMobileSheetSnapPoint(rawHeight);
+    const snapHeight = getMobileViewportHeight() * snapPoint;
+
+    sheetSnapPointRef.current = snapPoint;
+    sheetHeightRef.current = snapHeight;
+    dragStartHeightRef.current = snapHeight;
+    lastYRef.current = endY;
+    hasDraggedSheetRef.current = false;
+    setSheetHeight(snapHeight);
   };
 
   const fetchShopData = useCallback(async (id) => {
@@ -171,10 +260,16 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const ShellComponent = isMobile ? AnimatedContainer : Container;
   const shellProps = isMobile
     ? {
-      style: { height },
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
+      style: { height: sheetHeight },
+      $isDragging: isDraggingSheet,
+    }
+    : {};
+  const dragHandleProps = isMobile
+    ? {
+      onPointerDown: handleSheetDragStart,
+      onPointerMove: handleSheetDragMove,
+      onPointerUp: handleSheetDragEnd,
+      onPointerCancel: handleSheetDragEnd,
     }
     : {};
 
@@ -194,8 +289,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   return (
     <>
       <ShellComponent {...shellProps}>
-        {isMobile && <DragHandle aria-hidden="true" />}
-        <Header ref={headerRef}>
+        {isMobile && <DragHandle aria-hidden="true" {...dragHandleProps} />}
+        <Header ref={headerRef} {...dragHandleProps}>
           <HeaderMain>
             <IceShopHeader>{shopData.eisdiele.name}</IceShopHeader>
             <HeaderSubline>{shopData.eisdiele.adresse || 'Adresse nicht hinterlegt'}</HeaderSubline>
@@ -658,7 +753,9 @@ const ShopDetailsContent = ({
 
 export default ShopDetailsView;
 
-const AnimatedContainer = styled(animated.div)`
+const AnimatedContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== '$isDragging',
+})`
   position: fixed;
   bottom: 0;
   left: 0;
@@ -673,6 +770,7 @@ const AnimatedContainer = styled(animated.div)`
   z-index: 1400;
   overflow: hidden;
   border: 1px solid rgba(47, 33, 0, 0.08);
+  transition: ${({ $isDragging }) => ($isDragging ? 'none' : 'height 0.24s ease')};
 `;
 
 const Container = styled.div.withConfig({
@@ -710,12 +808,22 @@ const Container = styled.div.withConfig({
 
 const DragHandle = styled.div`
   width: 52px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(47, 33, 0, 0.16);
+  height: 26px;
   align-self: center;
-  margin: 0.55rem 0 0.1rem;
+  margin: 0.2rem 0 0;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+
+  &::before {
+    content: '';
+    width: 52px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(47, 33, 0, 0.16);
+  }
 `;
 
 const Header = styled.div`
@@ -727,9 +835,11 @@ const Header = styled.div`
   padding: 0.75rem 0.9rem 0.7rem;
   background: rgba(255, 252, 243, 0.94);
   border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+  touch-action: none;
 
   @media (min-width: 768px) {
     padding: 1rem;
+    touch-action: auto;
   }
 `;
 
