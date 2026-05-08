@@ -46,16 +46,6 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
         <Card
           $epicTier={epicTier}
           ref={ref}
-          role="button"
-          tabIndex={0}
-          onClick={() => setIsLightboxOpen(true)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setIsLightboxOpen(true);
-            }
-          }}
-          aria-label={`Award ${award?.title_de || ""} im Vollbild anzeigen`}
         >
           <CardMetaRow>
             <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
@@ -185,7 +175,6 @@ const SHIMMER_KEYFRAMES = `
 
 const Card = styled(SharedCard)`
   padding: 1rem;
-  cursor: zoom-in;
 `;
 
 const CardMetaRow = styled.div`
