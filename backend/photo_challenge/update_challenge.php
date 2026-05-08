@@ -42,6 +42,9 @@ try {
         ? ((string)$_POST['ko_bracket_size'] === '' ? null : (int)$_POST['ko_bracket_size'])
         : ($challenge['ko_bracket_size'] !== null ? (int)$challenge['ko_bracket_size'] : null);
     $startAt = array_key_exists('start_at', $_POST) ? normalizeDateTime($_POST['start_at'] ?? null) : ($challenge['start_at'] ?? null);
+    $minImageCreatedAt = array_key_exists('min_image_created_at', $_POST)
+        ? normalizeDateTime($_POST['min_image_created_at'] ?? null)
+        : ($challenge['min_image_created_at'] ?? null);
     $submissionDeadline = array_key_exists('submission_deadline', $_POST)
         ? normalizeDateTime($_POST['submission_deadline'] ?? null)
         : ($challenge['submission_deadline'] ?? null);
@@ -78,6 +81,9 @@ try {
     if ($startAt && $submissionDeadline && strtotime($submissionDeadline) <= strtotime($startAt)) {
         throw new RuntimeException('Die Einreichdeadline muss nach dem Startzeitpunkt liegen.');
     }
+    if ($minImageCreatedAt && $submissionDeadline && strtotime($minImageCreatedAt) > strtotime($submissionDeadline)) {
+        throw new RuntimeException('Das Mindestdatum für Bilder darf nicht nach der Einreichdeadline liegen.');
+    }
     if ($status === 'submission_open' && !$submissionDeadline) {
         throw new RuntimeException('Für den Status "submission_open" muss eine Einreichdeadline gesetzt sein.');
     }
@@ -92,6 +98,7 @@ try {
             status = :status,
             group_size = :group_size,
             start_at = :start_at,
+            min_image_created_at = :min_image_created_at,
             submission_deadline = :submission_deadline,
             submission_limit_per_user = :submission_limit_per_user,
             group_schedule = :group_schedule,
@@ -106,6 +113,7 @@ try {
         'status' => $status,
         'group_size' => $groupSize,
         'start_at' => $startAt,
+        'min_image_created_at' => $minImageCreatedAt,
         'submission_deadline' => $submissionDeadline,
         'submission_limit_per_user' => $submissionLimit,
         'group_schedule' => $groupScheduleJson,

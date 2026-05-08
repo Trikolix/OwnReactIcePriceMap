@@ -6,6 +6,19 @@ require_once __DIR__ . '/../lib/shop_maintenance.php';
 
 $auth = requireAuth($pdo);
 $userId = (int)$auth['user_id'];
+$levelStmt = $pdo->prepare("SELECT current_level FROM nutzer WHERE id = ? LIMIT 1");
+$levelStmt->execute([$userId]);
+$currentLevel = (int)($levelStmt->fetchColumn() ?: 0);
+
+if ($userId !== 1 && $currentLevel < 15) {
+    http_response_code(403);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Das Pflegeboard ist ab Level 15 freigeschaltet.',
+    ]);
+    exit;
+}
+
 $lat = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
 $lon = isset($_GET['lon']) ? (float)$_GET['lon'] : null;
 $radiusM = isset($_GET['radius_m']) ? (int)$_GET['radius_m'] : SHOP_MAINTENANCE_DEFAULT_RADIUS_M;

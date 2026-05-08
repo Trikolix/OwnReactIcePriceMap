@@ -4,6 +4,7 @@ require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/comment_registration.php';
+require_once  __DIR__ . '/lib/opening_hours.php';
 
 function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $activities = [];
@@ -90,7 +91,21 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
         'offset'         => $offsetDays
     ]);
     $eisdielen = $stmtEisdielen->fetchAll(PDO::FETCH_ASSOC);
+    $openingHoursMap = fetch_opening_hours_map($pdo, array_column($eisdielen, 'id'));
     foreach ($eisdielen as $shop) {
+        $shopId = (int)$shop['id'];
+        $rows = $openingHoursMap[$shopId] ?? [];
+        $note = $shop['opening_hours_note'] ?? null;
+        if (empty($rows) && !empty($shop['openingHours'])) {
+            $parsed = parse_legacy_opening_hours($shop['openingHours']);
+            $rows = $parsed['rows'];
+            if ($note === null && $parsed['note']) {
+                $note = $parsed['note'];
+            }
+        }
+        $shop['openingHoursStructured'] = build_structured_opening_hours($rows, $note);
+        $shop['opening_hours_note'] = $note;
+        $shop['is_open_now'] = is_shop_open($rows, null, $shop['status'] ?? null);
         $activities[] = [
             'typ'  => 'eisdiele',
             'id'   => $shop['id'],

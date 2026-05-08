@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useSpring, animated } from '@react-spring/web';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
-import { X } from 'lucide-react';
+import { Map, Navigation, X } from 'lucide-react';
 import { SubmitButton as SharedSubmitButton } from './styles/SharedStyles';
 import { Link, useSearchParams } from 'react-router-dom';
 import Rating from './components/Rating';
@@ -23,6 +22,44 @@ import SubmitIceShopModal from './SubmitIceShopModal';
 
 const hasValue = (value) => value !== null && value !== undefined;
 const hasPriceEntry = (entry) => hasValue(entry?.preis);
+const MOBILE_SHEET_SNAP_POINTS = [0.25, 0.5, 0.75, 1];
+const MOBILE_SHEET_DEFAULT_SNAP_POINT = 0.5;
+const MOBILE_SHEET_DRAG_THRESHOLD = 8;
+
+const getMobileViewportHeight = () => window.visualViewport?.height || window.innerHeight;
+
+const getShopCoordinates = (shop) => {
+  const latitude = Number(shop?.latitude);
+  const longitude = Number(shop?.longitude);
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude }
+    : null;
+};
+
+const buildMapsUrl = (shop) => {
+  const coordinates = getShopCoordinates(shop);
+  const destination = coordinates
+    ? `${coordinates.latitude},${coordinates.longitude}`
+    : shop?.adresse;
+
+  if (!destination) {
+    return null;
+  }
+
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+};
+
+const buildKomootUrl = (shop) => {
+  const coordinates = getShopCoordinates(shop);
+  if (coordinates) {
+    const { latitude, longitude } = coordinates;
+    return `https://www.komoot.com/de-de/plan/@${latitude},${longitude},13.500z?p[0]&p[1][loc]=${latitude},${longitude}&sport=racebike`;
+  }
+
+  return shop?.adresse
+    ? `https://www.komoot.com/discover/${encodeURIComponent(shop.adresse)}`
+    : null;
+};
 
 const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -40,8 +77,14 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const shopRequestRef = useRef(0);
   const routesRequestRef = useRef(0);
   const isMobile = useMediaQuery({ maxWidth: 767 });
-  const [currentHeight, setCurrentHeight] = useState(window.innerHeight * 0.5);
-  const [{ height }, api] = useSpring(() => ({ height: currentHeight }));
+  const [sheetHeight, setSheetHeight] = useState(() => getMobileViewportHeight() * MOBILE_SHEET_DEFAULT_SNAP_POINT);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+  const sheetSnapPointRef = useRef(MOBILE_SHEET_DEFAULT_SNAP_POINT);
+  const sheetHeightRef = useRef(sheetHeight);
+  const dragStartHeightRef = useRef(sheetHeight);
+  const lastYRef = useRef(0);
+  const hasDraggedSheetRef = useRef(false);
+  const isSheetDragActiveRef = useRef(false);
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const focusCheckinId = searchParams.get('focusCheckin');
@@ -57,22 +100,101 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
     if (tabParam) setActiveTab(tabParam);
   }, [tabParam]);
 
-  const minHeight = window.innerHeight * 0.3;
-  const maxHeight = window.innerHeight * 1;
+  useEffect(() => {
+    const handleResize = () => {
+      const nextHeight = getMobileViewportHeight() * sheetSnapPointRef.current;
 
-  const handleTouchStart = (e) => {
-    startYRef.current = e.touches[0].clientY;
+      sheetHeightRef.current = nextHeight;
+      dragStartHeightRef.current = nextHeight;
+      setSheetHeight(nextHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const getMobileSheetBounds = () => ({
+    minHeight: getMobileViewportHeight() * MOBILE_SHEET_SNAP_POINTS[0],
+    maxHeight: getMobileViewportHeight() * MOBILE_SHEET_SNAP_POINTS[MOBILE_SHEET_SNAP_POINTS.length - 1],
+  });
+
+  const getClosestMobileSheetSnapPoint = (rawHeight) => {
+    const viewportHeight = getMobileViewportHeight();
+    const currentRatio = rawHeight / viewportHeight;
+    return MOBILE_SHEET_SNAP_POINTS.reduce((nearest, snapPoint) => (
+      Math.abs(snapPoint - currentRatio) < Math.abs(nearest - currentRatio) ? snapPoint : nearest
+    ), MOBILE_SHEET_DEFAULT_SNAP_POINT);
   };
 
-  const handleTouchMove = (e) => {
-    const deltaY = e.touches[0].clientY - startYRef.current;
-    const newHeight = Math.max(minHeight, Math.min(maxHeight, currentHeight - deltaY));
-    api.start({ height: newHeight });
+  const handleSheetDragStart = (e) => {
+    if (e.target.closest('button, a, input, textarea, select, [role="button"]')) {
+      isSheetDragActiveRef.current = false;
+      return;
+    }
+
+    isSheetDragActiveRef.current = true;
+    setIsDraggingSheet(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    startYRef.current = e.clientY;
+    lastYRef.current = startYRef.current;
+    dragStartHeightRef.current = sheetHeightRef.current;
+    hasDraggedSheetRef.current = false;
   };
 
-  const handleTouchEnd = () => {
-    api.start({ height: height.get() });
-    setCurrentHeight(height.get());
+  const handleSheetDragMove = (e) => {
+    if (!isSheetDragActiveRef.current) {
+      return;
+    }
+
+    const nextY = e.clientY;
+    const deltaY = nextY - startYRef.current;
+    const { minHeight, maxHeight } = getMobileSheetBounds();
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeightRef.current - deltaY));
+
+    if (Math.abs(deltaY) > MOBILE_SHEET_DRAG_THRESHOLD) {
+      hasDraggedSheetRef.current = true;
+    }
+
+    lastYRef.current = nextY;
+    sheetHeightRef.current = newHeight;
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    setSheetHeight(newHeight);
+  };
+
+  const handleSheetDragEnd = (e) => {
+    if (!isSheetDragActiveRef.current) {
+      return;
+    }
+
+    const endY = Number.isFinite(e.clientY) ? e.clientY : lastYRef.current;
+    const deltaY = endY - startYRef.current;
+    isSheetDragActiveRef.current = false;
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setIsDraggingSheet(false);
+
+    if (!hasDraggedSheetRef.current && Math.abs(deltaY) <= MOBILE_SHEET_DRAG_THRESHOLD) {
+      return;
+    }
+
+    const { minHeight, maxHeight } = getMobileSheetBounds();
+    const rawHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeightRef.current - deltaY));
+    const snapPoint = getClosestMobileSheetSnapPoint(rawHeight);
+    const snapHeight = getMobileViewportHeight() * snapPoint;
+
+    sheetSnapPointRef.current = snapPoint;
+    sheetHeightRef.current = snapHeight;
+    dragStartHeightRef.current = snapHeight;
+    lastYRef.current = endY;
+    hasDraggedSheetRef.current = false;
+    setSheetHeight(snapHeight);
   };
 
   const fetchShopData = useCallback(async (id) => {
@@ -138,10 +260,16 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const ShellComponent = isMobile ? AnimatedContainer : Container;
   const shellProps = isMobile
     ? {
-      style: { height },
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
+      style: { height: sheetHeight },
+      $isDragging: isDraggingSheet,
+    }
+    : {};
+  const dragHandleProps = isMobile
+    ? {
+      onPointerDown: handleSheetDragStart,
+      onPointerMove: handleSheetDragMove,
+      onPointerUp: handleSheetDragEnd,
+      onPointerCancel: handleSheetDragEnd,
     }
     : {};
 
@@ -161,8 +289,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   return (
     <>
       <ShellComponent {...shellProps}>
-        {isMobile && <DragHandle aria-hidden="true" />}
-        <Header ref={headerRef}>
+        {isMobile && <DragHandle aria-hidden="true" {...dragHandleProps} />}
+        <Header ref={headerRef} {...dragHandleProps}>
           <HeaderMain>
             <IceShopHeader>{shopData.eisdiele.name}</IceShopHeader>
             <HeaderSubline>{shopData.eisdiele.adresse || 'Adresse nicht hinterlegt'}</HeaderSubline>
@@ -186,7 +314,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
 
           </HeaderMain>
           <HeaderActions>
-            <CloseButton onClick={onClose} aria-label="Details schliessen">
+            <CloseButton onClick={onClose} aria-label="Details schließen">
               <X size={16} />
             </CloseButton>
             <HeaderUtilityRow>
@@ -361,6 +489,8 @@ const ShopDetailsContent = ({
     hasValue(shopData.scores.eisbecher) ||
     shopData.attribute?.length > 0
   );
+  const mapsUrl = buildMapsUrl(shopData.eisdiele);
+  const komootUrl = buildKomootUrl(shopData.eisdiele);
 
   if (activeTab === 'info') {
     return (
@@ -369,7 +499,27 @@ const ShopDetailsContent = ({
           <InfoList>
             <InfoRow>
               <InfoLabel>Adresse</InfoLabel>
-              <InfoValue>{shopData.eisdiele.adresse || 'Keine Adresse eingetragen'}</InfoValue>
+              <InfoValue>
+                <AddressContent>
+                  <AddressText>{shopData.eisdiele.adresse || 'Keine Adresse eingetragen'}</AddressText>
+                  {(mapsUrl || komootUrl) && (
+                    <AddressActionRow>
+                      {mapsUrl && (
+                        <AddressLink href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                          <Map size={14} />
+                          Maps
+                        </AddressLink>
+                      )}
+                      {komootUrl && (
+                        <AddressLink href={komootUrl} target="_blank" rel="noopener noreferrer">
+                          <Navigation size={14} />
+                          Komoot
+                        </AddressLink>
+                      )}
+                    </AddressActionRow>
+                  )}
+                </AddressContent>
+              </InfoValue>
             </InfoRow>
           </InfoList>
           <InlineContent>
@@ -603,7 +753,9 @@ const ShopDetailsContent = ({
 
 export default ShopDetailsView;
 
-const AnimatedContainer = styled(animated.div)`
+const AnimatedContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== '$isDragging',
+})`
   position: fixed;
   bottom: 0;
   left: 0;
@@ -618,11 +770,13 @@ const AnimatedContainer = styled(animated.div)`
   z-index: 1400;
   overflow: hidden;
   border: 1px solid rgba(47, 33, 0, 0.08);
+  transition: ${({ $isDragging }) => ($isDragging ? 'none' : 'height 0.24s ease')};
 `;
 
 const Container = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'isfullheight',
 })`
+  box-sizing: border-box;
   overscroll-behavior: none;
   position: fixed;
   bottom: 0;
@@ -654,15 +808,26 @@ const Container = styled.div.withConfig({
 
 const DragHandle = styled.div`
   width: 52px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(47, 33, 0, 0.16);
+  height: 26px;
   align-self: center;
-  margin: 0.55rem 0 0.1rem;
+  margin: 0.2rem 0 0;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+
+  &::before {
+    content: '';
+    width: 52px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(47, 33, 0, 0.16);
+  }
 `;
 
 const Header = styled.div`
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
@@ -670,9 +835,11 @@ const Header = styled.div`
   padding: 0.75rem 0.9rem 0.7rem;
   background: rgba(255, 252, 243, 0.94);
   border-bottom: 1px solid rgba(47, 33, 0, 0.08);
+  touch-action: none;
 
   @media (min-width: 768px) {
     padding: 1rem;
+    touch-action: auto;
   }
 `;
 
@@ -756,6 +923,7 @@ const CloseButton = styled.button`
 `;
 
 const Tabs = styled.div`
+  box-sizing: border-box;
   display: flex;
   gap: 0.35rem;
   padding: 0.4rem 0.6rem;
@@ -785,9 +953,11 @@ const Tab = styled.button`
 `;
 
 const Content = styled.div`
+  box-sizing: border-box;
   flex: 1;
   padding: 0.85rem;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 
   &::-webkit-scrollbar {
@@ -835,6 +1005,8 @@ const TabStack = styled.div`
 `;
 
 const SectionCard = styled.section`
+  box-sizing: border-box;
+  min-width: 0;
   background: rgba(255, 252, 243, 0.94);
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 18px;
@@ -904,14 +1076,56 @@ const InfoValue = styled.span`
   line-height: 1.35;
 `;
 
+const AddressContent = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+`;
+
+const AddressText = styled.span`
+  min-width: 0;
+  overflow-wrap: anywhere;
+`;
+
+const AddressActionRow = styled.div`
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+`;
+
+const AddressLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 1.8rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 9px;
+  border: 1px solid rgba(138, 87, 0, 0.24);
+  background: rgba(255, 255, 255, 0.76);
+  color: #6f4300;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.14);
+    border-color: rgba(138, 87, 0, 0.36);
+    color: #4d3000;
+  }
+`;
+
 const InlineContent = styled.div`
   display: grid;
   gap: 0.45rem;
 `;
 
 const TableScroll = styled.div`
+  box-sizing: border-box;
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   border-radius: 14px;
   border: 1px solid rgba(47, 33, 0, 0.08);
   background: rgba(255, 255, 255, 0.8);
@@ -925,14 +1139,16 @@ const Table = styled.table`
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 520px;
+  min-width: 0;
+  table-layout: fixed;
 
   th,
   td {
     text-align: left;
     vertical-align: top;
-    padding: 0.65rem 0.75rem;
+    padding: 0.58rem 0.6rem;
     border-bottom: 1px solid rgba(47, 33, 0, 0.07);
+    overflow-wrap: anywhere;
   }
 
   tr:last-child th,
@@ -941,7 +1157,7 @@ const Table = styled.table`
   }
 
   th {
-    width: 120px;
+    width: 112px;
     color: #5f3f00;
     font-weight: 700;
     white-space: nowrap;

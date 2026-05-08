@@ -34,6 +34,7 @@ CREATE TABLE `photo_challenges` (
   `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'draft',
   `group_size` int NOT NULL DEFAULT '4',
   `start_at` datetime DEFAULT NULL,
+  `min_image_created_at` datetime DEFAULT NULL,
   `submission_deadline` datetime DEFAULT NULL,
   `submission_limit_per_user` int DEFAULT NULL,
   `group_schedule` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,

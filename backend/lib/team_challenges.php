@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/email_notification.php';
+require_once __DIR__ . '/notification_dispatcher.php';
 
 function teamChallengeColumnExists(PDO $pdo, string $table, string $column): bool
 {
@@ -19,10 +19,10 @@ function teamChallengeEnsureColumn(PDO $pdo, string $table, string $column, stri
 
 function ensureTeamChallengeSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__team_challenge_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__team_challenge_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS team_challenges (
@@ -56,8 +56,9 @@ function ensureTeamChallengeSchema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
 
-    teamChallengeEnsureColumn($pdo, 'team_challenges', 'mode', "ENUM('midpoint', 'expedition') NOT NULL DEFAULT 'midpoint' AFTER `type`");
-    teamChallengeEnsureColumn($pdo, 'team_challenges', 'min_radius_m', "INT NULL DEFAULT NULL AFTER `center_lon`");
+    teamChallengeEnsureColumn($pdo, 'team_challenges', 'mode', "ENUM('midpoint', 'expedition') NOT NULL DEFAULT 'midpoint' AFTER `type` ");
+    teamChallengeEnsureColumn($pdo, 'team_challenges', 'difficulty', "ENUM('leicht', 'mittel', 'schwer') NOT NULL DEFAULT 'leicht' AFTER `type` ");
+    teamChallengeEnsureColumn($pdo, 'team_challenges', 'min_radius_m', "INT NULL DEFAULT NULL AFTER `center_lon` ");
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS team_challenge_locations (
@@ -155,9 +156,16 @@ function teamChallengeNormalizeMode(?string $mode): string
     return in_array($mode, ['midpoint', 'expedition'], true) ? $mode : 'midpoint';
 }
 
-function teamChallengeGetModeConfig(string $mode): array
+function teamChallengeNormalizeDifficulty(?string $difficulty): string
+{
+    return in_array($difficulty, ['leicht', 'mittel', 'schwer'], true) ? $difficulty : 'leicht';
+}
+
+function teamChallengeGetModeConfig(string $mode, string $difficulty = 'leicht'): array
 {
     $normalizedMode = teamChallengeNormalizeMode($mode);
+    $normalizedDifficulty = teamChallengeNormalizeDifficulty($difficulty);
+
     if ($normalizedMode === 'expedition') {
         return [
             'mode' => 'expedition',
@@ -166,11 +174,29 @@ function teamChallengeGetModeConfig(string $mode): array
         ];
     }
 
-    return [
+    // Radius configuration based on difficulty
+    $config = [
         'mode' => 'midpoint',
-        'min_radius_m' => 0,
-        'steps' => [1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000],
+        'difficulty' => $normalizedDifficulty,
     ];
+
+    switch ($normalizedDifficulty) {
+        case 'schwer':
+            $config['min_radius_m'] = 15000;
+            $config['steps'] = [20000, 25000, 30000, 35000, 45000];
+            break;
+        case 'mittel':
+            $config['min_radius_m'] = 5000;
+            $config['steps'] = [7500, 10000, 12500, 15000, 20000];
+            break;
+        case 'leicht':
+        default:
+            $config['min_radius_m'] = 0;
+            $config['steps'] = [1000, 2500, 5000, 7500, 10000];
+            break;
+    }
+
+    return $config;
 }
 
 function teamChallengeActiveStatuses(): array
@@ -299,13 +325,17 @@ function teamChallengeBuildSummary(array $row, int $viewerId): array
     $isInviter = (int)$row['inviter_user_id'] === $viewerId;
     $isInvitee = (int)$row['invitee_user_id'] === $viewerId;
     $mode = teamChallengeNormalizeMode($row['mode'] ?? 'midpoint');
-    $minRadius = $row['min_radius_m'] !== null ? (int)$row['min_radius_m'] : teamChallengeGetModeConfig($mode)['min_radius_m'];
+    $difficulty = teamChallengeNormalizeDifficulty($row['difficulty'] ?? 'leicht');
+    $config = teamChallengeGetModeConfig($mode, $difficulty);
+    
+    $minRadius = $row['min_radius_m'] !== null ? (int)$row['min_radius_m'] : $config['min_radius_m'];
     $outerRadius = $row['radius_m'] !== null ? (int)$row['radius_m'] : null;
 
     return [
         'id' => (int)$row['id'],
         'type' => $row['type'],
         'mode' => $mode,
+        'difficulty' => $difficulty,
         'status' => $row['status'],
         'created_at' => $row['created_at'],
         'accepted_at' => $row['accepted_at'],
@@ -343,8 +373,8 @@ function teamChallengeBuildSummary(array $row, int $viewerId): array
         'viewer_role' => $isInviter ? 'inviter' : ($isInvitee ? 'invitee' : null),
         'can_accept' => $isInvitee && $row['status'] === 'pending_acceptance',
         'can_decline' => $isInvitee && $row['status'] === 'pending_acceptance',
-        'can_submit_proposals' => $isInvitee && in_array($row['status'], ['proposal_open', 'proposal_submitted'], true),
-        'can_finalize' => $isInviter && in_array($row['status'], ['proposal_open', 'proposal_submitted'], true),
+        'can_submit_proposals' => false, // Deprecated in simplified workflow
+        'can_finalize' => $isInvitee && $row['status'] === 'proposal_open',
         'can_cancel' => in_array($row['status'], teamChallengeActiveStatuses(), true),
     ];
 }
@@ -484,18 +514,18 @@ function teamChallengeFetchDetail(PDO $pdo, int $challengeId, int $viewerId): ar
 
 function teamChallengeInsertNotification(PDO $pdo, int $recipientId, int $challengeId, string $text, string $action, string $status): void
 {
-    $stmt = $pdo->prepare("
-        INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-        VALUES (:recipient_id, 'team_challenge', :reference_id, :text, JSON_OBJECT('team_challenge_id', :json_challenge_id, 'action', :action_name, 'status', :status_name))
-    ");
-    $stmt->execute([
-        'recipient_id' => $recipientId,
-        'reference_id' => $challengeId,
-        'text' => $text,
-        'json_challenge_id' => $challengeId,
-        'action_name' => $action,
-        'status_name' => $status,
-    ]);
+    createNotification(
+        $pdo,
+        $recipientId,
+        'team_challenge',
+        $challengeId,
+        $text,
+        [
+            'team_challenge_id' => $challengeId,
+            'action' => $action,
+            'status' => $status,
+        ]
+    );
 }
 
 function teamChallengeSendEmail(PDO $pdo, int $recipientId, string $senderName, string $action, int $challengeId, array $extra = []): void
@@ -508,6 +538,7 @@ function teamChallengeSendEmail(PDO $pdo, int $recipientId, string $senderName, 
         array_merge($extra, [
             'teamChallengeAction' => $action,
             'teamChallengeId' => $challengeId,
+            'skipRateLimit' => true,
         ])
     );
 }
@@ -538,12 +569,25 @@ function teamChallengeFetchLocationsByUsers(PDO $pdo, int $challengeId): array
     return $result;
 }
 
-function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA, float $latB, float $lonB, string $mode = 'midpoint'): array
+function teamChallengeHaversineDistanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+{
+    $earthRadius = 6371000;
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+    $a = sin($dLat / 2) * sin($dLat / 2) +
+        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+        sin($dLon / 2) * sin($dLon / 2);
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+    return $earthRadius * $c;
+}
+
+function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA, float $latB, float $lonB, string $mode = 'midpoint', string $difficulty = 'leicht'): array
 {
     $centerLat = ($latA + $latB) / 2;
     $centerLon = ($lonA + $lonB) / 2;
     $earthRadius = 6371000;
-    $config = teamChallengeGetModeConfig($mode);
+    
+    $config = teamChallengeGetModeConfig($mode, $difficulty);
     $steps = $config['steps'];
     $minRadius = (int)$config['min_radius_m'];
 
@@ -574,7 +618,8 @@ function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA
               AND e.longitude BETWEEN :min_lon AND :max_lon
               AND e.status = 'open'
             HAVING distance_to_center >= :min_radius AND distance_to_center <= :radius
-            ORDER BY distance_to_center ASC, e.name ASC
+            ORDER BY RAND()
+            LIMIT 5
         ");
         $stmt->execute([
             'lat' => $centerLat,
@@ -588,7 +633,7 @@ function teamChallengeCalculateCandidateShops(PDO $pdo, float $latA, float $lonA
         ]);
 
         $shops = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if (count($shops) >= 4) {
+        if (count($shops) >= 5 || $radius === end($steps)) {
             return [
                 'center_lat' => $centerLat,
                 'center_lon' => $centerLon,

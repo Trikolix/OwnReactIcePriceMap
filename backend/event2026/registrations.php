@@ -87,12 +87,18 @@ function event2026_create_account_for_registration(PDO $pdo, array $accountData,
     ]);
 
     $verifyUrl = 'https://ice-app.de/verify?token=' . urlencode($verifyToken);
-    $mailBody = "Hallo {$username},\n\n";
-    $mailBody .= "dein Ice-App Account für die Ice-Tour 2026 wurde erstellt.\n";
-    $mailBody .= "Bitte bestätige deine E-Mail-Adresse über diesen Link:\n{$verifyUrl}\n\n";
-    $mailBody .= "Viele Grüße\nIce-App Team";
-
-    $mailSent = iceapp_send_utf8_text_mail($email, 'Bestätige deine Registrierung für die Ice-App', $mailBody);
+    $mailSent = iceapp_send_branded_action_mail(
+        $email,
+        'Bestätige deine Registrierung für die Ice-App',
+        'Willkommen bei der Ice-App!',
+        'Hallo ' . $username . ',',
+        [
+            'dein Ice-App Account für die Ice-Tour 2026 wurde erstellt.',
+            'Bitte bestätige deine E-Mail-Adresse. Für die Teilnahme an der Ice-Tour wird ein bestätigter Account benötigt.',
+        ],
+        'Account jetzt verifizieren',
+        $verifyUrl
+    );
 
     return [
         'user_id' => $userId,
@@ -154,7 +160,8 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $event = event2026_current_event($pdo);
         $legal = event2026_active_legal($pdo, (int) $event['id']);
-        $reservedCount = event2026_reserved_count($pdo, (int) $event['id']);
+        $reservedBreakdown = event2026_reserved_slot_breakdown($pdo, (int) $event['id']);
+        $reservedCount = (int) $reservedBreakdown['total'];
         $auth = authenticateRequest($pdo);
         $accountEmail = null;
         $hasRegistration = false;
@@ -218,6 +225,7 @@ try {
                 'event_status' => $event['status'],
                 'max_participants' => (int) $event['max_participants'],
                 'reserved_slots' => $reservedCount,
+                'reserved_voucher_slots' => (int) $reservedBreakdown['voucher_slots'],
                 'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
                 'min_participants_for_go' => (int) $event['min_participants_for_go'],
                 'cancellation_deadline' => $event['cancellation_deadline'],
@@ -348,7 +356,7 @@ try {
     $distance = event2026_route_distance($routeKey);
     $routeDefinition = event2026_route_definition($routeKey);
     $paceGroup = event2026_normalize_pace_group($routeKey, (string) ($participant['paceGroup'] ?? ''));
-    $womenWaveOptIn = event2026_route_supports_pace($routeKey) && !empty($participant['womenWaveOptIn']) ? 1 : 0;
+    $womenWaveOptIn = 0;
     $publicNameConsent = array_key_exists('publicNameConsent', $participant) ? (!empty($participant['publicNameConsent']) ? 1 : 0) : 1;
     $clothingInterest = event2026_normalize_clothing_interest((string) ($data['clothingInterest'] ?? ''));
     $jerseyInterest = $clothingInterest !== 'none' ? 1 : 0;
@@ -380,7 +388,8 @@ try {
         }
     }
 
-    $reservedCount = event2026_reserved_count($pdo, $eventId);
+    $reservedBreakdown = event2026_reserved_slot_breakdown($pdo, $eventId);
+    $reservedCount = (int) $reservedBreakdown['total'];
     $additionalReservedSlots = 1 + $giftVoucherQuantity - ($voucherRow !== null ? 1 : 0);
     if (($reservedCount + $additionalReservedSlots) > (int) $event['max_participants']) {
         $pdo->rollBack();
@@ -389,6 +398,7 @@ try {
             'status' => 'sold_out',
             'message' => 'Nicht genügend freie Startplätze verfügbar.',
             'reserved_slots' => $reservedCount,
+            'reserved_voucher_slots' => (int) $reservedBreakdown['voucher_slots'],
             'max_participants' => (int) $event['max_participants'],
             'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
         ]);
@@ -574,51 +584,54 @@ try {
 
     $pdo->commit();
 
-    $reservedAfter = event2026_reserved_count($pdo, $eventId);
+    $reservedBreakdownAfter = event2026_reserved_slot_breakdown($pdo, $eventId);
+    $reservedAfter = (int) $reservedBreakdownAfter['total'];
     $mailSent = false;
     if ($accountEmail) {
         $appBaseUrl = 'https://ice-app.de';
         $salutationName = $fullName !== '' ? $fullName : $auth['username'];
-        $mailBody = "Hallo {$salutationName},\n\n";
-        $mailBody .= "vielen Dank für deine Anmeldung zur Ice-Tour 2026.\n";
-        $mailBody .= "Wir freuen uns sehr, dich am 16. Mai 2026 als Starterin bzw. Starter begrüßen zu dürfen.\n\n";
-        $mailBody .= "Kaufzusammenfassung:\n";
-        $mailBody .= "- Gewählte Strecke: {$routeDefinition['label']}\n";
+        $mailParagraphs = [
+            'vielen Dank für deine Anmeldung zur Ice-Tour 2026.',
+            'Wir freuen uns sehr, dich am 16. Mai 2026 als Starterin bzw. Starter begrüßen zu dürfen.',
+            'Kaufzusammenfassung:',
+            "Gewählte Strecke: {$routeDefinition['label']}",
+        ];
         if (trim((string) ($data['teamName'] ?? '')) !== '') {
-            $mailBody .= "- Team / Verein: " . trim((string) ($data['teamName'] ?? '')) . "\n";
+            $mailParagraphs[] = 'Team / Verein: ' . trim((string) ($data['teamName'] ?? ''));
         }
-        $mailBody .= "- Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
+        $mailParagraphs[] = 'Eigene Startgebühr: ' . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . ' EUR';
         if ($giftVoucherQuantity > 0) {
-            $mailBody .= "- Zusätzliche Gutschein-Codes: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
+            $mailParagraphs[] = 'Zusätzliche Gutschein-Codes: ' . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . ' EUR';
         }
         if ($voucherRow) {
-            $mailBody .= "- Eingelöster Gutschein: -" . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . " EUR\n";
+            $mailParagraphs[] = 'Eingelöster Gutschein: -' . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . ' EUR';
         }
         if ($donationAmount > 0) {
-            $mailBody .= "- Zusätzlicher Betrag: " . number_format($donationAmount, 2, ',', '.') . " EUR\n";
+            $mailParagraphs[] = 'Zusätzlicher Betrag: ' . number_format($donationAmount, 2, ',', '.') . ' EUR';
         }
-        $mailBody .= "- Gesamtbetrag: " . number_format($breakdown['expected_amount'], 2, ',', '.') . " EUR\n\n";
+        $mailParagraphs[] = 'Gesamtbetrag: ' . number_format($breakdown['expected_amount'], 2, ',', '.') . ' EUR';
         if ($isAutoPaid) {
-            $mailBody .= "Deine Zahlung ist bereits vollständig erledigt.\n\n";
-            $mailBody .= "Deine Anmeldung und Zahlungsbestätigung findest du jederzeit hier:\n";
-            $mailBody .= "{$appBaseUrl}/event-me\n\n";
+            $mailParagraphs[] = 'Deine Zahlung ist bereits vollständig erledigt. Deine Anmeldung und Zahlungsbestätigung findest du jederzeit im Event-Bereich.';
         } else {
-            $mailBody .= "Deine Anmeldung und eine eventuell noch ausstehende Zahlung findest du jederzeit hier:\n{$appBaseUrl}/event-me\n\n";
+            $mailParagraphs[] = 'Deine Anmeldung und eine eventuell noch ausstehende Zahlung findest du jederzeit im Event-Bereich.';
         }
         if ($voucherRow) {
-            $mailBody .= "Der Gutschein-Code {$voucherCode} wurde für diese Anmeldung erfolgreich eingelöst.\n\n";
+            $mailParagraphs[] = "Der Gutschein-Code {$voucherCode} wurde für diese Anmeldung erfolgreich eingelöst.";
         }
         if ($accountCreationInfo !== null && !empty($accountCreationInfo['verification_url'])) {
-            $mailBody .= "Wichtig: Dein Ice-App Account wurde gerade neu erstellt. Bitte bestätige ihn über diesen Link, um die Account-Erstellung abzuschließen:\n";
-            $mailBody .= $accountCreationInfo['verification_url'] . "\n\n";
+            $mailParagraphs[] = 'Wichtig: Dein Ice-App Account wurde gerade neu erstellt. Bitte bestätige ihn über die separate Verifizierungs-Mail, um die Account-Erstellung abzuschließen.';
         }
-        
-        $mailBody .= "Wir freuen uns schon darauf, dich bei der Ice-Tour begrüßen zu dürfen. Bis dahin kannst du in der {$appBaseUrl} schon aktiv werden:\n";
-        $mailBody .= "- Profilbild hochladen\n";
-        $mailBody .= "- Ein Probe-Eis einchecken\n";
-        $mailBody .= "- Bei der laufenden Foto-Challenge abstimmen und tolle Preise gewinnen\n\n";
-        $mailBody .= "Viele Grüße\nIce-App Team";
-        $mailSent = iceapp_send_utf8_text_mail($accountEmail, 'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos', $mailBody);
+        $mailParagraphs[] = 'Wir freuen uns schon darauf, dich bei der Ice-Tour begrüßen zu dürfen.';
+
+        $mailSent = iceapp_send_branded_action_mail(
+            $accountEmail,
+            'Ice-Tour 2026: Deine Anmeldung und Zahlungsinfos',
+            'Deine Ice-Tour Anmeldung',
+            "Hallo {$salutationName},",
+            $mailParagraphs,
+            'Zur Anmeldung',
+            "{$appBaseUrl}/event-me"
+        );
     }
 
     $adminMailBody = "Neue Event-Registrierung eingegangen.\n\n";
@@ -675,6 +688,7 @@ try {
         ] : null,
         'event' => [
             'reserved_slots' => $reservedAfter,
+            'reserved_voucher_slots' => (int) $reservedBreakdownAfter['voucher_slots'],
             'max_participants' => (int) $event['max_participants'],
             'available_slots' => max(0, (int) $event['max_participants'] - $reservedAfter),
         ],

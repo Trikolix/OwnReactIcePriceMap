@@ -142,17 +142,23 @@ try {
     $owner = event2026_fetch_registration_owner($pdo, (int) $registration['id']);
     $mailSent = false;
     if (!empty($owner['email'])) {
-        $mailBody = "Hallo {$owner['username']},\n\n";
-        $mailBody .= "deine Zusatzbestellung für die Ice-Tour 2026 wurde gespeichert.\n\n";
-        $mailBody .= "Bestellung: #{$purchaseId}\n";
-        $mailBody .= "Referenzcode: {$paymentRef}\n";
-        $mailBody .= "Gutschein-Codes: {$giftVoucherQuantity}\n";
-        $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n\n";
-        $mailBody .= "Bitte schliesse die Zahlung ueber Stripe im Event-Portal ab.\n";
-        $mailBody .= "Die Gutschein-Codes werden erst nach bestaetigtem Zahlungseingang freigeschaltet.\n";
-        $mailBody .= "Bitte gib den Referenzcode {$paymentRef} an.\n";
-        $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_ADDON_PAYMENT_CONTACT . ".\n";
-        $mailSent = iceapp_send_utf8_text_mail($owner['email'], 'Ice-Tour 2026: Deine Zusatzbestellung', $mailBody);
+        $mailSent = iceapp_send_branded_action_mail(
+            $owner['email'],
+            'Ice-Tour 2026: Deine Zusatzbestellung',
+            'Deine Zusatzbestellung',
+            "Hallo {$owner['username']},",
+            [
+                'deine Zusatzbestellung für die Ice-Tour 2026 wurde gespeichert.',
+                "Bestellung: #{$purchaseId}",
+                "Referenzcode: {$paymentRef}",
+                "Gutschein-Codes: {$giftVoucherQuantity}",
+                'Zu zahlender Gesamtbetrag: ' . number_format($expectedAmount, 2, ',', '.') . ' EUR',
+                'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang freigeschaltet.',
+                "Bitte gib den Referenzcode {$paymentRef} an. Bei Rückfragen melde dich bitte an " . EVENT2026_ADDON_PAYMENT_CONTACT . '.',
+            ],
+            'Zum Event-Bereich',
+            'https://ice-app.de/event-me'
+        );
     }
 
     echo json_encode([

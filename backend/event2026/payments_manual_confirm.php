@@ -72,14 +72,20 @@ try {
 
         $owner = event2026_fetch_registration_owner($pdo, $registrationId);
         if ($owner && !empty($owner['email']) && !empty($createdVouchers)) {
-            $mailBody = "Hallo {$owner['username']},\n\n";
-            $mailBody .= "deine Zahlung für die Ice-Tour 2026 wurde bestätigt.\n";
-            $mailBody .= "Deine Geschenk-Codes sind jetzt freigeschaltet:\n";
-            foreach ($createdVouchers as $voucher) {
-                $mailBody .= "- {$voucher['code']}\n";
-            }
-            $mailBody .= "\nViele Grüße\nIce-App Team";
-            iceapp_send_utf8_text_mail($owner['email'], 'Ice-Tour 2026: Gutschein-Codes freigeschaltet', $mailBody);
+            iceapp_send_branded_action_mail(
+                $owner['email'],
+                'Ice-Tour 2026: Gutschein-Codes freigeschaltet',
+                'Gutschein-Codes freigeschaltet',
+                "Hallo {$owner['username']},",
+                [
+                    'deine Zahlung für die Ice-Tour 2026 wurde bestätigt.',
+                    'Deine Geschenk-Codes sind jetzt freigeschaltet: ' . implode(', ', array_map(static function (array $voucher): string {
+                        return (string) ($voucher['code'] ?? '');
+                    }, $createdVouchers)),
+                ],
+                'Zur Anmeldung',
+                'https://ice-app.de/event-me'
+            );
         }
 
         echo json_encode([
@@ -131,14 +137,20 @@ try {
         : event2026_fetch_addon_purchase_contact($pdo, $addonPurchaseId);
     if ($owner && !empty($owner['email']) && !empty($createdVouchers)) {
         $ownerName = (string) ($owner['username'] ?? $owner['name'] ?? 'Ice-Tour Teilnehmer');
-        $mailBody = "Hallo {$ownerName},\n\n";
-        $mailBody .= "deine Zusatzbestellung für die Ice-Tour 2026 wurde bestätigt.\n";
-        $mailBody .= "Deine Geschenk-Codes sind jetzt freigeschaltet:\n";
-        foreach ($createdVouchers as $voucher) {
-            $mailBody .= "- {$voucher['code']}\n";
-        }
-        $mailBody .= "\nViele Grüße\nIce-App Team";
-        iceapp_send_utf8_text_mail($owner['email'], 'Ice-Tour 2026: Zusatzkauf freigeschaltet', $mailBody);
+        iceapp_send_branded_action_mail(
+            $owner['email'],
+            'Ice-Tour 2026: Zusatzkauf freigeschaltet',
+            'Zusatzkauf freigeschaltet',
+            "Hallo {$ownerName},",
+            [
+                'deine Zusatzbestellung für die Ice-Tour 2026 wurde bestätigt.',
+                'Deine Geschenk-Codes sind jetzt freigeschaltet: ' . implode(', ', array_map(static function (array $voucher): string {
+                    return (string) ($voucher['code'] ?? '');
+                }, $createdVouchers)),
+            ],
+            'Zum Event-Bereich',
+            'https://ice-app.de/event-me'
+        );
     }
 
     echo json_encode([

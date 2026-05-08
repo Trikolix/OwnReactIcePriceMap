@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
+import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
 import {
   EVENT_COMMUNITY_RIDE_CLAIM,
   EVENT_ENTRY_FEE_NOTICE,
@@ -202,9 +203,9 @@ export default function EventRegistrationSummary() {
               ...(summaryToken ? { summary_token: summaryToken } : {}),
             }),
           });
-          const finalizeJson = await finalizeResponse.json();
-          if (!finalizeResponse.ok || finalizeJson.status !== "success") {
-            throw new Error(finalizeJson.message || "Stripe-Zahlung konnte nicht bestätigt werden.");
+          const finalizeJson = await readEventApiJson(finalizeResponse);
+          if (!finalizeResponse.ok || finalizeJson?.status !== "success") {
+            throw new Error(getEventAccessErrorMessage(finalizeResponse.status, finalizeJson?.message || "Stripe-Zahlung konnte nicht bestätigt werden."));
           }
         }
 
@@ -217,9 +218,9 @@ export default function EventRegistrationSummary() {
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
         });
-        const json = await res.json();
-        if (!res.ok || json.status !== "success") {
-          throw new Error(json.message || "Zusammenfassung konnte nicht geladen werden.");
+        const json = await readEventApiJson(res);
+        if (!res.ok || json?.status !== "success") {
+          throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Zusammenfassung konnte nicht geladen werden."));
         }
         if (!cancelled) setSummary(json);
       } catch (err) {
@@ -261,9 +262,9 @@ export default function EventRegistrationSummary() {
           ...(summaryToken ? { summary_token: summaryToken } : {}),
         }),
       });
-      const json = await response.json();
-      if (!response.ok || json.status !== "success" || !json.checkout_url) {
-        throw new Error(json.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      const json = await readEventApiJson(response);
+      if (!response.ok || json?.status !== "success" || !json?.checkout_url) {
+        throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Stripe-Checkout konnte nicht gestartet werden."));
       }
       window.location.href = json.checkout_url;
     } catch (err) {

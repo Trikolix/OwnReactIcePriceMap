@@ -26,6 +26,7 @@ $groupAdvancers = (int)($_POST['group_advancers'] ?? 2);
 $luckyLoserSlots = (int)($_POST['lucky_loser_slots'] ?? 2);
 $koBracketSize = isset($_POST['ko_bracket_size']) ? (int)$_POST['ko_bracket_size'] : null;
 $startAt = normalizeDateTime($_POST['start_at'] ?? null);
+$minImageCreatedAt = normalizeDateTime($_POST['min_image_created_at'] ?? null);
 $submissionDeadline = normalizeDateTime($_POST['submission_deadline'] ?? null);
 $submissionLimit = isset($_POST['submission_limit_per_user']) ? (int)$_POST['submission_limit_per_user'] : null;
 $groupScheduleRaw = $_POST['group_schedule'] ?? null;
@@ -63,6 +64,15 @@ if ($startAt && $submissionDeadline && strtotime($submissionDeadline) <= strtoti
     exit;
 }
 
+if ($minImageCreatedAt && $submissionDeadline && strtotime($minImageCreatedAt) > strtotime($submissionDeadline)) {
+    http_response_code(422);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Das Mindestdatum für Bilder darf nicht nach der Einreichdeadline liegen.',
+    ]);
+    exit;
+}
+
 if ($groupSize < 2) {
     $groupSize = 2;
 }
@@ -94,6 +104,7 @@ try {
             status,
             group_size,
             start_at,
+            min_image_created_at,
             submission_deadline,
             submission_limit_per_user,
             group_schedule,
@@ -107,6 +118,7 @@ try {
             :status,
             :group_size,
             :start_at,
+            :min_image_created_at,
             :submission_deadline,
             :submission_limit_per_user,
             :group_schedule,
@@ -122,6 +134,7 @@ try {
         'status' => $status,
         'group_size' => $groupSize,
         'start_at' => $startAt,
+        'min_image_created_at' => $minImageCreatedAt,
         'submission_deadline' => $submissionDeadline,
         'submission_limit_per_user' => $submissionLimit,
         'group_schedule' => $groupScheduleJson,

@@ -1,0 +1,17 @@
+{
+  "project_info": {
+    "project_number": "123456789012",
+    "project_id": "dummy-project"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789012:android:0123456789abcdef",
+        "android_client_info": {
+          "package_name": "de.thegourmetcyclists.iceapp"
+        }
+      },
+      "api_key": [ { "current_key": "dummy-key" } ]
+    }
+  ]
+}

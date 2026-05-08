@@ -52,7 +52,7 @@ const RegisterForm = ({ onSuccess, onClose, inviteCode = null }) => {
             setMessage(data.message);
 
             if (data.status === 'success') {
-                login(data.userId, data.username, data.token, data.expires_at);
+                login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
                 resetForm();
                 if (onSuccess) onSuccess(data);
             }

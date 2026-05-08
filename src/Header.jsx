@@ -26,7 +26,7 @@ const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
-  const { userId, username, isLoggedIn, userPosition, authToken, login, logout } = useUser();
+  const { userId, username, currentLevel, isLoggedIn, userPosition, authToken, login, logout, setCurrentLevel } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -55,6 +55,7 @@ const Header = ({ refreshShops }) => {
   };
   const closeMenu = () => setMenuOpen(false);
   const isAdmin = Number(userId) === 1;
+  const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -86,6 +87,11 @@ const Header = ({ refreshShops }) => {
 
   useEffect(() => {
     if (location.pathname === '/dashboard') {
+      setDashboardNewCount(0);
+      return;
+    }
+
+    if (!userId) {
       setDashboardNewCount(0);
       return;
     }
@@ -258,14 +264,28 @@ const Header = ({ refreshShops }) => {
 
           if (data.award_type === "event_stamp_card") {
             if (!userId) {
+              let lookup = null;
+              try {
+                const lookupResponse = await fetch(`${apiUrl}/event2026/qr_lookup.php?code=${encodeURIComponent(scanCode)}`);
+                const lookupData = await lookupResponse.json();
+                if (lookupResponse.ok && lookupData.status === "success") {
+                  lookup = lookupData;
+                }
+              } catch (lookupError) {
+                console.error("Ice-Tour QR-Code konnte nicht für die Shop-Weiterleitung ausgewertet werden:", lookupError);
+              }
+
               persistEventPendingScan(scanCode);
               setModalData({
                 icon: data.icon,
-                name: data.name || "Ice-Tour QR-Code",
+                name: lookup?.checkpoint?.shop_name || data.name || "Ice-Tour QR-Code",
                 description: "Du hast einen QR-Code der Ice-Tour gescannt. Wenn du Teilnehmer bist, logge dich bitte ein, damit der Checkpoint automatisch übertragen wird. Wenn nicht, schau dir gern die Ice-App und das Spendenprojekt Ice-Tour an.",
                 statusMessage: "Scan erkannt. Nach dem Login wird der Event-Scan automatisch weiterverarbeitet.",
                 needsLogin: true,
               });
+              if (lookup?.checkpoint?.shop_id) {
+                redirectTarget = `/map/activeShop/${lookup.checkpoint.shop_id}`;
+              }
               return;
             }
 
@@ -293,6 +313,9 @@ const Header = ({ refreshShops }) => {
               statusMessage: "Kein Event-Stempel, da keine Ice-Tour Registrierung für diesen Account gefunden wurde.",
               needsLogin: false,
             });
+            if (lookup.checkpoint?.shop_id) {
+              redirectTarget = `/map/activeShop/${lookup.checkpoint.shop_id}`;
+            }
             return;
           }
 
@@ -372,6 +395,9 @@ const Header = ({ refreshShops }) => {
           statusMessage: 'Kein Event-Stempel, da keine Ice-Tour Registrierung für diesen Account gefunden wurde.',
           needsLogin: false,
         });
+        if (data.checkpoint?.shop_id) {
+          navigate(`/map/activeShop/${data.checkpoint.shop_id}`, { replace: true });
+        }
       } catch (error) {
         console.error('Fehler beim Verarbeiten des vorgemerkten Ice-Tour QR-Codes:', error);
       }
@@ -429,6 +455,9 @@ const Header = ({ refreshShops }) => {
     try {
       const response = await fetch(`${apiUrl}/userManagement/update_activity_and_awards.php?nutzer_id=${userId}`);
       const data = await response.json();
+      if (data.current_level != null) {
+        setCurrentLevel(data.current_level);
+      }
 
       if (data.level_up || (data.new_awards && data.new_awards.length > 0)) {
         if (data.level_up) {
@@ -567,7 +596,7 @@ const Header = ({ refreshShops }) => {
                   <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
                   <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
-                  <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>
+                  {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
                   {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
                   <MenuActionButton
                     type="button"

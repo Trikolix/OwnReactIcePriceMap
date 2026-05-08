@@ -22,6 +22,7 @@ require_once __DIR__ . '/../evaluators/GroupCheckinEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
 require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
 require_once __DIR__ . '/../evaluators/MembershipYearsEvaluator.php';
+require_once __DIR__ . '/../evaluators/FavoriteShopCountEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
 
 $authData = requireAuth($pdo);
@@ -62,6 +63,7 @@ try {
         new MultipleVehicleEvaluator(),
         new SeasonalPresentEvaluator(),
         new MembershipYearsEvaluator(),
+        new FavoriteShopCountEvaluator(),
         // weitere Evaluatoren können hier ergänzt werden
     ];
  
@@ -84,6 +86,7 @@ try {
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+        'current_level' => $levelChange['new_level'] ?? null,
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
     ]);
  

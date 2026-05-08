@@ -26,6 +26,7 @@ try {
     $submissionEditableForUser = isPhotoChallengeSubmissionEditable($challenge);
     $effectiveChallengeStatus = getPhotoChallengeEffectiveStatus($challenge);
     $challengeForResponse = enrichPhotoChallengeForApi($challenge);
+    $challengeForResponse['min_image_created_at'] = $challenge['min_image_created_at'] ? date(DATE_ATOM, strtotime($challenge['min_image_created_at'])) : null;
     $challengeForResponse['submission_deadline'] = $challenge['submission_deadline'] ? date(DATE_ATOM, strtotime($challenge['submission_deadline'])) : null;
     $challengeForResponse['submission_limit_per_user'] = $challenge['submission_limit_per_user'] !== null ? (int)$challenge['submission_limit_per_user'] : null;
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -33,12 +33,18 @@ const RegionOverview = () => {
   const [expandedShopLists, setExpandedShopLists] = useState({ kugel: false, softeis: false, eisbecher: false });
   const [showAllActiveUsers, setShowAllActiveUsers] = useState(false);
 
+  const currentRegionRef = useRef({ level, regionId });
+
   useEffect(() => {
     let isCancelled = false;
 
     const loadRegion = async () => {
-      setLoading(true);
-      setError(null);
+      const isSameRegion = currentRegionRef.current.level === level && currentRegionRef.current.regionId === regionId;
+      if (!data || !isSameRegion) {
+        setLoading(true);
+        setError(null);
+      }
+      currentRegionRef.current = { level, regionId };
 
       try {
         const response = await fetch(

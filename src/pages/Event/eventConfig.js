@@ -13,6 +13,7 @@ export const EVENT_START_FINISH = {
   lat: 50.841892,
   lng: 12.923957,
   routeKeys: ["family_2", "classic_3", "epic_4"],
+  navigationUrl: "https://www.google.com/maps/dir//u.+Aktienstra%C3%9Fe+12,+09111+Chemnitz/@50.8419578,12.9228072,17z/",
 };
 export const EVENT_PAYMENT_PAYPAL_ADDRESS = "ch_helbig@mail.de";
 export const EVENT_PAYMENT_PAYPAL_URL = "https://paypal.me/ChristianHelbig451";
@@ -41,8 +42,8 @@ export const ROUTE_OPTIONS = [
       text: "#9f1239",
       glow: "rgba(244, 63, 94, 0.18)",
     },
-    teaser: "175 km / 1.950 hm",
-    distanceKm: 175,
+    teaser: "180 km / 1.950 hm",
+    distanceKm: 180,
     elevationM: 1950,
     stops: 4,
     routeType: "sport",
@@ -60,8 +61,8 @@ export const ROUTE_OPTIONS = [
       text: "#8a5700",
       glow: "rgba(247, 201, 72, 0.2)",
     },
-    teaser: "140 km / 1.600 hm",
-    distanceKm: 140,
+    teaser: "145 km / 1.600 hm",
+    distanceKm: 145,
     elevationM: 1600,
     stops: 3,
     routeType: "sport",
@@ -79,14 +80,14 @@ export const ROUTE_OPTIONS = [
       text: "#166534",
       glow: "rgba(34, 197, 94, 0.18)",
     },
-    teaser: "ca. 75 km / 550 hm",
-    distanceKm: 75,
+    teaser: "70 km / 550 hm",
+    distanceKm: 70,
     elevationM: 550,
     stops: 2,
     routeType: "family",
     paceEnabled: false,
     startMode: "open_window",
-    description: "Die kompaktere Runde mit 75 km, zwei offiziellen Checkpoints und freiem Startfenster.",
+    description: "Die kompaktere Runde mit 70 km, zwei offiziellen Checkpoints und freiem Startfenster.",
   },
 ];
 

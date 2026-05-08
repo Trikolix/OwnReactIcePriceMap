@@ -1,0 +1,9 @@
+{
+  "appId": "de.thegourmetcyclists.iceapp",
+  "appName": "Ice-App",
+  "webDir": "build",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "https"
+  }
+}

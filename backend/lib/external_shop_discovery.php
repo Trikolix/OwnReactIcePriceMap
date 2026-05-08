@@ -6,10 +6,35 @@ if (!defined('EXTERNAL_SHOP_DISCOVERY_SLOT_LIMIT')) {
     define('EXTERNAL_SHOP_DISCOVERY_SLOT_LIMIT', 5);
 }
 if (!defined('EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM')) {
-    define('EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM', 13);
+    $configuredMinZoom = getenv('EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM');
+    if ($configuredMinZoom === false && isset($_ENV['EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM'])) {
+        $configuredMinZoom = $_ENV['EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM'];
+    }
+    if ($configuredMinZoom === false && isset($_SERVER['EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM'])) {
+        $configuredMinZoom = $_SERVER['EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM'];
+    }
+
+    $configuredMinZoom = filter_var($configuredMinZoom, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 0, 'max_range' => 22],
+    ]);
+    define('EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM', $configuredMinZoom !== false ? $configuredMinZoom : 9);
 }
 if (!defined('EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M')) {
-    define('EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M', 25000);
+    $configuredMaxBboxDiagonalMeters = getenv('EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M');
+    if ($configuredMaxBboxDiagonalMeters === false && isset($_ENV['EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M'])) {
+        $configuredMaxBboxDiagonalMeters = $_ENV['EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M'];
+    }
+    if ($configuredMaxBboxDiagonalMeters === false && isset($_SERVER['EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M'])) {
+        $configuredMaxBboxDiagonalMeters = $_SERVER['EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M'];
+    }
+
+    $configuredMaxBboxDiagonalMeters = filter_var($configuredMaxBboxDiagonalMeters, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1000, 'max_range' => 500000],
+    ]);
+    define(
+        'EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M',
+        $configuredMaxBboxDiagonalMeters !== false ? $configuredMaxBboxDiagonalMeters : 100000
+    );
 }
 if (!defined('EXTERNAL_SHOP_DISCOVERY_MIN_SEARCH_INTERVAL_SECONDS')) {
     define('EXTERNAL_SHOP_DISCOVERY_MIN_SEARCH_INTERVAL_SECONDS', 10);
@@ -39,10 +64,10 @@ function externalShopTableHasColumn(PDO $pdo, string $table, string $column): bo
 
 function ensureExternalShopDiscoverySchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__external_shop_discovery_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__external_shop_discovery_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS external_shop_mappings (
@@ -712,6 +737,8 @@ function externalShopGetDiscoverySlotStatus(PDO $pdo, int $userId): array
         'active_slots' => $activeSlots,
         'max_slots' => EXTERNAL_SHOP_DISCOVERY_SLOT_LIMIT,
         'remaining_slots' => $remainingSlots,
+        'min_zoom' => EXTERNAL_SHOP_DISCOVERY_MIN_ZOOM,
+        'max_bbox_diagonal_m' => EXTERNAL_SHOP_DISCOVERY_MAX_BBOX_DIAGONAL_M,
     ];
 }
 

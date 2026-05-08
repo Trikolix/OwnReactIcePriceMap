@@ -8,6 +8,7 @@ const EVENT2026_REMINDER_KIND_VOUCHER_UNUSED_7D = 'voucher_unused_7d';
 const EVENT2026_REMINDER_KIND_VOUCHER_UNUSED_PRE_EVENT = 'voucher_unused_pre_event';
 const EVENT2026_REMINDER_KIND_MANUAL_REGISTRATION_PAYMENT = 'manual_registration_payment';
 const EVENT2026_REMINDER_KIND_MANUAL_UNUSED_VOUCHER = 'manual_unused_voucher';
+const EVENT2026_REMINDER_KIND_MANUAL_ACCOUNT_VERIFICATION = 'manual_account_verification';
 
 function event2026_app_base_url(): string
 {
@@ -49,6 +50,9 @@ function event2026_reminder_group_for_kind(string $kind): ?string
     }
     if (event2026_reminder_is_voucher_kind($kind)) {
         return 'voucher';
+    }
+    if ($kind === EVENT2026_REMINDER_KIND_MANUAL_ACCOUNT_VERIFICATION) {
+        return 'account_verification';
     }
     return null;
 }
@@ -528,6 +532,171 @@ function event2026_filter_unused_voucher_candidates(
     return $result;
 }
 
+function event2026_build_account_verification_reminder_candidates(PDO $pdo, array $event): array
+{
+    $stmt = $pdo->prepare("SELECT
+            n.id AS user_id,
+            n.username,
+            n.email,
+            n.verification_token,
+            MIN(r.id) AS registration_id,
+            MIN(s.id) AS slot_id,
+            MIN(NULLIF(TRIM(s.full_name), '')) AS full_name
+        FROM event2026_participant_slots s
+        INNER JOIN event2026_registrations r ON r.id = s.registration_id
+        INNER JOIN nutzer n ON n.id = s.user_id
+        WHERE s.event_id = :event_id
+          AND r.event_id = :event_id2
+          AND COALESCE(n.is_verified, 0) = 0
+        GROUP BY n.id, n.username, n.email, n.verification_token
+        ORDER BY MIN(r.created_at) ASC, n.id ASC");
+    $stmt->execute([
+        ':event_id' => (int) ($event['id'] ?? 0),
+        ':event_id2' => (int) ($event['id'] ?? 0),
+    ]);
+
+    $candidates = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $email = event2026_safe_email($row['email'] ?? null);
+        if (!$email) {
+            continue;
+        }
+
+        $name = trim((string) ($row['full_name'] ?? ''));
+        if ($name === '') {
+            $name = trim((string) ($row['username'] ?? ''));
+        }
+
+        $candidates[] = [
+            'entity_type' => 'account',
+            'entity_id' => (int) $row['user_id'],
+            'user_id' => (int) $row['user_id'],
+            'username' => (string) ($row['username'] ?? ''),
+            'recipient' => [
+                'email' => $email,
+                'name' => $name !== '' ? $name : 'Ice-Tour Teilnehmer',
+                'user_id' => (int) $row['user_id'],
+                'source' => 'account',
+            ],
+            'registration_id' => $row['registration_id'] !== null ? (int) $row['registration_id'] : null,
+            'slot_id' => $row['slot_id'] !== null ? (int) $row['slot_id'] : null,
+            'verification_token' => (string) ($row['verification_token'] ?? ''),
+        ];
+    }
+
+    return $candidates;
+}
+
+function event2026_filter_account_verification_candidates(PDO $pdo, array $event, bool $allowAlreadySent = false): array
+{
+    $eventId = (int) ($event['id'] ?? 0);
+    $result = [];
+
+    foreach (event2026_build_account_verification_reminder_candidates($pdo, $event) as $candidate) {
+        if (
+            !$allowAlreadySent
+            && event2026_reminder_mail_already_sent($pdo, $eventId, 'account', (int) $candidate['entity_id'], EVENT2026_REMINDER_KIND_MANUAL_ACCOUNT_VERIFICATION)
+        ) {
+            continue;
+        }
+
+        $result[] = $candidate;
+    }
+
+    return $result;
+}
+
+function event2026_find_manual_account_verification_candidate(PDO $pdo, array $event, int $userId): ?array
+{
+    foreach (event2026_filter_account_verification_candidates($pdo, $event, true) as $candidate) {
+        if ((int) $candidate['entity_id'] === $userId) {
+            return $candidate;
+        }
+    }
+    return null;
+}
+
+function event2026_ensure_account_verification_token(PDO $pdo, int $userId, ?string $existingToken): string
+{
+    $token = trim((string) $existingToken);
+    if ($token !== '') {
+        return $token;
+    }
+
+    $token = bin2hex(random_bytes(32));
+    $stmt = $pdo->prepare("UPDATE nutzer
+        SET verification_token = :token
+        WHERE id = :id
+          AND COALESCE(is_verified, 0) = 0");
+    $stmt->execute([
+        ':token' => $token,
+        ':id' => $userId,
+    ]);
+
+    return $token;
+}
+
+function event2026_send_account_verification_reminder(
+    PDO $pdo,
+    array $event,
+    array $candidate,
+    string $triggerSource = 'admin_manual',
+    ?int $sentByUserId = null
+): bool {
+    $recipientEmail = event2026_safe_email($candidate['recipient']['email'] ?? null);
+    if (!$recipientEmail) {
+        return false;
+    }
+
+    $userId = (int) ($candidate['user_id'] ?? $candidate['entity_id'] ?? 0);
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $recipientName = trim((string) ($candidate['recipient']['name'] ?? 'Ice-Tour Teilnehmer'));
+    if ($recipientName === '') {
+        $recipientName = 'Ice-Tour Teilnehmer';
+    }
+
+    $token = event2026_ensure_account_verification_token($pdo, $userId, $candidate['verification_token'] ?? null);
+    $verifyUrl = event2026_app_base_url() . '/verify?token=' . urlencode($token);
+    $eventDateLabel = event2026_format_event_date_de($event['event_date'] ?? null);
+    $subject = 'Ice-Tour 2026: Bitte bestätige deinen Ice-App Account';
+
+    if (!iceapp_send_branded_action_mail(
+        $recipientEmail,
+        $subject,
+        'Bitte bestätige deinen Account',
+        "Hallo {$recipientName},",
+        [
+            'dein Ice-App Account ist noch nicht verifiziert. Für die Teilnahme an der Ice-Tour 2026 wird ein bestätigter Account benötigt.',
+            "Bitte bestätige deinen Account rechtzeitig vor der Ice-Tour am {$eventDateLabel}.",
+        ],
+        'Account jetzt verifizieren',
+        $verifyUrl
+    )) {
+        return false;
+    }
+
+    event2026_log_reminder_mail(
+        $pdo,
+        (int) $event['id'],
+        'account',
+        $userId,
+        $recipientEmail,
+        EVENT2026_REMINDER_KIND_MANUAL_ACCOUNT_VERIFICATION,
+        $triggerSource,
+        $sentByUserId,
+        $subject,
+        [
+            'registration_id' => $candidate['registration_id'] ?? null,
+            'slot_id' => $candidate['slot_id'] ?? null,
+        ]
+    );
+
+    return true;
+}
+
 function event2026_send_registration_payment_reminder(
     PDO $pdo,
     array $event,
@@ -550,18 +719,23 @@ function event2026_send_registration_payment_reminder(
     $subject = $reminderKind === EVENT2026_REMINDER_KIND_REGISTRATION_PAYMENT_PRE_EVENT
         ? 'Ice-Tour 2026: Zahlung vor dem Event bitte abschliessen'
         : 'Ice-Tour 2026: Erinnerung an deine offene Zahlung';
+    $eventMeUrl = event2026_app_base_url() . '/event-me';
 
-    $body = "Hallo {$recipientName},\n\n";
-    $body .= "zu deiner Anmeldung für die Ice-Tour 2026 ist noch eine Zahlung offen.\n\n";
-    $body .= "Event-Datum: {$eventDateLabel}\n";
-    $body .= "Referenzcode: " . (string) $candidate['payment_reference_code'] . "\n";
-    $body .= "Offener Betrag: " . number_format((float) $candidate['outstanding_amount'], 2, ',', '.') . " EUR\n\n";
-    $body .= "Deine Anmeldung und den aktuellen Zahlungsstatus findest du jederzeit hier:\n";
-    $body .= event2026_app_base_url() . "/event-me\n\n";
-    $body .= "Falls du bereits bezahlt hast, kannst du diese Nachricht ignorieren.\n\n";
-    $body .= "Viele Gruesse\nIce-App Team";
-
-    if (!iceapp_send_utf8_text_mail($recipientEmail, $subject, $body)) {
+    if (!iceapp_send_branded_action_mail(
+        $recipientEmail,
+        $subject,
+        'Offene Zahlung zur Ice-Tour',
+        "Hallo {$recipientName},",
+        [
+            'zu deiner Anmeldung für die Ice-Tour 2026 ist noch eine Zahlung offen.',
+            'Event-Datum: ' . $eventDateLabel,
+            'Referenzcode: ' . (string) $candidate['payment_reference_code'],
+            'Offener Betrag: ' . number_format((float) $candidate['outstanding_amount'], 2, ',', '.') . ' EUR',
+            'Deine Anmeldung und den aktuellen Zahlungsstatus findest du jederzeit im Event-Bereich. Falls du bereits bezahlt hast, kannst du diese Nachricht ignorieren.',
+        ],
+        'Zum Event-Bereich',
+        $eventMeUrl
+    )) {
         return false;
     }
 
@@ -606,24 +780,26 @@ function event2026_send_unused_voucher_reminder(
     $subject = $reminderKind === EVENT2026_REMINDER_KIND_VOUCHER_UNUSED_PRE_EVENT
         ? 'Ice-Tour 2026: Deine Gutschein-Codes vor dem Event'
         : 'Ice-Tour 2026: Deine Gutschein-Codes sind noch ungenutzt';
-
-    $body = "Hallo {$recipientName},\n\n";
-    $body .= "du hast aktuell noch ungenutzte Gutschein-Codes für die Ice-Tour 2026.\n\n";
-    $body .= "Event-Datum: {$eventDateLabel}\n";
-    $body .= "Referenzcode: " . (string) $candidate['payment_reference_code'] . "\n";
-    $body .= "Offene Codes: " . (int) $candidate['open_voucher_count'] . "\n";
+    $paragraphs = [
+        'du hast aktuell noch ungenutzte Gutschein-Codes für die Ice-Tour 2026.',
+        'Event-Datum: ' . $eventDateLabel,
+        'Referenzcode: ' . (string) $candidate['payment_reference_code'],
+        'Offene Codes: ' . (int) $candidate['open_voucher_count'],
+    ];
     if (!empty($candidate['open_codes'])) {
-        $body .= "Codes:\n";
-        foreach ($candidate['open_codes'] as $code) {
-            $body .= "- {$code}\n";
-        }
-        $body .= "\n";
+        $paragraphs[] = 'Codes: ' . implode(', ', array_map('strval', $candidate['open_codes']));
     }
-    $body .= "Falls du sie verschenken oder selbst nutzen willst, findest du den aktuellen Stand ebenfalls im Event-Bereich:\n";
-    $body .= event2026_app_base_url() . "/event-me\n\n";
-    $body .= "Viele Gruesse\nIce-App Team";
+    $paragraphs[] = 'Falls du sie verschenken oder selbst nutzen willst, findest du den aktuellen Stand ebenfalls im Event-Bereich.';
 
-    if (!iceapp_send_utf8_text_mail($recipientEmail, $subject, $body)) {
+    if (!iceapp_send_branded_action_mail(
+        $recipientEmail,
+        $subject,
+        'Ungenutzte Gutschein-Codes',
+        "Hallo {$recipientName},",
+        $paragraphs,
+        'Zum Event-Bereich',
+        event2026_app_base_url() . '/event-me'
+    )) {
         return false;
     }
 

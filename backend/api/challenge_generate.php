@@ -48,8 +48,8 @@ try {
     } else {
         // Nur prüfen ob User bereits aktive Challenge hat (aber nur bei "neu")
         $stmt = $pdo->prepare("
-            SELECT * FROM challenges 
-            WHERE nutzer_id = ? 
+            SELECT * FROM challenges
+            WHERE nutzer_id = ?
             AND type = ?
             AND difficulty = ?
             AND valid_until > NOW()
@@ -82,7 +82,7 @@ try {
 
     // Alle Eisdielen im Radius laden (inkl. Distance) und gleichzeitig prüfen, ob sie schon eine offene Challenge haben
     $stmt = $pdo->prepare("
-        SELECT 
+        SELECT
             e.id, e.name, e.latitude, e.longitude, e.adresse, e.openingHours, e.opening_hours_note, e.status,
             (6371000 * ACOS(
                 COS(RADIANS(:lat)) * COS(RADIANS(e.latitude)) *
@@ -91,7 +91,7 @@ try {
             )) AS distance,
             CASE WHEN c.id IS NULL THEN 0 ELSE 1 END AS has_active_challenge
         FROM eisdielen e
-        LEFT JOIN challenges c 
+        LEFT JOIN challenges c
             ON c.eisdiele_id = e.id
             AND c.nutzer_id = :userId
             AND c.type = :type
@@ -137,7 +137,7 @@ try {
 
     // Valid-Until setzen
     $now = new DateTime();
-    if ($type === 'daily') {        
+    if ($type === 'daily') {
         if ((int)$now->format('H') >= 18) {
             // nach 18 Uhr → gültig bis morgen 23:59:59
             $validUntil = $now->modify('tomorrow')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
@@ -153,12 +153,12 @@ try {
     if ($challengeId) {
         // --- Recreate: Alte Challenge aktualisieren ---
         $stmt = $pdo->prepare("
-            UPDATE challenges 
-            SET eisdiele_id = ?, valid_until = ?, recreated = 1 
+            UPDATE challenges
+            SET eisdiele_id = ?, valid_until = ?, recreated = 1
             WHERE id = ? AND nutzer_id = ?
         ");
         $stmt->execute([$randomShop['id'], $validUntil, $challengeId, $userId]);
-    
+
         $newChallengeId = $challengeId; // gleiche ID, nur geupdated
         $isRecreated = true;
     } else {
@@ -171,7 +171,7 @@ try {
         $newChallengeId = $pdo->lastInsertId();
         $isRecreated = false;
     }
-    
+
     // Response
     // Shop-Objekt umbenennen/erweitern für Frontend-Kompatibilität
     $shopOut = $randomShop;

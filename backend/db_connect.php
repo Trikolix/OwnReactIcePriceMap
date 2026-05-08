@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config.php';
 $DEBUG_MODE = false;
 
 $allowed_origins = [
@@ -6,21 +7,51 @@ $allowed_origins = [
     'https://ice-app.4lima.de',
     'http://www.ice-app.de/',
     'https://www.ice-app.de/',
-    'www.ice-app.de'
+    'www.ice-app.de',
+    'capacitor://localhost',
+    'http://localhost',
+    'https://localhost',
+    'http://localhost:5173'
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
 $host   = $_SERVER['HTTP_HOST'] ?? '';
 $https  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+$isCli = PHP_SAPI === 'cli';
+$requestPath = $_SERVER['SCRIPT_NAME'] ?? ($_SERVER['REQUEST_URI'] ?? '');
+$trustedNoOriginPaths = [
+    '~/Skripte/~i',
+    '~/userManagement/cleanup_expired_tokens\.php$~i',
+    '~/event2026/reminder_run\.php$~i',
+];
+$isTrustedNoOriginRequest = false;
+foreach ($trustedNoOriginPaths as $trustedNoOriginPathPattern) {
+    if (preg_match($trustedNoOriginPathPattern, $requestPath)) {
+        $isTrustedNoOriginRequest = true;
+        break;
+    }
+}
+$isScriptRequest = !$isCli
+    && !$origin
+    && $https
+    && in_array("https://$host", $allowed_origins)
+    && $isTrustedNoOriginRequest;
 
 // 1. Origin ist gesetzt → klassische CORS-Anfrage
-if ($origin && in_array($origin, $allowed_origins)) {
+if ($isCli) {
+    // Cron/CLI jobs do not send browser CORS headers.
+}
+elseif ($origin && in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
     header('Access-Control-Allow-Credentials: true');
 }
 
 // 2. Kein Origin – aber erlaubt, wenn von echtem Host über HTTPS und von Browser (Referer vorhanden)
 elseif (!$origin && in_array("https://$host", $allowed_origins) && $https && isset($_SERVER['HTTP_REFERER'])) {
+    header("Access-Control-Allow-Origin: https://$host");
+    header('Access-Control-Allow-Credentials: true');
+}
+elseif ($isScriptRequest) {
     header("Access-Control-Allow-Origin: https://$host");
     header('Access-Control-Allow-Credentials: true');
 }
@@ -39,19 +70,21 @@ else {
     exit;
 }
 
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json; charset=utf-8');
+if (!$isCli) {
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Content-Type: application/json; charset=utf-8');
+}
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (!$isCli && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-$host = "localhost";
-$dbname = "db_439770_2";
-$username = "USER439770_wed";
-$password = "K8RYTP23y8kWSdt";
+$host = "10.35.233.205:3306";
+$dbname = "k320202_iceapp";
+$username = "k320202_iceapp";
+$password = "@i5w647cU";
 
 // Verbindung zur Datenbank
 try {

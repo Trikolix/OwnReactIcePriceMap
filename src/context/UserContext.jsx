@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
+import { disableBrowserPush, disableNativePush } from '../services/pushNotifications';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,15 +11,25 @@ export const UserProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentLevel, setCurrentLevel] = useState(null);
   const [userPosition, setUserPosition] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const [tokenExpiresAt, setTokenExpiresAt] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
   const sessionValidatedRef = useRef(false);
+
+  const reloadCurrentPage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 0);
+  }, []);
 
   // Beim Laden schauen, ob userId schon gespeichert ist
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
     const storedUsername = localStorage.getItem('username');
+    const storedCurrentLevel = localStorage.getItem('currentLevel');
     const storedPosition = localStorage.getItem('userPosition');
     const storedToken = localStorage.getItem('authToken');
     const storedTokenExpiry = localStorage.getItem('tokenExpiresAt');
@@ -26,6 +37,7 @@ export const UserProvider = ({ children }) => {
     if (storedUserId && storedUsername && storedToken) {
       setUserId(storedUserId);
       setUsername(storedUsername);
+      setCurrentLevel(storedCurrentLevel != null ? Number(storedCurrentLevel) : null);
       setIsLoggedIn(true);
     }
 
@@ -47,6 +59,8 @@ export const UserProvider = ({ children }) => {
         console.error("Fehler beim Parsen der gespeicherten Position:", e);
       }
     }
+
+    setAuthReady(true);
   }, []);
 
   // Erweiterte Setter-Funktion, die gleich speichert
@@ -55,17 +69,31 @@ export const UserProvider = ({ children }) => {
     localStorage.setItem('userPosition', JSON.stringify(positionArray));
   };
 
-  const login = useCallback((id, name, token, expiresAt) => {
+  const updateCurrentLevel = (level) => {
+    const nextLevel = level != null ? Number(level) : null;
+    setCurrentLevel(nextLevel);
+    if (nextLevel != null && Number.isFinite(nextLevel)) {
+      localStorage.setItem('currentLevel', String(nextLevel));
+    } else {
+      localStorage.removeItem('currentLevel');
+    }
+  };
+
+  const login = useCallback((id, name, token, expiresAt, options = {}) => {
+    const { reload = true } = options;
+    const nextCurrentLevel = options.currentLevel != null ? Number(options.currentLevel) : null;
     const idAsString = id != null ? String(id) : null;
     const previousUserId = localStorage.getItem('userId');
 
     // Reset avatar cache when switching accounts to avoid showing the previous user's picture.
     if (previousUserId && idAsString && previousUserId !== idAsString) {
       localStorage.removeItem('avatarUrl');
+      localStorage.removeItem('event2026_has_registration');
     }
 
     setUserId(idAsString);
     setUsername(name);
+    setCurrentLevel(nextCurrentLevel);
     setIsLoggedIn(true);
     setAuthToken(token || null);
     setTokenExpiresAt(expiresAt || null);
@@ -83,6 +111,12 @@ export const UserProvider = ({ children }) => {
       localStorage.removeItem('username');
     }
 
+    if (nextCurrentLevel != null && Number.isFinite(nextCurrentLevel)) {
+      localStorage.setItem('currentLevel', String(nextCurrentLevel));
+    } else {
+      localStorage.removeItem('currentLevel');
+    }
+
     if (token) {
       localStorage.setItem('authToken', token);
     } else {
@@ -96,10 +130,16 @@ export const UserProvider = ({ children }) => {
     }
 
     sessionValidatedRef.current = true;
-  }, []);
 
-  const logout = useCallback(async () => {
+    if (reload) {
+      reloadCurrentPage();
+    }
+  }, [reloadCurrentPage]);
+
+  const logout = useCallback(async (options = {}) => {
+    const { reload = true } = options;
     const storedToken = localStorage.getItem('authToken');
+    const currentUserId = localStorage.getItem('userId');
     if (storedToken && API_BASE) {
       try {
         await fetch(`${API_BASE}/userManagement/logout.php`, { method: 'POST' });
@@ -108,19 +148,40 @@ export const UserProvider = ({ children }) => {
       }
     }
 
+    if (currentUserId) {
+      try {
+        await disableBrowserPush(currentUserId);
+      } catch (error) {
+        console.warn('Browser push cleanup failed', error);
+      }
+
+      try {
+        await disableNativePush(currentUserId);
+      } catch (error) {
+        console.warn('Native push cleanup failed', error);
+      }
+    }
+
     setUserId(null);
     setUsername(null);
+    setCurrentLevel(null);
     setIsLoggedIn(false);
     setAuthToken(null);
     setTokenExpiresAt(null);
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
+    localStorage.removeItem('currentLevel');
     localStorage.removeItem('authToken');
     localStorage.removeItem('tokenExpiresAt');
     localStorage.removeItem('userPosition');
     localStorage.removeItem('avatarUrl');
+    localStorage.removeItem('event2026_has_registration');
     sessionValidatedRef.current = false;
-  }, []);
+
+    if (reload) {
+      reloadCurrentPage();
+    }
+  }, [reloadCurrentPage]);
 
   const validateSession = useCallback(async () => {
     if (!API_BASE || !authToken) return;
@@ -132,12 +193,12 @@ export const UserProvider = ({ children }) => {
       }
       const data = await response.json();
       if (data.status === 'success') {
-        login(data.userId, data.username, authToken, data.expires_at);
+        login(data.userId, data.username, authToken, data.expires_at, { reload: false, currentLevel: data.currentLevel });
       } else {
-        await logout();
+        await logout({ reload: false });
       }
     } catch (error) {
-      await logout();
+      await logout({ reload: false });
     }
   }, [authToken, login, logout]);
 
@@ -163,13 +224,16 @@ export const UserProvider = ({ children }) => {
       value={{
         userId,
         username,
+        currentLevel,
         isLoggedIn,
         userPosition,
         authToken,
         tokenExpiresAt,
+        authReady,
         login,
         logout,
-        setUserPosition: updateUserPosition
+        setUserPosition: updateUserPosition,
+        setCurrentLevel: updateCurrentLevel
       }}
     >
       {children}

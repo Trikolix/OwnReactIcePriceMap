@@ -34,9 +34,9 @@ class BundeslandExperteEvaluator extends BaseAwardEvaluator implements MetadataA
             $level = (int)$levelData['level'];
             $bundeslandId = (int)$levelData['threshold'];
             if ((int)$bundesland == $bundeslandId) {
-                $iceCount = $this->getIceCountBundesland($userId, $bundeslandId);
+                $checkinCount = $this->getCheckinCountBundesland($userId, $bundeslandId);
 
-                if ($iceCount >= 30 && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+                if ($checkinCount >= 30 && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                     $achievements[] = [
                         'award_id' => self::AWARD_ID,
                         'level' => $level,
@@ -50,12 +50,11 @@ class BundeslandExperteEvaluator extends BaseAwardEvaluator implements MetadataA
         return $achievements;
     }
 
-    private function getIceCountBundesland(int $userId, int $bundeslandId): int {
+    private function getCheckinCountBundesland(int $userId, int $bundeslandId): int {
         global $pdo;
-        $sql = "SELECT COUNT(s.id) AS anzahl_eis
+        $sql = "SELECT COUNT(c.id) AS anzahl_checkins
          FROM checkins c
-         JOIN checkin_sorten s ON s.checkin_id = c.id
-		 JOIN eisdielen e ON e.id = c.eisdiele_id
+         JOIN eisdielen e ON e.id = c.eisdiele_id
          WHERE c.nutzer_id = :userId AND e.bundesland_id = :bundeslandId;";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['userId' => $userId, 'bundeslandId' => $bundeslandId]);

@@ -15,6 +15,7 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             status VARCHAR(20) NOT NULL DEFAULT 'draft',
             group_size INT NOT NULL DEFAULT 4,
             start_at DATETIME NULL,
+            min_image_created_at DATETIME NULL,
             submission_deadline DATETIME NULL,
             submission_limit_per_user INT NULL,
             group_schedule TEXT NULL,
@@ -26,7 +27,8 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
-    addColumnIfMissing($pdo, 'photo_challenges', 'submission_deadline', 'DATETIME NULL AFTER start_at');
+    addColumnIfMissing($pdo, 'photo_challenges', 'min_image_created_at', 'DATETIME NULL AFTER start_at');
+    addColumnIfMissing($pdo, 'photo_challenges', 'submission_deadline', 'DATETIME NULL AFTER min_image_created_at');
     addColumnIfMissing($pdo, 'photo_challenges', 'submission_limit_per_user', 'INT NULL AFTER submission_deadline');
     addColumnIfMissing($pdo, 'photo_challenges', 'group_schedule', 'TEXT NULL AFTER submission_limit_per_user');
     addColumnIfMissing($pdo, 'photo_challenges', 'group_advancers', 'INT NOT NULL DEFAULT 2 AFTER group_schedule');

@@ -98,16 +98,23 @@ try {
     ]);
     $pdo->commit();
 
-    $mailBody = "Hallo {$buyerName},\n\n";
-    $mailBody .= "deine Gutschein-Bestellung für die Ice-Tour 2026 wurde gespeichert.\n\n";
-    $mailBody .= "Bestellung: #{$purchaseId}\n";
-    $mailBody .= "Referenzcode: {$paymentRef}\n";
-    $mailBody .= "Gutschein-Codes: {$giftVoucherQuantity}\n";
-    $mailBody .= "Zu zahlender Gesamtbetrag: " . number_format($expectedAmount, 2, ',', '.') . " EUR\n\n";
-    $mailBody .= "Bitte schließe die Zahlung über Stripe im Event-Portal ab.\n";
-    $mailBody .= "Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang per Mail freigeschaltet.\n";
-    $mailBody .= "Bei Rueckfragen melde dich bitte an " . EVENT2026_GIFT_PAYMENT_CONTACT . ".\n";
-    iceapp_send_utf8_text_mail($buyerEmail, 'Ice-Tour 2026: Deine Gutschein-Bestellung', $mailBody);
+    iceapp_send_branded_action_mail(
+        $buyerEmail,
+        'Ice-Tour 2026: Deine Gutschein-Bestellung',
+        'Deine Gutschein-Bestellung',
+        "Hallo {$buyerName},",
+        [
+            'deine Gutschein-Bestellung für die Ice-Tour 2026 wurde gespeichert.',
+            "Bestellung: #{$purchaseId}",
+            "Referenzcode: {$paymentRef}",
+            "Gutschein-Codes: {$giftVoucherQuantity}",
+            'Zu zahlender Gesamtbetrag: ' . number_format($expectedAmount, 2, ',', '.') . ' EUR',
+            'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Die Gutschein-Codes werden erst nach bestätigtem Zahlungseingang per Mail freigeschaltet.',
+            'Bei Rückfragen melde dich bitte an ' . EVENT2026_GIFT_PAYMENT_CONTACT . '.',
+        ],
+        'Zur Ice-Tour',
+        'https://ice-app.de/ice-tour'
+    );
 
     echo json_encode([
         'status' => 'success',

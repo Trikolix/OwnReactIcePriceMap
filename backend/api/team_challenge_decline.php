@@ -3,6 +3,7 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
 
 ensureTeamChallengeSchema($pdo);
+ensurePushInfrastructureSchema($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -44,7 +45,13 @@ try {
     echo json_encode(['status' => 'success']);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
-        $pdo->rollBack();
+        try {
+            $pdo->rollBack();
+        } catch (PDOException $rollbackEx) {
+            if (stripos($rollbackEx->getMessage(), 'active transaction') === false) {
+                throw $rollbackEx;
+            }
+        }
     }
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

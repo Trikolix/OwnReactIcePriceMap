@@ -1,6 +1,6 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
-require_once __DIR__ . '/lib/email_notification.php';
+require_once __DIR__ . '/lib/notification_dispatcher.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/comment_registration.php';
 
@@ -118,19 +118,20 @@ function handleUserRegistrationKommentarBenachrichtigungen($pdo, $registeredUser
             return;
         }
 
-        $zusatzdaten = json_encode([
-            'user_registration_id' => (int)$registeredUser['id'],
-            'kommentar_id' => (int)$kommentarId
-        ]);
-
         // 1. Benachrichtigung an den neu registrierten Nutzer
         if ((int)$registeredUser['id'] !== (int)$currentUserId) {
-            $stmt = $pdo->prepare("
-                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-                VALUES (?, 'kommentar_new_user', ?, ?, ?)
-            ");
             $text = "$kommentatorName hat deinen Profil-Feed-Eintrag kommentiert.";
-            $stmt->execute([(int)$registeredUser['id'], $kommentarId, $text, $zusatzdaten]);
+            createNotification(
+                $pdo,
+                (int)$registeredUser['id'],
+                'kommentar_new_user',
+                (int)$kommentarId,
+                $text,
+                [
+                    'user_registration_id' => (int)$registeredUser['id'],
+                    'kommentar_id' => (int)$kommentarId,
+                ]
+            );
         }
 
         // 2. Andere Kommentierende benachrichtigen
@@ -145,13 +146,19 @@ function handleUserRegistrationKommentarBenachrichtigungen($pdo, $registeredUser
         $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         if ($beteiligteIds) {
-            $stmt = $pdo->prepare("
-                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-                VALUES (?, 'kommentar_new_user', ?, ?, ?)
-            ");
             $text = "$kommentatorName hat einen Profil-Feed-Eintrag kommentiert, den du auch kommentiert hast.";
             foreach ($beteiligteIds as $beteiligterId) {
-                $stmt->execute([(int)$beteiligterId, $kommentarId, $text, $zusatzdaten]);
+                createNotification(
+                    $pdo,
+                    (int)$beteiligterId,
+                    'kommentar_new_user',
+                    (int)$kommentarId,
+                    $text,
+                    [
+                        'user_registration_id' => (int)$registeredUser['id'],
+                        'kommentar_id' => (int)$kommentarId,
+                    ]
+                );
             }
         }
     } catch (Exception $e) {
@@ -190,34 +197,34 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUser
         $eisdieleId = $checkinData['eisdiele_id'];
         $eisdieleName = $checkinData['eisdiele_name'] ?? '';
 
-        $zusatzdaten = json_encode([
-            'checkin_id' => $checkinId,
-            'eisdiele_id' => $eisdieleId,
-            'eisdiele_name' => $eisdieleName,
-            'kommentar_id' => $kommentarId
-        ]);
-
         // 1. Benachrichtigung an Check-in-Autor
         if ($checkinAutorId && $checkinAutorId != $currentUserId) {
-            $stmt = $pdo->prepare("
-                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-                VALUES (?, 'kommentar', ?, ?, ?)
-            ");
             $text = "$kommentatorName hat deinen Check-in kommentiert.";
-            $stmt->execute([$checkinAutorId, $kommentarId, $text, $zusatzdaten]);
-            // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed(
+            createNotification(
                 $pdo,
-                $checkinAutorId,
-                'comment',
-                $kommentatorName,
+                (int)$checkinAutorId,
+                'kommentar',
+                (int)$kommentarId,
+                $text,
                 [
-                    'shopName' => $eisdieleName,
-                    'shopId' => $eisdieleId,
-                    'checkinId' => $checkinId,
-                    'kommentarId' => $kommentarId,
-                    'byUserId' => $currentUserId
-               ]
+                    'checkin_id' => $checkinId,
+                    'eisdiele_id' => $eisdieleId,
+                    'eisdiele_name' => $eisdieleName,
+                    'kommentar_id' => $kommentarId,
+                ],
+                [
+                    'email' => [
+                        'type' => 'comment',
+                        'senderName' => $kommentatorName,
+                        'extra' => [
+                            'shopName' => $eisdieleName,
+                            'shopId' => $eisdieleId,
+                            'checkinId' => $checkinId,
+                            'kommentarId' => $kommentarId,
+                            'byUserId' => $currentUserId,
+                        ],
+                    ],
+                ]
             );
         }
 
@@ -232,28 +239,35 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUser
 
         if ($beteiligteIds) {
             $text = "$kommentatorName hat einen Check-in kommentiert, den du auch kommentiert hast.";
-            $stmt = $pdo->prepare("
-                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-                VALUES (?, 'kommentar', ?, ?, ?)
-            ");
-
             foreach ($beteiligteIds as $beteiligterId) {
-                $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
-                // Email-Berechtigung wird in sendNotificationEmailIfAllowed geprüft
-                sendNotificationEmailIfAllowed(
+                createNotification(
                     $pdo,
-                    $beteiligterId,
-                    'comment_participated',
-                    $kommentatorName,
+                    (int)$beteiligterId,
+                    'kommentar',
+                    (int)$kommentarId,
+                    $text,
                     [
-                        'shopName' => $eisdieleName,
-                        'shopId' => $eisdieleId,
-                        'checkinId' => $checkinId,
-                        'kommentarId' => $kommentarId,
-                        'byUserId' => $currentUserId
-                   ]
+                        'checkin_id' => $checkinId,
+                        'eisdiele_id' => $eisdieleId,
+                        'eisdiele_name' => $eisdieleName,
+                        'kommentar_id' => $kommentarId,
+                    ],
+                    [
+                        'email' => [
+                            'type' => 'comment_participated',
+                            'senderName' => $kommentatorName,
+                            'extra' => [
+                                'shopName' => $eisdieleName,
+                                'shopId' => $eisdieleId,
+                                'checkinId' => $checkinId,
+                                'kommentarId' => $kommentarId,
+                                'byUserId' => $currentUserId,
+                            ],
+                        ],
+                    ]
                 );
             }
+        }
         }
     } catch (Exception $e) {
         error_log("Error in handleCheckinKommentarBenachrichtigungen: " . $e->getMessage());
@@ -289,32 +303,31 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $current
         $bewertungAutorId = $bewertungData['autor_id'];
         $eisdieleId = $bewertungData['eisdiele_id'];
 
-        $zusatzdaten = json_encode([
-            'bewertung_id' => $bewertungId,
-            'eisdiele_id' => $eisdieleId,
-            'kommentar_id' => $kommentarId
-        ]);
-
-        // 1. Benachrichtigung an Bewertungsautor
         if ($bewertungAutorId && $bewertungAutorId != $currentUserId) {
-            $stmt = $pdo->prepare("
-                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-                VALUES (?, 'kommentar_bewertung', ?, ?, ?)
-            ");
             $text = "$kommentatorName hat deine Bewertung kommentiert.";
-            $stmt->execute([$bewertungAutorId, $kommentarId, $text, $zusatzdaten]);
-            // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed(
+            createNotification(
                 $pdo,
-                $bewertungAutorId,
-                'comment',
-                $kommentatorName,
+                (int)$bewertungAutorId,
+                'kommentar_bewertung',
+                (int)$kommentarId,
+                $text,
                 [
-                    'shopName' => '',
-                    'shopId' => $eisdieleId,
-                    'bewertungId' => $bewertungId,
-                    'kommentarId' => $kommentarId,
-                    'byUserId' => $currentUserId
+                    'bewertung_id' => $bewertungId,
+                    'eisdiele_id' => $eisdieleId,
+                    'kommentar_id' => $kommentarId,
+                ],
+                [
+                    'email' => [
+                        'type' => 'comment',
+                        'senderName' => $kommentatorName,
+                        'extra' => [
+                            'shopName' => '',
+                            'shopId' => $eisdieleId,
+                            'bewertungId' => $bewertungId,
+                            'kommentarId' => $kommentarId,
+                            'byUserId' => $currentUserId,
+                        ],
+                    ],
                 ]
             );
         }
@@ -330,13 +343,19 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $current
 
         if ($beteiligteIds) {
             $text = "$kommentatorName hat eine Bewertung kommentiert, die du auch kommentiert hast.";
-            $stmt = $pdo->prepare("
-                INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten)
-                VALUES (?, 'kommentar_bewertung', ?, ?, ?)
-            ");
-
             foreach ($beteiligteIds as $beteiligterId) {
-                $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
+                createNotification(
+                    $pdo,
+                    (int)$beteiligterId,
+                    'kommentar_bewertung',
+                    (int)$kommentarId,
+                    $text,
+                    [
+                        'bewertung_id' => $bewertungId,
+                        'eisdiele_id' => $eisdieleId,
+                        'kommentar_id' => $kommentarId,
+                    ]
+                );
             }
         }
     } catch (Exception $e) {
@@ -359,29 +378,33 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, 
 
         $routeAutorId = $routeData['autor_id'];
         $routeName = $routeData['route_name'] ?? '';
-        $zusatzdaten = json_encode([
-            'route_id' => $routeId,
-            'route_name' => $routeName,
-            'kommentar_id' => $kommentarId,
-            'route_autor_id' => $routeAutorId
-        ]);
-
         // 1. Benachrichtigung an Route-Autor
         if ($routeAutorId && $routeAutorId != $currentUserId) {
-            $stmt = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'kommentar_route', ?, ?, ?)");
             $text = "$kommentatorName hat deine Route '$routeName' kommentiert.";
-            $stmt->execute([$routeAutorId, $kommentarId, $text, $zusatzdaten]);
-            sendNotificationEmailIfAllowed(
+            createNotification(
                 $pdo,
-                $routeAutorId,
-                'comment',
-                $kommentatorName,
+                (int)$routeAutorId,
+                'kommentar_route',
+                (int)$kommentarId,
+                $text,
                 [
-                    'routeName' => $routeName,
-                    'routeId' => $routeId,
-                    'kommentarId' => $kommentarId,
-                    'byUserId' => $currentUserId,
-                    'route_autor_id' => $routeAutorId
+                    'route_id' => $routeId,
+                    'route_name' => $routeName,
+                    'kommentar_id' => $kommentarId,
+                    'route_autor_id' => $routeAutorId,
+                ],
+                [
+                    'email' => [
+                        'type' => 'comment',
+                        'senderName' => $kommentatorName,
+                        'extra' => [
+                            'routeName' => $routeName,
+                            'routeId' => $routeId,
+                            'kommentarId' => $kommentarId,
+                            'byUserId' => $currentUserId,
+                            'route_autor_id' => $routeAutorId,
+                        ],
+                    ],
                 ]
             );
         }
@@ -392,20 +415,31 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, 
         $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         if ($beteiligteIds) {
             $text = "$kommentatorName hat eine Route kommentiert, die du auch kommentiert hast.";
-            $stmt = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'kommentar_route', ?, ?, ?)");
             foreach ($beteiligteIds as $beteiligterId) {
-                $stmt->execute([$beteiligterId, $kommentarId, $text, $zusatzdaten]);
-                sendNotificationEmailIfAllowed(
+                createNotification(
                     $pdo,
-                    $beteiligterId,
-                    'comment_participated_route',
-                    $kommentatorName,
+                    (int)$beteiligterId,
+                    'kommentar_route',
+                    (int)$kommentarId,
+                    $text,
                     [
-                        'routeName' => $routeName,
-                        'routeId' => $routeId,
-                        'kommentarId' => $kommentarId,
-                        'byUserId' => $currentUserId,
-                        'route_autor_id' => $routeAutorId
+                        'route_id' => $routeId,
+                        'route_name' => $routeName,
+                        'kommentar_id' => $kommentarId,
+                        'route_autor_id' => $routeAutorId,
+                    ],
+                    [
+                        'email' => [
+                            'type' => 'comment_participated_route',
+                            'senderName' => $kommentatorName,
+                            'extra' => [
+                                'routeName' => $routeName,
+                                'routeId' => $routeId,
+                                'kommentarId' => $kommentarId,
+                                'byUserId' => $currentUserId,
+                                'route_autor_id' => $routeAutorId,
+                            ],
+                        ],
                     ]
                 );
             }

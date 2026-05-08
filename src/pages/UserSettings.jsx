@@ -1,10 +1,19 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../utils/cropImage";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { SubmitButton } from "../styles/SharedStyles";
+import { Capacitor } from "@capacitor/core";
+import {
+  disableBrowserPush,
+  disableNativePush,
+  enableBrowserPush,
+  getBrowserPushStatus,
+  initializeNativePush,
+} from "../services/pushNotifications";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -21,10 +30,19 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const { userId } = useUser();
   const [settings, setSettings] = useState({
     notify_checkin_mention: 1,
+    notify_checkin_mention_push: 1,
     notify_comment: 1,
+    notify_comment_push: 1,
     notify_comment_participated: 1,
-    notify_news: 0,
+    notify_comment_participated_push: 1,
+    notify_news: 1,
+    notify_news_push: 1,
     notify_team_challenge: 1,
+    notify_team_challenge_push: 1,
+    notify_photo_challenge: 1,
+    notify_photo_challenge_push: 1,
+    push_enabled_web: 1,
+    push_enabled_android: 1,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,6 +60,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [presetAvatars, setPresetAvatars] = useState([]);
   const [selectedPresetId, setSelectedPresetId] = useState(null);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const [browserPushStatus, setBrowserPushStatus] = useState({ supported: false, permission: "default", subscribed: false });
   const selectedPreset = selectedPresetId
     ? presetAvatars.find((preset) => preset.id === selectedPresetId) || null
     : null;
@@ -64,6 +83,14 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
     fetchSettings();
   }, [userId]);
+
+  useEffect(() => {
+    getBrowserPushStatus()
+      .then(setBrowserPushStatus)
+      .catch(() => {
+        setBrowserPushStatus({ supported: false, permission: "unsupported", subscribed: false });
+      });
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -132,15 +159,26 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
 
   const handleChange = (e) => {
     const { name, checked } = e.target;
-    // Wenn notify_comment_participated aktiviert wird, auch notify_comment aktivieren
-    if (name === 'notify_comment_participated' && checked) {
-      setSettings({ ...settings, notify_comment: 1, notify_comment_participated: 1 });
-    } else if (name === 'notify_comment' && !checked) {
-      // Wenn notify_comment deaktiviert wird, auch participated deaktivieren
-      setSettings({ ...settings, notify_comment: 0, notify_comment_participated: 0 });
-    } else {
-      setSettings({ ...settings, [name]: checked ? 1 : 0 });
-    }
+
+    setSettings((prev) => {
+      const nextSettings = { ...prev, [name]: checked ? 1 : 0 };
+
+      if (name === 'notify_comment_participated' && checked) {
+        nextSettings.notify_comment = 1;
+      }
+      if (name === 'notify_comment_participated_push' && checked) {
+        nextSettings.notify_comment_push = 1;
+      }
+
+      if (name === 'notify_comment' && !checked) {
+        nextSettings.notify_comment_participated = 0;
+      }
+      if (name === 'notify_comment_push' && !checked) {
+        nextSettings.notify_comment_participated_push = 0;
+      }
+
+      return nextSettings;
+    });
   };
 
   const handleAvatarSelect = (event) => {
@@ -278,11 +316,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     return newPath;
   };
 
-  const persistNotificationSettings = async () => {
+  const persistNotificationSettings = async (targetSettings = settings) => {
     const res = await fetch(`${API_BASE}/api/update_user_notification_settings.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, ...settings }),
+      body: JSON.stringify({ user_id: userId, ...targetSettings }),
     });
     const json = await res.json();
     if (!json.success) {
@@ -296,12 +334,122 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setSuccess(false);
     try {
       await persistAvatarChange();
-      await persistNotificationSettings();
+      
+      const hasAnyPushEnabled = Object.keys(settings).some(key => key.endsWith('_push') && settings[key] === 1);
+      const isNative = Capacitor.isNativePlatform();
+      
+      const updatedSettings = {
+        ...settings,
+        push_enabled_web: (!isNative && hasAnyPushEnabled) ? 1 : (isNative ? settings.push_enabled_web : 0),
+        push_enabled_android: (isNative && hasAnyPushEnabled) ? 1 : (!isNative ? settings.push_enabled_android : 0),
+      };
+
+      await persistNotificationSettings(updatedSettings);
+
+      if (isNative) {
+        // Native Plattform (Android)
+        if (hasAnyPushEnabled) {
+          await initializeNativePush(userId);
+        } else {
+          await disableNativePush(userId);
+        }
+      } else {
+        // Web Plattform
+        if (hasAnyPushEnabled) {
+          await enableBrowserPush(userId);
+        } else {
+          await disableBrowserPush(userId);
+        }
+      }
+      
+      setBrowserPushStatus(await getBrowserPushStatus());
       setSuccess(true);
     } catch (e) {
       setError(e.message || "Fehler beim Speichern.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    const isNative = Capacitor.isNativePlatform();
+    
+    if (!isNative && browserPushStatus.permission !== 'granted') {
+      alert("Push-Berechtigung ist nicht erteilt. Bitte aktiviere Push zuerst in den Browsereinstellungen oder speichere die Einstellungen.");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/push/send-test.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        alert(`Senden fehlgeschlagen: ${json.message}`);
+      } else {
+        alert("Test-Benachrichtigung wurde versendet. Schau mal auf dein Handy!");
+      }
+    } catch (e) {
+      alert(`Fehler: ${e.message}`);
+    }
+  };
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('openDelete') === '1') {
+      setShowDeleteConfirm(true);
+      // Optional: Scroll to bottom after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        const modal = document.querySelector('[class*="ModalBox"]');
+        if (modal) modal.scrollTo({ top: modal.scrollHeight, behavior: 'smooth' });
+      }, 300);
+    }
+  }, [location.search]);
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    if (!deletePassword) {
+      setError("Bitte gib dein Passwort zur Bestätigung ein.");
+      return;
+    }
+
+    if (!deleteConfirmed) {
+      setError("Bitte bestätige, dass du die Konsequenzen verstehst.");
+      return;
+    }
+
+    if (!window.confirm("Bist du sicher? Dein Account wird zur Löschung markiert und du wirst sofort abgemeldet.")) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/userManagement/request_deletion.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || "Fehler beim Beantragen der Löschung.");
+      }
+
+      alert(json.message);
+      window.location.href = "/"; // Hartes Redirect zur Startseite
+    } catch (e) {
+      setError(e.message);
+      setDeleting(false);
     }
   };
 
@@ -399,59 +547,107 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         )}
         <Divider />
         <h3>Benachrichtigungseinstellungen</h3>
-        {/* ...existing code... */}
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_checkin_mention"
-            checked={!!settings.notify_checkin_mention}
-            onChange={handleChange}
-          />
-          Benachrichtigung bei Verlinkung in Checkins
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_comment"
-            checked={!!settings.notify_comment}
-            onChange={handleChange}
-          />
-          Benachrichtigung bei neuen Kommentaren an eigenen Checkins/Bewertungen
-        </Label>
-        <Label style={{ marginLeft: '2rem', opacity: settings.notify_comment ? 1 : 0.5 }}>
-          <input
-            type="checkbox"
-            name="notify_comment_participated"
-            checked={!!settings.notify_comment_participated}
-            onChange={handleChange}
-            disabled={!settings.notify_comment}
-          />
-          Benachrichtigung bei neuen Kommentaren an Checkins, die du auch kommentiert hast
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_news"
-            checked={!!settings.notify_news}
-            onChange={handleChange}
-          />
-          Systemmeldungen & News (Newsletter, Aktionen, wichtige Infos)
-        </Label>
-        <Label>
-          <input
-            type="checkbox"
-            name="notify_team_challenge"
-            checked={!!settings.notify_team_challenge}
-            onChange={handleChange}
-          />
-          Team-Challenges (Einladungen, Annahmen, Abbrüche, Abschlüsse)
-        </Label>
+        
+        <SettingsTable>
+          <thead>
+            <tr>
+              <th>Ereignis</th>
+              <th>E-Mail</th>
+              <th>
+                Push
+                {Number(userId) === 1 && (
+                  <MiniButton type="button" onClick={handleSendTest} style={{ color: '#0277bd', fontSize: '0.7rem', marginLeft: '0.5rem' }}>
+                    (Test)
+                  </MiniButton>
+                )}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Verlinkung in Checkins</td>
+              <td><input type="checkbox" name="notify_checkin_mention" checked={!!settings.notify_checkin_mention} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_checkin_mention_push" checked={!!settings.notify_checkin_mention_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Kommentare an eigenen Checkins</td>
+              <td><input type="checkbox" name="notify_comment" checked={!!settings.notify_comment} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_comment_push" checked={!!settings.notify_comment_push} onChange={handleChange} /></td>
+            </tr>
+            <tr style={{ opacity: (settings.notify_comment || settings.notify_comment_push) ? 1 : 0.5 }}>
+              <td style={{ paddingLeft: '1.5rem', fontSize: '0.85rem' }}>↳ auch wenn nur mitkommentiert</td>
+              <td><input type="checkbox" name="notify_comment_participated" checked={!!settings.notify_comment_participated} onChange={handleChange} disabled={!settings.notify_comment && !settings.notify_comment_push} /></td>
+              <td><input type="checkbox" name="notify_comment_participated_push" checked={!!settings.notify_comment_participated_push} onChange={handleChange} disabled={!settings.notify_comment && !settings.notify_comment_push} /></td>
+            </tr>
+            <tr>
+              <td>Systemmeldungen & News</td>
+              <td><input type="checkbox" name="notify_news" checked={!!settings.notify_news} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_news_push" checked={!!settings.notify_news_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Team-Challenges</td>
+              <td><input type="checkbox" name="notify_team_challenge" checked={!!settings.notify_team_challenge} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_team_challenge_push" checked={!!settings.notify_team_challenge_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Photo-Challenges</td>
+              <td><input type="checkbox" name="notify_photo_challenge" checked={!!settings.notify_photo_challenge} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_photo_challenge_push" checked={!!settings.notify_photo_challenge_push} onChange={handleChange} /></td>
+            </tr>
+          </tbody>
+        </SettingsTable>
+
+        {browserPushStatus.supported && browserPushStatus.permission === 'denied' && (
+          <SmallNote style={{ color: '#c62828', marginTop: '0.5rem' }}>
+            Hinweis: Push-Benachrichtigungen sind im Browser blockiert. Bitte in den Browsereinstellungen freigeben.
+          </SmallNote>
+        )}
+
         {error && <ErrorMsg>{error}</ErrorMsg>}
         {success && <SuccessMsg>Gespeichert!</SuccessMsg>}
         <ButtonRow>
           <SubmitButton onClick={handleSave} disabled={saving}>Speichern</SubmitButton>
           <CancelButton onClick={onClose}>Schließen</CancelButton>
         </ButtonRow>
+
+        <Divider />
+        <DangerZone>
+          <h4>Account löschen</h4>
+          <p>Hier kannst du deinen Account dauerhaft löschen.</p>
+          {!showDeleteConfirm ? (
+            <DeleteTriggerButton type="button" onClick={() => setShowDeleteConfirm(true)}>
+              Account löschen beantragen
+            </DeleteTriggerButton>
+          ) : (
+            <DeleteForm onSubmit={handleDeleteAccount}>
+              <p>Bitte gib dein Passwort ein, um die Löschung zu bestätigen:</p>
+              <input 
+                type="password" 
+                placeholder="Dein Passwort" 
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                required
+                autoFocus
+              />
+              <ConfirmationLabel>
+                <input 
+                  type="checkbox" 
+                  checked={deleteConfirmed} 
+                  onChange={(e) => setDeleteConfirmed(e.target.checked)} 
+                />
+                <span>Ich verstehe, dass mein Profil dauerhaft anonymisiert wird. Persönliche Daten (Favoriten, Profilbild) werden gelöscht, während meine Beiträge (Preise, Kommentare) anonymisiert erhalten bleiben.</span>
+              </ConfirmationLabel>
+              <DeleteActions>
+                <ConfirmDeleteButton type="submit" disabled={deleting || !deleteConfirmed}>
+                  {deleting ? "Wird verarbeitet..." : "Löschung jetzt beantragen"}
+                </ConfirmDeleteButton>
+                <CancelButton type="button" onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); }}>
+                  Abbrechen
+                </CancelButton>
+              </DeleteActions>
+            </DeleteForm>
+          )}
+        </DangerZone>
       </ModalBox>
     </ModalOverlay>
   );
@@ -499,13 +695,6 @@ const ModalBox = styled.div`
   }
 `;
 
-const Label = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-`;
-
 const ButtonRow = styled.div`
   display: flex;
   justify-content: center;
@@ -548,12 +737,12 @@ const TopCloseButton = styled.button`
 
 const ErrorMsg = styled.div`
   color: #d32f2f;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
 `;
 
 const SuccessMsg = styled.div`
   color: #388e3c;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
 `;
 
 const AvatarSection = styled.div`
@@ -807,5 +996,131 @@ const CropModalActions = styled.div`
     padding: 0.5rem 1.2rem;
     min-width: 0;
     border-radius: 8px;
+  }
+`;
+
+const SettingsTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  
+  th, td {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  th {
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  
+  td:first-child {
+    font-weight: 500;
+    color: #333;
+  }
+  
+  td:not(:first-child) {
+    text-align: center;
+  }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+`;
+
+const DangerZone = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid #ffcdd2;
+  border-radius: 12px;
+  background: #fff8f8;
+
+  h4 {
+    margin: 0 0 0.5rem;
+    color: #c62828;
+  }
+
+  p {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+`;
+
+const DeleteTriggerButton = styled.button`
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+
+  &:hover {
+    background: #d32f2f;
+  }
+`;
+
+const DeleteForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+`;
+
+const DeleteActions = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`;
+
+const ConfirmationLabel = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: #555;
+  cursor: pointer;
+  margin: 0.5rem 0;
+  max-width: 450px;
+
+  input[type="checkbox"] {
+    margin-top: 0.2rem;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  span {
+    line-height: 1.4;
+  }
+`;
+
+const ConfirmDeleteButton = styled.button`
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+  min-width: 150px;
+
+  &:disabled {
+    background: #e57373;
+    cursor: not-allowed;
   }
 `;

@@ -11,10 +11,10 @@ const SHOP_MAINTENANCE_BONUS_EP = [
 
 function ensureShopMaintenanceSchema(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__shop_maintenance_schema_initialized'])) {
         return;
     }
+    $GLOBALS['__shop_maintenance_schema_initialized'] = true;
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS shop_maintenance_tasks (
@@ -411,6 +411,125 @@ function shopMaintenanceFetchNearbyTasks(PDO $pdo, float $lat, float $lon, int $
                 'latest_price_update' => $row['latest_price_update'],
                 'has_opening_hours' => $hasOpeningHours,
             ],
+        ];
+    }, $rows);
+}
+
+function shopMaintenanceMetricAgeDays(?string $dateValue): ?int
+{
+    if (!$dateValue) {
+        return null;
+    }
+
+    try {
+        $date = new DateTimeImmutable($dateValue, new DateTimeZone(OPENING_HOURS_DEFAULT_TIMEZONE));
+        $now = shopMaintenanceNow();
+        if ($date > $now) {
+            return 0;
+        }
+        return (int)$date->diff($now)->days;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function shopMaintenanceMetricAgeScore(?int $ageDays): int
+{
+    if ($ageDays === null) {
+        return 100;
+    }
+    return (int)max(0, min(100, round(($ageDays / 365) * 100)));
+}
+
+function shopMaintenanceFetchMapMetrics(PDO $pdo, float $minLat, float $maxLat, float $minLon, float $maxLon): array
+{
+    ensureShopMaintenanceSchema($pdo);
+
+    $stmt = $pdo->prepare("
+        SELECT
+            e.id,
+            e.name,
+            e.adresse,
+            e.latitude,
+            e.longitude,
+            e.status,
+            e.openingHours,
+            e.opening_hours_note,
+            latest_price.latest_price_update,
+            latest_checkin.latest_checkin_at
+        FROM eisdielen e
+        LEFT JOIN (
+            SELECT eisdiele_id, MAX(gemeldet_am) AS latest_price_update
+            FROM preise
+            GROUP BY eisdiele_id
+        ) latest_price ON latest_price.eisdiele_id = e.id
+        LEFT JOIN (
+            SELECT eisdiele_id, MAX(datum) AS latest_checkin_at
+            FROM checkins
+            GROUP BY eisdiele_id
+        ) latest_checkin ON latest_checkin.eisdiele_id = e.id
+        WHERE e.latitude BETWEEN :min_lat AND :max_lat
+          AND e.longitude BETWEEN :min_lon AND :max_lon
+          AND e.status <> 'permanent_closed'
+          AND e.latitude IS NOT NULL
+          AND e.longitude IS NOT NULL
+        ORDER BY e.name ASC
+    ");
+    $stmt->execute([
+        'min_lat' => $minLat,
+        'max_lat' => $maxLat,
+        'min_lon' => $minLon,
+        'max_lon' => $maxLon,
+    ]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $shopIds = array_map(static function (array $row): int {
+        return (int)$row['id'];
+    }, $rows);
+
+    if (!empty($shopIds)) {
+        shopMaintenanceSyncTasksForShops($pdo, $shopIds);
+    }
+
+    $openingMap = fetch_opening_hours_map($pdo, $shopIds);
+    $activeTasks = shopMaintenanceFetchActiveTasksByShops($pdo, $shopIds);
+
+    return array_map(static function (array $row) use ($openingMap, $activeTasks): array {
+        $shopId = (int)$row['id'];
+        $hasOpeningHours = shopMaintenanceHasMeaningfulOpeningHours($row, $openingMap[$shopId] ?? []);
+        $priceAgeDays = shopMaintenanceMetricAgeDays(!empty($row['latest_price_update']) ? (string)$row['latest_price_update'] : null);
+        $checkinAgeDays = shopMaintenanceMetricAgeDays(!empty($row['latest_checkin_at']) ? (string)$row['latest_checkin_at'] : null);
+        $priceScore = shopMaintenanceMetricAgeScore($priceAgeDays);
+        $checkinScore = shopMaintenanceMetricAgeScore($checkinAgeDays);
+        $openingScore = $hasOpeningHours ? 0 : 100;
+        $activeTaskTypes = array_keys($activeTasks[$shopId] ?? []);
+        sort($activeTaskTypes);
+
+        $completenessParts = 0;
+        if ($priceAgeDays !== null) {
+            $completenessParts++;
+        }
+        if ($checkinAgeDays !== null) {
+            $completenessParts++;
+        }
+        if ($hasOpeningHours) {
+            $completenessParts++;
+        }
+
+        return [
+            'shop_id' => $shopId,
+            'name' => $row['name'],
+            'address' => $row['adresse'],
+            'lat' => $row['latitude'] !== null ? (float)$row['latitude'] : null,
+            'lon' => $row['longitude'] !== null ? (float)$row['longitude'] : null,
+            'status' => $row['status'],
+            'latest_price_update' => $row['latest_price_update'],
+            'latest_checkin_at' => $row['latest_checkin_at'],
+            'price_age_days' => $priceAgeDays,
+            'checkin_age_days' => $checkinAgeDays,
+            'has_opening_hours' => $hasOpeningHours,
+            'active_tasks' => $activeTaskTypes,
+            'staleness_score' => (int)round(($priceScore * 0.6) + ($checkinScore * 0.3) + ($openingScore * 0.1)),
+            'completeness_score' => (int)round(($completenessParts / 3) * 100),
         ];
     }, $rows);
 }

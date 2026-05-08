@@ -4,25 +4,18 @@ import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
 import MentionInviteModal from "./MentionInviteModal";
+import { buildNotificationDeeplink, parseNotificationExtra } from "../utils/notificationRouting";
 
 const NotificationBell = () => {
     const { userId } = useUser();
     const [notifications, setNotifications] = useState([]);
     const [show, setShow] = useState(false);
     const dropdownRef = useRef(null);
-    const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+    const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "", linkUrl: "", linkLabel: "" });
     const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
 
-    const openSystemModal = ({ title, message }) => {
-        setSystemModal({ isOpen: true, title, message });
-    };
-
-    const navigateToTeamChallenge = (notification) => {
-        const data = JSON.parse(notification.zusatzdaten || '{}');
-        const challengeId = data.team_challenge_id || notification.referenz_id;
-        window.location.href = challengeId
-            ? `/challenge?tab=team&teamChallengeId=${challengeId}`
-            : '/challenge?tab=team';
+    const openSystemModal = ({ title, message, linkUrl = "", linkLabel = "" }) => {
+        setSystemModal({ isOpen: true, title, message, linkUrl, linkLabel });
     };
 
     const loadNotifications = async () => {
@@ -77,36 +70,7 @@ const NotificationBell = () => {
         if (!notification.ist_gelesen) {
             markAsRead(notification.id);
         }
-        if (notification.typ === 'kommentar') {
-            const data = JSON.parse(notification.zusatzdaten || '{}');
-            if (data.checkin_id && data.eisdiele_id) {
-                const url = `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
-                window.location.href = url;
-            }
-        } else if (notification.typ === 'team_challenge') {
-            navigateToTeamChallenge(notification);
-        } else if (notification.typ === 'kommentar_bewertung') {
-            const data = JSON.parse(notification.zusatzdaten || '{}');
-            if (data.bewertung_id && data.eisdiele_id) {
-                const url = `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
-                window.location.href = url;
-            }
-        } else if (notification.typ === 'kommentar_route') {
-            const data = JSON.parse(notification.zusatzdaten || '{}');
-            if (data.route_id && data.route_autor_id) {
-                const url = `/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}`;
-                window.location.href = url;
-            }
-        } else if (notification.typ === 'kommentar_new_user') {
-            const data = JSON.parse(notification.zusatzdaten || '{}');
-            const targetUserId = data.user_registration_id || notification.referenz_id;
-            if (targetUserId) {
-                window.location.href = `/user/${targetUserId}`;
-            }
-        } else if (notification.typ === 'new_user') {
-            const url = `/user/${notification.referenz_id}`;
-            window.location.href = url;
-        } else if (notification.typ === 'systemmeldung') {
+        if (notification.typ === 'systemmeldung') {
             try {
                 const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/systemmeldung.php?action=get&id=${notification.referenz_id}`);
                 const data = await res.json();
@@ -114,27 +78,33 @@ const NotificationBell = () => {
                 if (data.status === 'success') {
                     openSystemModal({
                         title: data.systemmeldung.titel,
-                        message: data.systemmeldung.nachricht
+                        message: data.systemmeldung.nachricht,
+                        linkUrl: data.systemmeldung.link_url,
+                        linkLabel: data.systemmeldung.link_label
                     });
                 } else {
                     // Fallback auf zusatzdaten
-                    const fallback = JSON.parse(notification.zusatzdaten || '{}');
+                    const fallback = parseNotificationExtra(notification.zusatzdaten);
                     openSystemModal({
                         title: notification.text || "Systemmeldung",
-                        message: fallback.message || "Keine Nachricht verfügbar"
+                        message: fallback.message || "Keine Nachricht verfügbar",
+                        linkUrl: fallback.link_url,
+                        linkLabel: fallback.link_label
                     });
                 }
-            } catch (err) {
+                } catch (err) {
                 // Fallback bei Netzwerkfehler
-                const fallback = JSON.parse(notification.zusatzdaten || '{}');
+                const fallback = parseNotificationExtra(notification.zusatzdaten);
                 openSystemModal({
                     title: notification.text || "Systemmeldung",
-                    message: fallback.message || "Keine Nachricht verfügbar"
+                    message: fallback.message || "Keine Nachricht verfügbar",
+                    linkUrl: fallback.link_url,
+                    linkLabel: fallback.link_label
                 });
-            }
+                }
         } else if (notification.typ === 'checkin_mention') {
             // Modal öffnen mit Infos und Optionen
-            const data = JSON.parse(notification.zusatzdaten || '{}');
+            const data = parseNotificationExtra(notification.zusatzdaten);
             setMentionModal({
                 isOpen: true,
                 data: {
@@ -146,6 +116,11 @@ const NotificationBell = () => {
                     userId: userId
                 }
             });
+        } else {
+            const target = buildNotificationDeeplink(notification, userId);
+            if (target) {
+                window.location.href = target;
+            }
         }
     };
 
@@ -198,6 +173,8 @@ const NotificationBell = () => {
             onClose={() => setSystemModal({ ...systemModal, isOpen: false })}
             title={systemModal.title}
             message={systemModal.message}
+            linkUrl={systemModal.linkUrl}
+            linkLabel={systemModal.linkLabel}
         />
         <MentionInviteModal
             open={mentionModal.isOpen}

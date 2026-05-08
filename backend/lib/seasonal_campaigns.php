@@ -53,6 +53,11 @@ function ensureTableColumn(PDO $pdo, string $tableName, string $columnName, stri
 
 function ensureEasterCampaignTables(PDO $pdo): void
 {
+    if (isset($GLOBALS['__easter_campaign_schema_initialized'])) {
+        return;
+    }
+    $GLOBALS['__easter_campaign_schema_initialized'] = true;
+
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS easter_bunny_progress (
             user_id INT NOT NULL PRIMARY KEY,

@@ -146,11 +146,14 @@ export default function Header() {
                 <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>
               )}
               {isAdmin && (
-                <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+                <>
+                  <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+                  <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
+                </>
               )}
               {isLoggedIn && hasEventRegistration && (
                 <>
-                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
                   <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                 </>
               )}
@@ -169,12 +172,15 @@ export default function Header() {
                 <>
                   {hasEventRegistration && (
                     <>
-                      <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
+                      <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
                       <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                     </>
                   )}
                   {isAdmin && (
-                    <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                    <>
+                      <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                      <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
+                    </>
                   )}
                   <MenuActionButton
                     type="button"

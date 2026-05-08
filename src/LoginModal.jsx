@@ -7,8 +7,8 @@ import SocialAuthButtons from "./components/SocialAuthButtons";
 
 const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
 
-const LoginModal = ({ setShowLoginModal }) => {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
+  const [isRegisterMode, setIsRegisterMode] = useState(initialMode === 'register');
   const [isResetMode, setIsResetMode] = useState(false);
   const [message, setMessage] = useState('');
   const [username, setUsername] = useState('');
@@ -50,7 +50,7 @@ const LoginModal = ({ setShowLoginModal }) => {
 
       const data = await response.json();
       if (data.status === 'success') {
-        login(data.userId, data.username, data.token, data.expires_at);
+        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
         setMessage('Login erfolgreich!');
         setLoginSuccess(true);
         setTimeout(() => {
@@ -131,7 +131,7 @@ const LoginModal = ({ setShowLoginModal }) => {
       const data = await response.json();
       setMessage(data.message);
       if (data.status === 'success') {
-        login(data.userId, data.username, data.token, data.expires_at);
+        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
         resetForm();
         setLoginSuccess(true);
         setTimeout(() => {

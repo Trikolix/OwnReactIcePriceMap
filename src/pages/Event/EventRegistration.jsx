@@ -10,6 +10,7 @@ import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
 import "../../styles/eventTheme.css";
 import { getApiBaseUrl } from "../../shared/api/client";
+import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
 import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
@@ -39,7 +40,6 @@ const createParticipant = () => ({
   email: "",
   routeKey: "classic_3",
   paceGroup: "24_27",
-  womenWaveOptIn: false,
   publicNameConsent: true,
 });
 
@@ -369,10 +369,10 @@ export default function EventRegistration() {
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
         });
-        const data = await res.json();
+        const data = await readEventApiJson(res);
         if (aborted) return;
-        if (data.status !== "success") {
-          throw new Error(data.message || "Eventdaten konnten nicht geladen werden.");
+        if (!res.ok || data?.status !== "success") {
+          throw new Error(getEventAccessErrorMessage(res.status, data?.message || "Eventdaten konnten nicht geladen werden."));
         }
         setEventMeta(data.event);
         setLegal(data.legal);
@@ -403,8 +403,8 @@ export default function EventRegistration() {
       headers: { Authorization: `Bearer ${authToken}` },
     })
       .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok || json.status !== "success") throw new Error(json.message || "Zusatzbestellungen konnten nicht geladen werden.");
+        const json = await readEventApiJson(res);
+        if (!res.ok || json?.status !== "success") throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Zusatzbestellungen konnten nicht geladen werden."));
         if (!cancelled) setAddonPurchases(json.addon_purchases || []);
       })
       .catch(() => {
@@ -515,7 +515,6 @@ export default function EventRegistration() {
       if (field === "routeKey") {
         if (!routeSupportsPace(value)) {
           next.paceGroup = "family";
-          next.womenWaveOptIn = false;
         } else if (prev.paceGroup === "family") {
           next.paceGroup = "24_27";
         }
@@ -612,10 +611,10 @@ export default function EventRegistration() {
         headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify(payload),
       });
-      const result = await response.json();
-      if (!response.ok || result.status !== "success") {
-        if (result.status === "sold_out") throw new Error("Event ist ausgebucht oder es sind nicht genug freie Plätze verfügbar.");
-        throw new Error(result.message || "Fehler beim Speichern");
+      const result = await readEventApiJson(response);
+      if (!response.ok || result?.status !== "success") {
+        if (result?.status === "sold_out") throw new Error("Event ist ausgebucht oder es sind nicht genug freie Plätze verfügbar.");
+        throw new Error(getEventAccessErrorMessage(response.status, result?.message || "Fehler beim Speichern"));
       }
       localStorage.setItem("event2026_has_registration", "1");
       const summaryToken = result.registration_summary_access_token ? `&summaryToken=${encodeURIComponent(result.registration_summary_access_token)}` : "";
@@ -638,8 +637,8 @@ export default function EventRegistration() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ clothingInterest, jerseySize, bibSize }),
       });
-      const result = await response.json();
-      if (!response.ok || result.status !== "success") throw new Error(result.message || "Bekleidungsinteresse konnte nicht gespeichert werden.");
+      const result = await readEventApiJson(response);
+      if (!response.ok || result?.status !== "success") throw new Error(getEventAccessErrorMessage(response.status, result?.message || "Bekleidungsinteresse konnte nicht gespeichert werden."));
       setSuccess(result.message);
       setExistingRegistration((prev) => ({ ...prev, ...result.clothing }));
     } catch (err) {
@@ -660,8 +659,8 @@ export default function EventRegistration() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ giftVoucherQuantity: normalizedAddonVoucherQuantity, paymentMethodPreference: EVENT_PAYMENT_METHOD_PREFERENCE, notes: addonNote }),
       });
-      const result = await response.json();
-      if (!response.ok || result.status !== "success") throw new Error(result.message || "Zusatzbestellung konnte nicht gespeichert werden.");
+      const result = await readEventApiJson(response);
+      if (!response.ok || result?.status !== "success") throw new Error(getEventAccessErrorMessage(response.status, result?.message || "Zusatzbestellung konnte nicht gespeichert werden."));
       setSuccess(result.message);
       setAddonVoucherQuantity("0");
       setAddonNote("");
@@ -684,9 +683,9 @@ export default function EventRegistration() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ addon_purchase_id: addonPurchaseId }),
       });
-      const result = await response.json();
-      if (!response.ok || result.status !== "success" || !result.checkout_url) {
-        throw new Error(result.message || "Stripe-Checkout konnte nicht gestartet werden.");
+      const result = await readEventApiJson(response);
+      if (!response.ok || result?.status !== "success" || !result?.checkout_url) {
+        throw new Error(getEventAccessErrorMessage(response.status, result?.message || "Stripe-Checkout konnte nicht gestartet werden."));
       }
       window.location.href = result.checkout_url;
     } catch (err) {
@@ -696,7 +695,8 @@ export default function EventRegistration() {
   };
 
   const availableSlots = eventMeta?.available_slots ?? 0;
-  const isSoldOut = eventMeta?.event_status === "cancelled" || availableSlots <= 0;
+  const hasValidVoucherReservation = Boolean(voucherLookup?.valid);
+  const isSoldOut = eventMeta?.event_status === "cancelled" || (availableSlots <= 0 && !hasValidVoucherReservation);
   const registrationMode = !existingRegistration;
   const selectedRoute = getRouteSummary(participant.routeKey);
   const registrationSubmitLabel = isSubmitting ? "Speichern..." : "Verbindlich anmelden und Teilnahmebeitrag zahlen";
@@ -744,6 +744,11 @@ export default function EventRegistration() {
                   <span>Verfügbare Startplätze</span>
                   <span>noch <strong>{eventMeta.available_slots} / {eventMeta.max_participants}</strong></span>
                 </Flex>
+                {availableSlots <= 0 && hasValidVoucherReservation && registrationMode && (
+                  <StatusBanner tone="success" style={{ marginTop: 12, marginBottom: 0 }}>
+                    Dein gültiger Gutschein-Code reserviert einen Startplatz. Du kannst die Anmeldung damit abschließen.
+                  </StatusBanner>
+                )}
                 {existingRegistration && (
                   <StatusBanner style={{ marginTop: 12, marginBottom: 0 }}>
                     <strong>Du bist bereits registriert.</strong>
@@ -862,12 +867,6 @@ export default function EventRegistration() {
                     </GridRow>
                   ) : (
                     <StatusBanner>Diese Route bekommt ein eigenes Startfenster ohne sportliche Tempogruppe.</StatusBanner>
-                  )}
-                  {routeSupportsPace(participant.routeKey) && (
-                    <CheckboxLabel>
-                      <input type="checkbox" checked={participant.womenWaveOptIn} onChange={(e) => handleParticipantChange("womenWaveOptIn", e.target.checked)} />
-                      <span>Wunsch: separate Frauen-Startwelle (bei ausreichender Anzahl)</span>
-                    </CheckboxLabel>
                   )}
                   <CheckboxLabel>
                     <input type="checkbox" checked={participant.publicNameConsent} onChange={(e) => handleParticipantChange("publicNameConsent", e.target.checked)} />

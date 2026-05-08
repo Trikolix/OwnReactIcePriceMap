@@ -49,6 +49,46 @@ const formatCreatedAt = (value) => {
   return `${datePart} • ${timePart}`;
 };
 
+const extractIframeSrc = (embedCode = "") => {
+  const match = String(embedCode).match(/<iframe[^>]+src=["']([^"']+)["']/i);
+  return match?.[1] || "";
+};
+
+const getKomootTourId = (value = "") => {
+  const match = String(value).match(/komoot\.(?:com|de)\/(?:[a-z-]+\/)?tour\/(\d+)/i);
+  return match?.[1] || "";
+};
+
+const getShareToken = (value = "") => {
+  const decoded = String(value || "").replace(/&amp;/g, "&");
+  try {
+    const parsed = new URL(decoded);
+    return parsed.searchParams.get("share_token") || "";
+  } catch (error) {
+    const match = decoded.match(/[?&]share_token=([^&#"']+)/i);
+    return match?.[1] ? decodeURIComponent(match[1]) : "";
+  }
+};
+
+const buildRouteEmbedMarkup = (route) => {
+  const embedCode = route.embed_code?.trim() || "";
+  const routeUrl = String(route.url || "");
+  const isKomootEmbed = embedCode.includes("komoot.") || routeUrl.includes("komoot.");
+  if (!embedCode && !isKomootEmbed) return "";
+  if (!isKomootEmbed) return embedCode;
+
+  const iframeSrc = extractIframeSrc(embedCode);
+  const tourId = getKomootTourId(routeUrl) || getKomootTourId(iframeSrc);
+  const shareToken = getShareToken(routeUrl) || getShareToken(iframeSrc) || getShareToken(embedCode);
+
+  if (!tourId || !shareToken) {
+    return "";
+  }
+
+  const src = `https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}&layout=map`;
+  return `<iframe src="${src}" width="100%" height="360" frameborder="0" scrolling="no"></iframe>`;
+};
+
 const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
@@ -68,7 +108,10 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
 
   const isOwner = Number(route.nutzer_id) === Number(userId);
   const isPrivate = String(route.ist_oeffentlich) !== "1";
-  const hasEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
+  const embedMarkup = useMemo(() => buildRouteEmbedMarkup(route), [route]);
+  const hasStoredEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
+  const hasEmbed = Boolean(embedMarkup);
+  const komootEmbedSuppressed = !hasEmbed && (route.embed_code?.includes("komoot.") || String(route.url || "").includes("komoot."));
   const [showEmbed, setShowEmbed] = useState(hasEmbed);
   const eisdielenCount = routeShops.length;
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
@@ -76,7 +119,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
   const toggleEmbed = () => setShowEmbed((prev) => !prev);
 
   useEffect(() => {
-    if (showEmbed && route.embed_code?.includes('strava-embed-placeholder')) {
+    if (showEmbed && embedMarkup.includes('strava-embed-placeholder')) {
       const existingScript = document.getElementById('strava-embed-script');
       if (existingScript) {
         existingScript.remove();
@@ -88,7 +131,7 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
       script.async = true;
       document.body.appendChild(script);
     }
-  }, [showEmbed, route.embed_code]);
+  }, [showEmbed, embedMarkup]);
 return (
     <>
       <StyledCard>
@@ -228,9 +271,15 @@ return (
           )}
         </ActionsRow>
 
+        {komootEmbedSuppressed && (
+          <EmbedNotice>
+            Diese Komoot-Route wird nicht eingebettet, weil kein gültiger Freigabe-Token vorhanden ist. Öffne sie direkt bei Komoot.
+          </EmbedNotice>
+        )}
+
         {showEmbed && hasEmbed && (
           <EmbedWrapper
-            dangerouslySetInnerHTML={{ __html: route.embed_code }}
+            dangerouslySetInnerHTML={{ __html: embedMarkup }}
           />
         )}
         <CommentToggle
@@ -436,6 +485,16 @@ const ActionButton = styled.button`
 const ActionLink = styled.a`
   ${actionButtonStyles};
   min-width: auto;
+`;
+
+const EmbedNotice = styled.div`
+  margin-bottom: 1rem;
+  border: 1px solid #ffe08a;
+  border-radius: 14px;
+  background: #fff8db;
+  color: #6b4a00;
+  padding: 0.85rem 1rem;
+  line-height: 1.45;
 `;
 
 const EmbedWrapper = styled.div`

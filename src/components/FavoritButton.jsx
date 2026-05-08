@@ -39,18 +39,25 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
                 console.log(data);
                 if (data.status === "added") {
                     setFavorisiert(true);
-                    setIceCreamShops(prev =>
-                        prev.map(shop =>
-                          shop.id === eisdieleId ? { ...shop, is_favorit: data.is_favorit } : shop
-                        )
-                    );
+                    if (setIceCreamShops) {
+                        setIceCreamShops(prev =>
+                            prev.map(shop =>
+                              shop.id === eisdieleId ? { ...shop, is_favorit: data.is_favorit } : shop
+                            )
+                        );
+                    }
+                    if (data.new_awards?.length > 0) {
+                        window.dispatchEvent(new CustomEvent("new-awards", { detail: data.new_awards }));
+                    }
                 } else if (data.status === "removed") {
                     setFavorisiert(false);
-                    setIceCreamShops(prev =>
-                        prev.map(shop =>
-                          shop.id === eisdieleId ? { ...shop, is_favorit: data.is_favorit } : shop
-                        )
-                    );
+                    if (setIceCreamShops) {
+                        setIceCreamShops(prev =>
+                            prev.map(shop =>
+                              shop.id === eisdieleId ? { ...shop, is_favorit: data.is_favorit } : shop
+                            )
+                        );
+                    }
                 }
             })
             .finally(() => setLoading(false));

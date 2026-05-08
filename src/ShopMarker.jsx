@@ -46,6 +46,8 @@ const ShopMarker = ({
   fetchAndCenterShop,
   minValue,
   maxValue,
+  colorScaleMin = null,
+  colorScaleMax = null,
   displayValue,
   formatValue,
   invertScale,
@@ -64,7 +66,15 @@ const ShopMarker = ({
     ) {
       return `rgba(128, 128, 128, ${iconOpacity})`;
     }
-    let ratio = maxValue === minValue ? 0.5 : (value - minValue) / (maxValue - minValue);
+    const effectiveMinValue = colorScaleMin ?? minValue;
+    const effectiveMaxValue = colorScaleMax ?? maxValue;
+    if (!invertScale && colorScaleMin !== null && value <= colorScaleMin) {
+      return `rgba(0, 200, 0, ${iconOpacity})`;
+    }
+    if (!invertScale && colorScaleMax !== null && value >= colorScaleMax) {
+      return `rgba(200, 0, 0, ${iconOpacity})`;
+    }
+    let ratio = effectiveMaxValue === effectiveMinValue ? 0.5 : (value - effectiveMinValue) / (effectiveMaxValue - effectiveMinValue);
     ratio = Math.min(Math.max(ratio, 0), 1);
     if (invertScale) {
       ratio = 1 - ratio;
@@ -83,7 +93,10 @@ const ShopMarker = ({
 
   const backgroundColor = getColorForValue(displayValue, shop.status);
   const isFavorite = Number(shop.is_favorit) === 1;
-  const hasActiveChallenge = Number(shop.has_active_challenge) === 1;
+  const hasActivePersonalChallenge = Number(shop.has_active_personal_challenge ?? shop.has_active_challenge) === 1;
+  const hasUpcomingPersonalChallenge = Number(shop.has_upcoming_personal_challenge) === 1;
+  const hasActiveTeamChallenge = Number(shop.has_active_team_challenge) === 1;
+  const hasAnyChallenge = hasActivePersonalChallenge || hasUpcomingPersonalChallenge || hasActiveTeamChallenge;
   const markerOpacity = getMarkerOpacity(shop.status);
   const stableHash = getStableHash(`${shop.eisdielen_id}:${shop.name}:${shop.latitude}:${shop.longitude}`);
   const showEasterStyle = seasonalVariant === "easter";
@@ -93,8 +106,25 @@ const ShopMarker = ({
   const borderColor = isFavorite ? "#ffd54a" : "#ffffff";
   const textColor = isFavorite ? "#ffd54a" : "#ffffff";
   const focusGlow = isFocused ? "0 0 0 4px rgba(255, 111, 0, 0.35), 0 6px 18px rgba(0,0,0,0.35)" : "0 3px 10px rgba(0,0,0,0.25)";
-  const challengeBadge = hasActiveChallenge
-    ? `<div title="Aktive Challenge" style="position:absolute; top:-4px; right:-4px; width:18px; height:18px; border-radius:50%; background:#ff6f00; color:#fff; border:2px solid #fff; font-size:10px; line-height:14px; text-align:center; font-weight:700; opacity:${markerOpacity};">C</div>`
+  const challengeBadges = [
+    hasActiveTeamChallenge
+      ? { title: "Aktive Team-Challenge", label: "T", background: "#087f8c", color: "#ffffff", border: "#ffffff" }
+      : null,
+    hasActivePersonalChallenge
+      ? { title: "Aktive Challenge", label: "C", background: "#ff6f00", color: "#ffffff", border: "#ffffff" }
+      : null,
+    !hasActivePersonalChallenge && hasUpcomingPersonalChallenge
+      ? { title: "Challenge startet spaeter", label: "C", background: "#d6d8dd", color: "#636a75", border: "#ffffff" }
+      : null,
+  ].filter(Boolean);
+  const challengeBadgeHtml = challengeBadges.length
+    ? `<div style="position:absolute; top:-5px; right:-5px; display:flex; gap:2px; align-items:center;">
+        ${challengeBadges.map((badge) => `
+          <div title="${badge.title}" style="width:18px; height:18px; border-radius:50%; background:${badge.background}; color:${badge.color}; border:2px solid ${badge.border}; box-shadow:0 2px 7px rgba(0,0,0,0.25); font-size:10px; line-height:14px; text-align:center; font-weight:800; opacity:${markerOpacity}; box-sizing:border-box;">
+            ${badge.label}
+          </div>
+        `).join("")}
+      </div>`
     : "";
   const markerWidth = showEasterStyle ? (isFocused ? 64 : 56) : size;
   const markerHeight = showEasterStyle ? (isFocused ? 66 : 58) : size;
@@ -122,7 +152,7 @@ const ShopMarker = ({
       <div class="price-icon-circle" style="background-color:${backgroundColor}; color:${textColor}; text-align:center; border-radius:50%; width:${size}px; height:${size}px; border:3px solid ${borderColor}; box-shadow:${focusGlow}; font-weight:400; font-size:${isFocused ? 12 : 11}px; font-family:'Segoe UI', Tahoma, Arial, sans-serif; line-height:1; white-space:nowrap; display:flex; align-items:center; justify-content:center; padding:0 4px; transform:${isFocused ? "scale(1.05)" : "scale(1)"}; box-sizing:border-box;">
         ${escapedValue}
       </div>
-      ${challengeBadge}
+      ${challengeBadgeHtml}
     </div>
   `;
   const easterMarkerHtml = `
@@ -138,7 +168,7 @@ const ShopMarker = ({
           ${escapedValue}
         </div>
       </div>
-      ${challengeBadge}
+      ${challengeBadgeHtml}
     </div>
   `;
 
@@ -146,6 +176,12 @@ const ShopMarker = ({
     <Marker
       position={[shop.latitude, shop.longitude]}
       shopId={Number(shop.eisdielen_id)}
+      isFavorite={isFavorite}
+      hasActiveChallenge={hasActivePersonalChallenge}
+      hasUpcomingChallenge={hasUpcomingPersonalChallenge}
+      hasActiveTeamChallenge={hasActiveTeamChallenge}
+      hasAnyChallenge={hasAnyChallenge}
+      displayValue={displayValue}
       icon={L.divIcon({
         className: "price-icon",
         html: showEasterStyle ? easterMarkerHtml : defaultMarkerHtml,

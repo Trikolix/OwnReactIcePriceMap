@@ -7,8 +7,6 @@ class GeschmackstreueEvaluator extends BaseAwardEvaluator {
 
     public function evaluate(int $userId): array {
         global $pdo;
-        $count = $this->getMostEatenFlavourCount($userId);
-
         $achievements = [];
 
         // Hole alle Level für diesen Award aus der Datenbank
@@ -19,11 +17,17 @@ class GeschmackstreueEvaluator extends BaseAwardEvaluator {
         $stmt->execute(['awardId' => self::AWARD_ID]);
         $levels = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $thresholdDates = $this->getThresholdReachedDates($userId, array_map(
+            static fn($levelData) => (int)$levelData['threshold'],
+            $levels
+        ));
+
         foreach ($levels as $levelData) {
             $level = (int)$levelData['level'];
             $threshold = (int)$levelData['threshold'];
+            $awardedAt = $thresholdDates[$threshold] ?? null;
 
-            if ($count >= $threshold && $this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
+            if ($awardedAt !== null && $this->storeAwardIfNewWithDate($userId, self::AWARD_ID, $level, $awardedAt)) {
                 $achievements[] = [
                     'award_id' => self::AWARD_ID,
                     'level' => $level,
@@ -36,19 +40,37 @@ class GeschmackstreueEvaluator extends BaseAwardEvaluator {
         return $achievements;
     }
 
-    private function getMostEatenFlavourCount(int $userId): int {
+    private function getThresholdReachedDates(int $userId, array $thresholds): array {
         global $pdo;
-        $sql = "SELECT COUNT(*) AS anzahl
+        $thresholds = array_values(array_unique(array_filter(array_map('intval', $thresholds), static fn($value) => $value > 0)));
+        if (empty($thresholds)) {
+            return [];
+        }
+
+        $sql = "SELECT s.sortenname, c.datum
                 FROM checkin_sorten s
-                JOIN checkins c ON s.checkin_id = c.id
+                JOIN checkins c ON c.id = s.checkin_id
                 WHERE c.nutzer_id = ?
-                GROUP BY s.sortenname
-                ORDER BY anzahl DESC
-                LIMIT 1;";
+                ORDER BY c.datum ASC, c.id ASC, s.id ASC";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);
 
-        return (int)$stmt->fetchColumn();
+        $countsByFlavour = [];
+        $datesByThreshold = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $flavour = trim((string)$row['sortenname']);
+            if ($flavour === '') {
+                continue;
+            }
+
+            $countsByFlavour[$flavour] = ($countsByFlavour[$flavour] ?? 0) + 1;
+            $count = $countsByFlavour[$flavour];
+            if (in_array($count, $thresholds, true) && !isset($datesByThreshold[$count])) {
+                $datesByThreshold[$count] = (string)$row['datum'];
+            }
+        }
+
+        return $datesByThreshold;
     }
 }
 ?>

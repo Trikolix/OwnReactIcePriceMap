@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Overlay as SharedOverlay, CloseButton as SharedCloseButton, Input as SharedInput, SubmitButton as SharedSubmitButton } from '../styles/SharedStyles';
 import { useUser } from '../context/UserContext';
 
-const ShopWebsite = ({ eisdiele, onSuccess }) => {
+const ShopWebsite = ({ eisdiele, onSuccess, showSubmitAction = true }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [website, setWebsite] = useState(eisdiele.website);
@@ -89,15 +89,17 @@ const ShopWebsite = ({ eisdiele, onSuccess }) => {
           <br />
         </>
       )}
-      <WebsiteContainer
-        onClick={isLoggedIn ? setShowOverlay : undefined}
-        isLoggedIn={isLoggedIn}
-      >
-        {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (<>
+      {showSubmitAction && (
+        <WebsiteContainer
+          onClick={isLoggedIn ? setShowOverlay : undefined}
+          isLoggedIn={isLoggedIn}
+        >
+          {(eisdiele.website === "" || eisdiele.website === null) && isLoggedIn && (<>
           <strong>Website:</strong> <a onClick={() => setShowOverlay(true)}>Website eintragen</a>
         </>
-        )}
-      </WebsiteContainer>
+          )}
+        </WebsiteContainer>
+      )}
       {isLoggedIn && showOverlay && (
         <SharedOverlay ref={overlayRef}>
           <OverlayContent>

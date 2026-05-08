@@ -5,9 +5,9 @@ require_once __DIR__ . '/leaderboard_periods.php';
 function getRegionShopIds(PDO $pdo, string $level, int $id): array
 {
     if ($level === 'bundesland') {
-        $stmt = $pdo->prepare("SELECT id FROM eisdielen WHERE bundesland_id = :id");
+        $stmt = $pdo->prepare("SELECT id FROM eisdielen WHERE bundesland_id = :id AND COALESCE(status, 'open') <> 'permanent_closed'");
     } else {
-        $stmt = $pdo->prepare("SELECT id FROM eisdielen WHERE landkreis_id = :id");
+        $stmt = $pdo->prepare("SELECT id FROM eisdielen WHERE landkreis_id = :id AND COALESCE(status, 'open') <> 'permanent_closed'");
     }
 
     $stmt->execute(['id' => $id]);
@@ -27,6 +27,7 @@ function getRegionMeta(PDO $pdo, string $level, int $id): ?array
              FROM bundeslaender b
              JOIN laender l ON l.id = b.land_id
              LEFT JOIN eisdielen e ON e.bundesland_id = b.id
+                AND COALESCE(e.status, 'open') <> 'permanent_closed'
              WHERE b.id = :id
              GROUP BY b.id, b.name, b.iso_code, l.id, l.name"
         );
@@ -62,6 +63,7 @@ function getRegionMeta(PDO $pdo, string $level, int $id): ?array
          JOIN bundeslaender b ON b.id = lk.bundesland_id
          JOIN laender l ON l.id = b.land_id
          LEFT JOIN eisdielen e ON e.landkreis_id = lk.id
+            AND COALESCE(e.status, 'open') <> 'permanent_closed'
          WHERE lk.id = :id
          GROUP BY lk.id, lk.name, b.id, b.name, b.iso_code, l.id, l.name"
     );
@@ -160,6 +162,7 @@ function getRegionTopShops(PDO $pdo, string $level, int $id): array
             GROUP BY c.eisdiele_id
          ) type_counts ON type_counts.eisdiele_id = e.id
          WHERE $scopeWhere
+           AND COALESCE(e.status, 'open') <> 'permanent_closed'
          HAVING overall_score IS NOT NULL
          ORDER BY overall_score DESC, COALESCE(type_counts.total_checkins, 0) DESC, e.name ASC"
     );
@@ -211,6 +214,7 @@ function getRegionPriceSummary(PDO $pdo, string $level, int $id): array
          ) current_prices
          JOIN eisdielen e ON e.id = current_prices.eisdiele_id
          WHERE $scopeWhere
+           AND COALESCE(e.status, 'open') <> 'permanent_closed'
          ORDER BY current_prices.preis ASC"
     );
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -240,6 +244,7 @@ function getRegionPopularShops(PDO $pdo, string $level, int $id): array
          FROM eisdielen e
          LEFT JOIN checkins c ON c.eisdiele_id = e.id
          WHERE $scopeWhere
+           AND COALESCE(e.status, 'open') <> 'permanent_closed'
          GROUP BY e.id, e.name
          HAVING checkin_count > 0
          ORDER BY checkin_count DESC, e.name ASC

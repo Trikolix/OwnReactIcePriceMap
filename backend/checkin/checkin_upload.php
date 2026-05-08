@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
-require_once __DIR__ . '/../lib/email_notification.php';
+require_once __DIR__ . '/../lib/notification_dispatcher.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
@@ -46,6 +46,7 @@ require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/TeamChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
 require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
+require_once __DIR__ . '/../evaluators/Event2026CompletionEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -57,6 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Nur POST erlaubt']);
+    exit;
+}
+
+if (isMultipartBodyTooLarge()) {
+    http_response_code(413);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Die hochgeladenen Bilder sind zu gross. Bitte waehle weniger oder kleinere Bilder.'
+    ]);
     exit;
 }
 
@@ -91,7 +101,7 @@ function respondWithError($message, $httpCode = 400, $exception = null) {
     } else {
         error_log("Fehler: $message");
     }
-    echo json_encode(['error' => $message]);
+    echo json_encode(['status' => 'error', 'message' => $message, 'error' => $message]);
     exit;
 }
 
@@ -253,6 +263,9 @@ try {
     // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
     ensureTeamChallengeSchema($pdo);
     ensureUserNotificationSettingsSchema($pdo);
+    ensurePushInfrastructureSchema($pdo);
+    ensureExternalShopDiscoverySchema($pdo);
+    ensureShopMaintenanceSchema($pdo);
 
     // -------------------------
     // Datenbank-Transaktion starten
@@ -338,41 +351,38 @@ try {
         // Mentions einfügen + Notifications
         $createdMentionByUser = [];
         $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
-        $stmtNotif = $pdo->prepare("INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, zusatzdaten) VALUES (?, 'checkin_mention', ?, ?, JSON_OBJECT('checkin_mention_id', ?,'checkin_id', ?, 'by_user', ?, 'shop_id', ?, 'username', ?, 'shop_name', ?))");
-        $notifText = "$inviterName hat angegeben, mit dir Eis gegessen zu haben. Checke jetzt dein Eis ein.";
-
         foreach ($mentionedUsers as $mentionedUserId) {
-            // Nutzer existiert?
-            $stmtCheckUser = $pdo->prepare("SELECT id FROM nutzer WHERE id = ?");
-            $stmtCheckUser->execute([$mentionedUserId]);
-            $userRow = $stmtCheckUser->fetch(PDO::FETCH_ASSOC);
-            if (!$userRow) continue;
-
-            $stmtMentionExists = $pdo->prepare("SELECT id FROM checkin_mentions WHERE checkin_id = ? AND mentioned_user_id = ? LIMIT 1");
-            $stmtMentionExists->execute([$checkinId, $mentionedUserId]);
-            $existingMentionId = (int)$stmtMentionExists->fetchColumn();
-            if ($existingMentionId > 0) {
-                $createdMentionByUser[$mentionedUserId] = $existingMentionId;
-                continue;
-            }
-
-            $stmtMention->execute([$checkinId, $mentionedUserId]);
+            $stmtMention->execute([(int)$checkinId, (int)$mentionedUserId]);
             $mentionId = (int)$pdo->lastInsertId();
             $createdMentionByUser[$mentionedUserId] = $mentionId;
-            $stmtNotif->execute([$mentionedUserId, $checkinId, $notifText, $mentionId, $checkinId, $userId, $shopId, $inviterName, $meta['shop_name'] ?? 'einer Eisdiele']);
 
-            // E-Mail über die generische Funktion
-            sendNotificationEmailIfAllowed(
+            $notifText = "{$inviterName} hat dich bei einem Checkin erwähnt.";
+            createNotification(
                 $pdo,
-                $mentionedUserId,
+                (int)$mentionedUserId,
                 'checkin_mention',
-                $inviterName,
+                (int)$checkinId,
+                $notifText,
                 [
-                    'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
-                    'shopId' => $shopId,
-                    'checkinId' => $checkinId,
-                    'mentionId' => $mentionId,
-                    'byUserId' => $userId
+                    'checkin_mention_id' => $mentionId,
+                    'checkin_id' => $checkinId,
+                    'by_user' => $userId,
+                    'shop_id' => $shopId,
+                    'username' => $inviterName,
+                    'shop_name' => $meta['shop_name'] ?? 'einer Eisdiele',
+                ],
+                [
+                    'email' => [
+                        'type' => 'checkin_mention',
+                        'senderName' => $inviterName,
+                        'extra' => [
+                            'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
+                            'shopId' => $shopId,
+                            'checkinId' => $checkinId,
+                            'mentionId' => $mentionId,
+                            'byUserId' => $userId,
+                        ],
+                    ],
                 ]
             );
         }
@@ -453,11 +463,9 @@ try {
         new BundeslandExperteEvaluator(),
         new IceSeasonEvaluator(),
         new DifferentIceShopCountEvaluator(),
-        new GeschmacksvielfaltEvaluator(),
         new EarlyStarterEvaluator(),
         new AwardCollectorEvaluator(),
         new WeekStreakEvaluator(),
-        new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),
         new DetailedCheckinCountEvaluator(),
         new IceShopOneByOneEvaluator(),
@@ -468,10 +476,8 @@ try {
     ];
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
-    if (!empty($sorten)) $evaluators[] = new FuerstPuecklerEvaluator();
 
-    if ($type === "Kugel") $evaluators[] = new KugeleisCountEvaluator();
-    elseif ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
+    if ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
 
     if ($anreise === 'Fahrrad') {
@@ -481,6 +487,15 @@ try {
     elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
     elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
     elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
+
+    $postSortenEvaluators = [
+        new GeschmackstreueEvaluator(),
+        new GeschmacksvielfaltEvaluator(),
+        new IcePortionsPerWeekEvaluator(),
+        new Event2026CompletionEvaluator('live'),
+    ];
+    if (!empty($sorten)) $postSortenEvaluators[] = new FuerstPuecklerEvaluator();
+    if ($type === "Kugel") $postSortenEvaluators[] = new KugeleisCountEvaluator();
 
     $completedTeamChallenge = null;
     if ($isOnSite) {
@@ -587,6 +602,23 @@ try {
         }
     }
 
+    foreach ($postSortenEvaluators as $evaluator) {
+        $t0 = microtime(true);
+        if ($evaluator instanceof MetadataAwardEvaluator) {
+            $evaluator->setCheckinMetadata($meta);
+        }
+
+        try {
+            $evaluated = $evaluator->evaluate($userId);
+            $newAwards = array_merge($newAwards, $evaluated);
+        } catch (Exception $e) {
+            error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
+        }
+
+        $t1 = microtime(true);
+        $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
+    }
+
     // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.
     if ($referencedCheckinId) {
         $acceptReferencedStmt = $pdo->prepare("
@@ -596,6 +628,10 @@ try {
         ");
         $acceptReferencedStmt->execute([(int)$checkinId, (int)$referencedCheckinId, (int)$userId]);
         resolveOrMergeCheckinGroup($pdo, [(int)$checkinId, (int)$referencedCheckinId]);
+    }
+
+    if (!$pdo->inTransaction()) {
+        throw new Exception("Transaktion wurde vor dem Commit unerwartet beendet (impliziter Commit?).");
     }
 
     // Alle DB-Operationen erfolgreich -> Commit

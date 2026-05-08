@@ -6,6 +6,12 @@ require_once __DIR__ . '/../lib/auth.php';
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
 
+function respondWithError($message, $httpCode = 400) {
+    http_response_code($httpCode);
+    echo json_encode(["status" => "error", "message" => $message]);
+    exit;
+}
+
 function hasReviewEditedAtColumn(PDO $pdo): bool {
     static $hasColumn = null;
     if ($hasColumn !== null) {
@@ -20,6 +26,10 @@ function hasReviewEditedAtColumn(PDO $pdo): bool {
     }
 
     return $hasColumn;
+}
+
+if (isMultipartBodyTooLarge()) {
+    respondWithError('Die hochgeladenen Bilder sind zu gross. Bitte waehle weniger oder kleinere Bilder.', 413);
 }
 
 // 1. Hole POST-Daten direkt aus $_POST (da multipart/form-data)
@@ -41,26 +51,6 @@ if (!is_array($selectedAttributes)) {
 }
 
 // Für einfacheren Zugriff indexieren wir die alten Bilder nach ID
-$bestehendeBilderAssoc = [];
-foreach ($bestehendeBilder as $bild) {
-    $bestehendeBilderAssoc[$bild['id']] = $bild;
-}
-// Neue Bilder verarbeiten
-$uploadDir = '../../uploads/bewertungen/';
-if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);$bildUrls = [];
-if (isset($_FILES['bilder']) && is_array($_FILES['bilder']['tmp_name'])) {
-    try {
-        $bildUrls = processUploadedImages(
-            $_FILES['bilder'],
-            '../../uploads/bewertungen/',
-            'checkin_',
-            $_POST['beschreibungen'] ?? []
-        );
-    } catch (Exception $e) {
-        respondWithError($e->getMessage());
-    }
-}
-
 // bestehende_bilder als JSON-String, also decodieren
 $bestehende_bilder = [];
 if (!empty($_POST['bestehende_bilder'])) {

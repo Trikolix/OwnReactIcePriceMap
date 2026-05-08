@@ -100,6 +100,7 @@ function PhotoChallengeVoting() {
       try {
         const params = new URLSearchParams({
           nutzer_id: userId,
+          challenge_id: challengeId,
           page: String(page),
         });
         const res = await fetch(`${apiUrl}/photo_challenge/list_user_images.php?${params.toString()}`);
@@ -120,7 +121,7 @@ function PhotoChallengeVoting() {
         setUserImagesLoading(false);
       }
     },
-    [apiUrl, userId]
+    [apiUrl, challengeId, userId]
   );
 
   useEffect(() => {

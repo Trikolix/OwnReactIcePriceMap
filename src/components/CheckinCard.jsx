@@ -88,34 +88,36 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
             )}
 
             <Table>
-              {checkin.geschmackbewertung !== null && (<tr>
-                <th>Geschmack:</th>
-                <td>
-                  <Rating stars={checkin.geschmackbewertung} />{" "}
-                  <strong>{checkin.geschmackbewertung}</strong>
-                </td>
-              </tr>)}
-              {checkin.größenbewertung !== null && checkin.typ === "Kugel" && (<tr>
-                <th>Größe:</th>
-                <td>
-                  <Rating stars={checkin.größenbewertung} />{" "}
-                  <strong>{checkin.größenbewertung}</strong>
-                </td>
-              </tr>)}
-              {checkin.preisleistungsbewertung !== null && (<tr>
-                <th>Preis-Leistung:</th>
-                <td>
-                  <Rating stars={checkin.preisleistungsbewertung} />{" "}
-                  <strong>{checkin.preisleistungsbewertung}</strong>
-                </td>
-              </tr>)}
-              {checkin.waffelbewertung !== null && (<tr>
-                <th>Waffel:</th>
-                <td>
-                  <Rating stars={checkin.waffelbewertung} />{" "}
-                  <strong>{checkin.waffelbewertung}</strong>
-                </td>
-              </tr>)}
+              <tbody>
+                {checkin.geschmackbewertung !== null && (<tr>
+                  <th>Geschmack:</th>
+                  <td>
+                    <Rating stars={checkin.geschmackbewertung} />{" "}
+                    <strong>{checkin.geschmackbewertung}</strong>
+                  </td>
+                </tr>)}
+                {checkin.größenbewertung !== null && checkin.typ === "Kugel" && (<tr>
+                  <th>Größe:</th>
+                  <td>
+                    <Rating stars={checkin.größenbewertung} />{" "}
+                    <strong>{checkin.größenbewertung}</strong>
+                  </td>
+                </tr>)}
+                {checkin.preisleistungsbewertung !== null && (<tr>
+                  <th>Preis-Leistung:</th>
+                  <td>
+                    <Rating stars={checkin.preisleistungsbewertung} />{" "}
+                    <strong>{checkin.preisleistungsbewertung}</strong>
+                  </td>
+                </tr>)}
+                {checkin.waffelbewertung !== null && (<tr>
+                  <th>Waffel:</th>
+                  <td>
+                    <Rating stars={checkin.waffelbewertung} />{" "}
+                    <strong>{checkin.waffelbewertung}</strong>
+                  </td>
+                </tr>)}
+              </tbody>
             </Table>
             {(checkin.anreise && checkin.anreise !== "" || checkin.is_on_site !== 0) && (
               <ArrivalInfo>
