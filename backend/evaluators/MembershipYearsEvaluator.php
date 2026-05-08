@@ -31,8 +31,7 @@ class MembershipYearsEvaluator extends BaseAwardEvaluator {
                 continue;
             }
 
-            $awardedAt = $this->getAnniversaryDate($memberSince, $threshold);
-            if ($this->storeAwardIfNewWithDate($userId, self::AWARD_ID, $level, $awardedAt)) {
+            if ($this->storeAwardIfNew($userId, self::AWARD_ID, $level)) {
                 $achievements[] = [
                     'award_id' => self::AWARD_ID,
                     'level' => $level,
@@ -66,17 +65,6 @@ class MembershipYearsEvaluator extends BaseAwardEvaluator {
         $stmt->execute(['memberSince' => $memberSince]);
 
         return (int)$stmt->fetchColumn();
-    }
-
-    private function getAnniversaryDate(string $memberSince, int $threshold): string {
-        global $pdo;
-
-        $stmt = $pdo->prepare("SELECT DATE_ADD(:memberSince, INTERVAL :threshold YEAR)");
-        $stmt->bindValue(':memberSince', $memberSince);
-        $stmt->bindValue(':threshold', $threshold, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return (string)$stmt->fetchColumn();
     }
 }
 ?>
