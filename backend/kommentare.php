@@ -3,6 +3,7 @@ require_once  __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/lib/notification_dispatcher.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/comment_registration.php';
+require_once __DIR__ . '/lib/comment_award.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -37,19 +38,21 @@ switch ("$method:$action") {
 
 function createKommentar($pdo, $currentUserId) {
     $supportsUserRegistrationComments = ensureKommentarUserRegistrationSupport($pdo);
+    $supportsUserAwardComments = ensureKommentarUserAwardSupport($pdo);
     $input = json_decode(file_get_contents('php://input'), true);
     $checkinId = isset($input['checkin_id']) ? (int)$input['checkin_id'] : null;
     $bewertungId = isset($input['bewertung_id']) ? (int)$input['bewertung_id'] : null;
     $routeId = isset($input['route_id']) ? (int)$input['route_id'] : null;
     $userRegistrationId = isset($input['user_registration_id']) ? (int)$input['user_registration_id'] : null;
+    $userAwardId = isset($input['user_award_id']) ? (int)$input['user_award_id'] : null;
     $kommentar = trim($input['kommentar']);
 
     // Validierung: genau eine ID muss gesetzt sein
-    $ids = array_filter([$checkinId, $bewertungId, $routeId, $userRegistrationId], fn($v) => $v !== null);
+    $ids = array_filter([$checkinId, $bewertungId, $routeId, $userRegistrationId, $userAwardId], fn($v) => $v !== null);
     if (count($ids) !== 1) {
         echo json_encode([
             "status" => "error",
-            "message" => "Genau eine von checkin_id, bewertung_id, route_id oder user_registration_id muss gesetzt sein."
+            "message" => "Genau eine von checkin_id, bewertung_id, route_id, user_registration_id oder user_award_id muss gesetzt sein."
         ]);
         return;
     }
@@ -58,6 +61,14 @@ function createKommentar($pdo, $currentUserId) {
         echo json_encode([
             "status" => "error",
             "message" => "Kommentare für neue Nutzer sind auf diesem Server noch nicht verfügbar (Datenbank-Update fehlt)."
+        ]);
+        return;
+    }
+
+    if ($userAwardId && !$supportsUserAwardComments) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Kommentare für Awards sind auf diesem Server noch nicht verfügbar (Datenbank-Update fehlt)."
         ]);
         return;
     }
@@ -71,7 +82,13 @@ function createKommentar($pdo, $currentUserId) {
     }
 
     // Kommentar einfügen
-    if ($supportsUserRegistrationComments) {
+    if ($supportsUserRegistrationComments && $supportsUserAwardComments) {
+        $stmt = $pdo->prepare("
+            INSERT INTO kommentare (checkin_id, bewertung_id, route_id, user_registration_id, user_award_id, nutzer_id, kommentar)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$checkinId, $bewertungId, $routeId, $userRegistrationId, $userAwardId, $currentUserId, $kommentar]);
+    } elseif ($supportsUserRegistrationComments) {
         $stmt = $pdo->prepare("
             INSERT INTO kommentare (checkin_id, bewertung_id, route_id, user_registration_id, nutzer_id, kommentar)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -94,12 +111,83 @@ function createKommentar($pdo, $currentUserId) {
         handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, $kommentarId);
     } elseif ($userRegistrationId) {
         handleUserRegistrationKommentarBenachrichtigungen($pdo, $userRegistrationId, $currentUserId, $kommentarId);
+    } elseif ($userAwardId) {
+        handleUserAwardKommentarBenachrichtigungen($pdo, $userAwardId, $currentUserId, $kommentarId);
     }
 
     echo json_encode([
         "status" => "success",
         "kommentar_id" => $kommentarId
     ]);
+}
+
+function handleUserAwardKommentarBenachrichtigungen($pdo, $userAwardId, $currentUserId, $kommentarId) {
+    try {
+        // Fetch award owner and title
+        $stmt = $pdo->prepare("
+            SELECT ua.user_id, al.title_de
+            FROM user_awards ua
+            JOIN award_levels al ON ua.award_id = al.award_id AND ua.level = al.level
+            WHERE ua.id = ?
+        ");
+        $stmt->execute([$userAwardId]);
+        $awardData = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$awardData) return;
+
+        $awardOwnerId = (int)$awardData['user_id'];
+        $awardTitle = $awardData['title_de'];
+
+        $stmt = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
+        $stmt->execute([$currentUserId]);
+        $kommentatorName = $stmt->fetchColumn();
+        if (!$kommentatorName) return;
+
+        // 1. Notify award owner
+        if ($awardOwnerId !== $currentUserId) {
+            $text = "$kommentatorName hat deinen Award '$awardTitle' kommentiert.";
+            createNotification(
+                $pdo,
+                $awardOwnerId,
+                'kommentar_award',
+                (int)$kommentarId,
+                $text,
+                [
+                    'user_award_id' => (int)$userAwardId,
+                    'kommentar_id' => (int)$kommentarId,
+                ]
+            );
+        }
+
+        // 2. Notify other commenters
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT nutzer_id
+            FROM kommentare
+            WHERE user_award_id = ?
+              AND nutzer_id NOT IN (?, ?)
+              AND id != ?
+        ");
+        $stmt->execute([$userAwardId, $currentUserId, $awardOwnerId, $kommentarId]);
+        $beteiligteIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if ($beteiligteIds) {
+            $text = "$kommentatorName hat einen Award kommentiert, den du auch kommentiert hast.";
+            foreach ($beteiligteIds as $beteiligterId) {
+                createNotification(
+                    $pdo,
+                    (int)$beteiligterId,
+                    'kommentar_award',
+                    (int)$kommentarId,
+                    $text,
+                    [
+                        'user_award_id' => (int)$userAwardId,
+                        'kommentar_id' => (int)$kommentarId,
+                    ]
+                );
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error in handleUserAwardKommentarBenachrichtigungen: " . $e->getMessage());
+    }
 }
 
 function handleUserRegistrationKommentarBenachrichtigungen($pdo, $registeredUserId, $currentUserId, $kommentarId) {
@@ -177,7 +265,7 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUser
         ");
         $stmt->execute([$checkinId]);
         $checkinData = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$checkinData) {
             error_log("Checkin not found: $checkinId");
             return;
@@ -268,7 +356,6 @@ function handleCheckinKommentarBenachrichtigungen($pdo, $checkinId, $currentUser
                 );
             }
         }
-        }
     } catch (Exception $e) {
         error_log("Error in handleCheckinKommentarBenachrichtigungen: " . $e->getMessage());
     }
@@ -284,7 +371,7 @@ function handleBewertungKommentarBenachrichtigungen($pdo, $bewertungId, $current
         ");
         $stmt->execute([$bewertungId]);
         $bewertungData = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$bewertungData) {
             error_log("Bewertung not found: $bewertungId");
             return;
@@ -451,17 +538,27 @@ function handleRouteKommentarBenachrichtigungen($pdo, $routeId, $currentUserId, 
 
 function listKommentare($pdo) {
     $supportsUserRegistrationComments = ensureKommentarUserRegistrationSupport($pdo);
+    $supportsUserAwardComments = ensureKommentarUserAwardSupport($pdo);
     $checkinId = isset($_GET['checkin_id']) ? (int)$_GET['checkin_id'] : null;
     $bewertungId = isset($_GET['bewertung_id']) ? (int)$_GET['bewertung_id'] : null;
     $routeId = isset($_GET['route_id']) ? (int)$_GET['route_id'] : null;
     $userRegistrationId = isset($_GET['user_registration_id']) ? (int)$_GET['user_registration_id'] : null;
+    $userAwardId = isset($_GET['user_award_id']) ? (int)$_GET['user_award_id'] : null;
 
     // Validierung: genau eine ID muss gesetzt sein
-    $ids = array_filter([$checkinId, $bewertungId, $routeId, $userRegistrationId], fn($v) => $v !== null);
+    $ids = array_filter([$checkinId, $bewertungId, $routeId, $userRegistrationId, $userAwardId], fn($v) => $v !== null);
     if (count($ids) !== 1) {
         echo json_encode([
             "status" => "error",
-            "message" => "Genau eine von checkin_id, bewertung_id, route_id oder user_registration_id muss als Parameter übergeben werden."
+            "message" => "Genau eine von checkin_id, bewertung_id, route_id, user_registration_id oder user_award_id muss als Parameter übergeben werden."
+        ]);
+        return;
+    }
+    if ($userAwardId && !$supportsUserAwardComments) {
+        echo json_encode([
+            "status" => "success",
+            "anzahl" => 0,
+            "kommentare" => []
         ]);
         return;
     }
@@ -484,9 +581,12 @@ function listKommentare($pdo) {
     } elseif ($routeId) {
         $whereClause = "k.route_id = ?";
         $parameter = $routeId;
-    } else {
+    } elseif ($userRegistrationId) {
         $whereClause = "k.user_registration_id = ?";
         $parameter = $userRegistrationId;
+    } else {
+        $whereClause = "k.user_award_id = ?";
+        $parameter = $userAwardId;
     }
 
     $stmt = $pdo->prepare("
@@ -560,7 +660,7 @@ function deleteKommentar($pdo, $currentUserId) {
     }
 
     // Zuerst Benachrichtigungen löschen (sowohl für Checkins als auch Bewertungen)
-    $stmt = $pdo->prepare("DELETE FROM benachrichtigungen WHERE (typ = 'kommentar' OR typ = 'kommentar_bewertung' OR typ = 'kommentar_route' OR typ = 'kommentar_new_user') AND referenz_id = ?");
+    $stmt = $pdo->prepare("DELETE FROM benachrichtigungen WHERE (typ = 'kommentar' OR typ = 'kommentar_bewertung' OR typ = 'kommentar_route' OR typ = 'kommentar_new_user' OR typ = 'kommentar_award') AND referenz_id = ?");
     $stmt->execute([$kommentarId]);
 
     // Dann Kommentar löschen

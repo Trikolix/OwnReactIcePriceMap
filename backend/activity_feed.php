@@ -175,7 +175,8 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                al.title_de,
                al.description_de,
                al.icon_path,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               (SELECT COUNT(*) FROM kommentare k WHERE k.user_award_id = ua.id) AS commentCount
         FROM user_awards ua
         JOIN award_levels al 
           ON ua.award_id = al.award_id 

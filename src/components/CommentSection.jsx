@@ -3,8 +3,8 @@ import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
 
-// type: "checkin" | "bewertung" | "route" | "user_registration"
-const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, type = "checkin" }) => {
+// type: "checkin" | "bewertung" | "route" | "user_registration" | "award"
+const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, userAwardId, type = "checkin" }) => {
     const { userId } = useUser();
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
@@ -15,7 +15,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
     // Validierung der Props
     const isValidProps = () => {
         // Nur eine ID darf gesetzt sein
-        const ids = [checkinId, bewertungId, routeId, userRegistrationId].filter(Boolean);
+        const ids = [checkinId, bewertungId, routeId, userRegistrationId, userAwardId].filter(Boolean);
         return ids.length === 1;
     };
 
@@ -49,6 +49,9 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
         } else if (userRegistrationId) {
             parameterName = 'user_registration_id';
             parameterValue = userRegistrationId;
+        } else if (userAwardId) {
+            parameterName = 'user_award_id';
+            parameterValue = userAwardId;
         }
         const res = await fetch(`${apiUrl}/kommentare.php?action=list&${parameterName}=${parameterValue}`);
         const data = await res.json();
@@ -61,11 +64,11 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
 
     useEffect(() => {
         loadComments();
-    }, [checkinId, bewertungId, routeId, userRegistrationId]);
+    }, [checkinId, bewertungId, routeId, userRegistrationId, userAwardId]);
 
     const handleSubmit = async () => {
         if (!newComment.trim() || !isValidProps()) return;
-        
+
         const requestBody = {
             action: "create",
             nutzer_id: userId,
@@ -81,6 +84,8 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
             requestBody.route_id = routeId;
         } else if (userRegistrationId) {
             requestBody.user_registration_id = userRegistrationId;
+        } else if (userAwardId) {
+            requestBody.user_award_id = userAwardId;
         }
 
         const res = await fetch(`${apiUrl}/kommentare.php?action=create`, {
@@ -88,7 +93,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(requestBody)
         });
-        
+
         const data = await res.json();
         if (data.status === "success") {
             setNewComment("");
@@ -100,7 +105,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
 
     const handleDelete = async (id) => {
         if (!window.confirm("Kommentar wirklich löschen?")) return;
-        
+
         const res = await fetch(`${apiUrl}/kommentare.php?action=delete`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -109,7 +114,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
                 nutzer_id: userId
             })
         });
-        
+
         const data = await res.json();
         if (data.status === "success") {
             loadComments();
@@ -128,7 +133,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
                 nutzer_id: userId
             })
         });
-        
+
         const data = await res.json();
         if (data.status === "success") {
             setEditingId(null);
@@ -139,11 +144,19 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
         }
     };
 
+    const insertSmiley = (smiley) => {
+        if (editingId) {
+            setEditingText(prev => prev + smiley);
+        } else {
+            setNewComment(prev => prev + smiley);
+        }
+    };
+
     // Wenn Props nicht valide sind, nichts rendern
     if (!isValidProps()) {
         return (
             <ErrorMessage>
-                Fehler: Genau eine Ziel-ID (Check-in, Bewertung, Route oder Nutzerregistrierung) muss gesetzt sein.
+                Fehler: Genau eine Ziel-ID (Check-in, Bewertung, Route, Nutzerregistrierung oder Award) muss gesetzt sein.
             </ErrorMessage>
         );
     }
@@ -164,6 +177,11 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
                                         value={editingText}
                                         onChange={(e) => setEditingText(e.target.value)}
                                     />
+                                    <SmileyBar>
+                                        {["👍", "❤️", "🍦", "😂", "🥳", "🔥", "🙌"].map(smiley => (
+                                            <SmileyButton key={smiley} type="button" onClick={() => insertSmiley(smiley)}>{smiley}</SmileyButton>
+                                        ))}
+                                    </SmileyBar>
                                 </InputSection>
                                 <ButtonLeiste>
                                     <button onClick={handleUpdate}>💾</button>
@@ -205,6 +223,11 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, t
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Kommentar schreiben..."
                 />
+                <SmileyBar>
+                    {["👍", "❤️", "🍦", "😂", "🥳", "🔥", "🙌"].map(smiley => (
+                        <SmileyButton key={smiley} type="button" onClick={() => insertSmiley(smiley)}>{smiley}</SmileyButton>
+                    ))}
+                </SmileyBar>
                 <button onClick={handleSubmit}>Absenden</button>
             </InputSection>
         </Section>
@@ -280,6 +303,25 @@ const ButtonLeiste = styled.div`
   button {
     margin-right: 0.5rem;
     font-size: 1rem;
+  }
+`;
+
+const SmileyBar = styled.div`
+  display: flex;
+  gap: 0.25rem;
+  margin-top: -0.2rem;
+`;
+
+const SmileyButton = styled.button`
+  background: none !important;
+  border: none !important;
+  padding: 0.2rem !important;
+  font-size: 1.2rem !important;
+  cursor: pointer;
+  transition: transform 0.1s;
+
+  &:hover {
+    transform: scale(1.2);
   }
 `;
 

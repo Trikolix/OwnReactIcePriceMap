@@ -6,7 +6,9 @@ import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { getActiveAwardEffectTier } from "../shared/awardEffects";
 import { getAwardIconSources, handleAwardIconFallback } from "../utils/awardIcons";
-import { Card as SharedCard } from "../styles/SharedStyles";
+import { Card as SharedCard, CommentToggle } from "../styles/SharedStyles";
+import CommentSection from "./CommentSection";
+import { MessageCircle } from "lucide-react";
 
 const normalizeDateString = (value) => {
   if (typeof value !== "string") return value;
@@ -19,11 +21,12 @@ const parseAwardDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
+const AwardCard = React.forwardRef(function AwardCard({ award, showComments = false }, ref) {
     const { userId } = useUser();
     const awardDate = parseAwardDate(award?.datum);
     const iconSources = getAwardIconSources(award?.icon_path, 512);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+    const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
     const epicTier = getActiveAwardEffectTier(award?.ep);
 
     useEffect(() => {
@@ -111,6 +114,13 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
               <p>{award.description_de}</p>
             </TextContent>
           </ContentWrapper>
+          <CommentToggle
+            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+            onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+          >
+            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {award.commentCount || 0} Kommentar(e)
+          </CommentToggle>
+          {areCommentsVisible && <CommentSection userAwardId={award.id} type="award" />}
         </Card>
         {isLightboxOpen && typeof document !== "undefined" && createPortal(
           <LightboxOverlay onClick={() => setIsLightboxOpen(false)}>
