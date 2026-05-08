@@ -44,6 +44,24 @@ if ($action === 'markAsRead') {
     respond(['status' => 'success']);
 }
 
+if ($action === 'markAllAsRead') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!isset($input['nutzer_id'])) {
+        respond(['status' => 'error', 'message' => 'Fehlende Parameter']);
+    }
+
+    $stmt = $pdo->prepare("
+        UPDATE benachrichtigungen
+        SET ist_gelesen = 1
+        WHERE empfaenger_id = :uid AND ist_gelesen = 0
+    ");
+    $stmt->execute([
+        'uid' => $input['nutzer_id'],
+    ]);
+
+    respond(['status' => 'success']);
+}
+
 if ($action === 'get' && isset($_GET['id'], $_GET['nutzer_id'])) {
     $stmt = $pdo->prepare("
         SELECT id, typ, referenz_id, text, ist_gelesen, erstellt_am, zusatzdaten

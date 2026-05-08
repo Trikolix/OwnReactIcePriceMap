@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Bell, X } from "lucide-react";
+import { Bell, X, CheckCheck } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
@@ -62,6 +62,20 @@ const NotificationBell = () => {
             );
         } catch (err) {
             console.error("Fehler beim Markieren als gelesen", err);
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=markAllAsRead`,
+                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nutzer_id: userId }) }
+            );
+            setNotifications((prev) =>
+                prev.map((n) => ({ ...n, ist_gelesen: true }))
+            );
+        } catch (err) {
+            console.error("Fehler beim Markieren aller als gelesen", err);
         }
     };
 
@@ -136,13 +150,25 @@ const NotificationBell = () => {
                 <Dropdown ref={dropdownRef}>
                     <DropdownHeader>
                         <DropdownTitle>Benachrichtigungen</DropdownTitle>
-                        <DropdownCloseButton
-                            type="button"
-                            onClick={() => setShow(false)}
-                            aria-label="Benachrichtigungen schließen"
-                        >
-                            <X size={18} />
-                        </DropdownCloseButton>
+                        <HeaderActions>
+                            {unreadCount > 0 && (
+                                <DropdownActionButton
+                                    type="button"
+                                    onClick={markAllAsRead}
+                                    title="Alle als gelesen markieren"
+                                    aria-label="Alle als gelesen markieren"
+                                >
+                                    <CheckCheck size={18} />
+                                </DropdownActionButton>
+                            )}
+                            <DropdownCloseButton
+                                type="button"
+                                onClick={() => setShow(false)}
+                                aria-label="Benachrichtigungen schließen"
+                            >
+                                <X size={18} />
+                            </DropdownCloseButton>
+                        </HeaderActions>
                     </DropdownHeader>
                     {notifications.length === 0 ? (
                         <EmptyMessage>Keine Benachrichtigungen</EmptyMessage>
@@ -282,6 +308,29 @@ const DropdownTitle = styled.div`
   font-size: 0.9rem;
   font-weight: 800;
   color: #2f2100;
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const DropdownActionButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #2f2100;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(47, 33, 0, 0.07);
+  }
 `;
 
 const DropdownCloseButton = styled.button`
