@@ -27,7 +27,7 @@ const buildAssetUrl = (path) => {
 const normalizePath = (value) => (value || "").replace(/^\/+/, "");
 
 function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
-  const { userId } = useUser();
+  const { userId, currentLevel, setCurrentLevel } = useUser();
   const [settings, setSettings] = useState({
     notify_checkin_mention: 1,
     notify_checkin_mention_push: 1,
@@ -58,6 +58,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [objectUrl, setObjectUrl] = useState(null);
   const [presetAvatars, setPresetAvatars] = useState([]);
+  const [presetAvatarLevel, setPresetAvatarLevel] = useState(null);
   const [selectedPresetId, setSelectedPresetId] = useState(null);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [browserPushStatus, setBrowserPushStatus] = useState({ supported: false, permission: "default", subscribed: false });
@@ -68,6 +69,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const normalizedSelectedPresetPath = normalizePath(selectedPreset?.path);
   const hasPresetChange = !!selectedPreset && normalizedSelectedPresetPath !== normalizedCurrentAvatar;
   const canResetAvatar = !!avatarFile || removeAvatar || hasPresetChange;
+  const displayedPresetLevel = Number(presetAvatarLevel ?? currentLevel ?? 0);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -100,6 +102,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         const json = await res.json();
         if (!ignore && Array.isArray(json.avatars)) {
           setPresetAvatars(json.avatars);
+          setPresetAvatarLevel(Number(json.current_level || 0));
         }
       } catch (e) {
         console.error("Fehler beim Laden der Comic-Avatare", e);
@@ -256,6 +259,10 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
 
   const handlePresetSelect = (preset) => {
     if (!preset) return;
+    if (preset.unlocked === false) {
+      setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfuegbar.`);
+      return;
+    }
     if (objectUrl) {
       URL.revokeObjectURL(objectUrl);
       setObjectUrl(null);
@@ -306,6 +313,25 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       throw new Error(json.error || "Fehler beim Speichern des Avatars.");
     }
     const newPath = json.avatar_path ?? null;
+    const avatarCacheKey = userId ? `avatarUrl:${userId}` : null;
+    if (avatarCacheKey) {
+      if (newPath) {
+        localStorage.setItem(avatarCacheKey, newPath);
+      } else {
+        localStorage.removeItem(avatarCacheKey);
+      }
+      localStorage.removeItem('avatarUrl');
+    }
+    window.dispatchEvent(new CustomEvent("avatar-updated", {
+      detail: { userId, avatarUrl: newPath }
+    }));
+    if (json.current_level != null) {
+      setCurrentLevel(json.current_level);
+      setPresetAvatarLevel(Number(json.current_level || 0));
+    }
+    if (Array.isArray(json.new_awards) && json.new_awards.length > 0) {
+      window.dispatchEvent(new CustomEvent("new-awards", { detail: json.new_awards }));
+    }
     setAvatarFile(null);
     setRemoveAvatar(false);
     setAvatarPreview(buildAssetUrl(newPath));
@@ -493,34 +519,39 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               </ResetButton>
               {avatarFile && <SelectedFile>{avatarFile.name}</SelectedFile>}
             </InlineButtons>
-            {presetAvatars.length > 0 && showPresetPicker && (
-              <PresetSection>
-                <PresetHeader>
-                  <h4>Comic-Avatare</h4>
-                  <PresetInfo>Wähle eine Illustration statt eines eigenen Fotos.</PresetInfo>
-                </PresetHeader>
-                <PresetGrid>
-                  {presetAvatars.map((preset) => {
-                    const presetUrl = buildAssetUrl(preset.path);
-                    const isActive = !avatarFile && !removeAvatar && selectedPresetId === preset.id;
-                    return (
-                      <PresetButton
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handlePresetSelect(preset)}
-                        aria-pressed={isActive}
-                        $selected={isActive}
-                      >
-                        <img src={presetUrl} alt={preset.label} />
-                        <span>{preset.label}</span>
-                      </PresetButton>
-                    );
-                  })}
-                </PresetGrid>
-              </PresetSection>
-            )}
           </AvatarActions>
         </AvatarSection>
+        {presetAvatars.length > 0 && showPresetPicker && (
+          <PresetSection>
+            <PresetHeader>
+              <h4>Comic-Avatare</h4>
+              <PresetInfo>Dein Level: {displayedPresetLevel}</PresetInfo>
+            </PresetHeader>
+            <PresetGrid>
+              {presetAvatars.map((preset) => {
+                const presetUrl = buildAssetUrl(preset.path);
+                const isActive = !avatarFile && !removeAvatar && selectedPresetId === preset.id;
+                const isUnlocked = preset.unlocked !== false;
+                const requiredLevel = Number(preset.min_level || 0);
+                return (
+                  <PresetButton
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handlePresetSelect(preset)}
+                    aria-pressed={isActive}
+                    disabled={!isUnlocked}
+                    $selected={isActive}
+                    $locked={!isUnlocked}
+                  >
+                    <img src={presetUrl} alt={preset.label} />
+                    <span>{preset.label}</span>
+                    {!isUnlocked && <PresetLockBadge>Ab Level {requiredLevel}</PresetLockBadge>}
+                  </PresetButton>
+                );
+              })}
+            </PresetGrid>
+          </PresetSection>
+        )}
         {showCropModal && (
           <CropModalOverlay>
             <CropModalBox>
@@ -681,8 +712,9 @@ const ModalBox = styled.div`
   background: white;
   padding: 2rem;
   border-radius: 16px;
+  width: min(1040px, calc(100vw - 48px));
   min-width: 320px;
-  max-width: 90vw;
+  max-width: 96vw;
   max-height: 90vh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -748,8 +780,8 @@ const SuccessMsg = styled.div`
 const AvatarSection = styled.div`
   display: flex;
   gap: 1.5rem;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 `;
 
@@ -891,7 +923,7 @@ const Divider = styled.hr`
 `;
 
 const PresetSection = styled.div`
-  margin-top: 1.5rem;
+  margin: 0 0 1.5rem;
 `;
 
 const PresetHeader = styled.div`
@@ -914,7 +946,7 @@ const PresetInfo = styled.p`
 const PresetGrid = styled.div`
   margin-top: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   gap: 0.75rem;
 `;
 
@@ -922,15 +954,16 @@ const PresetButton = styled.button`
   border: 2px solid ${({ $selected }) => ($selected ? '#4caf50' : 'transparent')};
   border-radius: 16px;
   padding: 0.5rem;
-  background: ${({ $selected }) => ($selected ? 'rgba(76,175,80,0.12)' : '#f9f9f9')};
-  cursor: pointer;
+  background: ${({ $selected, $locked }) => ($selected ? 'rgba(76,175,80,0.12)' : $locked ? '#f1f1f1' : '#f9f9f9')};
+  cursor: ${({ $locked }) => ($locked ? 'not-allowed' : 'pointer')};
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
   transition: border 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  opacity: ${({ $locked }) => ($locked ? 0.72 : 1)};
 
-  &:hover {
+  &:hover:enabled {
     transform: translateY(-2px);
   }
 
@@ -941,6 +974,7 @@ const PresetButton = styled.button`
     border: 1px solid rgba(0,0,0,0.08);
     background: white;
     object-fit: cover;
+    filter: ${({ $locked }) => ($locked ? 'grayscale(1)' : 'none')};
   }
 
   span {
@@ -948,6 +982,17 @@ const PresetButton = styled.button`
     color: #555;
     text-align: center;
   }
+`;
+
+const PresetLockBadge = styled.small`
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #8a5a00;
+  text-align: center;
 `;
 
 // Crop modal styles

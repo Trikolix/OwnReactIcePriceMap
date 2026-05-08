@@ -5,9 +5,6 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/comment_registration.php';
 require_once __DIR__ . '/lib/comment_award.php';
 
-$authData = requireAuth($pdo);
-$currentUserId = (int)$authData['user_id'];
-
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 if ($method === "OPTIONS") {
@@ -16,15 +13,21 @@ if ($method === "OPTIONS") {
 }
 switch ("$method:$action") {
     case 'POST:create':
+        $authData = requireAuth($pdo);
+        $currentUserId = (int)$authData['user_id'];
         createKommentar($pdo, $currentUserId);
         break;
     case 'GET:list':
         listKommentare($pdo);
         break;
     case 'POST:update':
+        $authData = requireAuth($pdo);
+        $currentUserId = (int)$authData['user_id'];
         updateKommentar($pdo, $currentUserId);
         break;
     case 'POST:delete':
+        $authData = requireAuth($pdo);
+        $currentUserId = (int)$authData['user_id'];
         deleteKommentar($pdo, $currentUserId);
         break;
     default:
@@ -112,6 +115,7 @@ function createKommentar($pdo, $currentUserId) {
     } elseif ($userRegistrationId) {
         handleUserRegistrationKommentarBenachrichtigungen($pdo, $userRegistrationId, $currentUserId, $kommentarId);
     } elseif ($userAwardId) {
+        ensureAwardCommentNotificationSupport($pdo);
         handleUserAwardKommentarBenachrichtigungen($pdo, $userAwardId, $currentUserId, $kommentarId);
     }
 

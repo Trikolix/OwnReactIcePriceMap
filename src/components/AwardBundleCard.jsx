@@ -21,12 +21,17 @@ const parseAwardDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const AwardBundleCard = ({ awards, userName, date }) => {
+const AwardBundleCard = ({ awards, userName, date, focusAwardId = null, focusCommentId = null }) => {
   const [cardHeight, setCardHeight] = useState();
-  const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef(null);
   // Sortiere awards nach ep absteigend
   const sortedAwards = awards && awards.length > 0 ? awards.slice().sort((a, b) => (b.ep ?? 0) - (a.ep ?? 0)) : [];
+  const focusedAwardIndex = focusAwardId
+    ? sortedAwards.findIndex((award) => String(award.id) === String(focusAwardId))
+    : -1;
+  const initialIndex = focusedAwardIndex >= 0 ? focusedAwardIndex : 0;
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const swiperRef = useRef(null);
   const effectiveUserId = (() => {
     if (!awards || awards.length === 0) return null;
     const last = awards[awards.length - 1];
@@ -55,6 +60,14 @@ const AwardBundleCard = ({ awards, userName, date }) => {
       }
     };
   }, [awards, activeIndex]);
+
+  useEffect(() => {
+    if (focusedAwardIndex < 0) return;
+    setActiveIndex(focusedAwardIndex);
+    if (swiperRef.current && typeof swiperRef.current.slideTo === "function") {
+      swiperRef.current.slideTo(focusedAwardIndex, 0);
+    }
+  }, [focusedAwardIndex]);
 
   if (!awards || awards.length === 0) return null;
 
@@ -89,12 +102,21 @@ const AwardBundleCard = ({ awards, userName, date }) => {
         navigation
         pagination={{ clickable: true }}
         autoHeight={true}
+        initialSlide={initialIndex}
         style={{ marginTop: "1rem", marginLeft: "-2rem", marginRight: "-2rem", marginBottom: "-3.5rem" }}
+        onSwiper={(swiper) => {
+          swiperRef.current = swiper;
+        }}
         onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
       >
         {sortedAwards.map((award, idx) => (
           <SwiperSlide key={award.id}>
-            <AwardCard ref={idx === activeIndex ? cardRef : null} award={award} />
+            <AwardCard
+              ref={idx === activeIndex ? cardRef : null}
+              award={award}
+              showComments={String(award.id) === String(focusAwardId)}
+              focusCommentId={String(award.id) === String(focusAwardId) ? focusCommentId : null}
+            />
           </SwiperSlide>
         ))}
       </Swiper>

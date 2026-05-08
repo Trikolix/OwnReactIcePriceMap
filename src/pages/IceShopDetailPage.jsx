@@ -242,6 +242,7 @@ const IceShopDetailPage = () => {
   const tabParam = searchParams.get('tab');
   const focusCheckinId = searchParams.get('focusCheckin');
   const focusReviewId = searchParams.get('focusReview');
+  const focusCommentId = searchParams.get('focusComment');
 
   useEffect(() => {
     if (tabParam === 'reviews' || tabParam === 'checkins' || tabParam === 'photos' || tabParam === 'routes') {
@@ -855,7 +856,12 @@ const IceShopDetailPage = () => {
               <FeedList>
                 {checkins.length > 0 ? checkins.slice(0, FEED_BATCH_SIZE).map((checkin) => (
                   <div key={checkin.id} ref={(el) => { checkinRefs.current[checkin.id] = el; }}>
-                    <CheckinCard checkin={checkin} onSuccess={refreshShop} showComments={String(checkin.id) === String(focusCheckinId)} />
+                    <CheckinCard
+                      checkin={checkin}
+                      onSuccess={refreshShop}
+                      showComments={String(checkin.id) === String(focusCheckinId)}
+                      focusCommentId={String(checkin.id) === String(focusCheckinId) ? focusCommentId : null}
+                    />
                   </div>
                 )) : <EmptyState>Es wurden noch keine Eis-Besuche eingecheckt.</EmptyState>}
               </FeedList>
@@ -872,7 +878,12 @@ const IceShopDetailPage = () => {
               <FeedList>
                 {reviews.length > 0 ? reviews.slice(0, FEED_BATCH_SIZE).map((review) => (
                   <div key={review.id} ref={(el) => { reviewRefs.current[review.id] = el; }}>
-                    <ReviewCard review={review} setShowReviewForm={setShowReviewForm} showComments={String(review.id) === String(focusReviewId)} />
+                    <ReviewCard
+                      review={review}
+                      setShowReviewForm={setShowReviewForm}
+                      showComments={String(review.id) === String(focusReviewId)}
+                      focusCommentId={String(review.id) === String(focusReviewId) ? focusCommentId : null}
+                    />
                   </div>
                 )) : <EmptyState>Es wurden noch keine Reviews abgegeben.</EmptyState>}
               </FeedList>

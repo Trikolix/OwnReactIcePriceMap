@@ -89,7 +89,7 @@ const buildRouteEmbedMarkup = (route) => {
   return `<iframe src="${src}" width="100%" height="360" frameborder="0" scrolling="no"></iframe>`;
 };
 
-const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false }) => {
+const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false, focusCommentId = null }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
 
@@ -117,6 +117,12 @@ const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false })
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
   const toggleEmbed = () => setShowEmbed((prev) => !prev);
+
+  useEffect(() => {
+    if (showComments) {
+      setAreCommentsVisible(true);
+    }
+  }, [showComments]);
 
   useEffect(() => {
     if (showEmbed && embedMarkup.includes('strava-embed-placeholder')) {
@@ -288,7 +294,14 @@ return (
         >
           <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {route.commentCount || 0} Kommentar(e)
         </CommentToggle>
-        {areCommentsVisible && <CommentSection routeId={route.id} type="route" />}
+        {areCommentsVisible && (
+          <CommentSection
+            routeId={route.id}
+            type="route"
+            focusCommentId={focusCommentId}
+            focusLatestComment={Boolean(showComments)}
+          />
+        )}
       </StyledCard>
 
       {showEditModal && (
@@ -533,7 +546,7 @@ const DateText = styled.time`
   }
 `;
 
-export const CommentToggle = styled.button`
+export const CommentToggle = styled.button.attrs({ type: "button" })`
   margin-top: 0.5rem;
   background: transparent;
   border: none;

@@ -4,11 +4,13 @@ require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/comment_registration.php';
+require_once  __DIR__ . '/lib/comment_award.php';
 require_once  __DIR__ . '/lib/opening_hours.php';
 
 function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $activities = [];
     $hasUserRegistrationCommentSupport = ensureKommentarUserRegistrationSupport($pdo);
+    $hasUserAwardCommentSupport = ensureKommentarUserAwardSupport($pdo);
 
     // 🟢 CHECKINS
     $stmtCheckins = $pdo->prepare("
@@ -164,6 +166,10 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     }
 
     // Awards
+    $awardCommentCountSql = $hasUserAwardCommentSupport
+        ? "(SELECT COUNT(*) FROM kommentare k WHERE k.user_award_id = ua.id) AS commentCount"
+        : "0 AS commentCount";
+
     $stmtAwards = $pdo->prepare("
         SELECT ua.id,
                ua.user_id,
@@ -176,7 +182,7 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                al.description_de,
                al.icon_path,
                up.avatar_path AS avatar_url,
-               (SELECT COUNT(*) FROM kommentare k WHERE k.user_award_id = ua.id) AS commentCount
+               {$awardCommentCountSql}
         FROM user_awards ua
         JOIN award_levels al 
           ON ua.award_id = al.award_id 

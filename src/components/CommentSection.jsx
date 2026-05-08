@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
+import LoginModal from "../LoginModal";
 
 // type: "checkin" | "bewertung" | "route" | "user_registration" | "award"
-const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, userAwardId, type = "checkin" }) => {
-    const { userId } = useUser();
+const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, userAwardId, type = "checkin", focusCommentId = null, focusLatestComment = false }) => {
+    const { userId, isLoggedIn } = useUser();
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState("");
+    const [loginModalMode, setLoginModalMode] = useState(null);
+    const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+    const commentRefs = useRef({});
+    const didFocusCommentRef = useRef(false);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
     // Validierung der Props
@@ -63,11 +68,37 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
     };
 
     useEffect(() => {
+        didFocusCommentRef.current = false;
         loadComments();
     }, [checkinId, bewertungId, routeId, userRegistrationId, userAwardId]);
 
+    useEffect(() => {
+        if (!comments.length || didFocusCommentRef.current) return;
+
+        if (!focusCommentId && !focusLatestComment) return;
+
+        const targetCommentId = focusCommentId
+            ? String(focusCommentId)
+            : String(comments[comments.length - 1]?.id || "");
+        if (!targetCommentId) return;
+
+        let target = commentRefs.current[targetCommentId];
+        let highlightedId = targetCommentId;
+        if (!target && focusLatestComment) {
+            highlightedId = String(comments[comments.length - 1]?.id || "");
+            target = commentRefs.current[highlightedId];
+        }
+        if (!target) return;
+
+        didFocusCommentRef.current = true;
+        setHighlightedCommentId(highlightedId);
+        window.setTimeout(() => {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 80);
+    }, [comments, focusCommentId, focusLatestComment]);
+
     const handleSubmit = async () => {
-        if (!newComment.trim() || !isValidProps()) return;
+        if (!isLoggedIn || !newComment.trim() || !isValidProps()) return;
 
         const requestBody = {
             action: "create",
@@ -166,7 +197,17 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
             <h4>Kommentare ({comments.length})</h4>
             <List>
                 {comments.map((kom) => (
-                    <li key={kom.id}>
+                    <li
+                        key={kom.id}
+                        ref={(node) => {
+                            if (node) {
+                                commentRefs.current[String(kom.id)] = node;
+                            } else {
+                                delete commentRefs.current[String(kom.id)];
+                            }
+                        }}
+                        data-focused={String(highlightedCommentId) === String(kom.id)}
+                    >
                         <strong>{kom.nutzername}</strong>
                         <Zeitstempel>{formatDateTime(kom.erstellt_am)}</Zeitstempel>
 
@@ -217,6 +258,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                 ))}
             </List>
 
+            {isLoggedIn ? (
             <InputSection>
                 <textarea
                     value={newComment}
@@ -228,8 +270,25 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                         <SmileyButton key={smiley} type="button" onClick={() => insertSmiley(smiley)}>{smiley}</SmileyButton>
                     ))}
                 </SmileyBar>
-                <button onClick={handleSubmit}>Absenden</button>
+                <button type="button" onClick={handleSubmit}>Absenden</button>
             </InputSection>
+            ) : (
+                <LoginPrompt>
+                    <span>Bitte logge dich ein oder registriere dich, um einen Kommentar zu schreiben.</span>
+                    <LoginPromptActions>
+                        <button type="button" onClick={() => setLoginModalMode("login")}>Einloggen</button>
+                        <button type="button" onClick={() => setLoginModalMode("register")}>Registrieren</button>
+                    </LoginPromptActions>
+                </LoginPrompt>
+            )}
+            {loginModalMode && (
+                <LoginModal
+                    initialMode={loginModalMode}
+                    setShowLoginModal={(show) => {
+                        if (!show) setLoginModalMode(null);
+                    }}
+                />
+            )}
         </Section>
     );
 };
@@ -252,6 +311,13 @@ const List = styled.ul`
     padding: 0.5rem 0;
     border-bottom: 1px solid #eee;
     position: relative;
+    border-radius: 8px;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  li[data-focused="true"] {
+    background: rgba(255, 181, 34, 0.16);
+    box-shadow: 0 0 0 1px rgba(255, 181, 34, 0.28);
   }
 `;
 
@@ -284,6 +350,35 @@ const InputSection = styled.div`
     cursor: pointer;
     font-weight: 700;
     font-size: 0.8rem;
+  }
+`;
+
+const LoginPrompt = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 181, 34, 0.32);
+  border-radius: 10px;
+  background: rgba(255, 181, 34, 0.1);
+  color: #6f4600;
+  font-size: 0.92rem;
+`;
+
+const LoginPromptActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button {
+    background-color: #ffb522;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.55rem 0.85rem;
   }
 `;
 

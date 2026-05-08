@@ -42,7 +42,7 @@ export const RightContent = styled.div`
   padding-bottom: 8px;
 `;
 
-export const CommentToggle = styled.button`
+export const CommentToggle = styled.button.attrs({ type: 'button' })`
   margin-top: 0.65rem;
   background: transparent;
   border: none;

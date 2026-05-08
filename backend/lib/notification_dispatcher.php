@@ -165,6 +165,7 @@ function notificationTypeToSettingField(string $type): string
         case 'kommentar_bewertung':
         case 'kommentar_route':
         case 'kommentar_new_user':
+        case 'kommentar_award':
         case 'new_user':
         default:
             return 'notify_comment';
@@ -287,22 +288,34 @@ function buildNotificationDeeplink(array $notification): ?string
     switch ($notification['typ']) {
         case 'kommentar':
             if (!empty($data['checkin_id']) && !empty($data['eisdiele_id'])) {
-                return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$data['checkin_id'];
+                $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+                return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
             }
             return null;
         case 'kommentar_bewertung':
             if (!empty($data['bewertung_id']) && !empty($data['eisdiele_id'])) {
-                return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=reviews&focusReview=' . (int)$data['bewertung_id'];
+                $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+                return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=reviews&focusReview=' . (int)$data['bewertung_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
             }
             return null;
         case 'kommentar_route':
             if (!empty($data['route_id']) && !empty($data['route_autor_id'])) {
-                return '/user/' . (int)$data['route_autor_id'] . '?tab=routes&focusRoute=' . (int)$data['route_id'];
+                $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+                return '/user/' . (int)$data['route_autor_id'] . '?tab=routes&focusRoute=' . (int)$data['route_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
             }
             return null;
         case 'kommentar_new_user':
             $targetUserId = (int)($data['user_registration_id'] ?? $notification['referenz_id']);
-            return $targetUserId > 0 ? '/user/' . $targetUserId : null;
+            $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+            return $targetUserId > 0
+                ? '/dashboard?focusNewUser=' . $targetUserId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
+                : '/dashboard';
+        case 'kommentar_award':
+            $awardId = (int)($data['user_award_id'] ?? 0);
+            $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+            return $awardId > 0
+                ? '/dashboard?focusAward=' . $awardId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
+                : '/dashboard';
         case 'new_user':
             return '/user/' . (int)$notification['referenz_id'];
         case 'team_challenge':
