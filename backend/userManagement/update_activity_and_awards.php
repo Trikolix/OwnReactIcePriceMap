@@ -86,6 +86,7 @@ try {
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
+        'current_level' => $levelChange['new_level'] ?? null,
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
     ]);
  

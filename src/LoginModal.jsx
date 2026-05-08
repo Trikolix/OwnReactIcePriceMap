@@ -50,7 +50,7 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
 
       const data = await response.json();
       if (data.status === 'success') {
-        login(data.userId, data.username, data.token, data.expires_at);
+        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
         setMessage('Login erfolgreich!');
         setLoginSuccess(true);
         setTimeout(() => {
@@ -131,7 +131,7 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
       const data = await response.json();
       setMessage(data.message);
       if (data.status === 'success') {
-        login(data.userId, data.username, data.token, data.expires_at);
+        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
         resetForm();
         setLoginSuccess(true);
         setTimeout(() => {

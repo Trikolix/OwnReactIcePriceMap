@@ -310,7 +310,12 @@ function updateUserLevelIfChanged(PDO $pdo, int $userId): ?array {
         ];
     }
 
-    return ['level_up' => false];
+    return [
+        'level_up' => false,
+        'new_level' => $levelInfo['level'],
+        'level_name' => $levelInfo['level_name'],
+        'ep_current' => $levelInfo['ep_current'],
+    ];
 }
 
 ?>

@@ -44,7 +44,7 @@ const SocialAuthButtons = ({
       }
 
       if (payload.status === "success") {
-        login(payload.userId, payload.username, payload.token, payload.expires_at);
+        login(payload.userId, payload.username, payload.token, payload.expires_at, { currentLevel: payload.currentLevel });
         setMessage("");
         if (popupRef.current && !popupRef.current.closed) {
           popupRef.current.close();

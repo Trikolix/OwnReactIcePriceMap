@@ -35,6 +35,8 @@ const DEFAULT_CONTEXT_MENU_STATE = {
   message: '',
 };
 const DISCOVERY_SLOT_LIMIT = 5;
+const SEARCH_PLACE_MIN_QUERY_LENGTH = 3;
+const SEARCH_PLACE_DEBOUNCE_MS = 450;
 const DEFAULT_DISCOVERY_META = {
   hiddenExisting: 0,
   hiddenDuplicate: 0,
@@ -48,6 +50,59 @@ const toNumberOrNull = (value) => {
   }
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
+};
+
+const getDistanceKm = (from, to) => {
+  if (!from || !to) return Number.POSITIVE_INFINITY;
+  const [fromLat, fromLon] = from.map(Number);
+  const [toLat, toLon] = to.map(Number);
+  if (![fromLat, fromLon, toLat, toLon].every(Number.isFinite)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const toRad = (degrees) => degrees * (Math.PI / 180);
+  const earthRadiusKm = 6371;
+  const dLat = toRad(toLat - fromLat);
+  const dLon = toRad(toLon - fromLon);
+  const lat1 = toRad(fromLat);
+  const lat2 = toRad(toLat);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const getPlaceCountryPriority = (item) => {
+  const countryCode = item.address?.country_code;
+  if (countryCode === 'de') return 0;
+  if (['at', 'ch', 'cz', 'pl', 'nl', 'be', 'lu', 'fr', 'dk'].includes(countryCode)) return 1;
+  return 2;
+};
+
+const getPlaceName = (item) => {
+  const address = item.address || {};
+  return item.namedetails?.['name:de']
+    || item.namedetails?.name
+    || item.name
+    || address.city
+    || address.town
+    || address.village
+    || address.municipality
+    || address.hamlet
+    || item.display_name?.split(',')[0]
+    || 'Unbekannter Ort';
+};
+
+const formatPlaceLabel = (item) => {
+  const address = item.address || {};
+  const name = getPlaceName(item);
+  const parts = [
+    name,
+    address.state,
+    address.country,
+  ].filter(Boolean);
+
+  return [...new Set(parts)].join(', ');
 };
 
 const EASTER_CLUSTER_PALETTES = [
@@ -381,6 +436,8 @@ const hasTypeData = (shop, type) => {
 
 const LocateControl = ({ userPosition }) => {
   const map = useMap();
+  const buttonRef = useRef(null);
+  const userPositionRef = useRef(userPosition);
 
   useEffect(() => {
     if (!map) return;
@@ -390,18 +447,19 @@ const LocateControl = ({ userPosition }) => {
       const container = L.DomUtil.create('div', 'leaflet-bar');
       const button = L.DomUtil.create('a', 'leaflet-control-locate', container);
       button.href = '#';
+      buttonRef.current = button;
       button.textContent = '📍';
-      button.title = userPosition ? 'Auf meinen Standort zentrieren' : 'Standort wird geladen …';
+      button.title = userPositionRef.current ? 'Auf meinen Standort zentrieren' : 'Standort wird geladen …';
 
-      if (!userPosition) {
+      if (!userPositionRef.current) {
         L.DomUtil.addClass(button, 'leaflet-disabled');
       }
 
       const handleClick = (event) => {
         L.DomEvent.stopPropagation(event);
         L.DomEvent.preventDefault(event);
-        if (userPosition) {
-          map.setView(userPosition);
+        if (userPositionRef.current) {
+          map.setView(userPositionRef.current);
         }
       };
 
@@ -414,9 +472,24 @@ const LocateControl = ({ userPosition }) => {
     locateControl.addTo(map);
 
     return () => {
+      buttonRef.current = null;
       locateControl.remove();
     };
-  }, [map, userPosition]);
+  }, [map]);
+
+  useEffect(() => {
+    userPositionRef.current = userPosition;
+
+    const button = buttonRef.current;
+    if (!button) return;
+
+    button.title = userPosition ? 'Auf meinen Standort zentrieren' : 'Standort wird geladen …';
+    if (userPosition) {
+      L.DomUtil.removeClass(button, 'leaflet-disabled');
+    } else {
+      L.DomUtil.addClass(button, 'leaflet-disabled');
+    }
+  }, [userPosition]);
 
   return null;
 };
@@ -684,6 +757,8 @@ const IceCreamRadar = () => {
   const [searchError, setSearchError] = useState('');
   const [searchLocation, setSearchLocation] = useState(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [activeSearchSuggestionIndex, setActiveSearchSuggestionIndex] = useState(-1);
+  const searchInputRef = useRef(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
@@ -834,10 +909,117 @@ const IceCreamRadar = () => {
   };
 
   useEffect(() => {
+    if (isSearchVisible) {
+      window.requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      });
+    }
+  }, [isSearchVisible]);
+
+  const fetchPlaceMatches = useCallback(async (query, { signal, showNoResultError = false } = {}) => {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < SEARCH_PLACE_MIN_QUERY_LENGTH) {
+      setPlaceMatches([]);
+      setIsGeocoding(false);
+      return;
+    }
+
+    setIsGeocoding(true);
+    setSearchError('');
+    const params = new URLSearchParams({
+      format: 'jsonv2',
+      addressdetails: '1',
+      namedetails: '1',
+      limit: '8',
+      featureType: 'settlement',
+      q: trimmedQuery,
+    });
+    const mapBounds = mapRef.current?.getBounds?.();
+    if (mapBounds) {
+      const west = mapBounds.getWest();
+      const north = mapBounds.getNorth();
+      const east = mapBounds.getEast();
+      const south = mapBounds.getSouth();
+      params.set('viewbox', `${west},${north},${east},${south}`);
+    }
+
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        signal,
+        headers: {
+          'Accept-Language': 'de',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Geocoding error');
+      }
+
+      const data = await response.json();
+      const distanceOrigin = userPosition || (
+        mapRef.current ? [mapRef.current.getCenter().lat, mapRef.current.getCenter().lng] : null
+      );
+      const seenPlaces = new Set();
+      const formatted = data
+        .map((item) => {
+          const position = [Number(item.lat), Number(item.lon)];
+          const name = getPlaceName(item);
+          return {
+            type: 'place',
+            id: item.place_id,
+            name: formatPlaceLabel(item),
+            rawName: name,
+            position,
+            countryPriority: getPlaceCountryPriority(item),
+            distanceKm: getDistanceKm(distanceOrigin, position),
+            importance: Number(item.importance ?? 0),
+          };
+        })
+        .filter((item) => {
+          const key = `${item.rawName.toLowerCase()}|${item.position.map((value) => value.toFixed(3)).join(',')}`;
+          if (seenPlaces.has(key)) return false;
+          seenPlaces.add(key);
+          return item.position.every(Number.isFinite);
+        })
+        .sort((a, b) => {
+          const queryLower = trimmedQuery.toLowerCase();
+          const aStartsWithQuery = a.rawName.toLowerCase().startsWith(queryLower) ? 0 : 1;
+          const bStartsWithQuery = b.rawName.toLowerCase().startsWith(queryLower) ? 0 : 1;
+          if (aStartsWithQuery !== bStartsWithQuery) {
+            return aStartsWithQuery - bStartsWithQuery;
+          }
+          if (a.countryPriority !== b.countryPriority) {
+            return a.countryPriority - b.countryPriority;
+          }
+          if (a.distanceKm !== b.distanceKm) {
+            return a.distanceKm - b.distanceKm;
+          }
+          return b.importance - a.importance;
+        })
+        .slice(0, 5);
+      setPlaceMatches(formatted);
+      if (showNoResultError && !formatted.length) {
+        setSearchError('Kein Ort gefunden.');
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      console.error('Fehler bei der Ortssuche:', error);
+      setSearchError('Ortssuche fehlgeschlagen.');
+    } finally {
+      if (!signal?.aborted) {
+        setIsGeocoding(false);
+      }
+    }
+  }, [userPosition]);
+
+  useEffect(() => {
     if (!searchQuery.trim()) {
       setShopMatches([]);
       setPlaceMatches([]);
       setSearchError('');
+      setIsGeocoding(false);
       return;
     }
 
@@ -854,8 +1036,26 @@ const IceCreamRadar = () => {
       }));
 
     setShopMatches(matches);
-    setPlaceMatches([]);
   }, [searchQuery, iceCreamShops]);
+
+  useEffect(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length < SEARCH_PLACE_MIN_QUERY_LENGTH) {
+      setPlaceMatches([]);
+      setIsGeocoding(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      fetchPlaceMatches(trimmedQuery, { signal: controller.signal });
+    }, SEARCH_PLACE_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [fetchPlaceMatches, searchQuery]);
 
   const loadIceCreamShops = useCallback(async () => {
     const requestId = ++shopListRequestRef.current;
@@ -1000,36 +1200,7 @@ const IceCreamRadar = () => {
     if (!searchQuery.trim()) {
       return;
     }
-    setIsGeocoding(true);
-    setSearchError('');
-    setPlaceMatches([]);
-
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(searchQuery)}`, {
-        headers: {
-          'Accept-Language': 'de',
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Geocoding error');
-      }
-      const data = await response.json();
-      const formatted = data.map((item) => ({
-        type: 'place',
-        id: item.place_id,
-        name: item.display_name,
-        position: [Number(item.lat), Number(item.lon)],
-      }));
-      setPlaceMatches(formatted);
-      if (!formatted.length) {
-        setSearchError('Kein Ort gefunden.');
-      }
-    } catch (error) {
-      console.error('Fehler bei der Ortssuche:', error);
-      setSearchError('Ortssuche fehlgeschlagen.');
-    } finally {
-      setIsGeocoding(false);
-    }
+    await fetchPlaceMatches(searchQuery, { showNoResultError: true });
   };
 
   const handleSelectShop = (shopMatch) => {
@@ -1046,8 +1217,71 @@ const IceCreamRadar = () => {
     setSearchLocation(placeMatch);
   };
 
+  const searchSuggestions = useMemo(() => [
+    ...shopMatches.map((match) => ({ ...match, suggestionType: 'shop' })),
+    ...placeMatches.map((match) => ({ ...match, suggestionType: 'place' })),
+  ], [placeMatches, shopMatches]);
+
+  useEffect(() => {
+    setActiveSearchSuggestionIndex(-1);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setActiveSearchSuggestionIndex((currentIndex) => (
+      searchSuggestions.length ? Math.min(Math.max(currentIndex, -1), searchSuggestions.length - 1) : -1
+    ));
+  }, [searchSuggestions.length]);
+
+  const handleSelectSearchSuggestion = useCallback((suggestion) => {
+    if (!suggestion) return;
+
+    if (suggestion.suggestionType === 'shop') {
+      handleSelectShop(suggestion);
+      return;
+    }
+
+    handleSelectPlace(suggestion);
+  }, [handleSelectPlace, handleSelectShop]);
+
+  const handleSearchKeyDown = (event) => {
+    if (!searchSuggestions.length) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSearchSuggestionIndex((currentIndex) => (
+        currentIndex >= searchSuggestions.length - 1 ? 0 : currentIndex + 1
+      ));
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSearchSuggestionIndex((currentIndex) => (
+        currentIndex <= 0 ? searchSuggestions.length - 1 : currentIndex - 1
+      ));
+      return;
+    }
+
+    if (event.key === 'Enter' && activeSearchSuggestionIndex >= 0) {
+      event.preventDefault();
+      handleSelectSearchSuggestion(searchSuggestions[activeSearchSuggestionIndex]);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setActiveSearchSuggestionIndex(-1);
+    }
+  };
+
   const toggleSearchVisibility = useCallback(() => {
     setIsSearchVisible((prev) => !prev);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setIsSearchVisible(false);
+    setActiveSearchSuggestionIndex(-1);
   }, []);
 
   const toggleDiscoveryVisibility = useCallback(() => {
@@ -1730,25 +1964,38 @@ const IceCreamRadar = () => {
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
               <SearchInput
+                ref={searchInputRef}
                 type="text"
                 placeholder="Ort oder Eisdiele suchen"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                aria-autocomplete="list"
+                aria-controls="map-search-results"
+                aria-expanded={shopMatches.length > 0 || placeMatches.length > 0}
               />
               <SearchButton type="submit" disabled={isGeocoding}>
                 {isGeocoding ? 'Suche…' : 'Suchen'}
               </SearchButton>
+              <SearchCloseButton type="button" onClick={closeSearch} aria-label="Suche schlieÃŸen">
+                ×
+              </SearchCloseButton>
             </SearchCard>
             {(shopMatches.length > 0 || placeMatches.length > 0 || searchError || isGeocoding) && (
-              <SearchResults>
+              <SearchResults id="map-search-results">
                 {isGeocoding && (
                   <SearchStatusText>Ort wird gesucht …</SearchStatusText>
                 )}
                 {shopMatches.length > 0 && (
                   <>
                     <SearchGroupLabel>Eisdielen</SearchGroupLabel>
-                    {shopMatches.map((match) => (
-                      <SearchResultButton key={`shop-${match.id}`} type="button" onClick={() => handleSelectShop(match)}>
+                    {shopMatches.map((match, index) => (
+                      <SearchResultButton
+                        key={`shop-${match.id}`}
+                        type="button"
+                        $active={activeSearchSuggestionIndex === index}
+                        onClick={() => handleSelectShop(match)}
+                      >
                         {match.name}
                       </SearchResultButton>
                     ))}
@@ -1757,8 +2004,13 @@ const IceCreamRadar = () => {
                 {placeMatches.length > 0 && (
                   <>
                     <SearchGroupLabel>Orte</SearchGroupLabel>
-                    {placeMatches.map((match) => (
-                      <SearchResultButton key={`place-${match.id}`} type="button" onClick={() => handleSelectPlace(match)}>
+                    {placeMatches.map((match, index) => (
+                      <SearchResultButton
+                        key={`place-${match.id}`}
+                        type="button"
+                        $active={activeSearchSuggestionIndex === shopMatches.length + index}
+                        onClick={() => handleSelectPlace(match)}
+                      >
                         {match.name}
                       </SearchResultButton>
                     ))}
@@ -2421,6 +2673,18 @@ const SearchOverlay = styled.div`
   flex-direction: column;
   gap: 0.35rem;
   pointer-events: none;
+
+  @media (max-width: 520px) {
+    left: 12px;
+    right: 58px;
+    transform: none;
+    width: auto;
+  }
+
+  @media (max-width: 360px) {
+    left: 8px;
+    right: 52px;
+  }
 `;
 
 const SearchCard = styled.form`
@@ -2431,6 +2695,11 @@ const SearchCard = styled.form`
   border-radius: 16px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
   pointer-events: auto;
+
+  @media (max-width: 380px) {
+    gap: 0.3rem;
+    padding: 0.35rem;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -2440,6 +2709,12 @@ const SearchInput = styled.input`
   padding: 0.5rem 0.75rem;
   font-size: 0.95rem;
   background: #f7f7f7;
+  min-width: 0;
+
+  @media (max-width: 380px) {
+    padding: 0.48rem 0.58rem;
+    font-size: 0.88rem;
+  }
 `;
 
 const SearchButton = styled.button`
@@ -2450,10 +2725,41 @@ const SearchButton = styled.button`
   padding: 0.5rem 0.9rem;
   font-weight: 700;
   cursor: pointer;
+  flex: 0 0 auto;
 
   &:disabled {
     opacity: 0.7;
     cursor: progress;
+  }
+
+  @media (max-width: 380px) {
+    padding: 0.48rem 0.65rem;
+    font-size: 0.88rem;
+  }
+`;
+
+const SearchCloseButton = styled.button`
+  width: 2.15rem;
+  min-width: 2.15rem;
+  border: none;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.08);
+  color: #2f2100;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.14);
+  }
+
+  @media (max-width: 380px) {
+    width: 1.9rem;
+    min-width: 1.9rem;
+    font-size: 1.2rem;
   }
 `;
 
@@ -2479,14 +2785,14 @@ const SearchResultButton = styled.button`
   display: block;
   width: 100%;
   text-align: left;
-  background: transparent;
+  background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.22)' : 'transparent')};
   border: none;
   padding: 0.45rem 0.75rem;
   font-size: 0.9rem;
   cursor: pointer;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.3)' : 'rgba(0, 0, 0, 0.05)')};
   }
 `;
 

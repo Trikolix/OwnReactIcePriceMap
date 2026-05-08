@@ -475,7 +475,7 @@ function socialAuthFindIdentity(PDO $pdo, string $provider, string $providerUser
 }
 
 function socialAuthFindUserByEmail(PDO $pdo, string $email): ?array {
-    $stmt = $pdo->prepare('SELECT id, username, email, is_verified FROM nutzer WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, username, email, is_verified, current_level FROM nutzer WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;
@@ -559,6 +559,7 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
         'username' => $username,
         'email' => $identity['email'],
         'is_verified' => !empty($identity['email_verified']) ? 1 : 0,
+        'current_level' => 0,
     ];
 }
 
@@ -619,6 +620,7 @@ function socialAuthIssueAppLogin(PDO $pdo, array $user): array {
         'message' => 'Anmeldung erfolgreich.',
         'userId' => (int) $user['id'],
         'username' => $user['username'],
+        'currentLevel' => (int)($user['current_level'] ?? 0),
         'token' => $tokenData['token'],
         'expires_at' => $tokenData['expires_at'],
     ];

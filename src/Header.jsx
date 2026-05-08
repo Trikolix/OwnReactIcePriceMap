@@ -26,7 +26,7 @@ const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
-  const { userId, username, isLoggedIn, userPosition, authToken, login, logout } = useUser();
+  const { userId, username, currentLevel, isLoggedIn, userPosition, authToken, login, logout, setCurrentLevel } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -55,6 +55,7 @@ const Header = ({ refreshShops }) => {
   };
   const closeMenu = () => setMenuOpen(false);
   const isAdmin = Number(userId) === 1;
+  const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -454,6 +455,9 @@ const Header = ({ refreshShops }) => {
     try {
       const response = await fetch(`${apiUrl}/userManagement/update_activity_and_awards.php?nutzer_id=${userId}`);
       const data = await response.json();
+      if (data.current_level != null) {
+        setCurrentLevel(data.current_level);
+      }
 
       if (data.level_up || (data.new_awards && data.new_awards.length > 0)) {
         if (data.level_up) {
@@ -592,7 +596,7 @@ const Header = ({ refreshShops }) => {
                   <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
                   <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
-                  {isAdmin && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
+                  {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
                   {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
                   <MenuActionButton
                     type="button"

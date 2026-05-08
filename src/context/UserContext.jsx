@@ -11,6 +11,7 @@ export const UserProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentLevel, setCurrentLevel] = useState(null);
   const [userPosition, setUserPosition] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const [tokenExpiresAt, setTokenExpiresAt] = useState(null);
@@ -28,6 +29,7 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
     const storedUsername = localStorage.getItem('username');
+    const storedCurrentLevel = localStorage.getItem('currentLevel');
     const storedPosition = localStorage.getItem('userPosition');
     const storedToken = localStorage.getItem('authToken');
     const storedTokenExpiry = localStorage.getItem('tokenExpiresAt');
@@ -35,6 +37,7 @@ export const UserProvider = ({ children }) => {
     if (storedUserId && storedUsername && storedToken) {
       setUserId(storedUserId);
       setUsername(storedUsername);
+      setCurrentLevel(storedCurrentLevel != null ? Number(storedCurrentLevel) : null);
       setIsLoggedIn(true);
     }
 
@@ -66,8 +69,19 @@ export const UserProvider = ({ children }) => {
     localStorage.setItem('userPosition', JSON.stringify(positionArray));
   };
 
+  const updateCurrentLevel = (level) => {
+    const nextLevel = level != null ? Number(level) : null;
+    setCurrentLevel(nextLevel);
+    if (nextLevel != null && Number.isFinite(nextLevel)) {
+      localStorage.setItem('currentLevel', String(nextLevel));
+    } else {
+      localStorage.removeItem('currentLevel');
+    }
+  };
+
   const login = useCallback((id, name, token, expiresAt, options = {}) => {
     const { reload = true } = options;
+    const nextCurrentLevel = options.currentLevel != null ? Number(options.currentLevel) : null;
     const idAsString = id != null ? String(id) : null;
     const previousUserId = localStorage.getItem('userId');
 
@@ -79,6 +93,7 @@ export const UserProvider = ({ children }) => {
 
     setUserId(idAsString);
     setUsername(name);
+    setCurrentLevel(nextCurrentLevel);
     setIsLoggedIn(true);
     setAuthToken(token || null);
     setTokenExpiresAt(expiresAt || null);
@@ -94,6 +109,12 @@ export const UserProvider = ({ children }) => {
       localStorage.setItem('username', name);
     } else {
       localStorage.removeItem('username');
+    }
+
+    if (nextCurrentLevel != null && Number.isFinite(nextCurrentLevel)) {
+      localStorage.setItem('currentLevel', String(nextCurrentLevel));
+    } else {
+      localStorage.removeItem('currentLevel');
     }
 
     if (token) {
@@ -143,11 +164,13 @@ export const UserProvider = ({ children }) => {
 
     setUserId(null);
     setUsername(null);
+    setCurrentLevel(null);
     setIsLoggedIn(false);
     setAuthToken(null);
     setTokenExpiresAt(null);
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
+    localStorage.removeItem('currentLevel');
     localStorage.removeItem('authToken');
     localStorage.removeItem('tokenExpiresAt');
     localStorage.removeItem('userPosition');
@@ -170,7 +193,7 @@ export const UserProvider = ({ children }) => {
       }
       const data = await response.json();
       if (data.status === 'success') {
-        login(data.userId, data.username, authToken, data.expires_at, { reload: false });
+        login(data.userId, data.username, authToken, data.expires_at, { reload: false, currentLevel: data.currentLevel });
       } else {
         await logout({ reload: false });
       }
@@ -201,6 +224,7 @@ export const UserProvider = ({ children }) => {
       value={{
         userId,
         username,
+        currentLevel,
         isLoggedIn,
         userPosition,
         authToken,
@@ -208,7 +232,8 @@ export const UserProvider = ({ children }) => {
         authReady,
         login,
         logout,
-        setUserPosition: updateUserPosition
+        setUserPosition: updateUserPosition,
+        setCurrentLevel: updateCurrentLevel
       }}
     >
       {children}
