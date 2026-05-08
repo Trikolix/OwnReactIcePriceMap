@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -83,7 +84,7 @@ const OverlayLayout = styled.div`
   top: 12px;
   left: 12px;
   right: 12px;
-  z-index: 600;
+  z-index: 500;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -95,8 +96,23 @@ const OverlayLayout = styled.div`
   }
 
   @media (max-width: 720px) {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+`;
+
+const BottomLeftOverlay = styled.div`
+  position: absolute;
+  bottom: 24px;
+  left: 12px;
+  z-index: 500;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
   }
 `;
 
@@ -112,6 +128,11 @@ const MapInfo = styled.div`
     max-width: none;
     padding: 0.65rem 0.75rem;
     display: ${({ $isVisible }) => ($isVisible ? "block" : "none")};
+    position: absolute;
+    top: 45px;
+    left: 0;
+    width: 100%;
+    margin-top: 0.5rem;
   }
 `;
 
@@ -128,10 +149,34 @@ const InfoToggleButton = styled.button`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   cursor: pointer;
 
+  .desktop-text {
+    display: inline;
+  }
+  .mobile-text {
+    display: none;
+  }
+
   @media (max-width: 720px) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    font-family: serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    min-height: auto;
+    flex-shrink: 0;
+    margin: 0;
+
+    .desktop-text {
+      display: none;
+    }
+    .mobile-text {
+      display: inline;
+    }
   }
 `;
 
@@ -142,7 +187,7 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 5000;
 `;
 
 const Modal = styled.div`
@@ -182,28 +227,6 @@ const RouteBadge = styled.span`
   border: 1px solid ${({ $border }) => $border || "#f0d79a"};
   font-weight: 700;
   font-size: 0.8rem;
-`;
-
-const PopupButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  margin-top: 0.45rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 181, 34, 0.6);
-  background: linear-gradient(180deg, #ffcf63 0%, #ffb522 100%);
-  color: #2f2100;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.2);
-
-  &:hover {
-    background: linear-gradient(180deg, #ffd879 0%, #ffbf3f 100%);
-    transform: translateY(-1px);
-  }
 `;
 
 const ModalHeader = styled.div`
@@ -542,9 +565,11 @@ const StatsCard = styled.div`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
   @media (max-width: 720px) {
-    min-width: 0;
-    width: 100%;
+    flex: 1;
+    align-self: flex-start;
+    margin: 0;
     padding: 0.65rem 0.75rem;
+    min-width: 0;
   }
 `;
 
@@ -1060,8 +1085,9 @@ export default function EventLiveMap() {
       <Header />
       <MapShell>
         <OverlayLayout>
-          <InfoToggleButton type="button" onClick={() => setShowInfoPanel((prev) => !prev)}>
-            {showInfoPanel ? "Info ausblenden" : "Info anzeigen"}
+          <InfoToggleButton type="button" aria-label={showInfoPanel ? "Infos ausblenden" : "Infos anzeigen"} onClick={() => setShowInfoPanel((prev) => !prev)}>
+            <span className="desktop-text">{showInfoPanel ? "Infos ausblenden" : "Infos anzeigen"}</span>
+            <span className="mobile-text">{showInfoPanel ? "x" : "i"}</span>
           </InfoToggleButton>
           <MapInfo $isVisible={showInfoPanel}>
             <InfoHeading>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</InfoHeading>
@@ -1105,6 +1131,9 @@ export default function EventLiveMap() {
             </RouteStatSummary>
           </StatsCard>
 
+        </OverlayLayout>
+
+        <BottomLeftOverlay>
           <RouteLegend>
             <div style={{ fontWeight: 700, color: "#5b3a00", marginBottom: "0.45rem" }}>Routen</div>
             {routeOverlays.map((route) => (
@@ -1114,7 +1143,7 @@ export default function EventLiveMap() {
               </LegendItem>
             ))}
           </RouteLegend>
-        </OverlayLayout>
+        </BottomLeftOverlay>
 
         {!error && (
           <MapContainer
@@ -1143,7 +1172,9 @@ export default function EventLiveMap() {
                 key={item.checkpoint_id}
                 position={[item.lat, item.lng]}
                 icon={item.isStartFinishHub ? startFinishIcon : checkpointIcon}
+                eventHandlers={item.isStartFinishHub ? undefined : { click: () => openDetails(item) }}
               >
+                {item.isStartFinishHub && (
                 <Popup>
                   <strong>{item.name}</strong>
                   {item.isStartFinishHub ? (
@@ -1166,9 +1197,10 @@ export default function EventLiveMap() {
                   {item.isStartFinishHub ? (
                     <div style={{ marginTop: 6, color: "#7c4f00" }}>{startFinishAddress}</div>
                   ) : (
-                    <PopupButton type="button" onClick={() => openDetails(item)}>Details</PopupButton>
+                    <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
                   )}
                 </Popup>
+                )}
               </Marker>
             ))}
           </MapContainer>
@@ -1178,7 +1210,7 @@ export default function EventLiveMap() {
         {error && <Message $error>{error}</Message>}
       </MapShell>
 
-      {selected && (
+      {selected && createPortal(
         <ModalOverlay onClick={() => setSelected(null)}>
           <Modal onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
@@ -1304,7 +1336,8 @@ export default function EventLiveMap() {
               <AppButton type="button" onClick={() => setSelected(null)}>Schließen</AppButton>
             </ModalActions>
           </Modal>
-        </ModalOverlay>
+        </ModalOverlay>,
+        document.body
       )}
     </Page>
   );
