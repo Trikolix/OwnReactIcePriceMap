@@ -9,6 +9,7 @@ import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LogIn } from 'lucide-react';
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
@@ -531,12 +532,14 @@ const Header = ({ refreshShops }) => {
           ) : (
             <LoginHeaderButton
               type="button"
+              aria-label="Einloggen"
               onClick={() => {
                 setShowLoginModal(true);
                 setMenuOpen(false);
               }}
             >
-              Einloggen
+              <LogIn className="login-icon" size={20} aria-hidden="true" />
+              <span className="login-text">Einloggen</span>
             </LoginHeaderButton>
           )}
           <MenuTriggerWrap ref={menuTriggerRef}>
@@ -1005,22 +1008,42 @@ const UserStatusName = styled.span`
 `;
 
 const LoginHeaderButton = styled.button`
-  border: none;
-  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.52);
   color: #2f2100;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 0 12px;
-  min-height: 40px;
+  min-height: 42px;
+  height: 42px;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
-  &:hover {
-    background: #fff8e6;
+  .login-icon {
+    display: none;
+    flex-shrink: 0;
   }
 
-  @media (max-width: 420px) {
-    display: none;
+  &:hover {
+    background: rgba(255, 255, 255, 0.78);
+  }
+
+  @media (max-width: 520px) {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+
+    .login-icon {
+      display: block;
+    }
+
+    .login-text {
+      display: none;
+    }
   }
 `;
 
