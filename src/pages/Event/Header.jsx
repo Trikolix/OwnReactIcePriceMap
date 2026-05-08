@@ -11,7 +11,7 @@ import { getApiBaseUrl } from "../../shared/api/client";
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem("avatarUrl"));
+  const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
   const [hasEventRegistration, setHasEventRegistration] = useState(() => localStorage.getItem("event2026_has_registration") === "1");
   const menuRef = useRef(null);
   const { userId, username, isLoggedIn, login, logout } = useUser();
@@ -23,6 +23,7 @@ export default function Header() {
   const now = new Date();
   const liveStartDate = new Date(2026, 4, 16, 0, 0, 0, 0);
   const shouldShowLiveMap = isLocalHost || isAdmin || now >= liveStartDate;
+  const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -47,7 +48,8 @@ export default function Header() {
       setHeaderAvatarUrl(null);
       return;
     }
-    setHeaderAvatarUrl(localStorage.getItem("avatarUrl"));
+    const cacheKey = getAvatarCacheKey(userId);
+    setHeaderAvatarUrl(cacheKey ? localStorage.getItem(cacheKey) : null);
   }, [isLoggedIn, userId, username]);
 
   useEffect(() => {
@@ -69,16 +71,33 @@ export default function Header() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!isLoggedIn || !userId || !apiUrl || headerAvatarUrl) return;
+    const handleAvatarUpdated = (event) => {
+      if (String(event.detail?.userId ?? "") !== String(userId ?? "")) return;
+      setHeaderAvatarUrl(event.detail?.avatarUrl || null);
+    };
+
+    window.addEventListener("avatar-updated", handleAvatarUpdated);
+    return () => window.removeEventListener("avatar-updated", handleAvatarUpdated);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !userId || !apiUrl) return;
 
     let isCancelled = false;
     fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${userId}&cur_user_id=${userId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const nextAvatar = data?.avatar_url || null;
-        if (isCancelled || !nextAvatar) return;
+        if (isCancelled) return;
+        const cacheKey = getAvatarCacheKey(userId);
         setHeaderAvatarUrl(nextAvatar);
-        localStorage.setItem("avatarUrl", nextAvatar);
+        if (cacheKey) {
+          if (nextAvatar) {
+            localStorage.setItem(cacheKey, nextAvatar);
+          } else {
+            localStorage.removeItem(cacheKey);
+          }
+        }
       })
       .catch((error) => {
         console.warn("Event header avatar could not be loaded:", error);
@@ -87,7 +106,7 @@ export default function Header() {
     return () => {
       isCancelled = true;
     };
-  }, [apiUrl, isLoggedIn, userId, headerAvatarUrl]);
+  }, [apiUrl, isLoggedIn, userId]);
 
   return (
     <>

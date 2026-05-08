@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
@@ -9,7 +9,7 @@ import UserAvatar from "./UserAvatar";
 import { MessageCircle } from "lucide-react";
 import SubmitReviewModal from "../SubmitReviewModal";
 
-const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false }) => {
+const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false, focusCommentId = null }) => {
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -25,6 +25,12 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
     },
     preise: review.preise ?? {},
   }), [review.eisdiele_id, review.eisdiele_name, review.preise]);
+
+  useEffect(() => {
+    if (showComments) {
+      setAreCommentsVisible(true);
+    }
+  }, [showComments]);
 
   const handleEditClick = () => {
     if (setShowReviewForm) {
@@ -106,7 +112,13 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
         >
           <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {review.commentCount || 0} Kommentar(e)
         </CommentToggle>
-        {areCommentsVisible && <CommentSection bewertungId={review.id} />}
+        {areCommentsVisible && (
+          <CommentSection
+            bewertungId={review.id}
+            focusCommentId={focusCommentId}
+            focusLatestComment={Boolean(showComments)}
+          />
+        )}
       </Card>
 
       {showEditModal && (

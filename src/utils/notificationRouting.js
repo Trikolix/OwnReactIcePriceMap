@@ -15,22 +15,28 @@ export const buildNotificationDeeplink = (notification, userId) => {
   switch (notification?.typ) {
     case "kommentar":
       if (data.checkin_id && data.eisdiele_id) {
-        return `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}`;
+        return `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}${data.kommentar_id ? `&focusComment=${data.kommentar_id}` : ""}`;
       }
       return null;
     case "kommentar_bewertung":
       if (data.bewertung_id && data.eisdiele_id) {
-        return `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}`;
+        return `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}${data.kommentar_id ? `&focusComment=${data.kommentar_id}` : ""}`;
       }
       return null;
     case "kommentar_route":
       if (data.route_id && data.route_autor_id) {
-        return `/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}`;
+        return `/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}${data.kommentar_id ? `&focusComment=${data.kommentar_id}` : ""}`;
       }
       return null;
     case "kommentar_new_user": {
       const targetUserId = data.user_registration_id || notification?.referenz_id;
-      return targetUserId ? `/user/${targetUserId}` : null;
+      const commentId = data.kommentar_id || notification?.referenz_id;
+      return targetUserId ? `/dashboard?focusNewUser=${targetUserId}${commentId ? `&focusComment=${commentId}` : ""}` : "/dashboard";
+    }
+    case "kommentar_award": {
+      const awardId = data.user_award_id;
+      const commentId = data.kommentar_id || notification?.referenz_id;
+      return awardId ? `/dashboard?focusAward=${awardId}${commentId ? `&focusComment=${commentId}` : ""}` : "/dashboard";
     }
     case "new_user":
       return notification?.referenz_id ? `/user/${notification.referenz_id}` : null;

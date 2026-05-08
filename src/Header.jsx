@@ -36,7 +36,7 @@ const Header = ({ refreshShops }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showActionsOverview, setShowActionsOverview] = useState(false);
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
-  const [headerAvatarUrl, setHeaderAvatarUrl] = useState(() => localStorage.getItem('avatarUrl'));
+  const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
@@ -50,6 +50,7 @@ const Header = ({ refreshShops }) => {
   const now = new Date();
   const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
+  const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
   const toggleMenu = () => {
     setMenuOpen((isOpen) => !isOpen);
@@ -83,8 +84,9 @@ const Header = ({ refreshShops }) => {
       setHeaderAvatarUrl(null);
       return;
     }
-    setHeaderAvatarUrl(localStorage.getItem('avatarUrl'));
-  }, [isLoggedIn, userId, username, menuOpen]);
+    const cacheKey = getAvatarCacheKey(userId);
+    setHeaderAvatarUrl(cacheKey ? localStorage.getItem(cacheKey) : null);
+  }, [isLoggedIn, userId, username]);
 
   useEffect(() => {
     if (location.pathname === '/dashboard') {
@@ -143,27 +145,43 @@ const Header = ({ refreshShops }) => {
 
   useEffect(() => {
     const handleStorage = (event) => {
-      if (event.key === 'avatarUrl') {
+      if (event.key === getAvatarCacheKey(userId)) {
         setHeaderAvatarUrl(event.newValue);
       }
     };
 
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [userId]);
+
+  useEffect(() => {
+    const handleAvatarUpdated = (event) => {
+      if (String(event.detail?.userId ?? '') !== String(userId ?? '')) return;
+      setHeaderAvatarUrl(event.detail?.avatarUrl || null);
+    };
+
+    window.addEventListener('avatar-updated', handleAvatarUpdated);
+    return () => window.removeEventListener('avatar-updated', handleAvatarUpdated);
+  }, [userId]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId || !apiUrl) return;
-    if (headerAvatarUrl) return;
 
     let isCancelled = false;
     fetch(`${apiUrl}/get_user_stats.php?nutzer_id=${userId}&cur_user_id=${userId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const nextAvatar = data?.avatar_url || null;
-        if (isCancelled || !nextAvatar) return;
+        if (isCancelled) return;
+        const cacheKey = getAvatarCacheKey(userId);
         setHeaderAvatarUrl(nextAvatar);
-        localStorage.setItem('avatarUrl', nextAvatar);
+        if (cacheKey) {
+          if (nextAvatar) {
+            localStorage.setItem(cacheKey, nextAvatar);
+          } else {
+            localStorage.removeItem(cacheKey);
+          }
+        }
       })
       .catch((error) => {
         console.warn('Header avatar could not be loaded:', error);
@@ -172,7 +190,7 @@ const Header = ({ refreshShops }) => {
     return () => {
       isCancelled = true;
     };
-  }, [apiUrl, isLoggedIn, userId, headerAvatarUrl]);
+  }, [apiUrl, isLoggedIn, userId]);
 
   useEffect(() => {
     if (!userId) return;

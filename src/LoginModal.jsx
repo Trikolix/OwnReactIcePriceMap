@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { SubmitButton, Input } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
@@ -176,7 +177,7 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
   const resetHint = resetMessage || "Du bekommst eine E-Mail mit einem Link, um dein Passwort zurückzusetzen.";
   const loginHint = isLoggedIn && !isRegisterMode ? `Willkommen zurück, ${username}!` : "";
 
-  return (
+  const modalContent = (
     <ModalOverlay>
       <ModalCard>
         <CloseX onClick={closeLoginForm}>x</CloseX>
@@ -353,6 +354,12 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
       </ModalCard>
     </ModalOverlay>
   );
+
+  if (typeof document === "undefined") {
+    return modalContent;
+  }
+
+  return createPortal(modalContent, document.body);
 };
 
 export default LoginModal;

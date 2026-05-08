@@ -19,11 +19,16 @@ const parseAwardDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const AwardWaveCard = ({ wave }) => {
+const AwardWaveCard = ({ wave, focusAwardId = null, focusCommentId = null }) => {
   const awards = Array.isArray(wave?.recipients) ? wave.recipients : [];
   const [cardHeight, setCardHeight] = useState();
-  const [activeIndex, setActiveIndex] = useState(0);
+  const focusedAwardIndex = focusAwardId
+    ? awards.findIndex((award) => String(award.id) === String(focusAwardId))
+    : -1;
+  const initialIndex = focusedAwardIndex >= 0 ? focusedAwardIndex : 0;
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const cardRef = useRef(null);
+  const swiperRef = useRef(null);
   const parsedDate = parseAwardDate(wave?.datum);
 
   const updateHeight = () => {
@@ -45,6 +50,14 @@ const AwardWaveCard = ({ wave }) => {
       }
     };
   }, [awards, activeIndex]);
+
+  useEffect(() => {
+    if (focusedAwardIndex < 0) return;
+    setActiveIndex(focusedAwardIndex);
+    if (swiperRef.current && typeof swiperRef.current.slideTo === "function") {
+      swiperRef.current.slideTo(focusedAwardIndex, 0);
+    }
+  }, [focusedAwardIndex]);
 
   if (!awards.length) return null;
 
@@ -107,12 +120,21 @@ const AwardWaveCard = ({ wave }) => {
         navigation
         pagination={{ clickable: true }}
         autoHeight={true}
+        initialSlide={initialIndex}
         style={{ marginTop: "1rem", marginLeft: "-2rem", marginRight: "-2rem", marginBottom: "-3.5rem" }}
+        onSwiper={(swiper) => {
+          swiperRef.current = swiper;
+        }}
         onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
       >
         {awards.map((award, idx) => (
           <SwiperSlide key={award.id}>
-            <AwardCard ref={idx === activeIndex ? cardRef : null} award={award} />
+            <AwardCard
+              ref={idx === activeIndex ? cardRef : null}
+              award={award}
+              showComments={String(award.id) === String(focusAwardId)}
+              focusCommentId={String(award.id) === String(focusAwardId) ? focusCommentId : null}
+            />
           </SwiperSlide>
         ))}
       </Swiper>

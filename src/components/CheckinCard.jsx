@@ -11,7 +11,7 @@ import { Modal } from "./Modal";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
 import UserAvatar from "./UserAvatar";
 
-const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, ref) => {
+const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focusCommentId = null }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
@@ -148,7 +148,13 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false }, re
         >
           <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
         </CommentToggle>
-        {areCommentsVisible && <CommentSection checkinId={checkin.id} />}
+        {areCommentsVisible && (
+          <CommentSection
+            checkinId={checkin.id}
+            focusCommentId={focusCommentId}
+            focusLatestComment={Boolean(showComments)}
+          />
+        )}
       </Card>
 
 

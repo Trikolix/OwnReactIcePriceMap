@@ -11,6 +11,7 @@ import AwardBundleCard from '../components/AwardBundleCard';
 import AwardWaveCard from '../components/AwardWaveCard';
 import NewUserCard from '../components/NewUserCard';
 import { useUser } from '../context/UserContext';
+import { useLocation } from 'react-router-dom';
 import {
   getLatestActivityTimestamp,
   groupActivities,
@@ -21,6 +22,7 @@ import {
 
 function DashBoard() {
   const { userId } = useUser();
+  const location = useLocation();
   const [activities, setActivities] = useState([]);
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -31,6 +33,10 @@ function DashBoard() {
   const days = 7;
   const minimum = 20;
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const queryParams = new URLSearchParams(location.search);
+  const focusAwardId = queryParams.get('focusAward');
+  const focusNewUserId = queryParams.get('focusNewUser');
+  const focusCommentId = queryParams.get('focusComment');
 
   const markDashboardSeen = (activitiesToMark = []) => {
     const latestTimestamp = getLatestActivityTimestamp(activitiesToMark) || new Date().toISOString();
@@ -152,11 +158,32 @@ function DashBoard() {
               case 'eisdiele':
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
               case 'award':
-                return <AwardCard key={`award-${id}`} award={data} />;
+                return (
+                  <AwardCard
+                    key={`award-${id}`}
+                    award={data}
+                    showComments={String(data?.id) === String(focusAwardId)}
+                    focusCommentId={String(data?.id) === String(focusAwardId) ? focusCommentId : null}
+                  />
+                );
               case 'award_wave':
-                return <AwardWaveCard key={`award-wave-${id}`} wave={data} />;
+                return (
+                  <AwardWaveCard
+                    key={`award-wave-${id}`}
+                    wave={data}
+                    focusAwardId={focusAwardId}
+                    focusCommentId={focusCommentId}
+                  />
+                );
               case 'new_user':
-                return <NewUserCard key={`new-user-${id}`} user={data} />;
+                return (
+                  <NewUserCard
+                    key={`new-user-${id}`}
+                    user={data}
+                    showComments={String(data?.id) === String(focusNewUserId)}
+                    focusCommentId={String(data?.id) === String(focusNewUserId) ? focusCommentId : null}
+                  />
+                );
               case 'award_bundle': {
                 const firstAward = Array.isArray(data) ? data[0] : null;
                 const latestAward = Array.isArray(data) ? data[data.length - 1] : null;
@@ -166,6 +193,8 @@ function DashBoard() {
                     awards={data}
                     userName={latestAward?.user_name || firstAward?.user_name}
                     date={latestAward?.datum || firstAward?.datum}
+                    focusAwardId={focusAwardId}
+                    focusCommentId={focusCommentId}
                   />
                 );
               }

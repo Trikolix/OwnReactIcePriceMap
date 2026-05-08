@@ -6,7 +6,9 @@ import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { getActiveAwardEffectTier } from "../shared/awardEffects";
 import { getAwardIconSources, handleAwardIconFallback } from "../utils/awardIcons";
-import { Card as SharedCard } from "../styles/SharedStyles";
+import { Card as SharedCard, CommentToggle } from "../styles/SharedStyles";
+import CommentSection from "./CommentSection";
+import { MessageCircle } from "lucide-react";
 
 const normalizeDateString = (value) => {
   if (typeof value !== "string") return value;
@@ -19,12 +21,19 @@ const parseAwardDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
+const AwardCard = React.forwardRef(function AwardCard({ award, showComments = false, focusCommentId = null }, ref) {
     const { userId } = useUser();
     const awardDate = parseAwardDate(award?.datum);
     const iconSources = getAwardIconSources(award?.icon_path, 512);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+    const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
     const epicTier = getActiveAwardEffectTier(award?.ep);
+
+    useEffect(() => {
+      if (showComments) {
+        setAreCommentsVisible(true);
+      }
+    }, [showComments]);
 
     useEffect(() => {
       if (!isLightboxOpen) return undefined;
@@ -37,22 +46,22 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
       return () => window.removeEventListener("keydown", onKeyDown);
     }, [isLightboxOpen]);
 
+    useEffect(() => {
+      if (!ref || !ref.current) return;
+      const event = new Event("awardCardResize", { bubbles: true });
+      ref.current.dispatchEvent(event);
+      const swiperEl = ref.current.closest(".swiper");
+      if (swiperEl?.swiper && typeof swiperEl.swiper.updateAutoHeight === "function") {
+        swiperEl.swiper.updateAutoHeight();
+      }
+    }, [areCommentsVisible, ref]);
+
 
     return (
       <>
         <Card
           $epicTier={epicTier}
           ref={ref}
-          role="button"
-          tabIndex={0}
-          onClick={() => setIsLightboxOpen(true)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setIsLightboxOpen(true);
-            }
-          }}
-          aria-label={`Award ${award?.title_de || ""} im Vollbild anzeigen`}
         >
           <CardMetaRow>
             <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
@@ -111,6 +120,23 @@ const AwardCard = React.forwardRef(function AwardCard({ award }, ref) {
               <p>{award.description_de}</p>
             </TextContent>
           </ContentWrapper>
+          <CommentToggle
+            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+            onClick={(event) => {
+              event.preventDefault();
+              setAreCommentsVisible((prev) => !prev);
+            }}
+          >
+            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {award.commentCount || 0} Kommentar(e)
+          </CommentToggle>
+          {areCommentsVisible && (
+            <CommentSection
+              userAwardId={award.id}
+              type="award"
+              focusCommentId={focusCommentId}
+              focusLatestComment={Boolean(showComments)}
+            />
+          )}
         </Card>
         {isLightboxOpen && typeof document !== "undefined" && createPortal(
           <LightboxOverlay onClick={() => setIsLightboxOpen(false)}>
@@ -175,7 +201,6 @@ const SHIMMER_KEYFRAMES = `
 
 const Card = styled(SharedCard)`
   padding: 1rem;
-  cursor: zoom-in;
 `;
 
 const CardMetaRow = styled.div`

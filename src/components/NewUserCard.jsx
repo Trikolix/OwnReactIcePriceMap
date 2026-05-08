@@ -20,7 +20,7 @@ const formatCreatedAt = (value) => {
   });
 };
 
-const NewUserCard = ({ user, showComments = false }) => {
+const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
   useEffect(() => {
@@ -76,7 +76,14 @@ const NewUserCard = ({ user, showComments = false }) => {
       >
         <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: "text-bottom" }} /> {user.commentCount || 0} Kommentar(e)
       </CommentToggle>
-      {areCommentsVisible && <CommentSection userRegistrationId={user.id} type="user_registration" />}
+      {areCommentsVisible && (
+        <CommentSection
+          userRegistrationId={user.id}
+          type="user_registration"
+          focusCommentId={focusCommentId}
+          focusLatestComment={Boolean(showComments)}
+        />
+      )}
     </StyledCard>
   );
 };

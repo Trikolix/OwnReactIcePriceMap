@@ -250,6 +250,9 @@ function UserSite() {
   const awards = data?.user_awards || [];
   const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routes = data?.routen || [];
+  const routeFocusParams = new URLSearchParams(location.search);
+  const focusRouteId = routeFocusParams.get('focusRoute');
+  const focusCommentId = routeFocusParams.get('focusComment');
   const displayedCheckins = checkins.slice(0, checkinPage * 5);
   const displayedReviews = reviews.slice(0, reviewPage * 5);
   const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
@@ -589,18 +592,24 @@ function UserSite() {
     const params = new URLSearchParams(location.search);
     if (activeTab === 'routen' && params.get('focusRoute')) {
       const routeId = params.get('focusRoute');
+      const focusedIndex = routes.findIndex((route) => String(route.id) === String(routeId));
+      if (focusedIndex >= 0) {
+        const neededPage = Math.floor(focusedIndex / 5) + 1;
+        setRoutePage((prev) => Math.max(prev, neededPage));
+      }
       setTimeout(() => {
         if (routeRefs.current[routeId]) {
           routeRefs.current[routeId].scrollIntoView({ behavior: 'smooth', block: 'center' });
           const newParams = new URLSearchParams(location.search);
           newParams.delete('focusRoute');
+          newParams.delete('focusComment');
           newParams.delete('tab');
           const newUrl = `${location.pathname}${newParams.toString() ? '?' + newParams.toString() : ''}`;
           window.history.replaceState({}, '', newUrl);
         }
       }, 300);
     }
-  }, [activeTab, displayedRoutes, location.search]);
+  }, [activeTab, displayedRoutes, location.pathname, location.search, routes]);
 
   const handleAvatarUpdated = (newPath) => {
     setData((prev) => (prev ? { ...prev, avatar_url: newPath } : prev));
@@ -1066,6 +1075,8 @@ function UserSite() {
                       shopId={route.eisdielen?.[0]?.id || route.eisdiele_id}
                       shopName={route.eisdielen?.[0]?.name || route.eisdiele_name}
                       onSuccess={refreshUser}
+                      showComments={String(route.id) === String(focusRouteId)}
+                      focusCommentId={String(route.id) === String(focusRouteId) ? focusCommentId : null}
                     />
                     </div>
                   ))}
