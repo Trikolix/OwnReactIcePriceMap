@@ -57,9 +57,38 @@ function checkLogin(PDO $pdo, string $inputUsername, string $inputPassword): arr
 }
 
 $input = json_decode(file_get_contents("php://input"), true);
+if (!is_array($input)) {
+    iceapp_log_event('login_failed', ['reason' => 'invalid_json']);
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Ungültige JSON Daten.']);
+    exit;
+}
 $inputUsername = $input['username'] ?? '';
 $inputPassword = $input['password'] ?? '';
 
 $result = checkLogin($pdo, $inputUsername, $inputPassword);
+if (($result['status'] ?? '') === 'success') {
+    iceapp_log_event('login_success', [
+        'user_id' => (int) ($result['userId'] ?? 0),
+        'login_hash' => iceapp_hash_for_log($inputUsername),
+    ]);
+} else {
+    $reasonMessage = (string) ($result['message'] ?? '');
+    $reason = 'unknown';
+    if (strpos($reasonMessage, 'nicht gefunden') !== false) {
+        $reason = 'user_not_found';
+    } elseif (strpos($reasonMessage, 'Falsches Passwort') !== false) {
+        $reason = 'wrong_password';
+    } elseif (strpos($reasonMessage, 'noch nicht bestätigt') !== false) {
+        $reason = 'account_unverified';
+    } elseif (strpos($reasonMessage, 'Löschung') !== false) {
+        $reason = 'deletion_requested';
+    }
+
+    iceapp_log_event('login_failed', [
+        'reason' => $reason,
+        'login_hash' => iceapp_hash_for_log($inputUsername),
+    ]);
+}
 echo json_encode($result);
 ?>

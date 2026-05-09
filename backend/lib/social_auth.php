@@ -36,6 +36,8 @@ function socialAuthAllowedOrigins(): array {
     if (!$origins) {
         $origins = [
             socialAuthCurrentOrigin(),
+            'https://ice-app.de',
+            'https://www.ice-app.de',
             'http://localhost:5173',
             'http://127.0.0.1:5173',
         ];

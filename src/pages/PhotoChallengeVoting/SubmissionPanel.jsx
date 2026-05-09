@@ -60,7 +60,7 @@ const SubmissionPanel = ({
       )}
       {overview?.challenge?.min_image_created_at && (
         <p>
-          Eingereicht werden koennen Bilder ab{' '}
+          Eingereicht werden können Bilder ab{' '}
           <strong>{new Date(overview.challenge.min_image_created_at).toLocaleString('de-DE')}</strong>.
         </p>
       )}

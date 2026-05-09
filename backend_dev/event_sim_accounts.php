@@ -115,27 +115,26 @@ function extractDbConfigFromPhpFile(string $filePath): array
         throw new RuntimeException('Config file not found: ' . $filePath);
     }
 
-    $content = file_get_contents($filePath);
-    if ($content === false) {
-        throw new RuntimeException('Failed to read config file: ' . $filePath);
+    $helperPath = dirname($filePath) . '/lib/env.php';
+    if (!is_readable($helperPath)) {
+        $helperPath = dirname($filePath) . '/../backend/lib/env.php';
+    }
+    if (!function_exists('iceapp_db_config_from_env_dir')) {
+        require_once $helperPath;
     }
 
-    $keys = ['host', 'dbname', 'username', 'password'];
-    $config = [];
-    foreach ($keys as $key) {
-        $pattern = '/\\$' . preg_quote($key, '/') . '\\s*=\\s*([\'"])(.*?)\\1\\s*;/s';
-        if (!preg_match($pattern, $content, $matches)) {
-            throw new RuntimeException('Could not extract $' . $key . ' from ' . $filePath);
-        }
-        $config[$key] = $matches[2];
-    }
-
-    return $config;
+    return iceapp_db_config_from_env_dir(dirname($filePath));
 }
 
 function createPdo(array $config): PDO
 {
-    $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $config['host'], $config['dbname']);
+    $dsn = sprintf(
+        'mysql:host=%s%s;dbname=%s;charset=%s',
+        $config['host'],
+        !empty($config['port']) ? ';port=' . $config['port'] : '',
+        $config['dbname'],
+        $config['charset'] ?? 'utf8mb4'
+    );
     return new PDO($dsn, $config['username'], $config['password'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

@@ -173,6 +173,12 @@ try {
 
     if ($clientIp !== '') {
         if (event2026_contact_is_rate_limited($pdo, $clientIp)) {
+            iceapp_log_event('event2026_contact_failed', [
+                'reason' => 'rate_limited',
+                'source_page' => $sourcePage,
+                'submitted_by_user_id' => $submittedByUserId,
+            ]);
+
             event2026_log_action($pdo, $eventId, $submittedByUserId, 'contact_request_rate_limited', 'event', $eventId, [
                 'source_page' => $sourcePage,
                 'ip_hash' => $ipHash,
@@ -212,6 +218,12 @@ try {
         event2026_log_action($pdo, $eventId, $submittedByUserId, 'contact_request_flagged', 'contact_request', $requestId, [
             'reason' => 'honeypot',
             'source_page' => $sourcePage,
+        ]);
+        iceapp_log_event('event2026_contact_failed', [
+            'reason' => 'honeypot',
+            'request_id' => $requestId,
+            'source_page' => $sourcePage,
+            'submitted_by_user_id' => $submittedByUserId,
         ]);
 
         echo json_encode([
@@ -256,6 +268,13 @@ try {
     }
 
     if ($fieldErrors) {
+        iceapp_log_event('event2026_contact_failed', [
+            'reason' => 'validation_failed',
+            'source_page' => $sourcePage,
+            'fields' => array_keys($fieldErrors),
+            'submitted_by_user_id' => $submittedByUserId,
+        ]);
+
         event2026_log_action($pdo, $eventId, $submittedByUserId, 'contact_request_validation_failed', 'event', $eventId, [
             'source_page' => $sourcePage,
             'ip_hash' => $ipHash,
@@ -309,7 +328,14 @@ try {
         $mailBody .= "Telefon: {$phone}\n";
     }
     $mailBody .= "\nNachricht:\n{$message}\n";
-    iceapp_send_utf8_text_mail(EVENT2026_CONTACT_NOTIFY_EMAIL, 'Ice-Tour 2026: Neue Kontaktanfrage', $mailBody);
+    $mailSent = iceapp_send_utf8_text_mail(EVENT2026_CONTACT_NOTIFY_EMAIL, 'Ice-Tour 2026: Neue Kontaktanfrage', $mailBody);
+    iceapp_log_event('event2026_contact_success', [
+        'request_id' => $requestId,
+        'source_page' => $sourcePage,
+        'submitted_by_user_id' => $submittedByUserId,
+        'email_hash' => iceapp_hash_for_log($email),
+        'mail_sent' => (bool) $mailSent,
+    ]);
 
     echo json_encode([
         'status' => 'success',
@@ -320,6 +346,11 @@ try {
     if (http_response_code() < 400) {
         http_response_code(400);
     }
+
+    iceapp_log_event('event2026_contact_failed', [
+        'reason' => $e->getMessage(),
+        'status_code' => http_response_code(),
+    ]);
 
     echo json_encode([
         'status' => 'error',

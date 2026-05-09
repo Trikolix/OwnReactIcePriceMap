@@ -583,6 +583,16 @@ try {
     ]);
 
     $pdo->commit();
+    iceapp_log_event('event2026_registration_success', [
+        'event_id' => $eventId,
+        'registration_id' => $registrationId,
+        'slot_id' => $slotId,
+        'user_id' => $auth['user_id'],
+        'route_key' => $routeKey,
+        'payment_method' => $paymentMethod,
+        'expected_amount' => $breakdown['expected_amount'],
+        'account_created_in_flow' => $accountCreationInfo !== null,
+    ]);
 
     $reservedBreakdownAfter = event2026_reserved_slot_breakdown($pdo, $eventId);
     $reservedAfter = (int) $reservedBreakdownAfter['total'];
@@ -701,6 +711,11 @@ try {
     if (http_response_code() < 400) {
         http_response_code(400);
     }
+
+    iceapp_log_event('event2026_registration_failed', [
+        'reason' => $e->getMessage(),
+        'status_code' => http_response_code(),
+    ]);
 
     echo json_encode([
         'status' => 'error',

@@ -2,6 +2,34 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/auth.php';
 
+if (!function_exists('iceapp_log_event')) {
+    $requestLoggingFile = __DIR__ . '/../lib/request_logging.php';
+    if (is_readable($requestLoggingFile)) {
+        require_once $requestLoggingFile;
+    }
+}
+
+if (!function_exists('iceapp_log_event')) {
+    function iceapp_hash_for_log(?string $value): ?string
+    {
+        $value = trim((string) $value);
+        return $value === '' ? null : substr(hash('sha256', $value), 0, 16);
+    }
+
+    function iceapp_log_event(string $event, array $context = []): void
+    {
+        $payload = array_merge([
+            'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+            'uri' => $_SERVER['REQUEST_URI'] ?? ($_SERVER['SCRIPT_NAME'] ?? null),
+            'origin' => $_SERVER['HTTP_ORIGIN'] ?? null,
+            'host' => $_SERVER['HTTP_HOST'] ?? null,
+            'ip_hash' => iceapp_hash_for_log(getClientIpAddress() ?? ($_SERVER['REMOTE_ADDR'] ?? null)),
+            'user_agent_hash' => iceapp_hash_for_log($_SERVER['HTTP_USER_AGENT'] ?? null),
+        ], $context);
+        error_log('[iceapp] ' . $event . ' ' . json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+}
+
 function event2026_ensure_schema(PDO $pdo): void
 {
     static $initialized = false;

@@ -48,6 +48,12 @@ try {
     header('Location: ' . $config['authorize_url'] . '?' . http_build_query($params));
     exit;
 } catch (Throwable $e) {
+    iceapp_log_event('oauth_start_failed', [
+        'provider' => $provider ?: null,
+        'mode' => $mode ?: null,
+        'frontend_origin' => $origin ?: null,
+        'reason' => $e->getMessage(),
+    ]);
     $fallbackOrigin = $origin !== '' ? $origin : socialAuthCurrentOrigin();
     socialAuthRenderPopupResult($fallbackOrigin, [
         'type' => 'ice-social-auth',
