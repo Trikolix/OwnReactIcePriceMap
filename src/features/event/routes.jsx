@@ -22,6 +22,7 @@ export const eventRoutes = [
   // { path: "/event-gifts", element: <EventGiftPurchase /> },
   { path: "/event-live", element: <EventLiveMap /> },
   { path: "/event-me", element: <EventMyRegistration /> },
+  { path: "/event-my-registration", element: <EventMyRegistration view="registration" /> },
   { path: "/event-info", element: <EventParticipantInfo /> },
   { path: "/event-stamp-card", element: <EventStampCard /> },
   { path: "/event-admin", element: <EventAdminOverview /> },

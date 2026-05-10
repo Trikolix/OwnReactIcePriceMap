@@ -36,7 +36,9 @@ import {
   EVENT_PARKING,
   EVENT_PARKING_DIRECTIONS_EMBED_URL,
   EVENT_PARKING_DIRECTIONS_URL,
+  EVENT_LIVE_MAP_RELEASE_NOTICE,
   EVENT_ROUTE_RELEASE_NOTICE,
+  EVENT_ROUTE_RESOURCES,
   buildScheduleItems,
   formatEventTime,
   getRouteHints,
@@ -520,16 +522,21 @@ const PreviewNote = styled.div`
   line-height: 1.45;
 `;
 
-const ActionNotice = styled(PreviewNote)`
-  display: flex;
+const DisabledAction = styled.div`
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   min-height: 46px;
-  margin-bottom: 0;
-
-  svg {
-    flex: 0 0 auto;
-  }
+  height: 100%;
+  padding: 0.78rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(255, 249, 237, 0.64);
+  border: 1px dashed rgba(138, 87, 0, 0.24);
+  color: #9a6a00;
+  font-weight: 800;
+  text-align: center;
+  box-sizing: border-box;
 `;
 
 const SectionNav = styled.nav`
@@ -725,44 +732,82 @@ const MapFrameWrap = styled.div`
   }
 `;
 
-const EVENT_STAMP_CARD_PUBLIC_URL = "https://ice-app.de/event-stamp-card";
+const CulinaryIntro = styled.p`
+  margin: 0 0 1rem;
+  color: #5f4100;
+  line-height: 1.55;
+`;
 
-const RACE_DAY_PHASES = [
+const CulinaryGuide = styled.div`
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 860px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+`;
+
+const CulinaryCard = styled.div`
+  border: 1px solid rgba(138, 87, 0, 0.14);
+  border-top: 4px solid ${({ $accent }) => $accent || "#d69e2e"};
+  border-radius: 14px;
+  background: #fffaf0;
+  padding: 0.9rem;
+  color: #5f4100;
+`;
+
+const CulinaryTitle = styled.h3`
+  margin: 0 0 0.55rem;
+  color: #3a2600;
+  font-size: 0.98rem;
+`;
+
+const CulinaryText = styled.p`
+  margin: 0;
+  line-height: 1.5;
+`;
+
+const EVENT_LIVE_MAP_PUBLIC_URL = "https://ice-app.de/event-live";
+const EVENT_LIVE_MAP_PUBLIC_RELEASE_DATE = new Date(2026, 4, 13, 0, 0, 0, 0);
+
+const EVENT_DAY_SECTIONS = [
   {
-    title: "Vor dem Renntag",
+    title: "Anreise & Start",
     accent: "#b45309",
     items: [
-      "GPX-Datei und Komoot-Link werden rechtzeitig vor dem Event freigeschaltet.",
-      "Mach dein Fahrrad und deine Ausrüstung fit, damit am Tour-Tag nichts unnötig bremst.",
-      "Packe Ersatzschlauch, Werkzeug, Trinkflaschen, Radschuhe, Helm, Riegel, Gels und alles ein, was du sonst unterwegs brauchst.",
-      "Nimm etwas Bargeld mit, falls du mehr als die eine Kugel Eis möchtest. Nicht bei allen Eisdielen ist Kartenzahlung möglich.",
+      "Reise selbstständig per Bus, Bahn, Fahrrad oder Auto an.",
+      "Wenn du mit dem Auto kommst, nutze bitte den ausgewiesenen Parkplatz an der Heinrich-Zille-Straße.",
+      "Sei 30 Minuten vor deiner Startzeit abfahrbereit bei Karl mag's süß.",
+      "Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
     ],
   },
   {
-    title: "Am Tour-Tag",
+    title: "Start & Tour",
     accent: "#0f766e",
     items: [
-      "Reise per Auto, Öffis oder Rad an. Mit dem Auto kannst du bei 50.84228, 12.92685 parken.",
-      "Finde dich bei Karl mag's süß etwa 20 Minuten vor deiner Startzeit abfahrbereit mit Rad und Ausrüstung ein.",
-      "Wenn du magst, komm etwas eher und starte entspannt mit einem Kaffee.",
+      "Du startest gemeinsam mit deiner Gruppe.",
+      "Danach fährst du die Checkpoints selbstständig per Navigation entlang deiner Strecke an.",
+      "An jeder offiziellen Station nutzt du die digitale Stempelkarte für deinen Event-Stempel.",
     ],
   },
   {
-    title: "Die Tour selbst",
+    title: "An den Stationen",
     accent: "#2563eb",
     items: [
-      "Fahre die Checkpoints selbstständig per Navigation entlang deiner Strecke an.",
-      "Checke an jeder Eisdiele über die digitale Stempelkarte ein und zeige sie bei Bedarf vor, um deine Kugel Eis zu bekommen.",
-      "Unterstütze die Eisdiele oder Bäckerei gern zusätzlich mit einer zweiten oder dritten Kugel Eis oder etwas anderem.",
-      "Checke dein Eis ein und fülle Trinkflaschen bei Bedarf mit Carbs und Wasser nach.",
+      "Zeige bei Bedarf deine Stempelkarte vor. Sie verifiziert dich als Teilnehmer für die gratis Kugel Eis.",
+      "Kaufe gern zusätzlich eine zweite oder dritte Kugel, ein Stück Kuchen oder etwas zu trinken, damit die Stationen auch etwas vom Event haben.",
+      "Nimm etwas Bargeld mit, falls Kartenzahlung nicht überall möglich ist.",
     ],
   },
   {
-    title: "Abschluss der Tour",
+    title: "Im Ziel",
     accent: "#9333ea",
     items: [
       "Die Strecke endet wieder bei Karl mag's süß.",
-      "Bleib dort gern noch auf etwas zu essen, zu trinken, zum Verweilen und Quatschen.",
+      "Im Ziel gibt es Wasser und die übliche Kugel Eis.",
+      "Bier, Limo, Schorle und herzhafte Sandwiches gibt es für Teilnehmer bei Karl mag's süß zum reduzierten Preis.",
+      "Kaffee, Kuchen und Torte gibt es natürlich weiterhin regulär.",
     ],
   },
 ];
@@ -802,7 +847,7 @@ function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
   return `${window.location.origin}/event-registration?${query.toString()}`;
 }
 
-export default function EventMyRegistration() {
+export default function EventMyRegistration({ view = "participant" }) {
   const apiUrl = getApiBaseUrl();
   const location = useLocation();
   const { authToken, userId, authReady } = useUser();
@@ -821,6 +866,7 @@ export default function EventMyRegistration() {
   const [bibSize, setBibSize] = useState("");
   const [teamName, setTeamName] = useState("");
   const [isSavingTeam, setIsSavingTeam] = useState(false);
+  const isRegistrationView = view === "registration";
 
   useEffect(() => {
     let cancelled = false;
@@ -873,6 +919,7 @@ export default function EventMyRegistration() {
     () => ROUTE_OPTIONS.find((route) => route.key === ownSlot?.route_key) || null,
     [ownSlot?.route_key]
   );
+  const selectedRouteResources = selectedRoute ? EVENT_ROUTE_RESOURCES[selectedRoute.key] || {} : {};
   const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time), [ownSlot?.start_time]);
   const showRaceDayInfo = isPaid && (EVENT_RACE_DAY_INFO_ENABLED || isAdmin);
   const isRaceDayInfoPreview = showRaceDayInfo && !EVENT_RACE_DAY_INFO_ENABLED;
@@ -880,6 +927,11 @@ export default function EventMyRegistration() {
     if (typeof window === "undefined") return "live";
     const host = window.location.hostname;
     return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
+  }, [isAdmin]);
+  const isLiveMapPublic = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const host = window.location.hostname;
+    return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" || new Date() >= EVENT_LIVE_MAP_PUBLIC_RELEASE_DATE;
   }, [isAdmin]);
   const teamInviteLink = useMemo(() => {
     return buildEventRegistrationInviteLink(data?.registration?.team_name, data?.account?.invite_code);
@@ -1027,6 +1079,10 @@ export default function EventMyRegistration() {
   };
 
   const canEditMissingTeamName = !String(data?.registration?.team_name || "").trim();
+  const pageTitle = isRegistrationView ? "Meine Anmeldung" : "Teilnehmerbereich";
+  const pageSubtitle = isRegistrationView
+    ? `Hier findest du deinen Startplatz, Zahlungsstatus, Geschenk-Codes und deine hinterlegten Anmeldedaten. ${EVENT_COMMUNITY_RIDE_CLAIM}`
+    : `Hier findest du die Informationen für deinen Eventtag kompakt und ohne Zahlungsdetails. ${EVENT_COMMUNITY_RIDE_CLAIM}`;
 
   const handleUpdateTeamName = async () => {
     if (!apiUrl || !authToken || !canEditMissingTeamName) return;
@@ -1074,24 +1130,36 @@ export default function EventMyRegistration() {
   return (
     <Page>
       <Seo
-        title="Meine Ice-Tour Anmeldung"
-        description="Persoenlicher Teilnehmerbereich der Ice-Tour 2026."
+        title={isRegistrationView ? "Meine Ice-Tour Anmeldung" : "Ice-Tour Teilnehmerbereich"}
+        description={isRegistrationView ? "Persoenliche Anmeldung zur Ice-Tour 2026." : "Teilnehmerinfos fuer den Eventtag der Ice-Tour 2026."}
         robots="noindex,nofollow"
       />
       <Header />
       <Container>
         <HeroCard>
-          <HeroTitle>Teilnehmerbereich</HeroTitle>
-          <HeroSubtitle>
-            Hier findest du deinen Teilnahmeplatz, Zahlungsstatus, Geschenk-Codes und deine Event-Infos auf einen Blick. {EVENT_COMMUNITY_RIDE_CLAIM}
-          </HeroSubtitle>
+          <HeroTitle>{pageTitle}</HeroTitle>
+          <HeroSubtitle>{pageSubtitle}</HeroSubtitle>
         </HeroCard>
 
-        <SectionNav aria-label="Teilnehmerbereich Navigation">
-          <SectionNavLink href="#overview">Überblick</SectionNavLink>
-          <SectionNavLink href="#registration">Meine Anmeldung</SectionNavLink>
-          <SectionNavLink href="#info">Teilnehmerinfos</SectionNavLink>
-          <SectionNavLink href="#arrival">Anfahrt & Startbereich</SectionNavLink>
+        <SectionNav aria-label={isRegistrationView ? "Anmeldung Navigation" : "Teilnehmerbereich Navigation"}>
+          {isRegistrationView ? (
+            <>
+              <SectionNavLink href="#registration">Startplatz</SectionNavLink>
+              <SectionNavLink href="#payment">Zahlung</SectionNavLink>
+              <SectionNavLink href="#gift-codes">Geschenk-Codes</SectionNavLink>
+              <SectionNavLink href="/event-me">Teilnehmerbereich</SectionNavLink>
+            </>
+          ) : (
+            <>
+              <SectionNavLink href="#overview">Überblick</SectionNavLink>
+              <SectionNavLink href="#route">Meine Strecke</SectionNavLink>
+              <SectionNavLink href="#schedule">Ablauf</SectionNavLink>
+              <SectionNavLink href="#arrival">Anfahrt & Startbereich</SectionNavLink>
+              <SectionNavLink href="#stamp-card">Stempelkarte</SectionNavLink>
+              <SectionNavLink href="#culinary">Kulinarik der Tour</SectionNavLink>
+              <SectionNavLink href="/event-my-registration">Meine Anmeldung</SectionNavLink>
+            </>
+          )}
         </SectionNav>
 
         {loading && <StateCard>Daten werden geladen…</StateCard>}
@@ -1100,7 +1168,7 @@ export default function EventMyRegistration() {
 
         {data && ownSlot && (
           <CardGrid>
-            {ownSlot && (
+            {!isRegistrationView && ownSlot && (
               <FullWidth>
                 <RaceDayCard id="overview">
                   <RaceDayHero>
@@ -1147,11 +1215,7 @@ export default function EventMyRegistration() {
                   )}
 
                   <ActionRow>
-                    <ActionNotice>
-                      <Info size={18} aria-hidden="true" />
-                      <span>{EVENT_ROUTE_RELEASE_NOTICE}</span>
-                    </ActionNotice>
-                    <SecondaryActionLink href={EVENT_STAMP_CARD_PUBLIC_URL} target="_blank" rel="noreferrer">
+                    <SecondaryActionLink as={Link} to={`/event-stamp-card?mode=${stampCardMode}`}>
                       <Stamp size={18} aria-hidden="true" />
                       <span>Stempelkarte öffnen</span>
                     </SecondaryActionLink>
@@ -1163,30 +1227,26 @@ export default function EventMyRegistration() {
                       <MapPinned size={18} aria-hidden="true" />
                       <span>Navigation zum Parkplatz</span>
                     </SecondaryActionLink>
+                    {isLiveMapPublic ? (
+                      <SecondaryActionLink href={EVENT_LIVE_MAP_PUBLIC_URL} target="_blank" rel="noreferrer">
+                        <Info size={18} aria-hidden="true" />
+                        <span>Live-Karte öffnen</span>
+                      </SecondaryActionLink>
+                    ) : (
+                      <DisabledAction>
+                        <Info size={18} aria-hidden="true" />
+                        <span>Live-Karte ab 13. Mai</span>
+                      </DisabledAction>
+                    )}
                   </ActionRow>
 
-                  <PhaseGrid>
-                    {RACE_DAY_PHASES.map((phase, index) => (
-                      <PhaseCard key={phase.title} $accent={phase.accent}>
-                        <PhaseHeader>
-                          <PhaseIndex $accent={phase.accent}>{String(index + 1).padStart(2, "0")}</PhaseIndex>
-                          <PhaseTitle>{phase.title}</PhaseTitle>
-                        </PhaseHeader>
-                        <PhaseList>
-                          {phase.items.map((item) => (
-                            <PhaseItem key={item}>
-                              <PhaseBullet $accent={phase.accent} />
-                              <span>{item}</span>
-                            </PhaseItem>
-                          ))}
-                        </PhaseList>
-                      </PhaseCard>
-                    ))}
-                  </PhaseGrid>
+                  {!isLiveMapPublic && <PreviewNote style={{ marginBottom: 0 }}>{EVENT_LIVE_MAP_RELEASE_NOTICE}</PreviewNote>}
                 </RaceDayCard>
               </FullWidth>
             )}
 
+            {isRegistrationView && (
+              <>
             <Card id="registration">
               <CardTitle>Mein Startplatz</CardTitle>
               <SectionStack>
@@ -1361,7 +1421,7 @@ export default function EventMyRegistration() {
               </Card>
             )}
 
-            <Card>
+            <Card id="payment">
               <CardTitle>Zahlung</CardTitle>
               <FieldList>
                 <FieldRow>
@@ -1414,41 +1474,15 @@ export default function EventMyRegistration() {
                 </>
               )}
             </Card>
+              </>
+            )}
 
-            <Card>
-              <CardTitle>Eventtag</CardTitle>
-              <FieldList>
-                <FieldRow>
-                  <Label>Treffpunkt</Label>
-                  <Value>{EVENT_START_FINISH.name}</Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Adresse</Label>
-                  <Value>{EVENT_START_FINISH.fullAddress}</Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Route</Label>
-                  <Value as="span">
-                    <RoutePill
-                      $bg={getRouteTheme(ownSlot.route_key).background}
-                      $border={getRouteTheme(ownSlot.route_key).border}
-                      $color={getRouteTheme(ownSlot.route_key).text}
-                    >
-                      {formatRouteLabelWithDistance(ownSlot.route_key)}
-                    </RoutePill>
-                  </Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Startzeit</Label>
-                  <Value>{formatEventTime(ownSlot.start_time)}</Value>
-                </FieldRow>
-              </FieldList>
-            </Card>
-
-            <FullWidth id="info">
+            {!isRegistrationView && (
+              <>
+            <FullWidth id="route">
               <InfoGrid>
                 <InfoCard>
-                  <CardTitle>Deine Route</CardTitle>
+                  <CardTitle>Meine Strecke</CardTitle>
                   {selectedRoute ? (
                     <>
                       <RoutePill
@@ -1464,9 +1498,35 @@ export default function EventMyRegistration() {
                         <span>Startzeit: {formatEventTime(ownSlot.start_time)}</span>
                       </RouteFacts>
                       <p>{selectedRoute.description}</p>
-                      <PreviewNote style={{ marginTop: "0.8rem", marginBottom: 0 }}>
-                        {EVENT_ROUTE_RELEASE_NOTICE}
-                      </PreviewNote>
+                      <ActionRow style={{ marginTop: "0.85rem", marginBottom: 0 }}>
+                        {selectedRouteResources.gpxUrl ? (
+                          <SecondaryActionLink href={selectedRouteResources.gpxUrl} target="_blank" rel="noreferrer">
+                            <Navigation size={18} aria-hidden="true" />
+                            <span>GPX herunterladen</span>
+                          </SecondaryActionLink>
+                        ) : (
+                          <DisabledAction>
+                            <Navigation size={18} aria-hidden="true" />
+                            <span>GPX folgt</span>
+                          </DisabledAction>
+                        )}
+                        {selectedRouteResources.komootUrl ? (
+                          <SecondaryActionLink href={selectedRouteResources.komootUrl} target="_blank" rel="noreferrer">
+                            <MapPinned size={18} aria-hidden="true" />
+                            <span>Komoot öffnen</span>
+                          </SecondaryActionLink>
+                        ) : (
+                          <DisabledAction>
+                            <MapPinned size={18} aria-hidden="true" />
+                            <span>Komoot folgt</span>
+                          </DisabledAction>
+                        )}
+                      </ActionRow>
+                      {(!selectedRouteResources.gpxUrl || !selectedRouteResources.komootUrl) && (
+                        <PreviewNote style={{ marginTop: "0.8rem", marginBottom: 0 }}>
+                          {EVENT_ROUTE_RELEASE_NOTICE}
+                        </PreviewNote>
+                      )}
                     </>
                   ) : (
                     <Notice style={{ marginTop: 0 }}>Für dich wurde noch keine registrierte Strecke gefunden.</Notice>
@@ -1474,7 +1534,20 @@ export default function EventMyRegistration() {
                 </InfoCard>
 
                 <InfoCard>
-                  <CardTitle>Zeitplan</CardTitle>
+                  <CardTitle>Strecken-Hinweise</CardTitle>
+                  <WarningList>
+                    {getRouteHints(selectedRoute?.key).map((hint) => (
+                      <li key={hint}>{hint}</li>
+                    ))}
+                  </WarningList>
+                </InfoCard>
+              </InfoGrid>
+            </FullWidth>
+
+            <FullWidth id="schedule">
+              <InfoGrid>
+                <InfoCard>
+                  <CardTitle>Ablauf am Eventtag</CardTitle>
                   <Timeline>
                     {scheduleItems.map((item) => (
                       <TimelineItem key={`${item.time}-${item.title}`}>
@@ -1489,29 +1562,38 @@ export default function EventMyRegistration() {
                 </InfoCard>
 
                 <InfoCard>
-                  <CardTitle>Wichtige Strecken-Hinweise</CardTitle>
-                  <WarningList>
-                    {getRouteHints(selectedRoute?.key).map((hint) => (
-                      <li key={hint}>{hint}</li>
+                  <CardTitle>Start & Tour</CardTitle>
+                  <PhaseGrid>
+                    {EVENT_DAY_SECTIONS.slice(0, 2).map((phase, index) => (
+                      <PhaseCard key={phase.title} $accent={phase.accent}>
+                        <PhaseHeader>
+                          <PhaseIndex $accent={phase.accent}>{String(index + 1).padStart(2, "0")}</PhaseIndex>
+                          <PhaseTitle>{phase.title}</PhaseTitle>
+                        </PhaseHeader>
+                        <PhaseList>
+                          {phase.items.map((item) => (
+                            <PhaseItem key={item}>
+                              <PhaseBullet $accent={phase.accent} />
+                              <span>{item}</span>
+                            </PhaseItem>
+                          ))}
+                        </PhaseList>
+                      </PhaseCard>
                     ))}
-                  </WarningList>
+                  </PhaseGrid>
                 </InfoCard>
 
                 <InfoCard>
                   <CardTitle>Packliste</CardTitle>
                   <Checklist>
-                    {packingItems.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
+                    {packingItems.map((item) => <li key={item}>{item}</li>)}
                   </Checklist>
                 </InfoCard>
 
                 <InfoCard>
                   <CardTitle>Verhalten unterwegs</CardTitle>
                   <CleanList>
-                    {groupRules.map((rule) => (
-                      <li key={rule}>{rule}</li>
-                    ))}
+                    {groupRules.map((rule) => <li key={rule}>{rule}</li>)}
                   </CleanList>
                 </InfoCard>
               </InfoGrid>
@@ -1561,30 +1643,75 @@ export default function EventMyRegistration() {
               </InfoCard>
             </FullWidth>
 
-            <Card>
-              <CardTitle>Stempelkarte</CardTitle>
-              <FieldList>
-                <FieldRow>
-                  <Label>Pflicht-Checkpoints</Label>
-                  <Value>{data.progress?.mandatory_passed || 0} / {data.progress?.mandatory_total || 0}</Value>
-                </FieldRow>
-                <FieldRow>
-                  <Label>Finisher-Status</Label>
-                  <Value><Badge $tone={data.progress?.is_finisher ? "success" : undefined}>{data.progress?.is_finisher ? "Finisher" : "offen"}</Badge></Value>
-                </FieldRow>
-              </FieldList>
-              <NavLinkButton to={`/event-stamp-card?mode=${stampCardMode}`}>
-                Zur {stampCardMode === "test" ? "Test-" : ""}Stempelkarte
-              </NavLinkButton>
-              {isAdmin && (
-                <NavLinkButton to="/event-live?mode=test" style={{ marginLeft: "0.65rem" }}>
-                  Zur Test-Live-Map
-                </NavLinkButton>
-              )}
-            </Card>
+            <FullWidth id="stamp-card">
+              <InfoGrid>
+                <InfoCard>
+                  <CardTitle>Unterwegs & Stempelkarte</CardTitle>
+                  <CleanList>
+                    <li>Die digitale Stempelkarte ist dein Teilnehmernachweis an den offiziellen Stationen.</li>
+                    <li>Vor Ort kannst du per GPS einchecken. Wenn GPS nicht funktioniert, kann der QR-Code an der Station gescannt werden.</li>
+                    <li>Das Vorzeigen der Stempelkarte verifiziert dich als Teilnehmer, damit du deine gratis Kugel Eis bekommst.</li>
+                    <li>Kaufe gern zusätzlich Eis, Kuchen oder Getränke, damit die Eisdielen auch etwas vom Event haben.</li>
+                  </CleanList>
+                  <NavLinkButton to={`/event-stamp-card?mode=${stampCardMode}`}>
+                    Zur {stampCardMode === "test" ? "Test-" : ""}Stempelkarte
+                  </NavLinkButton>
+                  {isAdmin && (
+                    <NavLinkButton to="/event-live?mode=test" style={{ marginLeft: "0.65rem" }}>
+                      Zur Test-Live-Map
+                    </NavLinkButton>
+                  )}
+                </InfoCard>
 
-            {data.gift_vouchers?.length > 0 && (
-              <FullWidth>
+                <InfoCard>
+                  <CardTitle>Stempel-Status</CardTitle>
+                  <FieldList>
+                    <FieldRow>
+                      <Label>Pflicht-Checkpoints</Label>
+                      <Value>{data.progress?.mandatory_passed || 0} / {data.progress?.mandatory_total || 0}</Value>
+                    </FieldRow>
+                    <FieldRow>
+                      <Label>Finisher-Status</Label>
+                      <Value><Badge $tone={data.progress?.is_finisher ? "success" : undefined}>{data.progress?.is_finisher ? "Finisher" : "offen"}</Badge></Value>
+                    </FieldRow>
+                  </FieldList>
+                </InfoCard>
+              </InfoGrid>
+            </FullWidth>
+
+            <FullWidth id="culinary">
+              <InfoCard>
+                <CardTitle>Kulinarik der Tour</CardTitle>
+                <CulinaryIntro>
+                  Als TheGourmetCyclist ist mir das leibliche Wohl auf der Tour natürlich besonders wichtig. Deshalb hier ein kleiner Leitfaden für alles, was euch vor dem Start, unterwegs und im Ziel erwartet.
+                </CulinaryIntro>
+                <CulinaryGuide>
+                  <CulinaryCard $accent="#d97706">
+                    <CulinaryTitle>Früh am Start</CulinaryTitle>
+                    <CulinaryText>
+                      Vor dem Start stehen einige Äpfel und Bananen kostenlos bereit. Wer es gemütlicher angehen möchte, kann sich bei {EVENT_START_FINISH.name} außerdem mit Kaffee, Kuchen oder Torte eindecken.
+                    </CulinaryText>
+                  </CulinaryCard>
+                  <CulinaryCard $accent="#0f766e">
+                    <CulinaryTitle>Auf der Strecke</CulinaryTitle>
+                    <CulinaryText>
+                      An jeder offiziellen Station bekommt ihr beim Vorzeigen eurer Stempelkarte eine Kugel Eis gratis. Stockt eure Bestellung gern mit einer zweiten oder dritten Kugel auf oder nutzt die weiteren Angebote wie Eisbecher, Kaffee sowie Kuchen- und Eiskreationen. Denkt dafür bitte an etwas Bargeld, da Kartenzahlung nicht überall möglich ist. Eure Trinkflaschen könnt ihr an jeder Station kostenlos mit Wasser und Iso-Pulver auffüllen.
+                    </CulinaryText>
+                  </CulinaryCard>
+                  <CulinaryCard $accent="#7c3aed">
+                    <CulinaryTitle>Im Ziel</CulinaryTitle>
+                    <CulinaryText>
+                      Zurück bei {EVENT_START_FINISH.name} gibt es Wasser kostenlos. Bier, Radler, Limo und herzhafte Sandwiches könnt ihr als Teilnehmer zum reduzierten Sonderpreis kaufen. Das reguläre Kuchen- und Tortensortiment des Cafés steht euch natürlich ebenfalls zur Auswahl.
+                    </CulinaryText>
+                  </CulinaryCard>
+                </CulinaryGuide>
+              </InfoCard>
+            </FullWidth>
+              </>
+            )}
+
+            {isRegistrationView && data.gift_vouchers?.length > 0 && (
+              <FullWidth id="gift-codes">
                 <Card>
                   <CardTitle>Freigeschaltete Geschenk-Codes</CardTitle>
                   <InlineList>
@@ -1616,8 +1743,8 @@ export default function EventMyRegistration() {
               </FullWidth>
             )}
 
-            {Number(data.registration.gift_voucher_quantity || 0) > 0 && (!data.gift_vouchers || data.gift_vouchers.length === 0) && (
-              <FullWidth>
+            {isRegistrationView && Number(data.registration.gift_voucher_quantity || 0) > 0 && (!data.gift_vouchers || data.gift_vouchers.length === 0) && (
+              <FullWidth id="gift-codes">
                 <Card>
                   <CardTitle>Geschenk-Codes in Vorbereitung</CardTitle>
                   <Notice>
@@ -1628,7 +1755,7 @@ export default function EventMyRegistration() {
               </FullWidth>
             )}
 
-            {data.addon_purchases?.length > 0 && (
+            {isRegistrationView && data.addon_purchases?.length > 0 && (
               <FullWidth>
                 <Card>
                   <CardTitle>Zusatzbestellungen</CardTitle>

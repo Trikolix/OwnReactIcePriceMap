@@ -217,7 +217,7 @@ try {
 
         echo json_encode([
             'status' => 'success',
-            'event' => [
+            'event' => array_merge([
                 'id' => (int) $event['id'],
                 'slug' => $event['slug'],
                 'name' => $event['name'],
@@ -229,7 +229,7 @@ try {
                 'available_slots' => max(0, (int) $event['max_participants'] - $reservedCount),
                 'min_participants_for_go' => (int) $event['min_participants_for_go'],
                 'cancellation_deadline' => $event['cancellation_deadline'],
-            ],
+            ], event2026_registration_window_payload()),
             'voucher_value' => EVENT2026_ENTRY_FEE,
             'payment_instruction' => event2026_payment_instruction_text(),
             'routes' => array_values(array_map(static function (array $route): array {
@@ -299,6 +299,35 @@ try {
 
     $pdo->beginTransaction();
 
+    $event = event2026_current_event($pdo, true);
+    $eventId = (int) $event['id'];
+
+    if (!in_array($event['status'], ['open', 'confirmed'], true)) {
+        http_response_code(409);
+        throw new RuntimeException(EVENT2026_REGISTRATION_CLOSED_MESSAGE);
+    }
+
+    $voucherRow = null;
+    if ($voucherCode !== '') {
+        $voucherRow = event2026_load_gift_voucher($pdo, $eventId, $voucherCode, true);
+        $voucherState = event2026_gift_voucher_status($voucherRow);
+        if ($voucherState['state'] !== 'valid') {
+            throw new InvalidArgumentException($voucherState['message']);
+        }
+    }
+
+    $registrationClosed = event2026_registration_is_closed();
+    if ($registrationClosed) {
+        if ($voucherRow === null) {
+            http_response_code(409);
+            throw new RuntimeException(EVENT2026_REGISTRATION_CLOSED_MESSAGE);
+        }
+        if ($giftVoucherQuantity > 0) {
+            http_response_code(409);
+            throw new RuntimeException('Nach Registrierungsschluss ist nur noch die Anmeldung mit einem bestehenden Gutschein-Code möglich.');
+        }
+    }
+
     $authRecord = authenticateRequest($pdo);
     $auth = null;
     $accountCreationInfo = null;
@@ -322,13 +351,6 @@ try {
     }
 
     $accountEmail = event2026_fetch_user_email($pdo, $auth['user_id']);
-    $event = event2026_current_event($pdo, true);
-    $eventId = (int) $event['id'];
-
-    if (!in_array($event['status'], ['open', 'confirmed'], true)) {
-        http_response_code(409);
-        throw new RuntimeException('Die Registrierung ist aktuell nicht geöffnet.');
-    }
 
     $alreadyRegisteredStmt = $pdo->prepare("SELECT COUNT(*) FROM event2026_registrations WHERE event_id = :event_id AND registered_by_user_id = :user_id");
     $alreadyRegisteredStmt->execute([
@@ -377,15 +399,6 @@ try {
     }
     if ($clothingInterest === 'kit_interest' && $bibSize === '') {
         throw new InvalidArgumentException('Bitte gib eine Hosengröße an, wenn Set-Interesse besteht.');
-    }
-
-    $voucherRow = null;
-    if ($voucherCode !== '') {
-        $voucherRow = event2026_load_gift_voucher($pdo, $eventId, $voucherCode, true);
-        $voucherState = event2026_gift_voucher_status($voucherRow);
-        if ($voucherState['state'] !== 'valid') {
-            throw new InvalidArgumentException($voucherState['message']);
-        }
     }
 
     $reservedBreakdown = event2026_reserved_slot_breakdown($pdo, $eventId);

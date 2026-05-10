@@ -317,7 +317,7 @@ function Hero({ hasEventRegistration }) {
           </HeroSubtitle>
           <HeroActions>
             {hasEventRegistration ? (
-              <Button href="/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              <Button href="/event-my-registration" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
                 Meine Anmeldung
               </Button>
             ) : (

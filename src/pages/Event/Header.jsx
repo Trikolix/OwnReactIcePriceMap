@@ -21,7 +21,7 @@ export default function Header() {
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
   const now = new Date();
-  const liveStartDate = new Date(2026, 4, 16, 0, 0, 0, 0);
+  const liveStartDate = new Date(2026, 4, 13, 0, 0, 0, 0);
   const shouldShowLiveMap = isLocalHost || isAdmin || now >= liveStartDate;
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
@@ -176,6 +176,7 @@ export default function Header() {
               {isLoggedIn && hasEventRegistration && (
                 <>
                   <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
+                  <MenuItemLink to="/event-my-registration" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
                   <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                 </>
               )}
@@ -195,6 +196,7 @@ export default function Header() {
                   {hasEventRegistration && (
                     <>
                       <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
+                      <MenuItemLink to="/event-my-registration" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
                       <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                     </>
                   )}

@@ -281,6 +281,12 @@ function PhotoChallengeAdmin() {
 
   const isSubmissionSectionCollapsible = ['group_running', 'ko_running', 'finished'].includes(challengeStatus);
   const voteStats = overview?.vote_stats || [];
+  const activeKoMatches = useMemo(() => {
+    const openMatches = (overview?.ko_matches || []).filter((match) => match.status === 'open');
+    const firstOpenRound = Math.min(...openMatches.map((match) => Number(match.round) || 1));
+    return openMatches.filter((match) => (Number(match.round) || 1) === firstOpenRound);
+  }, [overview?.ko_matches]);
+  const isFinalKoRound = challengeStatus === 'ko_running' && activeKoMatches.length === 1;
 
   const getGroupTimeDraft = useCallback(
     (groupId) => {
@@ -1116,9 +1122,13 @@ function PhotoChallengeAdmin() {
                       <SecondaryButton
                         type="button"
                         onClick={handleAdvanceKoRound}
-                        disabled={koAdvanceLoading || !overview?.ko_matches?.length}
+                        disabled={koAdvanceLoading || !activeKoMatches.length}
                       >
-                        {koAdvanceLoading ? 'Schließe…' : 'Aktuelle KO-Runde abschließen'}
+                        {koAdvanceLoading
+                          ? 'Schließe…'
+                          : isFinalKoRound
+                            ? 'Finale abschließen und Challenge beenden'
+                            : 'Aktuelle KO-Runde abschließen'}
                       </SecondaryButton>
                     </ActionButtonRow>
                     <FormHint>Einreichphase schließen, Turnier konfigurieren und Gruppenstart findest du im Planungs-Wizard darunter.</FormHint>
@@ -1829,7 +1839,7 @@ function PhotoChallengeAdmin() {
               <PanelCard>
                 <PanelHeader>
                   <h3>KO-Runde</h3>
-                  <span>{overview.ko_matches.length} offene Matches</span>
+                  <span>{activeKoMatches.length} offene Matches</span>
                 </PanelHeader>
                 {/* KO-Duelle nach Turnierphase gruppieren */}
                 {(() => {

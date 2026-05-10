@@ -1,4 +1,7 @@
 export const EVENT_DATE = "Samstag, 16. Mai 2026";
+export const EVENT_REGISTRATION_CLOSES_AT = "2026-05-10T21:00:00+02:00";
+export const EVENT_REGISTRATION_CLOSED_MESSAGE = "Die Registrierung ist bereits geschlossen. Wenn du einen ganz dringenden Grund hast, doch noch Teil zu nehmen, schreib uns doch eine Mail ;)";
+export const EVENT_CLOTHING_INTEREST_ENABLED = false;
 export const EVENT_ENTRY_FEE = 15;
 export const JERSEY_DISPLAY_PRICE = 75;
 export const KIT_DISPLAY_PRICE = 175;

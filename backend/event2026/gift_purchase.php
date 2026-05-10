@@ -13,11 +13,11 @@ try {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         echo json_encode([
             'status' => 'success',
-            'event' => [
+            'event' => array_merge([
                 'id' => $eventId,
                 'name' => (string) $event['name'],
                 'status' => (string) $event['status'],
-            ],
+            ], event2026_registration_window_payload()),
             'voucher_value' => EVENT2026_GIFT_ENTRY_FEE,
             'payment_instruction' => 'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Bei Fragen melde dich bitte an ' . EVENT2026_GIFT_PAYMENT_CONTACT . '.',
         ]);
@@ -47,6 +47,12 @@ try {
 
     $pdo->beginTransaction();
     $event = event2026_current_event($pdo, true);
+    if (event2026_registration_is_closed()) {
+        $pdo->rollBack();
+        http_response_code(409);
+        throw new RuntimeException(EVENT2026_REGISTRATION_CLOSED_MESSAGE);
+    }
+
     $reservedCount = event2026_reserved_count($pdo, $eventId);
     if (($reservedCount + $giftVoucherQuantity) > (int) $event['max_participants']) {
         $pdo->rollBack();

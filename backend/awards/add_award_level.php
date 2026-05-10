@@ -1,9 +1,11 @@
 <?php
-require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 require_once __DIR__ . '/auth_awards_admin.php';
+require_once __DIR__ . '/dev_db.php';
 require_once __DIR__ . '/awards_cache.php';
 require_once __DIR__ . '/award_icon_variants.php';
 header('Content-Type: application/json');
+
+$pdo_dev = getAwardsDevPdo();
 
 // Zielverzeichnis für Uploads (konsistent mit save_award_level.php)
 $uploadDir = '../../uploads/award_icons/';

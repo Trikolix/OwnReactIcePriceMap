@@ -90,6 +90,12 @@ try {
 
     $pdo->beginTransaction();
     $event = event2026_current_event($pdo, true);
+    if (event2026_registration_is_closed()) {
+        $pdo->rollBack();
+        http_response_code(409);
+        throw new RuntimeException(EVENT2026_REGISTRATION_CLOSED_MESSAGE);
+    }
+
     $reservedCount = event2026_reserved_count($pdo, $eventId);
     if (($reservedCount + $giftVoucherQuantity) > (int) $event['max_participants']) {
         $pdo->rollBack();

@@ -439,7 +439,7 @@ export default function EventRegistrationSummary() {
         )}
 
         <Card>
-          <NavLinkButton to="/event-me">Zu meiner Anmeldung</NavLinkButton>
+          <NavLinkButton to="/event-my-registration">Zu meiner Anmeldung</NavLinkButton>
         </Card>
       </Container>
       <Footer />

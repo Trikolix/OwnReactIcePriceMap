@@ -1,4 +1,5 @@
 export const EVENT_ROUTE_RELEASE_NOTICE = "GPX-Datei und Komoot-Link werden noch freigeschaltet.";
+export const EVENT_LIVE_MAP_RELEASE_NOTICE = "Die Live-Karte wird am 13. Mai 2026 öffentlich freigeschaltet.";
 
 export const EVENT_PARKING = {
   name: "Parkplatz Heinrich-Zille-Straße",
@@ -12,11 +13,26 @@ export const EVENT_PARKING_DIRECTIONS_URL =
 export const EVENT_PARKING_DIRECTIONS_EMBED_URL =
   "https://www.google.com/maps?f=d&source=s_d&saddr=50.842370%2C%2012.926894&daddr=Untere%20Aktienstra%C3%9Fe%2012%2C%2009111%20Chemnitz&hl=de&output=embed";
 
+export const EVENT_ROUTE_RESOURCES = {
+  family_2: {
+    gpxUrl: "",
+    komootUrl: "",
+  },
+  classic_3: {
+    gpxUrl: "",
+    komootUrl: "",
+  },
+  epic_4: {
+    gpxUrl: "",
+    komootUrl: "",
+  },
+};
+
 const baseScheduleItems = [
   {
     time: "folgt",
-    title: "Am Start sammeln",
-    text: "Genaue Zeit wird noch bekannt gegeben. Vor Ort gibt es ggf. noch ein kleines Frühstück und eine kurze Einweisung.",
+    title: "Treff bei Karl mag's süß",
+    text: "Genaue Zeit wird noch bekannt gegeben. Bitte 30 Minuten vor deinem Start abfahrbereit am Startbereich sein. Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
   },
   {
     time: "folgt",
@@ -24,9 +40,14 @@ const baseScheduleItems = [
     text: "Genaue Zeit wird noch bekannt gegeben.",
   },
   {
+    time: "unterwegs",
+    title: "Tour entlang deiner Strecke",
+    text: "Fahre die Checkpoints selbstständig per Navigation an und nutze an den Eisdielen deine digitale Stempelkarte.",
+  },
+  {
     time: "nachmittags",
-    title: "Rückkehr & gemeinsamer Abschluss",
-    text: "Wenn du fertig bist, gibt es im Ziel nochmal ein Eis, aber auch andere herzhafte Leckereien. Danach ist gemütlicher Ausklang bei Essen, Trinken und Gesprächen.",
+    title: "Ziel & gemeinsamer Abschluss",
+    text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und reduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
   },
 ];
 
@@ -35,8 +56,8 @@ const generalRouteHints = [
 ];
 
 const sportRouteHints = [
-  "In der Abfahrt nach Geyer kommt in einer Rechtskurve eine Abzweigung nach links in den Wald, die ihr nehmen sollt. Fahrt dort vorsichtig.",
   "Zwischen Zwönitz und Geyer über die Geyrische Platte kann teilweise viel Verkehr sein. Fahrt dort besonders rücksichtsvoll, bildet bei Bedarf kleinere Grüppchen und lasst Autos aktiv vorbei.",
+  "In der Abfahrt nach dem Ortsausgang von Geyer kommt in einer Rechtskurve eine Abzweigung nach Am Wochenende sollte es eigentlich gehen, aber gebt trotzdem besonders Acht.",
 ];
 
 export const packingItems = [
@@ -76,12 +97,12 @@ export function buildScheduleItems(startTime) {
   const parsedStart = parseEventDateTime(startTime);
   if (!parsedStart) return baseScheduleItems;
 
-  const gatherTime = new Date(parsedStart.getTime() - 20 * 60 * 1000);
+  const gatherTime = new Date(parsedStart.getTime() - 30 * 60 * 1000);
   return [
     {
       time: formatEventTime(gatherTime),
-      title: "Am Start sammeln",
-      text: "Bitte abfahrbereit mit Rad und Ausrüstung am Startbereich einfinden. Vor Ort gibt es ggf. noch ein kleines Frühstück und eine kurze Einweisung.",
+      title: "Treff bei Karl mag's süß",
+      text: "Bitte 30 Minuten vor deiner Startzeit abfahrbereit mit Rad und Ausrüstung am Startbereich sein. Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
     },
     {
       time: formatEventTime(parsedStart),
@@ -89,6 +110,7 @@ export function buildScheduleItems(startTime) {
       text: "Startzeit deiner zugewiesenen Gruppe.",
     },
     baseScheduleItems[2],
+    baseScheduleItems[3],
   ];
 }
 

@@ -69,6 +69,8 @@ try {
         WHERE id = :id
     ");
 
+    $roundWinnerIds = [];
+
     foreach ($matches as $match) {
         if ($match['status'] !== 'open') {
             throw new RuntimeException('Mindestens ein Match dieser Runde ist bereits geschlossen.');
@@ -79,6 +81,7 @@ try {
         if ($winner === null) {
             $winner = min((int)$match['image_a_id'], (int)$match['image_b_id']);
         }
+        $roundWinnerIds[] = $winner;
 
         $updateMatch->execute([
             'winner' => $winner,
@@ -86,13 +89,7 @@ try {
         ]);
     }
 
-    $advancement = buildKoRoundAdvancers($matches, $voteSummary);
-    $winnerIds = array_column($advancement['winners'], 'image_id');
-    $nextRoundParticipants = $advancement['participants'];
-    $luckyLoser = $advancement['lucky_loser'];
-    $nextRound = $round + 1;
-
-    if (count($winnerIds) < 2) {
+    if (count($roundWinnerIds) < 2) {
         $stmt = $pdo->prepare("UPDATE photo_challenges SET status = 'finished' WHERE id = :id");
         $stmt->execute(['id' => $challengeId]);
         $pdo->commit();
@@ -101,9 +98,15 @@ try {
             'message' => 'Finale abgeschlossen – Challenge ist beendet.',
             'next_round_created' => false,
             'round_closed' => $round,
+            'winner_image_id' => $roundWinnerIds[0] ?? null,
         ]);
         return;
     }
+
+    $advancement = buildKoRoundAdvancers($matches, $voteSummary);
+    $nextRoundParticipants = $advancement['participants'];
+    $luckyLoser = $advancement['lucky_loser'];
+    $nextRound = $round + 1;
 
     $insertMatch = $pdo->prepare("
         INSERT INTO photo_challenge_matches

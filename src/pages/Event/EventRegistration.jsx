@@ -14,10 +14,13 @@ import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessage
 import {
   BIB_SIZES,
   CLOTHING_OPTIONS,
+  EVENT_CLOTHING_INTEREST_ENABLED,
   EVENT_COMMUNITY_RIDE_CLAIM,
   EVENT_ENTRY_FEE,
   EVENT_ENTRY_FEE_NOTICE,
   EVENT_DATE,
+  EVENT_REGISTRATION_CLOSED_MESSAGE,
+  EVENT_REGISTRATION_CLOSES_AT,
   EVENT_ORGANIZER_COUNTRY,
   EVENT_ORGANIZER_NAME,
   EVENT_ORGANIZER_POSTAL_CITY,
@@ -308,6 +311,10 @@ function getRouteSummary(routeKey) {
   return ROUTE_OPTIONS.find((route) => route.key === routeKey) || ROUTE_OPTIONS[0];
 }
 
+function isPastRegistrationDeadline(now = new Date()) {
+  return now.getTime() >= new Date(EVENT_REGISTRATION_CLOSES_AT).getTime();
+}
+
 export default function EventRegistration() {
   const { username, isLoggedIn, logout, authToken } = useUser();
   const navigate = useNavigate();
@@ -357,6 +364,7 @@ export default function EventRegistration() {
   const [success, setSuccess] = useState(null);
   const [validationMessage, setValidationMessage] = useState(null);
   const [invalidFields, setInvalidFields] = useState({});
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     let aborted = false;
@@ -395,6 +403,16 @@ export default function EventRegistration() {
       aborted = true;
     };
   }, [API_BASE, authToken]);
+
+  useEffect(() => {
+    if (eventMeta?.registration_closed || isPastRegistrationDeadline(now)) return undefined;
+
+    const timerId = window.setInterval(() => {
+      setNow(new Date());
+    }, 30000);
+
+    return () => window.clearInterval(timerId);
+  }, [eventMeta?.registration_closed, now]);
 
   useEffect(() => {
     if (!existingRegistration || !API_BASE || !authToken) return;
@@ -579,6 +597,10 @@ export default function EventRegistration() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!API_BASE || existingRegistration) return;
+    if (isPastRegistrationDeadline() && !voucherLookup?.valid) {
+      setError(EVENT_REGISTRATION_CLOSED_MESSAGE);
+      return;
+    }
     if (!validateRegistrationForm()) return;
     setIsSubmitting(true);
     setError(null);
@@ -696,8 +718,12 @@ export default function EventRegistration() {
 
   const availableSlots = eventMeta?.available_slots ?? 0;
   const hasValidVoucherReservation = Boolean(voucherLookup?.valid);
-  const isSoldOut = eventMeta?.event_status === "cancelled" || (availableSlots <= 0 && !hasValidVoucherReservation);
+  const isRegistrationClosed = Boolean(eventMeta?.registration_closed) || isPastRegistrationDeadline(now);
+  const canRegisterAfterClose = isRegistrationClosed && hasValidVoucherReservation;
   const registrationMode = !existingRegistration;
+  const isLateVoucherRegistration = registrationMode && canRegisterAfterClose;
+  const registrationClosedMessage = eventMeta?.registration_closed_message || EVENT_REGISTRATION_CLOSED_MESSAGE;
+  const isSoldOut = eventMeta?.event_status === "cancelled" || (isRegistrationClosed && !canRegisterAfterClose) || (availableSlots <= 0 && !hasValidVoucherReservation);
   const selectedRoute = getRouteSummary(participant.routeKey);
   const registrationSubmitLabel = isSubmitting ? "Speichern..." : "Verbindlich anmelden und Teilnahmebeitrag zahlen";
   const addonSubmitLabel = isSubmittingAddon ? "Speichern..." : "Zusätzliche Startplätze verbindlich reservieren";
@@ -730,6 +756,42 @@ export default function EventRegistration() {
         </ErrorOverlay>
       )}
       <Header />
+      {!loadingMeta && isRegistrationClosed && !canRegisterAfterClose ? (
+        <MainGrid>
+          <div>
+            <Card>
+              <CardTitle><ShieldAlert size={20} /> Registrierung geschlossen</CardTitle>
+              <StatusBanner tone="danger">
+                {registrationClosedMessage}
+              </StatusBanner>
+              <Muted style={{ marginBottom: "0.8rem" }}>
+                Mit einem gültigen Gutschein-Code ist die Anmeldung weiterhin möglich.
+              </Muted>
+              <Label>Gutschein-Code</Label>
+              <Input
+                data-field="voucher_code"
+                $invalid={Boolean(voucherLookup && !voucherLookup.valid)}
+                value={voucherCode}
+                onChange={(e) => {
+                  clearInvalidField("voucher_code");
+                  setVoucherCode(e.target.value.toUpperCase());
+                  setVoucherLookup(null);
+                }}
+                onBlur={lookupVoucher}
+                placeholder="AB12-CD34-EF56"
+              />
+              <Button type="button" onClick={lookupVoucher} disabled={!voucherCode.trim()}>
+                Gutschein prüfen
+              </Button>
+              {voucherLookup && (
+                <StatusBanner tone={voucherLookup.valid ? "success" : "danger"} style={{ marginTop: "1rem", marginBottom: 0 }}>
+                  {voucherLookup.message}
+                </StatusBanner>
+              )}
+            </Card>
+          </div>
+        </MainGrid>
+      ) : (
       <form onSubmit={handleSubmit}>
         <MainGrid>
           <div>
@@ -897,6 +959,7 @@ export default function EventRegistration() {
                   <Textarea value={registrationNote} onChange={(e) => setRegistrationNote(e.target.value)} maxLength={220} />
                 </Card>
 
+                {!isLateVoucherRegistration && (
                 <Card>
                   <CardTitle><Gift /> Startplätze für Freunde / Sammelanmeldung</CardTitle>
                   <Muted style={{ marginBottom: 10 }}>
@@ -927,6 +990,7 @@ export default function EventRegistration() {
                     <PriceHint>je {formatEuro(EVENT_ENTRY_FEE)}</PriceHint>
                   </CompactInputRow>
                 </Card>
+                )}
               </>
             ) : (
               <>
@@ -1013,6 +1077,7 @@ export default function EventRegistration() {
               </>
             )}
 
+            {EVENT_CLOTHING_INTEREST_ENABLED && (
             <Card>
               <CardTitle><Shirt /> Bekleidung</CardTitle>
               <Muted style={{ marginBottom: "0.6em" }}>Bekleidungsinteresse wird nur gesammelt. Finale Auswahl und Zahlung für Trikot oder Set laufen später separat.</Muted>
@@ -1070,6 +1135,7 @@ export default function EventRegistration() {
                 )}
               </div>
             </Card>
+            )}
 
             {registrationMode && (
               <>
@@ -1106,6 +1172,7 @@ export default function EventRegistration() {
                     onChange={(e) => {
                       clearInvalidField("voucher_code");
                       setVoucherCode(e.target.value.toUpperCase());
+                      setVoucherLookup(null);
                     }}
                     onBlur={lookupVoucher}
                     placeholder="AB12-CD34-EF56"
@@ -1237,6 +1304,7 @@ export default function EventRegistration() {
           </Summary>
         </MainGrid>
       </form>
+      )}
       <Footer />
     </PageWrapper>
   );

@@ -2,6 +2,10 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/auth.php';
 
+const EVENT2026_REGISTRATION_CLOSES_AT = '2026-05-10 21:00:00';
+const EVENT2026_REGISTRATION_TIMEZONE = 'Europe/Berlin';
+const EVENT2026_REGISTRATION_CLOSED_MESSAGE = 'Die Registrierung ist bereits geschlossen.';
+
 if (!function_exists('iceapp_log_event')) {
     $requestLoggingFile = __DIR__ . '/../lib/request_logging.php';
     if (is_readable($requestLoggingFile)) {
@@ -28,6 +32,26 @@ if (!function_exists('iceapp_log_event')) {
         ], $context);
         error_log('[iceapp] ' . $event . ' ' . json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
+}
+
+function event2026_registration_closes_at(): DateTimeImmutable
+{
+    return new DateTimeImmutable(EVENT2026_REGISTRATION_CLOSES_AT, new DateTimeZone(EVENT2026_REGISTRATION_TIMEZONE));
+}
+
+function event2026_registration_is_closed(): bool
+{
+    $now = new DateTimeImmutable('now', new DateTimeZone(EVENT2026_REGISTRATION_TIMEZONE));
+    return $now >= event2026_registration_closes_at();
+}
+
+function event2026_registration_window_payload(): array
+{
+    return [
+        'registration_closes_at' => event2026_registration_closes_at()->format(DateTimeInterface::ATOM),
+        'registration_closed' => event2026_registration_is_closed(),
+        'registration_closed_message' => EVENT2026_REGISTRATION_CLOSED_MESSAGE,
+    ];
 }
 
 function event2026_ensure_schema(PDO $pdo): void

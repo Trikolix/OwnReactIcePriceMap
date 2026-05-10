@@ -1,8 +1,10 @@
 <?php
-require_once '../../backend_dev/db_connect.php'; // Entwicklungsdatenbank
 require_once __DIR__ . '/auth_awards_admin.php';
+require_once __DIR__ . '/dev_db.php';
 require_once __DIR__ . '/awards_cache.php';
 header('Content-Type: application/json');
+
+$pdo_dev = getAwardsDevPdo();
 
 $code = $_POST['code'] ?? '';
 $category = $_POST['category'] ?? '';
