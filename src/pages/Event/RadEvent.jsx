@@ -350,7 +350,7 @@ function RouteOverview() {
     <Section>
       <Container>
         <SectionTitle>Die 3 Routen</SectionTitle>
-        <SectionDesc>Es stehen für euch 3 Routen zur Auswahl: die Genussrunde über 70 km, die Sportliche Runde über 145 km und als längste Option die Königsrunde mit 180 km.</SectionDesc>
+        <SectionDesc>Es stehen für euch 3 Routen zur Auswahl: die Genussrunde über 75 km, die Sportliche Runde über 140 km und als längste Option die Königsrunde mit 180 km.</SectionDesc>
         <CardGrid>
           {ROUTE_OPTIONS.map((route) => (
             <Card key={route.key}>
@@ -363,7 +363,7 @@ function RouteOverview() {
               <RequirementList>
                 <li>{route.stops} offizielle Checkpoints plus Ziel</li>
                 <li>{route.routeType === "family" ? "Eigenes Startfenster ohne Tempogruppe" : "Anhand der gewählten Route und Selbsteinschätzung wirst du in eine Startgruppe eingeteilt"}</li>
-                <li>{route.routeType === "family" ? "Für alle, die 70 km bewusst genießen und ohne Gruppendruck fahren wollen" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
+                <li>{route.routeType === "family" ? "Für alle, die 75 km bewusst genießen und ohne Gruppendruck fahren wollen" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
               </RequirementList>
             </Card>
           ))}

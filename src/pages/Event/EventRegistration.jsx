@@ -19,6 +19,7 @@ import {
   EVENT_ENTRY_FEE,
   EVENT_ENTRY_FEE_NOTICE,
   EVENT_DATE,
+  EVENT_GIFT_PURCHASE_ENABLED,
   EVENT_REGISTRATION_CLOSED_MESSAGE,
   EVENT_REGISTRATION_CLOSES_AT,
   EVENT_ORGANIZER_COUNTRY,
@@ -31,11 +32,10 @@ import {
   EVENT_START_FINISH,
   EVENT_WITHDRAWAL_NOTICE,
   KIT_DISPLAY_PRICE,
-  PACE_OPTIONS,
-  routeSupportsPace,
   ROUTE_OPTIONS,
   TSHIRT_SIZES,
   JERSEY_DISPLAY_PRICE,
+  getPaceLabel,
 } from "./eventConfig";
 
 const createParticipant = () => ({
@@ -43,6 +43,7 @@ const createParticipant = () => ({
   email: "",
   routeKey: "classic_3",
   paceGroup: "24_27",
+  waveId: "",
   publicNameConsent: true,
 });
 
@@ -311,6 +312,13 @@ function getRouteSummary(routeKey) {
   return ROUTE_OPTIONS.find((route) => route.key === routeKey) || ROUTE_OPTIONS[0];
 }
 
+function formatWaveStart(value) {
+  if (!value) return "Startzeit folgt";
+  const date = new Date(String(value).replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return "Startzeit folgt";
+  return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+}
+
 function isPastRegistrationDeadline(now = new Date()) {
   return now.getTime() >= new Date(EVENT_REGISTRATION_CLOSES_AT).getTime();
 }
@@ -382,7 +390,7 @@ export default function EventRegistration() {
         if (!res.ok || data?.status !== "success") {
           throw new Error(getEventAccessErrorMessage(res.status, data?.message || "Eventdaten konnten nicht geladen werden."));
         }
-        setEventMeta(data.event);
+        setEventMeta({ ...data.event, waves: data.waves });
         setLegal(data.legal);
         setAccountEmail(data.account?.email || "");
         setExistingRegistration(data.existing_registration || null);
@@ -513,13 +521,20 @@ export default function EventRegistration() {
   };
 
   const normalizedDonationAmount = parseNumberInput(donationAmount, { min: 0 });
-  const normalizedGiftVoucherQuantity = parseNumberInput(giftVoucherQuantity, { min: 0, max: 20 });
-  const normalizedAddonVoucherQuantity = parseNumberInput(addonVoucherQuantity, { min: 0, max: 20 });
+  const normalizedGiftVoucherQuantity = EVENT_GIFT_PURCHASE_ENABLED ? parseNumberInput(giftVoucherQuantity, { min: 0, max: 20 }) : 0;
+  const normalizedAddonVoucherQuantity = EVENT_GIFT_PURCHASE_ENABLED ? parseNumberInput(addonVoucherQuantity, { min: 0, max: 20 }) : 0;
 
   const totalCost = useMemo(() => {
     const voucherDiscount = voucherLookup?.valid ? EVENT_ENTRY_FEE : 0;
     return Math.max(0, EVENT_ENTRY_FEE + normalizedGiftVoucherQuantity * EVENT_ENTRY_FEE + normalizedDonationAmount - voucherDiscount);
   }, [normalizedDonationAmount, normalizedGiftVoucherQuantity, voucherLookup]);
+
+  const selectedRoute = getRouteSummary(participant.routeKey);
+  const eventWaves = Array.isArray(eventMeta?.waves) ? eventMeta.waves : [];
+  const routeWaveOptions = useMemo(() => {
+    return eventWaves.filter((wave) => Number(wave.distance_km) === Number(selectedRoute.distanceKm));
+  }, [eventWaves, selectedRoute.distanceKm]);
+  const selectedWave = routeWaveOptions.find((wave) => String(wave.id) === String(participant.waveId)) || null;
 
   const handleParticipantChange = (field, value) => {
     setInvalidFields((prev) => {
@@ -531,11 +546,7 @@ export default function EventRegistration() {
     setParticipant((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "routeKey") {
-        if (!routeSupportsPace(value)) {
-          next.paceGroup = "family";
-        } else if (prev.paceGroup === "family") {
-          next.paceGroup = "24_27";
-        }
+        next.waveId = "";
       }
       return next;
     });
@@ -576,6 +587,7 @@ export default function EventRegistration() {
 
     if (!participant.name.trim()) nextInvalidFields.participant_name = true;
     if (!participant.email.trim()) nextInvalidFields.participant_email = true;
+    if (!participant.waveId || !selectedWave || selectedWave.is_full) nextInvalidFields.participant_wave = true;
     if (!acceptWaiver) nextInvalidFields.accept_waiver = true;
     if (clothingInterest !== "none" && !jerseySize) nextInvalidFields.jersey_size = true;
     if (clothingInterest === "kit_interest" && !bibSize) nextInvalidFields.bib_size = true;
@@ -724,7 +736,6 @@ export default function EventRegistration() {
   const isLateVoucherRegistration = registrationMode && canRegisterAfterClose;
   const registrationClosedMessage = eventMeta?.registration_closed_message || EVENT_REGISTRATION_CLOSED_MESSAGE;
   const isSoldOut = eventMeta?.event_status === "cancelled" || (isRegistrationClosed && !canRegisterAfterClose) || (availableSlots <= 0 && !hasValidVoucherReservation);
-  const selectedRoute = getRouteSummary(participant.routeKey);
   const registrationSubmitLabel = isSubmitting ? "Speichern..." : "Verbindlich anmelden und Teilnahmebeitrag zahlen";
   const addonSubmitLabel = isSubmittingAddon ? "Speichern..." : "Zusätzliche Startplätze verbindlich reservieren";
 
@@ -914,21 +925,36 @@ export default function EventRegistration() {
                       </RouteCard>
                     ))}
                   </RouteGrid>
-                  {routeSupportsPace(participant.routeKey) ? (
-                    <GridRow>
-                      <div>
-                        <Label>Dein geplantes Tempo</Label>
-                        <Select value={participant.paceGroup} onChange={(e) => handleParticipantChange("paceGroup", e.target.value)}>
-                          {PACE_OPTIONS.map((pace) => <option key={pace.value} value={pace.value}>{pace.label}</option>)}
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Startmodus</Label>
-                        <Input value="Gruppeneinteilung nach Strecke und Tempo" disabled />
-                      </div>
-                    </GridRow>
-                  ) : (
-                    <StatusBanner>Diese Route bekommt ein eigenes Startfenster ohne sportliche Tempogruppe.</StatusBanner>
+                  <Label>Startwelle</Label>
+                  <Select
+                    data-field="participant_wave"
+                    $invalid={Boolean(invalidFields.participant_wave)}
+                    value={participant.waveId}
+                    onChange={(e) => {
+                      clearInvalidField("participant_wave");
+                      const nextWave = routeWaveOptions.find((wave) => String(wave.id) === e.target.value);
+                      setParticipant((prev) => ({
+                        ...prev,
+                        waveId: e.target.value,
+                        paceGroup: nextWave?.pace_group || prev.paceGroup,
+                      }));
+                    }}
+                    required
+                  >
+                    <option value="">Bitte Startwelle wählen</option>
+                    {routeWaveOptions.map((wave) => (
+                      <option key={wave.id} value={wave.id} disabled={wave.is_full}>
+                        {wave.wave_code} · {formatWaveStart(wave.start_time)} · {getPaceLabel(wave.pace_group)} · {wave.assigned_count}/{wave.capacity}{wave.is_full ? " · ausgebucht" : ""}
+                      </option>
+                    ))}
+                  </Select>
+                  {routeWaveOptions.length === 0 && (
+                    <StatusBanner tone="danger">Für diese Strecke ist aktuell keine Startwelle verfügbar.</StatusBanner>
+                  )}
+                  {selectedWave && (
+                    <Muted style={{ marginBottom: "0.8rem" }}>
+                      Gewählte Welle: <strong>{selectedWave.wave_code}</strong>, {formatWaveStart(selectedWave.start_time)}, noch {selectedWave.available_slots} freie Plätze.
+                    </Muted>
                   )}
                   <CheckboxLabel>
                     <input type="checkbox" checked={participant.publicNameConsent} onChange={(e) => handleParticipantChange("publicNameConsent", e.target.checked)} />
@@ -959,7 +985,7 @@ export default function EventRegistration() {
                   <Textarea value={registrationNote} onChange={(e) => setRegistrationNote(e.target.value)} maxLength={220} />
                 </Card>
 
-                {!isLateVoucherRegistration && (
+                {EVENT_GIFT_PURCHASE_ENABLED && !isLateVoucherRegistration && (
                 <Card>
                   <CardTitle><Gift /> Startplätze für Freunde / Sammelanmeldung</CardTitle>
                   <Muted style={{ marginBottom: 10 }}>
@@ -996,7 +1022,7 @@ export default function EventRegistration() {
               <>
                 <Card>
                   <CardTitle><Users /> Bereits registriert</CardTitle>
-                  <Muted>Du kannst hier keine zweite Event-Anmeldung anlegen. Zusätzliche Startplätze zum Verschenken oder für Sammelanmeldungen sowie Bekleidungsinteresse sind aber weiterhin möglich.</Muted>
+                  <Muted>Du kannst hier keine zweite Event-Anmeldung anlegen. Gutschein-Käufe sind für dieses Event nicht mehr möglich.</Muted>
                   <div style={{ marginTop: 12 }}>
                     <div>Status: <strong>{existingRegistration.payment_status}</strong></div>
                     <div>Referenzcode: <strong>{existingRegistration.payment_reference_code}</strong></div>
@@ -1004,6 +1030,7 @@ export default function EventRegistration() {
                   </div>
                 </Card>
 
+                {EVENT_GIFT_PURCHASE_ENABLED && (
                 <Card>
                   <CardTitle><Gift /> Zusätzliche Startplätze für Freunde / Sammelanmeldung</CardTitle>
                   <Muted style={{ marginBottom: 10 }}>Hier kannst du nachträglich weitere Startplätze für Freunde, Bekannte oder eine Sammelanmeldung reservieren.</Muted>
@@ -1074,6 +1101,7 @@ export default function EventRegistration() {
                     </div>
                   )}
                 </Card>
+                )}
               </>
             )}
 
@@ -1218,21 +1246,20 @@ export default function EventRegistration() {
               ) : (
                 <>
                   <Flex><span>Status deiner Anmeldung</span><span>{existingRegistration?.payment_status || "-"}</span></Flex>
-                  <Flex><span>Teilnahmebeitrag pro zusätzlichem Startplatz</span><span>{formatEuro(EVENT_ENTRY_FEE)}</span></Flex>
-                  {normalizedAddonVoucherQuantity > 0 && <Flex><span>Zusatzreservierung ({normalizedAddonVoucherQuantity})</span><span>{formatEuro(normalizedAddonVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>}
                   <SummaryDivider />
-                  <Flex style={{ fontWeight: 700, fontSize: 18 }}><span>Zusatzreservierung gesamt</span><span>{formatEuro(normalizedAddonVoucherQuantity * EVENT_ENTRY_FEE)}</span></Flex>
+                  <Muted style={{ margin: 0 }}>Gutschein-Käufe sind für dieses Event nicht mehr möglich.</Muted>
                 </>
               )}
             </Card>
 
+            {registrationMode && (
             <Card>
               <CardTitle>Pflichtinformationen vor Abgabe</CardTitle>
-              {registrationMode ? (
                 <LegalPanel>
                   <LegalHeadline>Deine Anmeldung</LegalHeadline>
                   <LegalList>
                     <li>Leistung: Teilnahme an der Ice-Tour 2026 auf der Route {selectedRoute.label} ({selectedRoute.teaser})</li>
+                    {selectedWave && <li>Startwelle: {selectedWave.wave_code} ({formatWaveStart(selectedWave.start_time)})</li>}
                     <li>Termin: {EVENT_DATE}</li>
                     <li>Start und Ziel: {EVENT_START_FINISH.name}, {EVENT_START_FINISH.fullAddress}</li>
                     <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
@@ -1252,27 +1279,8 @@ export default function EventRegistration() {
                     Mit Klick auf „Verbindlich anmelden und Teilnahmebeitrag zahlen“ gibst du eine verbindliche, zahlungspflichtige Anmeldung ab.
                   </LegalSmall>
                 </LegalPanel>
-              ) : (
-                <LegalPanel>
-                  <LegalHeadline>Deine Zusatzreservierung</LegalHeadline>
-                  <LegalList>
-                    <li>Leistung: zusätzliche Startplätze der Ice-Tour 2026 inklusive später verteilbarer Geschenk-Codes</li>
-                    <li>Zahlungsart: {EVENT_PAYMENT_PROVIDER_NAME}</li>
-                    <li>Teilnahmebeitrag pro zusätzlichem Startplatz: {formatEuro(EVENT_ENTRY_FEE)}</li>
-                    <li>{EVENT_ENTRY_FEE_NOTICE}</li>
-                  </LegalList>
-                  <LegalSmall>
-                    Anbieter: {EVENT_ORGANIZER_NAME}, {EVENT_ORGANIZER_STREET}, {EVENT_ORGANIZER_POSTAL_CITY}, {EVENT_ORGANIZER_COUNTRY}. Kontakt: {EVENT_PAYMENT_CONTACT_EMAIL}.
-                  </LegalSmall>
-                  <LegalSmall>
-                    Weitere Informationen: <LegalLink href="/impressum" target="_blank" rel="noreferrer">Impressum</LegalLink>, <LegalLink href="/agb" target="_blank" rel="noreferrer">AGB</LegalLink>, <LegalLink href="/datenschutz" target="_blank" rel="noreferrer">Datenschutz</LegalLink>.
-                  </LegalSmall>
-                  <LegalSmall>
-                    Mit Klick auf „Zusätzliche Startplätze verbindlich reservieren“ gibst du eine verbindliche, zahlungspflichtige Zusatzreservierung ab.
-                  </LegalSmall>
-                </LegalPanel>
-              )}
             </Card>
+            )}
 
             <Card>
               <CardTitle>Was danach passiert</CardTitle>
@@ -1283,17 +1291,17 @@ export default function EventRegistration() {
                     <br />
                     2. Danach zahlst du den Teilnahmebeitrag über {EVENT_PAYMENT_PROVIDER_NAME} oder später mit deinem Referenzcode.
                     <br />
-                    3. Reservierte Zusatz-Startplätze werden nach bestätigter Zahlung als Geschenk-Codes freigeschaltet.
+                    3. Deine gewählte Startwelle wird direkt für dich reserviert.
                     <br />
                     4. Anschließend findest du alle Details in `Meine Anmeldung`.
                   </>
                 ) : (
                   <>
-                    1. Die Zusatzreservierung wird mit eigenem Referenzcode angelegt.
+                    1. Deine bestehende Anmeldung bleibt gespeichert.
                     <br />
-                    2. Nach bestätigter Zahlung werden die Geschenk-Codes für die zusätzlichen Startplätze freigeschaltet.
+                    2. Gutschein-Käufe sind für dieses Event nicht mehr möglich.
                     <br />
-                    3. Bekleidungsinteresse wird unabhängig davon direkt an deiner Anmeldung aktualisiert.
+                    3. Alle Details findest du weiterhin in `Meine Anmeldung`.
                   </>
                 )}
               </Muted>

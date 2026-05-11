@@ -19,6 +19,7 @@ try {
                 'status' => (string) $event['status'],
             ], event2026_registration_window_payload()),
             'voucher_value' => EVENT2026_GIFT_ENTRY_FEE,
+            'gift_purchase_enabled' => false,
             'payment_instruction' => 'Bitte schließe die Zahlung über Stripe im Event-Portal ab. Bei Fragen melde dich bitte an ' . EVENT2026_GIFT_PAYMENT_CONTACT . '.',
         ]);
         exit;
@@ -28,6 +29,9 @@ try {
         http_response_code(405);
         throw new RuntimeException('Methode nicht erlaubt.');
     }
+
+    http_response_code(409);
+    throw new RuntimeException('Gutschein-Käufe sind für dieses Event nicht mehr möglich.');
 
     $data = event2026_json_input();
     $buyerName = trim((string) ($data['buyerName'] ?? ''));

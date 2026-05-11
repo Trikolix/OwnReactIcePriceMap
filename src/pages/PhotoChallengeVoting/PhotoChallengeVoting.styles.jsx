@@ -462,6 +462,18 @@ export const WinnerSubline = styled.span`
   font-weight: 600;
 `;
 
+export const WinnerUserLink = styled.a`
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
 export const SubmissionPanel = styled.section`
   background: #fff;
   border-radius: 24px;

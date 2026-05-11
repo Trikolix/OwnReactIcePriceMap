@@ -12,6 +12,8 @@ import PushBootstrap from './components/PushBootstrap';
 import PushOptInOverlay from './components/PushOptInOverlay';
 import CookieBanner from './components/CookieBanner';
 import GuestMotivation from './components/GuestMotivation';
+import MatomoTracker from './components/MatomoTracker';
+
 
 const allRoutes = [
   ...coreRoutes,
@@ -37,6 +39,7 @@ const App = () => {
     <Router>
       <UserProvider>
         <ScrollToTopOnRouteChange />
+        <MatomoTracker />
         <PushBootstrap />
         <PushOptInOverlay />
         <AppUpdateBanner />

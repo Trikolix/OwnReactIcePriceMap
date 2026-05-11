@@ -154,6 +154,80 @@ function event2026_team_name_suggestions(PDO $pdo, int $eventId, int $limit = 8)
     }, $stmt->fetchAll(PDO::FETCH_ASSOC))));
 }
 
+function event2026_registration_waves(PDO $pdo, int $eventId): array
+{
+    $stmt = $pdo->prepare("SELECT
+            w.id,
+            w.wave_code,
+            w.distance_km,
+            w.pace_group,
+            w.start_time,
+            w.capacity,
+            w.is_women_wave,
+            COUNT(wa.slot_id) AS assigned_count
+        FROM event2026_waves w
+        LEFT JOIN event2026_wave_assignments wa ON wa.wave_id = w.id
+        WHERE w.event_id = :event_id
+        GROUP BY w.id
+        ORDER BY w.start_time IS NULL ASC, w.start_time ASC, w.wave_code ASC");
+    $stmt->execute([':event_id' => $eventId]);
+
+    return array_map(static function (array $wave): array {
+        $capacity = (int) ($wave['capacity'] ?? 0);
+        $assignedCount = (int) ($wave['assigned_count'] ?? 0);
+        $availableSlots = max(0, $capacity - $assignedCount);
+
+        return [
+            'id' => (int) $wave['id'],
+            'wave_code' => (string) $wave['wave_code'],
+            'distance_km' => (int) $wave['distance_km'],
+            'pace_group' => (string) $wave['pace_group'],
+            'start_time' => $wave['start_time'],
+            'capacity' => $capacity,
+            'assigned_count' => $assignedCount,
+            'available_slots' => $availableSlots,
+            'is_full' => $availableSlots <= 0,
+            'is_women_wave' => !empty($wave['is_women_wave']),
+        ];
+    }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+}
+
+function event2026_registration_lock_wave(PDO $pdo, int $eventId, int $waveId, int $distanceKm): array
+{
+    if ($waveId <= 0) {
+        throw new InvalidArgumentException('Bitte wähle eine Startwelle aus.');
+    }
+
+    $waveStmt = $pdo->prepare("SELECT *
+        FROM event2026_waves
+        WHERE id = :wave_id AND event_id = :event_id
+        LIMIT 1
+        FOR UPDATE");
+    $waveStmt->execute([
+        ':wave_id' => $waveId,
+        ':event_id' => $eventId,
+    ]);
+    $wave = $waveStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$wave) {
+        throw new InvalidArgumentException('Die gewählte Startwelle wurde nicht gefunden.');
+    }
+
+    if ((int) $wave['distance_km'] !== $distanceKm) {
+        throw new InvalidArgumentException('Die gewählte Startwelle passt nicht zur ausgewählten Strecke.');
+    }
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM event2026_wave_assignments WHERE wave_id = :wave_id");
+    $countStmt->execute([':wave_id' => $waveId]);
+    $assignedCount = (int) $countStmt->fetchColumn();
+    $capacity = (int) $wave['capacity'];
+    if ($assignedCount >= $capacity) {
+        throw new RuntimeException('Die gewählte Startwelle ist bereits ausgebucht. Bitte wähle eine andere Welle.');
+    }
+
+    $wave['assigned_count'] = $assignedCount;
+    return $wave;
+}
+
 try {
     event2026_ensure_schema($pdo);
 
@@ -250,6 +324,7 @@ try {
                 ['value' => 'jersey_interest', 'label' => 'Trikot-Interesse', 'display_price' => 75],
                 ['value' => 'kit_interest', 'label' => 'Set-Interesse', 'display_price' => 175],
             ],
+            'waves' => event2026_registration_waves($pdo, (int) $event['id']),
             'legal' => [
                 'id' => (int) $legal['id'],
                 'version' => $legal['version'],
@@ -296,6 +371,10 @@ try {
     if (strlen($registrationNote) > 220) {
         throw new InvalidArgumentException('Bemerkung ist zu lang (max. 220 Zeichen).');
     }
+    if ($giftVoucherQuantity > 0) {
+        http_response_code(409);
+        throw new RuntimeException('Gutschein-Käufe sind für dieses Event nicht mehr möglich.');
+    }
 
     $pdo->beginTransaction();
 
@@ -322,10 +401,16 @@ try {
             http_response_code(409);
             throw new RuntimeException(EVENT2026_REGISTRATION_CLOSED_MESSAGE);
         }
-        if ($giftVoucherQuantity > 0) {
-            http_response_code(409);
-            throw new RuntimeException('Nach Registrierungsschluss ist nur noch die Anmeldung mit einem bestehenden Gutschein-Code möglich.');
-        }
+    }
+
+    $routeKey = event2026_normalize_route_key((string) ($participant['routeKey'] ?? ''));
+    $distance = event2026_route_distance($routeKey);
+    $routeDefinition = event2026_route_definition($routeKey);
+    $selectedWaveId = (int) ($participant['waveId'] ?? $data['waveId'] ?? 0);
+    $selectedWave = event2026_registration_lock_wave($pdo, $eventId, $selectedWaveId, $distance);
+    $paceGroup = event2026_normalize_pace_group($routeKey, (string) ($selectedWave['pace_group'] ?? ''));
+    if (!in_array($paceGroup, event2026_allowed_pace_groups($routeKey), true)) {
+        throw new InvalidArgumentException('Die gewählte Startwelle hat eine ungültige Tempogruppe.');
     }
 
     $authRecord = authenticateRequest($pdo);
@@ -374,10 +459,6 @@ try {
 
     $fullName = trim((string) ($participant['name'] ?? ''));
     $email = trim((string) ($participant['email'] ?? $accountEmail ?? ''));
-    $routeKey = event2026_normalize_route_key((string) ($participant['routeKey'] ?? ''));
-    $distance = event2026_route_distance($routeKey);
-    $routeDefinition = event2026_route_definition($routeKey);
-    $paceGroup = event2026_normalize_pace_group($routeKey, (string) ($participant['paceGroup'] ?? ''));
     $womenWaveOptIn = 0;
     $publicNameConsent = array_key_exists('publicNameConsent', $participant) ? (!empty($participant['publicNameConsent']) ? 1 : 0) : 1;
     $clothingInterest = event2026_normalize_clothing_interest((string) ($data['clothingInterest'] ?? ''));
@@ -390,9 +471,6 @@ try {
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         throw new InvalidArgumentException('Die E-Mail-Adresse ist ungültig.');
-    }
-    if (!in_array($paceGroup, event2026_allowed_pace_groups($routeKey), true)) {
-        throw new InvalidArgumentException('Ungültige Selbsteinschätzung der Geschwindigkeit.');
     }
     if ($jerseyInterest && $jerseySize === '') {
         throw new InvalidArgumentException('Bitte gib eine Trikotgröße an, wenn Interesse besteht.');
@@ -517,6 +595,9 @@ try {
         user_agent_hash
     ) VALUES (:slot_id, :legal_version_id, NOW(), :ip_hash, :user_agent_hash)");
 
+    $waveAssignStmt = $pdo->prepare("INSERT INTO event2026_wave_assignments (slot_id, wave_id, assigned_at)
+        VALUES (:slot_id, :wave_id, NOW())");
+
     $paymentStmt = $pdo->prepare("INSERT INTO event2026_payments (
         registration_id,
         method,
@@ -558,6 +639,11 @@ try {
         ':user_agent_hash' => $uaHash,
     ]);
 
+    $waveAssignStmt->execute([
+        ':slot_id' => $slotId,
+        ':wave_id' => (int) $selectedWave['id'],
+    ]);
+
     $paymentStmt->execute([
         ':registration_id' => $registrationId,
         ':method' => $paymentMethod,
@@ -591,6 +677,8 @@ try {
         'payment_method' => $paymentMethod,
         'expected_amount' => $breakdown['expected_amount'],
         'donation_amount' => $breakdown['donation_amount'],
+        'wave_id' => (int) $selectedWave['id'],
+        'wave_code' => (string) $selectedWave['wave_code'],
         'account_created_in_flow' => $accountCreationInfo !== null,
         'account_invited_by' => $accountCreationInfo['invited_by'] ?? null,
     ]);
@@ -602,6 +690,8 @@ try {
         'slot_id' => $slotId,
         'user_id' => $auth['user_id'],
         'route_key' => $routeKey,
+        'wave_id' => (int) $selectedWave['id'],
+        'wave_code' => (string) $selectedWave['wave_code'],
         'payment_method' => $paymentMethod,
         'expected_amount' => $breakdown['expected_amount'],
         'account_created_in_flow' => $accountCreationInfo !== null,
@@ -618,6 +708,7 @@ try {
             'Wir freuen uns sehr, dich am 16. Mai 2026 als Starterin bzw. Starter begrüßen zu dürfen.',
             'Kaufzusammenfassung:',
             "Gewählte Strecke: {$routeDefinition['label']}",
+            "Gewählte Startwelle: {$selectedWave['wave_code']}",
         ];
         if (trim((string) ($data['teamName'] ?? '')) !== '') {
             $mailParagraphs[] = 'Team / Verein: ' . trim((string) ($data['teamName'] ?? ''));
@@ -663,6 +754,7 @@ try {
     $adminMailBody .= "Angelegt von User: {$auth['username']} (#{$auth['user_id']})\n";
     $adminMailBody .= "Teilnehmer: {$fullName}\n";
     $adminMailBody .= "Route: {$routeDefinition['label']}\n";
+    $adminMailBody .= "Startwelle: {$selectedWave['wave_code']}\n";
     $adminMailBody .= "Eigene Startgebühr: " . number_format($breakdown['entry_fee_amount'], 2, ',', '.') . " EUR\n";
     $adminMailBody .= "Gutschein-Käufe: " . number_format($breakdown['gift_voucher_purchase_amount'], 2, ',', '.') . " EUR\n";
     $adminMailBody .= "Gutschein-Abzug: -" . number_format($breakdown['voucher_discount_amount'], 2, ',', '.') . " EUR\n";
@@ -700,6 +792,8 @@ try {
             'route_key' => $routeKey,
             'route_label' => $routeDefinition['label'],
             'distance_km' => $distance,
+            'wave_id' => (int) $selectedWave['id'],
+            'wave_code' => (string) $selectedWave['wave_code'],
             'clothing_interest' => $clothingInterest,
             'clothing_interest_label' => event2026_clothing_interest_label($clothingInterest),
             'jersey_size' => $jerseyInterest ? $jerseySize : null,

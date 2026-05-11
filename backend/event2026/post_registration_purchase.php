@@ -73,6 +73,9 @@ try {
         throw new RuntimeException('Methode nicht erlaubt.');
     }
 
+    http_response_code(409);
+    throw new RuntimeException('Gutschein-Käufe sind für dieses Event nicht mehr möglich.');
+
     $data = event2026_json_input();
     $giftVoucherQuantity = max(0, min(20, (int) ($data['giftVoucherQuantity'] ?? 0)));
     $paymentMethod = (string) ($data['paymentMethodPreference'] ?? 'stripe_checkout');

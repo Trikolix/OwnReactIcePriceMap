@@ -1,7 +1,8 @@
 export const EVENT_DATE = "Samstag, 16. Mai 2026";
-export const EVENT_REGISTRATION_CLOSES_AT = "2026-05-10T21:00:00+02:00";
-export const EVENT_REGISTRATION_CLOSED_MESSAGE = "Die Registrierung ist bereits geschlossen. Wenn du einen ganz dringenden Grund hast, doch noch Teil zu nehmen, schreib uns doch eine Mail ;)";
+export const EVENT_REGISTRATION_CLOSES_AT = "2026-05-13T22:00:00+02:00";
+export const EVENT_REGISTRATION_CLOSED_MESSAGE = "Die Registrierung ist bereits geschlossen. Wenn du einen ganz dringenden Grund hast, doch noch teilzunehmen, schreib uns doch eine Mail ;)";
 export const EVENT_CLOTHING_INTEREST_ENABLED = false;
+export const EVENT_GIFT_PURCHASE_ENABLED = false;
 export const EVENT_ENTRY_FEE = 15;
 export const JERSEY_DISPLAY_PRICE = 75;
 export const KIT_DISPLAY_PRICE = 175;
@@ -64,8 +65,8 @@ export const ROUTE_OPTIONS = [
       text: "#8a5700",
       glow: "rgba(247, 201, 72, 0.2)",
     },
-    teaser: "145 km / 1.600 hm",
-    distanceKm: 145,
+    teaser: "140 km / 1.600 hm",
+    distanceKm: 140,
     elevationM: 1600,
     stops: 3,
     routeType: "sport",
@@ -83,14 +84,14 @@ export const ROUTE_OPTIONS = [
       text: "#166534",
       glow: "rgba(34, 197, 94, 0.18)",
     },
-    teaser: "70 km / 550 hm",
-    distanceKm: 70,
+    teaser: "75 km / 550 hm",
+    distanceKm: 75,
     elevationM: 550,
     stops: 2,
     routeType: "family",
     paceEnabled: false,
     startMode: "open_window",
-    description: "Die kompaktere Runde mit 70 km, zwei offiziellen Checkpoints und freiem Startfenster.",
+    description: "Die kompaktere Runde mit 75 km, zwei offiziellen Checkpoints und freiem Startfenster.",
   },
 ];
 

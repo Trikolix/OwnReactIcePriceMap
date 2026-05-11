@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import * as S from './PhotoChallengeVoting.styles';
 import { buildAssetUrl } from './utils';
 
@@ -15,7 +16,16 @@ const Winner = ({ winner }) => {
         </S.WinnerImageWrapper>
         <S.WinnerMeta>
           <h2>{winner.title || `Bild #${winner.image_id}`}</h2>
-          <p>von {winner.username || 'Unbekannt'}</p>
+          <p>
+            von{' '}
+            {winner.nutzer_id ? (
+              <S.WinnerUserLink as={Link} to={`/user/${winner.nutzer_id}`}>
+                {winner.username}
+              </S.WinnerUserLink>
+            ) : (
+              winner.username || 'Unbekannt'
+            )}
+          </p>
           {winner.beschreibung && <small>{winner.beschreibung}</small>}
           <S.WinnerSubline>Entschieden in Runde {winner.round}</S.WinnerSubline>
         </S.WinnerMeta>
