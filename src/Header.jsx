@@ -338,7 +338,7 @@ const Header = ({ refreshShops }) => {
             return;
           }
 
-          if (data.already_scanned) {
+          if (data.already_scanned && !data.summer_campaign) {
             console.log("QR-Code wurde bereits gescannt. Kein Popup.");
             return;
           }
@@ -355,12 +355,29 @@ const Header = ({ refreshShops }) => {
             }
           }
 
-          setModalData({
-            icon: data.icon,
-            name: data.name,
-            description: data.description,
-            needsLogin: !data.saved,
-          });
+          if (data.summer_campaign) {
+            const summer = data.summer_campaign;
+            const achievementCount = Array.isArray(summer.achievements) ? summer.achievements.length : 0;
+            setModalData({
+              icon: summer.award?.icon || data.icon,
+              name: summer.award?.title || summer.shop_name || data.name || "Sommer-Sammelkarte",
+              description: data.saved
+                ? `${summer.award?.message || `Sammelkarte freigeschaltet: ${summer.shop_name}.`} ${summer.checkin_confirmed ? "Dein Check-in Bonus ist bereits bestaetigt." : "Checke bei dieser Eisdiele ein, um die Karte vollstaendig zu machen."}`
+                : "Sommer-Sammelkarte erkannt. Logge dich ein oder registriere dich, damit sie in deinem Sammelalbum gespeichert wird.",
+              statusMessage: data.saved
+                ? (data.already_scanned ? "Diese Sammelkarte war bereits in deinem Album." : `Gespeichert. ${achievementCount > 0 ? `${achievementCount} Bonus-Award(s) freigeschaltet.` : "Weiter sammeln fuer Bonus-Awards."}`)
+                : "Nach dem Login wird der Scan automatisch gespeichert.",
+              needsLogin: !data.saved,
+            });
+            window.dispatchEvent(new CustomEvent('seasonal:summer-progress-updated'));
+          } else {
+            setModalData({
+              icon: data.icon,
+              name: data.name,
+              description: data.description,
+              needsLogin: !data.saved,
+            });
+          }
         } catch (err) {
           console.error("Fehler beim Senden des QR-Codes:", err);
         } finally {
@@ -453,6 +470,8 @@ const Header = ({ refreshShops }) => {
 
           if (data?.status !== "success") {
             failedCodes.push(code);
+          } else if (data?.summer_campaign) {
+            window.dispatchEvent(new CustomEvent('seasonal:summer-progress-updated'));
           }
         } catch (err) {
           console.error("Fehler beim Nachsenden des QR-Codes:", err);

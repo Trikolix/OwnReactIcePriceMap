@@ -7,6 +7,7 @@ import {
   getActionsOverviewCampaigns,
 } from '../features/seasonal/campaigns';
 import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
+import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
 
 const POINT_LABELS = {
   login_active: 'App geöffnet & eingeloggt',
@@ -157,6 +158,27 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const activeCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
   const upcomingCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
   const hasPastEvents = campaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
+  const renderCampaignPanel = (campaign) => {
+    if (campaign.id === 'summer_2026') {
+      return (
+        <SummerCampaignPanel
+          key={campaign.id}
+          campaign={campaign}
+          isLoggedIn={isLoggedIn}
+          onLogin={onLogin}
+        />
+      );
+    }
+
+    return (
+      <EasterCampaignPanel
+        key={campaign.id}
+        campaign={campaign}
+        isLoggedIn={isLoggedIn}
+        onLogin={onLogin}
+      />
+    );
+  };
 
   return (
     <OverlayBackground>
@@ -205,14 +227,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
         {activeCampaigns.length > 0 && (
           <>
             <CategoryHeading>Laufende Events</CategoryHeading>
-            {activeCampaigns.map((campaign) => (
-              <EasterCampaignPanel
-                key={campaign.id}
-                campaign={campaign}
-                isLoggedIn={isLoggedIn}
-                onLogin={onLogin}
-              />
-            ))}
+            {activeCampaigns.map(renderCampaignPanel)}
           </>
         )}
 
@@ -232,7 +247,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                   )}
                 </Hint>
                 <Hint>
-                  Seid gespannt, welche spannende Aktion der Osterhase sich für euch ausgedacht hat!
+                  Weitere Informationen zum Event findest du hier, sobald es gestartet ist. Schau gerne später nochmal vorbei!
                 </Hint>
               </Section>
             ))}

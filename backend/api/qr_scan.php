@@ -1,5 +1,6 @@
 ﻿<?php
 require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/summer_campaign.php';
 
 // JSON-Daten lesen
 $input = json_decode(file_get_contents('php://input'), true);
@@ -35,6 +36,25 @@ if (
   exit;
 }
 
+$summerCampaignShop = null;
+$summerShopAward = null;
+$summerAchievements = [];
+if (($qrCode['award_type'] ?? '') === SUMMER_CAMPAIGN_AWARD_TYPE) {
+  $summerCampaignConfig = getSummerCampaignConfig($pdo, SUMMER_CAMPAIGN_ID);
+  if (!isSummerCampaignCurrentlyActive($summerCampaignConfig)) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Diese Sommeraktion ist aktuell nicht aktiv.']);
+    exit;
+  }
+
+  $summerCampaignShop = findSummerCampaignShopByQrCode($pdo, (int)$qrCode['id'], SUMMER_CAMPAIGN_ID);
+  if (!$summerCampaignShop || (int)($summerCampaignShop['is_active'] ?? 0) !== 1) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Dieser Sommeraktions-Code ist nicht aktiv.']);
+    exit;
+  }
+}
+
 $alreadyScanned = false;
 
 // Wenn NutzerId vorhanden: Scan speichern
@@ -50,6 +70,28 @@ if ($nutzerId) {
   } else {
     $alreadyScanned = true;
   }
+
+  if ($summerCampaignShop) {
+    $newShopAward = grantSummerShopAward($pdo, (int)$nutzerId, $summerCampaignShop);
+    $summerShopAward = $newShopAward ?: getSummerShopAwardPayload($pdo, $summerCampaignShop);
+    $summerAchievements = evaluateSummerCampaignBonusAwards($pdo, (int)$nutzerId, SUMMER_CAMPAIGN_ID);
+  }
+} elseif ($summerCampaignShop) {
+  $summerShopAward = getSummerShopAwardPayload($pdo, $summerCampaignShop);
+}
+
+$summerPayload = null;
+if ($summerCampaignShop) {
+  $summerPayload = [
+    'campaign_id' => SUMMER_CAMPAIGN_ID,
+    'shop_id' => (int)$summerCampaignShop['eisdiele_id'],
+    'shop_name' => $summerCampaignShop['shop_name'],
+    'shop_address' => $summerCampaignShop['shop_address'],
+    'category' => $summerCampaignShop['category'] ?: 'Sommerroute',
+    'award' => $summerShopAward,
+    'checkin_confirmed' => $nutzerId ? hasSummerCampaignCheckin($pdo, (int)$nutzerId, (int)$summerCampaignShop['eisdiele_id'], getSummerCampaignConfig($pdo, SUMMER_CAMPAIGN_ID)) : false,
+    'achievements' => $summerAchievements,
+  ];
 }
 
 // Erfolgreich
@@ -62,8 +104,9 @@ echo json_encode([
   'description' => $qrCode['description'],
   'already_scanned' => $alreadyScanned,
   'saved' => $nutzerId ? true : false,
+  'summer_campaign' => $summerPayload,
   'message' => $nutzerId
-    ? ($alreadyScanned ? 'QR-Code bereits gescannt' : 'Scan gespeichert')
+    ? ($alreadyScanned ? 'QR-Code bereits gescannt' : ($summerCampaignShop ? 'Sommer-Sammelkarte freigeschaltet' : 'Scan gespeichert'))
     : 'Scan erkannt - bitte einloggen oder registrieren',
 ]);
 
