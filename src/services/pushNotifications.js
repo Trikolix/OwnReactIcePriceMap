@@ -56,7 +56,7 @@ const persistServiceWorkerToken = async (subscriptionToken) => {
 
 const persistBrowserSubscriptionToken = async (subscriptionToken) => {
   if (!SUBSCRIPTION_TOKEN_PATTERN.test(String(subscriptionToken || ""))) {
-    throw new Error("Ungueltiger Web-Push-Subscription-Token vom Server.");
+    throw new Error("Ungültiger Web-Push-Subscription-Token vom Server.");
   }
 
   await persistServiceWorkerToken(subscriptionToken);

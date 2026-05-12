@@ -16,7 +16,7 @@ try {
     $entityId = (int) ($data['entity_id'] ?? 0);
 
     if (!in_array($scope, ['registration_payment', 'unused_vouchers', 'account_verification'], true)) {
-        throw new InvalidArgumentException('Ungueltiger Reminder-Bereich.');
+        throw new InvalidArgumentException('Ungültiger Reminder-Bereich.');
     }
 
     $event = event2026_current_event($pdo);
@@ -28,7 +28,7 @@ try {
         if ($entityId > 0) {
             $candidate = event2026_find_manual_payment_candidate_by_registration($pdo, $event, $entityId);
             if (!$candidate) {
-                throw new RuntimeException('Keine offene Registrierung fuer diesen Reminder gefunden.');
+                throw new RuntimeException('Keine offene Registrierung für diesen Reminder gefunden.');
             }
             $sent = event2026_send_registration_payment_reminder(
                 $pdo,
@@ -65,11 +65,11 @@ try {
     if ($scope === 'unused_vouchers') {
         if ($entityId > 0) {
             if (!in_array($entityType, ['registration', 'addon_purchase'], true)) {
-                throw new InvalidArgumentException('entity_type fehlt oder ist ungueltig.');
+                throw new InvalidArgumentException('entity_type fehlt oder ist ungültig.');
             }
             $candidate = event2026_find_manual_unused_voucher_candidate($pdo, $event, $entityType, $entityId);
             if (!$candidate) {
-                throw new RuntimeException('Keine ungenutzten Gutscheine fuer diesen Reminder gefunden.');
+                throw new RuntimeException('Keine ungenutzten Gutscheine für diesen Reminder gefunden.');
             }
             $sent = event2026_send_unused_voucher_reminder(
                 $pdo,
@@ -107,7 +107,7 @@ try {
         if ($entityId > 0) {
             $candidate = event2026_find_manual_account_verification_candidate($pdo, $event, $entityId);
             if (!$candidate) {
-                throw new RuntimeException('Kein unverifizierter Ice-Tour Account fuer diesen Reminder gefunden.');
+                throw new RuntimeException('Kein unverifizierter Ice-Tour Account für diesen Reminder gefunden.');
             }
             $sent = event2026_send_account_verification_reminder(
                 $pdo,

@@ -46,7 +46,7 @@ try {
 
         echo json_encode([
             'status' => 'added',
-            'message' => 'Eisdiele wurde zu den Favoriten hinzugefuegt.',
+            'message' => 'Eisdiele wurde zu den Favoriten hinzugefügt.',
             'is_favorit' => 1,
             'new_awards' => $newAwards,
             'level_up' => $levelChange['level_up'] ?? false,

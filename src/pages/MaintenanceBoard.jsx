@@ -415,7 +415,7 @@ const MaintenanceBoard = () => {
         )}
 
         {activeView === "map" && isLoggedIn && canAccessMaintenanceBoard && !isAdmin && (
-          <StateCard>Die Kartenansicht ist nur fuer Admins sichtbar.</StateCard>
+          <StateCard>Die Kartenansicht ist nur für Admins sichtbar.</StateCard>
         )}
 
         {activeView === "list" && canAccessMaintenanceBoard && (

@@ -331,7 +331,7 @@ function event2026_filter_registration_payment_candidates(
     bool $allowAlreadySent = false
 ): array {
     if (!event2026_reminder_is_payment_kind($reminderKind)) {
-        throw new InvalidArgumentException('Ungueltiger Zahlungs-Reminder-Typ.');
+        throw new InvalidArgumentException('Ungültiger Zahlungs-Reminder-Typ.');
     }
 
     $eventId = (int) ($event['id'] ?? 0);
@@ -494,7 +494,7 @@ function event2026_filter_unused_voucher_candidates(
     bool $allowAlreadySent = false
 ): array {
     if (!event2026_reminder_is_voucher_kind($reminderKind)) {
-        throw new InvalidArgumentException('Ungueltiger Gutschein-Reminder-Typ.');
+        throw new InvalidArgumentException('Ungültiger Gutschein-Reminder-Typ.');
     }
 
     $eventId = (int) ($event['id'] ?? 0);
@@ -717,7 +717,7 @@ function event2026_send_registration_payment_reminder(
 
     $eventDateLabel = event2026_format_event_date_de($event['event_date'] ?? null);
     $subject = $reminderKind === EVENT2026_REMINDER_KIND_REGISTRATION_PAYMENT_PRE_EVENT
-        ? 'Ice-Tour 2026: Zahlung vor dem Event bitte abschliessen'
+        ? 'Ice-Tour 2026: Zahlung vor dem Event bitte abschließen'
         : 'Ice-Tour 2026: Erinnerung an deine offene Zahlung';
     $eventMeUrl = event2026_app_base_url() . '/event-me';
 

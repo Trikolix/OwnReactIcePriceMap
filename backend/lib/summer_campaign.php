@@ -4,6 +4,7 @@ require_once __DIR__ . '/auth.php';
 
 const SUMMER_CAMPAIGN_ID = 'summer_2026';
 const SUMMER_CAMPAIGN_AWARD_TYPE = 'summer_2026_shop';
+const SUMMER_CAMPAIGN_SHOP_AWARD_CODE = 'summer_2026_shop';
 
 function ensureSummerCampaignTables(PDO $pdo): void
 {
@@ -51,6 +52,26 @@ function ensureSummerCampaignTables(PDO $pdo): void
     ensureSummerCampaignColumn($pdo, 'summer_campaign_shops', 'award_level', 'INT NOT NULL DEFAULT 1');
 
     $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS summer_campaign_shop_categories (
+            id INT NOT NULL AUTO_INCREMENT,
+            summer_shop_id INT NOT NULL,
+            category VARCHAR(80) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uniq_summer_shop_category (summer_shop_id, category),
+            KEY idx_summer_category_name (category),
+            CONSTRAINT fk_summer_category_shop FOREIGN KEY (summer_shop_id) REFERENCES summer_campaign_shops(id) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "INSERT IGNORE INTO summer_campaign_shop_categories (summer_shop_id, category)
+         SELECT id, TRIM(category)
+         FROM summer_campaign_shops
+         WHERE category IS NOT NULL AND TRIM(category) <> ''"
+    );
+
+    $pdo->exec(
         "CREATE TABLE IF NOT EXISTS summer_campaign_bonus_rules (
             id INT NOT NULL AUTO_INCREMENT,
             campaign_id VARCHAR(64) NOT NULL,
@@ -83,6 +104,77 @@ function ensureSummerCampaignColumn(PDO $pdo, string $tableName, string $columnN
     $stmt->execute(['column_name' => $columnName]);
     if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
         $pdo->exec("ALTER TABLE {$tableName} ADD COLUMN {$columnName} {$definition}");
+    }
+}
+
+function normalizeSummerCategories($value): array
+{
+    if (is_array($value)) {
+        $parts = $value;
+    } else {
+        $parts = preg_split('/[,;\n]+/', (string)$value);
+    }
+
+    $categories = [];
+    foreach ($parts as $part) {
+        $category = trim((string)$part);
+        if ($category === '') {
+            continue;
+        }
+        $categories[$category] = $category;
+    }
+
+    return array_values($categories);
+}
+
+function fetchSummerCampaignShopCategories(PDO $pdo, array $summerShopIds): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $summerShopIds), static fn($id) => $id > 0)));
+    if (empty($ids)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT summer_shop_id, category
+         FROM summer_campaign_shop_categories
+         WHERE summer_shop_id IN ({$placeholders})
+         ORDER BY category"
+    );
+    $stmt->execute($ids);
+
+    $categories = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $shopId = (int)$row['summer_shop_id'];
+        if (!isset($categories[$shopId])) {
+            $categories[$shopId] = [];
+        }
+        $categories[$shopId][] = $row['category'];
+    }
+
+    return $categories;
+}
+
+function setSummerCampaignShopCategories(PDO $pdo, int $summerShopId, $categories): void
+{
+    $normalized = normalizeSummerCategories($categories);
+
+    $deleteStmt = $pdo->prepare("DELETE FROM summer_campaign_shop_categories WHERE summer_shop_id = :summer_shop_id");
+    $deleteStmt->execute(['summer_shop_id' => $summerShopId]);
+
+    if (empty($normalized)) {
+        return;
+    }
+
+    $insertStmt = $pdo->prepare(
+        "INSERT IGNORE INTO summer_campaign_shop_categories (summer_shop_id, category)
+         VALUES (:summer_shop_id, :category)"
+    );
+    foreach ($normalized as $category) {
+        $insertStmt->execute([
+            'summer_shop_id' => $summerShopId,
+            'category' => $category,
+        ]);
     }
 }
 
@@ -149,6 +241,11 @@ function findSummerCampaignShopByQrCode(PDO $pdo, int $qrCodeId, string $campaig
         'qr_code_id' => $qrCodeId,
     ]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        $categoryMap = fetchSummerCampaignShopCategories($pdo, [(int)$row['id']]);
+        $row['categories'] = $categoryMap[(int)$row['id']] ?? normalizeSummerCategories($row['category'] ?? '');
+        $row['category'] = $row['categories'][0] ?? ($row['category'] ?: 'Sommerroute');
+    }
 
     return $row ?: null;
 }
@@ -223,6 +320,7 @@ function getSummerCampaignProgress(PDO $pdo, ?int $userId = null, string $campai
     }
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $categoryMap = fetchSummerCampaignShopCategories($pdo, array_column($rows, 'id'));
 
     $items = [];
     $categories = [];
@@ -239,19 +337,18 @@ function getSummerCampaignProgress(PDO $pdo, ?int $userId = null, string $campai
             $checkinCount++;
         }
 
-        $category = trim((string)($row['category'] ?? ''));
-        if ($category === '') {
-            $category = 'Sommerroute';
-        }
-        if (!isset($categories[$category])) {
-            $categories[$category] = ['total' => 0, 'collected' => 0, 'checkins' => 0];
-        }
-        $categories[$category]['total']++;
-        if ($collected) {
-            $categories[$category]['collected']++;
-        }
-        if ($collected && $checkinConfirmed) {
-            $categories[$category]['checkins']++;
+        $shopCategories = $categoryMap[(int)$row['id']] ?? normalizeSummerCategories($row['category'] ?? '');
+        foreach ($shopCategories as $category) {
+            if (!isset($categories[$category])) {
+                $categories[$category] = ['total' => 0, 'collected' => 0, 'checkins' => 0];
+            }
+            $categories[$category]['total']++;
+            if ($collected) {
+                $categories[$category]['collected']++;
+            }
+            if ($collected && $checkinConfirmed) {
+                $categories[$category]['checkins']++;
+            }
         }
 
         $items[] = [
@@ -262,7 +359,8 @@ function getSummerCampaignProgress(PDO $pdo, ?int $userId = null, string $campai
             'shop_address' => $row['shop_address'],
             'lat' => $row['latitude'] !== null ? (float)$row['latitude'] : null,
             'lng' => $row['longitude'] !== null ? (float)$row['longitude'] : null,
-            'category' => $category,
+            'category' => $shopCategories[0] ?? 'Sommerroute',
+            'categories' => $shopCategories,
             'award_id' => $row['award_id'] !== null ? (int)$row['award_id'] : null,
             'award_level' => $row['award_id'] !== null ? (int)$row['award_level'] : null,
             'award_icon' => $row['award_icon'] ?? null,

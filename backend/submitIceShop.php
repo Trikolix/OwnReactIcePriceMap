@@ -104,7 +104,7 @@ function getOrCreateLandId($pdo, $land, $country_code = null) {
     $currencyId = $resolvedCurrency['currency_id'] ?? null;
 
     if ($normalizedCountryCode !== null && $currencyId === null) {
-        throw new RuntimeException("Keine Waehrung fuer Land '{$land}' ({$normalizedCountryCode}) gefunden.");
+        throw new RuntimeException("Keine Währung für Land '{$land}' ({$normalizedCountryCode}) gefunden.");
     }
 
     $stmt = $pdo->prepare("SELECT id, country_code, waehrung_id FROM laender WHERE name = ?");

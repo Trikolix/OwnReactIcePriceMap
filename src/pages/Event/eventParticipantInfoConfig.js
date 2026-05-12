@@ -79,6 +79,7 @@ export const groupRules = [
   "Die StVO gilt jederzeit.",
   "In der Gruppe wird berechenbar gefahren: keine hektischen Manöver, klare Handzeichen, sauber einordnen.",
   "Jeder fährt auf eigenes Risiko, wir übernehmen keine Haftung für Unfälle oder Schäden.",
+  "Falls du deine Runde aus irgendeinem Grund nicht zu Ende fahren kannst, gib dem Orga-Team bitte kurz Bescheid. Schreib mir über Instagram, per Mail, WhatsApp oder lass die Info über andere Teilnehmer weitergeben. So wissen wir im Ziel, dass alles okay ist, und müssen uns keine Sorgen machen, wo du bleibst.",
 ];
 
 export function parseEventDateTime(value) {

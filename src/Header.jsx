@@ -25,6 +25,7 @@ import ActionsOverviewModal from './pages/ActionsOverview';
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [awardsActionsOpen, setAwardsActionsOpen] = useState(false);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
   const { userId, username, currentLevel, isLoggedIn, userPosition, authToken, login, logout, setCurrentLevel } = useUser();
@@ -48,7 +49,7 @@ const Header = ({ refreshShops }) => {
     : 'Aktionen & Ergebnisse öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const now = new Date();
-  const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 31, 23, 59, 59);
+  const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 11, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
@@ -58,6 +59,7 @@ const Header = ({ refreshShops }) => {
   const closeMenu = () => setMenuOpen(false);
   const isAdmin = Number(userId) === 1;
   const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
+  const isAwardsActionsActive = location.pathname === '/awards-admin' || location.pathname === '/summer-campaign-admin' || location.pathname === '/admin/summer-campaign';
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -345,7 +347,7 @@ const Header = ({ refreshShops }) => {
 
           if (!userId) {
             const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
-            if (stored.includes(scanCode)) {
+            if (stored.includes(scanCode) && !data.summer_campaign) {
               console.log("QR-Code ist bereits lokal vorgemerkt. Kein Popup.");
               return;
             }
@@ -358,16 +360,23 @@ const Header = ({ refreshShops }) => {
           if (data.summer_campaign) {
             const summer = data.summer_campaign;
             const achievementCount = Array.isArray(summer.achievements) ? summer.achievements.length : 0;
+            if (summer.shop_id) {
+              redirectTarget = `/map/activeShop/${summer.shop_id}`;
+            }
             setModalData({
               icon: summer.award?.icon || data.icon,
               name: summer.award?.title || summer.shop_name || data.name || "Sommer-Sammelkarte",
               description: data.saved
-                ? `${summer.award?.message || `Sammelkarte freigeschaltet: ${summer.shop_name}.`} ${summer.checkin_confirmed ? "Dein Check-in Bonus ist bereits bestaetigt." : "Checke bei dieser Eisdiele ein, um die Karte vollstaendig zu machen."}`
-                : "Sommer-Sammelkarte erkannt. Logge dich ein oder registriere dich, damit sie in deinem Sammelalbum gespeichert wird.",
+                ? `${summer.award?.message || `Sammelkarte freigeschaltet: ${summer.shop_name}.`} ${summer.checkin_confirmed ? "Dein Check-in Bonus ist bereits bestätigt." : "Checke jetzt dein Eis ein, um die Sammelkarte vollständig zu machen."}`
+                : `Du hast bei ${summer.shop_name} eine Sommer-Sammelkarte entdeckt. Registriere dich kurz, dann wird der Scan automatisch gespeichert und du kannst dein Eis direkt einchecken.`,
               statusMessage: data.saved
-                ? (data.already_scanned ? "Diese Sammelkarte war bereits in deinem Album." : `Gespeichert. ${achievementCount > 0 ? `${achievementCount} Bonus-Award(s) freigeschaltet.` : "Weiter sammeln fuer Bonus-Awards."}`)
-                : "Nach dem Login wird der Scan automatisch gespeichert.",
+                ? (data.already_scanned ? "Diese Sammelkarte war bereits in deinem Album." : `Gespeichert. ${achievementCount > 0 ? `${achievementCount} Bonus-Award(s) freigeschaltet.` : "Weiter sammeln für Bonus-Awards."}`)
+                : "Der Scan ist vorgemerkt. Nach dem Login landet der Award in deinem Sammelalbum.",
               needsLogin: !data.saved,
+              primaryAction: data.saved ? "checkin" : "login",
+              primaryActionLabel: data.saved ? "Jetzt einchecken" : "Award sichern",
+              secondaryActionLabel: data.saved ? "Erst zur Eisdiele" : "Erst Eisdiele ansehen",
+              shopId: summer.shop_id,
             });
             window.dispatchEvent(new CustomEvent('seasonal:summer-progress-updated'));
           } else {
@@ -518,6 +527,21 @@ const Header = ({ refreshShops }) => {
 
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
 
+  const handleQrPrimaryAction = () => {
+    const action = modalData?.primaryAction;
+    const shopId = modalData?.shopId;
+    setModalData(null);
+
+    if (action === "login") {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (action === "checkin" && shopId) {
+      navigate(`/map/activeShop/${shopId}?tab=checkins&openCheckin=1`, { replace: false });
+    }
+  };
+
   return (
     <>
       <HeaderContainer $menuOpen={menuOpen}>
@@ -532,13 +556,13 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
-          <DesktopNavLink to="/ice-tour" $compact>
+          <DesktopNavLink to="/ice-tour" $compact={showIceTourNewBadge}>
             Ice-Tour
             {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
           </DesktopNavLink>
-          <DesktopNavLink to="/photo-challenge" $compact>
-            Foto-Challenge
-            {showPhotoChallengeNewBadge && <DesktopNavBadge>NEU</DesktopNavBadge>}
+          <DesktopNavLink to="/photo-challenge" $compact={showPhotoChallengeNewBadge}>
+            Foto-Challenges
+            {showPhotoChallengeNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
           </DesktopNavLink>
           <DesktopNavLink to="/dashboard">
             Aktivitäten
@@ -655,7 +679,21 @@ const Header = ({ refreshShops }) => {
                       <MenuSectionTitle>Admin</MenuSectionTitle>
                       <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>
                       <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
-                      <MenuItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuItemLink>
+                      <MenuSubmenuButton
+                        type="button"
+                        onClick={() => setAwardsActionsOpen((isOpen) => !isOpen)}
+                        aria-expanded={awardsActionsOpen}
+                        $active={isAwardsActionsActive}
+                      >
+                        <span>Awards / Aktionen</span>
+                        <MenuSubmenuIndicator>{awardsActionsOpen ? '-' : '+'}</MenuSubmenuIndicator>
+                      </MenuSubmenuButton>
+                      {awardsActionsOpen && (
+                        <MenuSubmenu>
+                          <MenuSubItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuSubItemLink>
+                          <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}>Sommer-QR-Aktion verwalten</MenuSubItemLink>
+                        </MenuSubmenu>
+                      )}
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
                       <MenuItemLink to="/shop-change-requests" onClick={closeMenu}>Änderungsvorschläge</MenuItemLink>
                     </MenuSection>
@@ -753,6 +791,7 @@ const Header = ({ refreshShops }) => {
       <QrScanModal
         open={modalData !== null}
         onClose={() => setModalData(null)}
+        onPrimaryAction={handleQrPrimaryAction}
         data={modalData}
         needsLogin={modalData?.needsLogin}
       />
@@ -1233,6 +1272,44 @@ const MenuActionButton = styled.button`
     }
   `
       : ''}
+`;
+
+const MenuSubmenuButton = styled.button`
+  ${menuItemBase}
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  ${({ $active }) => ($active ? `
+    background: rgba(255, 181, 34, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 181, 34, 0.35);
+  ` : '')}
+`;
+
+const MenuSubmenuIndicator = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.08);
+  font-size: 0.95rem;
+  font-weight: 900;
+`;
+
+const MenuSubmenu = styled.div`
+  display: grid;
+  gap: 2px;
+  margin: 0 0 2px 0.8rem;
+  padding-left: 0.55rem;
+  border-left: 2px solid rgba(255, 181, 34, 0.38);
+`;
+
+const MenuSubItemLink = styled(MenuItemLink)`
+  width: calc(95% - 0.8rem);
+  min-height: 22px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
 `;
 
 const MenuItemBadge = styled.span`

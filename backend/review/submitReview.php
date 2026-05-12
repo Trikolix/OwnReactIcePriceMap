@@ -29,7 +29,7 @@ function hasReviewEditedAtColumn(PDO $pdo): bool {
 }
 
 if (isMultipartBodyTooLarge()) {
-    respondWithError('Die hochgeladenen Bilder sind zu gross. Bitte waehle weniger oder kleinere Bilder.', 413);
+    respondWithError('Die hochgeladenen Bilder sind zu groß. Bitte wähle weniger oder kleinere Bilder.', 413);
 }
 
 // 1. Hole POST-Daten direkt aus $_POST (da multipart/form-data)

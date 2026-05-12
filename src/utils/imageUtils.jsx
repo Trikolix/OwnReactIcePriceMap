@@ -1,4 +1,4 @@
-// Gemeinsame Konfiguration fuer Bild-Uploads
+// Gemeinsame Konfiguration für Bild-Uploads
 export const MAX_IMAGES = 5;
 export const MAX_DIMENSION = 1600; // px
 export const JPEG_QUALITY = 0.8;
@@ -16,16 +16,16 @@ const canvasToBlob = (canvas, quality) => new Promise((resolve, reject) => {
     }, 'image/jpeg', quality);
 });
 
-// Komprimiere ein Image-File mittels Canvas und gib ein JPEG-File zurueck.
+// Komprimiere ein Image-File mittels Canvas und gib ein JPEG-File zurück.
 export const compressImageFile = (file) => {
     return new Promise((resolve, reject) => {
         if (!file || !file.type?.startsWith('image/')) {
-            reject(new Error('Bitte nur Bilddateien auswaehlen.'));
+            reject(new Error('Bitte nur Bilddateien auswählen.'));
             return;
         }
 
         if (file.type === 'image/gif') {
-            reject(new Error('GIF-Dateien werden nicht unterstuetzt.'));
+            reject(new Error('GIF-Dateien werden nicht unterstützt.'));
             return;
         }
 

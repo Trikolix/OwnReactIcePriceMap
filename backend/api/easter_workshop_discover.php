@@ -23,7 +23,7 @@ if ($phase !== 'active') {
     echo json_encode([
         'success' => false,
         'phase' => $phase,
-        'message' => 'Die Osterwerkstatt kann nur waehrend der Osteraktion entdeckt werden.',
+        'message' => 'Die Osterwerkstatt kann nur während der Osteraktion entdeckt werden.',
     ]);
     exit;
 }

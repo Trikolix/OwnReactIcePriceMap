@@ -88,6 +88,7 @@ if ($summerCampaignShop) {
     'shop_name' => $summerCampaignShop['shop_name'],
     'shop_address' => $summerCampaignShop['shop_address'],
     'category' => $summerCampaignShop['category'] ?: 'Sommerroute',
+    'categories' => $summerCampaignShop['categories'] ?? [],
     'award' => $summerShopAward,
     'checkin_confirmed' => $nutzerId ? hasSummerCampaignCheckin($pdo, (int)$nutzerId, (int)$summerCampaignShop['eisdiele_id'], getSummerCampaignConfig($pdo, SUMMER_CAMPAIGN_ID)) : false,
     'achievements' => $summerAchievements,

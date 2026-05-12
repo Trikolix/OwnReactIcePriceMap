@@ -198,7 +198,7 @@ export default function PushOptInOverlay() {
 
       if (isBlocked) {
         setPermissionBlocked(true);
-        setError("Benachrichtigungen sind fuer diese Website im Browser blockiert.");
+        setError("Benachrichtigungen sind für diese Website im Browser blockiert.");
       } else {
         setError(activationError.message || "Push-Benachrichtigungen konnten nicht aktiviert werden.");
       }
@@ -217,7 +217,7 @@ export default function PushOptInOverlay() {
         </IconWrap>
         <Title id="push-opt-in-title">Push-Benachrichtigungen sind da</Title>
         <Text>
-          Ice App kann dich jetzt direkt informieren, wenn es neue Kommentare, Check-in-Erwaehnungen,
+          Ice App kann dich jetzt direkt informieren, wenn es neue Kommentare, Check-in-Erwähnungen,
           Team-Challenges oder News gibt.
         </Text>
         <Hint>
@@ -227,8 +227,8 @@ export default function PushOptInOverlay() {
         {error && <ErrorText>{error}</ErrorText>}
         {permissionBlocked && (
           <BrowserHelp>
-            Oeffne die Website-Informationen deines Browsers, meist ueber das Schloss- oder Regler-Symbol
-            links neben der Adresse. Erlaube dort Benachrichtigungen fuer diese Website und klicke danach
+            Öffne die Website-Informationen deines Browsers, meist über das Schloss- oder Regler-Symbol
+            links neben der Adresse. Erlaube dort Benachrichtigungen für diese Website und klicke danach
             erneut auf Push aktivieren.
           </BrowserHelp>
         )}

@@ -23,7 +23,7 @@ if ($phase !== 'active') {
     echo json_encode([
         'success' => false,
         'phase' => $phase,
-        'message' => 'Tageshinweise sind nur waehrend der Osteraktion verfuegbar.',
+        'message' => 'Tageshinweise sind nur während der Osteraktion verfügbar.',
     ]);
     exit;
 }

@@ -850,7 +850,7 @@ function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
 export default function EventMyRegistration({ view = "participant" }) {
   const apiUrl = getApiBaseUrl();
   const location = useLocation();
-  const { authToken, userId, authReady } = useUser();
+  const { authToken, authReady } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -914,25 +914,17 @@ export default function EventMyRegistration({ view = "participant" }) {
   const ownSlot = useMemo(() => data?.slots?.[0] || null, [data]);
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
   const isPaid = paymentStatus === "paid";
-  const isAdmin = Number(userId) === 1;
   const selectedRoute = useMemo(
     () => ROUTE_OPTIONS.find((route) => route.key === ownSlot?.route_key) || null,
     [ownSlot?.route_key]
   );
   const selectedRouteResources = selectedRoute ? EVENT_ROUTE_RESOURCES[selectedRoute.key] || {} : {};
   const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time), [ownSlot?.start_time]);
-  const showRaceDayInfo = isPaid && (EVENT_RACE_DAY_INFO_ENABLED || isAdmin);
-  const isRaceDayInfoPreview = showRaceDayInfo && !EVENT_RACE_DAY_INFO_ENABLED;
-  const stampCardMode = useMemo(() => {
-    if (typeof window === "undefined") return "live";
-    const host = window.location.hostname;
-    return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
-  }, [isAdmin]);
+  const showRaceDayInfo = isPaid && EVENT_RACE_DAY_INFO_ENABLED;
   const isLiveMapPublic = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const host = window.location.hostname;
-    return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" || new Date() >= EVENT_LIVE_MAP_PUBLIC_RELEASE_DATE;
-  }, [isAdmin]);
+    return new Date() >= EVENT_LIVE_MAP_PUBLIC_RELEASE_DATE;
+  }, []);
   const teamInviteLink = useMemo(() => {
     return buildEventRegistrationInviteLink(data?.registration?.team_name, data?.account?.invite_code);
   }, [data?.account?.invite_code, data?.registration?.team_name]);
@@ -1131,7 +1123,7 @@ export default function EventMyRegistration({ view = "participant" }) {
     <Page>
       <Seo
         title={isRegistrationView ? "Meine Ice-Tour Anmeldung" : "Ice-Tour Teilnehmerbereich"}
-        description={isRegistrationView ? "Persoenliche Anmeldung zur Ice-Tour 2026." : "Teilnehmerinfos fuer den Eventtag der Ice-Tour 2026."}
+        description={isRegistrationView ? "Persönliche Anmeldung zur Ice-Tour 2026." : "Teilnehmerinfos für den Eventtag der Ice-Tour 2026."}
         robots="noindex,nofollow"
       />
       <Header />
@@ -1173,7 +1165,7 @@ export default function EventMyRegistration({ view = "participant" }) {
                 <RaceDayCard id="overview">
                   <RaceDayHero>
                     <div>
-                      <HeroEyebrow>{isRaceDayInfoPreview ? "Renntag-Vorschau" : "Renntag auf einen Blick"}</HeroEyebrow>
+                      <HeroEyebrow>Renntag auf einen Blick</HeroEyebrow>
                       <RaceDayHeading>Alles Wichtige für deinen Tour-Tag auf einer Seite</RaceDayHeading>
                       <RaceDayLead>
                         Von deiner Anmeldung bis zur Zielankunft bei {EVENT_START_FINISH.name}: Hier findest du die wichtigsten Infos für deinen Event-Tag kompakt und übersichtlich gesammelt.
@@ -1208,14 +1200,8 @@ export default function EventMyRegistration({ view = "participant" }) {
                     </RaceDayMetaGrid>
                   </RaceDayHero>
 
-                  {isRaceDayInfoPreview && (
-                    <PreviewNote>
-                      Dieser Bereich ist aktuell nur als Vorschau sichtbar. Nach der Freischaltung sehen ihn ausschließlich vollständig bezahlte Starter.
-                    </PreviewNote>
-                  )}
-
                   <ActionRow>
-                    <SecondaryActionLink as={Link} to={`/event-stamp-card?mode=${stampCardMode}`}>
+                    <SecondaryActionLink as={Link} to="/event-stamp-card?mode=live">
                       <Stamp size={18} aria-hidden="true" />
                       <span>Stempelkarte öffnen</span>
                     </SecondaryActionLink>
@@ -1653,14 +1639,9 @@ export default function EventMyRegistration({ view = "participant" }) {
                     <li>Das Vorzeigen der Stempelkarte verifiziert dich als Teilnehmer, damit du deine gratis Kugel Eis bekommst.</li>
                     <li>Kaufe gern zusätzlich Eis, Kuchen oder Getränke, damit die Eisdielen auch etwas vom Event haben.</li>
                   </CleanList>
-                  <NavLinkButton to={`/event-stamp-card?mode=${stampCardMode}`}>
-                    Zur {stampCardMode === "test" ? "Test-" : ""}Stempelkarte
+                  <NavLinkButton to="/event-stamp-card?mode=live">
+                    Zur Stempelkarte
                   </NavLinkButton>
-                  {isAdmin && (
-                    <NavLinkButton to="/event-live?mode=test" style={{ marginLeft: "0.65rem" }}>
-                      Zur Test-Live-Map
-                    </NavLinkButton>
-                  )}
                 </InfoCard>
 
                 <InfoCard>

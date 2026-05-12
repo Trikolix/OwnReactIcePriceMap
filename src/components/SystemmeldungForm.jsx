@@ -141,7 +141,7 @@ function renderMarkdownContent(markdown) {
 }
 
 function buildMailPreviewHtml(form, includeSettingsHint) {
-  const heading = form.email_heading || form.title || "Mail-Ueberschrift";
+  const heading = form.email_heading || form.title || "Mail-Überschrift";
   const buttons = (form.email_buttons || []).filter((button) => button.label?.trim() && isSafeHttpUrl(absoluteIceAppUrl(button.url)));
   const settingsHint = includeSettingsHint
     ? `<div style="border-top:1px solid #f3dfad;background:#fff8e8;padding:18px 28px;color:#8a6a24;font-size:13px;line-height:1.45;">Du erhältst diese Nachricht, weil du Ice-App News abonniert hast. Deine Benachrichtigungseinstellungen kannst du jederzeit in der Ice-App ändern: <a href="https://ice-app.de/account/settings" style="color:#9a6500;text-decoration:underline;">Benachrichtigungseinstellungen öffnen</a>.</div>`
@@ -346,7 +346,7 @@ export default function SystemmeldungForm() {
   };
 
   const deleteMeldung = async (id) => {
-    if (!window.confirm("Systemmeldung wirklich loeschen?")) return;
+    if (!window.confirm("Systemmeldung wirklich löschen?")) return;
     await fetch(`${API_BASE}/systemmeldung.php?action=delete&id=${id}`);
     loadHistory();
   };
@@ -390,7 +390,7 @@ export default function SystemmeldungForm() {
               <FieldBlock>
                 <Label>Overlay-Nachricht</Label>
                 <Textarea value={form.message} onChange={(event) => updateField("message", event.target.value)} rows={10} required />
-                <Hint>Markdown: `## Ueberschrift`, `- Listenpunkt`, `**fett**`, `[Link](https://...)`.</Hint>
+                <Hint>Markdown: `## Überschrift`, `- Listenpunkt`, `**fett**`, `[Link](https://...)`.</Hint>
               </FieldBlock>
 
               <ButtonGrid>
@@ -430,14 +430,14 @@ export default function SystemmeldungForm() {
               </FieldBlock>
 
               <FieldBlock>
-                <Label>Mail-Ueberschrift</Label>
-                <Input value={form.email_heading} onChange={(event) => updateField("email_heading", event.target.value)} placeholder={form.title || "Ueberschrift"} maxLength={180} />
+                <Label>Mail-Überschrift</Label>
+                <Input value={form.email_heading} onChange={(event) => updateField("email_heading", event.target.value)} placeholder={form.title || "Überschrift"} maxLength={180} />
               </FieldBlock>
 
               <FieldBlock>
                 <Label>Mailtext</Label>
                 <Textarea value={form.email_body} onChange={(event) => updateField("email_body", event.target.value)} rows={12} />
-                <Hint>Markdown: `## Ueberschrift`, `- Listenpunkt`, `**fett**`, `[Link](https://...)`, `[button: Text](https://...)`.</Hint>
+                <Hint>Markdown: `## Überschrift`, `- Listenpunkt`, `**fett**`, `[Link](https://...)`, `[button: Text](https://...)`.</Hint>
               </FieldBlock>
             </Card>
 

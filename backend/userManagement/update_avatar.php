@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 if ($currentUserId <= 0) {
     http_response_code(400);
-    echo json_encode(['error' => 'Ungueltige Nutzer-ID']);
+    echo json_encode(['error' => 'Ungültige Nutzer-ID']);
     exit;
 }
 
@@ -72,7 +72,7 @@ if (!empty($_POST['preset_avatar'])) {
     $preset = findPresetAvatarByPath($selectedPreset);
     if (!$preset) {
         http_response_code(400);
-        echo json_encode(['error' => 'Ungueltiges Preset-Bild']);
+        echo json_encode(['error' => 'Ungültiges Preset-Bild']);
         exit;
     }
 
@@ -82,7 +82,7 @@ if (!empty($_POST['preset_avatar'])) {
     $requiredLevel = (int)($preset['min_level'] ?? 0);
     if ($currentLevel < $requiredLevel) {
         http_response_code(403);
-        echo json_encode(['error' => 'Dieser Avatar ist erst ab Level ' . $requiredLevel . ' verfuegbar.']);
+        echo json_encode(['error' => 'Dieser Avatar ist erst ab Level ' . $requiredLevel . ' verfügbar.']);
         exit;
     }
 
@@ -109,7 +109,7 @@ $allowedMime = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'we
 $mime = mime_content_type($file['tmp_name']);
 if (!isset($allowedMime[$mime])) {
     http_response_code(400);
-    echo json_encode(['error' => 'Ungueltiges Dateiformat']);
+    echo json_encode(['error' => 'Ungültiges Dateiformat']);
     exit;
 }
 

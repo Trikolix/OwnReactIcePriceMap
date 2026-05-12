@@ -282,7 +282,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const handlePendingPresetSelect = (preset) => {
     if (!preset) return;
     if (preset.unlocked === false) {
-      setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfuegbar.`);
+      setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfügbar.`);
       return;
     }
     setPendingPresetId(preset.id);
@@ -293,7 +293,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     const preset = presetAvatars.find((item) => item.id === pendingPresetId);
     if (!preset) return;
     if (preset.unlocked === false) {
-      setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfuegbar.`);
+      setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfügbar.`);
       return;
     }
     if (objectUrl) {

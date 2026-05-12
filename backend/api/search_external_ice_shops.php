@@ -26,7 +26,7 @@ if ($lat === null || $lon === null || $lat < -90 || $lat > 90 || $lon < -180 || 
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Gueltige Koordinaten werden fuer die Umkreissuche benoetigt.',
+        'message' => 'Gültige Koordinaten werden für die Umkreissuche benötigt.',
     ]);
     exit;
 }

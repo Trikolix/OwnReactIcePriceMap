@@ -18,7 +18,7 @@ if ($userId <= 0 || $userId !== (int)$auth['user_id']) {
     http_response_code(403);
     echo json_encode([
         'success' => false,
-        'message' => 'Nutzer stimmt nicht mit der Session ueberein.',
+        'message' => 'Nutzer stimmt nicht mit der Session überein.',
     ]);
     exit;
 }

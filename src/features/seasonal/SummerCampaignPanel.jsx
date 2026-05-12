@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { Lock, MapPin, ScanLine, Sparkles, Trophy } from 'lucide-react';
+import { MapPin, ScanLine, Sparkles, Trophy } from 'lucide-react';
 import { CAMPAIGN_STATUS } from './campaigns';
 import { fetchSummerCampaignProgress } from './summerApi';
 import { useUser } from '../../context/UserContext';
@@ -9,6 +9,7 @@ import { getAwardIconSources, handleAwardIconFallback } from '../../utils/awardI
 
 const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
   const { authToken } = useUser();
+  const [selectedShop, setSelectedShop] = useState(null);
   const [state, setState] = useState({
     loading: false,
     error: '',
@@ -47,7 +48,6 @@ const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
 
   const shops = state.data?.shops || [];
   const summary = state.data?.summary || { total: 0, collected: 0, missing: 0, checkins: 0 };
-  const categoryRows = useMemo(() => Object.entries(state.data?.categories || {}), [state.data]);
   const completion = summary.total > 0 ? Math.round((summary.collected / summary.total) * 100) : 0;
 
   return (
@@ -56,7 +56,7 @@ const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
         <div>
           <SectionTitle>{campaign?.title || 'Sommer-Sammelaktion 2026'}</SectionTitle>
           <Lead>
-            Scanne die Flyer-Codes in teilnehmenden Eisdielen und fuelle dein Sammelalbum. Ein Check-in vor Ort macht die Karte vollstaendig.
+            Scanne die Flyer-Codes in teilnehmenden Eisdielen und fülle dein Sammelalbum. Ein Check-in vor Ort macht die Karte vollständig.
           </Lead>
         </div>
         <Badge><Sparkles size={16} /> {completion}%</Badge>
@@ -65,7 +65,7 @@ const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
       {!isLoggedIn && (
         <GuestBox>
           <strong>Scans werden nach dem Login gespeichert.</strong>
-          <p>Du kannst einen Flyer-Code scannen und dich danach anmelden. Die App merkt sich den Scan lokal und traegt ihn nach.</p>
+          <p>Du kannst einen Flyer-Code scannen und dich danach anmelden. Die App merkt sich den Scan lokal und trägt ihn nach.</p>
           <ActionButton type="button" onClick={onLogin}>Login / Registrieren</ActionButton>
         </GuestBox>
       )}
@@ -84,49 +84,83 @@ const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
           </ProgressBar>
           <StatsRow>
             <Stat><ScanLine size={16} /> {summary.collected}/{summary.total} gesammelt</Stat>
-            <Stat><MapPin size={16} /> {summary.checkins} mit Check-in bestaetigt</Stat>
+            <Stat><MapPin size={16} /> {summary.checkins} mit Check-in bestätigt</Stat>
             <Stat><Trophy size={16} /> {summary.missing} offen</Stat>
           </StatsRow>
 
-          {categoryRows.length > 0 && (
-            <CategoryList>
-              {categoryRows.map(([name, stats]) => (
-                <CategoryPill key={name} $complete={stats.collected >= stats.total}>
-                  {name}: {stats.collected}/{stats.total}
-                </CategoryPill>
-              ))}
-            </CategoryList>
-          )}
-
           <AlbumGrid>
-            {shops.map((shop) => (
-              <AlbumCard key={shop.id} $collected={shop.collected} $complete={shop.checkin_confirmed}>
-                <CardIcon $collected={shop.collected}>
-                  {shop.collected && shop.award_icon ? (
-                    <AwardThumb
-                      src={getAwardIconSources(shop.award_icon, 512).src || ''}
-                      data-fallback-src={getAwardIconSources(shop.award_icon, 512).fallbackSrc || ''}
-                      onError={handleAwardIconFallback}
-                      alt={shop.award_title || shop.shop_name}
-                    />
-                  ) : shop.collected ? <Sparkles size={26} /> : <Lock size={24} />}
-                </CardIcon>
-                <CardBody>
-                  <CardCategory>{shop.category}</CardCategory>
-                  <CardTitle>{shop.collected ? (shop.award_title || shop.shop_name) : 'Noch nicht freigeschaltet'}</CardTitle>
-                  <CardMeta>
-                    {shop.collected
-                      ? (shop.checkin_confirmed ? 'Scan + Check-in bestaetigt' : 'Gescannt - Check-in Bonus offen')
-                      : 'Flyer-Code vor Ort scannen'}
-                  </CardMeta>
-                  {shop.collected && (
-                    <ShopLink to={`/map/activeShop/${shop.shop_id}`}>Zur Eisdiele</ShopLink>
-                  )}
-                </CardBody>
-              </AlbumCard>
-            ))}
+            {shops.map((shop) => {
+              const awardIconSources = shop.award_icon ? getAwardIconSources(shop.award_icon, 512) : null;
+              const imageAlt = shop.award_title || `Sammelkarte ${shop.shop_name}`;
+
+              return (
+                <AlbumCard key={shop.id}>
+                  <AwardImageButton type="button" onClick={() => setSelectedShop(shop)} aria-label={`Details zu ${shop.shop_name} anzeigen`}>
+                    {awardIconSources?.src ? (
+                      <AwardThumb
+                        src={awardIconSources.src}
+                        data-fallback-src={awardIconSources.fallbackSrc || ''}
+                        onError={handleAwardIconFallback}
+                        alt={imageAlt}
+                        $collected={shop.collected}
+                      />
+                    ) : (
+                      <AwardFallback $collected={shop.collected}>
+                        <Sparkles size={42} />
+                      </AwardFallback>
+                    )}
+                  </AwardImageButton>
+                  <ShopLink to={`/map/activeShop/${shop.shop_id}`}>{shop.shop_name}</ShopLink>
+                </AlbumCard>
+              );
+            })}
           </AlbumGrid>
         </>
+      )}
+
+      {selectedShop && (
+        <DetailOverlay onClick={() => setSelectedShop(null)}>
+          <DetailDialog onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="summer-award-detail-title">
+            <DetailClose type="button" onClick={() => setSelectedShop(null)} aria-label="Details schließen">x</DetailClose>
+            <DetailImageWrap>
+              {selectedShop.award_icon ? (
+                <AwardThumb
+                  src={getAwardIconSources(selectedShop.award_icon, 512).src || ''}
+                  data-fallback-src={getAwardIconSources(selectedShop.award_icon, 512).fallbackSrc || ''}
+                  onError={handleAwardIconFallback}
+                  alt={selectedShop.award_title || `Sammelkarte ${selectedShop.shop_name}`}
+                  $collected={selectedShop.collected}
+                />
+              ) : (
+                <AwardFallback $collected={selectedShop.collected}>
+                  <Sparkles size={48} />
+                </AwardFallback>
+              )}
+            </DetailImageWrap>
+            <DetailTitle id="summer-award-detail-title">{selectedShop.shop_name}</DetailTitle>
+            {selectedShop.award_title && <DetailMeta>{selectedShop.award_title}</DetailMeta>}
+            <DetailStatus $collected={selectedShop.collected}>
+              {selectedShop.collected ? 'Freigeschaltet' : 'Noch nicht freigeschaltet'}
+            </DetailStatus>
+            <DetailSection>
+              <DetailLabel>Kategorien</DetailLabel>
+              {selectedShop.categories?.length > 0 ? (
+                <DetailPills>
+                  {selectedShop.categories.map((category) => <DetailPill key={category}>{category}</DetailPill>)}
+                </DetailPills>
+              ) : (
+                <DetailMeta>Keine Kategorien zugeordnet.</DetailMeta>
+              )}
+            </DetailSection>
+            <DetailSection>
+              <DetailLabel>Adresse</DetailLabel>
+              <DetailMeta>{selectedShop.shop_address || 'Keine Adresse hinterlegt.'}</DetailMeta>
+            </DetailSection>
+            <DetailActions>
+              <DetailLink to={`/map/activeShop/${selectedShop.shop_id}`}>Zur Eisdiele</DetailLink>
+            </DetailActions>
+          </DetailDialog>
+        </DetailOverlay>
       )}
     </PanelSection>
   );
@@ -235,94 +269,185 @@ const Stat = styled.div`
   font-size: 0.85rem;
 `;
 
-const CategoryList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.75rem;
-`;
-
-const CategoryPill = styled.span`
-  border-radius: 999px;
-  padding: 0.3rem 0.6rem;
-  background: ${({ $complete }) => ($complete ? '#e9f7ef' : '#fff4dd')};
-  color: ${({ $complete }) => ($complete ? '#14532d' : '#7a4a00')};
-  font-size: 0.8rem;
-  font-weight: 800;
-`;
-
 const AlbumGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 1rem 0.85rem;
+  margin-top: 1rem;
 `;
 
 const AlbumCard = styled.article`
-  min-height: 190px;
-  border-radius: 8px;
-  border: 1px solid ${({ $complete, $collected }) => ($complete ? '#7bc894' : $collected ? '#ffd581' : '#e2dfd4')};
-  background: ${({ $complete, $collected }) => (
-    $complete
-      ? 'linear-gradient(180deg, #f1fbf4, #ffffff)'
-      : $collected
-        ? 'linear-gradient(180deg, #fff6dc, #ffffff)'
-        : 'linear-gradient(180deg, #f2f0e9, #ffffff)'
-  )};
-  padding: 0.8rem;
   display: grid;
+  justify-items: center;
   gap: 0.55rem;
-  align-content: start;
+  min-width: 0;
 `;
 
-const CardIcon = styled.div`
-  width: 58px;
-  height: 58px;
+const AwardImageButton = styled.button`
+  width: 100%;
+  max-width: 168px;
+  aspect-ratio: 1 / 1;
+  border: none;
   border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
   display: grid;
   place-items: center;
-  background: ${({ $collected }) => ($collected ? '#ffcf69' : '#ddd8ca')};
-  color: ${({ $collected }) => ($collected ? '#5b3600' : '#706a5c')};
+  background: #f1eee6;
+  box-shadow: 0 6px 18px rgba(47, 33, 0, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(47, 33, 0, 0.13);
+  }
 `;
 
 const AwardThumb = styled.img`
   width: 100%;
   height: 100%;
-  border-radius: 10px;
   object-fit: cover;
   display: block;
+  filter: ${({ $collected }) => ($collected ? 'none' : 'grayscale(1) saturate(0)')};
+  opacity: ${({ $collected }) => ($collected ? 1 : 0.35)};
 `;
 
-const CardBody = styled.div`
-  min-width: 0;
+const AwardFallback = styled.div`
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: ${({ $collected }) => ($collected ? '#7a4a00' : '#8a857a')};
+  background: ${({ $collected }) => ($collected ? '#fff1ca' : '#e7e4dc')};
+  filter: ${({ $collected }) => ($collected ? 'none' : 'grayscale(1) saturate(0)')};
+  opacity: ${({ $collected }) => ($collected ? 1 : 0.6)};
 `;
 
-const CardCategory = styled.div`
-  color: #7a4a00;
-  font-size: 0.74rem;
+const ShopLink = styled(Link)`
+  color: #2f2100;
+  font-weight: 800;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    color: #7a4a00;
+    text-decoration: underline;
+  }
+`;
+
+const DetailOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 3600;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(20, 14, 4, 0.54);
+`;
+
+const DetailDialog = styled.div`
+  position: relative;
+  width: min(420px, 94vw);
+  max-height: min(760px, 92vh);
+  overflow-y: auto;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.24);
+`;
+
+const DetailClose = styled.button`
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.08);
+  color: #2f2100;
+  font-size: 1.15rem;
+  font-weight: 800;
+  cursor: pointer;
+`;
+
+const DetailImageWrap = styled.div`
+  width: min(220px, 70vw);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto 0.85rem;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f1eee6;
+`;
+
+const DetailTitle = styled.h4`
+  margin: 0;
+  color: #2f2100;
+  font-size: 1.15rem;
+  text-align: center;
+`;
+
+const DetailMeta = styled.div`
+  margin-top: 0.35rem;
+  color: rgba(47, 33, 0, 0.68);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-align: center;
+`;
+
+const DetailStatus = styled.div`
+  width: fit-content;
+  margin: 0.75rem auto 0;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  background: ${({ $collected }) => ($collected ? '#dff4e6' : '#e7e4dc')};
+  color: ${({ $collected }) => ($collected ? '#14532d' : '#5f5a50')};
+  font-size: 0.78rem;
+  font-weight: 800;
+`;
+
+const DetailSection = styled.div`
+  margin-top: 1rem;
+`;
+
+const DetailLabel = styled.div`
+  margin-bottom: 0.4rem;
+  color: #5b4520;
+  font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
 `;
 
-const CardTitle = styled.h4`
-  margin: 0.25rem 0 0;
-  color: #2f2100;
-  font-size: 0.96rem;
-  line-height: 1.2;
+const DetailPills = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 `;
 
-const CardMeta = styled.div`
-  margin-top: 0.35rem;
-  color: rgba(47, 33, 0, 0.66);
-  font-size: 0.78rem;
-  line-height: 1.3;
-`;
-
-const ShopLink = styled(Link)`
-  display: inline-flex;
-  margin-top: 0.55rem;
-  color: #14532d;
+const DetailPill = styled.span`
+  border-radius: 999px;
+  padding: 0.28rem 0.58rem;
+  background: #fff4dd;
+  color: #7a4a00;
+  font-size: 0.8rem;
   font-weight: 800;
-  font-size: 0.82rem;
+`;
+
+const DetailActions = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 1.1rem;
+`;
+
+const DetailLink = styled(Link)`
+  border-radius: 10px;
+  background: #ffb522;
+  color: #2b1d00;
+  padding: 0.65rem 0.95rem;
+  font-weight: 800;
   text-decoration: none;
 `;

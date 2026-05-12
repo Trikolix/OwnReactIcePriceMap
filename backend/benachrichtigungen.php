@@ -82,5 +82,5 @@ if ($action === 'get' && isset($_GET['id'], $_GET['nutzer_id'])) {
     respond(['status' => 'success', 'notification' => $notification]);
 }
 
-respond(['status' => 'error', 'message' => 'Ungueltige Anfrage']);
+respond(['status' => 'error', 'message' => 'Ungültige Anfrage']);
 ?>

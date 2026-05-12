@@ -129,6 +129,42 @@ function upsertSummerAward(PDO $pdo, string $code, string $category, int $level,
     ];
 }
 
+function getNextSummerAwardLevel(PDO $pdo, int $awardId): int
+{
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(level), 0) + 1 FROM award_levels WHERE award_id = :award_id");
+    $stmt->execute(['award_id' => $awardId]);
+    return max(1, (int)$stmt->fetchColumn());
+}
+
+function resolveSummerShopAwardLevel(PDO $pdo, string $awardCode, int $shopId): int
+{
+    $stmt = $pdo->prepare(
+        "SELECT al.level
+         FROM awards a
+         JOIN award_levels al ON al.award_id = a.id
+         WHERE a.code = :award_code
+           AND al.threshold = :shop_id
+         LIMIT 1"
+    );
+    $stmt->execute([
+        'award_code' => $awardCode,
+        'shop_id' => $shopId,
+    ]);
+    $existingLevel = (int)$stmt->fetchColumn();
+    if ($existingLevel > 0) {
+        return $existingLevel;
+    }
+
+    $awardStmt = $pdo->prepare("SELECT id FROM awards WHERE code = :award_code LIMIT 1");
+    $awardStmt->execute(['award_code' => $awardCode]);
+    $awardId = (int)$awardStmt->fetchColumn();
+    if ($awardId <= 0) {
+        return 1;
+    }
+
+    return getNextSummerAwardLevel($pdo, $awardId);
+}
+
 function generateUniqueSummerQrCode(PDO $pdo): string
 {
     do {
@@ -175,14 +211,18 @@ function fetchSummerAdminState(PDO $pdo): array
          ORDER BY COALESCE(scs.sort_order, 0), e.name"
     );
     $shopsStmt->execute(['campaign_id' => SUMMER_CAMPAIGN_ID]);
-    $shops = array_map(static function (array $row): array {
+    $shopRows = $shopsStmt->fetchAll(PDO::FETCH_ASSOC);
+    $categoryMap = fetchSummerCampaignShopCategories($pdo, array_column($shopRows, 'id'));
+    $shops = array_map(static function (array $row) use ($categoryMap): array {
+        $categories = $categoryMap[(int)$row['id']] ?? normalizeSummerCategories($row['category'] ?? '');
         return [
             'id' => (int)$row['id'],
             'qr_code_id' => (int)$row['qr_code_id'],
             'eisdiele_id' => (int)$row['eisdiele_id'],
             'shop_name' => $row['shop_name'],
             'shop_address' => $row['shop_address'],
-            'category' => $row['category'] ?: '',
+            'category' => implode(', ', $categories),
+            'categories' => $categories,
             'sort_order' => (int)$row['sort_order'],
             'is_active' => (int)$row['is_active'] === 1,
             'award_id' => $row['award_id'] !== null ? (int)$row['award_id'] : null,
@@ -197,7 +237,7 @@ function fetchSummerAdminState(PDO $pdo): array
             'valid_from' => $row['valid_from'],
             'valid_until' => $row['valid_until'],
         ];
-    }, $shopsStmt->fetchAll(PDO::FETCH_ASSOC));
+    }, $shopRows);
 
     return [
         'status' => 'success',
@@ -297,6 +337,7 @@ try {
             'eisdiele_id' => $shopId,
         ]);
 
+        $shopCategories = normalizeSummerCategories($input['category'] ?? '');
         $campaignStmt = $pdo->prepare(
             "INSERT INTO summer_campaign_shops (campaign_id, qr_code_id, eisdiele_id, category, sort_order, is_active)
              VALUES (:campaign_id, :qr_code_id, :eisdiele_id, :category, :sort_order, 1)"
@@ -305,10 +346,12 @@ try {
             'campaign_id' => SUMMER_CAMPAIGN_ID,
             'qr_code_id' => (int)$pdo->lastInsertId(),
             'eisdiele_id' => $shopId,
-            'category' => trim((string)($input['category'] ?? '')),
+            'category' => $shopCategories[0] ?? '',
             'sort_order' => (int)($input['sort_order'] ?? 0),
         ]);
+        setSummerCampaignShopCategories($pdo, (int)$pdo->lastInsertId(), $shopCategories);
     } elseif ($action === 'update_shop') {
+        $shopCategories = normalizeSummerCategories($input['category'] ?? '');
         $stmt = $pdo->prepare(
             "UPDATE summer_campaign_shops
              SET category = :category,
@@ -317,18 +360,22 @@ try {
              WHERE id = :id AND campaign_id = :campaign_id"
         );
         $stmt->execute([
-            'category' => trim((string)($input['category'] ?? '')),
+            'category' => $shopCategories[0] ?? '',
             'sort_order' => (int)($input['sort_order'] ?? 0),
             'is_active' => normalizeSummerBool($input['is_active'] ?? false) ? 1 : 0,
             'id' => (int)($input['id'] ?? 0),
             'campaign_id' => SUMMER_CAMPAIGN_ID,
         ]);
+        setSummerCampaignShopCategories($pdo, (int)($input['id'] ?? 0), $shopCategories);
     } elseif ($action === 'save_shop_award') {
         $shopRowId = (int)($input['id'] ?? 0);
         $shopStmt = $pdo->prepare(
-            "SELECT scs.*, e.name AS shop_name
+            "SELECT scs.*,
+                    e.name AS shop_name,
+                    al.icon_path AS current_award_icon
              FROM summer_campaign_shops scs
              JOIN eisdielen e ON e.id = scs.eisdiele_id
+             LEFT JOIN award_levels al ON al.award_id = scs.award_id AND al.level = scs.award_level
              WHERE scs.id = :id AND scs.campaign_id = :campaign_id
              LIMIT 1"
         );
@@ -341,14 +388,16 @@ try {
             throw new InvalidArgumentException('Sommer-Eisdiele wurde nicht gefunden.');
         }
 
-        $iconPath = storeSummerAwardIcon('award_icon_file');
-        $awardCode = 'summer_2026_shop_' . (int)$shop['eisdiele_id'];
+        $iconPath = storeSummerAwardIcon('award_icon_file') ?: ($shop['current_award_icon'] ?? null);
+        $shopId = (int)$shop['eisdiele_id'];
+        $awardCode = SUMMER_CAMPAIGN_SHOP_AWARD_CODE;
+        $awardLevel = resolveSummerShopAwardLevel($pdo, $awardCode, $shopId);
         $award = upsertSummerAward(
             $pdo,
             $awardCode,
             'Sommer-Sammelaktion 2026',
-            1,
-            1,
+            $awardLevel,
+            $shopId,
             (int)($input['award_ep'] ?? 25),
             trim((string)($input['award_title'] ?? 'Sammelkarte: ' . $shop['shop_name'])),
             trim((string)($input['award_description'] ?? 'Du hast die Sommer-Sammelkarte dieser Eisdiele freigeschaltet.')),
@@ -391,7 +440,7 @@ try {
             $fallbackTitle = $ruleType === 'category_complete'
                 ? 'Sommerkategorie komplett: ' . (string)$category
                 : 'Sommer-Sammelbonus ' . (int)$targetValue;
-            $fallbackDescription = 'Du hast eine Bonusregel der Sommer-Sammelaktion 2026 erfuellt.';
+            $fallbackDescription = 'Du hast eine Bonusregel der Sommer-Sammelaktion 2026 erfüllt.';
             $iconPath = storeSummerAwardIcon('award_icon_file');
             $award = upsertSummerAward(
                 $pdo,

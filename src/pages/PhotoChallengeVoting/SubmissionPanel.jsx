@@ -161,7 +161,7 @@ const SubmissionPanel = ({
             {!userImagesLoading && !userImages.length && (
               <S.PlaceholderText>
                 {overview?.challenge?.min_image_created_at
-                  ? 'Keine deiner Bilder erfuellt den Zeitraum dieser Challenge.'
+                  ? 'Keine deiner Bilder erfüllt den Zeitraum dieser Challenge.'
                   : 'Du hast noch keine Bilder hochgeladen.'}
               </S.PlaceholderText>
             )}

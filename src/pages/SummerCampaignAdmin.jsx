@@ -44,7 +44,11 @@ export default function SummerCampaignAdmin() {
   const categories = useMemo(() => {
     const values = new Set();
     (state?.shops || []).forEach((shop) => {
-      if (shop.category) values.add(shop.category);
+      const shopCategories = Array.isArray(shop.categories) ? shop.categories : String(shop.category || "").split(",");
+      shopCategories.forEach((category) => {
+        const normalized = String(category).trim();
+        if (normalized) values.add(normalized);
+      });
     });
     return Array.from(values).sort((a, b) => a.localeCompare(b, "de"));
   }, [state]);
@@ -115,7 +119,7 @@ export default function SummerCampaignAdmin() {
       eisdiele_id: Number(selectedShopId),
       category: newCategory,
       sort_order: Number(newSortOrder || 0),
-    }, "Eisdiele hinzugefuegt und QR-Code generiert.");
+    }, "Eisdiele hinzugefügt und QR-Code generiert.");
     setSelectedShopId("");
   };
 
@@ -141,7 +145,7 @@ export default function SummerCampaignAdmin() {
     return (
       <Page>
         <Header />
-        <Container><Card>Kein Zugriff. Diese Seite ist nur fuer Admins.</Card></Container>
+        <Container><Card>Kein Zugriff. Diese Seite ist nur für Admins.</Card></Container>
       </Page>
     );
   }
@@ -152,7 +156,7 @@ export default function SummerCampaignAdmin() {
       <Container>
         <Card>
           <Title>Sommer-Sammelaktion 2026</Title>
-          <Muted>Teilnehmende Eisdielen konfigurieren, random QR-Codes erzeugen und Bonusregeln verknuepfen.</Muted>
+          <Muted>Teilnehmende Eisdielen konfigurieren, random QR-Codes erzeugen und Bonusregeln verknüpfen.</Muted>
         </Card>
 
         {loading && <Card>Lade...</Card>}
@@ -187,7 +191,7 @@ export default function SummerCampaignAdmin() {
         </Card>
 
         <Card>
-          <h2>Eisdiele hinzufuegen</h2>
+          <h2>Eisdiele hinzufügen</h2>
           <SearchRow>
             <Input value={shopQuery} onChange={(e) => setShopQuery(e.target.value)} placeholder="Name, Adresse oder ID" />
             <Button type="button" onClick={handleSearch}>Suchen</Button>
@@ -214,7 +218,7 @@ export default function SummerCampaignAdmin() {
                 <Input required type="number" value={selectedShopId} onChange={(e) => setSelectedShopId(e.target.value)} />
               </Label>
               <Label>
-                Kategorie
+                Kategorien
                 <Input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} list="summer-categories" />
               </Label>
               <Label>
@@ -236,7 +240,7 @@ export default function SummerCampaignAdmin() {
               <thead>
                 <tr>
                   <th>Shop</th>
-                  <th>Kategorie</th>
+                  <th>Kategorien</th>
                   <th>Sortierung</th>
                   <th>Status</th>
                   <th>Flyer-Link</th>
@@ -331,7 +335,7 @@ export default function SummerCampaignAdmin() {
             {(state?.rules || []).map((item) => (
               <RuleItem key={item.id}>
                 <span>{item.rule_type} {item.target_value || item.category || ""} {"->"} {item.title_de || `Award ${item.award_id}/${item.award_level}`} {Number(item.is_active) === 1 ? "" : "(inaktiv)"}</span>
-                <SmallButton type="button" onClick={() => runAction({ action: "delete_rule", id: item.id }, "Bonusregel entfernt.")}>Loeschen</SmallButton>
+                <SmallButton type="button" onClick={() => runAction({ action: "delete_rule", id: item.id }, "Bonusregel entfernt.")}>Löschen</SmallButton>
               </RuleItem>
             ))}
           </RuleList>
@@ -378,7 +382,10 @@ function EditableShopRow({ shop, onSave, onSaveAward, onDelete, onCopy }) {
         <Small>{shop.shop_address}</Small>
         {shop.award_id && <Small>Award {shop.award_id}/{shop.award_level}</Small>}
       </td>
-      <td><SmallInput value={category} onChange={(e) => setCategory(e.target.value)} /></td>
+      <td>
+        <SmallInput value={category} onChange={(e) => setCategory(e.target.value)} placeholder="z.B. Ausflug, Stadt, Softeis" />
+        <Small>Mehrere Kategorien mit Komma trennen.</Small>
+      </td>
       <td><SmallInput type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} /></td>
       <td>
         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
