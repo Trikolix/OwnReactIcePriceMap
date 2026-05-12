@@ -10,6 +10,20 @@ function ensureUserProfileTable(PDO $pdo): void {
     $pdo->exec($sql);
 }
 
+function ensureUserProfileColumns(PDO $pdo): void {
+    $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE 'instagram_account'");
+    $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+    if (!$column) {
+        $pdo->exec("ALTER TABLE nutzer ADD COLUMN instagram_account VARCHAR(255) DEFAULT NULL");
+    }
+    
+    $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE 'strava_account'");
+    $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+    if (!$column) {
+        $pdo->exec("ALTER TABLE nutzer ADD COLUMN strava_account VARCHAR(255) DEFAULT NULL");
+    }
+}
+
 function getUserAvatarPath(PDO $pdo, int $userId): ?string {
     ensureUserProfileTable($pdo);
     $stmt = $pdo->prepare("SELECT avatar_path FROM user_profile_images WHERE user_id = ?");

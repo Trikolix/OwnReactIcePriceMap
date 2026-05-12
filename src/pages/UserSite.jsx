@@ -659,6 +659,30 @@ function UserSite() {
                   </AvatarCircle>
                   <ProfileInfo>
                     <h1>{data.nutzername}</h1>
+                    {(data.instagram_account || data.strava_account) && (
+                      <SocialLinksRow>
+                        {data.instagram_account && (
+                          <SocialLink 
+                            href={(data.instagram_account.startsWith('http://') || data.instagram_account.startsWith('https://')) ? data.instagram_account : `https://instagram.com/${data.instagram_account.replace('@', '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            aria-label="Instagram Profil"
+                          >
+                            <img src="/icons/instagram.svg" alt="Instagram" width="20" height="20" onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn.simpleicons.org/instagram/2f2100'; }} />
+                          </SocialLink>
+                        )}
+                        {data.strava_account && (
+                          <SocialLink 
+                            href={(data.strava_account.startsWith('http://') || data.strava_account.startsWith('https://')) ? data.strava_account : `https://www.strava.com/athletes/${data.strava_account}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            aria-label="Strava Profil"
+                          >
+                            <img src="/icons/strava.svg" alt="Strava" width="20" height="20" onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn.simpleicons.org/strava/fc4c02'; }} />
+                          </SocialLink>
+                        )}
+                      </SocialLinksRow>
+                    )}
                   </ProfileInfo>
                   <MetaRow>
                     <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
@@ -1219,6 +1243,39 @@ const AvatarCircle = styled.div`
     height: 88px;
     min-width: 88px;
     font-size: 1.45rem;
+  }
+`;
+
+const SocialLinksRow = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  justify-content: flex-start;
+  
+  @media (max-width: 480px) {
+    justify-content: center;
+  }
+`;
+
+const SocialLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+  
+  img {
+    display: block;
   }
 `;
 

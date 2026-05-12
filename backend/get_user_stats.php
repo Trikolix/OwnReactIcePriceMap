@@ -128,11 +128,13 @@ function calculateStreakStats(array $dateRows): array
     ];
 }
 
+ensureUserProfileColumns($pdo);
+
 $nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
 $curUserId = intval($_GET['cur_user_id']);
 
 // Nutzername ermitteln
-$sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code
+$sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code, instagram_account, strava_account
          FROM nutzer WHERE id = ?";
 
 // Anzahl unterschiedlicher besuchter Eisdielen
@@ -276,6 +278,8 @@ try {
                 $stats['nutzername'] = $row['username'];
                 $stats['erstellungsdatum'] = $row['erstellungsdatum'];
                 $stats['invite_code'] = $row['invite_code'] ?? null;
+                $stats['instagram_account'] = $row['instagram_account'] ?? null;
+                $stats['strava_account'] = $row['strava_account'] ?? null;
                 break;
             case 1: $stats['eisdielen_besucht'] = $stmt->fetchColumn(); break;
             case 2: $stats['anzahl_checkins'] = $stmt->fetchColumn(); break;

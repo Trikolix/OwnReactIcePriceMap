@@ -28,6 +28,7 @@ const normalizePath = (value) => (value || "").replace(/^\/+/, "");
 
 function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const { userId, currentLevel, setCurrentLevel } = useUser();
+  const [socialAccounts, setSocialAccounts] = useState({ instagram_account: '', strava_account: '' });
   const [settings, setSettings] = useState({
     notify_checkin_mention: 1,
     notify_checkin_mention_push: 1,
@@ -45,9 +46,9 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     push_enabled_android: 1,
   });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingSection, setSavingSection] = useState(null);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [successSection, setSuccessSection] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(buildAssetUrl(currentAvatar));
   const [showCropModal, setShowCropModal] = useState(false);
@@ -60,6 +61,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [presetAvatars, setPresetAvatars] = useState([]);
   const [presetAvatarLevel, setPresetAvatarLevel] = useState(null);
   const [selectedPresetId, setSelectedPresetId] = useState(null);
+  const [pendingPresetId, setPendingPresetId] = useState(null);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [browserPushStatus, setBrowserPushStatus] = useState({ supported: false, permission: "default", subscribed: false });
   const selectedPreset = selectedPresetId
@@ -70,6 +72,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const hasPresetChange = !!selectedPreset && normalizedSelectedPresetPath !== normalizedCurrentAvatar;
   const canResetAvatar = !!avatarFile || removeAvatar || hasPresetChange;
   const displayedPresetLevel = Number(presetAvatarLevel ?? currentLevel ?? 0);
+  const isBusy = Boolean(savingSection);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -84,6 +87,21 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       }
     }
     fetchSettings();
+    async function fetchProfile() {
+      try {
+        const profileRes = await fetch(`${API_BASE}/api/get_user_profile.php`);
+        if (profileRes.ok) {
+          const profileJson = await profileRes.json();
+          setSocialAccounts({
+            instagram_account: profileJson.instagram_account || '',
+            strava_account: profileJson.strava_account || ''
+          });
+        }
+      } catch (e) {
+        console.error("Fehler beim Laden des Profils.", e);
+      }
+    }
+    fetchProfile();
   }, [userId]);
 
   useEffect(() => {
@@ -139,10 +157,8 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     const match = presetAvatars.find((preset) => normalizePath(preset.path) === normalizedCurrent);
     if (match) {
       setSelectedPresetId((prev) => (prev === match.id ? prev : match.id));
-      setShowPresetPicker(true);
     } else {
       setSelectedPresetId((prev) => (prev ? null : prev));
-      setShowPresetPicker(false);
     }
   }, [currentAvatar, presetAvatars]);
 
@@ -257,7 +273,24 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setError(null);
   };
 
-  const handlePresetSelect = (preset) => {
+  const openPresetPicker = () => {
+    setPendingPresetId(selectedPresetId);
+    setError(null);
+    setShowPresetPicker(true);
+  };
+
+  const handlePendingPresetSelect = (preset) => {
+    if (!preset) return;
+    if (preset.unlocked === false) {
+      setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfuegbar.`);
+      return;
+    }
+    setPendingPresetId(preset.id);
+    setError(null);
+  };
+
+  const handlePresetPickerSave = () => {
+    const preset = presetAvatars.find((item) => item.id === pendingPresetId);
     if (!preset) return;
     if (preset.unlocked === false) {
       setError(`Dieser Avatar ist erst ab Level ${preset.min_level || 0} verfuegbar.`);
@@ -272,7 +305,12 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setSelectedPresetId(preset.id);
     setAvatarPreview(buildAssetUrl(preset.path));
     setError(null);
-    setShowPresetPicker(true);
+    setShowPresetPicker(false);
+  };
+
+  const handlePresetPickerCancel = () => {
+    setPendingPresetId(null);
+    setShowPresetPicker(false);
   };
 
   const handleResetAvatarSelection = () => {
@@ -354,16 +392,28 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
   };
 
-  const handleSave = async () => {
-    setSaving(true);
+  const handleSaveAvatar = async () => {
+    setSavingSection("avatar");
     setError(null);
-    setSuccess(false);
+    setSuccessSection(null);
     try {
       await persistAvatarChange();
-      
+      setSuccessSection("avatar");
+    } catch (e) {
+      setError(e.message || "Fehler beim Speichern des Avatars.");
+    } finally {
+      setSavingSection(null);
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    setSavingSection("notifications");
+    setError(null);
+    setSuccessSection(null);
+    try {
       const hasAnyPushEnabled = Object.keys(settings).some(key => key.endsWith('_push') && settings[key] === 1);
       const isNative = Capacitor.isNativePlatform();
-      
+
       const updatedSettings = {
         ...settings,
         push_enabled_web: (!isNative && hasAnyPushEnabled) ? 1 : (isNative ? settings.push_enabled_web : 0),
@@ -387,13 +437,36 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           await disableBrowserPush(userId);
         }
       }
-      
+
       setBrowserPushStatus(await getBrowserPushStatus());
-      setSuccess(true);
+      setSettings(updatedSettings);
+      setSuccessSection("notifications");
     } catch (e) {
-      setError(e.message || "Fehler beim Speichern.");
+      setError(e.message || "Fehler beim Speichern der Benachrichtigungen.");
     } finally {
-      setSaving(false);
+      setSavingSection(null);
+    }
+  };
+
+  const handleSaveSocialAccounts = async () => {
+    setSavingSection("social");
+    setError(null);
+    setSuccessSection(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/update_user_profile.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(socialAccounts),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Fehler beim Speichern der Social Media Accounts.");
+      }
+      setSuccessSection("social");
+    } catch (e) {
+      setError(e.message || "Fehler beim Speichern der Social Media Accounts.");
+    } finally {
+      setSavingSection(null);
     }
   };
 
@@ -504,7 +577,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <SmallNote>PNG, JPG oder WebP · max. 5 MB</SmallNote>
               <PresetToggle
                 type="button"
-                onClick={() => setShowPresetPicker((prev) => !prev)}
+                onClick={openPresetPicker}
                 disabled={!presetAvatars.length}
               >
                 Comic Avatar auswählen
@@ -521,36 +594,68 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
             </InlineButtons>
           </AvatarActions>
         </AvatarSection>
-        {presetAvatars.length > 0 && showPresetPicker && (
-          <PresetSection>
-            <PresetHeader>
-              <h4>Comic-Avatare</h4>
-              <PresetInfo>Dein Level: {displayedPresetLevel}</PresetInfo>
-            </PresetHeader>
-            <PresetGrid>
-              {presetAvatars.map((preset) => {
-                const presetUrl = buildAssetUrl(preset.path);
-                const isActive = !avatarFile && !removeAvatar && selectedPresetId === preset.id;
-                const isUnlocked = preset.unlocked !== false;
-                const requiredLevel = Number(preset.min_level || 0);
-                return (
-                  <PresetButton
-                    key={preset.id}
-                    type="button"
-                    onClick={() => handlePresetSelect(preset)}
-                    aria-pressed={isActive}
-                    disabled={!isUnlocked}
-                    $selected={isActive}
-                    $locked={!isUnlocked}
-                  >
-                    <img src={presetUrl} alt={preset.label} />
-                    <span>{preset.label}</span>
-                    {!isUnlocked && <PresetLockBadge>Ab Level {requiredLevel}</PresetLockBadge>}
-                  </PresetButton>
-                );
-              })}
-            </PresetGrid>
-          </PresetSection>
+        <SectionActions>
+          <SubmitButton type="button" onClick={handleSaveAvatar} disabled={isBusy || !canResetAvatar}>
+            {savingSection === "avatar" ? "Speichert..." : "Avatar speichern"}
+          </SubmitButton>
+          {successSection === "avatar" && <SuccessMsg>Avatar gespeichert.</SuccessMsg>}
+        </SectionActions>
+        {showPresetPicker && (
+          <PresetModalOverlay>
+            <PresetModalBox>
+              <PresetModalHeader>
+                <div>
+                  <h3>Comic Avatar auswählen</h3>
+                  <PresetInfo>Dein Level: {displayedPresetLevel}</PresetInfo>
+                </div>
+                <TopCloseButton type="button" onClick={handlePresetPickerCancel} aria-label="Comic Avatar Auswahl schließen">
+                  ×
+                </TopCloseButton>
+              </PresetModalHeader>
+              <LargePresetPreview>
+                {pendingPresetId ? (
+                  <img
+                    src={buildAssetUrl(presetAvatars.find((preset) => preset.id === pendingPresetId)?.path)}
+                    alt="Ausgewählter Comic Avatar"
+                  />
+                ) : avatarPreview ? (
+                  <img src={avatarPreview} alt="Aktueller Avatar" />
+                ) : (
+                  <span>Kein Avatar ausgewählt</span>
+                )}
+              </LargePresetPreview>
+              <PresetModalGrid>
+                {error && <PresetModalError>{error}</PresetModalError>}
+                {presetAvatars.map((preset) => {
+                  const presetUrl = buildAssetUrl(preset.path);
+                  const isActive = pendingPresetId === preset.id;
+                  const isUnlocked = preset.unlocked !== false;
+                  const requiredLevel = Number(preset.min_level || 0);
+                  return (
+                    <PresetButton
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handlePendingPresetSelect(preset)}
+                      aria-pressed={isActive}
+                      disabled={!isUnlocked}
+                      $selected={isActive}
+                      $locked={!isUnlocked}
+                    >
+                      <img src={presetUrl} alt={preset.label} />
+                      <span>{preset.label}</span>
+                      {!isUnlocked && <PresetLockBadge>Ab Level {requiredLevel}</PresetLockBadge>}
+                    </PresetButton>
+                  );
+                })}
+              </PresetModalGrid>
+              <PresetModalActions>
+                <SubmitButton type="button" onClick={handlePresetPickerSave} disabled={!pendingPresetId}>
+                  Speichern
+                </SubmitButton>
+                <CancelButton type="button" onClick={handlePresetPickerCancel}>Abbrechen</CancelButton>
+              </PresetModalActions>
+            </PresetModalBox>
+          </PresetModalOverlay>
         )}
         {showCropModal && (
           <CropModalOverlay>
@@ -634,11 +739,44 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           </SmallNote>
         )}
 
+        <SectionActions>
+          <SubmitButton type="button" onClick={handleSaveNotifications} disabled={isBusy}>
+            {savingSection === "notifications" ? "Speichert..." : "Benachrichtigungen speichern"}
+          </SubmitButton>
+          {successSection === "notifications" && <SuccessMsg>Benachrichtigungen gespeichert.</SuccessMsg>}
+        </SectionActions>
+
+        <Divider />
+        <h3>Social Media Accounts</h3>
+        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>Verlinke deine Accounts, um sie auf deinem Profil anzuzeigen.</p>
+        <SocialInputGroup>
+          <label>Instagram Benutzername oder Link:</label>
+          <input 
+            type="text" 
+            placeholder="z.B. https://instagram.com/iceapp oder @iceapp" 
+            value={socialAccounts.instagram_account}
+            onChange={(e) => setSocialAccounts({...socialAccounts, instagram_account: e.target.value})}
+          />
+        </SocialInputGroup>
+        <SocialInputGroup>
+          <label>Strava Profil-Link:</label>
+          <input 
+            type="text" 
+            placeholder="z.B. https://www.strava.com/athletes/12345" 
+            value={socialAccounts.strava_account}
+            onChange={(e) => setSocialAccounts({...socialAccounts, strava_account: e.target.value})}
+          />
+        </SocialInputGroup>
+        <SectionActions>
+          <SubmitButton type="button" onClick={handleSaveSocialAccounts} disabled={isBusy}>
+            {savingSection === "social" ? "Speichert..." : "Social Media speichern"}
+          </SubmitButton>
+          {successSection === "social" && <SuccessMsg>Social Media gespeichert.</SuccessMsg>}
+        </SectionActions>
+
         {error && <ErrorMsg>{error}</ErrorMsg>}
-        {success && <SuccessMsg>Gespeichert!</SuccessMsg>}
         <ButtonRow>
-          <SubmitButton onClick={handleSave} disabled={saving}>Speichern</SubmitButton>
-          <CancelButton onClick={onClose}>Schließen</CancelButton>
+          <CancelButton type="button" onClick={onClose}>Schließen</CancelButton>
         </ButtonRow>
 
         <Divider />
@@ -736,16 +874,16 @@ const ButtonRow = styled.div`
 `;
 
 const CancelButton = styled.button`
-  background: #eee;
+  background-color: #eee;
   color: #333;
+  padding: 0.7rem 1.1rem;
+  margin: 0px 4px 0px 4px;
+  border-radius: 10px;
   border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
   cursor: pointer;
   font-weight: bold;
-  &:hover {
-    background: #ddd;
-  }
+  font-size: 1rem;
+  transition: background-color 0.15s ease;
 `;
 
 const TopCloseButton = styled.button`
@@ -922,32 +1060,18 @@ const Divider = styled.hr`
   margin: 1.5rem 0;
 `;
 
-const PresetSection = styled.div`
-  margin: 0 0 1.5rem;
-`;
-
-const PresetHeader = styled.div`
+const SectionActions = styled.div`
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-
-  h4 {
-    margin: 0;
-  }
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 `;
 
 const PresetInfo = styled.p`
   margin: 0;
   font-size: 0.8rem;
   color: #777;
-`;
-
-const PresetGrid = styled.div`
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: 0.75rem;
 `;
 
 const PresetButton = styled.button`
@@ -993,6 +1117,97 @@ const PresetLockBadge = styled.small`
   font-weight: 700;
   color: #8a5a00;
   text-align: center;
+`;
+
+const PresetModalOverlay = styled(ModalOverlay)`
+  z-index: 5200;
+  background: rgba(0,0,0,0.6);
+`;
+
+const PresetModalBox = styled.div`
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.24);
+  width: min(760px, calc(100vw - 32px));
+  height: min(90vh, 820px);
+  max-height: min(90vh, 820px);
+  display: grid;
+  grid-template-rows: 10fr 25fr 57fr 8fr;
+  overflow: hidden;
+`;
+
+const PresetModalHeader = styled.div`
+  min-height: 0;
+  padding: 0.75rem 1.5rem 0.5rem;
+  display: flex;
+  align-items: center;
+
+  h3 {
+    margin: 0 2.6rem 0.15rem 0;
+    color: #2f2100;
+  }
+`;
+
+const LargePresetPreview = styled.div`
+  min-height: 0;
+  padding: 0.35rem 1.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #eee;
+  color: #888;
+
+  img {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(76,175,80,0.28);
+    background: #fafafa;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+`;
+
+const PresetModalError = styled(ErrorMsg)`
+  grid-column: 1 / -1;
+  margin: 0 0 0.25rem;
+`;
+
+const PresetModalGrid = styled.div`
+  min-height: 0;
+  padding: 0.85rem 1.5rem;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.75rem;
+  overscroll-behavior: contain;
+`;
+
+const PresetModalActions = styled.div`
+  min-height: 0;
+  padding: 0.45rem 0.75rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  background: #fff;
+
+  button {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 520px) {
+    justify-content: stretch;
+
+    button {
+      flex: 1;
+    }
+  }
 `;
 
 // Crop modal styles
@@ -1075,6 +1290,23 @@ const SettingsTable = styled.table`
     width: 18px;
     height: 18px;
     cursor: pointer;
+  }
+`;
+
+const SocialInputGroup = styled.div`
+  margin-bottom: 1rem;
+  label {
+    display: block;
+    font-size: 0.9rem;
+    color: #444;
+    margin-bottom: 0.25rem;
+  }
+  input {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
   }
 `;
 
