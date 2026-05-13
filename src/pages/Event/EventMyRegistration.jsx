@@ -919,7 +919,7 @@ export default function EventMyRegistration({ view = "participant" }) {
     [ownSlot?.route_key]
   );
   const selectedRouteResources = selectedRoute ? EVENT_ROUTE_RESOURCES[selectedRoute.key] || {} : {};
-  const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time), [ownSlot?.start_time]);
+  const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time, ownSlot?.route_key), [ownSlot?.start_time, ownSlot?.route_key]);
   const showRaceDayInfo = isPaid && EVENT_RACE_DAY_INFO_ENABLED;
   const isLiveMapPublic = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -1074,7 +1074,7 @@ export default function EventMyRegistration({ view = "participant" }) {
   const pageTitle = isRegistrationView ? "Meine Anmeldung" : "Teilnehmerbereich";
   const pageSubtitle = isRegistrationView
     ? `Hier findest du deinen Startplatz, Zahlungsstatus, Geschenk-Codes und deine hinterlegten Anmeldedaten. ${EVENT_COMMUNITY_RIDE_CLAIM}`
-    : `Hier findest du die Informationen für deinen Eventtag kompakt und ohne Zahlungsdetails. ${EVENT_COMMUNITY_RIDE_CLAIM}`;
+    : `Hier findest du die Informationen für deinen Eventtag kompakt. ${EVENT_COMMUNITY_RIDE_CLAIM}`;
 
   const handleUpdateTeamName = async () => {
     if (!apiUrl || !authToken || !canEditMissingTeamName) return;

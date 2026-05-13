@@ -28,28 +28,6 @@ export const EVENT_ROUTE_RESOURCES = {
   },
 };
 
-const baseScheduleItems = [
-  {
-    time: "folgt",
-    title: "Treff bei Karl mag's süß",
-    text: "Genaue Zeit wird noch bekannt gegeben. Bitte 30 Minuten vor deinem Start abfahrbereit am Startbereich sein. Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
-  },
-  {
-    time: "folgt",
-    title: "Start in deiner Gruppe",
-    text: "Genaue Zeit wird noch bekannt gegeben.",
-  },
-  {
-    time: "unterwegs",
-    title: "Tour entlang deiner Strecke",
-    text: "Fahre die Checkpoints selbstständig per Navigation an und nutze an den Eisdielen deine digitale Stempelkarte.",
-  },
-  {
-    time: "nachmittags",
-    title: "Ziel & gemeinsamer Abschluss",
-    text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und reduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
-  },
-];
 
 const generalRouteHints = [
   "Die Strecke verläuft teilweise auf Radwegen sowie kombinierten Rad- und Fußwegen. Bei schönem Wetter kann dort viel los sein: Nehmt besonders Rücksicht auf Fußgänger und andere Radfahrer.",
@@ -94,24 +72,88 @@ export function formatEventTime(value) {
   return parsed.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
 }
 
-export function buildScheduleItems(startTime) {
+export function buildScheduleItems(startTime, routeKey) {
   const parsedStart = parseEventDateTime(startTime);
-  if (!parsedStart) return baseScheduleItems;
 
-  const gatherTime = new Date(parsedStart.getTime() - 30 * 60 * 1000);
+  const baseItems = [
+    {
+      time: "ab 07:00 Uhr",
+      title: "Treff bei Karl mag's süß",
+      text: "Wir sind ab 7 Uhr vor Ort und du kannst etwas zu essen und trinken bekommen.",
+    },
+    {
+      time: "unterwegs",
+      title: "Tour entlang deiner Strecke",
+      text: "Fahre die Checkpoints selbstständig per Navigation an und nutze an den Eisdielen deine digitale Stempelkarte.",
+    },
+    {
+      time: "nachmittags",
+      title: "Ziel & gemeinsamer Abschluss",
+      text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und reduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
+    },
+  ];
+
+  if (!parsedStart) {
+    if (routeKey === "family_2") {
+      return [
+        {
+          time: "vormittags",
+          title: "Treff bei Karl mag's süß",
+          text: "Du kannst im Laufe des Vormittags ankommen und dich entspannt auf deine Runde vorbereiten.",
+        },
+        {
+          time: "11:00 - 12:30 Uhr",
+          title: "Start Genussrunde",
+          text: "Du kannst in diesem Zeitraum flexibel auf deine Runde starten.",
+        },
+        baseItems[1],
+        baseItems[2],
+      ];
+    }
+    return [
+      baseItems[0],
+      {
+        time: "folgt",
+        title: "Start in deiner Gruppe",
+        text: "Genaue Zeit wird noch bekannt gegeben.",
+      },
+      baseItems[1],
+      baseItems[2],
+    ];
+  }
+
+  if (routeKey === "family_2") {
+    return [
+      {
+        time: "vormittags",
+        title: "Treff bei Karl mag's süß",
+        text: "Du kannst im Laufe des Vormittags ankommen und dich entspannt auf deine Runde vorbereiten.",
+      },
+      {
+        time: "11:00 - 12:30 Uhr",
+        title: "Start Genussrunde",
+        text: "Du kannst in diesem Zeitraum flexibel auf deine Runde starten.",
+      },
+      baseItems[1],
+      baseItems[2],
+    ];
+  }
+
+  const gatherTime = new Date(parsedStart.getTime() - 10 * 60 * 1000);
   return [
+    baseItems[0],
     {
       time: formatEventTime(gatherTime),
-      title: "Treff bei Karl mag's süß",
-      text: "Bitte 30 Minuten vor deiner Startzeit abfahrbereit mit Rad und Ausrüstung am Startbereich sein. Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
+      title: "Startbereit einfinden",
+      text: "Bitte finde dich 10 Minuten vor deinem Start abfahrbereit am Startbereich ein.",
     },
     {
       time: formatEventTime(parsedStart),
       title: "Start in deiner Gruppe",
       text: "Startzeit deiner zugewiesenen Gruppe.",
     },
-    baseScheduleItems[2],
-    baseScheduleItems[3],
+    baseItems[1],
+    baseItems[2],
   ];
 }
 
