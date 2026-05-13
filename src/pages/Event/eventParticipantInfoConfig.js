@@ -96,11 +96,15 @@ export function buildScheduleItems(startTime, routeKey) {
   if (!parsedStart) {
     if (routeKey === "family_2") {
       return [
-        baseItems[0],
+        {
+          time: "vormittags",
+          title: "Treff bei Karl mag's süß",
+          text: "Du kannst im Laufe des Vormittags ankommen und dich entspannt auf deine Runde vorbereiten.",
+        },
         {
           time: "11:00 - 12:30 Uhr",
           title: "Start Genussrunde",
-          text: "Du kannst in diesem Zeitraum flexibel starten.",
+          text: "Du kannst in diesem Zeitraum flexibel auf deine Runde starten.",
         },
         baseItems[1],
         baseItems[2],
@@ -120,11 +124,15 @@ export function buildScheduleItems(startTime, routeKey) {
 
   if (routeKey === "family_2") {
     return [
-      baseItems[0],
+      {
+        time: "vormittags",
+        title: "Treff bei Karl mag's süß",
+        text: "Du kannst im Laufe des Vormittags ankommen und dich entspannt auf deine Runde vorbereiten.",
+      },
       {
         time: "11:00 - 12:30 Uhr",
         title: "Start Genussrunde",
-        text: "Du kannst in diesem Zeitraum flexibel starten.",
+        text: "Du kannst in diesem Zeitraum flexibel auf deine Runde starten.",
       },
       baseItems[1],
       baseItems[2],
