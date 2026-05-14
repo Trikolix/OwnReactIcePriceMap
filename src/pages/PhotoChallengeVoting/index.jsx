@@ -414,7 +414,7 @@ function PhotoChallengeVoting() {
     });
   };
 
-  const handleSubmitPhoto = async (imageId, title = '') => {
+  const handleSubmitPhoto = async (imageId, title = '', file = null) => {
     if (!apiUrl || !challengeId || !userId) {
       setActionMessage('Bitte logge dich ein, um einzureichen.');
       return;
@@ -423,7 +423,11 @@ function PhotoChallengeVoting() {
       const formData = new FormData();
       formData.append('nutzer_id', userId);
       formData.append('challenge_id', challengeId);
-      formData.append('image_id', imageId);
+      if (file) {
+        formData.append('image', file);
+      } else {
+        formData.append('image_id', imageId);
+      }
       if (title) {
         formData.append('title', title);
       }

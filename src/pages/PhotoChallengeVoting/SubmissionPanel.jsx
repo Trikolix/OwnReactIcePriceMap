@@ -22,8 +22,12 @@ const SubmissionPanel = ({
 }) => {
   const [newImageTitles, setNewImageTitles] = React.useState({});
   const [submissionTitles, setSubmissionTitles] = React.useState({});
+  const [uploadFile, setUploadFile] = React.useState(null);
+  const [uploadTitle, setUploadTitle] = React.useState('');
+  const fileInputRef = React.useRef(null);
 
   const challengeStatus = overview?.challenge?.status;
+  const allowDirectUploads = Boolean(overview?.challenge?.allow_direct_uploads);
   const isSubmissionStage =
     ['submission_open', 'submission_closed'].includes(challengeStatus) ||
     Boolean(challengeFlags?.submission_is_open_effective) ||
@@ -47,6 +51,24 @@ const SubmissionPanel = ({
       return submissionTitles[submission.id];
     }
     return submission.title || '';
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setUploadFile(e.target.files[0]);
+    } else {
+      setUploadFile(null);
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadFile) return;
+    await handleSubmitPhoto(null, uploadTitle, uploadFile);
+    setUploadFile(null);
+    setUploadTitle('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -156,6 +178,38 @@ const SubmissionPanel = ({
             )}
           </S.SubmissionImagesWrapper>
           <S.SubmissionImagesWrapper>
+            {allowDirectUploads && (
+              <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f5f5f7', borderRadius: '12px' }}>
+                <h3 style={{ marginTop: 0 }}>Neues Bild hochladen</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                    disabled={!userCanEditSubmissions || (submissionLimit !== null && submissionsRemaining <= 0)}
+                  />
+                  {uploadFile && (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Bild-Titel (optional)"
+                        value={uploadTitle}
+                        onChange={(e) => setUploadTitle(e.target.value)}
+                        style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #ddd' }}
+                      />
+                      <S.SubmitButton
+                        type="button"
+                        onClick={handleUploadSubmit}
+                        disabled={!userCanEditSubmissions || (submissionLimit !== null && submissionsRemaining <= 0)}
+                      >
+                        Hochladen & Einreichen
+                      </S.SubmitButton>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
             <h3>Deine Bilder</h3>
             {userImagesLoading && <S.PlaceholderText>Lade Bilder…</S.PlaceholderText>}
             {!userImagesLoading && !userImages.length && (

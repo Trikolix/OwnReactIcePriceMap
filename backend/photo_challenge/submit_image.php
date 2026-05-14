@@ -14,11 +14,13 @@ if ($title === '') {
     $title = null;
 }
 
-if (!$userId || !$challengeId || !$imageId) {
+$hasImageUpload = isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE;
+
+if (!$userId || !$challengeId || (!$imageId && !$hasImageUpload)) {
     http_response_code(422);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Nutzer-, Challenge- oder Bild-ID fehlen.',
+        'message' => 'Nutzer-, Challenge- oder Bild-Daten fehlen.',
     ]);
     exit;
 }
@@ -39,20 +41,48 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT id, erstellt_am FROM bilder WHERE id = :image_id AND nutzer_id = :nutzer_id");
-    $stmt->execute([
-        'image_id' => $imageId,
-        'nutzer_id' => $userId,
-    ]);
-    $image = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$image) {
-        throw new RuntimeException('Dieses Bild gehört nicht dir.');
-    }
-    if (!empty($challenge['min_image_created_at'])) {
-        $imageCreatedAt = strtotime((string)($image['erstellt_am'] ?? ''));
-        $minImageCreatedAt = strtotime((string)$challenge['min_image_created_at']);
-        if ($imageCreatedAt === false || $minImageCreatedAt === false || $imageCreatedAt < $minImageCreatedAt) {
-            throw new RuntimeException('Dieses Bild ist für diese Challenge zu alt.');
+    if ($hasImageUpload) {
+        if (empty($challenge['allow_direct_uploads'])) {
+            throw new RuntimeException('Direkter Bilder-Upload ist für diese Challenge nicht erlaubt.');
+        }
+        require_once __DIR__ . '/../lib/image_upload.php';
+
+        $filesArray = [
+            'name' => [$_FILES['image']['name']],
+            'type' => [$_FILES['image']['type']],
+            'tmp_name' => [$_FILES['image']['tmp_name']],
+            'error' => [$_FILES['image']['error']],
+            'size' => [$_FILES['image']['size']],
+        ];
+
+        $uploaded = processUploadedImages($filesArray, '../uploads/photo_challenges/', 'pc_');
+        if (empty($uploaded) || empty($uploaded[0]['url'])) {
+            throw new RuntimeException('Bild konnte nicht hochgeladen werden.');
+        }
+        $relativePath = $uploaded[0]['url'];
+
+        $stmt = $pdo->prepare("INSERT INTO bilder (nutzer_id, url) VALUES (:nutzer_id, :url)");
+        $stmt->execute([
+            'nutzer_id' => $userId,
+            'url' => $relativePath,
+        ]);
+        $imageId = (int)$pdo->lastInsertId();
+    } else {
+        $stmt = $pdo->prepare("SELECT id, erstellt_am FROM bilder WHERE id = :image_id AND nutzer_id = :nutzer_id");
+        $stmt->execute([
+            'image_id' => $imageId,
+            'nutzer_id' => $userId,
+        ]);
+        $image = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$image) {
+            throw new RuntimeException('Dieses Bild gehört nicht dir.');
+        }
+        if (!empty($challenge['min_image_created_at'])) {
+            $imageCreatedAt = strtotime((string)($image['erstellt_am'] ?? ''));
+            $minImageCreatedAt = strtotime((string)$challenge['min_image_created_at']);
+            if ($imageCreatedAt === false || $minImageCreatedAt === false || $imageCreatedAt < $minImageCreatedAt) {
+                throw new RuntimeException('Dieses Bild ist für diese Challenge zu alt.');
+            }
         }
     }
 

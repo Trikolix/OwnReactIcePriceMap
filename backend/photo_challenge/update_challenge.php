@@ -51,6 +51,9 @@ try {
     $submissionLimit = array_key_exists('submission_limit_per_user', $_POST)
         ? (int)$_POST['submission_limit_per_user']
         : ($challenge['submission_limit_per_user'] !== null ? (int)$challenge['submission_limit_per_user'] : null);
+    $allowDirectUploads = array_key_exists('allow_direct_uploads', $_POST)
+        ? (!empty($_POST['allow_direct_uploads']) ? 1 : 0)
+        : (int)($challenge['allow_direct_uploads'] ?? 0);
 
     $groupScheduleRaw = array_key_exists('group_schedule', $_POST) ? $_POST['group_schedule'] : ($challenge['group_schedule'] ?? null);
     $groupSchedule = sanitizeGroupSchedule($groupScheduleRaw, $startAt);
@@ -101,6 +104,7 @@ try {
             min_image_created_at = :min_image_created_at,
             submission_deadline = :submission_deadline,
             submission_limit_per_user = :submission_limit_per_user,
+            allow_direct_uploads = :allow_direct_uploads,
             group_schedule = :group_schedule,
             group_advancers = :group_advancers,
             lucky_loser_slots = :lucky_loser_slots,
@@ -116,6 +120,7 @@ try {
         'min_image_created_at' => $minImageCreatedAt,
         'submission_deadline' => $submissionDeadline,
         'submission_limit_per_user' => $submissionLimit,
+        'allow_direct_uploads' => $allowDirectUploads,
         'group_schedule' => $groupScheduleJson,
         'group_advancers' => $groupAdvancers,
         'lucky_loser_slots' => $luckyLoserSlots,
