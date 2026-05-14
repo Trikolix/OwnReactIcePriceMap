@@ -1,5 +1,5 @@
 export const EVENT_DATE = "Samstag, 16. Mai 2026";
-export const EVENT_REGISTRATION_CLOSES_AT = "2026-05-13T22:00:00+02:00";
+export const EVENT_REGISTRATION_CLOSES_AT = "2026-05-14T15:30:00+02:00";
 export const EVENT_REGISTRATION_CLOSED_MESSAGE = "Die Registrierung ist bereits geschlossen. Wenn du einen ganz dringenden Grund hast, doch noch teilzunehmen, schreib uns doch eine Mail ;)";
 export const EVENT_CLOTHING_INTEREST_ENABLED = false;
 export const EVENT_GIFT_PURCHASE_ENABLED = false;

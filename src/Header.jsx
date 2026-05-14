@@ -23,6 +23,14 @@ import {
 } from './utils/activityFeed';
 import ActionsOverviewModal from './pages/ActionsOverview';
 
+const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
+  'active',
+  'submission_open',
+  'submission_closed',
+  'group_running',
+  'ko_running',
+]);
+
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [awardsActionsOpen, setAwardsActionsOpen] = useState(false);
@@ -38,6 +46,7 @@ const Header = ({ refreshShops }) => {
   const [showActionsOverview, setShowActionsOverview] = useState(false);
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
+  const [hasActivePhotoChallenge, setHasActivePhotoChallenge] = useState(false);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,7 +58,6 @@ const Header = ({ refreshShops }) => {
     : 'Aktionen & Ergebnisse öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const now = new Date();
-  const showPhotoChallengeNewBadge = now <= new Date(2026, 4, 11, 23, 59, 59);
   const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
@@ -60,6 +68,45 @@ const Header = ({ refreshShops }) => {
   const isAdmin = Number(userId) === 1;
   const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
   const isAwardsActionsActive = location.pathname === '/awards-admin' || location.pathname === '/summer-campaign-admin' || location.pathname === '/admin/summer-campaign';
+
+  useEffect(() => {
+    if (!apiUrl) {
+      setHasActivePhotoChallenge(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncPhotoChallengeBadge = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/photo_challenge/list_public_challenges.php`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const challenges = Array.isArray(data?.data) ? data.data : [];
+        const hasActiveChallenge = challenges.some((challenge) =>
+          ACTIVE_PHOTO_CHALLENGE_STATUSES.has(challenge?.status)
+        );
+
+        if (!cancelled) {
+          setHasActivePhotoChallenge(hasActiveChallenge);
+        }
+      } catch (error) {
+        console.error('Fotochallenge-Badge konnte nicht aktualisiert werden:', error);
+        if (!cancelled) {
+          setHasActivePhotoChallenge(false);
+        }
+      }
+    };
+
+    syncPhotoChallengeBadge();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -560,9 +607,9 @@ const Header = ({ refreshShops }) => {
             Ice-Tour
             {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
           </DesktopNavLink>
-          <DesktopNavLink to="/photo-challenge" $compact={showPhotoChallengeNewBadge}>
+          <DesktopNavLink to="/photo-challenge" $compact={hasActivePhotoChallenge}>
             Foto-Challenges
-            {showPhotoChallengeNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
+            {hasActivePhotoChallenge && (<DesktopNavBadge>AKTIV</DesktopNavBadge>)}
           </DesktopNavLink>
           <DesktopNavLink to="/dashboard">
             Aktivitäten
@@ -641,7 +688,7 @@ const Header = ({ refreshShops }) => {
               </MenuItemLink>
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
                 Foto-Challenges
-                {showPhotoChallengeNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
+                {hasActivePhotoChallenge && <MenuItemBadge>AKTIV</MenuItemBadge>}
               </MenuItemLink>
               <MenuItemLink to="/dashboard" onClick={closeMenu}>
                 Aktivitäten

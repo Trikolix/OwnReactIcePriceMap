@@ -1,4 +1,4 @@
-export const EVENT_ROUTE_RELEASE_NOTICE = "GPX-Datei und Komoot-Link werden noch freigeschaltet.";
+export const EVENT_ROUTE_RELEASE_NOTICE = "Komoot-Link wird noch freigeschaltet.";
 export const EVENT_LIVE_MAP_RELEASE_NOTICE = "Die Live-Karte wird am 13. Mai 2026 öffentlich freigeschaltet.";
 
 export const EVENT_PARKING = {
@@ -15,16 +15,16 @@ export const EVENT_PARKING_DIRECTIONS_EMBED_URL =
 
 export const EVENT_ROUTE_RESOURCES = {
   family_2: {
-    gpxUrl: "",
-    komootUrl: "",
+    gpxFilename: "Ice-Tour_70km.gpx",
+    komootUrl: "https://www.komoot.com/de-de/tour/2912847861?share_token=atSXhGgtT4QAoVrImuZ1ERPcUhDmI2bLOYBfz4zWHZaMCUblmI&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=912642806792",
   },
   classic_3: {
-    gpxUrl: "",
-    komootUrl: "",
+    gpxFilename: "Ice-Tour_140km.gpx",
+    komootUrl: "https://www.komoot.com/de-de/tour/2921634701?share_token=aNQ1wHAphErNlPEj5nGYRSzkpboVzX64jyipEpLeXTBdZvkIlG&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=912642806792",
   },
   epic_4: {
-    gpxUrl: "",
-    komootUrl: "",
+    gpxFilename: "Ice-Tour_180km.gpx",
+    komootUrl: "https://www.komoot.com/de-de/tour/2921638857?share_token=ac08gPaGi4ReME8kmttpYKuqtOu5fDPCfATg3vdleP6LlEfL4R&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=912642806792",
   },
 };
 
@@ -35,7 +35,12 @@ const generalRouteHints = [
 
 const sportRouteHints = [
   "Zwischen Zwönitz und Geyer über die Geyrische Platte kann teilweise viel Verkehr sein. Fahrt dort besonders rücksichtsvoll, bildet bei Bedarf kleinere Grüppchen und lasst Autos aktiv vorbei.",
-  "In der Abfahrt nach dem Ortsausgang von Geyer kommt in einer Rechtskurve eine Abzweigung nach Am Wochenende sollte es eigentlich gehen, aber gebt trotzdem besonders Acht.",
+  "In der Abfahrt nach dem Ortsausgang von Geyer kommt in einer Rechtskurve eine Abzweigung nach links in den Wald rein, die man schnell verpassen kann.",
+  "Zwischen Scharfenstein und Zschopau ist der Autoverkehr auch manchmal wild und nicht gerade rücksichtsvoll gegenüber Radfahreren. Am Wochenende sollte es eigentlich gehen, aber gebt trotzdem besonders Acht.",
+];
+
+const familyRouteHints = [
+  "Auf dem Stiftweg nach Ebersdorf gibt es bei Kilometer 9,5 eine Baustelle. Dort ist der Asphalt zwei- bis dreimal jeweils etwa 20 cm breit abgefräst. Fahrt dort besonders vorsichtig.",
 ];
 
 export const packingItems = [
@@ -79,7 +84,7 @@ export function buildScheduleItems(startTime, routeKey) {
     {
       time: "ab 07:00 Uhr",
       title: "Treff bei Karl mag's süß",
-      text: "Wir sind ab 7 Uhr vor Ort und du kannst etwas zu essen und trinken bekommen.",
+      text: "Wir sind ab 7 Uhr vor Ort und du kannst etwas zu essen und zu trinken bekommen.",
     },
     {
       time: "unterwegs",
@@ -89,7 +94,7 @@ export function buildScheduleItems(startTime, routeKey) {
     {
       time: "nachmittags",
       title: "Ziel & gemeinsamer Abschluss",
-      text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und reduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
+      text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und preisreduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
     },
   ];
 
@@ -160,6 +165,10 @@ export function buildScheduleItems(startTime, routeKey) {
 export function getRouteHints(routeKey) {
   if (routeKey === "classic_3" || routeKey === "epic_4") {
     return [...sportRouteHints, ...generalRouteHints];
+  }
+
+  if (routeKey === "family_2") {
+    return [...familyRouteHints, ...generalRouteHints];
   }
 
   return generalRouteHints;

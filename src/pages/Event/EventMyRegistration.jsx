@@ -4,6 +4,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Info, MapPinned, Navigation, Stamp } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
+import route70Gpx from "./Ice-Tour_70km.gpx?raw";
+import route140Gpx from "./Ice-Tour_140km.gpx?raw";
+import route180Gpx from "./Ice-Tour_180km.gpx?raw";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import {
@@ -45,6 +48,12 @@ import {
   groupRules,
   packingItems,
 } from "./eventParticipantInfoConfig";
+
+const ROUTE_GPX_CONTENT = {
+  family_2: route70Gpx,
+  classic_3: route140Gpx,
+  epic_4: route180Gpx,
+};
 
 const Page = styled.div`
   min-height: 100vh;
@@ -92,6 +101,11 @@ const CardGrid = styled.div`
 
 const FullWidth = styled.div`
   grid-column: 1 / -1;
+  scroll-margin-top: 170px;
+
+  @media (max-width: 768px) {
+    scroll-margin-top: 120px;
+  }
 `;
 
 const Card = styled.section`
@@ -100,6 +114,11 @@ const Card = styled.section`
   border: 1px solid rgba(138, 87, 0, 0.12);
   box-shadow: 0 8px 22px rgba(72, 45, 0, 0.08);
   padding: 1rem;
+  scroll-margin-top: 170px;
+
+  @media (max-width: 768px) {
+    scroll-margin-top: 120px;
+  }
 `;
 
 const CardTitle = styled.h2`
@@ -407,12 +426,8 @@ const RaceDayMetaValue = styled.div`
 const ActionRow = styled.div`
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
   margin-bottom: 1rem;
-
-  @media (min-width: 920px) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 
   > * {
     width: 100%;
@@ -919,6 +934,8 @@ export default function EventMyRegistration({ view = "participant" }) {
     [ownSlot?.route_key]
   );
   const selectedRouteResources = selectedRoute ? EVENT_ROUTE_RESOURCES[selectedRoute.key] || {} : {};
+  const selectedRouteGpx = selectedRoute ? ROUTE_GPX_CONTENT[selectedRoute.key] || "" : "";
+  const [gpxDownloadUrl, setGpxDownloadUrl] = useState("");
   const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time, ownSlot?.route_key), [ownSlot?.start_time, ownSlot?.route_key]);
   const showRaceDayInfo = isPaid && EVENT_RACE_DAY_INFO_ENABLED;
   const isLiveMapPublic = useMemo(() => {
@@ -952,6 +969,21 @@ export default function EventMyRegistration({ view = "participant" }) {
     const timeoutId = window.setTimeout(() => setCopyStatus(""), 2200);
     return () => window.clearTimeout(timeoutId);
   }, [copyStatus]);
+
+  useEffect(() => {
+    if (!selectedRouteGpx || typeof Blob === "undefined" || typeof URL === "undefined") {
+      setGpxDownloadUrl("");
+      return undefined;
+    }
+
+    const blob = new Blob([selectedRouteGpx], { type: "application/gpx+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    setGpxDownloadUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedRouteGpx]);
 
   useEffect(() => {
     if (!success) return undefined;
@@ -1485,8 +1517,11 @@ export default function EventMyRegistration({ view = "participant" }) {
                       </RouteFacts>
                       <p>{selectedRoute.description}</p>
                       <ActionRow style={{ marginTop: "0.85rem", marginBottom: 0 }}>
-                        {selectedRouteResources.gpxUrl ? (
-                          <SecondaryActionLink href={selectedRouteResources.gpxUrl} target="_blank" rel="noreferrer">
+                        {gpxDownloadUrl ? (
+                          <SecondaryActionLink
+                            href={gpxDownloadUrl}
+                            download={selectedRouteResources.gpxFilename || true}
+                          >
                             <Navigation size={18} aria-hidden="true" />
                             <span>GPX herunterladen</span>
                           </SecondaryActionLink>
@@ -1508,7 +1543,7 @@ export default function EventMyRegistration({ view = "participant" }) {
                           </DisabledAction>
                         )}
                       </ActionRow>
-                      {(!selectedRouteResources.gpxUrl || !selectedRouteResources.komootUrl) && (
+                      {(!gpxDownloadUrl || !selectedRouteResources.komootUrl) && (
                         <PreviewNote style={{ marginTop: "0.8rem", marginBottom: 0 }}>
                           {EVENT_ROUTE_RELEASE_NOTICE}
                         </PreviewNote>

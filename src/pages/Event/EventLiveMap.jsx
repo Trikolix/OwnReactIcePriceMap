@@ -759,29 +759,29 @@ const RankingScore = styled.div`
 
 const CHECKPOINT_PROGRESS_BY_ROUTE = {
   epic_4: [
-    { shopId: 314, distanceKm: 55 },
-    { shopId: 145, distanceKm: 82 },
-    { shopId: 111, distanceKm: 112 },
-    { shopId: 22, distanceKm: 137 },
+    { shopId: 314, distanceKm: 50.1 },
+    { shopId: 145, distanceKm: 88.5 },
+    { shopId: 111, distanceKm: 111 },
+    { shopId: 22, distanceKm: 136 },
     { shopId: 293, distanceKm: 180 },
   ],
   classic_3: [
-    { shopId: 314, distanceKm: 55 },
-    { shopId: 145, distanceKm: 82 },
-    { shopId: 111, distanceKm: 112 },
-    { shopId: 293, distanceKm: 140 },
+    { shopId: 314, distanceKm: 50.1 },
+    { shopId: 145, distanceKm: 88.5 },
+    { shopId: 111, distanceKm: 111 },
+    { shopId: 293, distanceKm: 145 },
   ],
   family_2: [
-    { shopId: 145, distanceKm: 17 },
-    { shopId: 111, distanceKm: 40 },
-    { shopId: 293, distanceKm: 75 },
+    { shopId: 145, distanceKm: 14.4 },
+    { shopId: 111, distanceKm: 37.3 },
+    { shopId: 293, distanceKm: 70.7 },
   ],
 };
 
 const ROUTE_OVERLAYS = [
   { id: "route-180", label: "König (180 km)", color: "#dc2626", offsetPx: 4, gpx: route180Gpx },
   { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
-  { id: "route-70", label: "Genuss (75 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
+  { id: "route-70", label: "Genuss (70 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
 ];
 
 const OFFSET_ZOOM_THRESHOLD = 12;

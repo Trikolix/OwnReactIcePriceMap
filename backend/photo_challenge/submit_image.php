@@ -55,7 +55,7 @@ try {
             'size' => [$_FILES['image']['size']],
         ];
 
-        $uploaded = processUploadedImages($filesArray, '../uploads/photo_challenges/', 'pc_');
+        $uploaded = processUploadedImages($filesArray, '../../uploads/photo_challenges/', 'pc_');
         if (empty($uploaded) || empty($uploaded[0]['url'])) {
             throw new RuntimeException('Bild konnte nicht hochgeladen werden.');
         }
