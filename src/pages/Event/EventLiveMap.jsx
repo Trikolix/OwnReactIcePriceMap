@@ -778,6 +778,14 @@ const CHECKPOINT_PROGRESS_BY_ROUTE = {
   ],
 };
 
+const CHECKPOINT_PROGRESS_ALIASES_BY_SHOP_ID = {
+  314: ["bäckerei bräunig", "baeckerei braeunig", "bräunig", "braeunig"],
+  145: ["eisdiele schöne", "eisdiele schoene", "schöne", "schoene"],
+  111: ["klatt-eismanufaktur", "klatt eismanufaktur", "klatt"],
+  22: ["eiscafé elisenhof", "eiscafe elisenhof", "elisenhof"],
+  293: ["karl mag's süß", "karl mags süß", "karl mags suess", "karl"],
+};
+
 const ROUTE_OVERLAYS = [
   { id: "route-180", label: "König (180 km)", color: "#dc2626", offsetPx: 4, gpx: route180Gpx },
   { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
@@ -791,6 +799,24 @@ const formatCheckpointTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+};
+
+const normalizeCheckpointName = (value) =>
+  String(value || "")
+    .trim()
+    .toLocaleLowerCase("de-DE");
+
+const findCheckpointProgressItem = (itemsByShopId, items, shopId) => {
+  const numericShopId = Number(shopId);
+  const directItem = itemsByShopId.get(numericShopId);
+  if (directItem) return directItem;
+
+  const aliases = CHECKPOINT_PROGRESS_ALIASES_BY_SHOP_ID[numericShopId] || [];
+  if (!aliases.length) return null;
+  return items.find((item) => {
+    const normalizedName = normalizeCheckpointName(item?.name);
+    return aliases.some((alias) => normalizedName.includes(alias));
+  }) || null;
 };
 
 const formatRankingTime = (value) => {
@@ -1008,6 +1034,7 @@ export default function EventLiveMap() {
   const [linkedCheckins, setLinkedCheckins] = useState({});
   const [startFinish, setStartFinish] = useState(EVENT_START_FINISH);
   const [checkedInPortions, setCheckedInPortions] = useState(0);
+  const [checkpointStats, setCheckpointStats] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [rankingOpen, setRankingOpen] = useState(false);
   const [rankingLoading, setRankingLoading] = useState(false);
@@ -1059,12 +1086,14 @@ export default function EventLiveMap() {
         if (!canceled) {
           setItems(json.items || []);
           setStartFinish(json.start_finish || EVENT_START_FINISH);
-          setCheckedInPortions(Number(json.stats?.checked_in_portions || 0));
+          setCheckpointStats(json.stats || null);
+          setCheckedInPortions(Number(json.stats?.checked_in_portions ?? 0));
         }
       })
       .catch((err) => {
         if (!canceled) {
           setError(err.message || "Unbekannter Fehler");
+          setCheckpointStats(null);
         }
       })
       .finally(() => {
@@ -1104,6 +1133,7 @@ export default function EventLiveMap() {
         .filter((item) => Number.isFinite(Number(item.shop_id)))
         .map((item) => [Number(item.shop_id), item])
     );
+    const apiRouteDistanceKm = checkpointStats?.route_distance_km || {};
 
     let totalKm = 0;
     const routeBreakdown = ROUTE_OPTIONS.map((route) => {
@@ -1112,29 +1142,37 @@ export default function EventLiveMap() {
       let previousDistanceKm = 0;
 
       checkpoints.forEach((checkpoint) => {
-        const item = itemsByShopId.get(checkpoint.shopId);
-        const reachedCount = Number(item?.route_counts?.[route.key] || 0);
+        const item = findCheckpointProgressItem(itemsByShopId, items, checkpoint.shopId);
+        const routeCount = Number(item?.route_counts?.[route.key]);
+        const routeSupportsCheckpoint = Array.isArray(item?.route_keys) && item.route_keys.includes(route.key);
+        const fallbackCount = routeSupportsCheckpoint ? Number(item?.checked_in_count || 0) : 0;
+        const reachedCount = Number.isFinite(routeCount) ? routeCount : fallbackCount;
         const segmentDistanceKm = Math.max(0, checkpoint.distanceKm - previousDistanceKm);
         routeKm += reachedCount * segmentDistanceKm;
         previousDistanceKm = checkpoint.distanceKm;
       });
 
-      totalKm += routeKm;
+      const apiDistanceKm = Number(apiRouteDistanceKm?.[route.key]);
+      const displayDistanceKm = Number.isFinite(apiDistanceKm) ? apiDistanceKm : routeKm;
+      totalKm += displayDistanceKm;
 
       return {
         routeKey: route.key,
         shortLabel: getRouteShortLabel(route.key),
-        distanceKm: routeKm,
+        distanceKm: displayDistanceKm,
         theme: route.badgeTone,
       };
     });
+    const apiTotalKm = Number(checkpointStats?.total_distance_km);
+    const fallbackPortions = items.reduce((sum, item) => sum + Number(item?.checked_in_count || 0), 0);
+    const apiPortions = Number(checkpointStats?.checked_in_portions);
 
     return {
-      totalKm,
-      checkedInPortions,
+      totalKm: Number.isFinite(apiTotalKm) ? apiTotalKm : totalKm,
+      checkedInPortions: Number.isFinite(apiPortions) ? apiPortions : checkedInPortions || fallbackPortions,
       routeBreakdown,
     };
-  }, [checkedInPortions, items]);
+  }, [checkedInPortions, checkpointStats, items]);
 
   const openDetails = async (item) => {
     setSelected(item);
