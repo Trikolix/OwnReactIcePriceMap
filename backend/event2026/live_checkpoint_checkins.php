@@ -48,7 +48,7 @@ try {
     $total = (int) $countStmt->fetchColumn();
 
     $stmt = $pdo->prepare("SELECT
-            s.user_id,
+            COALESCE(p.user_id, s.user_id) AS resolved_user_id,
             s.id AS slot_id,
             n.username,
             s.full_name AS user_display_name,
@@ -58,21 +58,39 @@ try {
             s.distance_km AS distance,
             c.shop_id,
             COALESCE(
-                p.checkin_id,
+                (
+                    SELECT c0.id
+                    FROM checkins c0
+                    WHERE c0.id = p.checkin_id
+                      AND c0.nutzer_id = COALESCE(p.user_id, s.user_id)
+                      AND c0.eisdiele_id = c.shop_id
+                    LIMIT 1
+                ),
                 (
                     SELECT c2.id
                     FROM checkins c2
-                    WHERE c2.nutzer_id = s.user_id
+                    INNER JOIN checkin_sorten cs2 ON cs2.checkin_id = c2.id
+                    WHERE c2.nutzer_id = COALESCE(p.user_id, s.user_id)
                       AND c2.eisdiele_id = c.shop_id
                       AND DATE(c2.datum) = :event_date
-                    ORDER BY c2.datum DESC, c2.id DESC
+                    GROUP BY c2.id
+                    ORDER BY COUNT(cs2.id) DESC, c2.datum DESC, c2.id DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT c3.id
+                    FROM checkins c3
+                    WHERE c3.nutzer_id = COALESCE(p.user_id, s.user_id)
+                      AND c3.eisdiele_id = c.shop_id
+                      AND DATE(c3.datum) = :event_date
+                    ORDER BY c3.datum DESC, c3.id DESC
                     LIMIT 1
                 )
             ) AS resolved_checkin_id
         FROM event2026_checkpoint_passages p
         INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
         INNER JOIN event2026_participant_slots s ON s.id = p.slot_id
-        LEFT JOIN nutzer n ON n.id = s.user_id
+        LEFT JOIN nutzer n ON n.id = COALESCE(p.user_id, s.user_id)
         WHERE p.event_id = :event_id
           AND p.checkpoint_id = :checkpoint_id
           AND c.stamp_card_mode = :stamp_card_mode{$consentSql}
@@ -93,7 +111,7 @@ try {
         'items' => array_map(static function (array $row): array {
             $routeKey = event2026_normalize_route_key($row['route_key'] ?? '');
             return [
-                'user_id' => $row['user_id'] !== null ? (int) $row['user_id'] : null,
+                'user_id' => $row['resolved_user_id'] !== null ? (int) $row['resolved_user_id'] : null,
                 'slot_id' => $row['slot_id'] !== null ? (int) $row['slot_id'] : null,
                 'username' => $row['username'] ?: null,
                 'full_name' => $row['user_display_name'],

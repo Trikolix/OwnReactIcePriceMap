@@ -5,7 +5,7 @@ require_once __DIR__ . '/lib/notification_dispatcher.php';
 $token = $_GET['token'] ?? '';
 
 if (empty($token)) {
-    echo json_encode(['status' => 'error', 'message' => 'Ungueltiger Link.']);
+    echo json_encode(['status' => 'error', 'message' => 'Ungültiger Link.']);
 }
 
 try {
@@ -27,13 +27,13 @@ try {
                 $invitedBy,
                 'new_user',
                 $userId,
-                $username . ' hat sich ueber deinen Einladungslink registriert.'
+                $username . ' hat sich über deinen Einladungslink registriert.'
             );
         }
 
-        echo json_encode(['status' => 'success', 'message' => 'Dein Account wurde erfolgreich bestaetigt. Du kannst dich jetzt einloggen.']);
+        echo json_encode(['status' => 'success', 'message' => 'Dein Account wurde erfolgreich bestätigt. Du kannst dich jetzt einloggen.']);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'Ungueltiger oder abgelaufener Token.']);
+        echo json_encode(['status' => 'error', 'message' => 'Ungültiger oder abgelaufener Token.']);
     }
 } catch (PDOException $e) {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);

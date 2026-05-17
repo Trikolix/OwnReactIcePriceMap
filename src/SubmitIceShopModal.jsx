@@ -40,6 +40,7 @@ const SubmitIceShopModal = ({
   const [levelUpInfo, setLevelUpInfo] = useState(null);
   const [closingDate, setClosingDate] = useState(existingIceShop?.closing_date || "");
   const [selectedExternalSource, setSelectedExternalSource] = useState(initialExternalSource || null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const isEditMode = Boolean(existingIceShop);
   const isAdmin = Number(userId) === 1;
@@ -120,6 +121,8 @@ const SubmitIceShopModal = ({
   ]);
 
   const submit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       setAwards([]);
       setLevelUpInfo(null);
@@ -214,6 +217,8 @@ const SubmitIceShopModal = ({
     } catch (error) {
       setMessage("Ein Fehler ist aufgetreten.");
       console.log(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -403,7 +408,7 @@ const SubmitIceShopModal = ({
           )}
 
           <ButtonGroup>
-            <PrimarySubmit type="submit">{submitLabel}</PrimarySubmit>
+            <PrimarySubmit type="submit" disabled={isSubmitting}>{submitLabel}</PrimarySubmit>
           </ButtonGroup>
         </form>)}
 

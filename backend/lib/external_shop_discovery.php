@@ -327,7 +327,7 @@ OVERPASS;
 
         $data = json_decode($json, true);
         if (!is_array($data)) {
-            $lastErrorMessage = "Ungueltige Antwort von {$endpoint}";
+            $lastErrorMessage = "Ungültige Antwort von {$endpoint}";
             continue;
         }
 
@@ -337,14 +337,14 @@ OVERPASS;
         }
 
         if (!is_array($data['elements'] ?? null)) {
-            $lastErrorMessage = "Keine gueltigen Elemente in Antwort von {$endpoint}";
+            $lastErrorMessage = "Keine gültigen Elemente in Antwort von {$endpoint}";
             continue;
         }
 
         return $data['elements'];
     }
 
-    throw new RuntimeException($lastErrorMessage ?: 'Die externe Eisdielen-Suche ist gerade voruebergehend nicht erreichbar.');
+    throw new RuntimeException($lastErrorMessage ?: 'Die externe Eisdielen-Suche ist gerade vorübergehend nicht erreichbar.');
 }
 
 function externalShopComposeAddressFromTags(array $tags): string

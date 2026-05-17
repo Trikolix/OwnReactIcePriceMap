@@ -29,6 +29,7 @@ $startAt = normalizeDateTime($_POST['start_at'] ?? null);
 $minImageCreatedAt = normalizeDateTime($_POST['min_image_created_at'] ?? null);
 $submissionDeadline = normalizeDateTime($_POST['submission_deadline'] ?? null);
 $submissionLimit = isset($_POST['submission_limit_per_user']) ? (int)$_POST['submission_limit_per_user'] : null;
+$allowDirectUploads = !empty($_POST['allow_direct_uploads']) ? 1 : 0;
 $groupScheduleRaw = $_POST['group_schedule'] ?? null;
 $groupSchedule = sanitizeGroupSchedule($groupScheduleRaw, $startAt);
 $groupScheduleJson = $groupSchedule ? json_encode($groupSchedule) : null;
@@ -107,6 +108,7 @@ try {
             min_image_created_at,
             submission_deadline,
             submission_limit_per_user,
+            allow_direct_uploads,
             group_schedule,
             group_advancers,
             lucky_loser_slots,
@@ -121,6 +123,7 @@ try {
             :min_image_created_at,
             :submission_deadline,
             :submission_limit_per_user,
+            :allow_direct_uploads,
             :group_schedule,
             :group_advancers,
             :lucky_loser_slots,
@@ -137,6 +140,7 @@ try {
         'min_image_created_at' => $minImageCreatedAt,
         'submission_deadline' => $submissionDeadline,
         'submission_limit_per_user' => $submissionLimit,
+        'allow_direct_uploads' => $allowDirectUploads,
         'group_schedule' => $groupScheduleJson,
         'group_advancers' => $groupAdvancers,
         'lucky_loser_slots' => $luckyLoserSlots,

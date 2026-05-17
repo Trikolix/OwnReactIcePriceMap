@@ -243,12 +243,17 @@ const IceShopDetailPage = () => {
   const focusCheckinId = searchParams.get('focusCheckin');
   const focusReviewId = searchParams.get('focusReview');
   const focusCommentId = searchParams.get('focusComment');
+  const openCheckin = searchParams.get('openCheckin');
 
   useEffect(() => {
     if (tabParam === 'reviews' || tabParam === 'checkins' || tabParam === 'photos' || tabParam === 'routes') {
       setActiveFeed(tabParam);
     }
   }, [tabParam]);
+
+  useEffect(() => {
+    if (openCheckin && isLoggedIn) setShowCheckinForm(true);
+  }, [openCheckin, isLoggedIn]);
 
   useEffect(() => {
     let cancelled = false;

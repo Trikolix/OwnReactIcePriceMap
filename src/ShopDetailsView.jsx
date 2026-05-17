@@ -90,11 +90,16 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
   const focusCheckinId = searchParams.get('focusCheckin');
   const focusReviewId = searchParams.get('focusReview');
   const createReferencedCheckin = searchParams.get('createReferencedCheckin');
+  const openCheckin = searchParams.get('openCheckin');
   const openAtParam = searchParams.get('open_at');
 
   useEffect(() => {
     if (createReferencedCheckin) setShowCheckinForm(true);
   }, [createReferencedCheckin]);
+
+  useEffect(() => {
+    if (openCheckin && isLoggedIn) setShowCheckinForm(true);
+  }, [openCheckin, isLoggedIn]);
 
   useEffect(() => {
     if (tabParam) setActiveTab(tabParam);

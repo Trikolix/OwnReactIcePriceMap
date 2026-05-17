@@ -206,7 +206,7 @@ if ($action === 'create') {
         $confirmed = !empty($input['force_mail_all_confirmed']);
         $confirmText = trim((string)($input['force_mail_all_confirm_text'] ?? ''));
         if (!$confirmed || $confirmText !== 'EMAIL AN ALLE') {
-            respondJson(["status" => "error", "message" => "E-Mail an alle muss doppelt bestaetigt werden"]);
+            respondJson(["status" => "error", "message" => "E-Mail an alle muss doppelt bestätigt werden"]);
         }
     }
 
@@ -291,7 +291,7 @@ if ($action === 'delete') {
         $pdo->prepare("DELETE FROM benachrichtigungen WHERE referenz_id = ? AND typ = 'systemmeldung'")->execute([$id]);
         echo json_encode(["status" => "success"]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Ungueltige ID"]);
+        echo json_encode(["status" => "error", "message" => "Ungültige ID"]);
     }
     exit;
 }
@@ -309,7 +309,7 @@ if ($action === 'update') {
     $emailButtons = normalizeMailButtons((array)($input['email_buttons'] ?? []), $linkUrl, $linkLabel);
 
     if ($id <= 0 || $titel === '' || $nachricht === '') {
-        echo json_encode(["status" => "error", "message" => "Ungueltige Daten"]);
+        echo json_encode(["status" => "error", "message" => "Ungültige Daten"]);
         exit;
     }
 

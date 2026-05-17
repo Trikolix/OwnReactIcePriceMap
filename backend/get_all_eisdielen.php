@@ -158,7 +158,7 @@ $sql = "SELECT
         ELSE 0
     END AS has_active_team_challenge,
 
-    -- Legacy-Sammelflag fuer bestehende Frontend-Stellen
+    -- Legacy-Sammelflag für bestehende Frontend-Stellen
     CASE
         WHEN EXISTS (
             SELECT 1

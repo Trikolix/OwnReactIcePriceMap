@@ -1,6 +1,7 @@
 import Header from '../Header';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from "styled-components";
+import { Settings } from "lucide-react";
 import ReviewCard from "../components/ReviewCard";
 import CheckinCard from '../components/CheckinCard';
 import GroupCheckinCard from '../components/GroupCheckinCard';
@@ -29,6 +30,48 @@ function DashBoard() {
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState(() => {
+    const saved = localStorage.getItem('dashboardFilters');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Fehler beim Parsen der Dashboard-Filter", e);
+      }
+    }
+    return {
+      checkin: true,
+      bewertung: true,
+      eisdiele: true,
+      award: true,
+      new_user: true,
+    };
+  });
+
+  const filterMenuRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem('dashboardFilters', JSON.stringify(filters));
+  }, [filters]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
+        setShowFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleFilterChange = (key) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   const days = 7;
   const minimum = 20;
@@ -127,6 +170,56 @@ function DashBoard() {
       <Header />
       <Container>
         <HeroCard>
+          <SettingsContainer ref={filterMenuRef}>
+            <SettingsButton onClick={() => setShowFilters(!showFilters)} aria-label="Aktivitätsfilter">
+              <Settings size={20} color="rgba(47, 33, 0, 0.6)" />
+            </SettingsButton>
+            {showFilters && (
+              <FilterMenu>
+                <FilterLabel>
+                  <FilterCheckbox
+                    type="checkbox"
+                    checked={filters.checkin}
+                    onChange={() => handleFilterChange('checkin')}
+                  />
+                  Check-ins
+                </FilterLabel>
+                <FilterLabel>
+                  <FilterCheckbox
+                    type="checkbox"
+                    checked={filters.bewertung}
+                    onChange={() => handleFilterChange('bewertung')}
+                  />
+                  Bewertungen
+                </FilterLabel>
+                <FilterLabel>
+                  <FilterCheckbox
+                    type="checkbox"
+                    checked={filters.eisdiele}
+                    onChange={() => handleFilterChange('eisdiele')}
+                  />
+                  Neue Eisdielen
+                </FilterLabel>
+                <FilterLabel>
+                  <FilterCheckbox
+                    type="checkbox"
+                    checked={filters.award}
+                    onChange={() => handleFilterChange('award')}
+                  />
+                  Awards
+                </FilterLabel>
+                <FilterLabel>
+                  <FilterCheckbox
+                    type="checkbox"
+                    checked={filters.new_user}
+                    onChange={() => handleFilterChange('new_user')}
+                  />
+                  Neue Nutzer
+                </FilterLabel>
+              </FilterMenu>
+            )}
+          </SettingsContainer>
+
           <Title>Aktivitäten</Title>
           <Subtitle>
             Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
@@ -144,7 +237,15 @@ function DashBoard() {
         )}
 
         <Section>
-          {groupActivities(activities).map((activity) => {
+          {groupActivities(activities).filter(activity => {
+            const { typ } = activity;
+            if (['checkin', 'group_checkin'].includes(typ)) return filters.checkin;
+            if (typ === 'bewertung') return filters.bewertung;
+            if (typ === 'eisdiele') return filters.eisdiele;
+            if (['award', 'award_bundle', 'award_wave'].includes(typ)) return filters.award;
+            if (typ === 'new_user') return filters.new_user;
+            return true; // route defaults to true since it's not in the requirements to be toggleable
+          }).map((activity) => {
             const { typ, id, data } = activity;
             switch (typ) {
               case 'checkin':
@@ -298,12 +399,66 @@ const LoadButton = styled.button`
 `;
 
 const HeroCard = styled.div`
+  position: relative;
   background: rgba(255, 252, 243, 0.96);
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem 1rem 0.9rem;
   margin-top: 0.25rem;
+`;
+
+const SettingsContainer = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+`;
+
+const SettingsButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(47, 33, 0, 0.05);
+  }
+`;
+
+const FilterMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: white;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 150px;
+`;
+
+const FilterLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #2f2100;
+  cursor: pointer;
+`;
+
+const FilterCheckbox = styled.input`
+  cursor: pointer;
+  accent-color: #ffb522;
 `;
 
 const Subtitle = styled.p`

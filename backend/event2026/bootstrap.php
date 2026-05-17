@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/auth.php';
 
-const EVENT2026_REGISTRATION_CLOSES_AT = '2026-05-12 22:00:00';
+const EVENT2026_REGISTRATION_CLOSES_AT = '2026-05-13 22:00:00';
 const EVENT2026_REGISTRATION_TIMEZONE = 'Europe/Berlin';
 const EVENT2026_REGISTRATION_CLOSED_MESSAGE = 'Die Registrierung ist bereits geschlossen. Wenn du einen ganz dringenden Grund hast, doch noch teilzunehmen, schreib uns doch eine Mail ;)';
 

@@ -102,7 +102,7 @@ const EasterCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
       {campaign?.status === CAMPAIGN_STATUS.UPCOMING && (
         <>
           <Lead>
-            Der Osterhase versteckt sich waehrend der Aktion hinter Osterei-Markern auf der Karte. Wenn du ihn erwischst,
+            Der Osterhase versteckt sich während der Aktion hinter Osterei-Markern auf der Karte. Wenn du ihn erwischst,
             hopst er weiter und hinterlaesst neue Richtungs- oder Werkstatthinweise.
           </Lead>
           <SmallCard>

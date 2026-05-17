@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Header from "./Header";
 import CheckinCard from "../../components/CheckinCard";
 import Seo from "../../components/Seo";
@@ -568,8 +568,9 @@ const StatsCard = styled.div`
     flex: 1;
     align-self: flex-start;
     margin: 0;
-    padding: 0.65rem 0.75rem;
+    padding: 0.42rem 0.5rem;
     min-width: 0;
+    border-radius: 10px;
   }
 `;
 
@@ -577,12 +578,21 @@ const StatsHeading = styled.div`
   font-weight: 800;
   color: #5b3a00;
   margin-bottom: 0.5rem;
+
+  @media (max-width: 720px) {
+    margin-bottom: 0.28rem;
+    font-size: 0.82rem;
+  }
 `;
 
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.6rem;
+
+  @media (max-width: 720px) {
+    gap: 0.35rem;
+  }
 `;
 
 const StatItem = styled.div`
@@ -594,6 +604,10 @@ const StatValue = styled.div`
   line-height: 1.05;
   font-weight: 900;
   color: #2f2100;
+
+  @media (max-width: 720px) {
+    font-size: 0.95rem;
+  }
 `;
 
 const StatLabel = styled.div`
@@ -601,6 +615,12 @@ const StatLabel = styled.div`
   color: #7c4f00;
   font-size: 0.78rem;
   line-height: 1.25;
+
+  @media (max-width: 720px) {
+    margin-top: 0.12rem;
+    font-size: 0.62rem;
+    line-height: 1.12;
+  }
 `;
 
 const RouteStatSummary = styled.div`
@@ -608,6 +628,13 @@ const RouteStatSummary = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+
+  @media (max-width: 720px) {
+    margin-top: 0.35rem;
+    gap: 0.2rem;
+    max-height: 1.55rem;
+    overflow: hidden;
+  }
 `;
 
 const RouteStatPill = styled.div`
@@ -621,33 +648,148 @@ const RouteStatPill = styled.div`
   border: 1px solid ${({ $border }) => $border || "#f0d79a"};
   font-size: 0.74rem;
   font-weight: 800;
+
+  @media (max-width: 720px) {
+    gap: 0.2rem;
+    padding: 0.12rem 0.32rem;
+    font-size: 0.58rem;
+  }
+`;
+
+const StatsActionButton = styled.button`
+  width: 100%;
+  margin-top: 0.75rem;
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 87, 0, 0.28);
+  background: #2f2100;
+  color: #fffdf7;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(47, 33, 0, 0.12);
+
+  &:hover {
+    background: #5a3900;
+  }
+
+  @media (max-width: 720px) {
+    margin-top: 0.38rem;
+    min-height: 30px;
+    font-size: 0.72rem;
+  }
+`;
+
+const RankingSummary = styled.div`
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.6rem;
+`;
+
+const RankingSummaryItem = styled.div`
+  border-radius: 12px;
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  background: #fff8e8;
+  padding: 0.65rem;
+`;
+
+const RankingList = styled.div`
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.55rem;
+`;
+
+const RankingRow = styled.div`
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid rgba(138, 87, 0, 0.12);
+  background: ${({ $hasPortions }) => ($hasPortions ? "#fffaf0" : "rgba(255, 255, 255, 0.7)")};
+
+  @media (max-width: 560px) {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+  }
+`;
+
+const RankingRank = styled.div`
+  width: 2.2rem;
+  height: 2.2rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ffddb0;
+  color: #5a3900;
+  font-weight: 900;
+`;
+
+const RankingName = styled.div`
+  color: #2f2100;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+`;
+
+const RankingMeta = styled.div`
+  margin-top: 0.2rem;
+  color: #7c4f00;
+  font-size: 0.82rem;
+  line-height: 1.35;
+`;
+
+const RankingScore = styled.div`
+  text-align: right;
+  color: #2f2100;
+  font-weight: 900;
+  white-space: nowrap;
+
+  span {
+    display: block;
+    color: #7c4f00;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 560px) {
+    grid-column: 2;
+    text-align: left;
+  }
 `;
 
 const CHECKPOINT_PROGRESS_BY_ROUTE = {
   epic_4: [
-    { shopId: 314, distanceKm: 55 },
-    { shopId: 145, distanceKm: 82 },
-    { shopId: 111, distanceKm: 112 },
-    { shopId: 22, distanceKm: 137 },
+    { shopId: 314, distanceKm: 50.1 },
+    { shopId: 145, distanceKm: 88.5 },
+    { shopId: 111, distanceKm: 111 },
+    { shopId: 22, distanceKm: 136 },
     { shopId: 293, distanceKm: 180 },
   ],
   classic_3: [
-    { shopId: 314, distanceKm: 55 },
-    { shopId: 145, distanceKm: 82 },
-    { shopId: 111, distanceKm: 112 },
-    { shopId: 293, distanceKm: 140 },
+    { shopId: 314, distanceKm: 50.1 },
+    { shopId: 145, distanceKm: 88.5 },
+    { shopId: 111, distanceKm: 111 },
+    { shopId: 293, distanceKm: 145 },
   ],
   family_2: [
-    { shopId: 145, distanceKm: 17 },
-    { shopId: 111, distanceKm: 40 },
-    { shopId: 293, distanceKm: 75 },
+    { shopId: 145, distanceKm: 14.4 },
+    { shopId: 111, distanceKm: 37.3 },
+    { shopId: 293, distanceKm: 70.7 },
   ],
+};
+
+const CHECKPOINT_PROGRESS_ALIASES_BY_SHOP_ID = {
+  314: ["bäckerei bräunig", "baeckerei braeunig", "bräunig", "braeunig"],
+  145: ["eisdiele schöne", "eisdiele schoene", "schöne", "schoene"],
+  111: ["klatt-eismanufaktur", "klatt eismanufaktur", "klatt"],
+  22: ["eiscafé elisenhof", "eiscafe elisenhof", "elisenhof"],
+  293: ["karl mag's süß", "karl mags süß", "karl mags suess", "karl"],
 };
 
 const ROUTE_OVERLAYS = [
   { id: "route-180", label: "König (180 km)", color: "#dc2626", offsetPx: 4, gpx: route180Gpx },
   { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
-  { id: "route-70", label: "Genuss (75 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
+  { id: "route-70", label: "Genuss (70 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
 ];
 
 const OFFSET_ZOOM_THRESHOLD = 12;
@@ -656,6 +798,31 @@ const formatCheckpointTime = (value) => {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+};
+
+const normalizeCheckpointName = (value) =>
+  String(value || "")
+    .trim()
+    .toLocaleLowerCase("de-DE");
+
+const findCheckpointProgressItem = (itemsByShopId, items, shopId) => {
+  const numericShopId = Number(shopId);
+  const directItem = itemsByShopId.get(numericShopId);
+  if (directItem) return directItem;
+
+  const aliases = CHECKPOINT_PROGRESS_ALIASES_BY_SHOP_ID[numericShopId] || [];
+  if (!aliases.length) return null;
+  return items.find((item) => {
+    const normalizedName = normalizeCheckpointName(item?.name);
+    return aliases.some((alias) => normalizedName.includes(alias));
+  }) || null;
+};
+
+const formatRankingTime = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 };
 
@@ -668,6 +835,8 @@ const formatRouteDistanceOnly = (routeLabel) => {
 const resolveUsername = (row) => row.username || "Kein Profil";
 
 const resolveFullName = (row) => row.full_name || row.user_display_name || "-";
+
+const formatPortionLabel = (count) => (count === 1 ? "1 Portion" : `${count} Portionen`);
 
 const formatCheckpointVisitsSummary = (count) => {
   if (count === 1) return "1 Teilnehmer hat diesen Checkpoint erreicht.";
@@ -850,11 +1019,8 @@ function RouteOverlay({ route, isActive, onHoverChange }) {
 
 export default function EventLiveMap() {
   const apiBase = getApiBaseUrl();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { authToken, userId } = useUser();
-  const requestedMode = searchParams.get("mode") === "test" ? "test" : "live";
-  const isAdmin = Number(userId) === 1;
-  const mode = requestedMode === "test" && isAdmin ? "test" : "live";
+  const { authToken } = useUser();
+  const mode = "live";
 
   const [items, setItems] = useState([]);
   const [routeOverlays, setRouteOverlays] = useState([]);
@@ -868,13 +1034,13 @@ export default function EventLiveMap() {
   const [linkedCheckins, setLinkedCheckins] = useState({});
   const [startFinish, setStartFinish] = useState(EVENT_START_FINISH);
   const [checkedInPortions, setCheckedInPortions] = useState(0);
+  const [checkpointStats, setCheckpointStats] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
-
-  useEffect(() => {
-    if (requestedMode === "test" && !isAdmin) {
-      setSearchParams({ mode: "live" }, { replace: true });
-    }
-  }, [isAdmin, requestedMode, setSearchParams]);
+  const [rankingOpen, setRankingOpen] = useState(false);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingError, setRankingError] = useState("");
+  const [rankingItems, setRankingItems] = useState([]);
+  const [rankingSummary, setRankingSummary] = useState(null);
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
@@ -920,12 +1086,14 @@ export default function EventLiveMap() {
         if (!canceled) {
           setItems(json.items || []);
           setStartFinish(json.start_finish || EVENT_START_FINISH);
-          setCheckedInPortions(Number(json.stats?.checked_in_portions || 0));
+          setCheckpointStats(json.stats || null);
+          setCheckedInPortions(Number(json.stats?.checked_in_portions ?? 0));
         }
       })
       .catch((err) => {
         if (!canceled) {
           setError(err.message || "Unbekannter Fehler");
+          setCheckpointStats(null);
         }
       })
       .finally(() => {
@@ -965,6 +1133,7 @@ export default function EventLiveMap() {
         .filter((item) => Number.isFinite(Number(item.shop_id)))
         .map((item) => [Number(item.shop_id), item])
     );
+    const apiRouteDistanceKm = checkpointStats?.route_distance_km || {};
 
     let totalKm = 0;
     const routeBreakdown = ROUTE_OPTIONS.map((route) => {
@@ -973,29 +1142,37 @@ export default function EventLiveMap() {
       let previousDistanceKm = 0;
 
       checkpoints.forEach((checkpoint) => {
-        const item = itemsByShopId.get(checkpoint.shopId);
-        const reachedCount = Number(item?.route_counts?.[route.key] || 0);
+        const item = findCheckpointProgressItem(itemsByShopId, items, checkpoint.shopId);
+        const routeCount = Number(item?.route_counts?.[route.key]);
+        const routeSupportsCheckpoint = Array.isArray(item?.route_keys) && item.route_keys.includes(route.key);
+        const fallbackCount = routeSupportsCheckpoint ? Number(item?.checked_in_count || 0) : 0;
+        const reachedCount = Number.isFinite(routeCount) ? routeCount : fallbackCount;
         const segmentDistanceKm = Math.max(0, checkpoint.distanceKm - previousDistanceKm);
         routeKm += reachedCount * segmentDistanceKm;
         previousDistanceKm = checkpoint.distanceKm;
       });
 
-      totalKm += routeKm;
+      const apiDistanceKm = Number(apiRouteDistanceKm?.[route.key]);
+      const displayDistanceKm = Number.isFinite(apiDistanceKm) ? apiDistanceKm : routeKm;
+      totalKm += displayDistanceKm;
 
       return {
         routeKey: route.key,
         shortLabel: getRouteShortLabel(route.key),
-        distanceKm: routeKm,
+        distanceKm: displayDistanceKm,
         theme: route.badgeTone,
       };
     });
+    const apiTotalKm = Number(checkpointStats?.total_distance_km);
+    const fallbackPortions = items.reduce((sum, item) => sum + Number(item?.checked_in_count || 0), 0);
+    const apiPortions = Number(checkpointStats?.checked_in_portions);
 
     return {
-      totalKm,
-      checkedInPortions,
+      totalKm: Number.isFinite(apiTotalKm) ? apiTotalKm : totalKm,
+      checkedInPortions: Number.isFinite(apiPortions) ? apiPortions : checkedInPortions || fallbackPortions,
       routeBreakdown,
     };
-  }, [checkedInPortions, items]);
+  }, [checkedInPortions, checkpointStats, items]);
 
   const openDetails = async (item) => {
     setSelected(item);
@@ -1066,6 +1243,39 @@ export default function EventLiveMap() {
     }
   };
 
+  const loadRanking = async () => {
+    if (!apiBase) return;
+    setRankingLoading(true);
+    setRankingError("");
+
+    try {
+      const res = await fetch(`${apiBase}/event2026/live_ranking.php?mode=${mode}`, {
+        headers: {
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+      });
+      const json = await readEventApiJson(res);
+      if (!res.ok || json?.status !== "success") {
+        throw new Error(getEventAccessErrorMessage(res.status, json?.message || "Ranking konnte nicht geladen werden."));
+      }
+      setRankingItems(json.items || []);
+      setRankingSummary(json.summary || null);
+    } catch (err) {
+      setRankingError(err.message || "Ranking konnte nicht geladen werden.");
+      setRankingItems([]);
+      setRankingSummary(null);
+    } finally {
+      setRankingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!rankingOpen) return undefined;
+    loadRanking();
+    const interval = window.setInterval(loadRanking, 30000);
+    return () => window.clearInterval(interval);
+  }, [rankingOpen, apiBase, authToken, mode]);
+
   const startFinishAddress = startFinish.full_address || startFinish.fullAddress || "";
 
   return (
@@ -1090,18 +1300,10 @@ export default function EventLiveMap() {
             <span className="mobile-text">{showInfoPanel ? "x" : "i"}</span>
           </InfoToggleButton>
           <MapInfo $isVisible={showInfoPanel}>
-            <InfoHeading>{mode === "test" ? "Test-Live-Map" : "Live-Checkpoint-Karte"}</InfoHeading>
+            <InfoHeading>Live-Checkpoint-Karte</InfoHeading>
             <InfoText>
-              {mode === "test"
-                ? "Admin-Testansicht für die Stempelkarte. Hier siehst du, wie Check-ins und Checkpoint-Anzeigen auf der Live-Map wirken."
-                : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker öffnen die checkpointbezogene Live-Liste."}
+              Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker öffnen die checkpointbezogene Live-Liste.
             </InfoText>
-            {isAdmin && (
-              <div style={{ display: "flex", gap: "0.45rem", marginTop: "0.7rem", flexWrap: "wrap" }}>
-                <button type="button" onClick={() => setSearchParams({ mode: "live" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "live" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Live</button>
-                <button type="button" onClick={() => setSearchParams({ mode: "test" })} style={{ borderRadius: 999, border: "1px solid #efcf84", background: mode === "test" ? "#ffddb0" : "#fff6de", color: "#6a4300", padding: "0.35rem 0.75rem", fontWeight: 700, cursor: "pointer" }}>Test</button>
-              </div>
-            )}
           </MapInfo>
 
           <StatsCard>
@@ -1129,6 +1331,9 @@ export default function EventLiveMap() {
                 </RouteStatPill>
               ))}
             </RouteStatSummary>
+            <StatsActionButton type="button" onClick={() => setRankingOpen(true)}>
+              Live-Ranking öffnen
+            </StatsActionButton>
           </StatsCard>
 
         </OverlayLayout>
@@ -1178,7 +1383,7 @@ export default function EventLiveMap() {
                 <Popup>
                   <strong>{item.name}</strong>
                   {item.isStartFinishHub ? (
-                    <div>{mode === "test" ? "Test-Start- und Zielbereich" : "Start- und Zielbereich für alle Routen"}</div>
+                    <div>Start- und Zielbereich für alle Routen</div>
                   ) : (
                     <div>{item.checked_in_count} / {item.licensed_count} eingecheckt</div>
                   )}
@@ -1209,6 +1414,85 @@ export default function EventLiveMap() {
         {loading && <Message>Karte wird geladen...</Message>}
         {error && <Message $error>{error}</Message>}
       </MapShell>
+
+      {rankingOpen && createPortal(
+        <ModalOverlay onClick={() => setRankingOpen(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <div>
+                <ModalHeading>Live-Ranking</ModalHeading>
+                <ModalSubline>
+                  Teilnehmer sortiert nach eingecheckten Eisportionen am Eventtag. Das Ranking aktualisiert sich automatisch alle 30 Sekunden.
+                </ModalSubline>
+              </div>
+            </ModalHeader>
+
+            <RankingSummary>
+              <RankingSummaryItem>
+                <StatValue>{Number(rankingSummary?.total_portions || 0).toLocaleString("de-DE")}</StatValue>
+                <StatLabel>Portionen im Ranking</StatLabel>
+              </RankingSummaryItem>
+              <RankingSummaryItem>
+                <StatValue>{Number(rankingSummary?.participants_with_portions || 0).toLocaleString("de-DE")}</StatValue>
+                <StatLabel>Teilnehmer mit Eis</StatLabel>
+              </RankingSummaryItem>
+              <RankingSummaryItem>
+                <StatValue>{Number(rankingSummary?.participants || 0).toLocaleString("de-DE")}</StatValue>
+                <StatLabel>Teilnehmer sichtbar</StatLabel>
+              </RankingSummaryItem>
+            </RankingSummary>
+
+            {rankingLoading && rankingItems.length === 0 ? (
+              <p>Lade Ranking...</p>
+            ) : rankingError ? (
+              <EmptyState>{rankingError}</EmptyState>
+            ) : rankingItems.length === 0 ? (
+              <EmptyState>Noch keine Teilnehmer im Ranking.</EmptyState>
+            ) : (
+              <RankingList>
+                {rankingItems.map((row) => {
+                  const routeLabel = row.route_label || getRouteLabel(row.route_key);
+                  const portionCount = Number(row.portion_count || 0);
+                  const checkinCount = Number(row.checkin_count || 0);
+                  const shops = Array.isArray(row.shop_names) ? row.shop_names.filter(Boolean) : [];
+                  return (
+                    <RankingRow key={row.slot_id || `${row.user_id}-${row.full_name}`} $hasPortions={portionCount > 0}>
+                      <RankingRank>{row.rank}</RankingRank>
+                      <div>
+                        <RankingName>{row.user_id ? <UserLink to={`/user/${row.user_id}`}>{resolveFullName(row)}</UserLink> : resolveFullName(row)}</RankingName>
+                        <RankingMeta>
+                          <CompactRouteBadge
+                            $bg={getRouteThemeByLabel(routeLabel).background}
+                            $border={getRouteThemeByLabel(routeLabel).border}
+                            $color={getRouteThemeByLabel(routeLabel).text}
+                          >
+                            {formatRouteDistanceOnly(routeLabel)}
+                          </CompactRouteBadge>
+                          {row.username ? ` @${row.username}` : ""}
+                          {row.last_checkin_at ? ` · zuletzt ${formatRankingTime(row.last_checkin_at)}` : ""}
+                          {shops.length > 0 ? ` · ${shops.join(", ")}` : ""}
+                        </RankingMeta>
+                      </div>
+                      <RankingScore>
+                        {formatPortionLabel(portionCount)}
+                        <span>{checkinCount === 1 ? "1 Check-in" : `${checkinCount} Check-ins`}</span>
+                      </RankingScore>
+                    </RankingRow>
+                  );
+                })}
+              </RankingList>
+            )}
+
+            <ModalActions>
+              <AppButton type="button" onClick={loadRanking} disabled={rankingLoading}>
+                {rankingLoading ? "Aktualisiere..." : "Aktualisieren"}
+              </AppButton>
+              <AppButton type="button" onClick={() => setRankingOpen(false)}>Schließen</AppButton>
+            </ModalActions>
+          </Modal>
+        </ModalOverlay>,
+        document.body
+      )}
 
       {selected && createPortal(
         <ModalOverlay onClick={() => setSelected(null)}>

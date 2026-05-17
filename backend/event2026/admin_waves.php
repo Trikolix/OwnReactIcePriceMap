@@ -56,6 +56,24 @@ function event2026_admin_wave_payload(array $data): array
     ];
 }
 
+function event2026_admin_route_key_for_distance(int $distanceKm): string
+{
+    foreach (event2026_route_catalog() as $routeKey => $route) {
+        if ((int) $route['distance_km'] === $distanceKm) {
+            return (string) $routeKey;
+        }
+    }
+
+    if ($distanceKm >= 170) {
+        return 'epic_4';
+    }
+    if ($distanceKm <= 90) {
+        return 'family_2';
+    }
+
+    return 'classic_3';
+}
+
 try {
     event2026_ensure_schema($pdo);
 
@@ -169,26 +187,62 @@ try {
             throw new InvalidArgumentException('Teilnehmer und Startwelle sind erforderlich.');
         }
 
-        $slotStmt = $pdo->prepare("SELECT id FROM event2026_participant_slots WHERE id = :slot_id AND event_id = :event_id LIMIT 1 FOR UPDATE");
+        $slotStmt = $pdo->prepare("SELECT id, route_key, distance_km, pace_group
+            FROM event2026_participant_slots
+            WHERE id = :slot_id AND event_id = :event_id
+            LIMIT 1
+            FOR UPDATE");
         $slotStmt->execute([':slot_id' => $slotId, ':event_id' => $eventId]);
-        if (!$slotStmt->fetch()) {
+        $slot = $slotStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$slot) {
             throw new RuntimeException('Teilnehmer wurde nicht gefunden.');
         }
 
-        $waveStmt = $pdo->prepare("SELECT id FROM event2026_waves WHERE id = :wave_id AND event_id = :event_id LIMIT 1 FOR UPDATE");
+        $waveStmt = $pdo->prepare("SELECT id, distance_km, pace_group, wave_code
+            FROM event2026_waves
+            WHERE id = :wave_id AND event_id = :event_id
+            LIMIT 1
+            FOR UPDATE");
         $waveStmt->execute([':wave_id' => $waveId, ':event_id' => $eventId]);
-        if (!$waveStmt->fetch()) {
+        $wave = $waveStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$wave) {
             throw new RuntimeException('Startwelle wurde nicht gefunden.');
         }
+
+        $newRouteKey = event2026_admin_route_key_for_distance((int) $wave['distance_km']);
+        $newDistanceKm = event2026_route_distance($newRouteKey);
+        $newPaceGroup = event2026_normalize_pace_group($newRouteKey, (string) ($wave['pace_group'] ?? ''));
+
+        $slotUpdateStmt = $pdo->prepare("UPDATE event2026_participant_slots
+            SET route_key = :route_key,
+                distance_km = :distance_km,
+                pace_group = :pace_group
+            WHERE id = :slot_id AND event_id = :event_id");
+        $slotUpdateStmt->execute([
+            ':route_key' => $newRouteKey,
+            ':distance_km' => $newDistanceKm,
+            ':pace_group' => $newPaceGroup,
+            ':slot_id' => $slotId,
+            ':event_id' => $eventId,
+        ]);
 
         $stmt = $pdo->prepare("INSERT INTO event2026_wave_assignments (slot_id, wave_id, assigned_at)
             VALUES (:slot_id, :wave_id, NOW())
             ON DUPLICATE KEY UPDATE wave_id = VALUES(wave_id), assigned_at = NOW()");
         $stmt->execute([':slot_id' => $slotId, ':wave_id' => $waveId]);
-        event2026_log_action($pdo, $eventId, $admin['user_id'], 'wave_assign_manual', 'slot', $slotId, ['wave_id' => $waveId]);
+        event2026_log_action($pdo, $eventId, $admin['user_id'], 'wave_assign_manual', 'slot', $slotId, [
+            'wave_id' => $waveId,
+            'wave_code' => (string) ($wave['wave_code'] ?? ''),
+            'old_route_key' => event2026_normalize_route_key($slot['route_key'] ?? ''),
+            'new_route_key' => $newRouteKey,
+            'old_distance_km' => (int) ($slot['distance_km'] ?? 0),
+            'new_distance_km' => $newDistanceKm,
+            'old_pace_group' => (string) ($slot['pace_group'] ?? ''),
+            'new_pace_group' => $newPaceGroup,
+        ]);
         $pdo->commit();
 
-        echo json_encode(['status' => 'success', 'message' => 'Teilnehmer wurde zugeordnet.']);
+        echo json_encode(['status' => 'success', 'message' => 'Teilnehmer wurde zugeordnet und Strecke aktualisiert.']);
         exit;
     }
 

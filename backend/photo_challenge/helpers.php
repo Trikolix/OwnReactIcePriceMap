@@ -246,6 +246,7 @@ function enrichPhotoChallengeForApi(array $challenge, ?DateTimeImmutable $now = 
     $challenge['submission_deadline_passed'] = $deadlinePassed;
     $challenge['submission_is_open_effective'] = $effectiveStatus === 'submission_open';
     $challenge['submission_is_closed_effective'] = $effectiveStatus === 'submission_closed';
+    $challenge['allow_direct_uploads'] = !empty($challenge['allow_direct_uploads']);
 
     return $challenge;
 }

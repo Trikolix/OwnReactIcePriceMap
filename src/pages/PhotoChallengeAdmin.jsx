@@ -28,6 +28,7 @@ const createDefaultCreateForm = () => ({
   minImageCreatedAt: '',
   submissionDeadline: '',
   submissionLimitPerUser: 3,
+  allowDirectUploads: false,
 });
 
 const createDefaultPlanningForm = () => ({
@@ -40,6 +41,7 @@ const createDefaultPlanningForm = () => ({
   minImageCreatedAt: '',
   submissionDeadline: '',
   submissionLimitPerUser: 3,
+  allowDirectUploads: false,
   groupSchedule: [createScheduleSlot()],
 });
 
@@ -97,6 +99,7 @@ const buildPlanningFormFromChallenge = (challenge) => {
       challenge.submission_limit_per_user !== null && challenge.submission_limit_per_user !== undefined
         ? Number(challenge.submission_limit_per_user)
         : 3,
+    allowDirectUploads: Boolean(challenge.allow_direct_uploads),
     groupSchedule: parseGroupScheduleSlots(challenge.group_schedule),
   };
 };
@@ -442,7 +445,7 @@ function PhotoChallengeAdmin() {
   }, [isAdmin, selectedChallengeId, loadChallengeImages, loadChallengeOverview, loadSubmissions]);
 
   const handleCreateFormChange = (field) => (event) => {
-    let { value } = event.target;
+    let value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     if (field === 'submissionLimitPerUser') {
       value = Number(value);
     }
@@ -471,6 +474,7 @@ function PhotoChallengeAdmin() {
       if (createFormState.submissionLimitPerUser !== '' && createFormState.submissionLimitPerUser !== null) {
         formData.append('submission_limit_per_user', createFormState.submissionLimitPerUser);
       }
+      formData.append('allow_direct_uploads', createFormState.allowDirectUploads ? 1 : 0);
 
       const res = await fetch(`${apiUrl}/photo_challenge/create_challenge.php`, {
         method: 'POST',
@@ -689,7 +693,7 @@ function PhotoChallengeAdmin() {
   };
 
   const handleFormChange = (field) => (event) => {
-    let { value } = event.target;
+    let value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     if (NUMBER_FIELDS.has(field)) {
       value = Number(value);
     } else if (OPTIONAL_NUMBER_FIELDS.has(field)) {
@@ -788,6 +792,7 @@ function PhotoChallengeAdmin() {
       formData.append('min_image_created_at', formState.minImageCreatedAt || '');
       formData.append('submission_deadline', formState.submissionDeadline || '');
       formData.append('submission_limit_per_user', formState.submissionLimitPerUser ?? '');
+      formData.append('allow_direct_uploads', formState.allowDirectUploads ? 1 : 0);
       if (nextStatus) {
         formData.append('status', nextStatus);
       }
@@ -1064,6 +1069,17 @@ function PhotoChallengeAdmin() {
                       required={createFormState.status === 'submission_open'}
                     />
                   </Field>
+                  <Field>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.8rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={createFormState.allowDirectUploads}
+                        onChange={handleCreateFormChange('allowDirectUploads')}
+                        style={{ padding: 0 }}
+                      />
+                      Direkter Bildupload erlaubt
+                    </label>
+                  </Field>
                 </FieldGroup>
                 <FormHint>
                   Turnierstruktur (Gruppen, Lucky-Loser, KO-Feld, Zeitplan) konfigurierst du später im Planungsbereich nach Ende der Einreichphase.
@@ -1240,6 +1256,18 @@ function PhotoChallengeAdmin() {
                           disabled={!canEditChallengeImagePool}
                         />
                         <FormHint>0 = unbegrenzt</FormHint>
+                      </Field>
+                      <Field>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={formState.allowDirectUploads}
+                            onChange={handleFormChange('allowDirectUploads')}
+                            disabled={!canEditChallengeImagePool}
+                            style={{ padding: 0 }}
+                          />
+                          Direkter Bildupload erlaubt
+                        </label>
                       </Field>
                     </FieldGroup>
                     <ActionButtonRow>
@@ -2033,8 +2061,12 @@ const Field = styled.div`
 
 const FieldGroup = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const PrimaryButton = styled.button`

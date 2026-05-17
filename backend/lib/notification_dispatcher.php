@@ -495,7 +495,7 @@ function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?
     $auth = trim((string)($keys['auth'] ?? ''));
 
     if ($endpoint === '' || $p256dh === '' || $auth === '') {
-        throw new InvalidArgumentException('Ungueltige Web-Push-Subscription.');
+        throw new InvalidArgumentException('Ungültige Web-Push-Subscription.');
     }
 
     $endpointHash = hash('sha256', $endpoint);
@@ -601,7 +601,7 @@ function upsertMobilePushDevice(PDO $pdo, int $userId, string $platform, string 
 
     $deviceToken = trim($deviceToken);
     if ($deviceToken === '') {
-        throw new InvalidArgumentException('Ungueltiges Device-Token.');
+        throw new InvalidArgumentException('Ungültiges Device-Token.');
     }
 
     $tokenHash = hash('sha256', $deviceToken);

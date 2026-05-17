@@ -1,4 +1,4 @@
-export const EVENT_ROUTE_RELEASE_NOTICE = "GPX-Datei und Komoot-Link werden noch freigeschaltet.";
+export const EVENT_ROUTE_RELEASE_NOTICE = "Komoot-Link wird noch freigeschaltet.";
 export const EVENT_LIVE_MAP_RELEASE_NOTICE = "Die Live-Karte wird am 13. Mai 2026 öffentlich freigeschaltet.";
 
 export const EVENT_PARKING = {
@@ -15,41 +15,19 @@ export const EVENT_PARKING_DIRECTIONS_EMBED_URL =
 
 export const EVENT_ROUTE_RESOURCES = {
   family_2: {
-    gpxUrl: "",
-    komootUrl: "",
+    gpxFilename: "Ice-Tour_70km.gpx",
+    komootUrl: "https://www.komoot.com/de-de/tour/2912847861?share_token=atSXhGgtT4QAoVrImuZ1ERPcUhDmI2bLOYBfz4zWHZaMCUblmI&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=912642806792",
   },
   classic_3: {
-    gpxUrl: "",
-    komootUrl: "",
+    gpxFilename: "Ice-Tour_140km.gpx",
+    komootUrl: "https://www.komoot.com/de-de/tour/2921634701?share_token=aNQ1wHAphErNlPEj5nGYRSzkpboVzX64jyipEpLeXTBdZvkIlG&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=912642806792",
   },
   epic_4: {
-    gpxUrl: "",
-    komootUrl: "",
+    gpxFilename: "Ice-Tour_180km.gpx",
+    komootUrl: "https://www.komoot.com/de-de/tour/2921638857?share_token=ac08gPaGi4ReME8kmttpYKuqtOu5fDPCfATg3vdleP6LlEfL4R&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=912642806792",
   },
 };
 
-const baseScheduleItems = [
-  {
-    time: "folgt",
-    title: "Treff bei Karl mag's süß",
-    text: "Genaue Zeit wird noch bekannt gegeben. Bitte 30 Minuten vor deinem Start abfahrbereit am Startbereich sein. Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
-  },
-  {
-    time: "folgt",
-    title: "Start in deiner Gruppe",
-    text: "Genaue Zeit wird noch bekannt gegeben.",
-  },
-  {
-    time: "unterwegs",
-    title: "Tour entlang deiner Strecke",
-    text: "Fahre die Checkpoints selbstständig per Navigation an und nutze an den Eisdielen deine digitale Stempelkarte.",
-  },
-  {
-    time: "nachmittags",
-    title: "Ziel & gemeinsamer Abschluss",
-    text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und reduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
-  },
-];
 
 const generalRouteHints = [
   "Die Strecke verläuft teilweise auf Radwegen sowie kombinierten Rad- und Fußwegen. Bei schönem Wetter kann dort viel los sein: Nehmt besonders Rücksicht auf Fußgänger und andere Radfahrer.",
@@ -57,7 +35,12 @@ const generalRouteHints = [
 
 const sportRouteHints = [
   "Zwischen Zwönitz und Geyer über die Geyrische Platte kann teilweise viel Verkehr sein. Fahrt dort besonders rücksichtsvoll, bildet bei Bedarf kleinere Grüppchen und lasst Autos aktiv vorbei.",
-  "In der Abfahrt nach dem Ortsausgang von Geyer kommt in einer Rechtskurve eine Abzweigung nach Am Wochenende sollte es eigentlich gehen, aber gebt trotzdem besonders Acht.",
+  "In der Abfahrt nach dem Ortsausgang von Geyer kommt in einer Rechtskurve eine Abzweigung nach links in den Wald rein, die man schnell verpassen kann.",
+  "Zwischen Scharfenstein und Zschopau ist der Autoverkehr auch manchmal wild und nicht gerade rücksichtsvoll gegenüber Radfahreren. Am Wochenende sollte es eigentlich gehen, aber gebt trotzdem besonders Acht.",
+];
+
+const familyRouteHints = [
+  "Auf dem Stiftweg nach Ebersdorf gibt es bei Kilometer 9,5 eine Baustelle. Dort ist der Asphalt zwei- bis dreimal jeweils etwa 20 cm breit abgefräst. Fahrt dort besonders vorsichtig.",
 ];
 
 export const packingItems = [
@@ -79,6 +62,7 @@ export const groupRules = [
   "Die StVO gilt jederzeit.",
   "In der Gruppe wird berechenbar gefahren: keine hektischen Manöver, klare Handzeichen, sauber einordnen.",
   "Jeder fährt auf eigenes Risiko, wir übernehmen keine Haftung für Unfälle oder Schäden.",
+  "Falls du deine Runde aus irgendeinem Grund nicht zu Ende fahren kannst, gib dem Orga-Team bitte kurz Bescheid. Schreib mir über Instagram, per Mail, WhatsApp oder lass die Info über andere Teilnehmer weitergeben. So wissen wir im Ziel, dass alles okay ist, und müssen uns keine Sorgen machen, wo du bleibst.",
 ];
 
 export function parseEventDateTime(value) {
@@ -93,30 +77,98 @@ export function formatEventTime(value) {
   return parsed.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
 }
 
-export function buildScheduleItems(startTime) {
+export function buildScheduleItems(startTime, routeKey) {
   const parsedStart = parseEventDateTime(startTime);
-  if (!parsedStart) return baseScheduleItems;
 
-  const gatherTime = new Date(parsedStart.getTime() - 30 * 60 * 1000);
+  const baseItems = [
+    {
+      time: "ab 07:00 Uhr",
+      title: "Treff bei Karl mag's süß",
+      text: "Wir sind ab 7 Uhr vor Ort und du kannst etwas zu essen und zu trinken bekommen.",
+    },
+    {
+      time: "unterwegs",
+      title: "Tour entlang deiner Strecke",
+      text: "Fahre die Checkpoints selbstständig per Navigation an und nutze an den Eisdielen deine digitale Stempelkarte.",
+    },
+    {
+      time: "nachmittags",
+      title: "Ziel & gemeinsamer Abschluss",
+      text: "Die Strecke endet wieder bei Karl mag's süß. Dort gibt es Wasser, die übliche Kugel Eis und preisreduzierte Getränke sowie herzhafte Sandwiches für Teilnehmer.",
+    },
+  ];
+
+  if (!parsedStart) {
+    if (routeKey === "family_2") {
+      return [
+        {
+          time: "vormittags",
+          title: "Treff bei Karl mag's süß",
+          text: "Du kannst im Laufe des Vormittags ankommen und dich entspannt auf deine Runde vorbereiten.",
+        },
+        {
+          time: "11:00 - 12:30 Uhr",
+          title: "Start Genussrunde",
+          text: "Du kannst in diesem Zeitraum flexibel auf deine Runde starten.",
+        },
+        baseItems[1],
+        baseItems[2],
+      ];
+    }
+    return [
+      baseItems[0],
+      {
+        time: "folgt",
+        title: "Start in deiner Gruppe",
+        text: "Genaue Zeit wird noch bekannt gegeben.",
+      },
+      baseItems[1],
+      baseItems[2],
+    ];
+  }
+
+  if (routeKey === "family_2") {
+    return [
+      {
+        time: "vormittags",
+        title: "Treff bei Karl mag's süß",
+        text: "Du kannst im Laufe des Vormittags ankommen und dich entspannt auf deine Runde vorbereiten.",
+      },
+      {
+        time: "11:00 - 12:30 Uhr",
+        title: "Start Genussrunde",
+        text: "Du kannst in diesem Zeitraum flexibel auf deine Runde starten.",
+      },
+      baseItems[1],
+      baseItems[2],
+    ];
+  }
+
+  const gatherTime = new Date(parsedStart.getTime() - 10 * 60 * 1000);
   return [
+    baseItems[0],
     {
       time: formatEventTime(gatherTime),
-      title: "Treff bei Karl mag's süß",
-      text: "Bitte 30 Minuten vor deiner Startzeit abfahrbereit mit Rad und Ausrüstung am Startbereich sein. Vor Ort gibt es ein paar wenige Bananen und Äpfel. Kaffee, Kuchen oder Torte kannst du dir bei Karl mag's süß kaufen.",
+      title: "Startbereit einfinden",
+      text: "Bitte finde dich 10 Minuten vor deinem Start abfahrbereit am Startbereich ein.",
     },
     {
       time: formatEventTime(parsedStart),
       title: "Start in deiner Gruppe",
       text: "Startzeit deiner zugewiesenen Gruppe.",
     },
-    baseScheduleItems[2],
-    baseScheduleItems[3],
+    baseItems[1],
+    baseItems[2],
   ];
 }
 
 export function getRouteHints(routeKey) {
   if (routeKey === "classic_3" || routeKey === "epic_4") {
     return [...sportRouteHints, ...generalRouteHints];
+  }
+
+  if (routeKey === "family_2") {
+    return [...familyRouteHints, ...generalRouteHints];
   }
 
   return generalRouteHints;

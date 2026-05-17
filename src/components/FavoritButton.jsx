@@ -36,7 +36,6 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
         fetch(`${apiUrl}/favoriten_toggle.php?nutzer_id=${userId}&eisdiele_id=${eisdieleId}`)
             .then(res => res.json())
             .then(data => {
-                console.log(data);
                 if (data.status === "added") {
                     setFavorisiert(true);
                     if (setIceCreamShops) {

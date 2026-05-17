@@ -327,7 +327,7 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
             try {
                 const compressed = await sharedCompressImageFile(file);
                 if (compressed.size > MAX_UPLOAD_BYTES) {
-                    setMessage(`"${file.name}" ist auch nach der Verkleinerung noch zu gross.`);
+                    setMessage(`"${file.name}" ist auch nach der Verkleinerung noch zu groß.`);
                     continue;
                 }
                 const previewUrl = URL.createObjectURL(compressed);

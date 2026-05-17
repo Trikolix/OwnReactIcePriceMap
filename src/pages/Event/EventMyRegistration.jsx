@@ -4,6 +4,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Info, MapPinned, Navigation, Stamp } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
+import route70Gpx from "./Ice-Tour_70km.gpx?raw";
+import route140Gpx from "./Ice-Tour_140km.gpx?raw";
+import route180Gpx from "./Ice-Tour_180km.gpx?raw";
 import { getApiBaseUrl } from "../../shared/api/client";
 import { useUser } from "../../context/UserContext";
 import {
@@ -45,6 +48,12 @@ import {
   groupRules,
   packingItems,
 } from "./eventParticipantInfoConfig";
+
+const ROUTE_GPX_CONTENT = {
+  family_2: route70Gpx,
+  classic_3: route140Gpx,
+  epic_4: route180Gpx,
+};
 
 const Page = styled.div`
   min-height: 100vh;
@@ -92,6 +101,11 @@ const CardGrid = styled.div`
 
 const FullWidth = styled.div`
   grid-column: 1 / -1;
+  scroll-margin-top: 170px;
+
+  @media (max-width: 768px) {
+    scroll-margin-top: 120px;
+  }
 `;
 
 const Card = styled.section`
@@ -100,6 +114,11 @@ const Card = styled.section`
   border: 1px solid rgba(138, 87, 0, 0.12);
   box-shadow: 0 8px 22px rgba(72, 45, 0, 0.08);
   padding: 1rem;
+  scroll-margin-top: 170px;
+
+  @media (max-width: 768px) {
+    scroll-margin-top: 120px;
+  }
 `;
 
 const CardTitle = styled.h2`
@@ -407,12 +426,8 @@ const RaceDayMetaValue = styled.div`
 const ActionRow = styled.div`
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
   margin-bottom: 1rem;
-
-  @media (min-width: 920px) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 
   > * {
     width: 100%;
@@ -850,7 +865,7 @@ function buildEventRegistrationInviteLink(teamName, inviteCode, voucherCode) {
 export default function EventMyRegistration({ view = "participant" }) {
   const apiUrl = getApiBaseUrl();
   const location = useLocation();
-  const { authToken, userId, authReady } = useUser();
+  const { authToken, authReady } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -914,25 +929,19 @@ export default function EventMyRegistration({ view = "participant" }) {
   const ownSlot = useMemo(() => data?.slots?.[0] || null, [data]);
   const paymentStatus = data?.payment?.status || data?.registration?.payment_status || "";
   const isPaid = paymentStatus === "paid";
-  const isAdmin = Number(userId) === 1;
   const selectedRoute = useMemo(
     () => ROUTE_OPTIONS.find((route) => route.key === ownSlot?.route_key) || null,
     [ownSlot?.route_key]
   );
   const selectedRouteResources = selectedRoute ? EVENT_ROUTE_RESOURCES[selectedRoute.key] || {} : {};
-  const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time), [ownSlot?.start_time]);
-  const showRaceDayInfo = isPaid && (EVENT_RACE_DAY_INFO_ENABLED || isAdmin);
-  const isRaceDayInfoPreview = showRaceDayInfo && !EVENT_RACE_DAY_INFO_ENABLED;
-  const stampCardMode = useMemo(() => {
-    if (typeof window === "undefined") return "live";
-    const host = window.location.hostname;
-    return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" ? "test" : "live";
-  }, [isAdmin]);
+  const selectedRouteGpx = selectedRoute ? ROUTE_GPX_CONTENT[selectedRoute.key] || "" : "";
+  const [gpxDownloadUrl, setGpxDownloadUrl] = useState("");
+  const scheduleItems = useMemo(() => buildScheduleItems(ownSlot?.start_time, ownSlot?.route_key), [ownSlot?.start_time, ownSlot?.route_key]);
+  const showRaceDayInfo = isPaid && EVENT_RACE_DAY_INFO_ENABLED;
   const isLiveMapPublic = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const host = window.location.hostname;
-    return isAdmin || host === "localhost" || host === "127.0.0.1" || host === "::1" || new Date() >= EVENT_LIVE_MAP_PUBLIC_RELEASE_DATE;
-  }, [isAdmin]);
+    return new Date() >= EVENT_LIVE_MAP_PUBLIC_RELEASE_DATE;
+  }, []);
   const teamInviteLink = useMemo(() => {
     return buildEventRegistrationInviteLink(data?.registration?.team_name, data?.account?.invite_code);
   }, [data?.account?.invite_code, data?.registration?.team_name]);
@@ -960,6 +969,21 @@ export default function EventMyRegistration({ view = "participant" }) {
     const timeoutId = window.setTimeout(() => setCopyStatus(""), 2200);
     return () => window.clearTimeout(timeoutId);
   }, [copyStatus]);
+
+  useEffect(() => {
+    if (!selectedRouteGpx || typeof Blob === "undefined" || typeof URL === "undefined") {
+      setGpxDownloadUrl("");
+      return undefined;
+    }
+
+    const blob = new Blob([selectedRouteGpx], { type: "application/gpx+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    setGpxDownloadUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedRouteGpx]);
 
   useEffect(() => {
     if (!success) return undefined;
@@ -1082,7 +1106,7 @@ export default function EventMyRegistration({ view = "participant" }) {
   const pageTitle = isRegistrationView ? "Meine Anmeldung" : "Teilnehmerbereich";
   const pageSubtitle = isRegistrationView
     ? `Hier findest du deinen Startplatz, Zahlungsstatus, Geschenk-Codes und deine hinterlegten Anmeldedaten. ${EVENT_COMMUNITY_RIDE_CLAIM}`
-    : `Hier findest du die Informationen für deinen Eventtag kompakt und ohne Zahlungsdetails. ${EVENT_COMMUNITY_RIDE_CLAIM}`;
+    : `Hier findest du die Informationen für deinen Eventtag kompakt. ${EVENT_COMMUNITY_RIDE_CLAIM}`;
 
   const handleUpdateTeamName = async () => {
     if (!apiUrl || !authToken || !canEditMissingTeamName) return;
@@ -1131,7 +1155,7 @@ export default function EventMyRegistration({ view = "participant" }) {
     <Page>
       <Seo
         title={isRegistrationView ? "Meine Ice-Tour Anmeldung" : "Ice-Tour Teilnehmerbereich"}
-        description={isRegistrationView ? "Persoenliche Anmeldung zur Ice-Tour 2026." : "Teilnehmerinfos fuer den Eventtag der Ice-Tour 2026."}
+        description={isRegistrationView ? "Persönliche Anmeldung zur Ice-Tour 2026." : "Teilnehmerinfos für den Eventtag der Ice-Tour 2026."}
         robots="noindex,nofollow"
       />
       <Header />
@@ -1173,7 +1197,7 @@ export default function EventMyRegistration({ view = "participant" }) {
                 <RaceDayCard id="overview">
                   <RaceDayHero>
                     <div>
-                      <HeroEyebrow>{isRaceDayInfoPreview ? "Renntag-Vorschau" : "Renntag auf einen Blick"}</HeroEyebrow>
+                      <HeroEyebrow>Renntag auf einen Blick</HeroEyebrow>
                       <RaceDayHeading>Alles Wichtige für deinen Tour-Tag auf einer Seite</RaceDayHeading>
                       <RaceDayLead>
                         Von deiner Anmeldung bis zur Zielankunft bei {EVENT_START_FINISH.name}: Hier findest du die wichtigsten Infos für deinen Event-Tag kompakt und übersichtlich gesammelt.
@@ -1208,14 +1232,8 @@ export default function EventMyRegistration({ view = "participant" }) {
                     </RaceDayMetaGrid>
                   </RaceDayHero>
 
-                  {isRaceDayInfoPreview && (
-                    <PreviewNote>
-                      Dieser Bereich ist aktuell nur als Vorschau sichtbar. Nach der Freischaltung sehen ihn ausschließlich vollständig bezahlte Starter.
-                    </PreviewNote>
-                  )}
-
                   <ActionRow>
-                    <SecondaryActionLink as={Link} to={`/event-stamp-card?mode=${stampCardMode}`}>
+                    <SecondaryActionLink as={Link} to="/event-stamp-card?mode=live">
                       <Stamp size={18} aria-hidden="true" />
                       <span>Stempelkarte öffnen</span>
                     </SecondaryActionLink>
@@ -1499,8 +1517,11 @@ export default function EventMyRegistration({ view = "participant" }) {
                       </RouteFacts>
                       <p>{selectedRoute.description}</p>
                       <ActionRow style={{ marginTop: "0.85rem", marginBottom: 0 }}>
-                        {selectedRouteResources.gpxUrl ? (
-                          <SecondaryActionLink href={selectedRouteResources.gpxUrl} target="_blank" rel="noreferrer">
+                        {gpxDownloadUrl ? (
+                          <SecondaryActionLink
+                            href={gpxDownloadUrl}
+                            download={selectedRouteResources.gpxFilename || true}
+                          >
                             <Navigation size={18} aria-hidden="true" />
                             <span>GPX herunterladen</span>
                           </SecondaryActionLink>
@@ -1522,7 +1543,7 @@ export default function EventMyRegistration({ view = "participant" }) {
                           </DisabledAction>
                         )}
                       </ActionRow>
-                      {(!selectedRouteResources.gpxUrl || !selectedRouteResources.komootUrl) && (
+                      {(!gpxDownloadUrl || !selectedRouteResources.komootUrl) && (
                         <PreviewNote style={{ marginTop: "0.8rem", marginBottom: 0 }}>
                           {EVENT_ROUTE_RELEASE_NOTICE}
                         </PreviewNote>
@@ -1653,14 +1674,9 @@ export default function EventMyRegistration({ view = "participant" }) {
                     <li>Das Vorzeigen der Stempelkarte verifiziert dich als Teilnehmer, damit du deine gratis Kugel Eis bekommst.</li>
                     <li>Kaufe gern zusätzlich Eis, Kuchen oder Getränke, damit die Eisdielen auch etwas vom Event haben.</li>
                   </CleanList>
-                  <NavLinkButton to={`/event-stamp-card?mode=${stampCardMode}`}>
-                    Zur {stampCardMode === "test" ? "Test-" : ""}Stempelkarte
+                  <NavLinkButton to="/event-stamp-card?mode=live">
+                    Zur Stempelkarte
                   </NavLinkButton>
-                  {isAdmin && (
-                    <NavLinkButton to="/event-live?mode=test" style={{ marginLeft: "0.65rem" }}>
-                      Zur Test-Live-Map
-                    </NavLinkButton>
-                  )}
                 </InfoCard>
 
                 <InfoCard>

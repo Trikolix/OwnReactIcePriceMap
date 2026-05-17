@@ -176,11 +176,15 @@ const Wrapper = styled.div`
 const Panel = styled.div`
   position: relative;
   width: min(100%, 520px);
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
   background: #fffdf8;
   border: 1px solid rgba(47, 33, 0, 0.12);
   border-radius: 18px;
   box-shadow: 0 20px 48px rgba(47, 33, 0, 0.18);
   padding: 1.65rem 1.4rem 1.4rem;
+  box-sizing: border-box;
+  overscroll-behavior: contain;
   pointer-events: auto;
 `;
 

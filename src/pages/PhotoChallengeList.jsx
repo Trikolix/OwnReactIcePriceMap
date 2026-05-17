@@ -20,7 +20,7 @@ const STATUS_ACTIONS = {
   submission_closed: 'Planung ansehen',
   finished: 'Ergebnisse ansehen',
   draft: 'Vorschau ansehen',
-  active: 'Challenge oeffnen',
+  active: 'Challenge öffnen',
 };
 
 const LIVE_STATUSES = ['group_running', 'ko_running', 'submission_open', 'submission_closed'];
@@ -193,7 +193,7 @@ function PhotoChallengeList() {
                 <h2>{featuredChallenge.title}</h2>
                 <p>
                   {featuredChallenge.description ||
-                    'Oeffne die Challenge und steige direkt in Voting, Einreichung oder Ergebnisse ein.'}
+                    'Öffne die Challenge und steige direkt in Voting, Einreichung oder Ergebnisse ein.'}
                 </p>
                 <SpotlightMeta>
                   {getChallengeMetaItems(featuredChallenge).map((item) => (
@@ -201,7 +201,7 @@ function PhotoChallengeList() {
                   ))}
                 </SpotlightMeta>
                 <SpotlightFooter>
-                  <span>{STATUS_ACTIONS[featuredChallenge.status] || 'Challenge oeffnen'}</span>
+                  <span>{STATUS_ACTIONS[featuredChallenge.status] || 'Challenge öffnen'}</span>
                   <strong>
                     {totalCount} Challenge{totalCount === 1 ? '' : 's'} online
                   </strong>
@@ -241,8 +241,8 @@ function PhotoChallengeList() {
 
             {!sections.running.length && !sections.upcoming.length && !sections.finished.length && (
               <Section>
-                <SectionHeader>Oeffentliche Challenges</SectionHeader>
-                <PlaceholderText>Derzeit sind noch keine Challenges veroeffentlicht.</PlaceholderText>
+                <SectionHeader>Öffentliche Challenges</SectionHeader>
+                <PlaceholderText>Derzeit sind noch keine Challenges veröffentlicht.</PlaceholderText>
               </Section>
             )}
           </>

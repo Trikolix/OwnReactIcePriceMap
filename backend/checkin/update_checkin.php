@@ -6,7 +6,7 @@ if (isMultipartBodyTooLarge()) {
     http_response_code(413);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Die hochgeladenen Bilder sind zu gross. Bitte waehle weniger oder kleinere Bilder.'
+        'message' => 'Die hochgeladenen Bilder sind zu groß. Bitte wähle weniger oder kleinere Bilder.'
     ]);
     exit;
 }

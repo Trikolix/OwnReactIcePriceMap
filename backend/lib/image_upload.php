@@ -72,7 +72,7 @@ function resizeImage($sourcePath, $destinationPath, $maxDim = 1200, $quality = 7
     $newHeight = (int) round($height * $scale);
 
     if ($newWidth <= 0 || $newHeight <= 0) {
-        throw new Exception('Ungueltige Bildabmessungen.');
+        throw new Exception('Ungültige Bildabmessungen.');
     }
 
     $newImage = imagecreatetruecolor($newWidth, $newHeight);
@@ -110,7 +110,7 @@ function processUploadedImages(array $filesArray, string $zielVerzeichnis, strin
         switch ($filesArray['error'][$index]) {
             case UPLOAD_ERR_OK:
                 if (!is_uploaded_file($tmpPath)) {
-                    throw new Exception('Ungueltiger Datei-Upload.');
+                    throw new Exception('Ungültiger Datei-Upload.');
                 }
                 $filename = uniqid($filenamePrefix, true) . '.jpg';
                 $destination = $zielVerzeichnis . $filename;

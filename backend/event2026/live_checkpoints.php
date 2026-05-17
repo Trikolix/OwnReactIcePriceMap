@@ -73,6 +73,53 @@ try {
         $routeCountsByCheckpoint[$checkpointId][$routeKey] = (int) ($routeCountRow['checked_in_count'] ?? 0);
     }
 
+    $routeProgressByShopId = [
+        'epic_4' => [
+            314 => 50.1,
+            145 => 88.5,
+            111 => 111.0,
+            22 => 136.0,
+            event2026_start_finish_shop_id($mode) => 180.0,
+        ],
+        'classic_3' => [
+            314 => 50.1,
+            145 => 88.5,
+            111 => 111.0,
+            event2026_start_finish_shop_id($mode) => 145.0,
+        ],
+        'family_2' => [
+            145 => 14.4,
+            111 => 37.3,
+            event2026_start_finish_shop_id($mode) => 70.7,
+        ],
+    ];
+    if ($mode === 'test') {
+        $routeProgressByShopId = [
+            'epic_4' => [20 => 60.0, 179 => 120.0, event2026_start_finish_shop_id($mode) => 180.0],
+            'classic_3' => [20 => 48.0, 179 => 96.0, event2026_start_finish_shop_id($mode) => 145.0],
+            'family_2' => [20 => 24.0, 179 => 48.0, event2026_start_finish_shop_id($mode) => 70.7],
+        ];
+    }
+
+    $routeDistanceKm = [];
+    foreach ($routeProgressByShopId as $routeKey => $progressByShopId) {
+        $routeDistanceKm[$routeKey] = 0.0;
+        $previousDistanceKm = 0.0;
+        foreach ($progressByShopId as $shopId => $distanceKm) {
+            $checkpointId = null;
+            foreach ($rows as $row) {
+                if ((int) ($row['shop_id'] ?? 0) === (int) $shopId) {
+                    $checkpointId = (int) $row['checkpoint_id'];
+                    break;
+                }
+            }
+            $segmentDistanceKm = max(0.0, (float) $distanceKm - $previousDistanceKm);
+            $reachedCount = $checkpointId !== null ? (int) ($routeCountsByCheckpoint[$checkpointId][$routeKey] ?? 0) : 0;
+            $routeDistanceKm[$routeKey] += $reachedCount * $segmentDistanceKm;
+            $previousDistanceKm = (float) $distanceKm;
+        }
+    }
+
     $portionCountStmt = $pdo->prepare("SELECT COUNT(*) 
         FROM event2026_checkpoint_passages p
         INNER JOIN event2026_checkpoints c ON c.id = p.checkpoint_id
@@ -110,6 +157,8 @@ try {
         'start_finish' => event2026_start_finish_config($pdo, $mode),
         'stats' => [
             'checked_in_portions' => $checkedInPortions,
+            'total_distance_km' => array_sum($routeDistanceKm),
+            'route_distance_km' => $routeDistanceKm,
         ],
         'items' => array_map(static function (array $row) use ($licensedCountsByRoute, $routeCountsByCheckpoint): array {
             $routeKeys = event2026_checkpoint_route_keys((string) ($row['route_keys_csv'] ?? ''));
