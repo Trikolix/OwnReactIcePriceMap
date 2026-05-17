@@ -107,7 +107,7 @@ export const seasonalCampaignDefinitions = [
     id: 'summer_2026',
     title: 'Sommer-Sammelaktion 2026',
     kind: 'campaign',
-    teaserIcon: '/logo192.png',
+    teaserIcon: '/assets/summer_action_logo2.png',
     schedule: {
       start: new Date('2026-06-01T00:00:00+02:00'),
       endExclusive: new Date('2026-10-01T00:00:00+02:00'),

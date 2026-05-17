@@ -331,6 +331,22 @@ function event2026_ensure_schema(PDO $pdo): void
             KEY idx_event2026_contact_flagged (event_id, is_flagged, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+        "CREATE TABLE IF NOT EXISTS event2026_impressions (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            title VARCHAR(160) DEFAULT NULL,
+            caption TEXT DEFAULT NULL,
+            image_url VARCHAR(255) NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_published TINYINT(1) NOT NULL DEFAULT 1,
+            created_by_user_id INT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_impressions_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            KEY idx_event2026_impressions_public (event_id, is_published, sort_order, created_at),
+            KEY idx_event2026_impressions_admin (event_id, sort_order, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
         "CREATE TABLE IF NOT EXISTS event2026_reminder_mail_log (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             event_id INT NOT NULL,

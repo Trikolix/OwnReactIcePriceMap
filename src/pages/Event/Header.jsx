@@ -7,6 +7,7 @@ import LoginModal from "../../LoginModal";
 import iceTourLogo from "./eis_tour_logo.png";
 import { buildAssetUrl } from "../../utils/assets.jsx";
 import { getApiBaseUrl } from "../../shared/api/client";
+import { EVENT_IS_RETROSPECTIVE, EVENT_LIVE_NAV_ENABLED, EVENT_REGISTRATION_NAV_ENABLED } from "./eventConfig";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -18,11 +19,6 @@ export default function Header() {
   const isAdmin = Number(userId) === 1;
   const apiUrl = getApiBaseUrl();
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-  const now = new Date();
-  const liveStartDate = new Date(2026, 4, 13, 0, 0, 0, 0);
-  const shouldShowLiveMap = isLocalHost || isAdmin || now >= liveStartDate;
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
   useEffect(() => {
@@ -53,7 +49,7 @@ export default function Header() {
   }, [isLoggedIn, userId, username]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || EVENT_IS_RETROSPECTIVE) {
       setHasEventRegistration(false);
       return;
     }
@@ -118,7 +114,7 @@ export default function Header() {
         <HeaderRight>
           {isLoggedIn ? (
             <AccountCluster>
-              <UserStatusLink to={hasEventRegistration ? "/event-me" : "/event-registration"} onClick={() => setMenuOpen(false)}>
+              <UserStatusLink to={!EVENT_IS_RETROSPECTIVE && hasEventRegistration ? "/event-me" : "/ice-tour-impressionen"} onClick={() => setMenuOpen(false)}>
                 <UserStatusAvatar aria-hidden="true">
                   {headerAvatarSrc ? <img src={headerAvatarSrc} alt="" /> : (username || "?").slice(0, 1).toUpperCase()}
                 </UserStatusAvatar>
@@ -158,26 +154,26 @@ export default function Header() {
           <Menu ref={menuRef}>
             <MenuSection>
               <MenuSectionTitle>Ice-Tour</MenuSectionTitle>
-              <MenuItemLink to="/ice-tour" onClick={() => setMenuOpen(false)}>Ausschreibung</MenuItemLink>
+              <MenuItemLink to="/ice-tour" onClick={() => setMenuOpen(false)}>{EVENT_IS_RETROSPECTIVE ? "Rückblick" : "Ausschreibung"}</MenuItemLink>
+              {EVENT_IS_RETROSPECTIVE && (
+                <>
+                  <MenuItemLink to="/ice-tour-impressionen" onClick={() => setMenuOpen(false)}>Impressionen</MenuItemLink>
+                  <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Event-Karte</MenuItemLink>
+                </>
+              )}
               <MenuItemLink to="/ice-tour-unterstuetzen" onClick={() => setMenuOpen(false)}>Unterstützen</MenuItemLink>
               {/* <MenuItemLink to="/event-gifts" onClick={() => setMenuOpen(false)}>Gutscheine schenken</MenuItemLink> */}
-              {!hasEventRegistration && (
+              {EVENT_REGISTRATION_NAV_ENABLED && !hasEventRegistration && (
                 <MenuItemLink to="/event-registration" onClick={() => setMenuOpen(false)}>Registrierung</MenuItemLink>
               )}
-              {shouldShowLiveMap && (
+              {EVENT_LIVE_NAV_ENABLED && (
                 <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Live</MenuItemLink>
               )}
               {isAdmin && (
                 <>
                   <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin</MenuItemLink>
+                  <MenuItemLink to="/event-admin-impressions" onClick={() => setMenuOpen(false)}>Admin-Impressionen</MenuItemLink>
                   <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
-                </>
-              )}
-              {isLoggedIn && hasEventRegistration && (
-                <>
-                  <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
-                  <MenuItemLink to="/event-my-registration" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
-                  <MenuItemLink to="/event-stamp-card" onClick={() => setMenuOpen(false)}>Stempelkarte</MenuItemLink>
                 </>
               )}
             </MenuSection>
@@ -193,7 +189,7 @@ export default function Header() {
               <MenuSectionTitle>Konto</MenuSectionTitle>
               {isLoggedIn ? (
                 <>
-                  {hasEventRegistration && (
+                  {!EVENT_IS_RETROSPECTIVE && hasEventRegistration && (
                     <>
                       <MenuItemLink to="/event-me" onClick={() => setMenuOpen(false)}>Teilnehmerbereich</MenuItemLink>
                       <MenuItemLink to="/event-my-registration" onClick={() => setMenuOpen(false)}>Meine Anmeldung</MenuItemLink>
@@ -203,6 +199,7 @@ export default function Header() {
                   {isAdmin && (
                     <>
                       <MenuItemLink to="/event-admin" onClick={() => setMenuOpen(false)}>Admin-Übersicht</MenuItemLink>
+                      <MenuItemLink to="/event-admin-impressions" onClick={() => setMenuOpen(false)}>Admin-Impressionen</MenuItemLink>
                       <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
                     </>
                   )}

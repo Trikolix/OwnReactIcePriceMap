@@ -10,6 +10,7 @@ import CheckinCard from "../../components/CheckinCard";
 import Seo from "../../components/Seo";
 import { getApiBaseUrl } from "../../shared/api/client";
 import {
+  EVENT_IS_RETROSPECTIVE,
   EVENT_START_FINISH,
   ROUTE_OPTIONS,
   formatRouteShortWithDistanceByLabel,
@@ -1021,6 +1022,7 @@ export default function EventLiveMap() {
   const apiBase = getApiBaseUrl();
   const { authToken } = useUser();
   const mode = "live";
+  const isRetrospective = EVENT_IS_RETROSPECTIVE;
 
   const [items, setItems] = useState([]);
   const [routeOverlays, setRouteOverlays] = useState([]);
@@ -1272,23 +1274,26 @@ export default function EventLiveMap() {
   useEffect(() => {
     if (!rankingOpen) return undefined;
     loadRanking();
+    if (isRetrospective) return undefined;
     const interval = window.setInterval(loadRanking, 30000);
     return () => window.clearInterval(interval);
-  }, [rankingOpen, apiBase, authToken, mode]);
+  }, [rankingOpen, apiBase, authToken, mode, isRetrospective]);
 
   const startFinishAddress = startFinish.full_address || startFinish.fullAddress || "";
 
   return (
     <Page>
       <Seo
-        title="Ice-Tour Live-Karte | Event-Karte der Ice-Tour 2026"
-        description="Öffentliche Live-Karte zur Ice-Tour 2026 in Chemnitz. Hier lassen sich Event-Checkpoints, Routen und aktuelle Check-ins am Veranstaltungstag verfolgen."
+        title={isRetrospective ? "Ice-Tour Event-Karte | Rückblick der Ice-Tour 2026" : "Ice-Tour Live-Karte | Event-Karte der Ice-Tour 2026"}
+        description={isRetrospective
+          ? "Event-Karte im Rückblick zur Ice-Tour 2026 in Chemnitz mit Checkpoints, Routen, gefahrenen Kilometern und Check-ins."
+          : "Öffentliche Live-Karte zur Ice-Tour 2026 in Chemnitz. Hier lassen sich Event-Checkpoints, Routen und aktuelle Check-ins am Veranstaltungstag verfolgen."}
         keywords={[
-          "Ice-Tour Live",
-          "Ice-Tour Live-Karte",
+          isRetrospective ? "Ice-Tour Rückblick Karte" : "Ice-Tour Live",
+          isRetrospective ? "Ice-Tour Event-Karte" : "Ice-Tour Live-Karte",
           "Event-Karte Chemnitz",
-          "Eis-Tour Live",
-          "Radtour Live Chemnitz",
+          "Eis-Tour 2026",
+          "Radtour Chemnitz",
         ]}
         canonical="/event-live"
       />
@@ -1300,14 +1305,16 @@ export default function EventLiveMap() {
             <span className="mobile-text">{showInfoPanel ? "x" : "i"}</span>
           </InfoToggleButton>
           <MapInfo $isVisible={showInfoPanel}>
-            <InfoHeading>Live-Checkpoint-Karte</InfoHeading>
+            <InfoHeading>{isRetrospective ? "Event-Karte im Rückblick" : "Live-Checkpoint-Karte"}</InfoHeading>
             <InfoText>
-              Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker öffnen die checkpointbezogene Live-Liste.
+              {isRetrospective
+                ? "Schau dir an, welche Routen gefahren wurden und wie viele Check-ins an den Ice-Tour Checkpoints zusammengekommen sind. Marker öffnen die Checkpoint-Übersicht."
+                : "Sehe in Echtzeit, wie viele Teilnehmer bereits an den Checkpoints eingecheckt haben. Marker öffnen die checkpointbezogene Live-Liste."}
             </InfoText>
           </MapInfo>
 
           <StatsCard>
-            <StatsHeading>Live-Stand</StatsHeading>
+            <StatsHeading>{isRetrospective ? "Tour-Rückblick" : "Live-Stand"}</StatsHeading>
             <StatsGrid>
               <StatItem>
                 <StatValue>{liveStats.totalKm.toLocaleString("de-DE")} km</StatValue>
@@ -1332,7 +1339,7 @@ export default function EventLiveMap() {
               ))}
             </RouteStatSummary>
             <StatsActionButton type="button" onClick={() => setRankingOpen(true)}>
-              Live-Ranking öffnen
+              {isRetrospective ? "Eis-Ranking ansehen" : "Live-Ranking öffnen"}
             </StatsActionButton>
           </StatsCard>
 
@@ -1420,9 +1427,11 @@ export default function EventLiveMap() {
           <Modal onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <div>
-                <ModalHeading>Live-Ranking</ModalHeading>
+                <ModalHeading>{isRetrospective ? "Eis-Ranking" : "Live-Ranking"}</ModalHeading>
                 <ModalSubline>
-                  Teilnehmer sortiert nach eingecheckten Eisportionen am Eventtag. Das Ranking aktualisiert sich automatisch alle 30 Sekunden.
+                  {isRetrospective
+                    ? "Teilnehmer sortiert nach eingecheckten Eisportionen der Ice-Tour 2026."
+                    : "Teilnehmer sortiert nach eingecheckten Eisportionen am Eventtag. Das Ranking aktualisiert sich automatisch alle 30 Sekunden."}
                 </ModalSubline>
               </div>
             </ModalHeader>

@@ -14,7 +14,7 @@ import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
-import { buildAssetUrl } from './utils/assets.jsx';
+import { buildAssetUrl, buildPublicAssetUrl } from './utils/assets.jsx';
 import {
   countActivitiesSince,
   readActivityFeedCache,
@@ -52,13 +52,13 @@ const Header = ({ refreshShops }) => {
   const navigate = useNavigate();
   const seasonalState = getResolvedSeasonalCampaigns();
   const featuredCampaign = seasonalState.featuredCampaign;
-  const promoIconSrc = featuredCampaign?.teaserIcon ? buildAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
+  const promoIconSrc = featuredCampaign?.teaserIcon ? buildPublicAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
   const promoIconAlt = featuredCampaign
     ? `${featuredCampaign.title} öffnen`
     : 'Aktionen & Ergebnisse öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const now = new Date();
-  const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
+  const showIceTourNewBadge = now <= new Date(2026, 4, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
   const toggleMenu = () => {
@@ -1425,10 +1425,17 @@ const ButtonWrapper = styled.div`
 const GewinnspielIcon = styled.div`
   cursor: pointer;
   margin-right: 8px;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
 
   img {
-    width: 80px;
-    height: 80px;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
     transition: transform 0.2s;
   }
 
@@ -1437,19 +1444,14 @@ const GewinnspielIcon = styled.div`
   }
 
   @media (max-width: 768px) {
-    img {
-      width: 50px;
-      height: 50px;
-    }
+    width: 50px;
+    height: 50px;
   }
 
   @media (max-width: 420px) {
     margin-right: 0;
-
-    img {
-      width: 42px;
-      height: 42px;
-    }
+    width: 42px;
+    height: 42px;
   }
 `;
 
