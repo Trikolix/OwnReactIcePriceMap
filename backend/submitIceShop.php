@@ -24,9 +24,9 @@ $checkStmt = $pdo->prepare("
     WHERE name = :name
     AND (
         6371 * acos(
-            cos(radians(:lat)) * cos(radians(latitude)) *
+            LEAST(1.0, cos(radians(:lat)) * cos(radians(latitude)) *
             cos(radians(longitude) - radians(:lon)) +
-            sin(radians(:lat)) * sin(radians(latitude))
+            sin(radians(:lat)) * sin(radians(latitude)))
         )
     ) < 0.2
 ");
