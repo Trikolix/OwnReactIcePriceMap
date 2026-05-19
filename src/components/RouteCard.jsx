@@ -60,12 +60,12 @@ const getKomootTourId = (value = "") => {
 };
 
 const getShareToken = (value = "") => {
-  const decoded = String(value || "").replace(/&amp;/g, "&");
+  const decoded = String(value || "").replace(/&amp;/g, "&").replace(/\\+$/, '');
   try {
     const parsed = new URL(decoded);
     return parsed.searchParams.get("share_token") || "";
   } catch (error) {
-    const match = decoded.match(/[?&]share_token=([^&#"']+)/i);
+    const match = decoded.match(/[?&]share_token=([^&#"'\\]+)/i);
     return match?.[1] ? decodeURIComponent(match[1]) : "";
   }
 };
@@ -78,14 +78,17 @@ const buildRouteEmbedMarkup = (route) => {
   if (!isKomootEmbed) return embedCode;
 
   const iframeSrc = extractIframeSrc(embedCode);
-  const tourId = getKomootTourId(routeUrl) || getKomootTourId(iframeSrc);
+  const tourId = getKomootTourId(routeUrl) || getKomootTourId(iframeSrc) || getKomootTourId(embedCode);
   const shareToken = getShareToken(routeUrl) || getShareToken(iframeSrc) || getShareToken(embedCode);
 
-  if (!tourId || !shareToken) {
+  if (!tourId) {
     return "";
   }
 
-  const src = `https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}&layout=map`;
+  let src = `https://www.komoot.com/de-de/tour/${tourId}/embed?layout=map`;
+  if (shareToken) {
+    src += `&share_token=${encodeURIComponent(shareToken)}`;
+  }
   return `<iframe src="${src}" width="100%" height="360" frameborder="0" scrolling="no"></iframe>`;
 };
 
