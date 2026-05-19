@@ -265,6 +265,9 @@ function Hero() {
           </HeroSubtitle>
           <HeroActions>
             <Button href="/ice-tour-impressionen">Impressionen ansehen</Button>
+            <Button href="/ice-tour-selbst-fahren" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Selbst fahren
+            </Button>
             <Button href="/event-live" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
               Event-Karte ansehen
             </Button>

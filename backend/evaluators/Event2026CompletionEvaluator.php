@@ -8,27 +8,33 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
     const DEFAULT_SPECIAL_THRESHOLD = 8;
 
     private string $mode;
+    private ?int $selfRideId;
 
-    public function __construct(string $mode = 'live') {
+    public function __construct(string $mode = 'live', ?int $selfRideId = null) {
         $this->mode = event2026_normalize_stamp_card_mode($mode);
+        $this->selfRideId = $selfRideId;
     }
 
     public function evaluate(int $userId): array {
         global $pdo;
 
-        if ($this->mode !== 'live') {
+        if ($this->mode !== 'live' && $this->mode !== 'self_ride') {
             return [];
         }
 
         $event = event2026_current_event($pdo);
         $eventId = (int)$event['id'];
-        $slot = event2026_get_slot_for_user($pdo, $eventId, $userId);
+        $slot = $this->mode === 'self_ride'
+            ? $this->getSelfRide($eventId, $userId)
+            : event2026_get_slot_for_user($pdo, $eventId, $userId);
         if (!$slot) {
             return [];
         }
 
         $routeKey = event2026_normalize_route_key($slot['route_key'] ?? '');
-        $progress = $this->getMandatoryProgress($eventId, (int)$slot['id'], $routeKey);
+        $progress = $this->mode === 'self_ride'
+            ? $this->getSelfRideMandatoryProgress($eventId, (int)$slot['id'], $routeKey)
+            : $this->getMandatoryProgress($eventId, (int)$slot['id'], $routeKey);
         if (!$progress['is_finisher']) {
             return [];
         }
@@ -45,6 +51,11 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
             if ($achievement !== null) {
                 $achievements[] = $achievement;
             }
+        }
+
+        if ($this->mode === 'self_ride') {
+            $this->markSelfRideCompleted((int)$slot['id']);
+            return $achievements;
         }
 
         $specialThreshold = isset($levelsByLevel[self::SPECIAL_LEVEL]['threshold'])
@@ -143,6 +154,89 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
             'passed' => $passed,
             'is_finisher' => $total > 0 && $passed >= $total,
         ];
+    }
+
+    private function getSelfRide(int $eventId, int $userId): ?array {
+        global $pdo;
+
+        if ($this->selfRideId !== null) {
+            $stmt = $pdo->prepare("SELECT *
+                FROM event2026_self_rides
+                WHERE id = :id
+                  AND event_id = :eventId
+                  AND user_id = :userId
+                  AND status <> 'cancelled'
+                LIMIT 1");
+            $stmt->execute([
+                'id' => $this->selfRideId,
+                'eventId' => $eventId,
+                'userId' => $userId,
+            ]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ?: null;
+        }
+
+        return event2026_get_self_ride_for_user($pdo, $eventId, $userId);
+    }
+
+    private function getSelfRideMandatoryProgress(int $eventId, int $selfRideId, string $routeKey): array {
+        global $pdo;
+
+        $stmt = $pdo->prepare("SELECT
+                c.route_keys_csv,
+                p.passed_at
+            FROM event2026_checkpoints c
+            LEFT JOIN event2026_self_ride_passages p
+                ON p.checkpoint_id = c.id
+                AND p.event_id = c.event_id
+                AND p.self_ride_id = :selfRideId
+            WHERE c.event_id = :eventId
+              AND c.stamp_card_mode = 'self_ride'
+              AND c.is_mandatory = 1");
+        $stmt->execute([
+            'selfRideId' => $selfRideId,
+            'eventId' => $eventId,
+        ]);
+
+        $total = 0;
+        $passed = 0;
+        $firstPassedAt = null;
+        $lastPassedAt = null;
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if (!event2026_route_applies_to_checkpoint($routeKey, (string)($row['route_keys_csv'] ?? ''))) {
+                continue;
+            }
+            $total++;
+            if ($row['passed_at'] !== null) {
+                $passed++;
+                $timestamp = strtotime((string)$row['passed_at']);
+                if ($timestamp !== false) {
+                    $firstPassedAt = $firstPassedAt === null ? $timestamp : min($firstPassedAt, $timestamp);
+                    $lastPassedAt = $lastPassedAt === null ? $timestamp : max($lastPassedAt, $timestamp);
+                }
+            }
+        }
+
+        $within24Hours = $firstPassedAt !== null
+            && $lastPassedAt !== null
+            && ($lastPassedAt - $firstPassedAt) <= 86400;
+
+        return [
+            'total' => $total,
+            'passed' => $passed,
+            'is_finisher' => $total > 0 && $passed >= $total && $within24Hours,
+        ];
+    }
+
+    private function markSelfRideCompleted(int $selfRideId): void {
+        global $pdo;
+
+        $stmt = $pdo->prepare("UPDATE event2026_self_rides
+            SET status = 'completed',
+                completed_at = COALESCE(completed_at, NOW())
+            WHERE id = :id
+              AND status <> 'completed'");
+        $stmt->execute(['id' => $selfRideId]);
     }
 
     private function getEventDayPortionCount(int $userId, array $event): int {

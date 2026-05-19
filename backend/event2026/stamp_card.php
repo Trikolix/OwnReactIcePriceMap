@@ -14,14 +14,24 @@ try {
     $eventId = (int) $event['id'];
     $mode = event2026_normalize_stamp_card_mode($_GET['mode'] ?? 'live');
     $startFinish = event2026_start_finish_config($pdo, $mode);
-    $stampingEnabled = $mode === 'test' ? true : event2026_is_live_stamping_open($event);
+    $selfRide = null;
+    if ($mode === 'self_ride') {
+        $selfRide = event2026_get_self_ride_for_user($pdo, $eventId, (int) $auth['user_id']);
+        if (!$selfRide) {
+            http_response_code(403);
+            throw new RuntimeException('Für heute ist keine Ice-Tour Selbstfahrer-Strecke geplant.');
+        }
+    }
+    $stampingEnabled = $mode === 'test'
+        ? true
+        : ($mode === 'self_ride' ? event2026_self_ride_is_stamping_open($selfRide) : event2026_is_live_stamping_open($event));
     $stampingAvailableFrom = event2026_live_stamping_available_from($event);
     if ($mode === 'test' && (int) $auth['user_id'] !== 1) {
         http_response_code(403);
         throw new RuntimeException('Test-Stempelkarte ist nur für Admin verfügbar.');
     }
 
-    $slot = event2026_get_slot_for_user($pdo, $eventId, $auth['user_id']);
+    $slot = $mode === 'self_ride' ? $selfRide : event2026_get_slot_for_user($pdo, $eventId, $auth['user_id']);
     if (!$slot) {
         http_response_code(403);
         throw new RuntimeException('Keine Event-Anmeldung für diesen Account gefunden.');
@@ -44,19 +54,24 @@ try {
             p.checkin_id,
             e.name AS shop_name
         FROM event2026_checkpoints c
-        LEFT JOIN event2026_checkpoint_passages p
+        LEFT JOIN " . ($mode === 'self_ride' ? "event2026_self_ride_passages" : "event2026_checkpoint_passages") . " p
             ON p.checkpoint_id = c.id
             AND p.event_id = c.event_id
             AND p.user_id = :user_id
+            " . ($mode === 'self_ride' ? "AND p.self_ride_id = :self_ride_id" : "") . "
         LEFT JOIN eisdielen e ON e.id = c.shop_id
         WHERE c.event_id = :event_id
           AND c.stamp_card_mode = :stamp_card_mode
         ORDER BY c.order_index ASC, c.id ASC");
-    $stmt->execute([
+    $params = [
         ':user_id' => $auth['user_id'],
         ':event_id' => $eventId,
         ':stamp_card_mode' => $mode,
-    ]);
+    ];
+    if ($mode === 'self_ride') {
+        $params[':self_ride_id'] = (int) $selfRide['id'];
+    }
+    $stmt->execute($params);
 
     $rawRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $checkpointShopIds = [];
@@ -66,9 +81,11 @@ try {
         }
     }
 
-    $eventDate = $mode === 'test'
+    $eventDate = $mode === 'self_ride'
+        ? (string) $selfRide['ride_date']
+        : ($mode === 'test'
         ? gmdate('Y-m-d')
-        : (!empty($event['event_date']) ? (string) $event['event_date'] : gmdate('Y-m-d'));
+        : (!empty($event['event_date']) ? (string) $event['event_date'] : gmdate('Y-m-d')));
     $eventDayCheckinsByShop = [];
     if (!empty($checkpointShopIds)) {
         $shopIdList = array_keys($checkpointShopIds);
@@ -112,6 +129,9 @@ try {
     $mandatoryPassed = 0;
     foreach ($rawRows as $row) {
         if ($mode === 'live' && !event2026_route_applies_to_checkpoint($routeKey, (string) ($row['route_keys_csv'] ?? ''))) {
+            continue;
+        }
+        if ($mode === 'self_ride' && !event2026_route_applies_to_checkpoint($routeKey, (string) ($row['route_keys_csv'] ?? ''))) {
             continue;
         }
 
@@ -162,7 +182,8 @@ try {
             'route_name' => event2026_route_label($routeKey),
             'distance_km' => (int) ($slot['distance_km'] ?? event2026_route_definition($routeKey)['distance_km']),
             'route_type' => event2026_route_definition($routeKey)['route_type'],
-            'full_name' => (string) $slot['full_name'],
+            'full_name' => $mode === 'self_ride' ? 'Selbstfahrer-Tour' : (string) $slot['full_name'],
+            'ride_date' => $mode === 'self_ride' ? (string) $selfRide['ride_date'] : null,
         ],
         'checkpoints' => $checkpoints,
         'progress' => [
@@ -173,11 +194,20 @@ try {
         'start_finish' => $startFinish,
         'stamping' => [
             'enabled' => $stampingEnabled,
-            'available_from' => $stampingAvailableFrom,
+            'available_from' => $mode === 'self_ride' ? (string) $selfRide['starts_at'] : $stampingAvailableFrom,
+            'expires_at' => $mode === 'self_ride' ? (string) $selfRide['expires_at'] : null,
             'message' => $stampingEnabled
                 ? null
-                : event2026_live_stamping_message($event),
+                : ($mode === 'self_ride' ? 'Diese Selbstfahrer-Stempelkarte ist nur am gewählten Tourtag für 24 Stunden aktiv.' : event2026_live_stamping_message($event)),
         ],
+        'self_ride' => $mode === 'self_ride' ? [
+            'id' => (int) $selfRide['id'],
+            'ride_date' => (string) $selfRide['ride_date'],
+            'starts_at' => (string) $selfRide['starts_at'],
+            'expires_at' => (string) $selfRide['expires_at'],
+            'order_free' => true,
+            'gps_only' => true,
+        ] : null,
         'sync' => [
             'server_time' => gmdate('c'),
             'gps_radius_m' => 300,

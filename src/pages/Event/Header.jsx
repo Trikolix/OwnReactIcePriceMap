@@ -159,6 +159,7 @@ export default function Header() {
                 <>
                   <MenuItemLink to="/ice-tour-impressionen" onClick={() => setMenuOpen(false)}>Impressionen</MenuItemLink>
                   <MenuItemLink to="/event-live" onClick={() => setMenuOpen(false)}>Event-Karte</MenuItemLink>
+                  <MenuItemLink to="/ice-tour-selbst-fahren" onClick={() => setMenuOpen(false)}>Selbst fahren</MenuItemLink>
                 </>
               )}
               <MenuItemLink to="/ice-tour-unterstuetzen" onClick={() => setMenuOpen(false)}>Unterstützen</MenuItemLink>
@@ -203,6 +204,7 @@ export default function Header() {
                       <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
                     </>
                   )}
+                  <MenuItemLink to="/ice-tour-selbst-fahren" onClick={() => setMenuOpen(false)}>Ice-Tour selbst fahren</MenuItemLink>
                   <MenuActionButton
                     type="button"
                     $danger

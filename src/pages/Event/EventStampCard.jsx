@@ -365,6 +365,7 @@ function writePendingScan(scan) {
 }
 
 function normalizeScanMode(mode) {
+  if (String(mode || "") === "self_ride") return "self_ride";
   return String(mode || "") === "test" ? "test" : "live";
 }
 
@@ -682,9 +683,10 @@ export default function EventStampCard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, authToken, userId, username } = useUser();
   const apiBase = getApiBaseUrl();
-  const requestedMode = searchParams.get("mode") === "test" ? "test" : "live";
+  const requestedMode = normalizeScanMode(searchParams.get("mode"));
   const isAdmin = Number(userId) === 1;
-  const mode = requestedMode === "test" && isAdmin ? "test" : "live";
+  const mode = requestedMode === "test" && !isAdmin ? "live" : requestedMode;
+  const isSelfRide = mode === "self_ride";
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -830,8 +832,10 @@ export default function EventStampCard() {
     [checkpointsWithDistance, startFinish]
   );
   const primaryCheckpoints = useMemo(
-    () => checkpointsWithDistance.filter((checkpoint) => !isFinishCheckpoint(checkpoint, startFinish)),
-    [checkpointsWithDistance, startFinish]
+    () => isSelfRide
+      ? checkpointsWithDistance
+      : checkpointsWithDistance.filter((checkpoint) => !isFinishCheckpoint(checkpoint, startFinish)),
+    [checkpointsWithDistance, isSelfRide, startFinish]
   );
   const mandatoryPrimaryCheckpoints = useMemo(
     () => primaryCheckpoints.filter((checkpoint) => Number(checkpoint.is_mandatory) === 1),
@@ -839,7 +843,7 @@ export default function EventStampCard() {
   );
 
   const completedMandatoryCount = mandatoryPrimaryCheckpoints.filter(isCheckpointComplete).length;
-  const finishUnlocked = mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
+  const finishUnlocked = isSelfRide || mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
   const pendingCount = pendingActions.filter((item) => item.mode === mode).length;
   const progressRatio = mandatoryPrimaryCheckpoints.length
     ? Math.round((completedMandatoryCount / mandatoryPrimaryCheckpoints.length) * 100)
@@ -1022,7 +1026,7 @@ export default function EventStampCard() {
 
   const handleGpsStamp = async (checkpoint, locked) => {
     if (!stampingEnabled) {
-      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+      setMessage({ tone: "info", text: stampingMessage || "Stempel sind aktuell noch nicht freigeschaltet." });
       return;
     }
     if (locked) {
@@ -1066,6 +1070,10 @@ export default function EventStampCard() {
   };
 
   const handleQrCode = async (checkpoint, qrCode) => {
+    if (isSelfRide) {
+      setMessage({ tone: "info", text: "Die Selbstfahrer-Stempelkarte funktioniert nur per GPS-Standort." });
+      return;
+    }
     if (!stampingEnabled) {
       setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
       return;
@@ -1351,25 +1359,27 @@ export default function EventStampCard() {
               <Button type="button" onClick={() => handleGpsStamp(checkpoint, locked)} disabled={!gpsReady || locked || !stampingEnabled}>
                 Standort-Stempel
               </Button>
-              <Button
-                type="button"
-                $secondary
-                onClick={() => {
-                  if (!stampingEnabled) {
-                    setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
-                    return;
-                  }
-                  if (locked) {
-                    setMessage({ tone: "info", text: options.lockHint || "Dieser Checkpoint ist noch gesperrt." });
-                    return;
-                  }
-                  setShowScannerFor(checkpoint);
-                }}
-                disabled={locked || !stampingEnabled}
-              >
-                <QrCode size={15} />
-                QR-Code
-              </Button>
+              {!isSelfRide && (
+                <Button
+                  type="button"
+                  $secondary
+                  onClick={() => {
+                    if (!stampingEnabled) {
+                      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+                      return;
+                    }
+                    if (locked) {
+                      setMessage({ tone: "info", text: options.lockHint || "Dieser Checkpoint ist noch gesperrt." });
+                      return;
+                    }
+                    setShowScannerFor(checkpoint);
+                  }}
+                  disabled={locked || !stampingEnabled}
+                >
+                  <QrCode size={15} />
+                  QR-Code
+                </Button>
+              )}
             </>
           )}
           {passed && !hasIceCheckin && (
@@ -1420,18 +1430,21 @@ export default function EventStampCard() {
               </VerifyBadge>
               <Title>
                 {data
-                  ? (mode === "test" ? "Test-Stempelkarte" : "Event-Stempelkarte")
+                  ? (isSelfRide ? "Selbstfahrer-Stempelkarte" : (mode === "test" ? "Test-Stempelkarte" : "Event-Stempelkarte"))
                   : "Ice-Tour Checkpoint"}
               </Title>
               <Intro>
                 {data
-                  ? "Zum Vorzeigen bei der Eisdiele und als kompakte Übersicht für deine Tour."
+                  ? (isSelfRide
+                    ? "GPS-Stempelkarte für deine eigenständig gefahrene Ice-Tour. Die Checkpoint-Reihenfolge ist frei."
+                    : "Zum Vorzeigen bei der Eisdiele und als kompakte Übersicht für deine Tour.")
                   : "QR-Scans der Ice-Tour werden hier verarbeitet, bestätigt oder nach dem Login automatisch nachgereicht."}
               </Intro>
             </div>
             {isAdmin && (
               <CompactRow style={{ justifyContent: "flex-end" }}>
                 <Button type="button" $secondary $active={mode === "live"} onClick={() => setSearchParams({ mode: "live" })}>Live</Button>
+                <Button type="button" $secondary $active={mode === "self_ride"} onClick={() => setSearchParams({ mode: "self_ride" })}>Selbstfahrer</Button>
                 <Button type="button" $secondary $active={mode === "test"} onClick={() => setSearchParams({ mode: "test" })}>Test</Button>
               </CompactRow>
             )}
@@ -1445,7 +1458,7 @@ export default function EventStampCard() {
                   <Value><UserRound size={17} />{username || "-"}</Value>
                 </IdentityCard>
                 <IdentityCard>
-                  <Label>Teilnehmer</Label>
+                  <Label>{isSelfRide ? "Modus" : "Teilnehmer"}</Label>
                   <Value>{data?.slot?.full_name || "-"}</Value>
                 </IdentityCard>
                 <IdentityCard>
@@ -1526,7 +1539,12 @@ export default function EventStampCard() {
           </ActionRow>
 
           {locationState.error && <MessageBox $tone="error">{locationState.error}</MessageBox>}
-          {!stampingEnabled && <MessageBox $tone="info">{stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet."}</MessageBox>}
+          {!stampingEnabled && <MessageBox $tone="info">{stampingMessage || "Stempel sind aktuell noch nicht freigeschaltet."}</MessageBox>}
+          {isSelfRide && data?.self_ride?.expires_at && (
+            <MessageBox $tone="info">
+              GPS-only: QR-Codes sind deaktiviert. Deine Stempelkarte läuft bis {new Date(data.self_ride.expires_at.replace(" ", "T")).toLocaleString("de-DE")} Uhr.
+            </MessageBox>
+          )}
           {message && <MessageBox $tone={message.tone}>{message.text}</MessageBox>}
         </PassCard>
 
@@ -1538,13 +1556,15 @@ export default function EventStampCard() {
           <Card>
             <SectionTitle>Deine Tour-Checkpoints</SectionTitle>
             <SectionText>
-              Zielbild pro Checkpoint: Pflichtstempel holen und idealerweise mindestens ein Eis einchecken.
+              {isSelfRide
+                ? "Bestätige die Checkpoints per GPS in beliebiger Reihenfolge. Eis-Check-ins sind optional und normal bezahlt."
+                : "Zielbild pro Checkpoint: Pflichtstempel holen und idealerweise mindestens ein Eis einchecken."}
             </SectionText>
             <CheckpointList>
               {primaryCheckpoints.length > 0
                 ? primaryCheckpoints.map((checkpoint) => renderCheckpointCard(checkpoint))
                 : <SectionText>Für diesen Modus sind aktuell keine routenrelevanten Checkpoints hinterlegt.</SectionText>}
-              {finishCheckpoint && renderCheckpointCard(finishCheckpoint, {
+              {!isSelfRide && finishCheckpoint && renderCheckpointCard(finishCheckpoint, {
                 highlight: true,
                 locked: !finishUnlocked && finishCheckpoint.localStatus !== "confirmed",
                 lockHint: `Noch ${Math.max(0, mandatoryPrimaryCheckpoints.length - completedMandatoryCount)} Pflichtstopp(s) bis zur Freischaltung.`,
@@ -1558,7 +1578,9 @@ export default function EventStampCard() {
           <ul style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0, paddingLeft: "1.2rem" }}>
             <li>Im Zweifel zuerst den Stempel holen und danach direkt über den Button "Eis einchecken" weitermachen.</li>
             <li>Wenn du offline bist, wird der Stempel lokal vorgemerkt und später synchronisiert.</li>
-            <li>Bei QR-Problemen kannst du den Code im Scanner-Dialog auch manuell eingeben.</li>
+            {isSelfRide
+              ? <li>Für Selbstfahrer zählen ausschließlich GPS-Stempel im Umkreis von 300 Metern.</li>
+              : <li>Bei QR-Problemen kannst du den Code im Scanner-Dialog auch manuell eingeben.</li>}
           </ul>
         </Card>
       </Container>
