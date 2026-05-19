@@ -493,6 +493,7 @@ try {
         new GeschmacksvielfaltEvaluator(),
         new IcePortionsPerWeekEvaluator(),
         new Event2026CompletionEvaluator('live'),
+        new Event2026CompletionEvaluator('self_ride'),
     ];
     if (!empty($sorten)) $postSortenEvaluators[] = new FuerstPuecklerEvaluator();
     if ($type === "Kugel") $postSortenEvaluators[] = new KugeleisCountEvaluator();

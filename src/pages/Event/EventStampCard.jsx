@@ -843,6 +843,7 @@ export default function EventStampCard() {
   );
 
   const completedMandatoryCount = mandatoryPrimaryCheckpoints.filter(isCheckpointComplete).length;
+  const requiredSelfRideCheckins = Number(data?.self_ride?.required_checkins || 0);
   const finishUnlocked = isSelfRide || mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
   const pendingCount = pendingActions.filter((item) => item.mode === mode).length;
   const progressRatio = mandatoryPrimaryCheckpoints.length
@@ -1542,7 +1543,7 @@ export default function EventStampCard() {
           {!stampingEnabled && <MessageBox $tone="info">{stampingMessage || "Stempel sind aktuell noch nicht freigeschaltet."}</MessageBox>}
           {isSelfRide && data?.self_ride?.expires_at && (
             <MessageBox $tone="info">
-              GPS-only: QR-Codes sind deaktiviert. Deine Stempelkarte läuft bis {new Date(data.self_ride.expires_at.replace(" ", "T")).toLocaleString("de-DE")} Uhr.
+              GPS-only: QR-Codes sind deaktiviert. Für den Award brauchst du alle Pflichtstempel und {requiredSelfRideCheckins || "die nötigen"} Ice-App-Check-ins im 24h-Fenster. Deine Stempelkarte läuft bis {new Date(data.self_ride.expires_at.replace(" ", "T")).toLocaleString("de-DE")} Uhr.
             </MessageBox>
           )}
           {message && <MessageBox $tone={message.tone}>{message.text}</MessageBox>}
@@ -1557,7 +1558,7 @@ export default function EventStampCard() {
             <SectionTitle>Deine Tour-Checkpoints</SectionTitle>
             <SectionText>
               {isSelfRide
-                ? "Bestätige die Checkpoints per GPS in beliebiger Reihenfolge. Eis-Check-ins sind optional und normal bezahlt."
+                ? "Bestätige alle Pflicht-Checkpoints per GPS in beliebiger Reihenfolge. Zusätzlich zählen für den Award deine Ice-App-Check-ins im 24h-Fenster, auch bei anderen Eisdielen auf der Route."
                 : "Zielbild pro Checkpoint: Pflichtstempel holen und idealerweise mindestens ein Eis einchecken."}
             </SectionText>
             <CheckpointList>
@@ -1579,7 +1580,7 @@ export default function EventStampCard() {
             <li>Im Zweifel zuerst den Stempel holen und danach direkt über den Button "Eis einchecken" weitermachen.</li>
             <li>Wenn du offline bist, wird der Stempel lokal vorgemerkt und später synchronisiert.</li>
             {isSelfRide
-              ? <li>Für Selbstfahrer zählen ausschließlich GPS-Stempel im Umkreis von 300 Metern.</li>
+              ? <li>Für den Self-Ride-Award brauchst du alle Pflichtstempel und zusätzlich mindestens 2 Check-ins auf der Genussrunde, 3 auf der Sport-Route oder 4 auf der Königsrunde.</li>
               : <li>Bei QR-Problemen kannst du den Code im Scanner-Dialog auch manuell eingeben.</li>}
           </ul>
         </Card>

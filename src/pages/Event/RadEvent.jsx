@@ -325,7 +325,7 @@ function RouteOverview() {
       <Container>
         <SectionTitle>Die gefahrenen Routen</SectionTitle>
         <SectionDesc>
-          Zur Auswahl standen drei Routen: die Genussrunde über 75 km, die Sportliche Runde über 140 km
+          Zur Auswahl standen drei Routen: die Genussrunde über 75 km, die Sportliche Runde über 145 km
           und die Königsrunde mit 180 km.
         </SectionDesc>
         <CardGrid>

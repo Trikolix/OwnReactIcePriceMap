@@ -789,7 +789,7 @@ const CHECKPOINT_PROGRESS_ALIASES_BY_SHOP_ID = {
 
 const ROUTE_OVERLAYS = [
   { id: "route-180", label: "König (180 km)", color: "#dc2626", offsetPx: 4, gpx: route180Gpx },
-  { id: "route-140", label: "Sport (140 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
+  { id: "route-140", label: "Sport (145 km)", color: "#facc15", offsetPx: 0, gpx: route140Gpx },
   { id: "route-70", label: "Genuss (70 km)", color: "#16a34a", offsetPx: -4, gpx: route70Gpx },
 ];
 

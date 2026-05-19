@@ -33,7 +33,7 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
 
         $routeKey = event2026_normalize_route_key($slot['route_key'] ?? '');
         $progress = $this->mode === 'self_ride'
-            ? $this->getSelfRideMandatoryProgress($eventId, (int)$slot['id'], $routeKey)
+            ? $this->getSelfRideCompletionProgress($eventId, $userId, $slot, $routeKey)
             : $this->getMandatoryProgress($eventId, (int)$slot['id'], $routeKey);
         if (!$progress['is_finisher']) {
             return [];
@@ -179,6 +179,17 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
         return event2026_get_self_ride_for_user($pdo, $eventId, $userId);
     }
 
+    private function getSelfRideCompletionProgress(int $eventId, int $userId, array $selfRide, string $routeKey): array {
+        $mandatoryProgress = $this->getSelfRideMandatoryProgress($eventId, (int)$selfRide['id'], $routeKey);
+        $checkinProgress = $this->getSelfRideCheckinProgress($userId, $selfRide, $routeKey);
+
+        return [
+            'total' => $mandatoryProgress['total'] + $checkinProgress['total'],
+            'passed' => $mandatoryProgress['passed'] + min($checkinProgress['passed'], $checkinProgress['total']),
+            'is_finisher' => $mandatoryProgress['is_finisher'] && $checkinProgress['is_finisher'],
+        ];
+    }
+
     private function getSelfRideMandatoryProgress(int $eventId, int $selfRideId, string $routeKey): array {
         global $pdo;
 
@@ -200,8 +211,6 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
 
         $total = 0;
         $passed = 0;
-        $firstPassedAt = null;
-        $lastPassedAt = null;
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             if (!event2026_route_applies_to_checkpoint($routeKey, (string)($row['route_keys_csv'] ?? ''))) {
                 continue;
@@ -209,22 +218,47 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
             $total++;
             if ($row['passed_at'] !== null) {
                 $passed++;
-                $timestamp = strtotime((string)$row['passed_at']);
-                if ($timestamp !== false) {
-                    $firstPassedAt = $firstPassedAt === null ? $timestamp : min($firstPassedAt, $timestamp);
-                    $lastPassedAt = $lastPassedAt === null ? $timestamp : max($lastPassedAt, $timestamp);
-                }
             }
         }
-
-        $within24Hours = $firstPassedAt !== null
-            && $lastPassedAt !== null
-            && ($lastPassedAt - $firstPassedAt) <= 86400;
 
         return [
             'total' => $total,
             'passed' => $passed,
-            'is_finisher' => $total > 0 && $passed >= $total && $within24Hours,
+            'is_finisher' => $total > 0 && $passed >= $total,
+        ];
+    }
+
+    private function getSelfRideCheckinProgress(int $userId, array $selfRide, string $routeKey): array {
+        global $pdo;
+
+        $requiredCheckins = event2026_self_ride_required_checkins($routeKey);
+        $shopIds = event2026_self_ride_route_shop_ids($routeKey);
+        if (empty($shopIds)) {
+            return [
+                'total' => $requiredCheckins,
+                'passed' => 0,
+                'is_finisher' => false,
+            ];
+        }
+
+        $shopIdSql = implode(',', array_map('intval', $shopIds));
+        $stmt = $pdo->prepare("SELECT COUNT(DISTINCT c.id)
+            FROM checkins c
+            WHERE c.nutzer_id = :userId
+              AND c.datum >= :startsAt
+              AND c.datum < :expiresAt
+              AND c.eisdiele_id IN ({$shopIdSql})");
+        $stmt->execute([
+            'userId' => $userId,
+            'startsAt' => (string)$selfRide['starts_at'],
+            'expiresAt' => (string)$selfRide['expires_at'],
+        ]);
+        $checkinCount = (int)$stmt->fetchColumn();
+
+        return [
+            'total' => $requiredCheckins,
+            'passed' => $checkinCount,
+            'is_finisher' => $checkinCount >= $requiredCheckins,
         ];
     }
 

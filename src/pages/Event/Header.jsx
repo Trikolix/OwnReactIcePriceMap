@@ -204,7 +204,9 @@ export default function Header() {
                       <MenuItemLink to="/event-admin-mails" onClick={() => setMenuOpen(false)}>Admin-Mails</MenuItemLink>
                     </>
                   )}
-                  <MenuItemLink to="/ice-tour-selbst-fahren" onClick={() => setMenuOpen(false)}>Ice-Tour selbst fahren</MenuItemLink>
+                  {isAdmin && (
+                    <MenuItemLink to="/ice-tour-selbst-fahren" onClick={() => setMenuOpen(false)}>Ice-Tour selbst fahren</MenuItemLink>
+                  )}
                   <MenuActionButton
                     type="button"
                     $danger

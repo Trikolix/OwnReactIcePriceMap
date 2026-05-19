@@ -16,6 +16,7 @@ try {
     $startFinish = event2026_start_finish_config($pdo, $mode);
     $selfRide = null;
     if ($mode === 'self_ride') {
+        event2026_assert_self_ride_access((int) $auth['user_id']);
         $selfRide = event2026_get_self_ride_for_user($pdo, $eventId, (int) $auth['user_id']);
         if (!$selfRide) {
             http_response_code(403);
@@ -205,6 +206,7 @@ try {
             'ride_date' => (string) $selfRide['ride_date'],
             'starts_at' => (string) $selfRide['starts_at'],
             'expires_at' => (string) $selfRide['expires_at'],
+            'required_checkins' => event2026_self_ride_required_checkins($routeKey),
             'order_free' => true,
             'gps_only' => true,
         ] : null,

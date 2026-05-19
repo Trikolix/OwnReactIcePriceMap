@@ -28,6 +28,7 @@ try {
     }
     $selfRide = null;
     if ($mode === 'self_ride') {
+        event2026_assert_self_ride_access((int) $auth['user_id']);
         $selfRide = event2026_get_self_ride_for_user($pdo, $eventId, (int) $auth['user_id']);
         if (!$selfRide) {
             http_response_code(403);

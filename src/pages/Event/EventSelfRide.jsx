@@ -11,9 +11,16 @@ import { getApiBaseUrl } from "../../shared/api/client";
 import { ROUTE_OPTIONS, formatRouteLabelWithDistance, getRouteTheme } from "./eventConfig";
 import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
 
+function getRequiredCheckins(routeKey) {
+  if (routeKey === "epic_4") return 4;
+  if (routeKey === "classic_3") return 3;
+  return 2;
+}
+
 export default function EventSelfRide() {
   const { isLoggedIn, authToken, userId, username, login } = useUser();
   const apiBase = getApiBaseUrl();
+  const isSelfRideAdmin = Number(userId) === 1;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -32,7 +39,7 @@ export default function EventSelfRide() {
   const plannedRides = state?.rides || [];
 
   const loadState = () => {
-    if (!isLoggedIn || !apiBase) return;
+    if (!isLoggedIn || !apiBase || !isSelfRideAdmin) return;
     setLoading(true);
     setError("");
     fetch(`${apiBase}/event2026/self_ride.php`, {
@@ -57,12 +64,16 @@ export default function EventSelfRide() {
 
   useEffect(() => {
     loadState();
-  }, [isLoggedIn, apiBase, authToken]);
+  }, [isLoggedIn, apiBase, authToken, isSelfRideAdmin]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isLoggedIn) {
       setShowLoginModal(true);
+      return;
+    }
+    if (!isSelfRideAdmin) {
+      setError("Die Selbstfahrer-Funktion ist aktuell nur für den Admin freigeschaltet.");
       return;
     }
 
@@ -105,7 +116,7 @@ export default function EventSelfRide() {
           <p>
             Wähle eine Strecke und einen Tag. Am gewählten Datum wird deine GPS-Stempelkarte freigeschaltet.
             Keine Startgebühr, keine Gratis-Kugel, keine QR-Codes vor Ort: einfach losfahren, normal Eis essen gehen
-            und die Checkpoints innerhalb von 24 Stunden sammeln.
+            alle Pflichtstempel plus je nach Strecke mindestens 2, 3 oder 4 Ice-App-Check-ins innerhalb von 24 Stunden sammeln.
           </p>
         </Hero>
 
@@ -114,6 +125,11 @@ export default function EventSelfRide() {
             <SectionTitle>Login erforderlich</SectionTitle>
             <SectionText>Die Selbstfahrer-Stempelkarte ist an dein Ice-App Konto gebunden.</SectionText>
             <Button type="button" onClick={() => setShowLoginModal(true)}>Einloggen</Button>
+          </Card>
+        ) : !isSelfRideAdmin ? (
+          <Card>
+            <SectionTitle>Noch nicht freigeschaltet</SectionTitle>
+            <SectionText>Die Selbstfahrer-Funktion ist aktuell nur für den Admin freigeschaltet.</SectionText>
           </Card>
         ) : (
           <>
@@ -134,7 +150,7 @@ export default function EventSelfRide() {
                       />
                       <strong>{formatRouteLabelWithDistance(route.key)}</strong>
                       <span>{route.teaser}</span>
-                      <small>{route.stops} Checkpoints</small>
+                      <small>{getRequiredCheckins(route.key)} Check-ins in 24 Stunden</small>
                     </RouteOption>
                   ))}
                 </RouteGrid>
@@ -155,6 +171,7 @@ export default function EventSelfRide() {
                 <SummaryBox $theme={getRouteTheme(selectedRoute.key)}>
                   <strong>{formatRouteLabelWithDistance(selectedRoute.key)}</strong>
                   <span>{rideDate ? new Date(`${rideDate}T12:00:00`).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }) : "Bitte Datum wählen"}</span>
+                  <small>{getRequiredCheckins(selectedRoute.key)} Check-ins im 24h-Fenster für den Award</small>
                 </SummaryBox>
 
                 <Button type="submit" disabled={saving || !rideDate}>
@@ -173,7 +190,7 @@ export default function EventSelfRide() {
                   <span><Clock size={16} /> bis {new Date(todayRide.expires_at.replace(" ", "T")).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr</span>
                 </RideMeta>
                 <SectionText>
-                  Deine GPS-Stempelkarte ist heute aktiv. Die Reihenfolge ist frei, der Award wird nach allen Pflicht-Checkpoints innerhalb von 24 Stunden geprüft.
+                  Deine GPS-Stempelkarte ist heute aktiv. Die Reihenfolge ist frei, der Award wird nach allen Pflichtstempeln und deinen Ice-App-Check-ins im 24h-Fenster geprüft.
                 </SectionText>
                 <ButtonLink to="/event-stamp-card?mode=self_ride">Stempelkarte öffnen</ButtonLink>
               </HighlightCard>
@@ -200,7 +217,8 @@ export default function EventSelfRide() {
                 <li><ShieldCheck size={16} /> Checkpoints zählen nur per GPS-Standort im Umkreis von 300 Metern.</li>
                 <li><ShieldCheck size={16} /> QR-Codes sind für die Selbstfahrer-Variante deaktiviert.</li>
                 <li><ShieldCheck size={16} /> Die Reihenfolge ist egal, es gibt keinen gesperrten Schluss-Checkpoint.</li>
-                <li><ShieldCheck size={16} /> Für den Award müssen alle Pflicht-Checkpoints deiner Strecke innerhalb von 24 Stunden bestätigt werden.</li>
+                <li><ShieldCheck size={16} /> Für den Award brauchst du alle Pflichtstempel deiner Strecke und zusätzlich mindestens 2 Check-ins auf der Genussrunde, 3 Check-ins auf der Sport-Route oder 4 Check-ins auf der Königsrunde.</li>
+                <li><ShieldCheck size={16} /> Es zählen auch Check-ins bei anderen Eisdielen auf deiner Route, falls ein offizieller Ice-Tour-Stopp nicht geöffnet hat.</li>
               </RuleList>
             </Card>
           </>
@@ -356,6 +374,12 @@ const SummaryBox = styled.div`
   background: ${({ $theme }) => $theme.background};
   color: ${({ $theme }) => $theme.text};
   padding: 0.8rem;
+
+  small {
+    flex-basis: 100%;
+    color: #6d4a00;
+    font-weight: 800;
+  }
 `;
 
 const Button = styled.button`

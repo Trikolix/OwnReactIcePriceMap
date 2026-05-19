@@ -51,6 +51,7 @@ function event2026_self_ride_payload(PDO $pdo, array $event, int $userId): array
                 'distance_km' => (int) $route['distance_km'],
                 'elevation_m' => (int) $route['elevation_m'],
                 'stops' => (int) $route['stops'],
+                'required_checkins' => event2026_self_ride_required_checkins($route['key']),
                 'route_type' => $route['route_type'],
             ];
         }, event2026_route_catalog())),
@@ -65,6 +66,7 @@ try {
     $event = event2026_current_event($pdo);
     $eventId = (int) $event['id'];
     $userId = (int) $auth['user_id'];
+    event2026_assert_self_ride_access($userId);
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(event2026_self_ride_payload($pdo, $event, $userId), JSON_UNESCAPED_UNICODE);

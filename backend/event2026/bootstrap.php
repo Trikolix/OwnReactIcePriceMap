@@ -1012,6 +1012,53 @@ function event2026_self_ride_is_stamping_open(array $selfRide): bool
     return $now >= $startsAt && $now < $expiresAt && ($selfRide['status'] ?? 'planned') !== 'cancelled';
 }
 
+function event2026_self_ride_is_allowed_user(int $userId): bool
+{
+    return $userId === 1;
+}
+
+function event2026_assert_self_ride_access(int $userId): void
+{
+    if (!event2026_self_ride_is_allowed_user($userId)) {
+        http_response_code(403);
+        throw new RuntimeException('Die Selbstfahrer-Funktion ist aktuell nur für den Admin freigeschaltet.');
+    }
+}
+
+function event2026_self_ride_required_checkins(?string $routeKey): int
+{
+    switch (event2026_normalize_route_key($routeKey)) {
+        case 'epic_4':
+            return 4;
+        case 'classic_3':
+            return 3;
+        case 'family_2':
+        default:
+            return 2;
+    }
+}
+
+function event2026_self_ride_route_shop_ids(?string $routeKey): array
+{
+    $checkpointShopIds = [];
+    foreach (event2026_live_checkpoint_shop_config() as $shopId => $config) {
+        if (event2026_route_applies_to_checkpoint(event2026_normalize_route_key($routeKey), implode(',', (array) ($config['route_keys'] ?? [])))) {
+            $checkpointShopIds[] = (int) $shopId;
+        }
+    }
+
+    $alternateShopIdsByRoute = [
+        'family_2' => [293, 356, 145, 111],
+        'classic_3' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491],
+        'epic_4' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491, 22, 58, 114, 205],
+    ];
+
+    return array_values(array_unique(array_merge(
+        $checkpointShopIds,
+        $alternateShopIdsByRoute[event2026_normalize_route_key($routeKey)] ?? []
+    )));
+}
+
 function event2026_ensure_checkpoint_qr_code(PDO $pdo, int $eventId, string $stampCardMode, int $shopId, string $shopName): int
 {
     $stampCardMode = event2026_normalize_stamp_card_mode($stampCardMode);
