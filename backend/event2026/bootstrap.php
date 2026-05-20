@@ -1014,7 +1014,7 @@ function event2026_self_ride_is_stamping_open(array $selfRide): bool
 
 function event2026_self_ride_is_allowed_user(int $userId): bool
 {
-    return $userId === 1;
+    return $userId > 0;
 }
 
 function event2026_assert_self_ride_access(int $userId): void

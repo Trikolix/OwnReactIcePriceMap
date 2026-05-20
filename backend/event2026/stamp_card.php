@@ -1,5 +1,134 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../lib/levelsystem.php';
+require_once __DIR__ . '/../evaluators/Event2026CompletionEvaluator.php';
+
+function event2026_stamp_card_award_level_for_route(string $routeKey): ?int
+{
+    switch (event2026_normalize_route_key($routeKey)) {
+        case 'family_2':
+            return 1;
+        case 'classic_3':
+            return 2;
+        case 'epic_4':
+            return 3;
+        default:
+            return null;
+    }
+}
+
+function event2026_stamp_card_self_ride_required_checkins(string $routeKey): int
+{
+    if (function_exists('event2026_self_ride_required_checkins')) {
+        return event2026_self_ride_required_checkins($routeKey);
+    }
+
+    switch (event2026_normalize_route_key($routeKey)) {
+        case 'epic_4':
+            return 4;
+        case 'classic_3':
+            return 3;
+        case 'family_2':
+        default:
+            return 2;
+    }
+}
+
+function event2026_stamp_card_self_ride_route_shop_ids(string $routeKey): array
+{
+    if (function_exists('event2026_self_ride_route_shop_ids')) {
+        return event2026_self_ride_route_shop_ids($routeKey);
+    }
+
+    $normalizedRouteKey = event2026_normalize_route_key($routeKey);
+    $checkpointShopIds = [];
+    if (function_exists('event2026_live_checkpoint_shop_config')) {
+        foreach (event2026_live_checkpoint_shop_config() as $shopId => $config) {
+            $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
+            if (event2026_route_applies_to_checkpoint($normalizedRouteKey, $routeKeysCsv)) {
+                $checkpointShopIds[] = (int) $shopId;
+            }
+        }
+    }
+
+    $alternateShopIdsByRoute = [
+        'family_2' => [293, 356, 145, 111],
+        'classic_3' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491],
+        'epic_4' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491, 22, 58, 114, 205],
+    ];
+
+    return array_values(array_unique(array_merge(
+        $checkpointShopIds,
+        $alternateShopIdsByRoute[$normalizedRouteKey] ?? []
+    )));
+}
+
+function event2026_stamp_card_self_ride_checkin_count(PDO $pdo, int $userId, array $selfRide, string $routeKey): int
+{
+    $shopIds = event2026_stamp_card_self_ride_route_shop_ids($routeKey);
+    if (empty($shopIds)) {
+        return 0;
+    }
+
+    $shopIdSql = implode(',', array_map('intval', $shopIds));
+    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT c.id)
+        FROM checkins c
+        WHERE c.nutzer_id = :user_id
+          AND c.datum >= :starts_at
+          AND c.datum < :expires_at
+          AND c.eisdiele_id IN ({$shopIdSql})");
+    $stmt->execute([
+        ':user_id' => $userId,
+        ':starts_at' => (string) $selfRide['starts_at'],
+        ':expires_at' => (string) $selfRide['expires_at'],
+    ]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function event2026_stamp_card_award_payload(PDO $pdo, int $userId, string $routeKey): ?array
+{
+    $awardLevel = event2026_stamp_card_award_level_for_route($routeKey);
+    if ($awardLevel === null) {
+        return null;
+    }
+
+    $stmt = $pdo->prepare("SELECT
+            ua.awarded_at,
+            al.award_id,
+            al.level,
+            al.icon_path,
+            al.title_de,
+            al.description_de,
+            al.ep
+        FROM user_awards ua
+        JOIN award_levels al
+          ON al.award_id = ua.award_id
+         AND al.level = ua.level
+        WHERE ua.user_id = :user_id
+          AND ua.award_id = :award_id
+          AND ua.level = :level
+        LIMIT 1");
+    $stmt->execute([
+        ':user_id' => $userId,
+        ':award_id' => Event2026CompletionEvaluator::AWARD_ID,
+        ':level' => $awardLevel,
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+
+    return [
+        'award_id' => (int) $row['award_id'],
+        'level' => (int) $row['level'],
+        'title' => (string) ($row['title_de'] ?? ''),
+        'message' => (string) ($row['description_de'] ?? ''),
+        'icon' => $row['icon_path'] ?? null,
+        'ep' => (int) ($row['ep'] ?? 0),
+        'awarded_at' => (string) $row['awarded_at'],
+    ];
+}
 
 try {
     event2026_ensure_schema($pdo);
@@ -168,6 +297,24 @@ try {
         ];
     }
 
+    $newAwards = [];
+    $levelChange = ['level_up' => false];
+    if ($mode === 'self_ride') {
+        $newAwards = (new Event2026CompletionEvaluator('self_ride', (int) $selfRide['id']))->evaluate((int) $auth['user_id']);
+        $levelChange = !empty($newAwards)
+            ? updateUserLevelIfChanged($pdo, (int) $auth['user_id'])
+            : ['level_up' => false];
+    }
+    $selfRideAward = $mode === 'self_ride'
+        ? event2026_stamp_card_award_payload($pdo, (int) $auth['user_id'], $routeKey)
+        : null;
+    $selfRideRequiredCheckins = $mode === 'self_ride'
+        ? event2026_stamp_card_self_ride_required_checkins($routeKey)
+        : 0;
+    $selfRideCheckinCount = $mode === 'self_ride'
+        ? event2026_stamp_card_self_ride_checkin_count($pdo, (int) $auth['user_id'], $selfRide, $routeKey)
+        : 0;
+
     echo json_encode([
         'status' => 'success',
         'mode' => $mode,
@@ -206,10 +353,20 @@ try {
             'ride_date' => (string) $selfRide['ride_date'],
             'starts_at' => (string) $selfRide['starts_at'],
             'expires_at' => (string) $selfRide['expires_at'],
-            'required_checkins' => event2026_self_ride_required_checkins($routeKey),
+            'required_checkins' => $selfRideRequiredCheckins,
+            'checkins_passed' => $selfRideCheckinCount,
+            'checkins_required' => $selfRideRequiredCheckins,
+            'checkins_complete' => $selfRideCheckinCount >= $selfRideRequiredCheckins,
             'order_free' => true,
             'gps_only' => true,
+            'status' => (string) ($selfRide['status'] ?? ''),
+            'completed_at' => $selfRide['completed_at'] ?? null,
+            'award' => $selfRideAward,
         ] : null,
+        'new_awards' => $newAwards,
+        'level_up' => $levelChange['level_up'] ?? false,
+        'new_level' => !empty($levelChange['level_up']) ? $levelChange['new_level'] : null,
+        'level_name' => !empty($levelChange['level_up']) ? $levelChange['level_name'] : null,
         'sync' => [
             'server_time' => gmdate('c'),
             'gps_radius_m' => 300,

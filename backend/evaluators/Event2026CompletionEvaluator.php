@@ -3,7 +3,7 @@ require_once __DIR__ . '/BaseAwardEvaluator.php';
 require_once __DIR__ . '/../event2026/bootstrap.php';
 
 class Event2026CompletionEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 62;
+    const AWARD_ID = 66;
     const SPECIAL_LEVEL = 4;
     const DEFAULT_SPECIAL_THRESHOLD = 8;
 
@@ -231,8 +231,8 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
     private function getSelfRideCheckinProgress(int $userId, array $selfRide, string $routeKey): array {
         global $pdo;
 
-        $requiredCheckins = event2026_self_ride_required_checkins($routeKey);
-        $shopIds = event2026_self_ride_route_shop_ids($routeKey);
+        $requiredCheckins = $this->getSelfRideRequiredCheckins($routeKey);
+        $shopIds = $this->getSelfRideRouteShopIds($routeKey);
         if (empty($shopIds)) {
             return [
                 'total' => $requiredCheckins,
@@ -260,6 +260,50 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
             'passed' => $checkinCount,
             'is_finisher' => $checkinCount >= $requiredCheckins,
         ];
+    }
+
+    private function getSelfRideRequiredCheckins(string $routeKey): int {
+        if (function_exists('event2026_self_ride_required_checkins')) {
+            return event2026_self_ride_required_checkins($routeKey);
+        }
+
+        switch (event2026_normalize_route_key($routeKey)) {
+            case 'epic_4':
+                return 4;
+            case 'classic_3':
+                return 3;
+            case 'family_2':
+            default:
+                return 2;
+        }
+    }
+
+    private function getSelfRideRouteShopIds(string $routeKey): array {
+        if (function_exists('event2026_self_ride_route_shop_ids')) {
+            return event2026_self_ride_route_shop_ids($routeKey);
+        }
+
+        $normalizedRouteKey = event2026_normalize_route_key($routeKey);
+        $checkpointShopIds = [];
+        if (function_exists('event2026_live_checkpoint_shop_config')) {
+            foreach (event2026_live_checkpoint_shop_config() as $shopId => $config) {
+                $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
+                if (event2026_route_applies_to_checkpoint($normalizedRouteKey, $routeKeysCsv)) {
+                    $checkpointShopIds[] = (int) $shopId;
+                }
+            }
+        }
+
+        $alternateShopIdsByRoute = [
+            'family_2' => [293, 356, 145, 111],
+            'classic_3' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491],
+            'epic_4' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491, 22, 58, 114, 205],
+        ];
+
+        return array_values(array_unique(array_merge(
+            $checkpointShopIds,
+            $alternateShopIdsByRoute[$normalizedRouteKey] ?? []
+        )));
     }
 
     private function markSelfRideCompleted(int $selfRideId): void {

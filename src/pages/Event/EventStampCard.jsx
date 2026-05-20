@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Compass,
+  Download,
   ExternalLink,
   Flag,
   IceCreamBowl,
@@ -26,8 +27,21 @@ import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
 import Seo from "../../components/Seo";
 import NewAwards from "../../components/NewAwards";
-import { EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
+import { EVENT_PAYMENT_PAYPAL_ADDRESS, EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
 import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
+import { getAwardIconSources, handleAwardIconFallback } from "../../utils/awardIcons";
+import { EVENT_ROUTE_RESOURCES } from "./eventParticipantInfoConfig";
+import route70Gpx from "./Ice-Tour_70km.gpx?raw";
+import route140Gpx from "./Ice-Tour_140km.gpx?raw";
+import route180Gpx from "./Ice-Tour_180km.gpx?raw";
+
+const ROUTE_GPX_CONTENT = {
+  family_2: route70Gpx,
+  classic_3: route140Gpx,
+  epic_4: route180Gpx,
+};
+
+const PAYPAL_DONATION_URL = `https://www.paypal.com/donate/?business=${encodeURIComponent(EVENT_PAYMENT_PAYPAL_ADDRESS)}&currency_code=EUR`;
 
 const Page = styled.div`
   min-height: 100vh;
@@ -206,7 +220,9 @@ const ProgressTrack = styled.div`
 const ProgressFill = styled.div`
   height: 100%;
   width: ${({ $value }) => `${$value}%`};
-  background: linear-gradient(90deg, #ffb522 0%, #ffd978 100%);
+  background: ${({ $tone }) => ($tone === "checkins"
+    ? "linear-gradient(90deg, #16a34a 0%, #86efac 100%)"
+    : "linear-gradient(90deg, #ffb522 0%, #ffd978 100%)")};
 `;
 
 const ProgressText = styled.div`
@@ -679,6 +695,56 @@ const InlineLink = styled(Link)`
   box-sizing: border-box;
 `;
 
+const InlineAnchor = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  gap: 0.45rem;
+  min-height: 42px;
+  border-radius: 13px;
+  border: 1px solid #ecd49b;
+  background: #fff5df;
+  color: #2f2100;
+  text-decoration: none;
+  font-weight: 800;
+  padding: 0.72rem 0.9rem;
+  box-sizing: border-box;
+`;
+
+const CompleteCard = styled(Card)`
+  border-color: rgba(34, 197, 94, 0.34);
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.72), rgba(255, 253, 249, 0.98));
+`;
+
+const AwardRow = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: center;
+  margin-top: 0.75rem;
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const AwardIcon = styled.img`
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(34, 197, 94, 0.24);
+`;
+
+const DonateHint = styled.p`
+  margin: 0.5rem 0 0;
+  color: #166534;
+  line-height: 1.45;
+  font-weight: 700;
+`;
+
 export default function EventStampCard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, authToken, userId, username } = useUser();
@@ -706,6 +772,7 @@ export default function EventStampCard() {
   const [scanContext, setScanContext] = useState(null);
   const [newAwards, setNewAwards] = useState([]);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const [gpxDownloadUrl, setGpxDownloadUrl] = useState("");
   const queryScanKeyRef = useRef("");
   const pendingScanKeyRef = useRef("");
 
@@ -759,6 +826,16 @@ export default function EventStampCard() {
         }
         if (!cancelled) {
           setData(json);
+          if (Array.isArray(json.new_awards) && json.new_awards.length > 0 && typeof window !== "undefined") {
+            setNewAwards(json.new_awards);
+            window.dispatchEvent(new CustomEvent("new-awards", { detail: json.new_awards }));
+          }
+          if (json.level_up) {
+            setLevelUpInfo({
+              level: json.new_level,
+              level_name: json.level_name,
+            });
+          }
         }
       })
       .catch((fetchError) => {
@@ -844,6 +921,14 @@ export default function EventStampCard() {
 
   const completedMandatoryCount = mandatoryPrimaryCheckpoints.filter(isCheckpointComplete).length;
   const requiredSelfRideCheckins = Number(data?.self_ride?.required_checkins || 0);
+  const completedSelfRideCheckins = Number(data?.self_ride?.checkins_passed || 0);
+  const selfRideCheckinRatio = requiredSelfRideCheckins
+    ? Math.round((Math.min(completedSelfRideCheckins, requiredSelfRideCheckins) / requiredSelfRideCheckins) * 100)
+    : 0;
+  const routeResources = data?.slot?.route_key ? (EVENT_ROUTE_RESOURCES[data.slot.route_key] || {}) : {};
+  const routeGpxContent = data?.slot?.route_key ? (ROUTE_GPX_CONTENT[data.slot.route_key] || "") : "";
+  const selfRideAward = data?.self_ride?.award || null;
+  const selfRideAwardIconSources = getAwardIconSources(selfRideAward?.icon, 512);
   const finishUnlocked = isSelfRide || mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
   const pendingCount = pendingActions.filter((item) => item.mode === mode).length;
   const progressRatio = mandatoryPrimaryCheckpoints.length
@@ -852,6 +937,19 @@ export default function EventStampCard() {
   const startFinishDistance = locationState.coords
     ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, startFinish.lat, startFinish.lng)
     : null;
+
+  useEffect(() => {
+    if (!routeGpxContent || typeof Blob === "undefined" || typeof URL === "undefined") {
+      setGpxDownloadUrl("");
+      return undefined;
+    }
+
+    const blob = new Blob([routeGpxContent], { type: "application/gpx+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    setGpxDownloadUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [routeGpxContent]);
 
   const storePendingQrScan = (scan) => {
     const nextScan = {
@@ -1404,7 +1502,11 @@ export default function EventStampCard() {
         </CardActions>
 
         {!gpsReady && !passed && !locked && (
-          <MetaText>GPS-Stempel ist erst im 300-m-Umkreis aktiv. Wenn GPS nicht mitspielt, nutze den QR-Code.</MetaText>
+          <MetaText>
+            {isSelfRide
+              ? "GPS-Stempel ist erst im 300-m-Umkreis aktiv."
+              : "GPS-Stempel ist erst im 300-m-Umkreis aktiv. Wenn GPS nicht mitspielt, nutze den QR-Code."}
+          </MetaText>
         )}
         {!passed && !stampingEnabled && (
           <MetaText>{stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet."}</MetaText>
@@ -1477,6 +1579,16 @@ export default function EventStampCard() {
                 </ProgressTrack>
                 <ProgressText>{completedMandatoryCount} / {mandatoryPrimaryCheckpoints.length} Pflichtstopps</ProgressText>
               </ProgressBar>
+              {isSelfRide && (
+                <ProgressBar>
+                  <ProgressTrack>
+                    <ProgressFill $value={selfRideCheckinRatio} $tone="checkins" />
+                  </ProgressTrack>
+                  <ProgressText>
+                    {Math.min(completedSelfRideCheckins, requiredSelfRideCheckins)} / {requiredSelfRideCheckins || "-"} Check-ins
+                  </ProgressText>
+                </ProgressBar>
+              )}
             </>
           ) : (
             <IdentityGrid>
@@ -1552,6 +1664,59 @@ export default function EventStampCard() {
         {!isLoggedIn && !scanContext && <Card><SectionText style={{ margin: 0 }}>Bitte logge dich ein, um deine Event-Stempelkarte zu öffnen.</SectionText></Card>}
         {loading && <Card><SectionText style={{ margin: 0 }}>Stempelkarte wird geladen...</SectionText></Card>}
         {error && <Card><MessageBox $tone="error" style={{ marginTop: 0 }}>{error}</MessageBox></Card>}
+
+        {!loading && !error && data && isSelfRide && (
+          <Card>
+            <SectionTitle>Route & Navigation</SectionTitle>
+            <SectionText>
+              GPX-Datei und Komoot-Link fuer deine aktuell geplante Selbstfahrer-Strecke.
+            </SectionText>
+            <ActionRow>
+              {gpxDownloadUrl && (
+                <InlineAnchor href={gpxDownloadUrl} download={routeResources.gpxFilename || true}>
+                  <Download size={15} />
+                  GPX herunterladen
+                </InlineAnchor>
+              )}
+              {routeResources.komootUrl && (
+                <InlineAnchor href={routeResources.komootUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={15} />
+                  Komoot oeffnen
+                </InlineAnchor>
+              )}
+            </ActionRow>
+          </Card>
+        )}
+
+        {!loading && !error && data && isSelfRide && selfRideAward && (
+          <CompleteCard>
+            <SectionTitle>{selfRideAward.title || "Self-Ride abgeschlossen"}</SectionTitle>
+            <AwardRow>
+              {selfRideAwardIconSources.src && (
+                <AwardIcon
+                  src={selfRideAwardIconSources.src}
+                  data-fallback-src={selfRideAwardIconSources.fallbackSrc || ""}
+                  onError={handleAwardIconFallback}
+                  alt={selfRideAward.title || "Ice-Tour Award"}
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              <div>
+                <SectionText>{selfRideAward.message || "Dein Self-Ride-Award wurde freigeschaltet."}</SectionText>
+                <DonateHint>
+                  Wenn dir die Ice-Tour gefallen hat, kannst du die Organisation freiwillig unterstuetzen.
+                </DonateHint>
+                <ActionRow>
+                  <InlineAnchor href={PAYPAL_DONATION_URL} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={15} />
+                    Per PayPal spenden
+                  </InlineAnchor>
+                </ActionRow>
+              </div>
+            </AwardRow>
+          </CompleteCard>
+        )}
 
         {!loading && !error && data && (
           <Card>

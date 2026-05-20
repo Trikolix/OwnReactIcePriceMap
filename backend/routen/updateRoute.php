@@ -28,14 +28,15 @@ try {
     $is_admin = ($currentUserId === 1);
     $incomingEisdieleIds = $data['eisdiele_ids'] ?? null;
     $newEisdieleIds = null;
+    $komootShareToken = $url ? getKomootShareToken($url) : '';
     if ($is_admin) {
         if (!isset($data['embed_code']) || $data['embed_code'] === '') {
-            $embed_code = generateEmbedCode($url);
+            $embed_code = generateEmbedCode($url, $komootShareToken);
         } else {
             $embed_code = $data['embed_code'];
         }
     } else {
-        $embed_code = generateEmbedCode($url);
+        $embed_code = generateEmbedCode($url, $komootShareToken);
     }
 
     if (!$route_id || !$currentUserId) {
@@ -51,6 +52,9 @@ try {
             echo json_encode(['status' => 'error', 'message' => 'Ungültige oder nicht unterstützte URL']);
             die();
         }
+        if ($komootShareToken === '') {
+            $komootShareToken = getKomootShareToken($cleanUrl);
+        }
     }
 
     // SQL-Dynamik: nur vorhandene Felder aktualisieren
@@ -60,6 +64,8 @@ try {
     if ($cleanUrl !== null) {
         $fields[] = "url = :url";
         $params['url'] = $cleanUrl;
+        $fields[] = "komoot_share_token = :komoot_share_token";
+        $params['komoot_share_token'] = $komootShareToken !== '' ? $komootShareToken : null;
     }
     if ($beschreibung !== null) {
         $fields[] = "beschreibung = :beschreibung";

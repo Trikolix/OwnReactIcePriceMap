@@ -20,6 +20,7 @@ export const eventRoutes = [
   { path: "/ice-tour-2026.html", element: <Navigate to="/ice-tour" replace /> },
   { path: "/ice-tour-impressionen", element: <EventImpressions /> },
   { path: "/ice-tour-selbst-fahren", element: <EventSelfRide /> },
+  { path: "/ice-tour-selber-fahren", element: <Navigate to="/ice-tour-selbst-fahren" replace /> },
   { path: "/ice-tour-unterstuetzen", element: <EventSupportPage /> },
   { path: "/rad-event", element: <Navigate to="/ice-tour" replace /> },
   { path: "/eis-tour", element: <Navigate to="/ice-tour" replace /> },

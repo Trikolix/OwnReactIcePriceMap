@@ -23,17 +23,18 @@ try {
     $eisdieleIdsInput = $data['eisdiele_ids'] ?? null;
     $url = $data['url'] ?? null;
     $typ = $data['typ'] ?? null;
+    $komootShareToken = $url ? getKomootShareToken($url) : '';
 
     // Optional: Nur Admins dürfen Embed-Code mitgeben
     $is_admin = ($currentUserId === 1);
     if ($is_admin) {
         if (!isset($data['embed_code']) || $data['embed_code'] === '') {
-            $embed_code = generateEmbedCode($url);
+            $embed_code = generateEmbedCode($url, $komootShareToken);
         } else {
             $embed_code = $data['embed_code'];
         }
     } else {
-        $embed_code = generateEmbedCode($url);
+        $embed_code = generateEmbedCode($url, $komootShareToken);
     }
 
      // Zusatzdaten
@@ -85,11 +86,15 @@ try {
         die();
     }
 
+    if ($komootShareToken === '') {
+        $komootShareToken = getKomootShareToken($cleanUrl);
+    }
+
     // SQL-Abfrage vorbereiten
     $sql = "INSERT INTO routen
-        (eisdiele_id, nutzer_id, url, embed_code, beschreibung, typ, ist_oeffentlich, name, laenge_km, hoehenmeter, schwierigkeit)
+        (eisdiele_id, nutzer_id, url, komoot_share_token, embed_code, beschreibung, typ, ist_oeffentlich, name, laenge_km, hoehenmeter, schwierigkeit)
         VALUES
-        (:eisdiele_id, :nutzer_id, :url, :embed_code, :beschreibung, :typ, :ist_oeffentlich, :name, :laenge_km, :hoehenmeter, :schwierigkeit)";
+        (:eisdiele_id, :nutzer_id, :url, :komoot_share_token, :embed_code, :beschreibung, :typ, :ist_oeffentlich, :name, :laenge_km, :hoehenmeter, :schwierigkeit)";
 
     $pdo->beginTransaction();
 
@@ -98,6 +103,7 @@ try {
         'eisdiele_id' => $primaryEisdieleId,
         'nutzer_id' => $currentUserId,
         'url' => $cleanUrl,
+        'komoot_share_token' => $komootShareToken !== '' ? $komootShareToken : null,
         'embed_code' => $embed_code,
         'beschreibung' => $beschreibung,
         'typ' => $typ,

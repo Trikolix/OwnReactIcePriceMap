@@ -1,6 +1,23 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
+function event2026_self_ride_payload_required_checkins(string $routeKey): int
+{
+    if (function_exists('event2026_self_ride_required_checkins')) {
+        return event2026_self_ride_required_checkins($routeKey);
+    }
+
+    switch (event2026_normalize_route_key($routeKey)) {
+        case 'epic_4':
+            return 4;
+        case 'classic_3':
+            return 3;
+        case 'family_2':
+        default:
+            return 2;
+    }
+}
+
 function event2026_self_ride_payload(PDO $pdo, array $event, int $userId): array
 {
     $eventId = (int) $event['id'];
@@ -51,7 +68,7 @@ function event2026_self_ride_payload(PDO $pdo, array $event, int $userId): array
                 'distance_km' => (int) $route['distance_km'],
                 'elevation_m' => (int) $route['elevation_m'],
                 'stops' => (int) $route['stops'],
-                'required_checkins' => event2026_self_ride_required_checkins($route['key']),
+                'required_checkins' => event2026_self_ride_payload_required_checkins($route['key']),
                 'route_type' => $route['route_type'],
             ];
         }, event2026_route_catalog())),

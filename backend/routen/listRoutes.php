@@ -109,6 +109,7 @@ try {
                r.hoehenmeter,
                r.schwierigkeit,
                r.url,
+               r.komoot_share_token,
                r.embed_code,
                r.ist_oeffentlich,
                r.erstellt_am,

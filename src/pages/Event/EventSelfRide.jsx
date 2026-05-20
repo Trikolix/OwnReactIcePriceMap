@@ -1,15 +1,27 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import { Bike, CalendarDays, CheckCircle2, Clock, MapPin, ShieldCheck } from "lucide-react";
+import { Bike, CalendarDays, CheckCircle2, Clock, Download, ExternalLink, MapPin, ShieldCheck } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
 import LoginModal from "../../LoginModal";
 import Seo from "../../components/Seo";
 import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
-import { ROUTE_OPTIONS, formatRouteLabelWithDistance, getRouteTheme } from "./eventConfig";
+import { EVENT_PAYMENT_PAYPAL_ADDRESS, ROUTE_OPTIONS, formatRouteLabelWithDistance, getRouteTheme } from "./eventConfig";
 import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
+import { EVENT_ROUTE_RESOURCES } from "./eventParticipantInfoConfig";
+import route70Gpx from "./Ice-Tour_70km.gpx?raw";
+import route140Gpx from "./Ice-Tour_140km.gpx?raw";
+import route180Gpx from "./Ice-Tour_180km.gpx?raw";
+
+const ROUTE_GPX_CONTENT = {
+  family_2: route70Gpx,
+  classic_3: route140Gpx,
+  epic_4: route180Gpx,
+};
+
+const PAYPAL_DONATION_URL = `https://www.paypal.com/donate/?business=${encodeURIComponent(EVENT_PAYMENT_PAYPAL_ADDRESS)}&currency_code=EUR`;
 
 function getRequiredCheckins(routeKey) {
   if (routeKey === "epic_4") return 4;
@@ -20,7 +32,7 @@ function getRequiredCheckins(routeKey) {
 export default function EventSelfRide() {
   const { isLoggedIn, authToken, userId, username, login } = useUser();
   const apiBase = getApiBaseUrl();
-  const isSelfRideAdmin = Number(userId) === 1;
+  const isSelfRideEnabled = true;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,17 +41,20 @@ export default function EventSelfRide() {
   const [state, setState] = useState(null);
   const [routeKey, setRouteKey] = useState("family_2");
   const [rideDate, setRideDate] = useState("");
+  const [gpxDownloadUrl, setGpxDownloadUrl] = useState("");
 
   const selectedRoute = useMemo(
     () => ROUTE_OPTIONS.find((route) => route.key === routeKey) || ROUTE_OPTIONS[0],
     [routeKey]
   );
+  const selectedRouteResources = EVENT_ROUTE_RESOURCES[selectedRoute.key] || {};
+  const selectedRouteGpx = ROUTE_GPX_CONTENT[selectedRoute.key] || "";
 
   const todayRide = state?.today_ride || null;
   const plannedRides = state?.rides || [];
 
   const loadState = () => {
-    if (!isLoggedIn || !apiBase || !isSelfRideAdmin) return;
+    if (!isLoggedIn || !apiBase || !isSelfRideEnabled) return;
     setLoading(true);
     setError("");
     fetch(`${apiBase}/event2026/self_ride.php`, {
@@ -64,7 +79,20 @@ export default function EventSelfRide() {
 
   useEffect(() => {
     loadState();
-  }, [isLoggedIn, apiBase, authToken, isSelfRideAdmin]);
+  }, [isLoggedIn, apiBase, authToken, isSelfRideEnabled]);
+
+  useEffect(() => {
+    if (!selectedRouteGpx || typeof Blob === "undefined" || typeof URL === "undefined") {
+      setGpxDownloadUrl("");
+      return undefined;
+    }
+
+    const blob = new Blob([selectedRouteGpx], { type: "application/gpx+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    setGpxDownloadUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [selectedRouteGpx]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -72,7 +100,7 @@ export default function EventSelfRide() {
       setShowLoginModal(true);
       return;
     }
-    if (!isSelfRideAdmin) {
+    if (!isSelfRideEnabled) {
       setError("Die Selbstfahrer-Funktion ist aktuell nur für den Admin freigeschaltet.");
       return;
     }
@@ -117,6 +145,8 @@ export default function EventSelfRide() {
             Wähle eine Strecke und einen Tag. Am gewählten Datum wird deine GPS-Stempelkarte freigeschaltet.
             Keine Startgebühr, keine Gratis-Kugel, keine QR-Codes vor Ort: einfach losfahren, normal Eis essen gehen
             alle Pflichtstempel plus je nach Strecke mindestens 2, 3 oder 4 Ice-App-Check-ins innerhalb von 24 Stunden sammeln.
+            Durch die unterschiedlichen Öffnungszeiten der Eisdielen, kannst du deine Check-ins auch bei anderen Eisdielen auf deiner Route sammeln,
+            du musst aber zumindest bei  jedem der offiziellen Stopps einmal kurz anhalten um deine Stempelkarte zu füllen.
           </p>
         </Hero>
 
@@ -126,7 +156,7 @@ export default function EventSelfRide() {
             <SectionText>Die Selbstfahrer-Stempelkarte ist an dein Ice-App Konto gebunden.</SectionText>
             <Button type="button" onClick={() => setShowLoginModal(true)}>Einloggen</Button>
           </Card>
-        ) : !isSelfRideAdmin ? (
+        ) : !isSelfRideEnabled ? (
           <Card>
             <SectionTitle>Noch nicht freigeschaltet</SectionTitle>
             <SectionText>Die Selbstfahrer-Funktion ist aktuell nur für den Admin freigeschaltet.</SectionText>
@@ -136,7 +166,7 @@ export default function EventSelfRide() {
             <Card>
               <SectionTitle>Tour planen</SectionTitle>
               <SectionText>
-                Du kannst heute oder bis zu 14 Tage im Voraus planen. Pro Tag ist eine Ice-Tour Selbstfahrer-Strecke aktiv.
+                Du kannst heute oder bis zu 14 Tage im Voraus planen. Es ist nur eine Ice-Tour Selbstfahrer-Strecke pro Tag möglich.
               </SectionText>
               <Form onSubmit={handleSubmit}>
                 <RouteGrid>
@@ -174,6 +204,24 @@ export default function EventSelfRide() {
                   <small>{getRequiredCheckins(selectedRoute.key)} Check-ins im 24h-Fenster für den Award</small>
                 </SummaryBox>
 
+                <RouteResourceBox>
+                  <strong>Navigation für diese Strecke</strong>
+                  <ResourceActions>
+                    {gpxDownloadUrl && (
+                      <ActionLink href={gpxDownloadUrl} download={selectedRouteResources.gpxFilename || true}>
+                        <Download size={16} />
+                        GPX herunterladen
+                      </ActionLink>
+                    )}
+                    {selectedRouteResources.komootUrl && (
+                      <ActionLink href={selectedRouteResources.komootUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={16} />
+                        Komoot öffnen
+                      </ActionLink>
+                    )}
+                  </ResourceActions>
+                </RouteResourceBox>
+
                 <Button type="submit" disabled={saving || !rideDate}>
                   {saving ? "Wird gespeichert..." : "Selbstfahrer-Tour planen"}
                 </Button>
@@ -192,7 +240,21 @@ export default function EventSelfRide() {
                 <SectionText>
                   Deine GPS-Stempelkarte ist heute aktiv. Die Reihenfolge ist frei, der Award wird nach allen Pflichtstempeln und deinen Ice-App-Check-ins im 24h-Fenster geprüft.
                 </SectionText>
-                <ButtonLink to="/event-stamp-card?mode=self_ride">Stempelkarte öffnen</ButtonLink>
+                <ResourceActions>
+                  <ButtonLink to="/event-stamp-card?mode=self_ride">Stempelkarte öffnen</ButtonLink>
+                  {gpxDownloadUrl && (
+                    <ActionLink href={gpxDownloadUrl} download={selectedRouteResources.gpxFilename || true}>
+                      <Download size={16} />
+                      GPX
+                    </ActionLink>
+                  )}
+                  {selectedRouteResources.komootUrl && (
+                    <ActionLink href={selectedRouteResources.komootUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink size={16} />
+                      Komoot
+                    </ActionLink>
+                  )}
+                </ResourceActions>
               </HighlightCard>
             )}
 
@@ -215,11 +277,22 @@ export default function EventSelfRide() {
               <SectionTitle>Regeln</SectionTitle>
               <RuleList>
                 <li><ShieldCheck size={16} /> Checkpoints zählen nur per GPS-Standort im Umkreis von 300 Metern.</li>
-                <li><ShieldCheck size={16} /> QR-Codes sind für die Selbstfahrer-Variante deaktiviert.</li>
-                <li><ShieldCheck size={16} /> Die Reihenfolge ist egal, es gibt keinen gesperrten Schluss-Checkpoint.</li>
-                <li><ShieldCheck size={16} /> Für den Award brauchst du alle Pflichtstempel deiner Strecke und zusätzlich mindestens 2 Check-ins auf der Genussrunde, 3 Check-ins auf der Sport-Route oder 4 Check-ins auf der Königsrunde.</li>
+                <li><ShieldCheck size={16} /> Es gibt keine alternativen QR-Codes um die Stempelkarte zu füllen.</li>
+                <li><ShieldCheck size={16} /> Die Reihenfolge ist egal, du kannst überall entlang der Strecke starten und enden.</li>
+                <li><ShieldCheck size={16} /> Für den Award brauchst du alle Pflichtstempel deiner Strecke und zusätzlich mindestens 2, 3 bzw. 4 Check-ins je nachdem ob du die Genussrunde, die Sport-Route oder die Königsrunde fährst.</li>
                 <li><ShieldCheck size={16} /> Es zählen auch Check-ins bei anderen Eisdielen auf deiner Route, falls ein offizieller Ice-Tour-Stopp nicht geöffnet hat.</li>
               </RuleList>
+            </Card>
+
+            <Card>
+              <SectionTitle>Support</SectionTitle>
+              <SectionText>
+                Die Selbstfahrer-Variante ist kostenlos. Wenn dir die Ice-Tour gefallen hat, kannst du die Organisation freiwillig unterstützen.
+              </SectionText>
+              <ActionLink href={PAYPAL_DONATION_URL} target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={16} />
+                Per PayPal spenden
+              </ActionLink>
             </Card>
           </>
         )}
@@ -409,6 +482,38 @@ const ButtonLink = styled(Link)`
   color: #fff8ea;
   text-decoration: none;
   font-weight: 900;
+`;
+
+const ActionLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  border-radius: 13px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e4c16f;
+  background: #fff8ea;
+  color: #2f2100;
+  text-decoration: none;
+  font-weight: 900;
+`;
+
+const RouteResourceBox = styled.div`
+  display: grid;
+  gap: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid rgba(235, 193, 106, 0.42);
+  background: #fffaf1;
+  padding: 0.8rem;
+  color: #2f2100;
+`;
+
+const ResourceActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
 `;
 
 const InlineLink = styled(Link)`

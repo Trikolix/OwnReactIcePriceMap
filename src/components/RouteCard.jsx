@@ -79,14 +79,14 @@ const buildRouteEmbedMarkup = (route) => {
 
   const iframeSrc = extractIframeSrc(embedCode);
   const tourId = getKomootTourId(routeUrl) || getKomootTourId(iframeSrc);
-  const shareToken = getShareToken(routeUrl) || getShareToken(iframeSrc) || getShareToken(embedCode);
+  const shareToken = route.komoot_share_token || getShareToken(routeUrl) || getShareToken(iframeSrc) || getShareToken(embedCode);
 
   if (!tourId || !shareToken) {
     return "";
   }
 
   const src = `https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}&layout=map`;
-  return `<iframe src="${src}" width="100%" height="360" frameborder="0" scrolling="no"></iframe>`;
+  return `<iframe src="${src}" width="100%" height="440" frameborder="0" scrolling="no"></iframe>`;
 };
 
 const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false, focusCommentId = null }) => {

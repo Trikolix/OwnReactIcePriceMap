@@ -32,6 +32,7 @@ CREATE TABLE `routen` (
   `eisdiele_id` int NOT NULL,
   `nutzer_id` int NOT NULL,
   `url` varchar(500) COLLATE utf8mb4_general_ci NOT NULL,
+  `komoot_share_token` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `embed_code` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `beschreibung` text COLLATE utf8mb4_general_ci,
