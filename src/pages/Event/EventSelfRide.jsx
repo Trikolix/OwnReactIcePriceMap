@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Bike, CalendarDays, CheckCircle2, Clock, Download, ExternalLink, MapPin, ShieldCheck } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -31,6 +31,7 @@ function getRequiredCheckins(routeKey) {
 
 export default function EventSelfRide() {
   const { isLoggedIn, authToken, userId, username, login } = useUser();
+  const navigate = useNavigate();
   const apiBase = getApiBaseUrl();
   const isSelfRideEnabled = true;
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -82,6 +83,12 @@ export default function EventSelfRide() {
   }, [isLoggedIn, apiBase, authToken, isSelfRideEnabled]);
 
   useEffect(() => {
+    if (todayRide?.stamping_open) {
+      navigate("/event-stamp-card?mode=self_ride", { replace: true });
+    }
+  }, [navigate, todayRide?.stamping_open]);
+
+  useEffect(() => {
     if (!selectedRouteGpx || typeof Blob === "undefined" || typeof URL === "undefined") {
       setGpxDownloadUrl("");
       return undefined;
@@ -122,6 +129,10 @@ export default function EventSelfRide() {
         throw new Error(getEventAccessErrorMessage(response.status, json?.message || "Tour konnte nicht geplant werden."));
       }
       setState(json);
+      if (json.today_ride?.stamping_open) {
+        navigate("/event-stamp-card?mode=self_ride", { replace: true });
+        return;
+      }
       setMessage("Deine Ice-Tour Selbstfahrer-Strecke ist geplant.");
     } catch (err) {
       setError(err.message || "Tour konnte nicht geplant werden.");

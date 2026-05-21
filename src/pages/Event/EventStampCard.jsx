@@ -334,6 +334,53 @@ const MessageBox = styled.div`
   line-height: 1.45;
 `;
 
+const StampReadyNotice = styled.div`
+  position: sticky;
+  top: 0.6rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.8rem 0 0;
+  padding: 0.72rem;
+  border-radius: 16px;
+  border: 1px solid rgba(34, 197, 94, 0.34);
+  background: rgba(240, 253, 244, 0.96);
+  box-shadow: 0 12px 28px rgba(22, 101, 52, 0.12);
+  color: #166534;
+
+  strong {
+    display: block;
+    line-height: 1.15;
+    color: #14532d;
+  }
+
+  span {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  @media (max-width: 640px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+const NoticeActions = styled.div`
+  display: flex;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+
+  @media (max-width: 640px) {
+    > button {
+      flex: 1;
+    }
+  }
+`;
+
 const PENDING_KEY = "event2026_pending_stamp_actions_v1";
 const PENDING_SCAN_KEY = "event2026_pending_qr_scan_v1";
 
@@ -563,6 +610,8 @@ const CheckpointCard = styled.article`
       ? "#f4fff6"
       : "#fffdf8")};
   padding: 0.9rem;
+  scroll-margin-top: 0.8rem;
+  box-shadow: ${({ $highlight, $passed }) => ($highlight && !$passed ? "0 0 0 3px rgba(255, 181, 34, 0.18), 0 16px 34px rgba(124, 79, 0, 0.12)" : "none")};
 `;
 
 const HeadRow = styled.div`
@@ -775,6 +824,8 @@ export default function EventStampCard() {
   const [gpxDownloadUrl, setGpxDownloadUrl] = useState("");
   const queryScanKeyRef = useRef("");
   const pendingScanKeyRef = useRef("");
+  const checkpointRefs = useRef(new Map());
+  const lastAutoFocusedCheckpointRef = useRef(null);
 
   const queryScan = useMemo(() => {
     if (!searchParams.get("scan")) return null;
@@ -937,6 +988,35 @@ export default function EventStampCard() {
   const startFinishDistance = locationState.coords
     ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, startFinish.lat, startFinish.lng)
     : null;
+  const activeStampableCheckpoint = useMemo(() => {
+    if (!stampingEnabled) return null;
+    const candidates = !isSelfRide && finishCheckpoint
+      ? [...primaryCheckpoints, finishCheckpoint]
+      : primaryCheckpoints;
+    return candidates.find((checkpoint) => {
+      if (isCheckpointComplete(checkpoint)) return false;
+      if (checkpoint.distanceMeters === null || checkpoint.distanceMeters > 300) return false;
+      if (!isSelfRide && isFinishCheckpoint(checkpoint, startFinish) && !finishUnlocked) return false;
+      return true;
+    }) || null;
+  }, [finishCheckpoint, finishUnlocked, isSelfRide, primaryCheckpoints, stampingEnabled, startFinish]);
+
+  const scrollToCheckpoint = (checkpointId) => {
+    const node = checkpointRefs.current.get(Number(checkpointId));
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  useEffect(() => {
+    if (!activeStampableCheckpoint?.id) {
+      return;
+    }
+    if (lastAutoFocusedCheckpointRef.current === activeStampableCheckpoint.id) {
+      return;
+    }
+    lastAutoFocusedCheckpointRef.current = activeStampableCheckpoint.id;
+    window.setTimeout(() => scrollToCheckpoint(activeStampableCheckpoint.id), 250);
+  }, [activeStampableCheckpoint?.id]);
 
   useEffect(() => {
     if (!routeGpxContent || typeof Blob === "undefined" || typeof URL === "undefined") {
@@ -1387,7 +1467,18 @@ export default function EventStampCard() {
         : null;
 
     return (
-      <CheckpointCard key={`${mode}-${checkpoint.id}`} $highlight={options.highlight} $passed={passed}>
+      <CheckpointCard
+        key={`${mode}-${checkpoint.id}`}
+        ref={(node) => {
+          if (node) {
+            checkpointRefs.current.set(Number(checkpoint.id), node);
+          } else {
+            checkpointRefs.current.delete(Number(checkpoint.id));
+          }
+        }}
+        $highlight={options.highlight}
+        $passed={passed}
+      >
         <HeadRow>
           <NameWrap>
             <CheckpointName>{checkpoint.name}</CheckpointName>
@@ -1659,6 +1750,22 @@ export default function EventStampCard() {
             </MessageBox>
           )}
           {message && <MessageBox $tone={message.tone}>{message.text}</MessageBox>}
+          {activeStampableCheckpoint && (
+            <StampReadyNotice>
+              <div>
+                <strong>Du bist am Checkpoint</strong>
+                <span>{activeStampableCheckpoint.shop_name || activeStampableCheckpoint.name}: Stempeln ist jetzt möglich.</span>
+              </div>
+              <NoticeActions>
+                <Button type="button" $secondary onClick={() => scrollToCheckpoint(activeStampableCheckpoint.id)}>
+                  Anzeigen
+                </Button>
+                <Button type="button" onClick={() => handleGpsStamp(activeStampableCheckpoint, false)}>
+                  Stempeln
+                </Button>
+              </NoticeActions>
+            </StampReadyNotice>
+          )}
         </PassCard>
 
         {!isLoggedIn && !scanContext && <Card><SectionText style={{ margin: 0 }}>Bitte logge dich ein, um deine Event-Stempelkarte zu öffnen.</SectionText></Card>}
@@ -1728,7 +1835,9 @@ export default function EventStampCard() {
             </SectionText>
             <CheckpointList>
               {primaryCheckpoints.length > 0
-                ? primaryCheckpoints.map((checkpoint) => renderCheckpointCard(checkpoint))
+                ? primaryCheckpoints.map((checkpoint) => renderCheckpointCard(checkpoint, {
+                  highlight: activeStampableCheckpoint?.id === checkpoint.id,
+                }))
                 : <SectionText>Für diesen Modus sind aktuell keine routenrelevanten Checkpoints hinterlegt.</SectionText>}
               {!isSelfRide && finishCheckpoint && renderCheckpointCard(finishCheckpoint, {
                 highlight: true,

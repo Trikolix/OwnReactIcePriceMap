@@ -13,6 +13,7 @@ import PushOptInOverlay from './components/PushOptInOverlay';
 import CookieBanner from './components/CookieBanner';
 import GuestMotivation from './components/GuestMotivation';
 import MatomoTracker from './components/MatomoTracker';
+import ActiveSelfRideCta from './pages/Event/ActiveSelfRideCta';
 
 
 const allRoutes = [
@@ -45,6 +46,7 @@ const App = () => {
         <AppUpdateBanner />
         <CookieBanner />
         <GuestMotivation />
+        <ActiveSelfRideCta />
         <Routes>
           {allRoutes.map((routeDef) => (
             <Route key={routeDef.path} path={routeDef.path} element={routeDef.element} />
