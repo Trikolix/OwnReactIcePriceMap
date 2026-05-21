@@ -244,7 +244,7 @@ export default function PushOptInOverlay() {
           </SecondaryLink>
           <SecondaryButton type="button" onClick={handleRemindLater}>
             <Clock3 size={17} />
-            Spaeter erinnern
+            Später erinnern
           </SecondaryButton>
           <QuietButton type="button" onClick={handleDismiss}>
             <XCircle size={17} />

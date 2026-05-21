@@ -185,6 +185,15 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       <Overlay>
         <CloseButton onClick={onClose}>&times;</CloseButton>
 
+        <MainHeading>Aktionen & Ergebnisse</MainHeading>
+
+        {activeCampaigns.length > 0 && (
+          <CampaignsBlock>
+            <CategoryHeading>Laufende Events</CategoryHeading>
+            {activeCampaigns.map(renderCampaignPanel)}
+          </CampaignsBlock>
+        )}
+
         <SectionTitle>Nutzer/in des Monats</SectionTitle>
         {isUserOfMonthLoading ? (
           <Hint>Lade Nutzer/innen des Monats...</Hint>
@@ -219,15 +228,6 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                 </CardGrid>
               </>
             )}
-          </>
-        )}
-
-        <MainHeading>Aktionen & Ergebnisse</MainHeading>
-
-        {activeCampaigns.length > 0 && (
-          <>
-            <CategoryHeading>Laufende Events</CategoryHeading>
-            {activeCampaigns.map(renderCampaignPanel)}
           </>
         )}
 
@@ -445,6 +445,10 @@ const MainHeading = styled.h2`
 const CategoryHeading = styled.h3`
   margin: 1.2rem 0 0.4rem;
   text-align: left;
+`;
+
+const CampaignsBlock = styled.div`
+  margin-bottom: 2rem;
 `;
 
 const SubTitle = styled.h4`

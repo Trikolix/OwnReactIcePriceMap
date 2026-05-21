@@ -25,6 +25,7 @@ require_once __DIR__ . '/../evaluators/MembershipYearsEvaluator.php';
 require_once __DIR__ . '/../evaluators/FavoriteShopCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/ProfileAvatarEvaluator.php';
 require_once __DIR__ . '/../evaluators/SummerCampaignEvaluator.php';
+require_once __DIR__ . '/../evaluators/SummerQrCountEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
 
 $authData = requireAuth($pdo);
@@ -68,6 +69,7 @@ try {
         new FavoriteShopCountEvaluator(),
         new ProfileAvatarEvaluator(),
         new SummerCampaignEvaluator(),
+        new SummerQrCountEvaluator(),
         // weitere Evaluatoren können hier ergänzt werden
     ];
  

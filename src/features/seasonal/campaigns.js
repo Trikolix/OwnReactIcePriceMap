@@ -109,7 +109,7 @@ export const seasonalCampaignDefinitions = [
     kind: 'campaign',
     teaserIcon: '/assets/summer_action_logo2.png',
     schedule: {
-      start: new Date('2026-06-01T00:00:00+02:00'),
+      start: new Date('2026-05-01T00:00:00+02:00'),
       endExclusive: new Date('2026-10-01T00:00:00+02:00'),
     },
     api: {

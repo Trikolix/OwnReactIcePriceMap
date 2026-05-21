@@ -49,6 +49,15 @@ const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
   const shops = state.data?.shops || [];
   const summary = state.data?.summary || { total: 0, collected: 0, missing: 0, checkins: 0 };
   const completion = summary.total > 0 ? Math.round((summary.collected / summary.total) * 100) : 0;
+  const getShopCategories = (shop) => {
+    if (Array.isArray(shop?.categories) && shop.categories.length > 0) {
+      return shop.categories.map((category) => String(category).trim()).filter(Boolean);
+    }
+    return String(shop?.category || '')
+      .split(/[,;\n]+/)
+      .map((category) => category.trim())
+      .filter(Boolean);
+  };
 
   return (
     <PanelSection>
@@ -144,9 +153,9 @@ const SummerCampaignPanel = ({ campaign, isLoggedIn, onLogin }) => {
             </DetailStatus>
             <DetailSection>
               <DetailLabel>Kategorien</DetailLabel>
-              {selectedShop.categories?.length > 0 ? (
+              {getShopCategories(selectedShop).length > 0 ? (
                 <DetailPills>
-                  {selectedShop.categories.map((category) => <DetailPill key={category}>{category}</DetailPill>)}
+                  {getShopCategories(selectedShop).map((category) => <DetailPill key={category}>{category}</DetailPill>)}
                 </DetailPills>
               ) : (
                 <DetailMeta>Keine Kategorien zugeordnet.</DetailMeta>
