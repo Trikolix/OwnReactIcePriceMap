@@ -1681,7 +1681,7 @@ export default function EventStampCard() {
               {routeResources.komootUrl && (
                 <InlineAnchor href={routeResources.komootUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink size={15} />
-                  Komoot oeffnen
+                  Komoot öffnen
                 </InlineAnchor>
               )}
             </ActionRow>

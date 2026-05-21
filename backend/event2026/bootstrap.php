@@ -934,6 +934,17 @@ function event2026_live_stamping_message(array $event): string
         $formattedDate = $rawDate;
     }
 
+    try {
+        $timezone = new DateTimeZone('Europe/Berlin');
+        $availableFrom = new DateTimeImmutable($rawDate . ' 00:00:00', $timezone);
+        $now = new DateTimeImmutable('now', $timezone);
+        if ($now >= $availableFrom->modify('+1 day')) {
+            return sprintf('Die Live-Stempelkarte war nur am Event-Tag (%s) aktiv.', $formattedDate);
+        }
+    } catch (Throwable $e) {
+        // Fall through to the default pre-event message for malformed dates.
+    }
+
     return sprintf('Die Stempelkarte kann erst am Event-Tag (%s) genutzt werden.', $formattedDate);
 }
 
@@ -941,8 +952,9 @@ function event2026_is_live_stamping_open(array $event): bool
 {
     $timezone = new DateTimeZone('Europe/Berlin');
     $availableFrom = new DateTimeImmutable(event2026_live_stamping_available_from($event) . ' 00:00:00', $timezone);
+    $availableUntil = $availableFrom->modify('+1 day');
     $now = new DateTimeImmutable('now', $timezone);
-    return $now >= $availableFrom;
+    return $now >= $availableFrom && $now < $availableUntil;
 }
 
 function event2026_self_ride_date_bounds(): array

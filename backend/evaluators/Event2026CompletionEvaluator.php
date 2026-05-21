@@ -23,6 +23,10 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
         }
 
         $event = event2026_current_event($pdo);
+        if ($this->mode === 'live' && !event2026_is_live_stamping_open($event)) {
+            return [];
+        }
+
         $eventId = (int)$event['id'];
         $slot = $this->mode === 'self_ride'
             ? $this->getSelfRide($eventId, $userId)
@@ -232,22 +236,12 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
         global $pdo;
 
         $requiredCheckins = $this->getSelfRideRequiredCheckins($routeKey);
-        $shopIds = $this->getSelfRideRouteShopIds($routeKey);
-        if (empty($shopIds)) {
-            return [
-                'total' => $requiredCheckins,
-                'passed' => 0,
-                'is_finisher' => false,
-            ];
-        }
-
-        $shopIdSql = implode(',', array_map('intval', $shopIds));
         $stmt = $pdo->prepare("SELECT COUNT(DISTINCT c.id)
             FROM checkins c
             WHERE c.nutzer_id = :userId
               AND c.datum >= :startsAt
               AND c.datum < :expiresAt
-              AND c.eisdiele_id IN ({$shopIdSql})");
+              AND c.eisdiele_id IS NOT NULL");
         $stmt->execute([
             'userId' => $userId,
             'startsAt' => (string)$selfRide['starts_at'],
@@ -276,34 +270,6 @@ class Event2026CompletionEvaluator extends BaseAwardEvaluator {
             default:
                 return 2;
         }
-    }
-
-    private function getSelfRideRouteShopIds(string $routeKey): array {
-        if (function_exists('event2026_self_ride_route_shop_ids')) {
-            return event2026_self_ride_route_shop_ids($routeKey);
-        }
-
-        $normalizedRouteKey = event2026_normalize_route_key($routeKey);
-        $checkpointShopIds = [];
-        if (function_exists('event2026_live_checkpoint_shop_config')) {
-            foreach (event2026_live_checkpoint_shop_config() as $shopId => $config) {
-                $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
-                if (event2026_route_applies_to_checkpoint($normalizedRouteKey, $routeKeysCsv)) {
-                    $checkpointShopIds[] = (int) $shopId;
-                }
-            }
-        }
-
-        $alternateShopIdsByRoute = [
-            'family_2' => [293, 356, 145, 111],
-            'classic_3' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491],
-            'epic_4' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491, 22, 58, 114, 205],
-        ];
-
-        return array_values(array_unique(array_merge(
-            $checkpointShopIds,
-            $alternateShopIdsByRoute[$normalizedRouteKey] ?? []
-        )));
     }
 
     private function markSelfRideCompleted(int $selfRideId): void {

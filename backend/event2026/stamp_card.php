@@ -34,49 +34,14 @@ function event2026_stamp_card_self_ride_required_checkins(string $routeKey): int
     }
 }
 
-function event2026_stamp_card_self_ride_route_shop_ids(string $routeKey): array
+function event2026_stamp_card_self_ride_checkin_count(PDO $pdo, int $userId, array $selfRide): int
 {
-    if (function_exists('event2026_self_ride_route_shop_ids')) {
-        return event2026_self_ride_route_shop_ids($routeKey);
-    }
-
-    $normalizedRouteKey = event2026_normalize_route_key($routeKey);
-    $checkpointShopIds = [];
-    if (function_exists('event2026_live_checkpoint_shop_config')) {
-        foreach (event2026_live_checkpoint_shop_config() as $shopId => $config) {
-            $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
-            if (event2026_route_applies_to_checkpoint($normalizedRouteKey, $routeKeysCsv)) {
-                $checkpointShopIds[] = (int) $shopId;
-            }
-        }
-    }
-
-    $alternateShopIdsByRoute = [
-        'family_2' => [293, 356, 145, 111],
-        'classic_3' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491],
-        'epic_4' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491, 22, 58, 114, 205],
-    ];
-
-    return array_values(array_unique(array_merge(
-        $checkpointShopIds,
-        $alternateShopIdsByRoute[$normalizedRouteKey] ?? []
-    )));
-}
-
-function event2026_stamp_card_self_ride_checkin_count(PDO $pdo, int $userId, array $selfRide, string $routeKey): int
-{
-    $shopIds = event2026_stamp_card_self_ride_route_shop_ids($routeKey);
-    if (empty($shopIds)) {
-        return 0;
-    }
-
-    $shopIdSql = implode(',', array_map('intval', $shopIds));
     $stmt = $pdo->prepare("SELECT COUNT(DISTINCT c.id)
         FROM checkins c
         WHERE c.nutzer_id = :user_id
           AND c.datum >= :starts_at
           AND c.datum < :expires_at
-          AND c.eisdiele_id IN ({$shopIdSql})");
+          AND c.eisdiele_id IS NOT NULL");
     $stmt->execute([
         ':user_id' => $userId,
         ':starts_at' => (string) $selfRide['starts_at'],
@@ -312,7 +277,7 @@ try {
         ? event2026_stamp_card_self_ride_required_checkins($routeKey)
         : 0;
     $selfRideCheckinCount = $mode === 'self_ride'
-        ? event2026_stamp_card_self_ride_checkin_count($pdo, (int) $auth['user_id'], $selfRide, $routeKey)
+        ? event2026_stamp_card_self_ride_checkin_count($pdo, (int) $auth['user_id'], $selfRide)
         : 0;
 
     echo json_encode([
