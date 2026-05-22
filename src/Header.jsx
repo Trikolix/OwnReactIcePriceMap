@@ -1027,7 +1027,7 @@ const HeaderRight = styled.div`
 const AccountCluster = styled.div`
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 48px;
   background: rgba(255, 255, 255, 0.65);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1052,12 +1052,13 @@ const NotificationBellWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 42px;
-  min-height: 40px;
+  min-width: 48px;
+  min-height: 48px;
   color: #2f2100;
   padding: 0 2px 0 4px;
 
   @media (max-width: 768px) {
+    min-width: 42px;
     min-height: 42px;
     height: 42px;
   }
@@ -1073,7 +1074,7 @@ const UserStatusLink = styled(Link)`
   border-radius: 14px;
   padding: 5px 10px 5px 6px;
   border: 1px solid transparent;
-  min-height: 40px;
+  min-height: 48px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.35);
@@ -1087,8 +1088,8 @@ const UserStatusLink = styled(Link)`
 `;
 
 const UserStatusAvatar = styled.div`
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #2f2100;
   color: #fff;
@@ -1104,6 +1105,11 @@ const UserStatusAvatar = styled.div`
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  @media (max-width: 768px) {
+    width: 28px;
+    height: 28px;
   }
 `;
 
@@ -1140,8 +1146,8 @@ const LoginHeaderButton = styled.button`
   color: #2f2100;
   border-radius: 12px;
   padding: 0 12px;
-  min-height: 42px;
-  height: 42px;
+  min-height: 48px;
+  height: 48px;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -1158,6 +1164,8 @@ const LoginHeaderButton = styled.button`
   @media (max-width: 520px) {
     width: 42px;
     min-width: 42px;
+    min-height: 42px;
+    height: 42px;
     padding: 0;
 
     .login-icon {
@@ -1181,8 +1189,8 @@ const BurgerMenu = styled.button`
   background: rgba(255, 255, 255, 0.52);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 12px;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
@@ -1195,6 +1203,11 @@ const BurgerMenu = styled.button`
 
   &:hover {
     background: rgba(255, 255, 255, 0.78);
+  }
+
+  @media (max-width: 768px) {
+    width: 42px;
+    height: 42px;
   }
 `;
 

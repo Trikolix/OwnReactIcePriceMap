@@ -11,10 +11,13 @@ import { EVENT_IS_RETROSPECTIVE, EVENT_LIVE_NAV_ENABLED, EVENT_REGISTRATION_NAV_
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
   const [hasEventRegistration, setHasEventRegistration] = useState(() => localStorage.getItem("event2026_has_registration") === "1");
   const menuRef = useRef(null);
+  const menuTriggerRef = useRef(null);
+  const accountMenuRef = useRef(null);
   const { userId, username, isLoggedIn, login, logout } = useUser();
   const isAdmin = Number(userId) === 1;
   const apiUrl = getApiBaseUrl();
@@ -23,12 +26,17 @@ export default function Header() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      const clickedInsideMenu = menuRef.current?.contains(event.target);
+      const clickedMenuTrigger = menuTriggerRef.current?.contains(event.target);
+      if (!clickedInsideMenu && !clickedMenuTrigger) {
         setMenuOpen(false);
+      }
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target)) {
+        setAccountMenuOpen(false);
       }
     };
 
-    if (menuOpen) {
+    if (menuOpen || accountMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -37,7 +45,7 @@ export default function Header() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [menuOpen]);
+  }, [accountMenuOpen, menuOpen]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -107,14 +115,28 @@ export default function Header() {
   return (
     <>
       <HeaderContainer>
-        <BrandCenter to="/ice-tour" onClick={() => setMenuOpen(false)}>
+        <BrandCenter
+          to="/ice-tour"
+          onClick={() => {
+            setMenuOpen(false);
+            setAccountMenuOpen(false);
+          }}
+        >
           <Logo src={iceTourLogo} alt="Ice-Tour" />
         </BrandCenter>
 
         <HeaderRight>
           {isLoggedIn ? (
-            <AccountCluster>
-              <UserStatusLink to={!EVENT_IS_RETROSPECTIVE && hasEventRegistration ? "/event-me" : "/ice-tour-impressionen"} onClick={() => setMenuOpen(false)}>
+            <AccountCluster ref={accountMenuRef}>
+              <UserStatusButton
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
+                onClick={() => {
+                  setAccountMenuOpen((prev) => !prev);
+                  setMenuOpen(false);
+                }}
+              >
                 <UserStatusAvatar aria-hidden="true">
                   {headerAvatarSrc ? <img src={headerAvatarSrc} alt="" /> : (username || "?").slice(0, 1).toUpperCase()}
                 </UserStatusAvatar>
@@ -122,7 +144,39 @@ export default function Header() {
                   <UserStatusLabel>Eingeloggt</UserStatusLabel>
                   <UserStatusName>{username || `Nutzer ${userId}`}</UserStatusName>
                 </UserStatusText>
-              </UserStatusLink>
+              </UserStatusButton>
+
+              {accountMenuOpen && (
+                <AccountMenu role="menu">
+                  <AccountMenuLink
+                    to={`/user/${userId}`}
+                    role="menuitem"
+                    onClick={() => setAccountMenuOpen(false)}
+                  >
+                    Zum Profil
+                  </AccountMenuLink>
+                  {!EVENT_IS_RETROSPECTIVE && hasEventRegistration && (
+                    <AccountMenuLink
+                      to="/event-me"
+                      role="menuitem"
+                      onClick={() => setAccountMenuOpen(false)}
+                    >
+                      Teilnehmerbereich
+                    </AccountMenuLink>
+                  )}
+                  <AccountMenuButton
+                    type="button"
+                    role="menuitem"
+                    $danger
+                    onClick={() => {
+                      logout();
+                      setAccountMenuOpen(false);
+                    }}
+                  >
+                    Ausloggen
+                  </AccountMenuButton>
+                </AccountMenu>
+              )}
             </AccountCluster>
           ) : (
             <LoginHeaderButton
@@ -130,6 +184,7 @@ export default function Header() {
               aria-label="Einloggen"
               onClick={() => {
                 setShowLoginModal(true);
+                setAccountMenuOpen(false);
                 setMenuOpen(false);
               }}
             >
@@ -139,10 +194,14 @@ export default function Header() {
           )}
 
           <BurgerMenu
+            ref={menuTriggerRef}
             type="button"
             aria-label={menuOpen ? "Menü schließen" : "Menü öffnen"}
             aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((prev) => !prev)}
+            onClick={() => {
+              setMenuOpen((prev) => !prev);
+              setAccountMenuOpen(false);
+            }}
           >
             <span />
             <span />
@@ -308,39 +367,111 @@ const HeaderRight = styled.div`
 `;
 
 const AccountCluster = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 48px;
   background: rgba(255, 255, 255, 0.65);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   @media (max-width: 768px) {
+    min-height: 42px;
+    height: 42px;
     max-width: calc(100vw - 160px);
   }
 `;
 
-const UserStatusLink = styled(Link)`
+const UserStatusButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  text-decoration: none;
   color: #2f2100;
   background: transparent;
   border-radius: 14px;
   padding: 5px 10px 5px 6px;
   border: 1px solid transparent;
-  min-height: 40px;
+  min-height: 48px;
+  font-family: inherit;
+  cursor: pointer;
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     background: rgba(255, 255, 255, 0.35);
+    outline: none;
+  }
+
+  @media (max-width: 768px) {
+    min-height: 42px;
+    height: 42px;
+    padding: 0 8px 0 6px;
   }
 `;
 
+const AccountMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1003;
+  width: min(220px, calc(100vw - 24px));
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(47, 33, 0, 0.12);
+  background: rgba(255, 252, 243, 0.98);
+  box-shadow: 0 14px 30px rgba(28, 20, 0, 0.18);
+  color: #2f2100;
+`;
+
+const accountMenuItemBase = `
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #2f2100;
+  font-family: inherit;
+  font-size: 0.93rem;
+  font-weight: 750;
+  line-height: 1.2;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(255, 181, 34, 0.18);
+    color: #231900;
+    outline: none;
+  }
+`;
+
+const AccountMenuLink = styled(Link)`
+  ${accountMenuItemBase}
+`;
+
+const AccountMenuButton = styled.button`
+  ${accountMenuItemBase}
+  ${({ $danger }) =>
+    $danger
+      ? `
+    color: #9f1f1f;
+    &:hover,
+    &:focus-visible {
+      background: rgba(220, 38, 38, 0.10);
+      color: #861313;
+    }
+  `
+      : ""}
+`;
+
 const UserStatusAvatar = styled.div`
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #2f2100;
   color: #fff;
@@ -356,6 +487,11 @@ const UserStatusAvatar = styled.div`
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  @media (max-width: 768px) {
+    width: 28px;
+    height: 28px;
   }
 `;
 
@@ -392,8 +528,8 @@ const LoginHeaderButton = styled.button`
   color: #2f2100;
   border-radius: 12px;
   padding: 0 12px;
-  min-height: 42px;
-  height: 42px;
+  min-height: 48px;
+  height: 48px;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -410,6 +546,8 @@ const LoginHeaderButton = styled.button`
   @media (max-width: 520px) {
     width: 42px;
     min-width: 42px;
+    min-height: 42px;
+    height: 42px;
     padding: 0;
 
     .login-icon {
@@ -433,8 +571,8 @@ const BurgerMenu = styled.button`
   background: rgba(255, 255, 255, 0.52);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 12px;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
@@ -448,11 +586,16 @@ const BurgerMenu = styled.button`
   &:hover {
     background: rgba(255, 255, 255, 0.78);
   }
+
+  @media (max-width: 768px) {
+    width: 42px;
+    height: 42px;
+  }
 `;
 
 const Menu = styled.nav`
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(50% + 32px);
   right: 16px;
   width: min(360px, calc(100vw - 24px));
   box-sizing: border-box;
@@ -466,6 +609,11 @@ const Menu = styled.nav`
   box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
   z-index: 1002;
   color: #2f2100;
+
+  @media (max-width: 768px) {
+    top: calc(50% + 29px);
+    right: 8px;
+  }
 `;
 
 const MenuSection = styled.div`
