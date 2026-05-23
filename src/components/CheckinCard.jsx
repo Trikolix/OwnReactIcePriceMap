@@ -10,6 +10,7 @@ import CommentSection from "./CommentSection";
 import { Modal } from "./Modal";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
 import UserAvatar from "./UserAvatar";
+import MentionFormatter from "./MentionFormatter";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focusCommentId = null }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -127,7 +128,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
               </ArrivalInfo>
             )}
 
-            {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
+            {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}><MentionFormatter text={checkin.kommentar} /></p>}
             {Number(checkin.nutzer_id) === Number(userId) && (
               <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
             )}

@@ -24,6 +24,7 @@ import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
 import ChallengesAwarded from "./components/ChallengesAwarded";
+import MentionTextarea from "./components/MentionTextarea";
 import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES, MAX_UPLOAD_BYTES } from "./utils/imageUtils";
@@ -720,11 +721,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
                         <Section>
                             <Label>Kommentar</Label>
-                            <Textarea
+                            <MentionTextarea
                                 rows="5"
                                 value={kommentar}
                                 placeholder="Beschreibe wie dein Eis geschmeckt hat. Was hat dich überzeugt, wo ist Verbesserungspotential?"
                                 onChange={(e) => setKommentar(e.target.value)}
+                                padding="1rem"
+                                borderRadius="12px"
+                                border="1px solid rgba(47, 33, 0, 0.2)"
                             />
                         </Section>
                         <Section>

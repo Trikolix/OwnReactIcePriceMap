@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import styled, { css } from "styled-components";
 import { useUser } from "../context/UserContext";
+import MentionFormatter from "./MentionFormatter";
 import { Link } from "react-router-dom";
 import SubmitRouteForm from "../SubmitRouteModal";
 import { Card } from "../styles/SharedStyles";
@@ -229,7 +230,7 @@ return (
           </AuthorInfo>
         </HeaderRow>
 
-        {route.beschreibung && <Description>{route.beschreibung}</Description>}
+        {route.beschreibung && <Description><MentionFormatter text={route.beschreibung} /></Description>}
 
         <StatsRow>
           <Stat>

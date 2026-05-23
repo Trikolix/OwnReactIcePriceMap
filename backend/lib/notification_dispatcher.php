@@ -161,6 +161,8 @@ function notificationTypeToSettingField(string $type): string
             return 'notify_news';
         case 'photo_challenge':
             return 'notify_photo_challenge';
+        case 'mention':
+            return 'notify_mention';
         case 'kommentar':
         case 'kommentar_bewertung':
         case 'kommentar_route':
@@ -190,6 +192,8 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
             notify_team_challenge_push,
             notify_photo_challenge,
             notify_photo_challenge_push,
+            notify_mention,
+            notify_mention_push,
             push_enabled_web,
             push_enabled_android
         FROM user_notification_settings
@@ -216,6 +220,8 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
         'notify_team_challenge_push' => 1,
         'notify_photo_challenge' => 1,
         'notify_photo_challenge_push' => 1,
+        'notify_mention' => 1,
+        'notify_mention_push' => 1,
         'push_enabled_web' => 0,
         'push_enabled_android' => 0,
     ];
@@ -329,6 +335,10 @@ function buildNotificationDeeplink(array $notification): ?string
             return '/challenge';
         case 'photo_challenge':
             return '/photo-challenge/' . (int)$notification['referenz_id'];
+        case 'mention':
+            return $recipientId > 0
+                ? '/user/' . $recipientId . '?mentionNotificationId=' . (int)$notification['id']
+                : null;
         case 'checkin_mention':
             return $recipientId > 0
                 ? '/user/' . $recipientId . '?mentionNotificationId=' . (int)$notification['id']

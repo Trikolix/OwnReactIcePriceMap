@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/notification_dispatcher.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
+require_once __DIR__ . '/../lib/mention_utils.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
 require_once __DIR__ . '/../lib/external_shop_discovery.php';
 require_once __DIR__ . '/../lib/user_notification_settings.php';
@@ -569,6 +570,11 @@ try {
 
     // -------------------------
     // Sorten (Eissorten) speichern
+    // Process text mentions in the comment
+    if (!empty($kommentar)) {
+        processTextMentions($pdo, $kommentar, $userId, 'checkin', $checkinId, ['eisdiele_id' => $shopId, 'checkin_id' => $checkinId]);
+    }
+
     // Wir speichern die Sorten nur, wenn zuvor ein gültiger $checkinId
     // erstellt wurde. Falls $checkinId ungültig wäre, wäre das Insert eine
     // Verletzung der Foreign Key Constraint und würde Exceptions verursachen.

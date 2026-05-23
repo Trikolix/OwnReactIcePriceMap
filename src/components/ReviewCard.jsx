@@ -7,6 +7,7 @@ import CommentSection from "./CommentSection";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from "../styles/SharedStyles";
 import UserAvatar from "./UserAvatar";
 import { MessageCircle } from "lucide-react";
+import MentionFormatter from "./MentionFormatter";
 import SubmitReviewModal from "../SubmitReviewModal";
 
 const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false, focusCommentId = null }) => {
@@ -80,7 +81,7 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
               )}
             </Table>
 
-            {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
+            {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}><MentionFormatter text={review.beschreibung} /></p>}
 
             {review.attributes?.length > 0 && (
               <AttributeSection>

@@ -130,7 +130,16 @@ function calculateStreakStats(array $dateRows): array
 
 ensureUserProfileColumns($pdo);
 
-$nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
+$nutzerParam = $_GET['nutzer_id'] ?? '';
+if (strpos($nutzerParam, '@') === 0) {
+    $username = substr($nutzerParam, 1);
+    $stmt = $pdo->prepare("SELECT id FROM nutzer WHERE username = ? LIMIT 1");
+    $stmt->execute([$username]);
+    $nutzerId = (int)$stmt->fetchColumn();
+} else {
+    $nutzerId = (int)$nutzerParam;
+}
+
 $curUserId = intval($_GET['cur_user_id']);
 
 // Nutzername ermitteln

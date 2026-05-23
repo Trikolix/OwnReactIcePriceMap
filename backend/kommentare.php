@@ -4,6 +4,7 @@ require_once __DIR__ . '/lib/notification_dispatcher.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/comment_registration.php';
 require_once __DIR__ . '/lib/comment_award.php';
+require_once __DIR__ . '/lib/mention_utils.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -117,6 +118,19 @@ function createKommentar($pdo, $currentUserId) {
     } elseif ($userAwardId) {
         ensureAwardCommentNotificationSupport($pdo);
         handleUserAwardKommentarBenachrichtigungen($pdo, $userAwardId, $currentUserId, $kommentarId);
+    }
+
+    // Process mentions in the comment text
+    if ($checkinId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'checkin_kommentar', $checkinId, ['kommentar_id' => $kommentarId]);
+    } elseif ($bewertungId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'bewertung_kommentar', $bewertungId, ['kommentar_id' => $kommentarId]);
+    } elseif ($routeId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'route_kommentar', $routeId, ['kommentar_id' => $kommentarId]);
+    } elseif ($userRegistrationId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'user_registration_kommentar', $userRegistrationId, ['kommentar_id' => $kommentarId]);
+    } elseif ($userAwardId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'user_award_kommentar', $userAwardId, ['kommentar_id' => $kommentarId]);
     }
 
     echo json_encode([
@@ -625,11 +639,11 @@ function updateKommentar($pdo, $currentUserId) {
     }
 
     // Sicherheit: nur eigene Kommentare bearbeiten
-    $stmt = $pdo->prepare("SELECT nutzer_id FROM kommentare WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT * FROM kommentare WHERE id = ?");
     $stmt->execute([$kommentarId]);
-    $autorId = $stmt->fetchColumn();
+    $kommentarRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($autorId != $currentUserId) {
+    if (!$kommentarRow || $kommentarRow['nutzer_id'] != $currentUserId) {
         http_response_code(403);
         echo json_encode([
             "status" => "error",
@@ -640,6 +654,25 @@ function updateKommentar($pdo, $currentUserId) {
 
     $stmt = $pdo->prepare("UPDATE kommentare SET kommentar = ? WHERE id = ?");
     $stmt->execute([$kommentar, $kommentarId]);
+
+    // Process mentions for the updated text
+    $checkinId = $kommentarRow['checkin_id'];
+    $bewertungId = $kommentarRow['bewertung_id'];
+    $routeId = $kommentarRow['route_id'];
+    $userRegistrationId = $kommentarRow['user_registration_id'] ?? null;
+    $userAwardId = $kommentarRow['user_award_id'] ?? null;
+
+    if ($checkinId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'checkin_kommentar', $checkinId, ['kommentar_id' => $kommentarId]);
+    } elseif ($bewertungId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'bewertung_kommentar', $bewertungId, ['kommentar_id' => $kommentarId]);
+    } elseif ($routeId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'route_kommentar', $routeId, ['kommentar_id' => $kommentarId]);
+    } elseif ($userRegistrationId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'user_registration_kommentar', $userRegistrationId, ['kommentar_id' => $kommentarId]);
+    } elseif ($userAwardId) {
+        processTextMentions($pdo, $kommentar, $currentUserId, 'user_award_kommentar', $userAwardId, ['kommentar_id' => $kommentarId]);
+    }
 
     echo json_encode(["status" => "success"]);
 }

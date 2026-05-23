@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Overlay, Modal, CloseButton, Heading, Label, Input, Textarea, Select, ButtonGroup, SubmitButton, DeleteButton, Message, LevelInfo } from './styles/SharedStyles';
 import { useUser } from './context/UserContext';
 import NewAwards from "./components/NewAwards";
+import MentionTextarea from "./components/MentionTextarea";
 
 const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRoute = null, onSuccess }) => {
 
@@ -412,11 +413,14 @@ const SubmitRouteForm = ({ showForm, setShowForm, shopId, shopName, existingRout
 
                     <FieldLabel>
                         Beschreibung:
-                        <TextArea
+                        <MentionTextarea
                             rows={3}
                             value={beschreibung}
                             onChange={(e) => setBeschreibung(e.target.value)}
                             placeholder="Hier kannst du deine Route beschreiben."
+                            padding="12px"
+                            borderRadius="12px"
+                            border="1px solid rgba(47, 33, 0, 0.2)"
                         />
                     </FieldLabel>
 

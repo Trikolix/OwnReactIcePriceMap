@@ -3,6 +3,8 @@ import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
 import LoginModal from "../LoginModal";
+import MentionTextarea from "./MentionTextarea";
+import MentionFormatter from "../components/MentionFormatter";
 
 // type: "checkin" | "bewertung" | "route" | "user_registration" | "award"
 const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, userAwardId, type = "checkin", focusCommentId = null, focusLatestComment = false }) => {
@@ -214,7 +216,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                         {editingId === kom.id ? (
                             <>
                                 <InputSection>
-                                    <textarea
+                                    <MentionTextarea
                                         value={editingText}
                                         onChange={(e) => setEditingText(e.target.value)}
                                     />
@@ -237,7 +239,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                             <KommentarText>
                                 {kom.kommentar.split("\n").map((line, i) => (
                                     <span key={i}>
-                                        {line}
+                                        <MentionFormatter text={line} />
                                         <br />
                                     </span>
                                 ))}
@@ -260,7 +262,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
 
             {isLoggedIn ? (
             <InputSection>
-                <textarea
+                <MentionTextarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Kommentar schreiben..."
