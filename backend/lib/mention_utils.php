@@ -57,6 +57,7 @@ function processTextMentions(PDO $pdo, ?string $text, int $sourceUserId, string 
                 $notificationText,
                 array_merge($extraData, [
                     'source_user_id' => $sourceUserId,
+                    'reference_id' => $referenceId,
                     'reference_type' => $referenceType
                 ])
             );

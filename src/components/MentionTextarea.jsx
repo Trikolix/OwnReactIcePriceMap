@@ -49,18 +49,53 @@ const SuggestionItem = styled.li`
 const MentionTextarea = ({ value, onChange, placeholder, minHeight, borderRadius, border, padding, rows, className }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [mentionSearch, setMentionSearch] = useState("");
     const [cursorPosition, setCursorPosition] = useState(0);
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const [activeIndex, setActiveIndex] = useState(0);
     const textareaRef = useRef(null);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const getDropdownPosition = () => {
+    const getDropdownPosition = (text, targetIndex) => {
         if (!textareaRef.current) return { top: 0, left: 0 };
+
+        const ta = textareaRef.current;
+        const div = document.createElement('div');
+        const computed = window.getComputedStyle(ta);
+
+        for (const prop of computed) {
+            div.style[prop] = computed[prop];
+        }
+
+        div.style.position = 'absolute';
+        div.style.visibility = 'hidden';
+        div.style.whiteSpace = 'pre-wrap';
+        div.style.wordWrap = 'break-word';
+        div.style.overflowWrap = computed.overflowWrap;
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.overflow = 'hidden';
+        div.style.width = `${ta.clientWidth}px`;
+        div.style.height = 'auto';
+
+        div.textContent = text.slice(0, targetIndex);
+        const span = document.createElement('span');
+        span.textContent = text[targetIndex] || '.';
+        div.appendChild(span);
+
+        document.body.appendChild(div);
+
+        const lineHeight = Number.parseFloat(computed.lineHeight)
+            || Number.parseFloat(computed.fontSize) * 1.2
+            || 20;
+        const topPos = span.offsetTop + lineHeight - ta.scrollTop;
+        const leftPos = span.offsetLeft - ta.scrollLeft;
+        document.body.removeChild(div);
+
+        const dropdownWidth = 220;
+
         return {
-            top: textareaRef.current.offsetHeight + 5,
-            left: 0
+            top: Math.min(topPos, ta.offsetHeight),
+            left: Math.max(0, Math.min(leftPos, ta.offsetWidth - dropdownWidth))
         };
     };
 
@@ -91,12 +126,12 @@ const MentionTextarea = ({ value, onChange, placeholder, minHeight, borderRadius
         setCursorPosition(pos);
 
         const textBeforeCursor = val.slice(0, pos);
-        const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_.-]*)$/);
+        const match = textBeforeCursor.match(/(^|\s)@([a-zA-Z0-9_.-]*)$/);
 
         if (match) {
-            const search = match[1];
-            setMentionSearch(search);
-            setDropdownPos(getDropdownPosition());
+            const search = match[2];
+            const atIndex = match.index + match[1].length;
+            setDropdownPos(getDropdownPosition(val, atIndex));
 
             if (search.length >= 2) {
                 try {
@@ -124,7 +159,7 @@ const MentionTextarea = ({ value, onChange, placeholder, minHeight, borderRadius
         const textBeforeCursor = value.slice(0, cursorPosition);
         const textAfterCursor = value.slice(cursorPosition);
 
-        const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_.-]*)$/);
+        const match = textBeforeCursor.match(/(^|\s)@([a-zA-Z0-9_.-]*)$/);
         if (match) {
             const mentionText = `@${user.username} `;
             const matchString = match[0];

@@ -49,7 +49,7 @@ class IceSummerEvaluator extends BaseAwardEvaluator {
 
         // Set the parameters
         $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-        $startDate = "$year-06-01 00:00:00";
+        $startDate = "$year-05-01 00:00:00";
         $endDate = "$year-08-31 23:59:59";
         $stmt->bindParam(':startDate', $startDate);
         $stmt->bindParam(':endDate', $endDate);

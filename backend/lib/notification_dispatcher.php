@@ -10,6 +10,7 @@ function ensurePushInfrastructureSchema(PDO $pdo): void
     $GLOBALS['__push_infrastructure_schema_initialized'] = true;
 
     ensureUserNotificationSettingsSchema($pdo);
+    ensureNotificationTypeSchema($pdo);
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS web_push_subscriptions (
@@ -74,6 +75,36 @@ function ensurePushInfrastructureSchema(PDO $pdo): void
     ");
 
     $initialized = true;
+}
+
+function ensureNotificationTypeSchema(PDO $pdo): void
+{
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM benachrichtigungen LIKE 'typ'");
+        $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+        $type = (string)($column['Type'] ?? '');
+        if ($type && strpos($type, "'mention'") === false) {
+            $pdo->exec("
+                ALTER TABLE benachrichtigungen
+                MODIFY COLUMN typ ENUM(
+                    'kommentar',
+                    'new_user',
+                    'systemmeldung',
+                    'kommentar_bewertung',
+                    'checkin_mention',
+                    'kommentar_route',
+                    'kommentar_new_user',
+                    'team_challenge',
+                    'engagement',
+                    'photo_challenge',
+                    'kommentar_award',
+                    'mention'
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
+            ");
+        }
+    } catch (Throwable $e) {
+        error_log("Failed to ensure benachrichtigungen.typ supports mention: " . $e->getMessage());
+    }
 }
 
 function pushBase64UrlEncode(string $input): string
@@ -336,6 +367,23 @@ function buildNotificationDeeplink(array $notification): ?string
         case 'photo_challenge':
             return '/photo-challenge/' . (int)$notification['referenz_id'];
         case 'mention':
+            if (isset($data['reference_type'])) {
+                if ($data['reference_type'] === 'checkin_kommentar') {
+                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                } elseif ($data['reference_type'] === 'bewertung_kommentar') {
+                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=reviews&focusReview=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                } elseif ($data['reference_type'] === 'route_kommentar') {
+                    return '/user/' . (int)$data['route_autor_id'] . '?tab=routes&focusRoute=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                } elseif ($data['reference_type'] === 'user_registration_kommentar') {
+                    return '/dashboard?focusNewUser=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                } elseif ($data['reference_type'] === 'user_award_kommentar') {
+                    return '/dashboard?focusAward=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                } elseif ($data['reference_type'] === 'checkin') {
+                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id'];
+                } elseif ($data['reference_type'] === 'route') {
+                    return '/user/' . (int)$data['source_user_id'] . '?tab=routes&focusRoute=' . (int)$notification['referenz_id'];
+                }
+            }
             return $recipientId > 0
                 ? '/user/' . $recipientId . '?mentionNotificationId=' . (int)$notification['id']
                 : null;

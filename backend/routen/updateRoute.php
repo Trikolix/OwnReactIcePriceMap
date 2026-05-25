@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/route_utils.php';
+require_once __DIR__ . '/../lib/mention_utils.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -143,6 +144,23 @@ try {
             $ins->execute([
                 'route_id' => $route_id,
                 'eisdiele_id' => $shopId
+            ]);
+        }
+    }
+
+    if (!empty($beschreibung)) {
+        $mentionShopId = $newEisdieleIds[0] ?? null;
+        if (!$mentionShopId) {
+            $shopStmt = $pdo->prepare("SELECT eisdiele_id FROM routen WHERE id = ? AND nutzer_id = ?");
+            $shopStmt->execute([$route_id, $currentUserId]);
+            $mentionShopId = $shopStmt->fetchColumn();
+        }
+
+        if ($mentionShopId) {
+            processTextMentions($pdo, $beschreibung, $currentUserId, 'route', (int)$route_id, [
+                'eisdiele_id' => (int)$mentionShopId,
+                'route_id' => (int)$route_id,
+                'route_autor_id' => $currentUserId,
             ]);
         }
     }

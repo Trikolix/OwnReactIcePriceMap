@@ -1088,11 +1088,12 @@ function UserSite() {
                     <EmptyState>Noch keine Routen vorhanden.</EmptyState>
                   )}
                   {displayedRoutes.map((route, index) => (
-                    <div
+                    <FocusedFeedItem
                       key={route.id || index}
                       ref={el => {
                         if (route.id) routeRefs.current[route.id] = el;
                       }}
+                      data-focused={String(route.id) === String(focusRouteId)}
                     >
                     <RouteCard
                       route={route}
@@ -1102,7 +1103,7 @@ function UserSite() {
                       showComments={String(route.id) === String(focusRouteId)}
                       focusCommentId={String(route.id) === String(focusRouteId) ? focusCommentId : null}
                     />
-                    </div>
+                    </FocusedFeedItem>
                   ))}
                   {displayedRoutes.length < routes.length && (
                     <LoadMoreButton onClick={loadMoreRoutes}>Mehr Routen laden</LoadMoreButton>
@@ -1860,6 +1861,16 @@ const TabContent = styled.div`
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem;
+`;
+
+const FocusedFeedItem = styled.div`
+  border-radius: 22px;
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+
+  &[data-focused="true"] {
+    background: rgba(255, 181, 34, 0.12);
+    box-shadow: 0 0 0 3px rgba(255, 181, 34, 0.34);
+  }
 `;
 
 const LoadMoreButton = styled.button`

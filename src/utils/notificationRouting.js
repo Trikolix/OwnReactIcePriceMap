@@ -54,6 +54,41 @@ export const buildNotificationDeeplink = (notification, userId) => {
       const targetUserId = userId || notification?.empfaenger_id;
       return targetUserId ? `/user/${targetUserId}?mentionNotificationId=${notification?.id}` : null;
     }
+    case "mention": {
+      const referenceId = data.reference_id || notification?.referenz_id;
+      const commentQuery = data.kommentar_id ? `&focusComment=${data.kommentar_id}` : "";
+
+      switch (data.reference_type) {
+        case "checkin_kommentar":
+          return data.eisdiele_id && referenceId
+            ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${referenceId}${commentQuery}`
+            : null;
+        case "bewertung_kommentar":
+          return data.eisdiele_id && referenceId
+            ? `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${referenceId}${commentQuery}`
+            : null;
+        case "route_kommentar":
+          return data.route_autor_id && referenceId
+            ? `/user/${data.route_autor_id}?tab=routes&focusRoute=${referenceId}${commentQuery}`
+            : null;
+        case "user_registration_kommentar":
+          return referenceId ? `/dashboard?focusNewUser=${referenceId}${commentQuery}` : "/dashboard";
+        case "user_award_kommentar":
+          return referenceId ? `/dashboard?focusAward=${referenceId}${commentQuery}` : "/dashboard";
+        case "checkin":
+          return data.eisdiele_id && referenceId
+            ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${referenceId}`
+            : null;
+        case "route": {
+          const routeOwnerId = data.route_autor_id || data.source_user_id;
+          return routeOwnerId && referenceId
+            ? `/user/${routeOwnerId}?tab=routes&focusRoute=${referenceId}`
+            : null;
+        }
+        default:
+          return null;
+      }
+    }
     default:
       return null;
   }

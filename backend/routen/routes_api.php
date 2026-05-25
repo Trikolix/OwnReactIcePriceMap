@@ -58,7 +58,11 @@ if ($method === 'POST' && $endpoint === 'routes') {
 
         $routeId = (int)$pdo->lastInsertId();
         if (!empty($data['beschreibung'])) {
-            processTextMentions($pdo, $data['beschreibung'], $data['nutzer_id'], 'route', $routeId, ['eisdiele_id' => $data['eisdiele_id'], 'route_id' => $routeId]);
+            processTextMentions($pdo, $data['beschreibung'], $data['nutzer_id'], 'route', $routeId, [
+                'eisdiele_id' => $data['eisdiele_id'],
+                'route_id' => $routeId,
+                'route_autor_id' => $data['nutzer_id'],
+            ]);
         }
 
         // Evaluatoren
@@ -132,7 +136,11 @@ elseif ($method === 'PUT' && $endpoint === 'routes') {
         $stmtMeta->execute([$data['id']]);
         $routeEisdieleId = $stmtMeta->fetchColumn();
         if ($routeEisdieleId) {
-            processTextMentions($pdo, $data['beschreibung'], $data['nutzer_id'], 'route', $data['id'], ['eisdiele_id' => $routeEisdieleId, 'route_id' => $data['id']]);
+            processTextMentions($pdo, $data['beschreibung'], $data['nutzer_id'], 'route', $data['id'], [
+                'eisdiele_id' => $routeEisdieleId,
+                'route_id' => $data['id'],
+                'route_autor_id' => $data['nutzer_id'],
+            ]);
         }
     }
 

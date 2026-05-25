@@ -18,7 +18,7 @@ class IceSeasonEvaluator extends BaseAwardEvaluator {
         ],
         'summer' => [
             'award_id' => self::AWARD_ID_SUMMER,
-            'start_month' => 6,
+            'start_month' => 5,
             'start_day' => 1,
             'end_month' => 9,
             'end_day' => 1,

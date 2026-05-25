@@ -237,11 +237,13 @@ const IceShopDetailPage = () => {
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
   const checkinRefs = useRef({});
   const reviewRefs = useRef({});
+  const routeRefs = useRef({});
 
   const searchParams = new URLSearchParams(location.search);
   const tabParam = searchParams.get('tab');
   const focusCheckinId = searchParams.get('focusCheckin');
   const focusReviewId = searchParams.get('focusReview');
+  const focusRouteId = searchParams.get('focusRoute');
   const focusCommentId = searchParams.get('focusComment');
   const openCheckin = searchParams.get('openCheckin');
 
@@ -331,6 +333,12 @@ const IceShopDetailPage = () => {
       reviewRefs.current[focusReviewId].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [activeFeed, focusReviewId, reviews]);
+
+  useEffect(() => {
+    if (activeFeed === 'routes' && focusRouteId && routeRefs.current[focusRouteId]) {
+      routeRefs.current[focusRouteId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeFeed, focusRouteId, routes]);
 
   const showPreviousPhoto = useCallback(() => {
     if (!photoGallery.length) return;
@@ -860,14 +868,18 @@ const IceShopDetailPage = () => {
               )}
               <FeedList>
                 {checkins.length > 0 ? checkins.slice(0, FEED_BATCH_SIZE).map((checkin) => (
-                  <div key={checkin.id} ref={(el) => { checkinRefs.current[checkin.id] = el; }}>
+                  <FocusedFeedItem
+                    key={checkin.id}
+                    ref={(el) => { checkinRefs.current[checkin.id] = el; }}
+                    data-focused={String(checkin.id) === String(focusCheckinId)}
+                  >
                     <CheckinCard
                       checkin={checkin}
                       onSuccess={refreshShop}
                       showComments={String(checkin.id) === String(focusCheckinId)}
                       focusCommentId={String(checkin.id) === String(focusCheckinId) ? focusCommentId : null}
                     />
-                  </div>
+                  </FocusedFeedItem>
                 )) : <EmptyState>Es wurden noch keine Eis-Besuche eingecheckt.</EmptyState>}
               </FeedList>
             </>
@@ -882,14 +894,18 @@ const IceShopDetailPage = () => {
               )}
               <FeedList>
                 {reviews.length > 0 ? reviews.slice(0, FEED_BATCH_SIZE).map((review) => (
-                  <div key={review.id} ref={(el) => { reviewRefs.current[review.id] = el; }}>
+                  <FocusedFeedItem
+                    key={review.id}
+                    ref={(el) => { reviewRefs.current[review.id] = el; }}
+                    data-focused={String(review.id) === String(focusReviewId)}
+                  >
                     <ReviewCard
                       review={review}
                       setShowReviewForm={setShowReviewForm}
                       showComments={String(review.id) === String(focusReviewId)}
                       focusCommentId={String(review.id) === String(focusReviewId) ? focusCommentId : null}
                     />
-                  </div>
+                  </FocusedFeedItem>
                 )) : <EmptyState>Es wurden noch keine Reviews abgegeben.</EmptyState>}
               </FeedList>
             </>
@@ -924,13 +940,20 @@ const IceShopDetailPage = () => {
               )}
               <FeedList>
                 {routes.length > 0 ? routes.map((route) => (
-                  <RouteCard
+                  <FocusedFeedItem
                     key={route.id}
-                    route={route}
-                    shopId={eisdiele.id}
-                    shopName={eisdiele.name}
-                    onSuccess={refreshShop}
-                  />
+                    ref={(el) => { routeRefs.current[route.id] = el; }}
+                    data-focused={String(route.id) === String(focusRouteId)}
+                  >
+                    <RouteCard
+                      route={route}
+                      shopId={eisdiele.id}
+                      shopName={eisdiele.name}
+                      onSuccess={refreshShop}
+                      showComments={String(route.id) === String(focusRouteId)}
+                      focusCommentId={String(route.id) === String(focusRouteId) ? focusCommentId : null}
+                    />
+                  </FocusedFeedItem>
                 )) : <EmptyState>Es sind noch keine öffentlichen Routen für diese Eisdiele vorhanden.</EmptyState>}
               </FeedList>
             </>
@@ -1617,6 +1640,16 @@ const FeedTab = styled.button`
 const FeedList = styled.div`
   display: grid;
   gap: 0.9rem;
+`;
+
+const FocusedFeedItem = styled.div`
+  border-radius: 22px;
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+
+  &[data-focused="true"] {
+    background: rgba(255, 181, 34, 0.12);
+    box-shadow: 0 0 0 3px rgba(255, 181, 34, 0.34);
+  }
 `;
 
 const LargePhotoGrid = styled.div`

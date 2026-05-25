@@ -5,6 +5,7 @@ require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/route_utils.php';
+require_once __DIR__ . '/../lib/mention_utils.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -124,6 +125,14 @@ try {
         $relStmt->execute([
             'route_id' => $routeId,
             'eisdiele_id' => $shopId
+        ]);
+    }
+
+    if (!empty($beschreibung)) {
+        processTextMentions($pdo, $beschreibung, $currentUserId, 'route', $routeId, [
+            'eisdiele_id' => $primaryEisdieleId,
+            'route_id' => $routeId,
+            'route_autor_id' => $currentUserId,
         ]);
     }
 

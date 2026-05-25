@@ -122,11 +122,20 @@ function createKommentar($pdo, $currentUserId) {
 
     // Process mentions in the comment text
     if ($checkinId) {
-        processTextMentions($pdo, $kommentar, $currentUserId, 'checkin_kommentar', $checkinId, ['kommentar_id' => $kommentarId]);
+        $stmtMeta = $pdo->prepare("SELECT eisdiele_id FROM checkins WHERE id = ?");
+        $stmtMeta->execute([$checkinId]);
+        $metaId = $stmtMeta->fetchColumn();
+        processTextMentions($pdo, $kommentar, $currentUserId, 'checkin_kommentar', $checkinId, ['kommentar_id' => $kommentarId, 'eisdiele_id' => $metaId]);
     } elseif ($bewertungId) {
-        processTextMentions($pdo, $kommentar, $currentUserId, 'bewertung_kommentar', $bewertungId, ['kommentar_id' => $kommentarId]);
+        $stmtMeta = $pdo->prepare("SELECT eisdiele_id FROM bewertungen WHERE id = ?");
+        $stmtMeta->execute([$bewertungId]);
+        $metaId = $stmtMeta->fetchColumn();
+        processTextMentions($pdo, $kommentar, $currentUserId, 'bewertung_kommentar', $bewertungId, ['kommentar_id' => $kommentarId, 'eisdiele_id' => $metaId]);
     } elseif ($routeId) {
-        processTextMentions($pdo, $kommentar, $currentUserId, 'route_kommentar', $routeId, ['kommentar_id' => $kommentarId]);
+        $stmtMeta = $pdo->prepare("SELECT nutzer_id FROM routen WHERE id = ?");
+        $stmtMeta->execute([$routeId]);
+        $metaId = $stmtMeta->fetchColumn();
+        processTextMentions($pdo, $kommentar, $currentUserId, 'route_kommentar', $routeId, ['kommentar_id' => $kommentarId, 'route_autor_id' => $metaId]);
     } elseif ($userRegistrationId) {
         processTextMentions($pdo, $kommentar, $currentUserId, 'user_registration_kommentar', $userRegistrationId, ['kommentar_id' => $kommentarId]);
     } elseif ($userAwardId) {
@@ -663,11 +672,20 @@ function updateKommentar($pdo, $currentUserId) {
     $userAwardId = $kommentarRow['user_award_id'] ?? null;
 
     if ($checkinId) {
-        processTextMentions($pdo, $kommentar, $currentUserId, 'checkin_kommentar', $checkinId, ['kommentar_id' => $kommentarId]);
+        $stmtMeta = $pdo->prepare("SELECT eisdiele_id FROM checkins WHERE id = ?");
+        $stmtMeta->execute([$checkinId]);
+        $metaId = $stmtMeta->fetchColumn();
+        processTextMentions($pdo, $kommentar, $currentUserId, 'checkin_kommentar', $checkinId, ['kommentar_id' => $kommentarId, 'eisdiele_id' => $metaId]);
     } elseif ($bewertungId) {
-        processTextMentions($pdo, $kommentar, $currentUserId, 'bewertung_kommentar', $bewertungId, ['kommentar_id' => $kommentarId]);
+        $stmtMeta = $pdo->prepare("SELECT eisdiele_id FROM bewertungen WHERE id = ?");
+        $stmtMeta->execute([$bewertungId]);
+        $metaId = $stmtMeta->fetchColumn();
+        processTextMentions($pdo, $kommentar, $currentUserId, 'bewertung_kommentar', $bewertungId, ['kommentar_id' => $kommentarId, 'eisdiele_id' => $metaId]);
     } elseif ($routeId) {
-        processTextMentions($pdo, $kommentar, $currentUserId, 'route_kommentar', $routeId, ['kommentar_id' => $kommentarId]);
+        $stmtMeta = $pdo->prepare("SELECT nutzer_id FROM routen WHERE id = ?");
+        $stmtMeta->execute([$routeId]);
+        $metaId = $stmtMeta->fetchColumn();
+        processTextMentions($pdo, $kommentar, $currentUserId, 'route_kommentar', $routeId, ['kommentar_id' => $kommentarId, 'route_autor_id' => $metaId]);
     } elseif ($userRegistrationId) {
         processTextMentions($pdo, $kommentar, $currentUserId, 'user_registration_kommentar', $userRegistrationId, ['kommentar_id' => $kommentarId]);
     } elseif ($userAwardId) {
