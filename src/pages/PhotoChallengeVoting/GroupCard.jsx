@@ -15,7 +15,7 @@ const CountryFlagBadge = ({ country, compact = false }) => {
   );
 };
 
-const GroupCard = ({ group, openGroupModal }) => {
+const GroupCard = ({ group, openGroupModal, showCountryBadges = false }) => {
   const totalMatches = group.matches.length;
   const completedMatches = group.user_votes ?? group.matches.filter((match) => match.has_voted).length;
   const statusVariant = group.status === 'finished' ? 'closed' : group.status === 'upcoming' ? 'upcoming' : 'open';
@@ -47,7 +47,7 @@ const GroupCard = ({ group, openGroupModal }) => {
       {!!previewEntries.length && (
         <S.GroupPreviewStrip>
           {previewEntries.map((entry) => {
-            const country = getPhotoChallengeCountry(entry.title);
+            const country = showCountryBadges ? getPhotoChallengeCountry(entry.title) : null;
             return (
               <S.CountryImageFrame key={entry.image_id}>
                 <S.GroupPreviewThumb

@@ -6,7 +6,8 @@ import { useUser } from '../../context/UserContext';
 import {
   useKoRoundLabel,
   buildAssetUrl,
-  shuffleArray
+  shuffleArray,
+  isWorldCupPhotoChallenge
 } from './utils';
 import * as S from './PhotoChallengeVoting.styles';
 import SubmissionPanel from './SubmissionPanel';
@@ -38,6 +39,7 @@ function PhotoChallengeVoting() {
   const getKoRoundLabel = useKoRoundLabel(overview);
   const requestIdRef = React.useRef(0);
   const challengeFlags = overview?.challenge_flags || {};
+  const showCountryBadges = isWorldCupPhotoChallenge(overview?.challenge);
   const isSubmissionStage = Boolean(
     challengeFlags.submission_is_open_effective || challengeFlags.submission_is_closed_effective
   );
@@ -636,7 +638,11 @@ function PhotoChallengeVoting() {
         )}
 
         {!loading && !isSubmissionStage && activePhase === 'group' && (
-          <Group groups={groupsSorted} openGroupModal={openGroupModal} />
+          <Group
+            groups={groupsSorted}
+            openGroupModal={openGroupModal}
+            showCountryBadges={showCountryBadges}
+          />
         )}
 
         {!loading &&
@@ -663,6 +669,7 @@ function PhotoChallengeVoting() {
           handleModalVote={handleModalVote}
           setImagePreview={setImagePreview}
           isLoggedIn={isLoggedIn}
+          showCountryBadges={showCountryBadges}
         />
 
         <KoModal

@@ -132,3 +132,15 @@ export const getPhotoChallengeCountry = (title) => {
     flagSrcSet: `https://flagcdn.com/w80/${flagCode}.png 1x, https://flagcdn.com/w160/${flagCode}.png 2x`,
   };
 };
+
+export const isWorldCupPhotoChallenge = (challenge) => {
+  const normalizedText = normalizeCountryLabel(`${challenge?.title || ''} ${challenge?.description || ''}`);
+  if (!normalizedText) return false;
+  const tokens = normalizedText.split(/\s+/);
+  return (
+    tokens.includes('wm') ||
+    normalizedText.includes('weltmeisterschaft') ||
+    normalizedText.includes('world cup') ||
+    normalizedText.includes('worldcup')
+  );
+};

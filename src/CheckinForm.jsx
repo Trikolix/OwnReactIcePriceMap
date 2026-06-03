@@ -73,6 +73,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
+    const [priceConfirmationSaving, setPriceConfirmationSaving] = useState(false);
     const [mentionedUsers, setMentionedUsers] = useState([]);
     const [referencedCheckin, setReferencedCheckin] = useState(null);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -498,6 +499,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const confirmPrice = async () => {
         try {
+            setPriceConfirmationSaving(true);
             const response = await fetch(`${apiUrl}/submitPrice.php`, {
                 method: 'POST',
                 headers: {
@@ -519,13 +521,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 return;
             }
 
-            let localAwards = null;
             let maintenanceBonus = 0;
-            data.forEach(element => {
+            let priceSaved = false;
+            for (const element of data) {
                 if (element.typ) {
                     if (element.status === 'success') {
                         onSuccess();
                         setSubmitted(true);
+                        priceSaved = true;
                         setMessage('Preis erfolgreich gemeldet!');
                     } else {
                         setMessage(`Fehler bei Meldung von Preis: ${element.message}`);
@@ -533,21 +536,24 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     }
                 } else if (element.new_awards) {
                     setAwards(element.new_awards);
-                    localAwards = element.new_awards;
                 } else if (element.maintenance_task_resolved?.bonus_ep) {
                     maintenanceBonus = element.maintenance_task_resolved.bonus_ep;
                 }
-            });
+            }
+            if (!priceSaved) {
+                setMessage('Preis erfolgreich gemeldet!');
+            }
             if (maintenanceBonus > 0) {
                 setMessage(`Preis erfolgreich gemeldet! +${maintenanceBonus} Pflege-EP`);
             }
-            if (!localAwards || localAwards.length === 0) {
-                setTimeout(() => {
-                    setShowCheckinForm(false);
-                }, 2000);
-            }
+            setPreisfrage(false);
+            setTimeout(() => {
+                setShowCheckinForm(false);
+            }, 2000);
         } catch (error) {
             setMessage(`Fehler bei Meldung von Preis: ${error.message || 'Ein Fehler ist aufgetreten.'}`);
+        } finally {
+            setPriceConfirmationSaving(false);
         }
     }
 
@@ -835,7 +841,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </p>
                         <ButtonGroup>
                             {(shop.preise?.kugel?.preis || shop.preise?.softeis?.preis) && (
-                                <SubmitButton onClick={confirmPrice}>Stimmt noch</SubmitButton>)}
+                                <SubmitButton onClick={confirmPrice} disabled={priceConfirmationSaving}>
+                                    {priceConfirmationSaving ? "Speichert..." : "Stimmt noch"}
+                                </SubmitButton>)}
                             <SubmitButton onClick={() => openSubmitPriceForm()}>Änderung vorschlagen</SubmitButton>
                             <SubmitButton onClick={() => setShowCheckinForm(false)}>Weiß ich nicht</SubmitButton>
                         </ButtonGroup>

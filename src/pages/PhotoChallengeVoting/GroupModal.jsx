@@ -35,6 +35,7 @@ const GroupModal = ({
   handleModalVote,
   setImagePreview,
   isLoggedIn,
+  showCountryBadges = false,
 }) => {
   useEffect(() => {
     if (!groupModal || !activeModalGroup) {
@@ -111,7 +112,7 @@ const GroupModal = ({
           {groupModal.mode === 'active' && activeModalMatch && (
             <S.ModalVoteWrapper>
               {modalSides.map((side) => {
-                const country = getPhotoChallengeCountry(side.title);
+                const country = showCountryBadges ? getPhotoChallengeCountry(side.title) : null;
                 return (
                 <S.ModalVoteCard
                   key={side.id}
@@ -156,7 +157,7 @@ const GroupModal = ({
           {groupModal.mode === 'upcoming' && (
             <S.PreviewGrid>
               {activeModalGroup.entries.map((entry) => {
-                const country = getPhotoChallengeCountry(entry.title);
+                const country = showCountryBadges ? getPhotoChallengeCountry(entry.title) : null;
                 return (
                 <S.PreviewCard
                   key={entry.image_id}
@@ -183,7 +184,7 @@ const GroupModal = ({
             <S.ResultsList>
               {activeModalGroup.results && activeModalGroup.results.length ? (
                 activeModalGroup.results.map((result) => {
-                  const country = getPhotoChallengeCountry(result.title);
+                  const country = showCountryBadges ? getPhotoChallengeCountry(result.title) : null;
                   return (
                   <S.ResultItem
                     key={result.image_id}
