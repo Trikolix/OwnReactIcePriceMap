@@ -714,6 +714,9 @@ function Statistics() {
                                   userId={entry.nutzer_id}
                                   name={entry.username}
                                   avatarUrl={entry.avatar_url}
+                                  level={entry.current_level}
+                                  showLevelBadge={Number(entry.show_level_badge) === 1}
+                                  frameKey={entry.avatar_frame_key}
                                 />
                                 <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
                               </UserInfo>
@@ -781,6 +784,9 @@ function Statistics() {
                                       userId={entry.user_id}
                                       name={entry.username}
                                       avatarUrl={entry.avatar_url}
+                                      level={entry.current_level}
+                                      showLevelBadge={Number(entry.show_level_badge) === 1}
+                                      frameKey={entry.avatar_frame_key}
                                     />
                                     <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
                                   </UserInfo>

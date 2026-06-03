@@ -15,6 +15,7 @@ import MentionInviteModal from '../components/MentionInviteModal';
 import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
+import UserAvatar from '../components/UserAvatar';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -303,7 +304,6 @@ function UserSite() {
     value: Number(epBreakdown[item.key] || 0)
   })) : [];
   const avatarUrl = buildAssetUrl(data?.avatar_url);
-  const userInitial = data?.nutzername?.charAt(0)?.toUpperCase() || '?';
   const activityData = {
     land: { label: 'Land', data: data?.aktivitaet_land || [] },
     bundesland: { label: 'Bundesland', data: data?.aktivitaet_bundesland || [] },
@@ -611,8 +611,15 @@ function UserSite() {
     }
   }, [activeTab, displayedRoutes, location.pathname, location.search, routes]);
 
-  const handleAvatarUpdated = (newPath) => {
-    setData((prev) => (prev ? { ...prev, avatar_url: newPath } : prev));
+  const handleAvatarUpdated = (newPath, decoration = null) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        ...(newPath !== undefined ? { avatar_url: newPath } : {}),
+        ...(decoration || {}),
+      };
+    });
   };
   if (loading) {
     return (
@@ -654,9 +661,16 @@ function UserSite() {
             <ProfileHeader>
               <ProfileMainColumn>
                 <ProfileIdentity>
-                  <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
-                    {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
-                  </AvatarCircle>
+                  <UserAvatar
+                    userId={finalUserId}
+                    name={data.nutzername}
+                    avatarUrl={data.avatar_url}
+                    size={128}
+                    level={data.current_level ?? data.level_info?.level}
+                    showLevelBadge={Number(data.show_level_badge) === 1}
+                    frameKey={data.avatar_frame_key}
+                    onClick={avatarUrl ? () => setShowAvatarModal(true) : null}
+                  />
                   <ProfileInfo>
                     <h1>{data.nutzername}</h1>
                     {(data.instagram_account || data.strava_account) && (

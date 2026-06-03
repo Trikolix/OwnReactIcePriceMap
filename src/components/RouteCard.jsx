@@ -219,6 +219,9 @@ return (
               userId={route.nutzer_id}
               name={route.username || route.nutzer_name}
               avatarUrl={route.avatar_url}
+              level={route.current_level}
+              showLevelBadge={Number(route.show_level_badge) === 1}
+              frameKey={route.avatar_frame_key}
               size={48}
             />
             <AuthorText>

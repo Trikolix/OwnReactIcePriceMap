@@ -341,6 +341,9 @@ const RegionOverview = () => {
                         userId={entry.user_id}
                         name={entry.username}
                         avatarUrl={entry.avatar_url}
+                        level={entry.current_level}
+                        showLevelBadge={Number(entry.show_level_badge) === 1}
+                        frameKey={entry.avatar_frame_key}
                       />
                       <Link to={`/user/${entry.user_id}`}>{entry.username}</Link>
                     </UserRow>

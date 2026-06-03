@@ -69,6 +69,9 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
                 userId={checkin.nutzer_id}
                 name={checkin.nutzer_name}
                 avatarUrl={checkin.avatar_url}
+                level={checkin.current_level}
+                showLevelBadge={Number(checkin.show_level_badge) === 1}
+                frameKey={checkin.avatar_frame_key}
                 size={48}
               />
               <HeaderText>

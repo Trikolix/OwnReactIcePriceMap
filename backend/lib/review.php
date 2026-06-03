@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/user_profile.php';
+
 function hasReviewEditedAtColumn(PDO $pdo): bool {
     static $hasColumn = null;
     if ($hasColumn !== null) {
@@ -17,11 +19,15 @@ function hasReviewEditedAtColumn(PDO $pdo): bool {
 }
 
 function getReviewById(PDO $pdo, int $reviewId): ?array {
+    ensureUserProfileTable($pdo);
     $stmt = $pdo->prepare("
         SELECT b.*, 
+               n.current_level,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM bewertungen b
         JOIN nutzer n ON n.id = b.nutzer_id
         JOIN eisdielen e ON e.id = b.eisdiele_id
@@ -65,13 +71,17 @@ function getReviewByUserAndShop(PDO $pdo, int $userId, int $shopId): ?array {
 }
 
 function getReviewsByEisdieleId(PDO $pdo, int $shopId): array {
+    ensureUserProfileTable($pdo);
     $stmt = $pdo->prepare("
         SELECT b.*,
                n.id AS nutzer_id,
                n.username AS nutzer_name,
+               n.current_level,
                e.name AS eisdiele_name,
                e.adresse,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM bewertungen b
         JOIN nutzer n ON b.nutzer_id = n.id
         JOIN eisdielen e ON b.eisdiele_id = e.id
@@ -92,13 +102,17 @@ function getReviewsByEisdieleId(PDO $pdo, int $shopId): array {
 }
 
 function getReviewsByNutzerId(PDO $pdo, int $userId): array {
+    ensureUserProfileTable($pdo);
     $stmt = $pdo->prepare("
         SELECT b.*,
                n.id AS nutzer_id,
                n.username AS nutzer_name,
+               n.current_level,
                e.name AS eisdiele_name,
                e.adresse,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM bewertungen b
         JOIN nutzer n ON b.nutzer_id = n.id
         JOIN eisdielen e ON b.eisdiele_id = e.id
@@ -119,14 +133,18 @@ function getReviewsByNutzerId(PDO $pdo, int $userId): array {
 }
 
 function getLatestReviews(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
+    ensureUserProfileTable($pdo);
     if (hasReviewEditedAtColumn($pdo)) {
         $stmt = $pdo->prepare("
             SELECT b.*,
                    n.id AS nutzer_id,
                    n.username AS nutzer_name,
+                   n.current_level,
                    e.name AS eisdiele_name,
                    e.adresse,
                    up.avatar_path AS avatar_url,
+                   up.show_level_badge,
+                   up.avatar_frame_key,
                    CASE
                        WHEN b.zuletzt_bearbeitet_am IS NOT NULL
                             AND b.erstellt_am < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
@@ -166,9 +184,12 @@ function getLatestReviews(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
             SELECT b.*,
                    n.id AS nutzer_id,
                    n.username AS nutzer_name,
+                   n.current_level,
                    e.name AS eisdiele_name,
                    e.adresse,
                    up.avatar_path AS avatar_url,
+                   up.show_level_badge,
+                   up.avatar_frame_key,
                    b.erstellt_am AS aktivitaet_am,
                    'create' AS activity_type
             FROM bewertungen b

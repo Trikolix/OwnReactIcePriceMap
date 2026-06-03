@@ -57,6 +57,9 @@ const ShopCard = ({ iceShop, onSuccess }) => {
           userId={iceShop.user_id}
           name={iceShop.nutzer_name}
           avatarUrl={iceShop.avatar_url}
+          level={iceShop.current_level}
+          showLevelBadge={Number(iceShop.show_level_badge) === 1}
+          frameKey={iceShop.avatar_frame_key}
         />
         <HeaderText>
           <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}

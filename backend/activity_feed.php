@@ -6,8 +6,10 @@ require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/comment_registration.php';
 require_once  __DIR__ . '/lib/comment_award.php';
 require_once  __DIR__ . '/lib/opening_hours.php';
+require_once  __DIR__ . '/lib/user_profile.php';
 
 function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
+    ensureUserProfileTable($pdo);
     $activities = [];
     $hasUserRegistrationCommentSupport = ensureKommentarUserRegistrationSupport($pdo);
     $hasUserAwardCommentSupport = ensureKommentarUserAwardSupport($pdo);
@@ -48,7 +50,12 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
 
     // 🔵 ROUTEN
     $stmtRouten = $pdo->prepare("
-        SELECT r.*, n.username AS nutzer_name, up.avatar_path AS avatar_url
+        SELECT r.*,
+               n.username AS nutzer_name,
+               n.current_level,
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM routen r
         JOIN nutzer n ON r.nutzer_id = n.id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
@@ -80,7 +87,12 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
 
     // 🔷 Eisdielen
     $stmtEisdielen = $pdo->prepare("
-        SELECT e.*, n.username AS nutzer_name, up.avatar_path AS avatar_url
+        SELECT e.*,
+               n.username AS nutzer_name,
+               n.current_level,
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM eisdielen e
         JOIN nutzer n ON e.user_id = n.id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
@@ -123,6 +135,8 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                    n.erstellt_am,
                    n.current_level,
                    up.avatar_path AS avatar_url,
+                   up.show_level_badge,
+                   up.avatar_frame_key,
                    COALESCE(kc.comment_count, 0) AS commentCount
             FROM nutzer n
             LEFT JOIN user_profile_images up ON up.user_id = n.id
@@ -143,6 +157,8 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                    n.erstellt_am,
                    n.current_level,
                    up.avatar_path AS avatar_url,
+                   up.show_level_badge,
+                   up.avatar_frame_key,
                    0 AS commentCount
             FROM nutzer n
             LEFT JOIN user_profile_images up ON up.user_id = n.id
@@ -181,7 +197,10 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
                al.title_de,
                al.description_de,
                al.icon_path,
+               n.current_level,
                up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key,
                {$awardCommentCountSql}
         FROM user_awards ua
         JOIN award_levels al 

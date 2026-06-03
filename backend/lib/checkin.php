@@ -1,12 +1,18 @@
 <?php
 
+require_once __DIR__ . '/user_profile.php';
+
 function getCheckinById(PDO $pdo, int $id): ?array {
+    ensureUserProfileTable($pdo);
     $stmt = $pdo->prepare("
         SELECT c.*,
                n.id AS nutzer_id,
                n.username AS nutzer_name,
+               n.current_level,
                e.name AS eisdiele_name,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM checkins c
         JOIN nutzer n ON n.id = c.nutzer_id
         JOIN eisdielen e ON e.id = c.eisdiele_id
@@ -51,13 +57,17 @@ function getBilderForCheckin(PDO $pdo, int $checkinId): array {
 }
 
 function getCheckinsByEisdieleId(PDO $pdo, int $eisdieleId): array {
+    ensureUserProfileTable($pdo);
     $stmt = $pdo->prepare("
         SELECT c.*, 
                n.id AS nutzer_id,
                n.username AS nutzer_name,
+               n.current_level,
                e.name AS eisdiele_name,
                e.adresse,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM checkins c
         JOIN nutzer n ON c.nutzer_id = n.id
         JOIN eisdielen e ON c.eisdiele_id = e.id
@@ -77,6 +87,7 @@ function getCheckinsByEisdieleId(PDO $pdo, int $eisdieleId): array {
 }
 
 function getCheckins(PDO $pdo, string $sort = 'datum', string $order = 'DESC', ?int $limit = null): array {
+    ensureUserProfileTable($pdo);
     $allowedSort = ['datum', 'geschmackbewertung', 'preisleistungsbewertung'];
     $allowedOrder = ['ASC', 'DESC'];
 
@@ -87,9 +98,12 @@ function getCheckins(PDO $pdo, string $sort = 'datum', string $order = 'DESC', ?
         SELECT c.*, 
                n.id AS nutzer_id,
                n.username AS nutzer_name,
+               n.current_level,
                e.name AS eisdiele_name,
                e.adresse,
-               up.avatar_path AS avatar_url
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM checkins c
         JOIN nutzer n ON c.nutzer_id = n.id
         JOIN eisdielen e ON c.eisdiele_id = e.id
@@ -121,12 +135,16 @@ function countCheckinsByNutzerId(PDO $pdo, int $nutzerId): int {
 }
 
 function getCheckinsByNutzerId(PDO $pdo, int $nutzerId): array {
+    ensureUserProfileTable($pdo);
     $sql = "SELECT c.*, 
                    n.id AS nutzer_id,
                    n.username AS nutzer_name,
+                   n.current_level,
                    e.name AS eisdiele_name,
                    e.adresse,
-                   up.avatar_path AS avatar_url
+                   up.avatar_path AS avatar_url,
+                   up.show_level_badge,
+                   up.avatar_frame_key
             FROM checkins c
             JOIN nutzer n ON c.nutzer_id = n.id
             JOIN eisdielen e ON c.eisdiele_id = e.id

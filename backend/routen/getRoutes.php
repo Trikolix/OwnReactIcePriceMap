@@ -1,6 +1,9 @@
 <?php
 require_once  __DIR__ . '/../db_connect.php';
 require_once  __DIR__ . '/../lib/route_helpers.php';
+require_once  __DIR__ . '/../lib/user_profile.php';
+
+ensureUserProfileTable($pdo);
 
 // Eisdiele-ID aus der Anfrage holen
 $eisdiele_id = isset($_GET['eisdiele_id']) ? (int)$_GET['eisdiele_id'] : null;
@@ -12,7 +15,12 @@ if (!$eisdiele_id) {
 }
 
 // SQL-Abfrage vorbereiten
-$sql = "SELECT r.*, n.username, up.avatar_path AS avatar_url
+$sql = "SELECT r.*,
+               n.username,
+               n.current_level,
+               up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key
         FROM routen r
         JOIN route_eisdielen rel ON rel.route_id = r.id
         JOIN nutzer n ON r.nutzer_id = n.id

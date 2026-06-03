@@ -25,6 +25,15 @@ const buildAssetUrl = (path) => {
 };
 
 const normalizePath = (value) => (value || "").replace(/^\/+/, "");
+const avatarFramePreviewCss = {
+  mint: '#2bb673',
+  berry: '#d9467a',
+  sky: '#2f80ed',
+  sunset: 'linear-gradient(135deg, #ffb522, #ff595e)',
+  royal: 'linear-gradient(135deg, #6f2dbd, #2f80ed)',
+  aurora: 'linear-gradient(135deg, #2bb673, #9bf6ff, #ffc6ff)',
+  gold: 'linear-gradient(135deg, #f6d365, #fda085, #ffd700)',
+};
 
 function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const { userId, currentLevel, setCurrentLevel } = useUser();
@@ -64,6 +73,12 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [pendingPresetId, setPendingPresetId] = useState(null);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [browserPushStatus, setBrowserPushStatus] = useState({ supported: false, permission: "default", subscribed: false });
+  const [avatarDecoration, setAvatarDecoration] = useState({
+    show_level_badge: 0,
+    avatar_frame_key: null,
+    available_avatar_frames: [],
+    current_level: currentLevel || 0,
+  });
   const selectedPreset = selectedPresetId
     ? presetAvatars.find((preset) => preset.id === selectedPresetId) || null
     : null;
@@ -72,6 +87,9 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const hasPresetChange = !!selectedPreset && normalizedSelectedPresetPath !== normalizedCurrentAvatar;
   const canResetAvatar = !!avatarFile || removeAvatar || hasPresetChange;
   const displayedPresetLevel = Number(presetAvatarLevel ?? currentLevel ?? 0);
+  const displayedDecorationLevel = Number(avatarDecoration.current_level ?? currentLevel ?? 0);
+  const selectedFrameKey = avatarDecoration.avatar_frame_key || 'none';
+  const selectedFrameCss = avatarFramePreviewCss[selectedFrameKey] || null;
   const isBusy = Boolean(savingSection);
 
   useEffect(() => {
@@ -95,6 +113,14 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           setSocialAccounts({
             instagram_account: profileJson.instagram_account || '',
             strava_account: profileJson.strava_account || ''
+          });
+          setAvatarDecoration({
+            show_level_badge: Number(profileJson.show_level_badge || 0),
+            avatar_frame_key: profileJson.avatar_frame_key || null,
+            available_avatar_frames: Array.isArray(profileJson.available_avatar_frames)
+              ? profileJson.available_avatar_frames
+              : [],
+            current_level: Number(profileJson.current_level ?? currentLevel ?? 0),
           });
         }
       } catch (e) {
@@ -456,15 +482,70 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       const res = await fetch(`${API_BASE}/api/update_user_profile.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(socialAccounts),
+        body: JSON.stringify({
+          ...socialAccounts,
+          show_level_badge: avatarDecoration.show_level_badge ? 1 : 0,
+          avatar_frame_key: avatarDecoration.avatar_frame_key || 'none',
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json.error) {
         throw new Error(json.error || "Fehler beim Speichern der Social Media Accounts.");
       }
+      setAvatarDecoration((prev) => ({
+        ...prev,
+        show_level_badge: Number(json.show_level_badge ?? prev.show_level_badge),
+        avatar_frame_key: json.avatar_frame_key || null,
+        available_avatar_frames: Array.isArray(json.available_avatar_frames)
+          ? json.available_avatar_frames
+          : prev.available_avatar_frames,
+        current_level: Number(json.current_level ?? prev.current_level),
+      }));
       setSuccessSection("social");
     } catch (e) {
       setError(e.message || "Fehler beim Speichern der Social Media Accounts.");
+    } finally {
+      setSavingSection(null);
+    }
+  };
+
+  const handleSaveAvatarDecoration = async () => {
+    setSavingSection("decoration");
+    setError(null);
+    setSuccessSection(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/update_user_profile.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...socialAccounts,
+          show_level_badge: avatarDecoration.show_level_badge ? 1 : 0,
+          avatar_frame_key: avatarDecoration.avatar_frame_key || 'none',
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "Fehler beim Speichern der Profilbild-Deko.");
+      }
+      setAvatarDecoration((prev) => ({
+        ...prev,
+        show_level_badge: Number(json.show_level_badge ?? prev.show_level_badge),
+        avatar_frame_key: json.avatar_frame_key || null,
+        available_avatar_frames: Array.isArray(json.available_avatar_frames)
+          ? json.available_avatar_frames
+          : prev.available_avatar_frames,
+        current_level: Number(json.current_level ?? prev.current_level),
+      }));
+      if (onAvatarUpdated) {
+        onAvatarUpdated(undefined, {
+          show_level_badge: Number(json.show_level_badge ?? avatarDecoration.show_level_badge),
+          avatar_frame_key: json.avatar_frame_key || null,
+          current_level: Number(json.current_level ?? avatarDecoration.current_level),
+        });
+      }
+      setSuccessSection("decoration");
+    } catch (e) {
+      setError(e.message || "Fehler beim Speichern der Profilbild-Deko.");
     } finally {
       setSavingSection(null);
     }
@@ -560,12 +641,15 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         </TopCloseButton>
         <h2>Profil & Benachrichtigungen</h2>
         <AvatarSection>
-          <AvatarPreviewCircle>
+          <AvatarPreviewCircle $frameCss={selectedFrameCss}>
             {avatarPreview ? (
               <img src={avatarPreview} alt="Avatar Vorschau" />
             ) : (
               <span>Kein Bild</span>
             )}
+            {avatarDecoration.show_level_badge ? (
+              <AvatarPreviewBadge>{displayedDecorationLevel}</AvatarPreviewBadge>
+            ) : null}
           </AvatarPreviewCircle>
           <AvatarActions>
             <p>Profilbild</p>
@@ -600,6 +684,62 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           </SubmitButton>
           {successSection === "avatar" && <SuccessMsg>Avatar gespeichert.</SuccessMsg>}
         </SectionActions>
+        <AvatarDecorationPanel>
+          <DecorationHeader>
+            <div>
+              <h3>Profilbild-Deko</h3>
+              <SmallNote>Dein Level: {displayedDecorationLevel}</SmallNote>
+            </div>
+            <BadgeToggleLabel>
+              <input
+                type="checkbox"
+                checked={!!avatarDecoration.show_level_badge}
+                onChange={(event) => setAvatarDecoration((prev) => ({
+                  ...prev,
+                  show_level_badge: event.target.checked ? 1 : 0,
+                }))}
+              />
+              <span>Level-Badge anzeigen</span>
+            </BadgeToggleLabel>
+          </DecorationHeader>
+          <FrameGrid>
+            {(avatarDecoration.available_avatar_frames || []).map((frame) => {
+              const frameKey = frame.key || 'none';
+              const isSelected = selectedFrameKey === frameKey;
+              const isUnlocked = frame.unlocked !== false;
+              return (
+                <FrameOption
+                  key={frameKey}
+                  type="button"
+                  onClick={() => {
+                    if (!isUnlocked) {
+                      setError(`Dieser Rahmen ist erst ab Level ${frame.min_level || 0} verfügbar.`);
+                      return;
+                    }
+                    setAvatarDecoration((prev) => ({
+                      ...prev,
+                      avatar_frame_key: frameKey === 'none' ? null : frameKey,
+                    }));
+                    setError(null);
+                  }}
+                  aria-pressed={isSelected}
+                  $selected={isSelected}
+                  $locked={!isUnlocked}
+                >
+                  <FrameSwatch $frameCss={avatarFramePreviewCss[frameKey] || null} />
+                  <span>{frame.label}</span>
+                  {!isUnlocked && <PresetLockBadge>Ab Level {frame.min_level}</PresetLockBadge>}
+                </FrameOption>
+              );
+            })}
+          </FrameGrid>
+          <SectionActions>
+            <SubmitButton type="button" onClick={handleSaveAvatarDecoration} disabled={isBusy}>
+              {savingSection === "decoration" ? "Speichert..." : "Profilbild-Deko speichern"}
+            </SubmitButton>
+            {successSection === "decoration" && <SuccessMsg>Profilbild-Deko gespeichert.</SuccessMsg>}
+          </SectionActions>
+        </AvatarDecorationPanel>
         {showPresetPicker && (
           <PresetModalOverlay>
             <PresetModalBox>
@@ -924,23 +1064,59 @@ const AvatarSection = styled.div`
 `;
 
 const AvatarPreviewCircle = styled.div`
+  position: relative;
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  border: 2px dashed #ddd;
-  background: #fafafa;
+  border: ${({ $frameCss }) => ($frameCss ? 'none' : '2px dashed #ddd')};
+  padding: ${({ $frameCss }) => ($frameCss ? '8px' : '0')};
+  background: ${({ $frameCss }) => $frameCss || '#fafafa'};
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   font-size: 0.8rem;
   color: #999;
 
   img {
     width: 100%;
     height: 100%;
+    border-radius: 50%;
     object-fit: cover;
+    box-shadow: ${({ $frameCss }) => ($frameCss ? 'inset 0 0 0 2px rgba(255,255,255,0.9)' : 'none')};
+    background: white;
   }
+
+  > span:first-child {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+  }
+`;
+
+const AvatarPreviewBadge = styled.span`
+  position: absolute;
+  right: -4px;
+  bottom: -5px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #2f2100;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-sizing: border-box;
 `;
 
 const AvatarActions = styled.div`
@@ -1066,6 +1242,77 @@ const SectionActions = styled.div`
   gap: 0.75rem;
   margin-top: 1rem;
   flex-wrap: wrap;
+`;
+
+const AvatarDecorationPanel = styled.div`
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 252, 243, 0.8);
+`;
+
+const DecorationHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+
+  h3 {
+    margin: 0;
+  }
+`;
+
+const BadgeToggleLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  color: #2f2100;
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const FrameGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.7rem;
+`;
+
+const FrameOption = styled.button`
+  border: 2px solid ${({ $selected }) => ($selected ? '#4caf50' : 'rgba(47, 33, 0, 0.08)')};
+  border-radius: 10px;
+  background: ${({ $selected, $locked }) => ($selected ? 'rgba(76,175,80,0.12)' : $locked ? '#f1f1f1' : '#fff')};
+  padding: 0.55rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: ${({ $locked }) => ($locked ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $locked }) => ($locked ? 0.72 : 1)};
+  min-height: 92px;
+
+  span {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4b3b20;
+    text-align: center;
+  }
+`;
+
+const FrameSwatch = styled.span`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: ${({ $frameCss }) => $frameCss || '#fafafa'};
+  border: ${({ $frameCss }) => ($frameCss ? 'none' : '2px dashed #d6d6d6')};
+  box-shadow: ${({ $frameCss }) => ($frameCss ? 'inset 0 0 0 4px rgba(255,255,255,0.78), 0 2px 8px rgba(0,0,0,0.12)' : 'none')};
 `;
 
 const PresetInfo = styled.p`

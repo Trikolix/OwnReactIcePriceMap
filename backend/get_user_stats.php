@@ -129,6 +129,7 @@ function calculateStreakStats(array $dateRows): array
 }
 
 ensureUserProfileColumns($pdo);
+ensureUserProfileTable($pdo);
 
 $nutzerParam = $_GET['nutzer_id'] ?? '';
 if (strpos($nutzerParam, '@') === 0) {
@@ -143,7 +144,7 @@ if (strpos($nutzerParam, '@') === 0) {
 $curUserId = intval($_GET['cur_user_id']);
 
 // Nutzername ermitteln
-$sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code, instagram_account, strava_account
+$sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code, instagram_account, strava_account, current_level
          FROM nutzer WHERE id = ?";
 
 // Anzahl unterschiedlicher besuchter Eisdielen
@@ -249,7 +250,12 @@ $levelInfo = getLevelInformationForUser($pdo, $nutzerId);
 $reviews = getReviewsByNutzerId($pdo, $nutzerId);
 
 // User Routen
-$stmtRouten = $pdo->prepare("SELECT r.*, n.username, up.avatar_path AS avatar_url
+$stmtRouten = $pdo->prepare("SELECT r.*,
+        n.username,
+        n.current_level,
+        up.avatar_path AS avatar_url,
+        up.show_level_badge,
+        up.avatar_frame_key
         FROM routen r
         JOIN nutzer n ON r.nutzer_id = n.id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
@@ -289,6 +295,7 @@ try {
                 $stats['invite_code'] = $row['invite_code'] ?? null;
                 $stats['instagram_account'] = $row['instagram_account'] ?? null;
                 $stats['strava_account'] = $row['strava_account'] ?? null;
+                $stats['current_level'] = (int)($row['current_level'] ?? 0);
                 break;
             case 1: $stats['eisdielen_besucht'] = $stmt->fetchColumn(); break;
             case 2: $stats['anzahl_checkins'] = $stmt->fetchColumn(); break;
@@ -298,7 +305,12 @@ try {
             case 6: $stats['user_awards'] = $stmt->fetchAll(PDO::FETCH_ASSOC); break;
         }
     }
-    $stats['avatar_url'] = getUserAvatarPath($pdo, $nutzerId);
+    $profileImageSettings = getUserProfileImageSettings($pdo, $nutzerId);
+    $stats['avatar_url'] = $profileImageSettings['avatar_path'];
+    $stats['show_level_badge'] = $profileImageSettings['show_level_badge'];
+    $stats['avatar_frame_key'] = isAvatarFrameUnlocked($profileImageSettings['avatar_frame_key'], (int)($stats['current_level'] ?? 0))
+        ? $profileImageSettings['avatar_frame_key']
+        : null;
 
     $stmt = $pdo->prepare($sql8);
     $stmt->execute([$nutzerId]);

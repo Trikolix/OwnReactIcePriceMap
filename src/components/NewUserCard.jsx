@@ -42,6 +42,9 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
           userId={user.id}
           name={user.username}
           avatarUrl={user.avatar_url}
+          level={user.current_level}
+          showLevelBadge={Number(user.show_level_badge) === 1}
+          frameKey={user.avatar_frame_key}
           size={52}
         />
         <HeaderContent>

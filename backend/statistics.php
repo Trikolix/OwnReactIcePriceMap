@@ -1,7 +1,9 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/checkin.php';
+require_once  __DIR__ . '/lib/user_profile.php';
 
+ensureUserProfileTable($pdo);
 
 // Price Per Landkreis
 $stmtPricePerLandkreis = $pdo->prepare("
@@ -113,7 +115,10 @@ $mostActiveUsers = $stmtMostActiveUsers->fetchAll(PDO::FETCH_ASSOC);
 $stmtUsersByLevel = $pdo->prepare("SELECT 
     n.id AS nutzer_id,
     n.username,
+    n.current_level,
     up.avatar_path AS avatar_url,
+    up.show_level_badge,
+    up.avatar_frame_key,
     -- Anzahl Checkins
     COALESCE(ci_ohne_bild.count, 0) + COALESCE(ci_mit_bild.count, 0) AS anzahl_checkins,
     -- EP durch Check-ins ohne Bild

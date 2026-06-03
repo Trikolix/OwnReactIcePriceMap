@@ -62,6 +62,9 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
             userId={review.nutzer_id}
             name={review.nutzer_name}
             avatarUrl={review.avatar_url}
+            level={review.current_level}
+            showLevelBadge={Number(review.show_level_badge) === 1}
+            frameKey={review.avatar_frame_key}
           />
           <HeaderText>
             <strong><CleanLink to={`/user/${review.nutzer_id}`}>{review.nutzer_name}</CleanLink></strong> hat{" "}

@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/user_profile.php';
+
 function getPeriodWindow(string $period, ?string $periodKey = null): array
 {
     date_default_timezone_set('Europe/Berlin');
@@ -139,8 +141,14 @@ function buildShopScopeNotWhere(string $scope, int $scopeId, string $alias = 'e'
 
 function initializeLeaderboardRows(PDO $pdo): array
 {
+    ensureUserProfileTable($pdo);
     $stmt = $pdo->query(
-        "SELECT n.id AS user_id, n.username, up.avatar_path AS avatar_url
+        "SELECT n.id AS user_id,
+                n.username,
+                n.current_level,
+                up.avatar_path AS avatar_url,
+                up.show_level_badge,
+                up.avatar_frame_key
          FROM nutzer n
          LEFT JOIN user_profile_images up ON up.user_id = n.id"
     );
@@ -151,6 +159,9 @@ function initializeLeaderboardRows(PDO $pdo): array
             'user_id' => (int)$row['user_id'],
             'username' => (string)$row['username'],
             'avatar_url' => $row['avatar_url'] ?? null,
+            'current_level' => (int)($row['current_level'] ?? 0),
+            'show_level_badge' => (int)($row['show_level_badge'] ?? 0),
+            'avatar_frame_key' => $row['avatar_frame_key'] ?? null,
             'counts' => [
                 'checkins_without_photo' => 0,
                 'checkins_with_photo' => 0,

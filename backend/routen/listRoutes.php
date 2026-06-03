@@ -1,10 +1,12 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/route_helpers.php';
+require_once __DIR__ . '/../lib/user_profile.php';
 
 header('Content-Type: application/json');
 
 try {
+    ensureUserProfileTable($pdo);
     $nutzerId = isset($_GET['nutzer_id']) ? (int)$_GET['nutzer_id'] : null;
     $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
     $minLength = isset($_GET['min_length']) ? (float)$_GET['min_length'] : null;
@@ -115,14 +117,17 @@ try {
                r.erstellt_am,
                r.nutzer_id,
                n.username,
+               n.current_level,
                up.avatar_path AS avatar_url,
+               up.show_level_badge,
+               up.avatar_frame_key,
                COUNT(DISTINCT re.eisdiele_id) AS eisdielen_count
         FROM routen r
         JOIN nutzer n ON n.id = r.nutzer_id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
         LEFT JOIN route_eisdielen re ON re.route_id = r.id
         $whereSql
-        GROUP BY r.id, n.username, up.avatar_path
+        GROUP BY r.id, n.username, n.current_level, up.avatar_path, up.show_level_badge, up.avatar_frame_key
         $havingSql
         ORDER BY r.erstellt_am DESC
     ";

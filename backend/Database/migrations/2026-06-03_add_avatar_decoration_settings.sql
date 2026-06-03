@@ -1,0 +1,3 @@
+ALTER TABLE user_profile_images
+  ADD COLUMN IF NOT EXISTS show_level_badge TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS avatar_frame_key VARCHAR(40) DEFAULT NULL;
