@@ -47,3 +47,88 @@ export const shuffleArray = (items = []) => {
   }
   return arr;
 };
+
+const COUNTRY_BY_LABEL = [
+  ['Deutschland', 'DE'],
+  ['Italien', 'IT'],
+  ['Frankreich', 'FR'],
+  ['Zypern', 'CY'],
+  ['Schweiz', 'CH'],
+  ['Tschechien', 'CZ'],
+  ['Portugal', 'PT'],
+  ['Malta', 'MT'],
+  ['Österreich', 'AT'],
+  ['Kroatien', 'HR'],
+  ['Vereinigtes Königreich', 'GB'],
+  ['Spanien', 'ES'],
+  ['Niederlande', 'NL'],
+  ['China', 'CN'],
+  ['Vereinigte Staaten von Amerika', 'US'],
+  ['Polen', 'PL'],
+  ['Japan', 'JP'],
+  ['Ungarn', 'HU'],
+  ['Britische Jungferninseln', 'VG'],
+  ['Belgien', 'BE'],
+  ['Südkorea', 'KR'],
+  ['Griechenland', 'GR'],
+  ['St. Kitts und Nevis', 'KN'],
+  ['Island', 'IS'],
+  ['Kasachstan', 'KZ'],
+  ['Türkei', 'TR'],
+  ['Usbekistan', 'UZ'],
+];
+
+const COUNTRY_ALIASES = {
+  gb: 'Vereinigtes Königreich',
+  uk: 'Vereinigtes Königreich',
+  grossbritannien: 'Vereinigtes Königreich',
+  großbritannien: 'Vereinigtes Königreich',
+  'vereinigte staaten': 'Vereinigte Staaten von Amerika',
+  usa: 'Vereinigte Staaten von Amerika',
+  us: 'Vereinigte Staaten von Amerika',
+  amerika: 'Vereinigte Staaten von Amerika',
+  bvi: 'Britische Jungferninseln',
+  'british virgin islands': 'Britische Jungferninseln',
+  korea: 'Südkorea',
+  suedkorea: 'Südkorea',
+  'süd korea': 'Südkorea',
+  'st kitts nevis': 'St. Kitts und Nevis',
+  'saint kitts und nevis': 'St. Kitts und Nevis',
+  'saint kitts and nevis': 'St. Kitts und Nevis',
+};
+
+const normalizeCountryLabel = (value = '') =>
+  String(value)
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’'`´]/g, '')
+    .replace(/&/g, ' und ')
+    .replace(/\bst[.]/gi, 'st')
+    .replace(/[^a-z0-9]+/gi, ' ')
+    .trim()
+    .toLowerCase();
+
+const countryByNormalizedLabel = new Map(
+  COUNTRY_BY_LABEL.map(([name, code]) => [normalizeCountryLabel(name), { name, code }])
+);
+
+Object.entries(COUNTRY_ALIASES).forEach(([alias, name]) => {
+  const target = COUNTRY_BY_LABEL.find(([countryName]) => countryName === name);
+  if (target) {
+    countryByNormalizedLabel.set(normalizeCountryLabel(alias), { name: target[0], code: target[1] });
+  }
+});
+
+export const getPhotoChallengeCountry = (title) => {
+  const normalizedTitle = normalizeCountryLabel(title);
+  if (!normalizedTitle) return null;
+  const country = countryByNormalizedLabel.get(normalizedTitle);
+  if (!country) return null;
+  const flagCode = country.code.toLowerCase();
+  return {
+    ...country,
+    flagUrl: `https://flagcdn.com/w80/${flagCode}.png`,
+    flagSrcSet: `https://flagcdn.com/w80/${flagCode}.png 1x, https://flagcdn.com/w160/${flagCode}.png 2x`,
+  };
+};
