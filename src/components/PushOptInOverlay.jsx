@@ -140,10 +140,17 @@ export default function PushOptInOverlay() {
   useEffect(() => {
     if (!visible) return undefined;
 
+    window.dispatchEvent(new CustomEvent("iceapp:push-opt-in-visibility", {
+      detail: { visible: true },
+    }));
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
+      window.dispatchEvent(new CustomEvent("iceapp:push-opt-in-visibility", {
+        detail: { visible: false },
+      }));
     };
   }, [visible]);
 

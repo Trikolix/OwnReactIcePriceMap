@@ -15,7 +15,6 @@ const Sidebar = ({  shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId
 
 
   if (!shop) return null;
-  console.log(shop);
 
   // Funktion zur Berechnung der Farbe basierend auf dem Preis
   const getColorBasedOnPrice = (price, minPrice, maxPrice) => {
@@ -50,7 +49,6 @@ const Sidebar = ({  shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId
 
     setLoading(true);
     try {
-      console.log(`Fetching details for shop ID: ${shop.eisdielen_id}`);
       const response = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${shop.eisdielen_id}`);
 
       // Checke, ob die Antwort wirklich JSON ist
@@ -60,7 +58,6 @@ const Sidebar = ({  shop, selectedOption, minPrice, maxPrice, isLoggedIn, userId
         throw new Error(`Invalid JSON response: ${text}`);
       }
       const data = await response.json();
-      console.log(data);
       setShopDetails(data);
     } catch (error) {
       console.error("Fehler beim Laden der Daten:", error);

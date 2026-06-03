@@ -395,7 +395,6 @@ const Header = ({ refreshShops }) => {
           if (!userId) {
             const stored = JSON.parse(localStorage.getItem("pendingQrScans") || "[]");
             if (stored.includes(scanCode) && !data.summer_campaign) {
-              console.log("QR-Code ist bereits lokal vorgemerkt. Kein Popup.");
               return;
             }
             if (!stored.includes(scanCode)) {
@@ -522,7 +521,6 @@ const Header = ({ refreshShops }) => {
             body: JSON.stringify({ code, nutzer_id: userId }),
           });
           const data = await res.json();
-          console.log("QR-Scan nach Login übertragen:", data);
 
           if (data?.status !== "success") {
             failedCodes.push(code);

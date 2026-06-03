@@ -470,6 +470,12 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     }
   };
 
+  const handleRestartOnboarding = () => {
+    window.dispatchEvent(new CustomEvent("iceapp:onboarding:start", {
+      detail: { force: true },
+    }));
+  };
+
   const handleSendTest = async () => {
     const isNative = Capacitor.isNativePlatform();
     
@@ -774,6 +780,15 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           {successSection === "social" && <SuccessMsg>Social Media gespeichert.</SuccessMsg>}
         </SectionActions>
 
+        <Divider />
+        <h3>Hilfe & Einstieg</h3>
+        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>Starte die kurze Einführung erneut, wenn du die wichtigsten Bereiche der Ice-App noch einmal sehen möchtest.</p>
+        <SectionActions>
+          <OnboardingButton type="button" onClick={handleRestartOnboarding}>
+            Onboarding erneut ansehen
+          </OnboardingButton>
+        </SectionActions>
+
         {error && <ErrorMsg>{error}</ErrorMsg>}
         <ButtonRow>
           <CancelButton type="button" onClick={onClose}>Schließen</CancelButton>
@@ -884,6 +899,21 @@ const CancelButton = styled.button`
   font-weight: bold;
   font-size: 1rem;
   transition: background-color 0.15s ease;
+`;
+
+const OnboardingButton = styled.button`
+  background: #fff2d2;
+  color: #4b3500;
+  padding: 0.7rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+
+  &:hover {
+    background: #ffe6ad;
+  }
 `;
 
 const TopCloseButton = styled.button`

@@ -11,16 +11,19 @@ function ensureUserProfileTable(PDO $pdo): void {
 }
 
 function ensureUserProfileColumns(PDO $pdo): void {
-    $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE 'instagram_account'");
-    $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
-    if (!$column) {
-        $pdo->exec("ALTER TABLE nutzer ADD COLUMN instagram_account VARCHAR(255) DEFAULT NULL");
-    }
-    
-    $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE 'strava_account'");
-    $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
-    if (!$column) {
-        $pdo->exec("ALTER TABLE nutzer ADD COLUMN strava_account VARCHAR(255) DEFAULT NULL");
+    $columns = [
+        'instagram_account' => 'VARCHAR(255) DEFAULT NULL',
+        'strava_account' => 'VARCHAR(255) DEFAULT NULL',
+        'onboarding_completed_at' => 'TIMESTAMP NULL DEFAULT NULL',
+        'onboarding_dismissed_at' => 'TIMESTAMP NULL DEFAULT NULL',
+    ];
+
+    foreach ($columns as $columnName => $definition) {
+        $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE " . $pdo->quote($columnName));
+        $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+        if (!$column) {
+            $pdo->exec("ALTER TABLE nutzer ADD COLUMN {$columnName} {$definition}");
+        }
     }
 }
 

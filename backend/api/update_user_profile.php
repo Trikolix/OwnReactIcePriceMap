@@ -21,9 +21,35 @@ if (!$data) {
 
 $instagramAccount = isset($data['instagram_account']) ? trim($data['instagram_account']) : null;
 $stravaAccount = isset($data['strava_account']) ? trim($data['strava_account']) : null;
+$onboardingAction = isset($data['onboarding_action']) ? trim((string)$data['onboarding_action']) : null;
 
 try {
     ensureUserProfileColumns($pdo);
+
+    if ($onboardingAction !== null) {
+        if ($onboardingAction === 'complete') {
+            $stmt = $pdo->prepare("
+                UPDATE nutzer
+                SET onboarding_completed_at = COALESCE(onboarding_completed_at, NOW()),
+                    onboarding_dismissed_at = COALESCE(onboarding_dismissed_at, NOW())
+                WHERE id = :id
+            ");
+        } elseif ($onboardingAction === 'dismiss') {
+            $stmt = $pdo->prepare("
+                UPDATE nutzer
+                SET onboarding_dismissed_at = NOW()
+                WHERE id = :id
+            ");
+        } else {
+            http_response_code(422);
+            echo json_encode(['error' => 'Invalid onboarding_action']);
+            return;
+        }
+
+        $success = $stmt->execute(['id' => $userId]);
+        echo json_encode($success ? ['success' => true] : ['error' => 'Update failed']);
+        return;
+    }
 
     $stmt = $pdo->prepare("
         UPDATE nutzer

@@ -24,7 +24,6 @@ const PushBootstrap = () => {
           const data = action.notification.data;
           const deeplink = data?.deeplink;
           if (deeplink) {
-            console.log("Navigating to deeplink:", deeplink);
             navigate(deeplink);
           }
         }
