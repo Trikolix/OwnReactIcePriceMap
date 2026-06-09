@@ -85,6 +85,24 @@ const fetchWebPushPublicKey = async () => {
   return json.public_key;
 };
 
+export const reportNativePushClick = async (deliveryId) => {
+  const numericDeliveryId = Number(deliveryId || 0);
+  if (!numericDeliveryId || !API_BASE) return;
+
+  try {
+    await fetch(`${API_BASE}/api/push/events.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        delivery_id: numericDeliveryId,
+        event: "clicked",
+      }),
+    });
+  } catch (error) {
+    console.warn("Native push click could not be reported", error);
+  }
+};
+
 export const enableBrowserPush = async (userId) => {
   ensureApiBase();
   if (!userId) throw new Error("Nutzer nicht gefunden.");
@@ -175,7 +193,9 @@ const installNativeListeners = () => {
   });
 
   PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
-    const deeplink = event?.notification?.data?.deeplink;
+    const data = event?.notification?.data || {};
+    reportNativePushClick(data.delivery_id);
+    const deeplink = data.deeplink;
     if (deeplink) {
       if (navigationHandler) {
         navigationHandler(deeplink);

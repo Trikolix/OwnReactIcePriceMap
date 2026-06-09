@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { PushNotifications } from "@capacitor/push-notifications";
 import {
   initializeNativePush,
+  reportNativePushClick,
   registerPushServiceWorker,
   syncPushConfigToServiceWorker,
 } from "../services/pushNotifications";
@@ -22,6 +23,7 @@ const PushBootstrap = () => {
         "pushNotificationActionPerformed",
         (action) => {
           const data = action.notification.data;
+          reportNativePushClick(data?.delivery_id);
           const deeplink = data?.deeplink;
           if (deeplink) {
             console.log("Navigating to deeplink:", deeplink);

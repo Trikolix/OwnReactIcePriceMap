@@ -64,6 +64,14 @@ function ensurePushInfrastructureSchema(PDO $pdo): void
             subscription_token VARCHAR(64) NULL DEFAULT NULL,
             payload_json LONGTEXT NOT NULL,
             status VARCHAR(16) NOT NULL DEFAULT 'pending',
+            provider_status_code INT NULL DEFAULT NULL,
+            provider_response TEXT NULL DEFAULT NULL,
+            signal_sent_at DATETIME NULL DEFAULT NULL,
+            pulled_at DATETIME NULL DEFAULT NULL,
+            shown_at DATETIME NULL DEFAULT NULL,
+            clicked_at DATETIME NULL DEFAULT NULL,
+            failure_at DATETIME NULL DEFAULT NULL,
+            attempt_count INT NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             delivered_at DATETIME NULL DEFAULT NULL,
             last_error TEXT NULL DEFAULT NULL,
@@ -74,7 +82,30 @@ function ensurePushInfrastructureSchema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
 
+    ensurePushDeliveryAuditColumns($pdo);
+
     $initialized = true;
+}
+
+function ensurePushDeliveryAuditColumns(PDO $pdo): void
+{
+    $columns = [
+        'provider_status_code' => 'INT NULL DEFAULT NULL AFTER status',
+        'provider_response' => 'TEXT NULL DEFAULT NULL AFTER provider_status_code',
+        'signal_sent_at' => 'DATETIME NULL DEFAULT NULL AFTER provider_response',
+        'pulled_at' => 'DATETIME NULL DEFAULT NULL AFTER signal_sent_at',
+        'shown_at' => 'DATETIME NULL DEFAULT NULL AFTER pulled_at',
+        'clicked_at' => 'DATETIME NULL DEFAULT NULL AFTER shown_at',
+        'failure_at' => 'DATETIME NULL DEFAULT NULL AFTER clicked_at',
+        'attempt_count' => 'INT NOT NULL DEFAULT 0 AFTER failure_at',
+    ];
+
+    foreach ($columns as $columnName => $columnDefinition) {
+        $stmt = $pdo->query("SHOW COLUMNS FROM push_notification_deliveries LIKE '$columnName'");
+        if (!($stmt && $stmt->fetch(PDO::FETCH_ASSOC))) {
+            $pdo->exec("ALTER TABLE push_notification_deliveries ADD COLUMN $columnName $columnDefinition");
+        }
+    }
 }
 
 function ensureNotificationTypeSchema(PDO $pdo): void
@@ -445,7 +476,7 @@ function dispatchNotification(PDO $pdo, array $notificationRecord, array $contex
     }
 
     if ((int)$settings['push_enabled_android'] === 1) {
-        sendAndroidPush($pdo, $recipientId, $payload);
+        sendAndroidPush($pdo, $recipientId, $notificationRecord, $payload);
     }
 }
 
@@ -453,8 +484,8 @@ function queueAndSendWebPush(PDO $pdo, int $userId, array $notificationRecord, a
 {
     $subscriptions = fetchActiveWebPushSubscriptions($pdo, $userId);
     foreach ($subscriptions as $subscription) {
-        queueWebPushDelivery($pdo, $notificationRecord, $subscription, $payload);
-        sendWebPushSignal($pdo, $subscription);
+        $deliveryId = queueWebPushDelivery($pdo, $notificationRecord, $subscription, $payload);
+        sendWebPushSignal($pdo, $subscription, $deliveryId);
     }
 }
 
@@ -470,7 +501,7 @@ function fetchActiveWebPushSubscriptions(PDO $pdo, int $userId): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
 
-function queueWebPushDelivery(PDO $pdo, array $notificationRecord, array $subscription, array $payload): void
+function queueWebPushDelivery(PDO $pdo, array $notificationRecord, array $subscription, array $payload): int
 {
     $stmt = $pdo->prepare("
         INSERT INTO push_notification_deliveries (
@@ -498,6 +529,61 @@ function queueWebPushDelivery(PDO $pdo, array $notificationRecord, array $subscr
         'subscription_token' => (string)$subscription['subscription_token'],
         'payload_json' => pushJsonEncode($payload),
     ]);
+
+    $deliveryId = (int)$pdo->lastInsertId();
+    updatePushDeliveryPayload($pdo, $deliveryId, $payload, 'web');
+
+    return $deliveryId;
+}
+
+function queueAndroidPushDelivery(PDO $pdo, array $notificationRecord, array $device, array $payload): int
+{
+    $stmt = $pdo->prepare("
+        INSERT INTO push_notification_deliveries (
+            notification_id,
+            user_id,
+            channel,
+            target_id,
+            payload_json,
+            status
+        ) VALUES (
+            :notification_id,
+            :user_id,
+            'android',
+            :target_id,
+            :payload_json,
+            'pending'
+        )
+    ");
+    $stmt->execute([
+        'notification_id' => (int)$notificationRecord['id'],
+        'user_id' => (int)$notificationRecord['empfaenger_id'],
+        'target_id' => (int)$device['id'],
+        'payload_json' => pushJsonEncode($payload),
+    ]);
+
+    $deliveryId = (int)$pdo->lastInsertId();
+    updatePushDeliveryPayload($pdo, $deliveryId, $payload, 'android');
+
+    return $deliveryId;
+}
+
+function updatePushDeliveryPayload(PDO $pdo, int $deliveryId, array $payload, string $channel): array
+{
+    $payload['delivery_id'] = $deliveryId;
+    $payload['channel'] = $channel;
+
+    $stmt = $pdo->prepare("
+        UPDATE push_notification_deliveries
+        SET payload_json = :payload_json
+        WHERE id = :id
+    ");
+    $stmt->execute([
+        'payload_json' => pushJsonEncode($payload),
+        'id' => $deliveryId,
+    ]);
+
+    return $payload;
 }
 
 function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $limit = 5): array
@@ -523,7 +609,7 @@ function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $l
     $ids = array_map(static fn(array $row): int => (int)$row['id'], $rows);
     $pdo->prepare("
         UPDATE push_notification_deliveries
-        SET status = 'delivered', delivered_at = NOW()
+        SET pulled_at = NOW()
         WHERE id IN (" . implode(',', $ids) . ")
     ")->execute();
 
@@ -750,23 +836,26 @@ function invalidateMobilePushDevice(PDO $pdo, int $userId, ?string $deviceToken 
     $stmt->execute(['user_id' => $userId]);
 }
 
-function sendWebPushSignal(PDO $pdo, array $subscription): void
+function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): void
 {
     $publicKey = pushEnv('ICEAPP_WEB_PUSH_VAPID_PUBLIC_KEY');
     $privateKeyPem = pushEnv('ICEAPP_WEB_PUSH_VAPID_PRIVATE_KEY_PEM');
     $subject = pushEnv('ICEAPP_WEB_PUSH_VAPID_SUBJECT', 'mailto:noreply@ice-app.de');
 
     if (!$publicKey || !$privateKeyPem) {
+        markPushDeliveryFailed($pdo, $deliveryId, 'Web push skipped: missing VAPID public or private key.');
         return;
     }
 
     $audience = buildWebPushAudience((string)$subscription['endpoint']);
     if (!$audience) {
+        markPushDeliveryFailed($pdo, $deliveryId, 'Web push skipped: invalid endpoint audience.');
         return;
     }
 
     $jwt = buildVapidJwt($audience, $subject, $publicKey, $privateKeyPem);
     if (!$jwt) {
+        markPushDeliveryFailed($pdo, $deliveryId, 'Web push skipped: VAPID JWT could not be built.');
         return;
     }
 
@@ -783,6 +872,7 @@ function sendWebPushSignal(PDO $pdo, array $subscription): void
     );
 
     $status = (int)$response['status'];
+    updatePushDeliveryProviderResult($pdo, $deliveryId, $status, (string)$response['body']);
     if ($status >= 200 && $status < 300) {
         $stmt = $pdo->prepare("UPDATE web_push_subscriptions SET last_success_at = NOW() WHERE id = :id");
         $stmt->execute(['id' => (int)$subscription['id']]);
@@ -800,6 +890,100 @@ function sendWebPushSignal(PDO $pdo, array $subscription): void
         'invalidate' => $invalidate ? 1 : 0,
         'id' => (int)$subscription['id'],
     ]);
+
+    markPushDeliveryFailed($pdo, $deliveryId, 'Web push provider returned HTTP ' . $status . '.', $status, (string)$response['body']);
+}
+
+function updatePushDeliveryProviderResult(PDO $pdo, int $deliveryId, int $statusCode, string $responseBody = ''): void
+{
+    $success = $statusCode >= 200 && $statusCode < 300;
+    $stmt = $pdo->prepare("
+        UPDATE push_notification_deliveries
+        SET provider_status_code = :status_code,
+            provider_response = :provider_response,
+            signal_sent_at = NOW(),
+            attempt_count = attempt_count + 1,
+            last_error = CASE WHEN :success = 1 THEN NULL ELSE last_error END
+        WHERE id = :id
+    ");
+    $stmt->execute([
+        'status_code' => $statusCode > 0 ? $statusCode : null,
+        'provider_response' => substr($responseBody, 0, 1000),
+        'success' => $success ? 1 : 0,
+        'id' => $deliveryId,
+    ]);
+}
+
+function markPushDeliveryFailed(PDO $pdo, int $deliveryId, string $message, ?int $statusCode = null, ?string $responseBody = null): void
+{
+    $stmt = $pdo->prepare("
+        UPDATE push_notification_deliveries
+        SET status = 'failed',
+            provider_status_code = COALESCE(:status_code, provider_status_code),
+            provider_response = COALESCE(:provider_response, provider_response),
+            failure_at = NOW(),
+            last_error = :last_error
+        WHERE id = :id
+    ");
+    $stmt->execute([
+        'status_code' => $statusCode,
+        'provider_response' => $responseBody !== null ? substr($responseBody, 0, 1000) : null,
+        'last_error' => $message,
+        'id' => $deliveryId,
+    ]);
+}
+
+function recordPushDeliveryEvent(PDO $pdo, int $deliveryId, string $event, ?string $subscriptionToken = null, ?int $userId = null): bool
+{
+    ensurePushInfrastructureSchema($pdo);
+
+    if (!in_array($event, ['shown', 'clicked'], true)) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT id, user_id, channel, subscription_token
+        FROM push_notification_deliveries
+        WHERE id = :id
+        LIMIT 1
+    ");
+    $stmt->execute(['id' => $deliveryId]);
+    $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$delivery) {
+        return false;
+    }
+
+    if ((string)$delivery['channel'] === 'web') {
+        if (!$subscriptionToken || !hash_equals((string)$delivery['subscription_token'], $subscriptionToken)) {
+            return false;
+        }
+    } else {
+        if ($userId === null || (int)$delivery['user_id'] !== $userId) {
+            return false;
+        }
+    }
+
+    if ($event === 'shown') {
+        $update = $pdo->prepare("
+            UPDATE push_notification_deliveries
+            SET shown_at = COALESCE(shown_at, NOW()),
+                delivered_at = COALESCE(delivered_at, NOW()),
+                status = CASE WHEN status = 'failed' THEN status ELSE 'delivered' END
+            WHERE id = :id
+        ");
+    } else {
+        $update = $pdo->prepare("
+            UPDATE push_notification_deliveries
+            SET clicked_at = COALESCE(clicked_at, NOW()),
+                shown_at = COALESCE(shown_at, NOW()),
+                delivered_at = COALESCE(delivered_at, NOW()),
+                status = CASE WHEN status = 'failed' THEN status ELSE 'delivered' END
+            WHERE id = :id
+        ");
+    }
+    $update->execute(['id' => $deliveryId]);
+
+    return true;
 }
 
 function buildWebPushAudience(string $endpoint): ?string
@@ -891,22 +1075,11 @@ function ecdsaDerToJose(string $der, int $partLength): ?string
     return $r . $s;
 }
 
-function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
+function sendAndroidPush(PDO $pdo, int $userId, array $notificationRecord, array $payload): void
 {
     $projectId = pushEnv('ICEAPP_FCM_PROJECT_ID');
     $clientEmail = pushEnv('ICEAPP_FCM_SERVICE_ACCOUNT_EMAIL');
     $privateKeyPem = pushEnv('ICEAPP_FCM_PRIVATE_KEY_PEM');
-
-    if (!$projectId || !$clientEmail || !$privateKeyPem) {
-        error_log('Android push skipped: missing FCM project id, service account email, or private key.');
-        return;
-    }
-
-    $accessToken = fetchGoogleAccessToken($clientEmail, $privateKeyPem);
-    if (!$accessToken) {
-        error_log('Android push skipped: could not fetch Google OAuth access token.');
-        return;
-    }
 
     $stmt = $pdo->prepare("
         SELECT id, device_token
@@ -919,15 +1092,37 @@ function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
     $stmt->execute(['user_id' => $userId]);
     $devices = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
+    if (!$projectId || !$clientEmail || !$privateKeyPem) {
+        foreach ($devices as $device) {
+            $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
+            markPushDeliveryFailed($pdo, $deliveryId, 'Android push skipped: missing FCM project id, service account email, or private key.');
+        }
+        error_log('Android push skipped: missing FCM project id, service account email, or private key.');
+        return;
+    }
+
+    $accessToken = fetchGoogleAccessToken($clientEmail, $privateKeyPem);
+    if (!$accessToken) {
+        foreach ($devices as $device) {
+            $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
+            markPushDeliveryFailed($pdo, $deliveryId, 'Android push skipped: could not fetch Google OAuth access token.');
+        }
+        error_log('Android push skipped: could not fetch Google OAuth access token.');
+        return;
+    }
+
     foreach ($devices as $device) {
+        $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
+        $deliveryPayload = updatePushDeliveryPayload($pdo, $deliveryId, $payload, 'android');
+
         $body = [
             'message' => [
                 'token' => (string)$device['device_token'],
                 'notification' => [
-                    'title' => (string)($payload['title'] ?? 'Ice App'),
-                    'body' => (string)($payload['body'] ?? ''),
+                    'title' => (string)($deliveryPayload['title'] ?? 'Ice App'),
+                    'body' => (string)($deliveryPayload['body'] ?? ''),
                 ],
-                'data' => flattenPushPayloadForFcm($payload),
+                'data' => flattenPushPayloadForFcm($deliveryPayload),
                 'android' => [
                     'priority' => 'HIGH',
                     'notification' => [
@@ -949,9 +1144,16 @@ function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
         );
 
         $status = (int)$response['status'];
+        updatePushDeliveryProviderResult($pdo, $deliveryId, $status, (string)$response['body']);
         if ($status >= 200 && $status < 300) {
             $pdo->prepare("UPDATE mobile_push_devices SET last_success_at = NOW(), last_failure_at = NULL WHERE id = :id")
                 ->execute(['id' => (int)$device['id']]);
+            $pdo->prepare("
+                UPDATE push_notification_deliveries
+                SET status = 'delivered',
+                    delivered_at = NOW()
+                WHERE id = :id
+            ")->execute(['id' => $deliveryId]);
             continue;
         }
 
@@ -971,6 +1173,7 @@ function sendAndroidPush(PDO $pdo, int $userId, array $payload): void
         ]);
 
         // Hier den Fehler für den Admin-Test protokollieren (optional in ein Log-File oder eine separate Spalte)
+        markPushDeliveryFailed($pdo, $deliveryId, $errorMessage, $status, (string)$response['body']);
         error_log("FCM Error for User $userId: $status - $errorMessage");
     }
 }
