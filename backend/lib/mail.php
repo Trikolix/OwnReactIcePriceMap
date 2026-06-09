@@ -335,6 +335,16 @@ function iceapp_mail_is_safe_http_url(string $url): bool
 function iceapp_render_admin_markdown_inline_html(string $text): string
 {
     $tokens = [];
+    $text = preg_replace_callback('/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/i', static function (array $matches) use (&$tokens): string {
+        $url = trim($matches[2]);
+        if (!iceapp_mail_is_safe_http_url($url)) {
+            return iceapp_mail_escape($matches[0]);
+        }
+        $key = '%%ICEAPP_TOKEN_' . count($tokens) . '%%';
+        $alt = iceapp_mail_escape(trim($matches[1]));
+        $tokens[$key] = '<img src="' . iceapp_mail_escape($url) . '" alt="' . $alt . '" style="max-width:100%; border-radius:12px; margin:16px 0; display:block; box-shadow:0 4px 12px rgba(0,0,0,0.1);" />';
+        return $key;
+    }, $text);
     $text = preg_replace_callback('/\[button:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', static function (array $matches) use (&$tokens): string {
         $url = trim($matches[2]);
         if (!iceapp_mail_is_safe_http_url($url)) {
@@ -361,6 +371,7 @@ function iceapp_render_admin_markdown_inline_html(string $text): string
 
 function iceapp_render_admin_markdown_inline_plain(string $text): string
 {
+    $text = preg_replace('/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/i', '[Bild: $1] $2', $text);
     $text = preg_replace('/\[button:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', '$1: $2', $text);
     $text = preg_replace('/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', '$1: $2', $text);
     return preg_replace('/\*\*([^*]+)\*\*/', '$1', $text);

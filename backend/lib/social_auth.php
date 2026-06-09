@@ -556,11 +556,18 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
     ");
     $stmt->execute([$userId, $newsletterOptIn ? 1 : 0]);
 
+    $isVerified = !empty($identity['email_verified']) ? 1 : 0;
+
+    if ($isVerified) {
+        require_once __DIR__ . '/welcome_mail.php';
+        iceapp_send_welcome_mail($identity['email'], $username);
+    }
+
     return [
         'id' => $userId,
         'username' => $username,
         'email' => $identity['email'],
-        'is_verified' => !empty($identity['email_verified']) ? 1 : 0,
+        'is_verified' => $isVerified,
         'current_level' => 0,
     ];
 }
