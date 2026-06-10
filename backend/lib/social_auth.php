@@ -559,8 +559,8 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
     $isVerified = !empty($identity['email_verified']) ? 1 : 0;
 
     if ($isVerified) {
-        require_once __DIR__ . '/welcome_mail.php';
-        iceapp_send_welcome_mail($identity['email'], $username);
+        require_once __DIR__ . '/user_lifecycle_mails.php';
+        iceapp_send_welcome_mail_to_user($pdo, $userId);
     }
 
     return [
@@ -574,6 +574,8 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
 
 function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = null, ?string $desiredUsername = null, int $newsletterOptIn = 0): array {
     socialAuthEnsureTable($pdo);
+    require_once __DIR__ . '/user_lifecycle_mails.php';
+    iceapp_ensure_user_lifecycle_mail_schema($pdo);
 
     $pdo->beginTransaction();
 

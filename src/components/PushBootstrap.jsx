@@ -60,7 +60,7 @@ const PushBootstrap = () => {
 
     const initializeIfEnabled = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php?user_id=${userId}`);
+        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
         const json = await response.json();
         if (cancelled || Number(json?.push_enabled_android || 0) !== 1) return;
 

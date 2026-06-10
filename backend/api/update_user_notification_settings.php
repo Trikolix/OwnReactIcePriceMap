@@ -1,5 +1,6 @@
 <?php
 require_once '../db_connect.php';
+require_once '../lib/auth.php';
 require_once '../lib/user_notification_settings.php';
 header('Content-Type: application/json');
 
@@ -7,7 +8,17 @@ ensureUserNotificationSettingsSchema($pdo);
 
 // POST: user_id, notify_checkin_mention, notify_comment
 $data = json_decode(file_get_contents('php://input'), true);
-$user_id = isset($data['user_id']) ? intval($data['user_id']) : 0;
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
+$requestedUserId = isset($data['user_id']) ? intval($data['user_id']) : $currentUserId;
+
+if ($requestedUserId !== $currentUserId) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Zugriff verweigert']);
+    exit;
+}
+
+$user_id = $currentUserId;
 
 $notify_checkin_mention = isset($data['notify_checkin_mention']) ? intval($data['notify_checkin_mention']) : 1;
 $notify_comment = isset($data['notify_comment']) ? intval($data['notify_comment']) : 1;

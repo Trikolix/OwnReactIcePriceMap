@@ -37,12 +37,12 @@ function UserSite() {
   const { userId: userIdFromContext } = useUser();
   const viewerUserId = userIdFromContext || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
   const [activeTab, setActiveTab] = useState('checkins');
-  const isOwnProfile = userIdFromUrl === viewerUserId;
+  const finalUserId = userIdFromUrl || userIdFromContext;
+  const isOwnProfile = Boolean(finalUserId && viewerUserId && String(finalUserId) === String(viewerUserId));
   const [showToast, setShowToast] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const finalUserId = userIdFromUrl || userIdFromContext;
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [checkinPage, setCheckinPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
@@ -70,7 +70,20 @@ function UserSite() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('openSettings') === '1') {
-      setShowSettings(true);
+      if (isOwnProfile) {
+        setShowSettings(true);
+      } else {
+        setShowSettings(false);
+        params.delete('openSettings');
+        params.delete('openDelete');
+        navigate(
+          {
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+          },
+          { replace: true }
+        );
+      }
     }
     if (params.get('tab') === 'routes') {
       setActiveTab('routen');
@@ -78,7 +91,7 @@ function UserSite() {
     if (params.get('tab') === 'stats') {
       setActiveTab('stats');
     }
-  }, [location.search]);
+  }, [isOwnProfile, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

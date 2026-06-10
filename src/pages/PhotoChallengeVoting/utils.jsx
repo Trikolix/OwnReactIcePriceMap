@@ -120,17 +120,31 @@ Object.entries(COUNTRY_ALIASES).forEach(([alias, name]) => {
   }
 });
 
-export const getPhotoChallengeCountry = (title) => {
-  const normalizedTitle = normalizeCountryLabel(title);
+const buildCountryPayload = ({ name, code }) => {
+  const normalizedCode = String(code || '').trim().toLowerCase();
+  if (!name || !normalizedCode) return null;
+  return {
+    name,
+    code: String(code || '').trim().toUpperCase(),
+    flagUrl: `https://flagcdn.com/w80/${normalizedCode}.png`,
+    flagSrcSet: `https://flagcdn.com/w80/${normalizedCode}.png 1x, https://flagcdn.com/w160/${normalizedCode}.png 2x`,
+  };
+};
+
+export const getPhotoChallengeCountry = (source) => {
+  if (source && typeof source === 'object') {
+    const countryName = source.country_name || source.countryName || source.title || '';
+    const countryCode = source.country_code || source.countryCode || '';
+    const directCountry = buildCountryPayload({ name: countryName, code: countryCode });
+    if (directCountry) return directCountry;
+    source = countryName;
+  }
+
+  const normalizedTitle = normalizeCountryLabel(source);
   if (!normalizedTitle) return null;
   const country = countryByNormalizedLabel.get(normalizedTitle);
   if (!country) return null;
-  const flagCode = country.code.toLowerCase();
-  return {
-    ...country,
-    flagUrl: `https://flagcdn.com/w80/${flagCode}.png`,
-    flagSrcSet: `https://flagcdn.com/w80/${flagCode}.png 1x, https://flagcdn.com/w160/${flagCode}.png 2x`,
-  };
+  return buildCountryPayload(country);
 };
 
 export const isWorldCupPhotoChallenge = (challenge) => {

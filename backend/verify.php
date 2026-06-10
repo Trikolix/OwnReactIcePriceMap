@@ -22,8 +22,8 @@ try {
         $stmt = $pdo->prepare("UPDATE nutzer SET is_verified = 1, verification_token = NULL WHERE id = :id");
         $stmt->execute(['id' => $userId]);
 
-        require_once __DIR__ . '/lib/welcome_mail.php';
-        iceapp_send_welcome_mail($email, $username);
+        require_once __DIR__ . '/lib/user_lifecycle_mails.php';
+        iceapp_send_welcome_mail_to_user($pdo, $userId);
 
         if ($invitedBy !== null) {
             createNotification(

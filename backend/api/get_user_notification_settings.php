@@ -1,11 +1,22 @@
 <?php
 require_once '../db_connect.php';
+require_once '../lib/auth.php';
 require_once '../lib/user_notification_settings.php';
 header('Content-Type: application/json');
 
 ensureUserNotificationSettingsSchema($pdo);
 
-$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
+$requestedUserId = isset($_GET['user_id']) ? intval($_GET['user_id']) : $currentUserId;
+
+if ($requestedUserId !== $currentUserId) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Zugriff verweigert']);
+    exit;
+}
+
+$user_id = $currentUserId;
 if ($user_id <= 0) {
     echo json_encode(['error' => 'Ungültige Nutzer-ID']);
     exit;

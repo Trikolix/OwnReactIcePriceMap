@@ -77,7 +77,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch(`${API_BASE}/api/get_user_notification_settings.php?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
         const json = await res.json();
         setSettings(json);
       } catch (e) {
@@ -384,7 +384,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     const res = await fetch(`${API_BASE}/api/update_user_notification_settings.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, ...targetSettings }),
+      body: JSON.stringify(targetSettings),
     });
     const json = await res.json();
     if (!json.success) {
