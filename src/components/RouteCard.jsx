@@ -7,6 +7,14 @@ import SubmitRouteForm from "../SubmitRouteModal";
 import { Card } from "../styles/SharedStyles";
 import CommentSection from "./CommentSection";
 import UserAvatar from "./UserAvatar";
+import LikeButton from "./LikeButton";
+
+const ActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+
 import {
   Bike, MountainSnow, Footprints, SignalHigh, SignalMedium, SignalLow, BookLock, HelpCircle,
   ExternalLink, MessageCircle
@@ -289,12 +297,15 @@ return (
             dangerouslySetInnerHTML={{ __html: embedMarkup }}
           />
         )}
-        <CommentToggle
-          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-        >
-          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {route.commentCount || 0} Kommentar(e)
-        </CommentToggle>
+        <ActionRow>
+          <LikeButton entityType="route" entityId={route.id} />
+          <CommentToggle
+            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+            onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+          >
+            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {route.commentCount || 0} Kommentar(e)
+          </CommentToggle>
+        </ActionRow>
         {areCommentsVisible && (
           <CommentSection
             routeId={route.id}

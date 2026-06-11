@@ -5,6 +5,7 @@ import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
 import LoginModal from "../LoginModal";
 import MentionTextarea from "./MentionTextarea";
 import MentionFormatter from "../components/MentionFormatter";
+import LikeButton from "./LikeButton";
 
 // type: "checkin" | "bewertung" | "route" | "user_registration" | "award"
 const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, userAwardId, type = "checkin", focusCommentId = null, focusLatestComment = false }) => {
@@ -255,6 +256,9 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                                 <button onClick={() => handleDelete(kom.id)}><Trash2 size={14} /></button>
                             </ActionButtons>
                         )}
+                        <BottomActionRow>
+                            <LikeButton entityType="kommentar" entityId={kom.id} />
+                        </BottomActionRow>
                     </li>
 
                 ))}
@@ -429,4 +433,10 @@ const ErrorMessage = styled.div`
   border: 1px solid #d73a49;
   border-radius: 4px;
   margin: 1rem 0;
+`;
+
+const BottomActionRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.25rem;
 `;

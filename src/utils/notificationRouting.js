@@ -54,6 +54,20 @@ export const buildNotificationDeeplink = (notification, userId) => {
       const targetUserId = userId || notification?.empfaenger_id;
       return targetUserId ? `/user/${targetUserId}?mentionNotificationId=${notification?.id}` : null;
     }
+    case "like": {
+      const entityType = data.entity_type || "";
+      const entityId = data.entity_id || 0;
+      if (entityType === "checkin") {
+        return `/dashboard?focusCheckin=${entityId}`;
+      } else if (entityType === "bewertung") {
+        return `/dashboard?focusReview=${entityId}`;
+      } else if (entityType === "route") {
+        return `/dashboard?focusRoute=${entityId}`;
+      } else if (entityType === "kommentar") {
+        return `/dashboard?focusComment=${entityId}`;
+      }
+      return null;
+    }
     case "mention": {
       const referenceId = data.reference_id || notification?.referenz_id;
       const commentQuery = data.kommentar_id ? `&focusComment=${data.kommentar_id}` : "";

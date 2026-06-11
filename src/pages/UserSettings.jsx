@@ -42,6 +42,8 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_team_challenge_push: 1,
     notify_photo_challenge: 1,
     notify_photo_challenge_push: 1,
+    notify_like: 0,
+    notify_like_push: 1,
     push_enabled_web: 1,
     push_enabled_android: 1,
   });
@@ -729,6 +731,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <td>Photo-Challenges</td>
               <td><input type="checkbox" name="notify_photo_challenge" checked={!!settings.notify_photo_challenge} onChange={handleChange} /></td>
               <td><input type="checkbox" name="notify_photo_challenge_push" checked={!!settings.notify_photo_challenge_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Likes auf Beiträge</td>
+              <td><input type="checkbox" name="notify_like" checked={!!settings.notify_like} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_like_push" checked={!!settings.notify_like_push} onChange={handleChange} /></td>
             </tr>
           </tbody>
         </SettingsTable>

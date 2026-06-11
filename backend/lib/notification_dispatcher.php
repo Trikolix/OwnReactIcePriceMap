@@ -114,7 +114,7 @@ function ensureNotificationTypeSchema(PDO $pdo): void
         $stmt = $pdo->query("SHOW COLUMNS FROM benachrichtigungen LIKE 'typ'");
         $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
         $type = (string)($column['Type'] ?? '');
-        if ($type && strpos($type, "'mention'") === false) {
+        if ($type && strpos($type, "'like'") === false) {
             $pdo->exec("
                 ALTER TABLE benachrichtigungen
                 MODIFY COLUMN typ ENUM(
@@ -129,12 +129,13 @@ function ensureNotificationTypeSchema(PDO $pdo): void
                     'engagement',
                     'photo_challenge',
                     'kommentar_award',
-                    'mention'
+                    'mention',
+                    'like'
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
             ");
         }
     } catch (Throwable $e) {
-        error_log("Failed to ensure benachrichtigungen.typ supports mention: " . $e->getMessage());
+        error_log("Failed to ensure benachrichtigungen.typ supports like: " . $e->getMessage());
     }
 }
 
@@ -225,6 +226,8 @@ function notificationTypeToSettingField(string $type): string
             return 'notify_photo_challenge';
         case 'mention':
             return 'notify_mention';
+        case 'like':
+            return 'notify_like';
         case 'kommentar':
         case 'kommentar_bewertung':
         case 'kommentar_route':
@@ -256,6 +259,8 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
             notify_photo_challenge_push,
             notify_mention,
             notify_mention_push,
+            notify_like,
+            notify_like_push,
             push_enabled_web,
             push_enabled_android
         FROM user_notification_settings
@@ -384,6 +389,19 @@ function buildNotificationDeeplink(array $notification): ?string
             return $awardId > 0
                 ? '/dashboard?focusAward=' . $awardId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
                 : '/dashboard';
+        case 'like':
+            $entityType = $data['entity_type'] ?? '';
+            $entityId = (int)($data['entity_id'] ?? 0);
+            if ($entityType === 'checkin') {
+                return '/dashboard?focusCheckin=' . $entityId;
+            } elseif ($entityType === 'bewertung') {
+                return '/dashboard?focusReview=' . $entityId;
+            } elseif ($entityType === 'route') {
+                return '/dashboard?focusRoute=' . $entityId;
+            } elseif ($entityType === 'kommentar') {
+                return '/dashboard?focusComment=' . $entityId; // Or redirect somewhere better
+            }
+            return null;
         case 'new_user':
             return '/user/' . (int)$notification['referenz_id'];
         case 'team_challenge':

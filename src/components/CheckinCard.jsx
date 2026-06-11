@@ -11,6 +11,7 @@ import { Modal } from "./Modal";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
 import UserAvatar from "./UserAvatar";
 import MentionFormatter from "./MentionFormatter";
+import LikeButton from "./LikeButton";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focusCommentId = null }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
