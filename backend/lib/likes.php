@@ -2,6 +2,16 @@
 
 require_once __DIR__ . '/notification_dispatcher.php';
 
+function getLikeEntityTypes(): array
+{
+    return ['checkin', 'bewertung', 'route', 'kommentar', 'user_registration', 'user_award'];
+}
+
+function isValidLikeEntityType(string $entityType): bool
+{
+    return in_array($entityType, getLikeEntityTypes(), true);
+}
+
 function ensureLikesSchema(PDO $pdo): void
 {
     if (isset($GLOBALS['__likes_schema_initialized'])) {
@@ -13,13 +23,22 @@ function ensureLikesSchema(PDO $pdo): void
         CREATE TABLE IF NOT EXISTS likes (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
-            entity_type ENUM('checkin', 'bewertung', 'route', 'kommentar') NOT NULL,
+            entity_type ENUM('checkin', 'bewertung', 'route', 'kommentar', 'user_registration', 'user_award') NOT NULL,
             entity_id INT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY unique_like (user_id, entity_type, entity_id),
             FOREIGN KEY (user_id) REFERENCES nutzer(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+
+    try {
+        $pdo->exec("
+            ALTER TABLE likes
+            MODIFY entity_type ENUM('checkin', 'bewertung', 'route', 'kommentar', 'user_registration', 'user_award') NOT NULL
+        ");
+    } catch (Throwable $e) {
+        error_log("Failed to ensure likes.entity_type supports all entities: " . $e->getMessage());
+    }
 }
 
 function getLikesCount(PDO $pdo, string $entityType, int $entityId): int {
@@ -67,6 +86,12 @@ function getEntityOwner(PDO $pdo, string $entityType, int $entityId): ?int {
         case 'kommentar':
             $stmt = $pdo->prepare("SELECT nutzer_id FROM kommentare WHERE id = ?");
             break;
+        case 'user_registration':
+            $stmt = $pdo->prepare("SELECT id FROM nutzer WHERE id = ?");
+            break;
+        case 'user_award':
+            $stmt = $pdo->prepare("SELECT user_id FROM user_awards WHERE id = ?");
+            break;
     }
     if ($stmt) {
         $stmt->execute([$entityId]);
@@ -74,6 +99,89 @@ function getEntityOwner(PDO $pdo, string $entityType, int $entityId): ?int {
         return $ownerId ? (int)$ownerId : null;
     }
     return null;
+}
+
+function getLikeNotificationExtraData(PDO $pdo, string $entityType, int $entityId, int $likerId): array {
+    $extraData = [
+        'entity_type' => $entityType,
+        'entity_id' => $entityId,
+        'liker_id' => $likerId
+    ];
+
+    switch ($entityType) {
+        case 'checkin':
+            $stmt = $pdo->prepare("SELECT id AS checkin_id, eisdiele_id FROM checkins WHERE id = ?");
+            $stmt->execute([$entityId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $extraData['checkin_id'] = (int)$row['checkin_id'];
+                $extraData['eisdiele_id'] = (int)$row['eisdiele_id'];
+            }
+            break;
+        case 'bewertung':
+            $stmt = $pdo->prepare("SELECT id AS bewertung_id, eisdiele_id FROM bewertungen WHERE id = ?");
+            $stmt->execute([$entityId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $extraData['bewertung_id'] = (int)$row['bewertung_id'];
+                $extraData['eisdiele_id'] = (int)$row['eisdiele_id'];
+            }
+            break;
+        case 'route':
+            $stmt = $pdo->prepare("SELECT id AS route_id, nutzer_id AS route_autor_id FROM routen WHERE id = ?");
+            $stmt->execute([$entityId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $extraData['route_id'] = (int)$row['route_id'];
+                $extraData['route_autor_id'] = (int)$row['route_autor_id'];
+            }
+            break;
+        case 'kommentar':
+            $stmt = $pdo->prepare("
+                SELECT k.id AS kommentar_id,
+                       k.checkin_id,
+                       k.bewertung_id,
+                       k.route_id,
+                       k.user_registration_id,
+                       k.user_award_id,
+                       c.eisdiele_id AS checkin_eisdiele_id,
+                       b.eisdiele_id AS bewertung_eisdiele_id,
+                       r.nutzer_id AS route_autor_id
+                FROM kommentare k
+                LEFT JOIN checkins c ON c.id = k.checkin_id
+                LEFT JOIN bewertungen b ON b.id = k.bewertung_id
+                LEFT JOIN routen r ON r.id = k.route_id
+                WHERE k.id = ?
+            ");
+            $stmt->execute([$entityId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $extraData['kommentar_id'] = (int)$row['kommentar_id'];
+                if (!empty($row['checkin_id'])) {
+                    $extraData['checkin_id'] = (int)$row['checkin_id'];
+                    $extraData['eisdiele_id'] = (int)$row['checkin_eisdiele_id'];
+                } elseif (!empty($row['bewertung_id'])) {
+                    $extraData['bewertung_id'] = (int)$row['bewertung_id'];
+                    $extraData['eisdiele_id'] = (int)$row['bewertung_eisdiele_id'];
+                } elseif (!empty($row['route_id'])) {
+                    $extraData['route_id'] = (int)$row['route_id'];
+                    $extraData['route_autor_id'] = (int)$row['route_autor_id'];
+                } elseif (!empty($row['user_registration_id'])) {
+                    $extraData['user_registration_id'] = (int)$row['user_registration_id'];
+                } elseif (!empty($row['user_award_id'])) {
+                    $extraData['user_award_id'] = (int)$row['user_award_id'];
+                }
+            }
+            break;
+        case 'user_registration':
+            $extraData['user_registration_id'] = $entityId;
+            break;
+        case 'user_award':
+            $extraData['user_award_id'] = $entityId;
+            break;
+    }
+
+    return $extraData;
 }
 
 function dispatchLikeNotification(PDO $pdo, int $likerId, string $entityType, int $entityId): void {
@@ -102,23 +210,25 @@ function dispatchLikeNotification(PDO $pdo, int $likerId, string $entityType, in
     if ($totalLikes === 0) return; // Should not happen, we just inserted one
 
     $itemNames = [
-        'checkin' => 'Check-in',
-        'bewertung' => 'Bewertung',
-        'route' => 'Route',
-        'kommentar' => 'Kommentar'
+        'checkin' => 'dein Checkin',
+        'bewertung' => 'deine Bewertung',
+        'route' => 'deine Route',
+        'kommentar' => 'dein Kommentar',
+        'user_registration' => 'dein Profil-Feed-Eintrag',
+        'user_award' => 'dein Award'
     ];
-    $itemName = $itemNames[$entityType] ?? 'Beitrag';
+    $itemName = $itemNames[$entityType] ?? 'dein Beitrag';
 
     if ($totalLikes === 1) {
         $firstLiker = $likers[0];
-        $text = sprintf("%s gefällt dein(e) %s.", $firstLiker, $itemName);
+        $text = sprintf("%s gefällt %s.", $firstLiker, $itemName);
     } elseif ($totalLikes === 2) {
         $firstLiker = $likers[0];
-        $text = sprintf("%s und 1 weitere Person gefällt dein(e) %s.", $firstLiker, $itemName);
+        $text = sprintf("%s und 1 weitere Person gefällt %s.", $firstLiker, $itemName);
     } else {
         $firstLiker = $likers[0];
         $othersCount = $totalLikes - 1;
-        $text = sprintf("%s und %d weitere Personen gefällt dein(e) %s.", $firstLiker, $othersCount, $itemName);
+        $text = sprintf("%s und %d weitere Personen gefällt %s.", $firstLiker, $othersCount, $itemName);
     }
 
     // Check for existing notification
@@ -130,11 +240,7 @@ function dispatchLikeNotification(PDO $pdo, int $likerId, string $entityType, in
     $stmt->execute([$ownerId, $entityId, $entityType]);
     $existingId = $stmt->fetchColumn();
 
-    $extraData = [
-        'entity_type' => $entityType,
-        'entity_id' => $entityId,
-        'liker_id' => $likerId
-    ];
+    $extraData = getLikeNotificationExtraData($pdo, $entityType, $entityId, $likerId);
 
     if ($existingId) {
         $stmt = $pdo->prepare("
@@ -144,17 +250,12 @@ function dispatchLikeNotification(PDO $pdo, int $likerId, string $entityType, in
         ");
         $stmt->execute([$text, json_encode($extraData), $existingId]);
         $notificationId = (int)$existingId;
-    } else {
-        $stmt = $pdo->prepare("
-            INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, ist_gelesen, zusatzdaten)
-            VALUES (?, 'like', ?, ?, 0, ?)
-        ");
-        $stmt->execute([$ownerId, $entityId, $text, json_encode($extraData)]);
-        $notificationId = (int)$pdo->lastInsertId();
-    }
 
-    $notification = fetchNotificationById($pdo, $notificationId);
-    if ($notification) {
-        dispatchPushNotification($pdo, $ownerId, $notification);
+        $notification = fetchNotificationById($pdo, $notificationId);
+        if ($notification) {
+            dispatchNotification($pdo, $notification);
+        }
+    } else {
+        createNotification($pdo, $ownerId, 'like', $entityId, $text, $extraData);
     }
 }

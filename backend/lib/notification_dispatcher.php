@@ -393,13 +393,47 @@ function buildNotificationDeeplink(array $notification): ?string
             $entityType = $data['entity_type'] ?? '';
             $entityId = (int)($data['entity_id'] ?? 0);
             if ($entityType === 'checkin') {
-                return '/dashboard?focusCheckin=' . $entityId;
+                $checkinId = (int)($data['checkin_id'] ?? $entityId);
+                $shopId = (int)($data['eisdiele_id'] ?? 0);
+                return $shopId > 0 && $checkinId > 0
+                    ? '/map/activeShop/' . $shopId . '?tab=checkins&focusCheckin=' . $checkinId
+                    : null;
             } elseif ($entityType === 'bewertung') {
-                return '/dashboard?focusReview=' . $entityId;
+                $reviewId = (int)($data['bewertung_id'] ?? $entityId);
+                $shopId = (int)($data['eisdiele_id'] ?? 0);
+                return $shopId > 0 && $reviewId > 0
+                    ? '/map/activeShop/' . $shopId . '?tab=reviews&focusReview=' . $reviewId
+                    : null;
             } elseif ($entityType === 'route') {
-                return '/dashboard?focusRoute=' . $entityId;
+                $routeId = (int)($data['route_id'] ?? $entityId);
+                $routeOwnerId = (int)($data['route_autor_id'] ?? 0);
+                return $routeOwnerId > 0 && $routeId > 0
+                    ? '/user/' . $routeOwnerId . '?tab=routes&focusRoute=' . $routeId
+                    : null;
             } elseif ($entityType === 'kommentar') {
-                return '/dashboard?focusComment=' . $entityId; // Or redirect somewhere better
+                $commentId = (int)($data['kommentar_id'] ?? $entityId);
+                if (!empty($data['checkin_id']) && !empty($data['eisdiele_id'])) {
+                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                }
+                if (!empty($data['bewertung_id']) && !empty($data['eisdiele_id'])) {
+                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=reviews&focusReview=' . (int)$data['bewertung_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                }
+                if (!empty($data['route_id']) && !empty($data['route_autor_id'])) {
+                    return '/user/' . (int)$data['route_autor_id'] . '?tab=routes&focusRoute=' . (int)$data['route_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                }
+                if (!empty($data['user_registration_id'])) {
+                    return '/dashboard?focusNewUser=' . (int)$data['user_registration_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                }
+                if (!empty($data['user_award_id'])) {
+                    return '/dashboard?focusAward=' . (int)$data['user_award_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                }
+                return null;
+            } elseif ($entityType === 'user_registration') {
+                $targetUserId = (int)($data['user_registration_id'] ?? $entityId);
+                return $targetUserId > 0 ? '/dashboard?focusNewUser=' . $targetUserId : null;
+            } elseif ($entityType === 'user_award') {
+                $awardId = (int)($data['user_award_id'] ?? $entityId);
+                return $awardId > 0 ? '/dashboard?focusAward=' . $awardId : null;
             }
             return null;
         case 'new_user':

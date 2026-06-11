@@ -2,7 +2,7 @@
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
 
 class LikeCountEvaluator extends BaseAwardEvaluator {
-    const AWARD_ID = 70;
+    const AWARD_ID = 71;
     
     public function evaluate(int $userId): array {
         global $pdo;

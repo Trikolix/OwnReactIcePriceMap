@@ -144,12 +144,15 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
             />
           </MediaColumn>
         </StyledContentWrapper>
-        <CommentToggle
-          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-        >
-          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
-        </CommentToggle>
+        <ActionRow>
+          <LikeButton entityType="checkin" entityId={checkin.id} />
+          <CommentToggle
+            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+            onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+          >
+            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
+          </CommentToggle>
+        </ActionRow>
         {areCommentsVisible && (
           <CommentSection
             checkinId={checkin.id}
@@ -185,6 +188,13 @@ export default CheckinCard;
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const ActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 `;
 
 const CardMetaRow = styled.div`

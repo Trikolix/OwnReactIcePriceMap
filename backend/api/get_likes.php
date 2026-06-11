@@ -6,12 +6,10 @@ require_once __DIR__ . '/../lib/likes.php';
 header('Content-Type: application/json');
 
 try {
-    $authUser = requireAuth($pdo);
-
     $entityType = $_GET['entity_type'] ?? '';
     $entityId = (int)($_GET['entity_id'] ?? 0);
 
-    if (!in_array($entityType, ['checkin', 'bewertung', 'route', 'kommentar']) || $entityId <= 0) {
+    if (!isValidLikeEntityType($entityType) || $entityId <= 0) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid parameters']);
         exit();
@@ -20,9 +18,10 @@ try {
     ensureLikesSchema($pdo);
 
     $stmt = $pdo->prepare("
-        SELECT u.id, u.username, u.profilbild
+        SELECT u.id, u.username, up.avatar_path
         FROM likes l
         JOIN nutzer u ON l.user_id = u.id
+        LEFT JOIN user_profile_images up ON up.user_id = u.id
         WHERE l.entity_type = ? AND l.entity_id = ?
         ORDER BY l.created_at DESC
     ");

@@ -4,35 +4,54 @@ import { Heart } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import LikeUsersModal from "./LikeUsersModal";
 
-const ButtonWrapper = styled.button`
-  display: flex;
+const LikeActions = styled.div`
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  background: none;
+  gap: 0.15rem;
+  margin-top: 0.65rem;
+`;
+
+const HeartButton = styled.button.attrs({ type: "button" })`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
   border: none;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  color: ${({ $hasLiked }) => ($hasLiked ? "var(--accent-color)" : "var(--text-color)")};
-  font-size: 0.875rem;
-  transition: all 0.2s;
+  color: ${({ $hasLiked }) => ($hasLiked ? "#c43f4c" : "#8a5600")};
+  cursor: ${({ $canLike }) => ($canLike ? "pointer" : "default")};
+  font-weight: 700;
+  padding: 0.3rem 0.1rem 0.3rem 0;
+  border-radius: 8px;
+  transition: color 0.15s ease, transform 0.15s ease;
 
   &:hover {
-    color: var(--accent-color);
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.7;
+    color: ${({ $canLike, $hasLiked }) => ($canLike || $hasLiked ? "#c43f4c" : "#8a5600")};
+    transform: ${({ $canLike }) => ($canLike ? "translateY(-1px)" : "none")};
   }
 
   svg {
-    fill: ${({ $hasLiked }) => ($hasLiked ? "var(--accent-color)" : "none")};
+    fill: ${({ $hasLiked }) => ($hasLiked ? "currentColor" : "none")};
     transition: fill 0.2s;
   }
 `;
 
+const CountButton = styled.button.attrs({ type: "button" })`
+  background: transparent;
+  border: none;
+  color: #8a5600;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.3rem 0;
+  text-align: left;
+  border-radius: 8px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const LikeButton = ({ entityType, entityId }) => {
-  const { userId, isLoggedIn } = useUser();
+  const { isLoggedIn } = useUser();
   const [likesCount, setLikesCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,8 +65,10 @@ const LikeButton = ({ entityType, entityId }) => {
       try {
         const response = await fetch(`${apiUrl}/likes.php?entity_type=${entityType}&entity_id=${entityId}`);
         const data = await response.json();
-        setLikesCount(data.likes_count || 0);
-        setHasLiked(data.has_liked || false);
+        if (response.ok) {
+          setLikesCount(data.likes_count || 0);
+          setHasLiked(data.has_liked || false);
+        }
       } catch (err) {
         console.error("Failed to fetch like status", err);
       } finally {
@@ -69,7 +90,7 @@ const LikeButton = ({ entityType, entityId }) => {
   const handleLike = async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!isLoggedIn || hasLiked) return; // Prevent unlike for now
+    if (!isLoggedIn || hasLiked) return;
 
     // Optimistic update
     setHasLiked(true);
@@ -95,6 +116,10 @@ const LikeButton = ({ entityType, entityId }) => {
         setLikesCount(prev => Math.max(0, prev - 1));
       } else {
         setLikesCount(data.likes_count);
+        setHasLiked(Boolean(data.has_liked));
+        if (Array.isArray(data.new_awards) && data.new_awards.length > 0) {
+          window.dispatchEvent(new CustomEvent("new-awards", { detail: data.new_awards }));
+        }
       }
     } catch (err) {
       console.error("Failed to post like", err);
@@ -106,12 +131,26 @@ const LikeButton = ({ entityType, entityId }) => {
 
   if (!entityId || !entityType || isLoading) return null;
 
+  const canLike = Boolean(isLoggedIn && !hasLiked);
+
   return (
     <>
-    <ButtonWrapper onClick={handleLike} $hasLiked={hasLiked} disabled={!isLoggedIn || hasLiked} aria-label="Like">
-      <Heart size={18} />
-      {likesCount > 0 && <span onClick={handleCountClick} style={{ cursor: "pointer", textDecoration: "underline" }}>{likesCount}</span>}
-    </ButtonWrapper>
+      <LikeActions>
+        <HeartButton
+          onClick={handleLike}
+          $hasLiked={hasLiked}
+          $canLike={canLike}
+          aria-label={hasLiked ? "Gefällt dir" : "Gefällt mir"}
+          title={!isLoggedIn ? "Zum Liken einloggen" : hasLiked ? "Gefällt dir" : "Gefällt mir"}
+        >
+          <Heart size={18} />
+        </HeartButton>
+        {likesCount > 0 && (
+          <CountButton onClick={handleCountClick} aria-label={`${likesCount} Likes anzeigen`}>
+            {likesCount}
+          </CountButton>
+        )}
+      </LikeActions>
       <LikeUsersModal
         isOpen={showLikersModal}
         onClose={(e) => {
