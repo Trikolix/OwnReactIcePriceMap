@@ -137,7 +137,7 @@ function ensureTeamChallengeNotificationType(PDO $pdo): void
 
     $pdo->exec("
         ALTER TABLE benachrichtigungen
-        MODIFY COLUMN typ ENUM('kommentar','new_user','systemmeldung','kommentar_bewertung','checkin_mention','kommentar_route','kommentar_new_user','team_challenge','engagement','photo_challenge','kommentar_award')
+        MODIFY COLUMN typ ENUM('kommentar','new_user','systemmeldung','kommentar_bewertung','checkin_mention','kommentar_route','kommentar_new_user','team_challenge','engagement','photo_challenge','kommentar_award','mention')
         CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
     ");
 }

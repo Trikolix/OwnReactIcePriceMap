@@ -308,6 +308,44 @@ function event2026_ensure_schema(PDO $pdo): void
             KEY idx_event2026_passage_checkpoint (checkpoint_id, passed_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+        "CREATE TABLE IF NOT EXISTS event2026_self_rides (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            user_id INT NOT NULL,
+            route_key VARCHAR(32) NOT NULL,
+            ride_date DATE NOT NULL,
+            starts_at DATETIME NOT NULL,
+            expires_at DATETIME NOT NULL,
+            status ENUM('planned','completed','cancelled') NOT NULL DEFAULT 'planned',
+            completed_at DATETIME DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_self_ride_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            UNIQUE KEY uniq_event2026_self_ride_user_date (event_id, user_id, ride_date),
+            KEY idx_event2026_self_ride_user (user_id, ride_date),
+            KEY idx_event2026_self_ride_status (event_id, status, ride_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS event2026_self_ride_passages (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            self_ride_id INT NOT NULL,
+            event_id INT NOT NULL,
+            checkpoint_id INT NOT NULL,
+            user_id INT NOT NULL,
+            passed_at DATETIME NOT NULL,
+            source ENUM('gps_click') NOT NULL DEFAULT 'gps_click',
+            checkin_id INT DEFAULT NULL,
+            lat DECIMAL(10,7) DEFAULT NULL,
+            lng DECIMAL(10,7) DEFAULT NULL,
+            distance_m DECIMAL(10,2) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_self_passage_ride FOREIGN KEY (self_ride_id) REFERENCES event2026_self_rides(id) ON DELETE CASCADE,
+            CONSTRAINT fk_event2026_self_passage_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            CONSTRAINT fk_event2026_self_passage_checkpoint FOREIGN KEY (checkpoint_id) REFERENCES event2026_checkpoints(id) ON DELETE CASCADE,
+            UNIQUE KEY uniq_event2026_self_passage (self_ride_id, checkpoint_id),
+            KEY idx_event2026_self_passage_user (user_id, passed_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
         "CREATE TABLE IF NOT EXISTS event2026_contact_requests (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             event_id INT NOT NULL,
@@ -329,6 +367,22 @@ function event2026_ensure_schema(PDO $pdo): void
             KEY idx_event2026_contact_created (event_id, created_at),
             KEY idx_event2026_contact_status (event_id, status, created_at),
             KEY idx_event2026_contact_flagged (event_id, is_flagged, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS event2026_impressions (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            title VARCHAR(160) DEFAULT NULL,
+            caption TEXT DEFAULT NULL,
+            image_url VARCHAR(255) NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_published TINYINT(1) NOT NULL DEFAULT 1,
+            created_by_user_id INT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            CONSTRAINT fk_event2026_impressions_event FOREIGN KEY (event_id) REFERENCES event2026_seasons(id) ON DELETE CASCADE,
+            KEY idx_event2026_impressions_public (event_id, is_published, sort_order, created_at),
+            KEY idx_event2026_impressions_admin (event_id, sort_order, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
         "CREATE TABLE IF NOT EXISTS event2026_reminder_mail_log (
@@ -709,7 +763,9 @@ function event2026_ensure_schema(PDO $pdo): void
                 $order = (int) ($config['order'] ?? 0);
                 $minDistanceKm = (int) ($config['min_distance_km'] ?? 0);
                 $routeKeysCsv = implode(',', (array) ($config['route_keys'] ?? []));
-                $qrCodeId = event2026_ensure_checkpoint_qr_code($pdo, $eventId, $stampCardMode, (int) $shop['id'], (string) $shop['name']);
+                $qrCodeId = $stampCardMode === 'self_ride'
+                    ? null
+                    : event2026_ensure_checkpoint_qr_code($pdo, $eventId, $stampCardMode, (int) $shop['id'], (string) $shop['name']);
                 $checkpointStmt->execute([
                     ':event_id' => $eventId,
                     ':event_id2' => $eventId,
@@ -785,13 +841,21 @@ function event2026_stamp_card_configs(PDO $pdo): array
 {
     return [
         'live' => event2026_live_checkpoint_shop_config(),
+        'self_ride' => event2026_live_checkpoint_shop_config(),
         'test' => event2026_test_checkpoint_shop_config($pdo),
     ];
 }
 
 function event2026_normalize_stamp_card_mode(?string $mode): string
 {
-    return trim((string) $mode) === 'test' ? 'test' : 'live';
+    $mode = trim((string) $mode);
+    if ($mode === 'test') {
+        return 'test';
+    }
+    if ($mode === 'self_ride') {
+        return 'self_ride';
+    }
+    return 'live';
 }
 
 function event2026_start_finish_shop_id(?string $mode = 'live'): int
@@ -870,6 +934,17 @@ function event2026_live_stamping_message(array $event): string
         $formattedDate = $rawDate;
     }
 
+    try {
+        $timezone = new DateTimeZone('Europe/Berlin');
+        $availableFrom = new DateTimeImmutable($rawDate . ' 00:00:00', $timezone);
+        $now = new DateTimeImmutable('now', $timezone);
+        if ($now >= $availableFrom->modify('+1 day')) {
+            return sprintf('Die Live-Stempelkarte war nur am Event-Tag (%s) aktiv.', $formattedDate);
+        }
+    } catch (Throwable $e) {
+        // Fall through to the default pre-event message for malformed dates.
+    }
+
     return sprintf('Die Stempelkarte kann erst am Event-Tag (%s) genutzt werden.', $formattedDate);
 }
 
@@ -877,8 +952,123 @@ function event2026_is_live_stamping_open(array $event): bool
 {
     $timezone = new DateTimeZone('Europe/Berlin');
     $availableFrom = new DateTimeImmutable(event2026_live_stamping_available_from($event) . ' 00:00:00', $timezone);
+    $availableUntil = $availableFrom->modify('+1 day');
     $now = new DateTimeImmutable('now', $timezone);
-    return $now >= $availableFrom;
+    return $now >= $availableFrom && $now < $availableUntil;
+}
+
+function event2026_self_ride_date_bounds(): array
+{
+    $timezone = new DateTimeZone(EVENT2026_REGISTRATION_TIMEZONE);
+    $today = new DateTimeImmutable('today', $timezone);
+    return [
+        'min' => $today->format('Y-m-d'),
+        'max' => $today->modify('+14 days')->format('Y-m-d'),
+    ];
+}
+
+function event2026_validate_self_ride_date(string $rideDate): string
+{
+    $rideDate = trim($rideDate);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $rideDate)) {
+        throw new InvalidArgumentException('Bitte wähle ein gültiges Datum.');
+    }
+
+    $bounds = event2026_self_ride_date_bounds();
+    if ($rideDate < $bounds['min'] || $rideDate > $bounds['max']) {
+        throw new InvalidArgumentException(sprintf(
+            'Das Datum muss zwischen %s und %s liegen.',
+            $bounds['min'],
+            $bounds['max']
+        ));
+    }
+
+    return $rideDate;
+}
+
+function event2026_self_ride_window(string $rideDate): array
+{
+    $timezone = new DateTimeZone(EVENT2026_REGISTRATION_TIMEZONE);
+    $start = new DateTimeImmutable($rideDate . ' 00:00:00', $timezone);
+    $end = $start->modify('+24 hours');
+    return [
+        'starts_at' => $start->format('Y-m-d H:i:s'),
+        'expires_at' => $end->format('Y-m-d H:i:s'),
+    ];
+}
+
+function event2026_get_self_ride_for_user(PDO $pdo, int $eventId, int $userId, ?string $rideDate = null): ?array
+{
+    $rideDate = $rideDate ?: (new DateTimeImmutable('today', new DateTimeZone(EVENT2026_REGISTRATION_TIMEZONE)))->format('Y-m-d');
+    $stmt = $pdo->prepare("SELECT * FROM event2026_self_rides
+        WHERE event_id = :event_id
+          AND user_id = :user_id
+          AND ride_date = :ride_date
+          AND status <> 'cancelled'
+        LIMIT 1");
+    $stmt->execute([
+        ':event_id' => $eventId,
+        ':user_id' => $userId,
+        ':ride_date' => $rideDate,
+    ]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function event2026_self_ride_is_stamping_open(array $selfRide): bool
+{
+    $timezone = new DateTimeZone(EVENT2026_REGISTRATION_TIMEZONE);
+    $now = new DateTimeImmutable('now', $timezone);
+    $startsAt = new DateTimeImmutable((string) $selfRide['starts_at'], $timezone);
+    $expiresAt = new DateTimeImmutable((string) $selfRide['expires_at'], $timezone);
+    return $now >= $startsAt && $now < $expiresAt && ($selfRide['status'] ?? 'planned') !== 'cancelled';
+}
+
+function event2026_self_ride_is_allowed_user(int $userId): bool
+{
+    return $userId > 0;
+}
+
+function event2026_assert_self_ride_access(int $userId): void
+{
+    if (!event2026_self_ride_is_allowed_user($userId)) {
+        http_response_code(403);
+        throw new RuntimeException('Die Selbstfahrer-Funktion ist aktuell nur für den Admin freigeschaltet.');
+    }
+}
+
+function event2026_self_ride_required_checkins(?string $routeKey): int
+{
+    switch (event2026_normalize_route_key($routeKey)) {
+        case 'epic_4':
+            return 4;
+        case 'classic_3':
+            return 3;
+        case 'family_2':
+        default:
+            return 2;
+    }
+}
+
+function event2026_self_ride_route_shop_ids(?string $routeKey): array
+{
+    $checkpointShopIds = [];
+    foreach (event2026_live_checkpoint_shop_config() as $shopId => $config) {
+        if (event2026_route_applies_to_checkpoint(event2026_normalize_route_key($routeKey), implode(',', (array) ($config['route_keys'] ?? [])))) {
+            $checkpointShopIds[] = (int) $shopId;
+        }
+    }
+
+    $alternateShopIdsByRoute = [
+        'family_2' => [293, 356, 145, 111],
+        'classic_3' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491],
+        'epic_4' => [293, 356, 314, 245, 145, 111, 49, 122, 144, 233, 491, 22, 58, 114, 205],
+    ];
+
+    return array_values(array_unique(array_merge(
+        $checkpointShopIds,
+        $alternateShopIdsByRoute[event2026_normalize_route_key($routeKey)] ?? []
+    )));
 }
 
 function event2026_ensure_checkpoint_qr_code(PDO $pdo, int $eventId, string $stampCardMode, int $shopId, string $shopName): int

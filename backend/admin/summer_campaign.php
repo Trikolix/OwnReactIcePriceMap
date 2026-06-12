@@ -71,7 +71,7 @@ function upsertSummerAward(PDO $pdo, string $code, string $category, int $level,
     $awardId = (int)$awardStmt->fetchColumn();
 
     if ($awardId <= 0) {
-        $insertAward = $pdo->prepare("INSERT INTO awards (code, category, visibility, is_repeatable, repeat_xp_type) VALUES (:code, :category, 'public', 0, 'full')");
+        $insertAward = $pdo->prepare("INSERT INTO awards (code, category) VALUES (:code, :category)");
         $insertAward->execute([
             'code' => $code,
             'category' => $category,
@@ -390,7 +390,7 @@ try {
 
         $iconPath = storeSummerAwardIcon('award_icon_file') ?: ($shop['current_award_icon'] ?? null);
         $shopId = (int)$shop['eisdiele_id'];
-        $awardCode = SUMMER_CAMPAIGN_SHOP_AWARD_CODE;
+        $awardCode = SUMMER_CAMPAIGN_AWARD_TYPE;
         $awardLevel = resolveSummerShopAwardLevel($pdo, $awardCode, $shopId);
         $award = upsertSummerAward(
             $pdo,

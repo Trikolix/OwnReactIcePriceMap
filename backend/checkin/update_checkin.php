@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/image_upload.php';
+require_once __DIR__ . '/../lib/mention_utils.php';
 
 if (isMultipartBodyTooLarge()) {
     http_response_code(413);
@@ -236,6 +237,10 @@ try {
                 ]
             );
         }
+    }
+
+    if (!empty($kommentar)) {
+        processTextMentions($pdo, $kommentar, $userId, 'checkin', $checkinId, ['eisdiele_id' => $shopId, 'checkin_id' => $checkinId]);
     }
 
     // Commit der Transaktion

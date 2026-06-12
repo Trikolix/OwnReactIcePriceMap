@@ -6,6 +6,13 @@ export const buildAssetUrl = (path) => {
   return `${ASSET_BASE}/${normalized}`;
 };
 
+export const buildPublicAssetUrl = (path) => {
+  if (!path) return null;
+  if (/^(https?:|data:|blob:)/i.test(path)) return path;
+  if (path.startsWith("/")) return path;
+  return `/${path}`;
+};
+
 export const getInitials = (name) => {
   if (!name) return "?";
   const trimmed = name.trim();

@@ -1,6 +1,6 @@
 <?php
 require_once  __DIR__ . '/BaseAwardEvaluator.php';
-require_once  __DIR__ . '/../db_connect.php';
+// require_once  __DIR__ . '/../db_connect.php';
 
 class TheTasteOfChemnitzEvaluator extends BaseAwardEvaluator {
     const AWARD_ID = 56;
@@ -14,16 +14,14 @@ class TheTasteOfChemnitzEvaluator extends BaseAwardEvaluator {
         $stmt->execute(['userId' => $userId]);
         $hasScanned = $stmt->fetchColumn() > 0;
 
-        if (!$hasScanned) return [];
-
-        // Prüfe: Hat Nutzer 3 verschiedene Eisdielen im Landkreis Chemnitz eingecheckt zwischen 05.03. und 31.05.?
+        // Prüfe: Hat Nutzer 3 verschiedene Eisdielen im Landkreis Chemnitz eingecheckt seit 28.02.2026?
         $stmt = $pdo->prepare("
             SELECT COUNT(DISTINCT e.id) 
             FROM checkins 
             JOIN eisdielen e ON checkins.eisdiele_id = e.id
             WHERE nutzer_id = :userId 
               AND e.landkreis_id = 6
-              AND DATE(datum) BETWEEN '2026-03-06 00:00:00' AND '2026-05-31 23:59:59'
+              AND DATE(datum) >= '2026-02-28 00:00:00'
         ");
         $stmt->execute(['userId' => $userId]);
         $hasCheckin = $stmt->fetchColumn() >= 3;
@@ -38,7 +36,14 @@ class TheTasteOfChemnitzEvaluator extends BaseAwardEvaluator {
         }
 
         // Bestimme Ziel-Stufe
-        $targetLevel = $hasCheckin ? 2 : 1;
+        $targetLevel = 0;
+        if ($hasCheckin) {
+            $targetLevel = 2;
+        } elseif ($hasScanned) {
+            $targetLevel = 1;
+        }
+
+        if ($targetLevel === 0) return [];
 
         // Prüfe, ob Nutzer schon diese oder höhere Stufe hat
         $stmt = $pdo->prepare("SELECT MAX(level) FROM user_awards WHERE user_id = :userId AND award_id = :awardId");

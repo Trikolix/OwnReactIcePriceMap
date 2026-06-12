@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/route_utils.php';
+require_once __DIR__ . '/../lib/mention_utils.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -28,14 +29,15 @@ try {
     $is_admin = ($currentUserId === 1);
     $incomingEisdieleIds = $data['eisdiele_ids'] ?? null;
     $newEisdieleIds = null;
+    $komootShareToken = $url ? getKomootShareToken($url) : '';
     if ($is_admin) {
         if (!isset($data['embed_code']) || $data['embed_code'] === '') {
-            $embed_code = generateEmbedCode($url);
+            $embed_code = generateEmbedCode($url, $komootShareToken);
         } else {
             $embed_code = $data['embed_code'];
         }
     } else {
-        $embed_code = generateEmbedCode($url);
+        $embed_code = generateEmbedCode($url, $komootShareToken);
     }
 
     if (!$route_id || !$currentUserId) {
@@ -51,6 +53,9 @@ try {
             echo json_encode(['status' => 'error', 'message' => 'Ungültige oder nicht unterstützte URL']);
             die();
         }
+        if ($komootShareToken === '') {
+            $komootShareToken = getKomootShareToken($cleanUrl);
+        }
     }
 
     // SQL-Dynamik: nur vorhandene Felder aktualisieren
@@ -60,6 +65,8 @@ try {
     if ($cleanUrl !== null) {
         $fields[] = "url = :url";
         $params['url'] = $cleanUrl;
+        $fields[] = "komoot_share_token = :komoot_share_token";
+        $params['komoot_share_token'] = $komootShareToken !== '' ? $komootShareToken : null;
     }
     if ($beschreibung !== null) {
         $fields[] = "beschreibung = :beschreibung";
@@ -137,6 +144,23 @@ try {
             $ins->execute([
                 'route_id' => $route_id,
                 'eisdiele_id' => $shopId
+            ]);
+        }
+    }
+
+    if (!empty($beschreibung)) {
+        $mentionShopId = $newEisdieleIds[0] ?? null;
+        if (!$mentionShopId) {
+            $shopStmt = $pdo->prepare("SELECT eisdiele_id FROM routen WHERE id = ? AND nutzer_id = ?");
+            $shopStmt->execute([$route_id, $currentUserId]);
+            $mentionShopId = $shopStmt->fetchColumn();
+        }
+
+        if ($mentionShopId) {
+            processTextMentions($pdo, $beschreibung, $currentUserId, 'route', (int)$route_id, [
+                'eisdiele_id' => (int)$mentionShopId,
+                'route_id' => (int)$route_id,
+                'route_autor_id' => $currentUserId,
             ]);
         }
     }

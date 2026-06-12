@@ -8,6 +8,7 @@ import { getActiveAwardEffectTier } from "../shared/awardEffects";
 import { getAwardIconSources, handleAwardIconFallback } from "../utils/awardIcons";
 import { Card as SharedCard, CommentToggle } from "../styles/SharedStyles";
 import CommentSection from "./CommentSection";
+import LikeButton from "./LikeButton";
 import { MessageCircle } from "lucide-react";
 
 const normalizeDateString = (value) => {
@@ -120,15 +121,18 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
               <p>{award.description_de}</p>
             </TextContent>
           </ContentWrapper>
-          <CommentToggle
-            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-            onClick={(event) => {
-              event.preventDefault();
-              setAreCommentsVisible((prev) => !prev);
-            }}
-          >
-            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {award.commentCount || 0} Kommentar(e)
-          </CommentToggle>
+          <ActionRow>
+            <LikeButton entityType="user_award" entityId={award.id} />
+            <CommentToggle
+              title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+              onClick={(event) => {
+                event.preventDefault();
+                setAreCommentsVisible((prev) => !prev);
+              }}
+            >
+              <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {award.commentCount || 0} Kommentar(e)
+            </CommentToggle>
+          </ActionRow>
           {areCommentsVisible && (
             <CommentSection
               userAwardId={award.id}
@@ -181,6 +185,13 @@ export default AwardCard;
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const ActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 `;
 
 const SHIMMER_KEYFRAMES = `

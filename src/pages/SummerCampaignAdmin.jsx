@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import Header from "../Header";
 import { useUser } from "../context/UserContext";
@@ -7,6 +8,7 @@ import {
   postSummerAdminAction,
   searchSummerAdminShops,
 } from "../features/seasonal/summerApi";
+import { getAwardIconSources, handleAwardIconFallback } from "../utils/awardIcons";
 
 const defaultRule = {
   rule_type: "scan_count",
@@ -237,10 +239,20 @@ export default function SummerCampaignAdmin() {
           <h2>Teilnehmende Eisdielen</h2>
           <TableWrap>
             <Table>
+              <colgroup>
+                <col />
+                <col className="category-col" />
+                <col className="award-col" />
+                <col className="sort-col" />
+                <col className="status-col" />
+                <col className="flyer-col" />
+                <col className="actions-col" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Shop</th>
                   <th>Kategorien</th>
+                  <th>Award</th>
                   <th>Sortierung</th>
                   <th>Status</th>
                   <th>Flyer-Link</th>
@@ -353,6 +365,7 @@ function EditableShopRow({ shop, onSave, onSaveAward, onDelete, onCopy }) {
   const [awardDescription, setAwardDescription] = useState(shop.award_description || "Du hast diese Sommer-Sammelkarte freigeschaltet.");
   const [awardEp, setAwardEp] = useState(String(shop.award_ep || 25));
   const [awardIconFile, setAwardIconFile] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     setCategory(shop.category || "");
@@ -374,42 +387,75 @@ function EditableShopRow({ shop, onSave, onSaveAward, onDelete, onCopy }) {
     if (awardIconFile) formData.append("award_icon_file", awardIconFile);
     onSaveAward(formData);
   };
+  const awardIconSources = shop.award_icon ? getAwardIconSources(shop.award_icon, 128) : null;
+  const largeAwardIconSources = shop.award_icon ? getAwardIconSources(shop.award_icon, 512) : null;
 
   return (
-    <tr>
-      <td>
-        <strong>#{shop.eisdiele_id} {shop.shop_name}</strong>
-        <Small>{shop.shop_address}</Small>
-        {shop.award_id && <Small>Award {shop.award_id}/{shop.award_level}</Small>}
-      </td>
-      <td>
-        <SmallInput value={category} onChange={(e) => setCategory(e.target.value)} placeholder="z.B. Ausflug, Stadt, Softeis" />
-        <Small>Mehrere Kategorien mit Komma trennen.</Small>
-      </td>
-      <td><SmallInput type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} /></td>
-      <td>
-        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-      </td>
-      <td>
-        <Code>{shop.code}</Code>
-        <Small>{shop.flyer_url}</Small>
-      </td>
-      <td>
-        <InlineActions>
-          <SmallButton type="button" onClick={() => onSave({ id: shop.id, category, sort_order: Number(sortOrder || 0), is_active: isActive })}>Speichern</SmallButton>
-          <SmallButton type="button" onClick={() => onCopy(shop.flyer_url)}>Kopieren</SmallButton>
-          <DangerButton type="button" onClick={onDelete}>Entfernen</DangerButton>
-        </InlineActions>
-        <AwardEditor>
-          <Small>Award-Bildchen</Small>
-          <SmallInput value={awardTitle} onChange={(e) => setAwardTitle(e.target.value)} placeholder="Award-Titel" />
-          <SmallTextarea rows={2} value={awardDescription} onChange={(e) => setAwardDescription(e.target.value)} placeholder="Beschreibung" />
-          <SmallInput type="number" value={awardEp} onChange={(e) => setAwardEp(e.target.value)} placeholder="EP" />
-          <SmallInput type="file" accept="image/*" onChange={(e) => setAwardIconFile(e.target.files?.[0] || null)} />
-          <SmallButton type="button" onClick={saveAward}>Award speichern</SmallButton>
-        </AwardEditor>
-      </td>
-    </tr>
+    <>
+      <tr>
+        <td>
+          <strong>#{shop.eisdiele_id} {shop.shop_name}</strong>
+          <Small>{shop.shop_address}</Small>
+          {shop.award_id && <Small>Award {shop.award_id}/{shop.award_level}</Small>}
+        </td>
+        <td>
+          <CategoryTextarea rows={2} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="z.B. Ausflug, Stadt, Softeis" />
+        </td>
+        <td>
+          {awardIconSources?.src ? (
+            <AwardPreviewButton type="button" onClick={() => setPreviewOpen(true)} aria-label={`Award-Bild ${shop.award_title || shop.shop_name} groß anzeigen`}>
+              <AwardPreview
+                src={awardIconSources.src}
+                data-fallback-src={awardIconSources.fallbackSrc || ""}
+                onError={handleAwardIconFallback}
+                alt={shop.award_title || `Award ${shop.shop_name}`}
+              />
+            </AwardPreviewButton>
+          ) : (
+            <AwardPlaceholder>kein Bild</AwardPlaceholder>
+          )}
+        </td>
+        <td><SortInput type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} /></td>
+        <td>
+          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+        </td>
+        <td>
+          <FlyerCopyButton type="button" title={shop.flyer_url} onClick={() => onCopy(shop.flyer_url)}>
+            {shop.flyer_url}
+          </FlyerCopyButton>
+          <Small>klicken kopiert komplett</Small>
+        </td>
+        <td>
+          <InlineActions>
+            <SmallButton type="button" onClick={() => onSave({ id: shop.id, category, sort_order: Number(sortOrder || 0), is_active: isActive })}>Speichern</SmallButton>
+            <DangerButton type="button" onClick={onDelete}>Entfernen</DangerButton>
+          </InlineActions>
+          <AwardEditor>
+            <Small>Award-Bildchen</Small>
+            <SmallInput value={awardTitle} onChange={(e) => setAwardTitle(e.target.value)} placeholder="Award-Titel" />
+            <SmallTextarea rows={2} value={awardDescription} onChange={(e) => setAwardDescription(e.target.value)} placeholder="Beschreibung" />
+            <SmallInput type="number" value={awardEp} onChange={(e) => setAwardEp(e.target.value)} placeholder="EP" />
+            <SmallInput type="file" accept="image/*" onChange={(e) => setAwardIconFile(e.target.files?.[0] || null)} />
+            <SmallButton type="button" onClick={saveAward}>Award speichern</SmallButton>
+          </AwardEditor>
+        </td>
+      </tr>
+      {previewOpen && typeof document !== "undefined" && createPortal(
+        <AwardOverlay onClick={() => setPreviewOpen(false)}>
+          <AwardOverlayCard onClick={(event) => event.stopPropagation()}>
+            <AwardOverlayClose type="button" onClick={() => setPreviewOpen(false)} aria-label="Award-Vorschau schließen">×</AwardOverlayClose>
+            <AwardOverlayImage
+              src={largeAwardIconSources?.src || awardIconSources?.src || ""}
+              data-fallback-src={largeAwardIconSources?.fallbackSrc || awardIconSources?.fallbackSrc || ""}
+              onError={handleAwardIconFallback}
+              alt={shop.award_title || `Award ${shop.shop_name}`}
+            />
+            <AwardOverlayTitle>{shop.award_title || shop.shop_name}</AwardOverlayTitle>
+          </AwardOverlayCard>
+        </AwardOverlay>,
+        document.body
+      )}
+    </>
   );
 }
 
@@ -552,11 +598,36 @@ const TableWrap = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+
+  .category-col {
+    width: 168px;
+  }
+
+  .award-col {
+    width: 74px;
+  }
+
+  .sort-col {
+    width: 82px;
+  }
+
+  .status-col {
+    width: 66px;
+  }
+
+  .flyer-col {
+    width: 230px;
+  }
+
+  .actions-col {
+    width: 260px;
+  }
 
   th,
   td {
     border-bottom: 1px solid #e5e7eb;
-    padding: 0.65rem;
+    padding: 0.48rem;
     text-align: left;
     vertical-align: top;
   }
@@ -571,13 +642,77 @@ const Small = styled.span`
 
 const Code = styled.code`
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   word-break: break-all;
+  max-height: 2.8em;
+  overflow: hidden;
 `;
 
 const SmallInput = styled(Input)`
   min-width: 110px;
   padding: 0.45rem 0.55rem;
+`;
+
+const CategoryTextarea = styled(Textarea)`
+  min-width: 0;
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.82rem;
+`;
+
+const SortInput = styled(SmallInput)`
+  width: 58px;
+  min-width: 0;
+`;
+
+const AwardPreview = styled.img`
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+  background: #eef2f7;
+`;
+
+const AwardPreviewButton = styled.button`
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+  display: block;
+`;
+
+const AwardPlaceholder = styled.span`
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.68rem;
+  text-align: center;
+`;
+
+const FlyerCopyButton = styled.button`
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #14532d;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: copy;
 `;
 
 const SmallTextarea = styled(Textarea)`
@@ -610,6 +745,58 @@ const SmallButton = styled.button`
 const DangerButton = styled(SmallButton)`
   border-color: #fecaca;
   color: #9f1239;
+`;
+
+const AwardOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.68);
+`;
+
+const AwardOverlayCard = styled.div`
+  position: relative;
+  width: min(520px, 94vw);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 24px 72px rgba(15, 23, 42, 0.32);
+`;
+
+const AwardOverlayClose = styled.button`
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+`;
+
+const AwardOverlayImage = styled.img`
+  width: min(420px, 82vw);
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  border-radius: 10px;
+  background: #f8fafc;
+`;
+
+const AwardOverlayTitle = styled.div`
+  margin-top: 0.75rem;
+  padding: 0 2rem;
+  color: #0f172a;
+  font-weight: 800;
+  text-align: center;
 `;
 
 const RuleList = styled.div`

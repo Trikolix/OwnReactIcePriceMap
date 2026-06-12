@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Compass,
+  Download,
   ExternalLink,
   Flag,
   IceCreamBowl,
@@ -26,8 +27,21 @@ import { useUser } from "../../context/UserContext";
 import { getApiBaseUrl } from "../../shared/api/client";
 import Seo from "../../components/Seo";
 import NewAwards from "../../components/NewAwards";
-import { EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
+import { EVENT_PAYMENT_PAYPAL_ADDRESS, EVENT_START_FINISH, formatRouteLabelWithDistance } from "./eventConfig";
 import { getEventAccessErrorMessage, readEventApiJson } from "./eventAuthMessages";
+import { getAwardIconSources, handleAwardIconFallback } from "../../utils/awardIcons";
+import { EVENT_ROUTE_RESOURCES } from "./eventParticipantInfoConfig";
+import route70Gpx from "./Ice-Tour_70km.gpx?raw";
+import route140Gpx from "./Ice-Tour_140km.gpx?raw";
+import route180Gpx from "./Ice-Tour_180km.gpx?raw";
+
+const ROUTE_GPX_CONTENT = {
+  family_2: route70Gpx,
+  classic_3: route140Gpx,
+  epic_4: route180Gpx,
+};
+
+const PAYPAL_DONATION_URL = `https://www.paypal.com/donate/?business=${encodeURIComponent(EVENT_PAYMENT_PAYPAL_ADDRESS)}&currency_code=EUR`;
 
 const Page = styled.div`
   min-height: 100vh;
@@ -206,7 +220,9 @@ const ProgressTrack = styled.div`
 const ProgressFill = styled.div`
   height: 100%;
   width: ${({ $value }) => `${$value}%`};
-  background: linear-gradient(90deg, #ffb522 0%, #ffd978 100%);
+  background: ${({ $tone }) => ($tone === "checkins"
+    ? "linear-gradient(90deg, #16a34a 0%, #86efac 100%)"
+    : "linear-gradient(90deg, #ffb522 0%, #ffd978 100%)")};
 `;
 
 const ProgressText = styled.div`
@@ -318,6 +334,53 @@ const MessageBox = styled.div`
   line-height: 1.45;
 `;
 
+const StampReadyNotice = styled.div`
+  position: sticky;
+  top: 0.6rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.8rem 0 0;
+  padding: 0.72rem;
+  border-radius: 16px;
+  border: 1px solid rgba(34, 197, 94, 0.34);
+  background: rgba(240, 253, 244, 0.96);
+  box-shadow: 0 12px 28px rgba(22, 101, 52, 0.12);
+  color: #166534;
+
+  strong {
+    display: block;
+    line-height: 1.15;
+    color: #14532d;
+  }
+
+  span {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  @media (max-width: 640px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+const NoticeActions = styled.div`
+  display: flex;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+
+  @media (max-width: 640px) {
+    > button {
+      flex: 1;
+    }
+  }
+`;
+
 const PENDING_KEY = "event2026_pending_stamp_actions_v1";
 const PENDING_SCAN_KEY = "event2026_pending_qr_scan_v1";
 
@@ -365,6 +428,7 @@ function writePendingScan(scan) {
 }
 
 function normalizeScanMode(mode) {
+  if (String(mode || "") === "self_ride") return "self_ride";
   return String(mode || "") === "test" ? "test" : "live";
 }
 
@@ -546,6 +610,8 @@ const CheckpointCard = styled.article`
       ? "#f4fff6"
       : "#fffdf8")};
   padding: 0.9rem;
+  scroll-margin-top: 0.8rem;
+  box-shadow: ${({ $highlight, $passed }) => ($highlight && !$passed ? "0 0 0 3px rgba(255, 181, 34, 0.18), 0 16px 34px rgba(124, 79, 0, 0.12)" : "none")};
 `;
 
 const HeadRow = styled.div`
@@ -678,13 +744,64 @@ const InlineLink = styled(Link)`
   box-sizing: border-box;
 `;
 
+const InlineAnchor = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  gap: 0.45rem;
+  min-height: 42px;
+  border-radius: 13px;
+  border: 1px solid #ecd49b;
+  background: #fff5df;
+  color: #2f2100;
+  text-decoration: none;
+  font-weight: 800;
+  padding: 0.72rem 0.9rem;
+  box-sizing: border-box;
+`;
+
+const CompleteCard = styled(Card)`
+  border-color: rgba(34, 197, 94, 0.34);
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.72), rgba(255, 253, 249, 0.98));
+`;
+
+const AwardRow = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: center;
+  margin-top: 0.75rem;
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const AwardIcon = styled.img`
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(34, 197, 94, 0.24);
+`;
+
+const DonateHint = styled.p`
+  margin: 0.5rem 0 0;
+  color: #166534;
+  line-height: 1.45;
+  font-weight: 700;
+`;
+
 export default function EventStampCard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, authToken, userId, username } = useUser();
   const apiBase = getApiBaseUrl();
-  const requestedMode = searchParams.get("mode") === "test" ? "test" : "live";
+  const requestedMode = normalizeScanMode(searchParams.get("mode"));
   const isAdmin = Number(userId) === 1;
-  const mode = requestedMode === "test" && isAdmin ? "test" : "live";
+  const mode = requestedMode === "test" && !isAdmin ? "live" : requestedMode;
+  const isSelfRide = mode === "self_ride";
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -704,8 +821,11 @@ export default function EventStampCard() {
   const [scanContext, setScanContext] = useState(null);
   const [newAwards, setNewAwards] = useState([]);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const [gpxDownloadUrl, setGpxDownloadUrl] = useState("");
   const queryScanKeyRef = useRef("");
   const pendingScanKeyRef = useRef("");
+  const checkpointRefs = useRef(new Map());
+  const lastAutoFocusedCheckpointRef = useRef(null);
 
   const queryScan = useMemo(() => {
     if (!searchParams.get("scan")) return null;
@@ -757,6 +877,16 @@ export default function EventStampCard() {
         }
         if (!cancelled) {
           setData(json);
+          if (Array.isArray(json.new_awards) && json.new_awards.length > 0 && typeof window !== "undefined") {
+            setNewAwards(json.new_awards);
+            window.dispatchEvent(new CustomEvent("new-awards", { detail: json.new_awards }));
+          }
+          if (json.level_up) {
+            setLevelUpInfo({
+              level: json.new_level,
+              level_name: json.level_name,
+            });
+          }
         }
       })
       .catch((fetchError) => {
@@ -830,8 +960,10 @@ export default function EventStampCard() {
     [checkpointsWithDistance, startFinish]
   );
   const primaryCheckpoints = useMemo(
-    () => checkpointsWithDistance.filter((checkpoint) => !isFinishCheckpoint(checkpoint, startFinish)),
-    [checkpointsWithDistance, startFinish]
+    () => isSelfRide
+      ? checkpointsWithDistance
+      : checkpointsWithDistance.filter((checkpoint) => !isFinishCheckpoint(checkpoint, startFinish)),
+    [checkpointsWithDistance, isSelfRide, startFinish]
   );
   const mandatoryPrimaryCheckpoints = useMemo(
     () => primaryCheckpoints.filter((checkpoint) => Number(checkpoint.is_mandatory) === 1),
@@ -839,7 +971,16 @@ export default function EventStampCard() {
   );
 
   const completedMandatoryCount = mandatoryPrimaryCheckpoints.filter(isCheckpointComplete).length;
-  const finishUnlocked = mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
+  const requiredSelfRideCheckins = Number(data?.self_ride?.required_checkins || 0);
+  const completedSelfRideCheckins = Number(data?.self_ride?.checkins_passed || 0);
+  const selfRideCheckinRatio = requiredSelfRideCheckins
+    ? Math.round((Math.min(completedSelfRideCheckins, requiredSelfRideCheckins) / requiredSelfRideCheckins) * 100)
+    : 0;
+  const routeResources = data?.slot?.route_key ? (EVENT_ROUTE_RESOURCES[data.slot.route_key] || {}) : {};
+  const routeGpxContent = data?.slot?.route_key ? (ROUTE_GPX_CONTENT[data.slot.route_key] || "") : "";
+  const selfRideAward = data?.self_ride?.award || null;
+  const selfRideAwardIconSources = getAwardIconSources(selfRideAward?.icon, 512);
+  const finishUnlocked = isSelfRide || mandatoryPrimaryCheckpoints.every(isCheckpointComplete);
   const pendingCount = pendingActions.filter((item) => item.mode === mode).length;
   const progressRatio = mandatoryPrimaryCheckpoints.length
     ? Math.round((completedMandatoryCount / mandatoryPrimaryCheckpoints.length) * 100)
@@ -847,6 +988,48 @@ export default function EventStampCard() {
   const startFinishDistance = locationState.coords
     ? haversineDistanceMeters(locationState.coords.lat, locationState.coords.lng, startFinish.lat, startFinish.lng)
     : null;
+  const activeStampableCheckpoint = useMemo(() => {
+    if (!stampingEnabled) return null;
+    const candidates = !isSelfRide && finishCheckpoint
+      ? [...primaryCheckpoints, finishCheckpoint]
+      : primaryCheckpoints;
+    return candidates.find((checkpoint) => {
+      if (isCheckpointComplete(checkpoint)) return false;
+      if (checkpoint.distanceMeters === null || checkpoint.distanceMeters > 300) return false;
+      if (!isSelfRide && isFinishCheckpoint(checkpoint, startFinish) && !finishUnlocked) return false;
+      return true;
+    }) || null;
+  }, [finishCheckpoint, finishUnlocked, isSelfRide, primaryCheckpoints, stampingEnabled, startFinish]);
+
+  const scrollToCheckpoint = (checkpointId) => {
+    const node = checkpointRefs.current.get(Number(checkpointId));
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  useEffect(() => {
+    if (!activeStampableCheckpoint?.id) {
+      return;
+    }
+    if (lastAutoFocusedCheckpointRef.current === activeStampableCheckpoint.id) {
+      return;
+    }
+    lastAutoFocusedCheckpointRef.current = activeStampableCheckpoint.id;
+    window.setTimeout(() => scrollToCheckpoint(activeStampableCheckpoint.id), 250);
+  }, [activeStampableCheckpoint?.id]);
+
+  useEffect(() => {
+    if (!routeGpxContent || typeof Blob === "undefined" || typeof URL === "undefined") {
+      setGpxDownloadUrl("");
+      return undefined;
+    }
+
+    const blob = new Blob([routeGpxContent], { type: "application/gpx+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    setGpxDownloadUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [routeGpxContent]);
 
   const storePendingQrScan = (scan) => {
     const nextScan = {
@@ -1022,7 +1205,7 @@ export default function EventStampCard() {
 
   const handleGpsStamp = async (checkpoint, locked) => {
     if (!stampingEnabled) {
-      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+      setMessage({ tone: "info", text: stampingMessage || "Stempel sind aktuell noch nicht freigeschaltet." });
       return;
     }
     if (locked) {
@@ -1066,6 +1249,10 @@ export default function EventStampCard() {
   };
 
   const handleQrCode = async (checkpoint, qrCode) => {
+    if (isSelfRide) {
+      setMessage({ tone: "info", text: "Die Selbstfahrer-Stempelkarte funktioniert nur per GPS-Standort." });
+      return;
+    }
     if (!stampingEnabled) {
       setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
       return;
@@ -1280,7 +1467,18 @@ export default function EventStampCard() {
         : null;
 
     return (
-      <CheckpointCard key={`${mode}-${checkpoint.id}`} $highlight={options.highlight} $passed={passed}>
+      <CheckpointCard
+        key={`${mode}-${checkpoint.id}`}
+        ref={(node) => {
+          if (node) {
+            checkpointRefs.current.set(Number(checkpoint.id), node);
+          } else {
+            checkpointRefs.current.delete(Number(checkpoint.id));
+          }
+        }}
+        $highlight={options.highlight}
+        $passed={passed}
+      >
         <HeadRow>
           <NameWrap>
             <CheckpointName>{checkpoint.name}</CheckpointName>
@@ -1351,25 +1549,27 @@ export default function EventStampCard() {
               <Button type="button" onClick={() => handleGpsStamp(checkpoint, locked)} disabled={!gpsReady || locked || !stampingEnabled}>
                 Standort-Stempel
               </Button>
-              <Button
-                type="button"
-                $secondary
-                onClick={() => {
-                  if (!stampingEnabled) {
-                    setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
-                    return;
-                  }
-                  if (locked) {
-                    setMessage({ tone: "info", text: options.lockHint || "Dieser Checkpoint ist noch gesperrt." });
-                    return;
-                  }
-                  setShowScannerFor(checkpoint);
-                }}
-                disabled={locked || !stampingEnabled}
-              >
-                <QrCode size={15} />
-                QR-Code
-              </Button>
+              {!isSelfRide && (
+                <Button
+                  type="button"
+                  $secondary
+                  onClick={() => {
+                    if (!stampingEnabled) {
+                      setMessage({ tone: "info", text: stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet." });
+                      return;
+                    }
+                    if (locked) {
+                      setMessage({ tone: "info", text: options.lockHint || "Dieser Checkpoint ist noch gesperrt." });
+                      return;
+                    }
+                    setShowScannerFor(checkpoint);
+                  }}
+                  disabled={locked || !stampingEnabled}
+                >
+                  <QrCode size={15} />
+                  QR-Code
+                </Button>
+              )}
             </>
           )}
           {passed && !hasIceCheckin && (
@@ -1393,7 +1593,11 @@ export default function EventStampCard() {
         </CardActions>
 
         {!gpsReady && !passed && !locked && (
-          <MetaText>GPS-Stempel ist erst im 300-m-Umkreis aktiv. Wenn GPS nicht mitspielt, nutze den QR-Code.</MetaText>
+          <MetaText>
+            {isSelfRide
+              ? "GPS-Stempel ist erst im 300-m-Umkreis aktiv."
+              : "GPS-Stempel ist erst im 300-m-Umkreis aktiv. Wenn GPS nicht mitspielt, nutze den QR-Code."}
+          </MetaText>
         )}
         {!passed && !stampingEnabled && (
           <MetaText>{stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet."}</MetaText>
@@ -1420,18 +1624,21 @@ export default function EventStampCard() {
               </VerifyBadge>
               <Title>
                 {data
-                  ? (mode === "test" ? "Test-Stempelkarte" : "Event-Stempelkarte")
+                  ? (isSelfRide ? "Selbstfahrer-Stempelkarte" : (mode === "test" ? "Test-Stempelkarte" : "Event-Stempelkarte"))
                   : "Ice-Tour Checkpoint"}
               </Title>
               <Intro>
                 {data
-                  ? "Zum Vorzeigen bei der Eisdiele und als kompakte Übersicht für deine Tour."
+                  ? (isSelfRide
+                    ? "GPS-Stempelkarte für deine eigenständig gefahrene Ice-Tour. Die Checkpoint-Reihenfolge ist frei."
+                    : "Zum Vorzeigen bei der Eisdiele und als kompakte Übersicht für deine Tour.")
                   : "QR-Scans der Ice-Tour werden hier verarbeitet, bestätigt oder nach dem Login automatisch nachgereicht."}
               </Intro>
             </div>
             {isAdmin && (
               <CompactRow style={{ justifyContent: "flex-end" }}>
                 <Button type="button" $secondary $active={mode === "live"} onClick={() => setSearchParams({ mode: "live" })}>Live</Button>
+                <Button type="button" $secondary $active={mode === "self_ride"} onClick={() => setSearchParams({ mode: "self_ride" })}>Selbstfahrer</Button>
                 <Button type="button" $secondary $active={mode === "test"} onClick={() => setSearchParams({ mode: "test" })}>Test</Button>
               </CompactRow>
             )}
@@ -1445,7 +1652,7 @@ export default function EventStampCard() {
                   <Value><UserRound size={17} />{username || "-"}</Value>
                 </IdentityCard>
                 <IdentityCard>
-                  <Label>Teilnehmer</Label>
+                  <Label>{isSelfRide ? "Modus" : "Teilnehmer"}</Label>
                   <Value>{data?.slot?.full_name || "-"}</Value>
                 </IdentityCard>
                 <IdentityCard>
@@ -1463,6 +1670,16 @@ export default function EventStampCard() {
                 </ProgressTrack>
                 <ProgressText>{completedMandatoryCount} / {mandatoryPrimaryCheckpoints.length} Pflichtstopps</ProgressText>
               </ProgressBar>
+              {isSelfRide && (
+                <ProgressBar>
+                  <ProgressTrack>
+                    <ProgressFill $value={selfRideCheckinRatio} $tone="checkins" />
+                  </ProgressTrack>
+                  <ProgressText>
+                    {Math.min(completedSelfRideCheckins, requiredSelfRideCheckins)} / {requiredSelfRideCheckins || "-"} Check-ins
+                  </ProgressText>
+                </ProgressBar>
+              )}
             </>
           ) : (
             <IdentityGrid>
@@ -1526,25 +1743,103 @@ export default function EventStampCard() {
           </ActionRow>
 
           {locationState.error && <MessageBox $tone="error">{locationState.error}</MessageBox>}
-          {!stampingEnabled && <MessageBox $tone="info">{stampingMessage || "Live-Stempel sind aktuell noch nicht freigeschaltet."}</MessageBox>}
+          {!stampingEnabled && <MessageBox $tone="info">{stampingMessage || "Stempel sind aktuell noch nicht freigeschaltet."}</MessageBox>}
+          {isSelfRide && data?.self_ride?.expires_at && (
+            <MessageBox $tone="info">
+              GPS-only: QR-Codes sind deaktiviert. Für den Award brauchst du alle Pflichtstempel und {requiredSelfRideCheckins || "die nötigen"} Ice-App-Check-ins im 24h-Fenster. Deine Stempelkarte läuft bis {new Date(data.self_ride.expires_at.replace(" ", "T")).toLocaleString("de-DE")} Uhr.
+            </MessageBox>
+          )}
           {message && <MessageBox $tone={message.tone}>{message.text}</MessageBox>}
+          {activeStampableCheckpoint && (
+            <StampReadyNotice>
+              <div>
+                <strong>Du bist am Checkpoint</strong>
+                <span>{activeStampableCheckpoint.shop_name || activeStampableCheckpoint.name}: Stempeln ist jetzt möglich.</span>
+              </div>
+              <NoticeActions>
+                <Button type="button" $secondary onClick={() => scrollToCheckpoint(activeStampableCheckpoint.id)}>
+                  Anzeigen
+                </Button>
+                <Button type="button" onClick={() => handleGpsStamp(activeStampableCheckpoint, false)}>
+                  Stempeln
+                </Button>
+              </NoticeActions>
+            </StampReadyNotice>
+          )}
         </PassCard>
 
         {!isLoggedIn && !scanContext && <Card><SectionText style={{ margin: 0 }}>Bitte logge dich ein, um deine Event-Stempelkarte zu öffnen.</SectionText></Card>}
         {loading && <Card><SectionText style={{ margin: 0 }}>Stempelkarte wird geladen...</SectionText></Card>}
         {error && <Card><MessageBox $tone="error" style={{ marginTop: 0 }}>{error}</MessageBox></Card>}
 
+        {!loading && !error && data && isSelfRide && (
+          <Card>
+            <SectionTitle>Route & Navigation</SectionTitle>
+            <SectionText>
+              GPX-Datei und Komoot-Link fuer deine aktuell geplante Selbstfahrer-Strecke.
+            </SectionText>
+            <ActionRow>
+              {gpxDownloadUrl && (
+                <InlineAnchor href={gpxDownloadUrl} download={routeResources.gpxFilename || true}>
+                  <Download size={15} />
+                  GPX herunterladen
+                </InlineAnchor>
+              )}
+              {routeResources.komootUrl && (
+                <InlineAnchor href={routeResources.komootUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={15} />
+                  Komoot öffnen
+                </InlineAnchor>
+              )}
+            </ActionRow>
+          </Card>
+        )}
+
+        {!loading && !error && data && isSelfRide && selfRideAward && (
+          <CompleteCard>
+            <SectionTitle>{selfRideAward.title || "Self-Ride abgeschlossen"}</SectionTitle>
+            <AwardRow>
+              {selfRideAwardIconSources.src && (
+                <AwardIcon
+                  src={selfRideAwardIconSources.src}
+                  data-fallback-src={selfRideAwardIconSources.fallbackSrc || ""}
+                  onError={handleAwardIconFallback}
+                  alt={selfRideAward.title || "Ice-Tour Award"}
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              <div>
+                <SectionText>{selfRideAward.message || "Dein Self-Ride-Award wurde freigeschaltet."}</SectionText>
+                <DonateHint>
+                  Wenn dir die Ice-Tour gefallen hat, kannst du die Organisation freiwillig unterstuetzen.
+                </DonateHint>
+                <ActionRow>
+                  <InlineAnchor href={PAYPAL_DONATION_URL} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={15} />
+                    Per PayPal spenden
+                  </InlineAnchor>
+                </ActionRow>
+              </div>
+            </AwardRow>
+          </CompleteCard>
+        )}
+
         {!loading && !error && data && (
           <Card>
             <SectionTitle>Deine Tour-Checkpoints</SectionTitle>
             <SectionText>
-              Zielbild pro Checkpoint: Pflichtstempel holen und idealerweise mindestens ein Eis einchecken.
+              {isSelfRide
+                ? "Bestätige alle Pflicht-Checkpoints per GPS in beliebiger Reihenfolge. Zusätzlich zählen für den Award deine Ice-App-Check-ins im 24h-Fenster, auch bei anderen Eisdielen auf der Route."
+                : "Zielbild pro Checkpoint: Pflichtstempel holen und idealerweise mindestens ein Eis einchecken."}
             </SectionText>
             <CheckpointList>
               {primaryCheckpoints.length > 0
-                ? primaryCheckpoints.map((checkpoint) => renderCheckpointCard(checkpoint))
+                ? primaryCheckpoints.map((checkpoint) => renderCheckpointCard(checkpoint, {
+                  highlight: activeStampableCheckpoint?.id === checkpoint.id,
+                }))
                 : <SectionText>Für diesen Modus sind aktuell keine routenrelevanten Checkpoints hinterlegt.</SectionText>}
-              {finishCheckpoint && renderCheckpointCard(finishCheckpoint, {
+              {!isSelfRide && finishCheckpoint && renderCheckpointCard(finishCheckpoint, {
                 highlight: true,
                 locked: !finishUnlocked && finishCheckpoint.localStatus !== "confirmed",
                 lockHint: `Noch ${Math.max(0, mandatoryPrimaryCheckpoints.length - completedMandatoryCount)} Pflichtstopp(s) bis zur Freischaltung.`,
@@ -1558,7 +1853,9 @@ export default function EventStampCard() {
           <ul style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0, paddingLeft: "1.2rem" }}>
             <li>Im Zweifel zuerst den Stempel holen und danach direkt über den Button "Eis einchecken" weitermachen.</li>
             <li>Wenn du offline bist, wird der Stempel lokal vorgemerkt und später synchronisiert.</li>
-            <li>Bei QR-Problemen kannst du den Code im Scanner-Dialog auch manuell eingeben.</li>
+            {isSelfRide
+              ? <li>Für den Self-Ride-Award brauchst du alle Pflichtstempel und zusätzlich mindestens 2 Check-ins auf der Genussrunde, 3 auf der Sport-Route oder 4 auf der Königsrunde.</li>
+              : <li>Bei QR-Problemen kannst du den Code im Scanner-Dialog auch manuell eingeben.</li>}
           </ul>
         </Card>
       </Container>

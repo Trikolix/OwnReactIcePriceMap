@@ -30,6 +30,9 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
     addColumnIfMissing($pdo, 'photo_challenges', 'min_image_created_at', 'DATETIME NULL AFTER start_at');
     addColumnIfMissing($pdo, 'photo_challenges', 'submission_deadline', 'DATETIME NULL AFTER min_image_created_at');
     addColumnIfMissing($pdo, 'photo_challenges', 'submission_limit_per_user', 'INT NULL AFTER submission_deadline');
+    addColumnIfMissing($pdo, 'photo_challenges', 'allow_direct_uploads', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER submission_limit_per_user');
+    addColumnIfMissing($pdo, 'photo_challenges', 'is_country_challenge', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER allow_direct_uploads');
+    addColumnIfMissing($pdo, 'photo_challenges', 'reveal_countries_at_ko', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER is_country_challenge');
     addColumnIfMissing($pdo, 'photo_challenges', 'group_schedule', 'TEXT NULL AFTER submission_limit_per_user');
     addColumnIfMissing($pdo, 'photo_challenges', 'group_advancers', 'INT NOT NULL DEFAULT 2 AFTER group_schedule');
     addColumnIfMissing($pdo, 'photo_challenges', 'lucky_loser_slots', 'INT NOT NULL DEFAULT 2 AFTER group_advancers');
@@ -48,6 +51,7 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
     addColumnIfMissing($pdo, 'photo_challenge_images', 'title', 'VARCHAR(100) NULL AFTER image_id');
+    addColumnIfMissing($pdo, 'photo_challenge_images', 'land_id', 'INT NULL AFTER image_id');
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS photo_challenge_groups (
@@ -247,6 +251,8 @@ function enrichPhotoChallengeForApi(array $challenge, ?DateTimeImmutable $now = 
     $challenge['submission_is_open_effective'] = $effectiveStatus === 'submission_open';
     $challenge['submission_is_closed_effective'] = $effectiveStatus === 'submission_closed';
     $challenge['allow_direct_uploads'] = !empty($challenge['allow_direct_uploads']);
+    $challenge['is_country_challenge'] = !empty($challenge['is_country_challenge']);
+    $challenge['reveal_countries_at_ko'] = !empty($challenge['reveal_countries_at_ko']);
 
     return $challenge;
 }
@@ -391,13 +397,19 @@ function fetchChallenges(PDO $pdo): array
 {
     $stmt = $pdo->query("
         SELECT c.*,
-               COALESCE(img_counts.total_images, 0) AS image_count
+               COALESCE(img_counts.total_images, 0) AS image_count,
+               COALESCE(submission_counts.total_submissions, 0) AS submission_count
         FROM photo_challenges c
         LEFT JOIN (
             SELECT challenge_id, COUNT(*) AS total_images
             FROM photo_challenge_images
             GROUP BY challenge_id
         ) AS img_counts ON img_counts.challenge_id = c.id
+        LEFT JOIN (
+            SELECT challenge_id, COUNT(*) AS total_submissions
+            FROM photo_challenge_submissions
+            GROUP BY challenge_id
+        ) AS submission_counts ON submission_counts.challenge_id = c.id
         ORDER BY c.created_at DESC
     ");
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -417,13 +429,20 @@ function fetchChallengeImages(PDO $pdo, int $challengeId): array
                b.url,
                b.beschreibung,
                b.nutzer_id,
-               COALESCE(pci.title, sub.title, b.beschreibung) AS title,
+               CASE
+                   WHEN ch.is_country_challenge = 1 THEN COALESCE(NULLIF(pci.title, ''), NULLIF(l.name, ''), NULLIF(sub.title, ''), b.beschreibung)
+                   ELSE COALESCE(NULLIF(sub.title, ''), b.beschreibung)
+               END AS title,
+               CASE WHEN ch.is_country_challenge = 1 THEN l.name ELSE NULL END AS country_name,
+               CASE WHEN ch.is_country_challenge = 1 THEN l.country_code ELSE NULL END AS country_code,
                b.checkin_id,
                c.datum AS checkin_datum,
                e.name AS eisdiele_name
         FROM photo_challenge_images pci
+        JOIN photo_challenges ch ON ch.id = pci.challenge_id
         JOIN bilder b ON b.id = pci.image_id
         LEFT JOIN photo_challenge_submissions sub ON sub.challenge_id = pci.challenge_id AND sub.image_id = pci.image_id
+        LEFT JOIN laender l ON l.id = pci.land_id
         LEFT JOIN nutzer n ON n.id = b.nutzer_id
         LEFT JOIN checkins c ON c.id = b.checkin_id
         LEFT JOIN eisdielen e ON e.id = c.eisdiele_id
@@ -644,11 +663,21 @@ function fetchGroupStandings(PDO $pdo, int $challengeId): array
                ge.image_id,
                b.url,
                b.beschreibung,
+               CASE
+                   WHEN ch.is_country_challenge = 1 THEN COALESCE(NULLIF(pci.title, ''), NULLIF(l.name, ''), NULLIF(sub.title, ''), b.beschreibung)
+                   ELSE COALESCE(NULLIF(sub.title, ''), b.beschreibung)
+               END AS title,
+               CASE WHEN ch.is_country_challenge = 1 THEN l.name ELSE NULL END AS country_name,
+               CASE WHEN ch.is_country_challenge = 1 THEN l.country_code ELSE NULL END AS country_code,
                g.start_at,
                g.end_at
         FROM photo_challenge_group_entries ge
         JOIN photo_challenge_groups g ON g.id = ge.group_id
+        JOIN photo_challenges ch ON ch.id = ge.challenge_id
         JOIN bilder b ON b.id = ge.image_id
+        LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ge.challenge_id AND pci.image_id = ge.image_id
+        LEFT JOIN photo_challenge_submissions sub ON sub.challenge_id = ge.challenge_id AND sub.image_id = ge.image_id
+        LEFT JOIN laender l ON l.id = pci.land_id
         WHERE ge.challenge_id = :challenge_id
         ORDER BY g.position ASC, ge.id ASC
     ");
@@ -679,6 +708,9 @@ function fetchGroupStandings(PDO $pdo, int $challengeId): array
             'image_id' => (int)$entry['image_id'],
             'url' => $entry['url'],
             'beschreibung' => $entry['beschreibung'],
+            'title' => $entry['title'],
+            'country_name' => $entry['country_name'],
+            'country_code' => $entry['country_code'],
             'wins' => 0,
             'votes_for' => 0,
             'votes_against' => 0,

@@ -105,7 +105,7 @@ export default function PushOptInOverlay() {
       if (promptState.remindAfter && Date.now() < Number(promptState.remindAfter)) return;
 
       try {
-        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php?user_id=${userId}`);
+        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
         const json = await response.json();
         if (cancelled) return;
 
@@ -151,7 +151,7 @@ export default function PushOptInOverlay() {
     const response = await fetch(`${API_BASE}/api/update_user_notification_settings.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, ...nextSettings }),
+      body: JSON.stringify(nextSettings),
     });
     const json = await response.json();
     if (!response.ok || !json.success) {
@@ -244,7 +244,7 @@ export default function PushOptInOverlay() {
           </SecondaryLink>
           <SecondaryButton type="button" onClick={handleRemindLater}>
             <Clock3 size={17} />
-            Spaeter erinnern
+            Später erinnern
           </SecondaryButton>
           <QuietButton type="button" onClick={handleDismiss}>
             <XCircle size={17} />

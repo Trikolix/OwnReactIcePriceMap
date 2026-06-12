@@ -1,4 +1,5 @@
 export const EVENT_DATE = "Samstag, 16. Mai 2026";
+export const EVENT_SITE_MODE = "retrospective"; // "retrospective" | "registration" | "live"
 export const EVENT_REGISTRATION_CLOSES_AT = "2026-05-16T12:20:00+02:00";
 export const EVENT_REGISTRATION_CLOSED_MESSAGE = "Die Registrierung ist bereits geschlossen. Wenn du einen ganz dringenden Grund hast, doch noch teilzunehmen, schreib uns doch eine Mail ;)";
 export const EVENT_CLOTHING_INTEREST_ENABLED = false;
@@ -34,6 +35,9 @@ export const EVENT_WITHDRAWAL_NOTICE = "Kein Widerrufsrecht bei dieser Anmeldung
 export const EVENT_COMMUNITY_RIDE_CLAIM = "Die Ice-Tour ist eine privat organisierte, nicht-kommerzielle Community-Ausfahrt und ausdrücklich kein Rennen.";
 export const EVENT_ENTRY_FEE_NOTICE = "Der Teilnahmebeitrag dient ausschließlich zur Deckung der Organisationskosten. Überschüsse werden gespendet.";
 export const EVENT_RACE_DAY_INFO_ENABLED = true;
+export const EVENT_IS_RETROSPECTIVE = EVENT_SITE_MODE === "retrospective";
+export const EVENT_REGISTRATION_NAV_ENABLED = EVENT_SITE_MODE === "registration" || EVENT_SITE_MODE === "live";
+export const EVENT_LIVE_NAV_ENABLED = EVENT_SITE_MODE === "live";
 
 export const ROUTE_OPTIONS = [
   {
@@ -65,8 +69,8 @@ export const ROUTE_OPTIONS = [
       text: "#8a5700",
       glow: "rgba(247, 201, 72, 0.2)",
     },
-    teaser: "140 km / 1.600 hm",
-    distanceKm: 140,
+    teaser: "145 km / 1.600 hm",
+    distanceKm: 145,
     elevationM: 1600,
     stops: 3,
     routeType: "sport",
@@ -84,14 +88,14 @@ export const ROUTE_OPTIONS = [
       text: "#166534",
       glow: "rgba(34, 197, 94, 0.18)",
     },
-    teaser: "75 km / 550 hm",
-    distanceKm: 75,
+    teaser: "70 km / 550 hm",
+    distanceKm: 70,
     elevationM: 550,
     stops: 2,
     routeType: "family",
     paceEnabled: false,
     startMode: "open_window",
-    description: "Die kompaktere Runde mit 75 km, zwei offiziellen Checkpoints und freiem Startfenster.",
+    description: "Die kompaktere Runde mit 70 km, zwei offiziellen Checkpoints und freiem Startfenster.",
   },
 ];
 

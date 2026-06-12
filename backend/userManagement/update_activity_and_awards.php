@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/ReferredUsersEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
 require_once __DIR__ . '/../evaluators/CommentCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/ReviewCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
 require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
@@ -25,6 +26,7 @@ require_once __DIR__ . '/../evaluators/MembershipYearsEvaluator.php';
 require_once __DIR__ . '/../evaluators/FavoriteShopCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/ProfileAvatarEvaluator.php';
 require_once __DIR__ . '/../evaluators/SummerCampaignEvaluator.php';
+require_once __DIR__ . '/../evaluators/SummerQrCountEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
 
 $authData = requireAuth($pdo);
@@ -47,6 +49,7 @@ try {
         new ReferredUsersEvaluator(),
         new CountryVisitEvaluator(),
         new CommentCountEvaluator(),
+        new ReviewCountEvaluator(),
         new WeekStreakEvaluator(),
         new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),
@@ -68,6 +71,7 @@ try {
         new FavoriteShopCountEvaluator(),
         new ProfileAvatarEvaluator(),
         new SummerCampaignEvaluator(),
+        new SummerQrCountEvaluator(),
         // weitere Evaluatoren können hier ergänzt werden
     ];
  

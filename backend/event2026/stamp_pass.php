@@ -26,6 +26,19 @@ try {
         http_response_code(403);
         throw new RuntimeException(event2026_live_stamping_message($event));
     }
+    $selfRide = null;
+    if ($mode === 'self_ride') {
+        event2026_assert_self_ride_access((int) $auth['user_id']);
+        $selfRide = event2026_get_self_ride_for_user($pdo, $eventId, (int) $auth['user_id']);
+        if (!$selfRide) {
+            http_response_code(403);
+            throw new RuntimeException('Für heute ist keine Ice-Tour Selbstfahrer-Strecke geplant.');
+        }
+        if (!event2026_self_ride_is_stamping_open($selfRide)) {
+            http_response_code(403);
+            throw new RuntimeException('Diese Selbstfahrer-Stempelkarte ist nur am gewählten Tourtag für 24 Stunden aktiv.');
+        }
+    }
     $source = trim((string) ($data['source'] ?? 'gps_click'));
     $lat = isset($data['lat']) ? (float) $data['lat'] : null;
     $lng = isset($data['lng']) ? (float) $data['lng'] : null;
@@ -40,8 +53,11 @@ try {
     if (!in_array($source, ['gps_click', 'qr_scan'], true)) {
         throw new InvalidArgumentException('Ungültige source.');
     }
+    if ($mode === 'self_ride' && $source !== 'gps_click') {
+        throw new InvalidArgumentException('Selbstfahrer-Checkpoints können nur per GPS-Standort bestätigt werden.');
+    }
 
-    $slot = event2026_get_slot_for_user($pdo, $eventId, $auth['user_id']);
+    $slot = $mode === 'self_ride' ? $selfRide : event2026_get_slot_for_user($pdo, $eventId, $auth['user_id']);
     if (!$slot) {
         http_response_code(403);
         throw new RuntimeException('Kein Event-Starterplatz für diesen Account gefunden.');
@@ -64,7 +80,7 @@ try {
         throw new InvalidArgumentException('Checkpoint nicht gefunden.');
     }
 
-    if ($mode === 'live' && !event2026_route_applies_to_checkpoint(
+    if (($mode === 'live' || $mode === 'self_ride') && !event2026_route_applies_to_checkpoint(
         event2026_normalize_route_key($slot['route_key'] ?? ''),
         (string) ($checkpoint['route_keys_csv'] ?? '')
     )) {
@@ -72,7 +88,7 @@ try {
         throw new RuntimeException('Dieser Checkpoint gehört nicht zu deiner Route.');
     }
 
-    $isFinishCheckpoint = (int) ($checkpoint['shop_id'] ?? 0) === event2026_start_finish_shop_id($mode);
+    $isFinishCheckpoint = $mode !== 'self_ride' && (int) ($checkpoint['shop_id'] ?? 0) === event2026_start_finish_shop_id($mode);
     if ($isFinishCheckpoint) {
         $mandatoryStmt = $pdo->prepare("SELECT
                 c.id,
@@ -132,12 +148,14 @@ try {
         );
         if ($distanceMeters > 300.0) {
             http_response_code(403);
-            throw new RuntimeException('Du bist nicht nah genug am Checkpoint. Bitte nähere dich auf 300 m oder nutze den QR-Code.');
+            throw new RuntimeException($mode === 'self_ride'
+                ? 'Du bist nicht nah genug am Checkpoint. Bitte nähere dich auf 300 m.'
+                : 'Du bist nicht nah genug am Checkpoint. Bitte nähere dich auf 300 m oder nutze den QR-Code.');
         }
     }
 
     $qrCodeId = (int) ($checkpoint['qr_code_id'] ?? 0);
-    if ($qrCodeId <= 0) {
+    if ($mode !== 'self_ride' && $qrCodeId <= 0) {
         throw new RuntimeException('Für diesen Checkpoint ist noch kein QR-Code hinterlegt.');
     }
 
@@ -159,23 +177,64 @@ try {
 
     $scanSaved = false;
     $alreadyScanned = false;
-    $scanCheckStmt = $pdo->prepare("SELECT 1 FROM user_qr_scans WHERE user_id = :user_id AND qr_code_id = :qr_code_id");
-    $scanCheckStmt->execute([
-        ':user_id' => $auth['user_id'],
-        ':qr_code_id' => $qrCodeId,
-    ]);
-    if ($scanCheckStmt->fetchColumn()) {
-        $alreadyScanned = true;
-    } else {
-        $scanInsertStmt = $pdo->prepare("INSERT INTO user_qr_scans (user_id, qr_code_id) VALUES (:user_id, :qr_code_id)");
-        $scanInsertStmt->execute([
+    if ($mode !== 'self_ride') {
+        $scanCheckStmt = $pdo->prepare("SELECT 1 FROM user_qr_scans WHERE user_id = :user_id AND qr_code_id = :qr_code_id");
+        $scanCheckStmt->execute([
             ':user_id' => $auth['user_id'],
             ':qr_code_id' => $qrCodeId,
         ]);
-        $scanSaved = true;
+        if ($scanCheckStmt->fetchColumn()) {
+            $alreadyScanned = true;
+        } else {
+            $scanInsertStmt = $pdo->prepare("INSERT INTO user_qr_scans (user_id, qr_code_id) VALUES (:user_id, :qr_code_id)");
+            $scanInsertStmt->execute([
+                ':user_id' => $auth['user_id'],
+                ':qr_code_id' => $qrCodeId,
+            ]);
+            $scanSaved = true;
+        }
     }
 
-    $passStmt = $pdo->prepare("INSERT INTO event2026_checkpoint_passages (
+    if ($mode === 'self_ride') {
+        $passStmt = $pdo->prepare("INSERT INTO event2026_self_ride_passages (
+                self_ride_id,
+                event_id,
+                checkpoint_id,
+                user_id,
+                passed_at,
+                source,
+                checkin_id,
+                lat,
+                lng,
+                distance_m
+            ) VALUES (
+                :self_ride_id,
+                :event_id,
+                :checkpoint_id,
+                :user_id,
+                NOW(),
+                'gps_click',
+                :checkin_id,
+                :lat,
+                :lng,
+                :distance_m
+            ) ON DUPLICATE KEY UPDATE
+                checkin_id = COALESCE(VALUES(checkin_id), checkin_id),
+                lat = VALUES(lat),
+                lng = VALUES(lng),
+                distance_m = VALUES(distance_m)");
+        $passStmt->execute([
+            ':self_ride_id' => (int) $selfRide['id'],
+            ':event_id' => $eventId,
+            ':checkpoint_id' => $checkpointId,
+            ':user_id' => $auth['user_id'],
+            ':checkin_id' => $checkinId,
+            ':lat' => $lat,
+            ':lng' => $lng,
+            ':distance_m' => $distanceMeters,
+        ]);
+    } else {
+        $passStmt = $pdo->prepare("INSERT INTO event2026_checkpoint_passages (
             event_id,
             checkpoint_id,
             slot_id,
@@ -197,15 +256,16 @@ try {
             source = VALUES(source),
             checkin_id = COALESCE(VALUES(checkin_id), checkin_id),
             qr_payload = COALESCE(NULLIF(VALUES(qr_payload), ''), qr_payload)");
-    $passStmt->execute([
-        ':event_id' => $eventId,
-        ':checkpoint_id' => $checkpointId,
-        ':slot_id' => (int) $slot['id'],
-        ':user_id' => $auth['user_id'],
-        ':source' => $source,
-        ':checkin_id' => $checkinId,
-        ':qr_payload' => $providedQrCode !== '' ? $providedQrCode : null,
-    ]);
+        $passStmt->execute([
+            ':event_id' => $eventId,
+            ':checkpoint_id' => $checkpointId,
+            ':slot_id' => (int) $slot['id'],
+            ':user_id' => $auth['user_id'],
+            ':source' => $source,
+            ':checkin_id' => $checkinId,
+            ':qr_payload' => $providedQrCode !== '' ? $providedQrCode : null,
+        ]);
+    }
 
     event2026_log_action($pdo, $eventId, $auth['user_id'], 'stamp_card_pass', 'checkpoint', $checkpointId, [
         'mode' => $mode,
@@ -218,7 +278,7 @@ try {
         'checkin_id' => $checkinId,
     ]);
 
-    $newAwards = (new Event2026CompletionEvaluator($mode))->evaluate((int) $auth['user_id']);
+    $newAwards = (new Event2026CompletionEvaluator($mode, $mode === 'self_ride' ? (int) $selfRide['id'] : null))->evaluate((int) $auth['user_id']);
     $levelChange = !empty($newAwards)
         ? updateUserLevelIfChanged($pdo, (int) $auth['user_id'])
         : ['level_up' => false];

@@ -104,13 +104,15 @@ function getKomootShareToken(string $url): string {
     return isset($queryParams['share_token']) ? (string) $queryParams['share_token'] : '';
 }
 
-function buildKomootEmbedUrl(string $url): ?string {
+function buildKomootEmbedUrl(string $url, ?string $shareTokenOverride = null): ?string {
     if (!preg_match('#https?:\/\/(www\.)?komoot\.(com|de)\/(?:[a-z-]+\/)?tour\/(\d+)#', $url, $matches)) {
         return null;
     }
 
     $src = 'https://www.komoot.com/de-de/tour/' . $matches[3] . '/embed';
-    $shareToken = getKomootShareToken($url);
+    $shareToken = $shareTokenOverride !== null && $shareTokenOverride !== ''
+        ? $shareTokenOverride
+        : getKomootShareToken($url);
     $params = [];
     if ($shareToken !== '') {
         $params['share_token'] = $shareToken;
@@ -125,7 +127,7 @@ function buildKomootEmbedUrl(string $url): ?string {
 /**
  * Generates embed code for the given (cleaned or raw) URL.
  */
-function generateEmbedCode($url) {
+function generateEmbedCode($url, ?string $komootShareToken = null) {
     if (!$url) return null;
 
     // We might need to resolve it here too if it hasn't been cleaned yet
@@ -133,10 +135,10 @@ function generateEmbedCode($url) {
 
     // Komoot
     if (preg_match('#https?:\/\/(www\.)?komoot\.(com|de)\/(?:[a-z-]+\/)?tour\/(\d+)#', $cleanUrl)) {
-        $src = buildKomootEmbedUrl($cleanUrl);
+        $src = buildKomootEmbedUrl($cleanUrl, $komootShareToken);
         if (!$src) return null;
         $src = htmlspecialchars($src, ENT_QUOTES, 'UTF-8');
-        return '<iframe src="' . $src . '" width="100%" height="360" frameborder="0" scrolling="no"></iframe>';
+        return '<iframe src="' . $src . '" width="100%" height="440" frameborder="0" scrolling="no"></iframe>';
     }
 
     // Strava

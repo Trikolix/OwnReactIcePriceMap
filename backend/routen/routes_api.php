@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
+require_once __DIR__ . '/../lib/mention_utils.php';
 
 header("Content-Type: application/json");
 
@@ -54,6 +55,15 @@ if ($method === 'POST' && $endpoint === 'routes') {
             'typ' => $data['typ'],
             'ist_oeffentlich' => $data['ist_oeffentlich'] ?? false
         ]);
+
+        $routeId = (int)$pdo->lastInsertId();
+        if (!empty($data['beschreibung'])) {
+            processTextMentions($pdo, $data['beschreibung'], $data['nutzer_id'], 'route', $routeId, [
+                'eisdiele_id' => $data['eisdiele_id'],
+                'route_id' => $routeId,
+                'route_autor_id' => $data['nutzer_id'],
+            ]);
+        }
 
         // Evaluatoren
         $evaluators = [
@@ -120,6 +130,19 @@ elseif ($method === 'PUT' && $endpoint === 'routes') {
         'id' => $data['id'],
         'nutzer_id' => $data['nutzer_id']
     ]);
+
+    if (!empty($data['beschreibung'])) {
+        $stmtMeta = $pdo->prepare("SELECT eisdiele_id FROM routen WHERE id = ?");
+        $stmtMeta->execute([$data['id']]);
+        $routeEisdieleId = $stmtMeta->fetchColumn();
+        if ($routeEisdieleId) {
+            processTextMentions($pdo, $data['beschreibung'], $data['nutzer_id'], 'route', $data['id'], [
+                'eisdiele_id' => $routeEisdieleId,
+                'route_id' => $data['id'],
+                'route_autor_id' => $data['nutzer_id'],
+            ]);
+        }
+    }
 
     sendResponse('success', 'Route erfolgreich aktualisiert');
 }

@@ -14,7 +14,7 @@ import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
-import { buildAssetUrl } from './utils/assets.jsx';
+import { buildAssetUrl, buildPublicAssetUrl } from './utils/assets.jsx';
 import {
   countActivitiesSince,
   readActivityFeedCache,
@@ -52,13 +52,13 @@ const Header = ({ refreshShops }) => {
   const navigate = useNavigate();
   const seasonalState = getResolvedSeasonalCampaigns();
   const featuredCampaign = seasonalState.featuredCampaign;
-  const promoIconSrc = featuredCampaign?.teaserIcon ? buildAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
+  const promoIconSrc = featuredCampaign?.teaserIcon ? buildPublicAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
   const promoIconAlt = featuredCampaign
     ? `${featuredCampaign.title} öffnen`
     : 'Aktionen & Ergebnisse öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const now = new Date();
-  const showIceTourNewBadge = now <= new Date(2026, 5, 16, 23, 59, 59);
+  const showIceTourNewBadge = now <= new Date(2026, 4, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
   const toggleMenu = () => {
@@ -709,6 +709,7 @@ const Header = ({ refreshShops }) => {
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
                   {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
                   {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
+                  {userId == 2 && (<MenuItemLink to="/admin/push-stats" onClick={closeMenu}>Push-Statistik</MenuItemLink>)}
                   <MenuActionButton
                     type="button"
                     onClick={() => {
@@ -725,6 +726,7 @@ const Header = ({ refreshShops }) => {
                     <MenuSection>
                       <MenuSectionTitle>Admin</MenuSectionTitle>
                       <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>
+                      <MenuItemLink to="/admin/push-stats" onClick={closeMenu}>Push-Statistik</MenuItemLink>
                       <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
                       <MenuSubmenuButton
                         type="button"
@@ -1027,7 +1029,7 @@ const HeaderRight = styled.div`
 const AccountCluster = styled.div`
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 48px;
   background: rgba(255, 255, 255, 0.65);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1052,12 +1054,13 @@ const NotificationBellWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 42px;
-  min-height: 40px;
+  min-width: 48px;
+  min-height: 48px;
   color: #2f2100;
   padding: 0 2px 0 4px;
 
   @media (max-width: 768px) {
+    min-width: 42px;
     min-height: 42px;
     height: 42px;
   }
@@ -1073,7 +1076,7 @@ const UserStatusLink = styled(Link)`
   border-radius: 14px;
   padding: 5px 10px 5px 6px;
   border: 1px solid transparent;
-  min-height: 40px;
+  min-height: 48px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.35);
@@ -1087,8 +1090,8 @@ const UserStatusLink = styled(Link)`
 `;
 
 const UserStatusAvatar = styled.div`
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #2f2100;
   color: #fff;
@@ -1104,6 +1107,11 @@ const UserStatusAvatar = styled.div`
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  @media (max-width: 768px) {
+    width: 28px;
+    height: 28px;
   }
 `;
 
@@ -1140,8 +1148,8 @@ const LoginHeaderButton = styled.button`
   color: #2f2100;
   border-radius: 12px;
   padding: 0 12px;
-  min-height: 42px;
-  height: 42px;
+  min-height: 48px;
+  height: 48px;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -1158,6 +1166,8 @@ const LoginHeaderButton = styled.button`
   @media (max-width: 520px) {
     width: 42px;
     min-width: 42px;
+    min-height: 42px;
+    height: 42px;
     padding: 0;
 
     .login-icon {
@@ -1181,8 +1191,8 @@ const BurgerMenu = styled.button`
   background: rgba(255, 255, 255, 0.52);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 12px;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
@@ -1195,6 +1205,11 @@ const BurgerMenu = styled.button`
 
   &:hover {
     background: rgba(255, 255, 255, 0.78);
+  }
+
+  @media (max-width: 768px) {
+    width: 42px;
+    height: 42px;
   }
 `;
 
@@ -1425,10 +1440,17 @@ const ButtonWrapper = styled.div`
 const GewinnspielIcon = styled.div`
   cursor: pointer;
   margin-right: 8px;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
 
   img {
-    width: 80px;
-    height: 80px;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
     transition: transform 0.2s;
   }
 
@@ -1437,19 +1459,14 @@ const GewinnspielIcon = styled.div`
   }
 
   @media (max-width: 768px) {
-    img {
-      width: 50px;
-      height: 50px;
-    }
+    width: 50px;
+    height: 50px;
   }
 
   @media (max-width: 420px) {
     margin-right: 0;
-
-    img {
-      width: 42px;
-      height: 42px;
-    }
+    width: 42px;
+    height: 42px;
   }
 `;
 

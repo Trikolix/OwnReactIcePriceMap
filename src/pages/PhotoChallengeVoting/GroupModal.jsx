@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import * as S from './PhotoChallengeVoting.styles';
-import { buildAssetUrl } from './utils';
+import { buildAssetUrl, getPhotoChallengeCountry } from './utils';
 
 const ZoomIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -10,6 +10,19 @@ const ZoomIcon = () => (
     <path d="M8.5 11H13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
+
+const CountryFlagBadge = ({ country, compact = false }) => {
+  if (!country) return null;
+  return (
+    <S.CountryFlagBadge
+      $compact={compact}
+      title={country.name}
+      aria-label={country.name}
+    >
+      <img src={country.flagUrl} srcSet={country.flagSrcSet} alt="" loading="lazy" />
+    </S.CountryFlagBadge>
+  );
+};
 
 const GroupModal = ({
   groupModal,
@@ -22,6 +35,7 @@ const GroupModal = ({
   handleModalVote,
   setImagePreview,
   isLoggedIn,
+  showCountryBadges = false,
 }) => {
   useEffect(() => {
     if (!groupModal || !activeModalGroup) {
@@ -97,7 +111,9 @@ const GroupModal = ({
         <S.ModalBody $lockScroll={groupModal.mode === 'active'}>
           {groupModal.mode === 'active' && activeModalMatch && (
             <S.ModalVoteWrapper>
-              {modalSides.map((side) => (
+              {modalSides.map((side) => {
+                const country = showCountryBadges ? getPhotoChallengeCountry(side) : null;
+                return (
                 <S.ModalVoteCard
                   key={side.id}
                   $disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
@@ -110,8 +126,9 @@ const GroupModal = ({
                       disabled={activeModalMatch.status !== 'open' || !isLoggedIn}
                       aria-label={`Für Bild ${side.id} abstimmen`}
                     >
-                      <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={`Bild ${side.id}`} />
+                      <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
                     </S.ModalVotePreviewButton>
+                    <CountryFlagBadge country={country} />
                     <S.ModalZoomButton
                       type="button"
                       onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
@@ -133,12 +150,15 @@ const GroupModal = ({
                     )}
                   </S.ModalVoteMeta>
                 </S.ModalVoteCard>
-              ))}
+                );
+              })}
             </S.ModalVoteWrapper>
           )}
           {groupModal.mode === 'upcoming' && (
             <S.PreviewGrid>
-              {activeModalGroup.entries.map((entry) => (
+              {activeModalGroup.entries.map((entry) => {
+                const country = showCountryBadges ? getPhotoChallengeCountry(entry) : null;
+                return (
                 <S.PreviewCard
                   key={entry.image_id}
                   type="button"
@@ -146,20 +166,26 @@ const GroupModal = ({
                   aria-label={`Bild ${entry.image_id} in Vollbild ansehen`}
                 >
                   <S.PreviewImageButton>
-                    <S.PreviewImage src={buildAssetUrl(entry.url)} alt={entry.beschreibung || `Bild ${entry.image_id}`} />
+                    <S.CountryImageFrame>
+                      <S.PreviewImage src={buildAssetUrl(entry.url)} alt={entry.beschreibung || `Bild ${entry.image_id}`} />
+                      <CountryFlagBadge country={country} />
+                    </S.CountryImageFrame>
                   </S.PreviewImageButton>
                   <S.PreviewMeta>
                     <strong>{entry.title || `Bild #${entry.image_id}`}</strong>
                     <small>Zum Vergrößern antippen</small>
                   </S.PreviewMeta>
                 </S.PreviewCard>
-              ))}
+                );
+              })}
             </S.PreviewGrid>
           )}
           {groupModal.mode === 'finished' && (
             <S.ResultsList>
               {activeModalGroup.results && activeModalGroup.results.length ? (
-                activeModalGroup.results.map((result) => (
+                activeModalGroup.results.map((result) => {
+                  const country = showCountryBadges ? getPhotoChallengeCountry(result) : null;
+                  return (
                   <S.ResultItem
                     key={result.image_id}
                     type="button"
@@ -173,9 +199,12 @@ const GroupModal = ({
                         : ''
                     }
                   >
-                    <S.ResultInfo>
-                      <S.ResultImageButton>
-                        <S.ResultImage src={buildAssetUrl(result.url)} alt={result.title || `Bild ${result.image_id}`} />
+                      <S.ResultInfo>
+                        <S.ResultImageButton>
+                        <S.CountryImageFrame $thumb>
+                          <S.ResultImage src={buildAssetUrl(result.url)} alt={result.title || `Bild ${result.image_id}`} />
+                          <CountryFlagBadge country={country} compact />
+                        </S.CountryImageFrame>
                       </S.ResultImageButton>
                       <div>
                         <strong>{result.title ? `"${result.title}"` : `Bild #${result.image_id}`}</strong><br />
@@ -192,7 +221,8 @@ const GroupModal = ({
                     </S.ResultInfo>
                     <S.ResultWins>{result.votes} Stimmen</S.ResultWins>
                   </S.ResultItem>
-                ))
+                  );
+                })
               ) : (
                 <S.EmptyState>Keine Ergebnisse verfügbar.</S.EmptyState>
               )}

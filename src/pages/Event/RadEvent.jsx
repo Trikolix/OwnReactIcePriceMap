@@ -1,45 +1,54 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import styled from "styled-components";
-import { Bike, Calendar, CheckCircle2, Euro, Flag, HeartHandshake, MapPin, QrCode, Smartphone } from "lucide-react";
+import { Bike, Calendar, Flag, HeartHandshake, IceCreamCone, MapPin, Route, Sparkles } from "lucide-react";
 import Header, { Button } from "./Header";
 import Footer from "./Footer";
-import { useUser } from "../../context/UserContext";
 import Seo from "../../components/Seo";
 import EventContactForm from "./EventContactForm";
-import { EVENT_COMMUNITY_RIDE_CLAIM, EVENT_DATE, EVENT_ENTRY_FEE, EVENT_ENTRY_FEE_NOTICE, EVENT_PAYMENT_CONTACT_EMAIL, EVENT_START_FINISH, ROUTE_OPTIONS } from "./eventConfig";
+import {
+  EVENT_COMMUNITY_RIDE_CLAIM,
+  EVENT_DATE,
+  EVENT_ENTRY_FEE,
+  EVENT_ENTRY_FEE_NOTICE,
+  EVENT_IS_RETROSPECTIVE,
+  EVENT_PAYMENT_CONTACT_EMAIL,
+  EVENT_START_FINISH,
+  ROUTE_OPTIONS,
+} from "./eventConfig";
 import eisdieleSchoeneImage from "./images/eisdiele_schoene.webp";
 import eismanufakturKlattImage from "./images/eismanufaktur_klatt.jpg";
 import eiscafeElisenhofImage from "./images/eiscafe_elisenhof.webp";
+
 const PARTNER_ICE_CREAM_PARLORS = [
   {
     name: EVENT_START_FINISH.name,
-    role: "Start und Ziel aller Routen",
+    role: "Start und Ziel",
     image: EVENT_START_FINISH.logoUrl,
-    description: "Café am Brühl Boulevard, Startpunkt der Tour und perfekter Ort für einen gemütlichen gemeinsamen Ausklang im Ziel.",
+    description: "Café am Brühl Boulevard und gemeinsamer Treffpunkt für Start, Zielankunft und Ausklang.",
   },
   {
     name: "Bäckerei Bräunig",
-    role: "Checkpoint auf den sportlichen Routen",
+    role: "Checkpoint",
     image: "https://www.baeckerei-braeunig.de/wp-content/uploads/baeckerei-braeunig-logo-1.png",
-    description: "Traditionsbäckerei in 5. Generation mit handwerklichem Anspruch, natürlichen Zutaten und selbstgemachtem Eis.",
+    description: "Traditionsbäckerei mit handwerklichem Anspruch, natürlichen Zutaten und selbstgemachtem Eis.",
   },
   {
     name: "Eisdiele Schöne",
-    role: "Checkpoint auf allen Routen",
+    role: "Checkpoint",
     image: eisdieleSchoeneImage,
     description: "Familienunternehmen mit regionalen Naturprodukten und viel Erfahrung bei Feiern und Veranstaltungen.",
   },
   {
     name: "Klatt Eis",
-    role: "Checkpoint auf allen Routen",
+    role: "Checkpoint",
     image: eismanufakturKlattImage,
-    description: "Kleine Eismanufaktur aus Frankenau mit wechselnden Sorten aus frischen, saisonalen Zutaten und viel Regionalität.",
+    description: "Kleine Eismanufaktur aus Frankenau mit wechselnden Sorten aus frischen, saisonalen Zutaten.",
   },
   {
     name: "Eiscafé Elisenhof",
-    role: "Zusätzlicher Stopp auf der Königsrunde",
+    role: "Checkpoint der Königsrunde",
     image: eiscafeElisenhofImage,
-    description: "Wer die Königsrunde dreht, bekommt hier am Töpferbrunnen in Kohren-Sahlis noch einen beliebten zusätzlichen Eisstopp.",
+    description: "Der zusätzliche Eisstopp am Töpferbrunnen in Kohren-Sahlis für die lange Runde.",
   },
 ];
 
@@ -69,7 +78,7 @@ const HeroCard = styled.div`
 `;
 
 const HeroTitle = styled.h1`
-  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  font-size: clamp(1.95rem, 4vw, 3.25rem);
   font-weight: 900;
   text-align: center;
   margin: 0;
@@ -77,10 +86,11 @@ const HeroTitle = styled.h1`
 
 const HeroSubtitle = styled.p`
   text-align: center;
-  margin: 0.7rem auto 0;
+  margin: 0.75rem auto 0;
   font-size: 1.05rem;
   color: rgba(47, 33, 0, 0.72);
-  max-width: 740px;
+  max-width: 820px;
+  line-height: 1.6;
 `;
 
 const HeroActions = styled.div`
@@ -95,7 +105,7 @@ const FactGrid = styled.div`
   margin-top: 1.2rem;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 `;
 
 const Fact = styled.div`
@@ -123,7 +133,7 @@ const SectionDesc = styled.p`
   font-size: 0.98rem;
   margin: 0.45rem auto 0;
   max-width: 840px;
-  line-height: 1.5;
+  line-height: 1.55;
 `;
 
 const CardGrid = styled.div`
@@ -131,6 +141,7 @@ const CardGrid = styled.div`
   gap: 1rem;
   grid-template-columns: 1fr;
   margin-top: 1.1rem;
+
   @media (min-width: 840px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -152,41 +163,18 @@ const PartnerGrid = styled.div`
 `;
 
 const PartnerCard = styled.article`
-  position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 235, 0.98)),
-    #fff;
-  border-radius: 24px;
+  background: #fff;
+  border-radius: 20px;
   border: 1px solid rgba(138, 87, 0, 0.12);
   box-shadow: 0 14px 30px rgba(77, 48, 0, 0.09);
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
-  transform-origin: center center;
-
-  @media (hover: hover) {
-    &:hover {
-      transform: translateY(-6px) scale(1.03);
-      border-color: rgba(255, 181, 34, 0.5);
-      box-shadow: 0 22px 42px rgba(77, 48, 0, 0.16);
-    }
-  }
-
-  &:active {
-    transform: translateY(-4px) scale(1.02);
-    border-color: rgba(255, 181, 34, 0.5);
-    box-shadow: 0 18px 34px rgba(77, 48, 0, 0.14);
-  }
 `;
 
 const PartnerImageWrap = styled.div`
-  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: #fff;
+  background: #fff7e5;
 `;
 
 const PartnerImage = styled.img`
@@ -194,35 +182,10 @@ const PartnerImage = styled.img`
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 220ms ease, filter 220ms ease;
-
-  ${PartnerCard}:hover &,
-  ${PartnerCard}:active & {
-    transform: scale(1.06);
-    filter: saturate(1.06);
-  }
-`;
-
-const PartnerImageShade = styled.div`
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(47, 33, 0, 0.05) 0%, rgba(47, 33, 0, 0.22) 100%);
-  pointer-events: none;
 `;
 
 const PartnerBody = styled.div`
   padding: 1rem 1rem 1.1rem;
-`;
-
-const PartnerTitle = styled.h3`
-  margin: 0.7rem 0 0.4rem;
-  font-size: 1.12rem;
-`;
-
-const PartnerDescription = styled.p`
-  color: #7c4f00;
-  margin: 0;
-  line-height: 1.6;
 `;
 
 const RouteBadge = styled.span`
@@ -234,7 +197,6 @@ const RouteBadge = styled.span`
   background: ${({ $bg }) => $bg || "#fff3c2"};
   color: ${({ $color }) => $color || "#8a5700"};
   border: 1px solid ${({ $border }) => $border || "#f0d79a"};
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
   font-weight: 700;
   font-size: 0.82rem;
 `;
@@ -249,34 +211,15 @@ const RouteBadgeIcon = styled.span`
   background: rgba(255, 255, 255, 0.7);
 `;
 
-const Timeline = styled.div`
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1rem;
+const PartnerTitle = styled.h3`
+  margin: 0.7rem 0 0.4rem;
+  font-size: 1.12rem;
 `;
 
-const TimelineItem = styled.div`
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 0.9rem;
-  align-items: start;
-  background: #fffdf7;
-  border: 1px solid #f0d79a;
-  border-radius: 16px;
-  padding: 1rem;
-`;
-
-const Step = styled.div`
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
-  background: #ffb522;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 1.1rem;
+const PartnerDescription = styled.p`
+  color: #7c4f00;
+  margin: 0;
+  line-height: 1.6;
 `;
 
 const SplitGrid = styled.div`
@@ -284,25 +227,70 @@ const SplitGrid = styled.div`
   gap: 1rem;
   grid-template-columns: 1fr;
   margin-top: 1rem;
+
   @media (min-width: 840px) {
     grid-template-columns: 1fr 1fr;
   }
 `;
 
-const RequirementList = styled.ul`
+const BulletList = styled.ul`
   margin: 0.8rem 0 0;
   padding-left: 1.2rem;
   color: #7c4f00;
   line-height: 1.55;
 `;
 
-const FaqGrid = styled.div`
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1rem;
+const ContactWrap = styled.div`
+  max-width: 860px;
+  margin: 0 auto;
 `;
 
-function Hero({ hasEventRegistration }) {
+function routeIcon(routeKey) {
+  if (routeKey === "epic_4") return <Flag size={14} />;
+  if (routeKey === "classic_3") return <Bike size={14} />;
+  return <HeartHandshake size={14} />;
+}
+
+function Hero() {
+  return (
+    <Section style={{ paddingTop: "1rem" }}>
+      <Container>
+        <HeroCard>
+          <HeroTitle>Ice-Tour 2026 Rückblick</HeroTitle>
+          <HeroSubtitle>
+            Die Ice-Tour 2026 ist gefahren: über 70 Starterinnen und Starter, mehr als 6.400 gemeinsame Kilometer,
+            mehrere hundert Portionen Eis und unzählige kleine Genussmomente bei unseren Partnern.
+            Trotz frostiger Temperaturen und müder Beine kamen am Ende vor allem erschöpfte, aber durchweg glückliche Gesichter ins Ziel.
+            {` ${EVENT_COMMUNITY_RIDE_CLAIM}`}
+          </HeroSubtitle>
+          <HeroActions>
+            <Button href="/ice-tour-impressionen">Impressionen ansehen</Button>
+            <Button href="/ice-tour-selbst-fahren" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Selbst fahren
+            </Button>
+            <Button href="/event-live" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Event-Karte ansehen
+            </Button>
+            <Button href="#kontakt-zukunft" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Kontakt für künftige Events
+            </Button>
+            <Button href="/ice-tour-unterstuetzen" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
+              Unterstützen
+            </Button>
+          </HeroActions>
+          <FactGrid>
+            <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
+            <Fact><MapPin size={18} color="#ffb522" />{EVENT_START_FINISH.name}, {EVENT_START_FINISH.city}</Fact>
+            <Fact><Route size={18} color="#ffb522" /> 70, 145 und 180 km</Fact>
+            <Fact><IceCreamCone size={18} color="#ffb522" /> Offizielle Eis-Stopps</Fact>
+          </FactGrid>
+        </HeroCard>
+      </Container>
+    </Section>
+  );
+}
+
+function AnnouncementHero() {
   return (
     <Section style={{ paddingTop: "1rem" }}>
       <Container>
@@ -310,19 +298,11 @@ function Hero({ hasEventRegistration }) {
           <HeroTitle>Ice-Tour 2026</HeroTitle>
           <HeroSubtitle>
             Ein Tag auf dem Rad, mehrere Eisdielen-Stopps, gute Leute und am Ende auch noch etwas Gutes tun:
-            Die Ice-Tour verbindet gemeinsames Radfahren, Gratis-Eis an offiziellen Checkpoints und freiwillige Spenden für einen guten Zweck.<br /><br />
-
-            Du sammelst digitale Stempel, triffst andere Teilnehmer und genießt eine besondere Runde durch die Region.
+            Die Ice-Tour verbindet gemeinsames Radfahren, Gratis-Eis an offiziellen Checkpoints und freiwillige Spenden für einen guten Zweck.
             {` ${EVENT_COMMUNITY_RIDE_CLAIM}`}
           </HeroSubtitle>
           <HeroActions>
-            {hasEventRegistration ? (
-              <Button href="/event-my-registration" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-                Meine Anmeldung
-              </Button>
-            ) : (
-              <Button href="/event-registration">Jetzt anmelden</Button>
-            )}
+            <Button href="/event-registration">Jetzt anmelden</Button>
             <Button href="/ice-tour-unterstuetzen" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
               Ice-Tour unterstützen
             </Button>
@@ -330,8 +310,8 @@ function Hero({ hasEventRegistration }) {
           <FactGrid>
             <Fact><Calendar size={18} color="#ffb522" /> {EVENT_DATE}</Fact>
             <Fact><MapPin size={18} color="#ffb522" />{EVENT_START_FINISH.name}, {EVENT_START_FINISH.city}</Fact>
-            <Fact><Euro size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} € Teilnahmebeitrag</Fact>
-            <Fact><Flag size={18} color="#ffb522" /> Start in kleinen Gruppen oder individuell</Fact>
+            <Fact><Route size={18} color="#ffb522" /> 75, 140 und 180 km</Fact>
+            <Fact><IceCreamCone size={18} color="#ffb522" /> {EVENT_ENTRY_FEE} € Teilnahmebeitrag</Fact>
           </FactGrid>
         </HeroCard>
       </Container>
@@ -340,61 +320,31 @@ function Hero({ hasEventRegistration }) {
 }
 
 function RouteOverview() {
-  const getBadgeIcon = (routeKey) => {
-    if (routeKey === "epic_4") return <Flag size={14} />;
-    if (routeKey === "classic_3") return <Bike size={14} />;
-    return <HeartHandshake size={14} />;
-  };
-
   return (
     <Section>
       <Container>
-        <SectionTitle>Die 3 Routen</SectionTitle>
-        <SectionDesc>Es stehen für euch 3 Routen zur Auswahl: die Genussrunde über 75 km, die Sportliche Runde über 140 km und als längste Option die Königsrunde mit 180 km.</SectionDesc>
+        <SectionTitle>Die gefahrenen Routen</SectionTitle>
+        <SectionDesc>
+          Zur Auswahl standen drei Routen: die Genussrunde über 75 km, die Sportliche Runde über 145 km
+          und die Königsrunde mit 180 km.
+        </SectionDesc>
         <CardGrid>
           {ROUTE_OPTIONS.map((route) => (
             <Card key={route.key}>
               <RouteBadge $bg={route.badgeTone.background} $border={route.badgeTone.border} $color={route.badgeTone.text}>
-                <RouteBadgeIcon>{getBadgeIcon(route.key)}</RouteBadgeIcon>
+                <RouteBadgeIcon>{routeIcon(route.key)}</RouteBadgeIcon>
                 {route.label}
               </RouteBadge>
               <h3 style={{ marginBottom: "0.4rem" }}>{route.teaser}</h3>
               <p style={{ color: "#7c4f00", marginTop: 0, lineHeight: 1.5 }}>{route.description}</p>
-              <RequirementList>
+              <BulletList>
                 <li>{route.stops} offizielle Checkpoints plus Ziel</li>
-                <li>{route.routeType === "family" ? "Eigenes Startfenster ohne Tempogruppe" : "Anhand der gewählten Route und Selbsteinschätzung wirst du in eine Startgruppe eingeteilt"}</li>
-                <li>{route.routeType === "family" ? "Für alle, die 75 km bewusst genießen und ohne Gruppendruck fahren wollen" : "Für sportliche Starter mit Navigation und Gruppenrhythmus"}</li>
-              </RequirementList>
+                <li>{route.routeType === "family" ? "Freies Startfenster für die kompakte Runde" : "Sportliche Gruppen mit gemeinsamer Orientierung"}</li>
+                <li>Eis-Stopps, Check-ins und gemeinsamer Ausklang als verbindendes Element</li>
+              </BulletList>
             </Card>
           ))}
         </CardGrid>
-      </Container>
-    </Section>
-  );
-}
-
-function Workflow() {
-  const steps = [
-    "Entweder hast du bereits einen Ice-App-Account oder du erstellst bei der Registrierung einen Account. Anschließend zahlst du den Teilnahmebeitrag.",
-    "Nach erfolgreicher Anmeldung und Zahlung erhältst du Zugang zu deiner Anmeldung. Dort siehst du noch einmal deine Daten, eventuell ergänzte Geschenk-Startplätze und später auch deine Startgruppe, deine Startzeit sowie die konkrete Strecke.",
-    "Einige Tage vor dem Event erhältst du noch eine Erinnerungsmail mit allen wichtigen Informationen zur Anreise, zum Ablauf und zur Strecke.",
-    "Am Eventtag reist du selbstständig an, startest mit deiner zugeteilten Gruppe bzw. deinem Startzeitfenster und navigierst die gewählte Route mit Radcomputer oder Smartphone.",
-    "An jedem Checkpoint bekommst du eine Kugel Eis: Digitale Stempelkarte zeigen, Gratis-Kugel bei der Partnereisdiele abholen, QR-Code scannen oder direkt einen Check-in in der Ice-App anlegen.",
-    `Im Ziel bei ${EVENT_START_FINISH.name} wird die Runde per QR-Code oder Check-in abgeschlossen. Danach gibt es einen gemeinsamen Ausklang in der Community.`,
-  ];
-
-  return (
-    <Section>
-      <Container>
-        <SectionTitle>So läuft das Event ab</SectionTitle>
-        <Timeline>
-          {steps.map((text, idx) => (
-            <TimelineItem key={idx}>
-              <Step>{idx + 1}</Step>
-              <div style={{ color: "#7c4f00", lineHeight: 1.5 }}>{text}</div>
-            </TimelineItem>
-          ))}
-        </Timeline>
       </Container>
     </Section>
   );
@@ -404,17 +354,16 @@ function PartnerParlors() {
   return (
     <Section>
       <Container>
-        <SectionTitle>Unsere Partnereisdielen</SectionTitle>
+        <SectionTitle>Partnereisdielen 2026</SectionTitle>
         <SectionDesc>
-          Bei unseren tollen Partnern erhält jeder Starter nach Vorzeigen des Starterpasses eine Kugel Eis gratis. Außerdem besteht die Möglichkeit, eure Trinkflaschen mit Wasser und ISO-Pulver aufzufüllen.<br /><br />
-          Nutzt die Gelegenheit gerne, die Eisdielen zu unterstützen – zum Beispiel mit einer zweiten oder dritten Kugel Eis oder auch einem Kaffee oder Stück Kuchen – und geht anschließend optimal gestärkt zurück auf die Strecke.
+          Die Route lebte von den Eisdielen und Cafés entlang der Strecke. Dort gab es die offiziellen Stopps,
+          Eis für die Starter und Gelegenheit zum Auffüllen der Flaschen.
         </SectionDesc>
         <PartnerGrid>
           {PARTNER_ICE_CREAM_PARLORS.map((parlor) => (
             <PartnerCard key={parlor.name}>
               <PartnerImageWrap>
                 <PartnerImage src={parlor.image} alt={parlor.name} />
-                <PartnerImageShade />
               </PartnerImageWrap>
               <PartnerBody>
                 <RouteBadge>{parlor.role}</RouteBadge>
@@ -429,48 +378,39 @@ function PartnerParlors() {
   );
 }
 
-function CharitySection() {
+function RetrospectiveSection() {
   return (
     <Section>
       <Container>
-        <Card style={{ maxWidth: 860, margin: "1rem auto 0" }}>
-          <SectionTitle>Radeln und Gutes tun</SectionTitle>
-          <p style={{ color: "#7c4f00", lineHeight: 1.6, marginTop: "1rem" }}>
-            {EVENT_ENTRY_FEE_NOTICE} Zusätzliche freiwillige Spenden gehen an den <a href="https://www.ekk-chemnitz.de/" target="_blank" rel="noopener noreferrer" style={{ color: "#8a5700", textDecoration: "none", fontWeight: 700 }}>Elternverein krebskranker Kinder e.V. Chemnitz</a>.
-          </p>
-          <p style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0 }}>
-            Den freiwilligen Spendenbetrag kannst du direkt bei der Anmeldung ergänzen. So unterstützt die Ausfahrt optional auch noch Familien in schwierigen Situationen.
-          </p>
-        </Card>
-      </Container>
-    </Section>
-  );
-}
-
-function RequirementsAndServices() {
-  return (
-    <Section>
-      <Container>
-        <SectionTitle>Was du brauchst und was inklusive ist</SectionTitle>
         <SplitGrid>
           <Card>
-            <h3 style={{ marginTop: 0 }}>Was du brauchst</h3>
-            <RequirementList>
-              <li>Navi-Radcomputer mit GPX oder Smartphone mit Navigation</li>
-              <li>Smartphone mit Internet und installierter Ice-App / Ice-App im Browser geöffnet</li>
-              <li>Digitale Stempelkarte im persönlichen Event-Portal</li>
-              <li>Bereitschaft einen coolen Tag auf dem Rad mit leckerem Eis und coolen Leuten zu verbringen</li>
-              <li>Helm, Trinkflaschen, wettergerechte Kleidung und eigenverantwortliche Ausrüstung</li>
-            </RequirementList>
+            <Sparkles size={28} color="#ffb522" />
+            <h2>Was die Tour ausgemacht hat</h2>
+            <p style={{ color: "#7c4f00", lineHeight: 1.6 }}>
+              Die Ice-Tour war genau das, was sie sein sollte: kein Rennen, sondern ein richtig starkes Community-Event
+              mit Teamwork auf der Strecke, gegenseitiger Hilfe an den richtigen Stellen und Eis als rotem Faden durch den Tag.
+              Viele waren nach den Kilometern und den kühlen Temperaturen sichtbar geschafft, aber die Stimmung im Ziel war eindeutig:
+              müde Beine, warme Gespräche und viele glückliche Gesichter.
+            </p>
+            <BulletList>
+              <li>über 70 Starterinnen und Starter auf drei Routen</li>
+              <li>mehr als 6.400 gefahrene Kilometer</li>
+              <li>richtig tolle Genussmomente und leckeres Eis bei allen Partnern</li>
+            </BulletList>
           </Card>
           <Card>
-            <h3 style={{ marginTop: 0 }}>Leistungen inklusive / selbst zahlen</h3>
-            <RequirementList>
-              <li>Inklusive: eine Kugel Eis pro offiziellem Checkpoint</li>
-              <li>Inklusive: Iso-Pulver und Leitungswasser zum Auffüllen an den Checkpunkten</li>
-              <li>Wer mehr Eis oder etwas anderes essen / trinken möchte, muss das selber zahlen</li>
-              <li>Am Start und im Ziel wird es die Möglichkeit geben, Kleinigkeiten zu essen und zu trinken zu kaufen.</li>
-            </RequirementList>
+            <HeartHandshake size={28} color="#ffb522" />
+            <h2>Guter Zweck und Ausblick</h2>
+            <p style={{ color: "#7c4f00", lineHeight: 1.6 }}>
+              Neben all den Kilometern und Eisportionen wurde auch viel gespendet. {EVENT_ENTRY_FEE_NOTICE} Zusätzliche freiwillige Spenden gingen an den{" "}
+              <a href="https://www.ekk-chemnitz.de/" target="_blank" rel="noopener noreferrer" style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>
+                Elternverein krebskranker Kinder e.V. Chemnitz
+              </a>.
+            </p>
+            <p style={{ color: "#7c4f00", lineHeight: 1.6, marginBottom: 0 }}>
+              Sehr oft kam die Rückmeldung, dass die Ice-Tour wiederholt werden soll. Und genau danach fühlt es sich auch an:
+              Es wird sehr wahrscheinlich eine weitere Auflage geben. Für künftige Events sind Partner, Eisdielen und Unterstützer weiterhin willkommen.
+            </p>
           </Card>
         </SplitGrid>
       </Container>
@@ -478,72 +418,36 @@ function RequirementsAndServices() {
   );
 }
 
-function EventTech() {
+function AnnouncementInfo() {
   return (
     <Section>
       <Container>
-        <SectionTitle>Digitale Stempelkarte & Check-ins</SectionTitle>
-        <CardGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-          <Card>
-            <QrCode size={28} color="#ffb522" />
-            <h3>Checkpoint abhaken</h3>
-            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              Wenn du GPS aktiviert hast, kannst du vor Ort einfach den Checkpoint abhaken. Sollte das nicht funktionieren, liegt ein QR-Code aus, der beim Scannen ebenfalls den Checkpoint einlöst.
-            </p>
-          </Card>
-          <Card>
-            <Smartphone size={28} color="#ffb522" />
-            <h3>Ice-App Check-in</h3>
-            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              Es wäre natürlich toll, wenn du deine Kugel(n) Eis in der Ice-App eincheckst.<br /><br />
-              Wenn es schnell gehen muss, mache einfach ein Foto vom Eis, lege einen leeren Check-in an und füge die Beschreibung später hinzu.
-            </p>
-          </Card>
-          <Card>
-            <CheckCircle2 size={28} color="#ffb522" />
-            <h3>Zielabschluss</h3>
-            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              Im Ziel wird die Runde noch einmal per QR-Code oder Check-in abgeschlossen. Danach lässt sich dein Finisher-Status sauber auswerten.
-            </p>
-          </Card>
-        </CardGrid>
-
-        <Card style={{ marginTop: "1rem" }}>
-          <h3 style={{ marginTop: 0 }}>Tipps für schnelle Checkpoints</h3>
-          <RequirementList>
-            <li>Tipp: Wenn du Zeit sparen willst, lege vor Ort direkt einen leeren Check-in an, mache ein Foto von deinem Eis und ergänze die Details später entspannt im Ziel.</li>
-            <li><strong>Zusatz-Ice-Challenge:</strong> Wer am Eventtag die meisten Eisportionen mit Beweisbild eincheckt, gewinnt ein kleines Präsent.</li>
-          </RequirementList>
-        </Card>
-      </Container>
-    </Section>
-  );
-}
-
-function EventMapSection() {
-  return (
-    <Section>
-      <Container>
-        <SectionTitle>Event-Karte am Veranstaltungstag</SectionTitle>
-        <SectionDesc>
-          Am Eventtag gibt es eine öffentliche Event-Karte. Dort können Interessierte, Freunde und Familie live verfolgen, an welchen offiziellen Eis-Stopps bereits Starter eingecheckt haben.
-        </SectionDesc>
         <SplitGrid>
           <Card>
-            <h3 style={{ marginTop: 0 }}>Was die Karte zeigt</h3>
-            <RequirementList>
-              <li>welche offiziellen Checkpoints bereits erreicht wurden</li>
-              <li>wie viele Starter an einem Stopp schon eingecheckt haben</li>
-              <li>welche Eis-Stopps auf den jeweiligen Routen liegen</li>
-            </RequirementList>
+            <Sparkles size={28} color="#ffb522" />
+            <h2>So ist die Ice-Tour gedacht</h2>
+            <p style={{ color: "#7c4f00", lineHeight: 1.6 }}>
+              Die Ice-Tour ist eine Community-Ausfahrt mit digitalen Stempeln, offiziellen Eis-Stopps und einem gemeinsamen Ausklang.
+              Sie ist kein Rennen; Navigation, Ausrüstung und Fahrt erfolgen eigenverantwortlich.
+            </p>
+            <BulletList>
+              <li>Wähle eine der drei Routen passend zu deinem Tag.</li>
+              <li>Nutze deine digitale Stempelkarte an den Checkpoints.</li>
+              <li>Genieße Eis, Strecke und Community ohne Renncharakter.</li>
+            </BulletList>
           </Card>
           <Card>
-            <h3 style={{ marginTop: 0 }}>Wichtig zu wissen</h3>
-            <RequirementList>
-              <li>Die Karte wird erst am Eventtag freigeschaltet.</li>
-              <li>Sie ist öffentlich sichtbar und kann auch von Nicht-Teilnehmern geöffnet werden.</li>
-              <li>In der Anmeldung kannst du zustimmen, dass dein Name und deine Check-in-Zeiten dort sichtbar sind.</li>
-            </RequirementList>
+            <HeartHandshake size={28} color="#ffb522" />
+            <h2>Guter Zweck</h2>
+            <p style={{ color: "#7c4f00", lineHeight: 1.6 }}>
+              {EVENT_ENTRY_FEE_NOTICE} Zusätzliche freiwillige Spenden gehen an den{" "}
+              <a href="https://www.ekk-chemnitz.de/" target="_blank" rel="noopener noreferrer" style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>
+                Elternverein krebskranker Kinder e.V. Chemnitz
+              </a>.
+            </p>
+            <div style={{ marginTop: "1rem" }}>
+              <Button href="/event-registration">Zur Registrierung</Button>
+            </div>
           </Card>
         </SplitGrid>
       </Container>
@@ -553,138 +457,64 @@ function EventMapSection() {
 
 function ContactSection() {
   return (
-    <Section>
+    <Section id="kontakt-zukunft">
       <Container>
-        <div style={{ maxWidth: 860, margin: "0 auto" }}>
-          <SectionTitle>Fragen zum Event?</SectionTitle>
+        <ContactWrap>
+          <SectionTitle>{EVENT_IS_RETROSPECTIVE ? "Interesse an künftigen Events?" : "Fragen zur Ice-Tour?"}</SectionTitle>
           <SectionDesc>
-            Nutze das Kontaktformular für Fragen zur Anmeldung, zur Route, zum Ablauf, für Unterstützungsaktionen, Partnerschaften oder wenn du als Eisdiele bei künftigen Events dabei sein möchtest.
+            {EVENT_IS_RETROSPECTIVE
+              ? "Nutze das Kontaktformular für Rückmeldungen zur Ice-Tour 2026, Ideen für kommende Ausgaben, Partnerschaften oder wenn du als Eisdiele künftig dabei sein möchtest."
+              : "Nutze das Kontaktformular für Fragen zur Anmeldung, zur Route, zum Ablauf, für Unterstützungsaktionen, Partnerschaften oder wenn du als Eisdiele bei künftigen Events dabei sein möchtest."}
           </SectionDesc>
           <div style={{ marginTop: "1rem" }}>
             <EventContactForm
-              title="Direkt Kontakt aufnehmen"
-              description="Wir lesen jede Anfrage und melden uns per E-Mail zurück. Das gilt für Eventfragen genauso wie für Firmenaktionen, Partnerschaften und neue Ideen rund um die Ice-Tour."
-              sourcePage="ice-tour"
+              title="Kontakt zur Ice-Tour"
+              description={EVENT_IS_RETROSPECTIVE
+                ? "Wir lesen jede Anfrage und melden uns per E-Mail zurück. Das gilt für Rückblick, Partnerschaften und neue Ideen rund um kommende Ice-Tour-Ausgaben."
+                : "Wir lesen jede Anfrage und melden uns per E-Mail zurück. Das gilt für Eventfragen genauso wie für Partnerschaften und neue Ideen rund um die Ice-Tour."}
+              sourcePage={EVENT_IS_RETROSPECTIVE ? "ice-tour-retrospective" : "ice-tour"}
             />
           </div>
-          <div style={{ marginTop: "0.9rem", display: "flex", justifyContent: "center" }}>
-            <Button href="/ice-tour-unterstuetzen" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-              Mehr Möglichkeiten zur Unterstützung ansehen
-            </Button>
-          </div>
           <p style={{ marginTop: "0.9rem", textAlign: "center", color: "#7c4f00", lineHeight: 1.5 }}>
-            Alternativ erreichst du uns direkt per Mail unter <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}?subject=Frage%20zur%20Ice-Tour%202026`} style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>{EVENT_PAYMENT_CONTACT_EMAIL}</a>.
+            Alternativ erreichst du uns direkt per Mail unter{" "}
+            <a href={`mailto:${EVENT_PAYMENT_CONTACT_EMAIL}?subject=Ice-Tour%20Kontakt`} style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>
+              {EVENT_PAYMENT_CONTACT_EMAIL}
+            </a>.
           </p>
-        </div>
-      </Container>
-    </Section>
-  );
-}
-
-function Faq() {
-  const items = [
-    {
-      q: "Wo finde ich die konkreten Routen?",
-      a: `Die GPX-Datei mit der Route wird einige Tage vor dem Event im persönlichen Starterbereich zum Download bereitgestellt. So hast du genug Zeit, die Route auf deinen Radcomputer oder dein Smartphone zu laden und dich mit der Navigation vertraut zu machen.`,
-    },
-    {
-      q: "Wie wird der genaue zeitliche Ablauf sein?",
-      a: "Der genaue Zeitplan wird noch bekannt gegeben, aber grundsätzlich starten die Gruppen im Laufe des Vormittags im Abstand von einigen Minuten. Die Teilnehmer der längsten Strecke gehen zuerst auf die Runde. Ziel ist, dass alle Gruppen im Laufe des Nachmittags wieder im Ziel eintreffen.",
-    },
-    {
-      q: "Gibt es Verpflegung auf der Strecke?",
-      a: "Es gibt keine offizielle Verpflegungsstation mit All-you-can-eat, aber an jedem offiziellen Checkpoint erhältst du eine Kugel Eis deiner Wahl gratis. Außerdem kannst du deine Trinkflaschen mit Leitungswasser und Iso-Pulver auffüllen. Es ist empfehlenswert, zusätzlich eigene Snacks und Getränke mitzunehmen, um unterwegs gut versorgt zu sein. Alternativ könnt ihr die Checkpoints nutzen, um euch dort zusätzlich mit Verpflegung einzudecken. Packt am besten etwas Bargeld ein, falls ihr noch ein Stück Kuchen oder eine zweite oder dritte Kugel Eis kaufen möchtet.",
-    },
-    {
-      q: "Kann ich die Route wechseln?",
-      a: "Momentan ist es nicht möglich, auf eine andere Route als die bei der Registrierung gewählte zu wechseln.",
-    },
-    {
-      q: "Muss ich zwingend die Ice-App nutzen?",
-      a: "Ja, die Ice-App dient als eure digitale Stempelkarte und als Nachweis, dass ihr Teilnehmer des Events seid. Außerdem könnt ihr damit die Check-ins an den Eis-Stopps vornehmen und habt alle wichtigen Infos zum Event jederzeit griffbereit.",
-    },
-    {
-      q: "Gibt es am Eventtag eine öffentliche Event-Karte?",
-      a: "Ja. Die Event-Karte wird am Veranstaltungstag freigeschaltet und ist öffentlich sichtbar. Dort sieht man, welche Starter an welchen offiziellen Checkpoints bereits eingecheckt haben.",
-    },
-    {
-      q: "Kann ich die Ice-Tour auch unterstützen, ohne mitzufahren?",
-      a: <>Ja. Für Firmen, Unterstützer, Nicht-Radler und Eisdielen gibt es eine eigene Seite mit Möglichkeiten zur Unterstützung. Alle Infos findest du unter <a href="/ice-tour-unterstuetzen" style={{ color: "#8a5700", fontWeight: 700, textDecoration: "none" }}>Ice-Tour unterstützen</a>.</>,
-    },
-  ];
-
-  return (
-    <Section>
-      <Container>
-        <SectionTitle>FAQ</SectionTitle>
-        <FaqGrid>
-          {items.map((item) => (
-            <Card key={item.q}>
-              <h3 style={{ marginTop: 0 }}>{item.q}</h3>
-              <p style={{ marginBottom: 0, color: "#7c4f00", lineHeight: 1.55 }}>{item.a}</p>
-            </Card>
-          ))}
-        </FaqGrid>
+        </ContactWrap>
       </Container>
     </Section>
   );
 }
 
 export default function RadEvent() {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
-  const { userId, isLoggedIn } = useUser();
-  const [hasEventRegistration, setHasEventRegistration] = useState(
-    () => localStorage.getItem("event2026_has_registration") === "1"
-  );
-  const seoDescription = `Ice-Tour 2026 in Chemnitz: Eis-Tour und Spendenfahrt mit ${ROUTE_OPTIONS.map((route) => route.distanceKm).join(", ")} km, offiziellen Eisdielen-Stopps, digitaler Stempelkarte und freiwilligen Spenden für einen guten Zweck.`;
-  const seoKeywords = [
+  const routeDistances = ROUTE_OPTIONS.map((route) => route.distanceKm).join(", ");
+  const seoDescription = EVENT_IS_RETROSPECTIVE
+    ? `Rückblick auf die Ice-Tour 2026 in Chemnitz: Community-Ausfahrt mit ${routeDistances} km, Eisdielen-Stopps, digitaler Stempelkarte und Spendenaktion.`
+    : `Ice-Tour 2026 in Chemnitz: Community-Ausfahrt mit ${routeDistances} km, offiziellen Eisdielen-Stopps, digitaler Stempelkarte und Spendenaktion.`;
+  const seoKeywords = EVENT_IS_RETROSPECTIVE ? [
+    "Ice-Tour 2026 Rückblick",
+    "Eis-Tour 2026",
+    "Chemnitz",
+    "Spendenfahrt",
+    "Eisdielenradtour",
+    "Community Ride Chemnitz",
+    "Ice-App Event",
+  ] : [
     "Ice-Tour 2026",
     "Eis-Tour 2026",
     "Chemnitz",
     "Spendenfahrt",
-    "Eisdielen",
     "Eisdielenradtour",
-    "Charity Radtour Chemnitz",
     "Fahrrad Event Chemnitz",
     "Community Ride Chemnitz",
-    "Radtour Chemnitz Mai 2026",
-    "Eisdielen Chemnitz",
     "Ice-App Event",
   ];
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setHasEventRegistration(false);
-      return;
-    }
-
-    const syncRegistrationState = () => {
-      setHasEventRegistration(localStorage.getItem("event2026_has_registration") === "1");
-    };
-
-    syncRegistrationState();
-    window.addEventListener("storage", syncRegistrationState);
-    return () => {
-      window.removeEventListener("storage", syncRegistrationState);
-    };
-  }, [isLoggedIn]);
-
-  useEffect(() => {
-    if (!isLoggedIn || !userId || !apiUrl) return;
-
-    fetch(`${apiUrl}/api/birthday_track_event_page.php`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ user_id: userId }),
-    }).catch(() => { });
-  }, [apiUrl, isLoggedIn, userId]);
 
   return (
     <PageWrapper>
       <Seo
-        title="Ice-Tour 2026 in Chemnitz | Eis-Tour, Spendenfahrt und Eisdielen-Stopps"
+        title={EVENT_IS_RETROSPECTIVE ? "Ice-Tour 2026 Rückblick | Eis-Tour, Spendenfahrt und Impressionen" : "Ice-Tour 2026 in Chemnitz | Eis-Tour, Spendenfahrt und Eisdielen-Stopps"}
         description={seoDescription}
         keywords={seoKeywords}
         canonical="/ice-tour"
@@ -694,7 +524,7 @@ export default function RadEvent() {
           name: "Ice-Tour 2026",
           startDate: "2026-05-16",
           eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-          eventStatus: "https://schema.org/EventScheduled",
+          eventStatus: EVENT_IS_RETROSPECTIVE ? "https://schema.org/EventCompleted" : "https://schema.org/EventScheduled",
           description: seoDescription,
           url: "https://ice-app.de/ice-tour",
           location: {
@@ -708,56 +538,23 @@ export default function RadEvent() {
               addressCountry: "DE",
             },
           },
-          offers: {
-            "@type": "Offer",
-            price: String(EVENT_ENTRY_FEE),
-            priceCurrency: "EUR",
-            availability: "https://schema.org/InStock",
-            url: "https://ice-app.de/event-registration",
-          },
+          ...(EVENT_IS_RETROSPECTIVE ? {} : {
+            offers: {
+              "@type": "Offer",
+              price: String(EVENT_ENTRY_FEE),
+              priceCurrency: "EUR",
+              availability: "https://schema.org/InStock",
+              url: "https://ice-app.de/event-registration",
+            },
+          }),
           keywords: seoKeywords.join(", "),
         }}
       />
       <Header />
-      <Hero hasEventRegistration={hasEventRegistration} />
+      {EVENT_IS_RETROSPECTIVE ? <Hero /> : <AnnouncementHero />}
       <RouteOverview />
       <PartnerParlors />
-      <CharitySection />
-      <Workflow />
-      <RequirementsAndServices />
-      <EventTech />
-      <EventMapSection />
-      <Faq />
-      <Section>
-        <Container>
-          <Card style={{ textAlign: "center" }}>
-            <h2 style={{ marginTop: 0 }}>Bereit für die Ice-Tour?</h2>
-            <p style={{ color: "#7c4f00", lineHeight: 1.5 }}>
-              {hasEventRegistration ? (
-                <>
-                  Sehr cool, du bist bereits angemeldet. Gehe zu deinem <strong>Teilnehmer-Bereich</strong>.
-                </>
-              ) : (
-                <>Bist du bereit für einen unvergesslichen Tag auf dem Rad mit leckerem Eis, guten Leuten und einer privat organisierten Community-Ausfahrt? Dann melde dich jetzt an.</>
-              )}
-            </p>
-            <div style={{ display: "flex", gap: "0.8rem", justifyContent: "center", flexWrap: "wrap" }}>
-              {hasEventRegistration ? (
-                <Button href="/event-me" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-                  Mein Teilnehmer-Bereich
-                </Button>
-              ) : (
-                <>
-                  <Button href="/event-registration">Zur Anmeldung</Button>
-                  {/* <Button href="/#/event-gifts" style={{ background: "#fff", color: "#8a5700", border: "1px solid #ffb522" }}>
-                    Startplatz verschenken
-                  </Button> */}
-                </>
-              )}
-            </div>
-          </Card>
-        </Container>
-      </Section>
+      {EVENT_IS_RETROSPECTIVE ? <RetrospectiveSection /> : <AnnouncementInfo />}
       <ContactSection />
       <Footer />
     </PageWrapper>

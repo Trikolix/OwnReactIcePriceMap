@@ -38,6 +38,7 @@ function PhotoChallengeVoting() {
   const getKoRoundLabel = useKoRoundLabel(overview);
   const requestIdRef = React.useRef(0);
   const challengeFlags = overview?.challenge_flags || {};
+  const showCountryBadges = Boolean(overview?.challenge?.is_country_challenge);
   const isSubmissionStage = Boolean(
     challengeFlags.submission_is_open_effective || challengeFlags.submission_is_closed_effective
   );
@@ -512,12 +513,16 @@ function PhotoChallengeVoting() {
       {
         id: activeModalMatch.image_a_id,
         title: activeModalMatch.image_a_title,
+        country_name: activeModalMatch.image_a_country_name,
+        country_code: activeModalMatch.image_a_country_code,
         url: activeModalMatch.image_a_url,
         votes: activeModalMatch.votes_a,
       },
       {
         id: activeModalMatch.image_b_id,
         title: activeModalMatch.image_b_title,
+        country_name: activeModalMatch.image_b_country_name,
+        country_code: activeModalMatch.image_b_country_code,
         url: activeModalMatch.image_b_url,
         votes: activeModalMatch.votes_b,
       },
@@ -532,12 +537,16 @@ function PhotoChallengeVoting() {
       {
         id: activeKoModalMatch.image_a_id,
         title: activeKoModalMatch.image_a_title,
+        country_name: activeKoModalMatch.image_a_country_name,
+        country_code: activeKoModalMatch.image_a_country_code,
         url: activeKoModalMatch.image_a_url,
         votes: activeKoModalMatch.votes_a,
       },
       {
         id: activeKoModalMatch.image_b_id,
         title: activeKoModalMatch.image_b_title,
+        country_name: activeKoModalMatch.image_b_country_name,
+        country_code: activeKoModalMatch.image_b_country_code,
         url: activeKoModalMatch.image_b_url,
         votes: activeKoModalMatch.votes_b,
       },
@@ -636,7 +645,11 @@ function PhotoChallengeVoting() {
         )}
 
         {!loading && !isSubmissionStage && activePhase === 'group' && (
-          <Group groups={groupsSorted} openGroupModal={openGroupModal} />
+          <Group
+            groups={groupsSorted}
+            openGroupModal={openGroupModal}
+            showCountryBadges={showCountryBadges}
+          />
         )}
 
         {!loading &&
@@ -663,6 +676,7 @@ function PhotoChallengeVoting() {
           handleModalVote={handleModalVote}
           setImagePreview={setImagePreview}
           isLoggedIn={isLoggedIn}
+          showCountryBadges={showCountryBadges}
         />
 
         <KoModal
@@ -676,6 +690,7 @@ function PhotoChallengeVoting() {
           getKoRoundLabel={getKoRoundLabel}
           setImagePreview={setImagePreview}
           isLoggedIn={isLoggedIn}
+          showCountryBadges={showCountryBadges}
         />
 
         <ImageLightbox imagePreview={imagePreview} setImagePreview={setImagePreview} />

@@ -7,7 +7,15 @@ import CommentSection from "./CommentSection";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from "../styles/SharedStyles";
 import UserAvatar from "./UserAvatar";
 import { MessageCircle } from "lucide-react";
+
+const ActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+import MentionFormatter from "./MentionFormatter";
 import SubmitReviewModal from "../SubmitReviewModal";
+import LikeButton from "./LikeButton";
 
 const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false, focusCommentId = null }) => {
   const { userId } = useUser();
@@ -80,7 +88,7 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
               )}
             </Table>
 
-            {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}>{review.beschreibung}</p>}
+            {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}><MentionFormatter text={review.beschreibung} /></p>}
 
             {review.attributes?.length > 0 && (
               <AttributeSection>
@@ -106,12 +114,15 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
 
           </MediaColumn>
         </StyledContentWrapper>
-        <CommentToggle
-          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-        >
-          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {review.commentCount || 0} Kommentar(e)
-        </CommentToggle>
+        <ActionRow>
+          <LikeButton entityType="bewertung" entityId={review.id} />
+          <CommentToggle
+            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+            onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+          >
+            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {review.commentCount || 0} Kommentar(e)
+          </CommentToggle>
+        </ActionRow>
         {areCommentsVisible && (
           <CommentSection
             bewertungId={review.id}

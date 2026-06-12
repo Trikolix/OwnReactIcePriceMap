@@ -130,7 +130,16 @@ function calculateStreakStats(array $dateRows): array
 
 ensureUserProfileColumns($pdo);
 
-$nutzerId = intval($_GET['nutzer_id']); // z.B. ?nutzer_id=1
+$nutzerParam = $_GET['nutzer_id'] ?? '';
+if (strpos($nutzerParam, '@') === 0) {
+    $username = substr($nutzerParam, 1);
+    $stmt = $pdo->prepare("SELECT id FROM nutzer WHERE username = ? LIMIT 1");
+    $stmt->execute([$username]);
+    $nutzerId = (int)$stmt->fetchColumn();
+} else {
+    $nutzerId = (int)$nutzerParam;
+}
+
 $curUserId = intval($_GET['cur_user_id']);
 
 // Nutzername ermitteln
@@ -155,7 +164,8 @@ $sql4 = "SELECT c.typ, COUNT(s.id) AS anzahl_eis
          GROUP BY c.typ";
 
 // Anzahl besuchter Eisdielen & Checkins pro Landkreis
-$sql5 = "SELECT l.name AS landkreis,
+$sql5 = "SELECT e.landkreis_id AS landkreis_id,
+                l.name AS landkreis,
                 COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
                 COUNT(*) AS checkins
          FROM checkins c
@@ -212,7 +222,8 @@ $sql10 = "SELECT anreise, COUNT(*) AS anzahl
           ORDER BY anzahl DESC";
 
 // Aktivität pro Land
-$sql11 = "SELECT la.name AS land,
+$sql11 = "SELECT e.land_id AS land_id,
+                 la.name AS land,
                  COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
                  COUNT(*) AS checkins
           FROM checkins c
@@ -223,7 +234,8 @@ $sql11 = "SELECT la.name AS land,
           ORDER BY checkins DESC";
 
 // Aktivität pro Bundesland
-$sql12 = "SELECT bl.name AS bundesland,
+$sql12 = "SELECT e.bundesland_id AS bundesland_id,
+                 bl.name AS bundesland,
                  COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
                  COUNT(*) AS checkins
           FROM checkins c

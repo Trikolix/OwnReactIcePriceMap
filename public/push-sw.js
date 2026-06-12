@@ -30,6 +30,25 @@ const fetchPendingDeliveries = async () => {
   return Array.isArray(json.deliveries) ? json.deliveries : [];
 };
 
+const reportPushEvent = async (payload, eventName) => {
+  const deliveryId = Number(payload?.delivery_id || 0);
+  if (!deliveryId) return;
+
+  const config = await readPushConfig();
+  if (!config.subscriptionToken) return;
+
+  const apiBase = config.apiBase || "";
+  await fetch(`${apiBase}/api/push/events.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      delivery_id: deliveryId,
+      event: eventName,
+      subscription_token: config.subscriptionToken,
+    }),
+  }).catch(() => {});
+};
+
 self.addEventListener("push", (event) => {
   event.waitUntil((async () => {
     let deliveries = [];
@@ -53,15 +72,18 @@ self.addEventListener("push", (event) => {
         tag: payload.tag || undefined,
         renotify: true,
       });
+      await reportPushEvent(payload, "shown");
     }
   })());
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const payload = event.notification?.data || {};
   const deeplink = event.notification?.data?.deeplink || "/";
 
   event.waitUntil((async () => {
+    await reportPushEvent(payload, "clicked");
     const allClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of allClients) {
       if ("focus" in client) {
