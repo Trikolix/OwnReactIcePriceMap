@@ -164,7 +164,8 @@ $sql4 = "SELECT c.typ, COUNT(s.id) AS anzahl_eis
          GROUP BY c.typ";
 
 // Anzahl besuchter Eisdielen & Checkins pro Landkreis
-$sql5 = "SELECT l.name AS landkreis,
+$sql5 = "SELECT e.landkreis_id AS landkreis_id,
+                l.name AS landkreis,
                 COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
                 COUNT(*) AS checkins
          FROM checkins c
@@ -221,7 +222,8 @@ $sql10 = "SELECT anreise, COUNT(*) AS anzahl
           ORDER BY anzahl DESC";
 
 // Aktivität pro Land
-$sql11 = "SELECT la.name AS land,
+$sql11 = "SELECT e.land_id AS land_id,
+                 la.name AS land,
                  COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
                  COUNT(*) AS checkins
           FROM checkins c
@@ -232,7 +234,8 @@ $sql11 = "SELECT la.name AS land,
           ORDER BY checkins DESC";
 
 // Aktivität pro Bundesland
-$sql12 = "SELECT bl.name AS bundesland,
+$sql12 = "SELECT e.bundesland_id AS bundesland_id,
+                 bl.name AS bundesland,
                  COUNT(DISTINCT c.eisdiele_id) AS eisdielen,
                  COUNT(*) AS checkins
           FROM checkins c

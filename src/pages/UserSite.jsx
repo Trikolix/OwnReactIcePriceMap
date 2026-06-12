@@ -1,7 +1,7 @@
 import Header from './../Header';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
@@ -399,6 +399,30 @@ function UserSite() {
     }
   };
 
+  const getActivityRegionLabel = (item) =>
+    item.land || item.bundesland || item.landkreis || 'Unbekannt';
+
+  const getActivityRegionPath = (item) => {
+    if (item.landkreis_id) {
+      return `/region/landkreis/${item.landkreis_id}`;
+    }
+    if (item.bundesland_id) {
+      return `/region/bundesland/${item.bundesland_id}`;
+    }
+    return null;
+  };
+
+  const renderActivityRegionName = (item) => {
+    const label = getActivityRegionLabel(item);
+    const path = getActivityRegionPath(item);
+
+    if (!path) {
+      return label;
+    }
+
+    return <ActivityRegionLink to={path}>{label}</ActivityRegionLink>;
+  };
+
   const buildFlavorKey = (sortenname, category = 'flavor') =>
     `${category}__${sortenname}`;
 
@@ -556,8 +580,8 @@ function UserSite() {
       </thead>
       <tbody>
         {items.map((item, index) => (
-          <tr key={`${item.land || item.bundesland || item.landkreis || 'region'}-${index}`}>
-            <td>{item.land || item.bundesland || item.landkreis || 'Unbekannt'}</td>
+          <tr key={`${getActivityRegionLabel(item)}-${index}`}>
+            <td>{renderActivityRegionName(item)}</td>
             <td>{item.checkins}</td>
             <td>{item.eisdielen}</td>
           </tr>
@@ -1026,24 +1050,7 @@ function UserSite() {
                 </ActivityTabs>
                 {activeActivityData.length ? (
                   <>
-                    <ActivityTable>
-                      <thead>
-                        <tr>
-                          <th>Region</th>
-                          <th>Check-ins</th>
-                          <th>Eisdielen</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activityPreview.map((item, index) => (
-                          <tr key={`${activityLevel}-${index}`}>
-                            <td>{item.land || item.bundesland || item.landkreis || 'Unbekannt'}</td>
-                            <td>{item.checkins}</td>
-                            <td>{item.eisdielen}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </ActivityTable>
+                    {renderActivityTable(activityPreview)}
                     {activeActivityData.length > PREVIEW_COUNT && (
                       <ListToggle
                         onClick={() => openListModal({ title: 'Aktivität nach Region', type: 'activity' })}
@@ -1864,6 +1871,18 @@ const ActivityTable = styled.table`
 
   tbody tr:last-child td {
     border-bottom: none;
+  }
+`;
+
+const ActivityRegionLink = styled(Link)`
+  color: #7a4a00;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: #4f3000;
+    text-decoration: underline;
   }
 `;
 
