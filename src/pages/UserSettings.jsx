@@ -42,6 +42,8 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_team_challenge_push: 1,
     notify_photo_challenge: 1,
     notify_photo_challenge_push: 1,
+    notify_like: 0,
+    notify_like_push: 1,
     push_enabled_web: 1,
     push_enabled_android: 1,
   });
@@ -77,7 +79,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch(`${API_BASE}/api/get_user_notification_settings.php?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
         const json = await res.json();
         setSettings(json);
       } catch (e) {
@@ -384,7 +386,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     const res = await fetch(`${API_BASE}/api/update_user_notification_settings.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, ...targetSettings }),
+      body: JSON.stringify(targetSettings),
     });
     const json = await res.json();
     if (!json.success) {
@@ -729,6 +731,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <td>Photo-Challenges</td>
               <td><input type="checkbox" name="notify_photo_challenge" checked={!!settings.notify_photo_challenge} onChange={handleChange} /></td>
               <td><input type="checkbox" name="notify_photo_challenge_push" checked={!!settings.notify_photo_challenge_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Likes auf Beiträge</td>
+              <td><input type="checkbox" name="notify_like" checked={!!settings.notify_like} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_like_push" checked={!!settings.notify_like_push} onChange={handleChange} /></td>
             </tr>
           </tbody>
         </SettingsTable>

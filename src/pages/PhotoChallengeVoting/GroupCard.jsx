@@ -47,7 +47,7 @@ const GroupCard = ({ group, openGroupModal, showCountryBadges = false }) => {
       {!!previewEntries.length && (
         <S.GroupPreviewStrip>
           {previewEntries.map((entry) => {
-            const country = showCountryBadges ? getPhotoChallengeCountry(entry.title) : null;
+            const country = showCountryBadges ? getPhotoChallengeCountry(entry) : null;
             return (
               <S.CountryImageFrame key={entry.image_id}>
                 <S.GroupPreviewThumb

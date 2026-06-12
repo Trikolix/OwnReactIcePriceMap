@@ -8,6 +8,7 @@ import Community from "../../pages/Community";
 import SystemmeldungForm from "../../components/SystemmeldungForm";
 import AwardsAdmin from "../../pages/AwardsAdmin";
 import AdminWeeklyStats from "../../pages/AdminWeeklyStats";
+import AdminPushStats from "../../pages/AdminPushStats";
 import SummerCampaignAdmin from "../../pages/SummerCampaignAdmin";
 
 export const coreRoutes = [
@@ -22,4 +23,5 @@ export const coreRoutes = [
   { path: "/admin/summer-campaign", element: <SummerCampaignAdmin /> },
   { path: "/shop-change-requests", element: <ShopChangeRequestsAdmin /> },
   { path: "/admin/weekly-stats", element: <AdminWeeklyStats /> },
+  { path: "/admin/push-stats", element: <AdminPushStats /> },
 ];

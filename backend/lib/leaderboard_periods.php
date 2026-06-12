@@ -423,7 +423,6 @@ function buildLeaderboardResponse(array $rows, ?int $userId, DateTimeImmutable $
         }
     }
 
-    $topRows = array_slice($rows, 0, 20);
     $progressToNext = null;
     if ($currentUser !== null && $currentUser['rank'] > 1) {
         $higherRows = array_values(array_filter(
@@ -447,7 +446,7 @@ function buildLeaderboardResponse(array $rows, ?int $userId, DateTimeImmutable $
     $secondsUntilEnd = $period === 'overall' ? null : max(0, $end->getTimestamp() - $now->getTimestamp());
 
     return [
-        'leaderboard' => $topRows,
+        'leaderboard' => $rows,
         'current_user' => $currentUser,
         'period_meta' => [
             'period' => $period,

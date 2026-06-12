@@ -35,7 +35,7 @@ function iceapp_notification_absolute_url(string $pathOrUrl): string
 
 function iceapp_notification_settings_url(int $userId): string
 {
-    return "https://ice-app.de/user/{$userId}?openSettings=1";
+    return 'https://ice-app.de/account/settings';
 }
 
 /**

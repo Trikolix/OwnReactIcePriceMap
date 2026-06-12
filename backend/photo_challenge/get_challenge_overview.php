@@ -42,13 +42,20 @@ try {
                b.beschreibung,
                b.nutzer_id,
                n.username,
-               COALESCE(pci.title, s.title, b.beschreibung) AS title
+               CASE
+                   WHEN ch.is_country_challenge = 1 THEN COALESCE(NULLIF(pci.title, ''), NULLIF(l.name, ''), NULLIF(s.title, ''), b.beschreibung)
+                   ELSE COALESCE(NULLIF(s.title, ''), b.beschreibung)
+               END AS title,
+               CASE WHEN ch.is_country_challenge = 1 THEN l.name ELSE NULL END AS country_name,
+               CASE WHEN ch.is_country_challenge = 1 THEN l.country_code ELSE NULL END AS country_code
         FROM photo_challenge_group_entries ge
         JOIN photo_challenge_groups g ON g.id = ge.group_id
+        JOIN photo_challenges ch ON ch.id = ge.challenge_id
         JOIN bilder b ON b.id = ge.image_id
         LEFT JOIN nutzer n ON n.id = b.nutzer_id
         LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ge.challenge_id AND pci.image_id = ge.image_id
         LEFT JOIN photo_challenge_submissions s ON s.challenge_id = ge.challenge_id AND s.image_id = ge.image_id
+        LEFT JOIN laender l ON l.id = pci.land_id
         WHERE ge.challenge_id = :challenge_id
         ORDER BY g.position ASC, ge.seed ASC
     ");
@@ -77,6 +84,8 @@ try {
             'beschreibung' => $entry['beschreibung'],
             'nutzer_id' => (int)$entry['nutzer_id'],
             'username' => $entry['username'],
+            'country_name' => $entry['country_name'],
+            'country_code' => $entry['country_code'],
         ];
     }
 
@@ -128,6 +137,8 @@ try {
                 'beschreibung' => $entry['beschreibung'],
                 'username' => $entry['username'],
                 'nutzer_id' => (int)$entry['nutzer_id'],
+                'country_name' => $entry['country_name'] ?? null,
+                'country_code' => $entry['country_code'] ?? null,
             ];
         }
     }
@@ -161,6 +172,10 @@ try {
             'image_b_url' => $match['image_b_url'],
             'image_a_title' => $imageATitle,
             'image_b_title' => $imageBTitle,
+            'image_a_country_name' => $imageMetaById[$imageAId]['country_name'] ?? null,
+            'image_a_country_code' => $imageMetaById[$imageAId]['country_code'] ?? null,
+            'image_b_country_name' => $imageMetaById[$imageBId]['country_name'] ?? null,
+            'image_b_country_code' => $imageMetaById[$imageBId]['country_code'] ?? null,
             'votes_a' => $summary['votes_a'],
             'votes_b' => $summary['votes_b'],
             'status' => $match['status'],
@@ -257,6 +272,8 @@ try {
                     'url' => $entry['url'],
                     'beschreibung' => $entry['beschreibung'],
                     'username' => $entry['username'],
+                    'country_name' => $entry['country_name'] ?? null,
+                    'country_code' => $entry['country_code'] ?? null,
                     'votes' => $entry['votes'] ?? 0,
                     'is_advancer' => in_array($entry['image_id'], $advancers, true),
                     'is_lucky_loser' => false,
@@ -390,12 +407,14 @@ try {
             $stmt->execute(['image_id' => $finalMatch['winner']]);
             if ($winnerImage = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 // Winner title fetch
-                $stmtWinnerTitle = $pdo->prepare("SELECT COALESCE(pci.title, s.title, b.beschreibung) AS title FROM bilder b LEFT JOIN photo_challenge_images pci ON pci.challenge_id = :challenge_id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = :challenge_id AND s.image_id = b.id WHERE b.id = :image_id LIMIT 1");
+                $stmtWinnerTitle = $pdo->prepare("SELECT CASE WHEN ch.is_country_challenge = 1 THEN COALESCE(NULLIF(pci.title, ''), NULLIF(l.name, ''), NULLIF(s.title, ''), b.beschreibung) ELSE COALESCE(NULLIF(s.title, ''), b.beschreibung) END AS title, CASE WHEN ch.is_country_challenge = 1 THEN l.name ELSE NULL END AS country_name, CASE WHEN ch.is_country_challenge = 1 THEN l.country_code ELSE NULL END AS country_code FROM bilder b JOIN photo_challenges ch ON ch.id = :challenge_id LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ch.id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = ch.id AND s.image_id = b.id LEFT JOIN laender l ON l.id = pci.land_id WHERE b.id = :image_id LIMIT 1");
                 $stmtWinnerTitle->execute(['challenge_id' => $challengeId, 'image_id' => $winnerImage['id']]);
-                $winnerTitle = $stmtWinnerTitle->fetchColumn();
+                $winnerTitleRow = $stmtWinnerTitle->fetch(PDO::FETCH_ASSOC) ?: [];
                 $winnerPayload = [
                     'image_id' => (int)$winnerImage['id'],
-                    'title' => $winnerTitle,
+                    'title' => $winnerTitleRow['title'] ?? null,
+                    'country_name' => $winnerTitleRow['country_name'] ?? null,
+                    'country_code' => $winnerTitleRow['country_code'] ?? null,
                     'url' => $winnerImage['url'],
                     'beschreibung' => $winnerImage['beschreibung'],
                     'nutzer_id' => (int)$winnerImage['nutzer_id'],

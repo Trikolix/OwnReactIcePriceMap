@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Bell, X, CheckCheck } from "lucide-react";
+import { Bell, X, CheckCheck, Trash2 } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
@@ -11,11 +11,22 @@ const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [show, setShow] = useState(false);
     const dropdownRef = useRef(null);
+    const touchTimerRef = useRef(null);
+    const suppressNextClickRef = useRef(false);
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
+    const [deleteErrorId, setDeleteErrorId] = useState(null);
     const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "", linkUrl: "", linkLabel: "" });
     const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
 
     const openSystemModal = ({ title, message, linkUrl = "", linkLabel = "" }) => {
         setSystemModal({ isOpen: true, title, message, linkUrl, linkLabel });
+    };
+
+    const resetDeleteState = () => {
+        setConfirmingDeleteId(null);
+        setPendingDeleteId(null);
+        setDeleteErrorId(null);
     };
 
     const loadNotifications = async () => {
@@ -32,6 +43,7 @@ const NotificationBell = () => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setShow(false);
+                resetDeleteState();
             }
         };
 
@@ -49,6 +61,14 @@ const NotificationBell = () => {
     useEffect(() => {
         if (userId) loadNotifications();
     }, [userId]);
+
+    useEffect(() => {
+        return () => {
+            if (touchTimerRef.current) {
+                clearTimeout(touchTimerRef.current);
+            }
+        };
+    }, []);
 
     const markAsRead = async (id) => {
         try {
@@ -79,8 +99,89 @@ const NotificationBell = () => {
         }
     };
 
+    const armDeleteNotification = (event, id) => {
+        event?.preventDefault();
+        event?.stopPropagation();
+        setConfirmingDeleteId(id);
+        setDeleteErrorId(null);
+    };
+
+    const cancelDeleteNotification = (event) => {
+        event?.preventDefault();
+        event?.stopPropagation();
+        setConfirmingDeleteId(null);
+        setDeleteErrorId(null);
+    };
+
+    const handleTouchStart = (notification) => {
+        if (touchTimerRef.current) {
+            clearTimeout(touchTimerRef.current);
+        }
+
+        touchTimerRef.current = setTimeout(() => {
+            suppressNextClickRef.current = true;
+            setConfirmingDeleteId(notification.id);
+            setDeleteErrorId(null);
+            touchTimerRef.current = null;
+        }, 600);
+    };
+
+    const cancelLongPress = () => {
+        if (touchTimerRef.current) {
+            clearTimeout(touchTimerRef.current);
+            touchTimerRef.current = null;
+        }
+    };
+
+    const handleDeleteNotification = async (event, notification) => {
+        event?.preventDefault();
+        event?.stopPropagation();
+
+        if (pendingDeleteId === notification.id) {
+            return;
+        }
+
+        const previousNotifications = notifications;
+        setPendingDeleteId(notification.id);
+        setDeleteErrorId(null);
+        setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=hide`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: notification.id, nutzer_id: userId })
+                }
+            );
+            const data = await res.json();
+            if (data.status !== "success") {
+                throw new Error(data.message || "Benachrichtigung konnte nicht gelöscht werden");
+            }
+            setConfirmingDeleteId(null);
+            setPendingDeleteId(null);
+        } catch (err) {
+            console.error("Fehler beim Löschen der Benachrichtigung", err);
+            setNotifications(previousNotifications);
+            setPendingDeleteId(null);
+            setConfirmingDeleteId(notification.id);
+            setDeleteErrorId(notification.id);
+        }
+    };
+
     const handleNotificationClick = async (notification) => {
+        if (suppressNextClickRef.current) {
+            suppressNextClickRef.current = false;
+            return;
+        }
+
+        if (confirmingDeleteId === notification.id || pendingDeleteId === notification.id) {
+            return;
+        }
+
         setShow(false);
+        resetDeleteState();
         if (!notification.ist_gelesen) {
             markAsRead(notification.id);
         }
@@ -142,7 +243,10 @@ const NotificationBell = () => {
 
     return (<>
         <BellWrapper>
-            <BellButton onClick={() => setShow(!show)}>
+            <BellButton onClick={() => {
+                setShow(!show);
+                resetDeleteState();
+            }}>
                 <Bell size={28} color="currentColor" style={{ verticalAlign: 'middle' }} />
                 {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
             </BellButton>
@@ -163,7 +267,10 @@ const NotificationBell = () => {
                             )}
                             <DropdownCloseButton
                                 type="button"
-                                onClick={() => setShow(false)}
+                                onClick={() => {
+                                    setShow(false);
+                                    resetDeleteState();
+                                }}
                                 aria-label="Benachrichtigungen schließen"
                             >
                                 <X size={18} />
@@ -177,16 +284,58 @@ const NotificationBell = () => {
                             {notifications.map((n) => (
                                 <NotificationItem
                                     key={n.id}
-                                    gelesen={n.ist_gelesen}
+                                    $gelesen={n.ist_gelesen}
+                                    $confirming={confirmingDeleteId === n.id}
+                                    $pending={pendingDeleteId === n.id}
+                                    $error={deleteErrorId === n.id}
                                     onClick={() => handleNotificationClick(n)}
+                                    onTouchStart={() => handleTouchStart(n)}
+                                    onTouchEnd={cancelLongPress}
+                                    onTouchMove={cancelLongPress}
+                                    onTouchCancel={cancelLongPress}
+                                    onContextMenu={(event) => confirmingDeleteId === n.id && event.preventDefault()}
                                 >
-                                    <Message>{n.text}</Message>
-                                    <Time>
-                                        {new Date(n.erstellt_am).toLocaleString("de-DE", {
-                                            dateStyle: "short",
-                                            timeStyle: "short",
-                                        })}
-                                    </Time>
+                                    <NotificationContent>
+                                        <Message>{n.text}</Message>
+                                        <Time>
+                                            {new Date(n.erstellt_am).toLocaleString("de-DE", {
+                                                dateStyle: "short",
+                                                timeStyle: "short",
+                                            })}
+                                        </Time>
+                                        {deleteErrorId === n.id && (
+                                            <DeleteError>Benachrichtigung konnte nicht gelöscht werden.</DeleteError>
+                                        )}
+                                        {confirmingDeleteId === n.id && (
+                                            <ConfirmationRow>
+                                                <ConfirmDeleteButton
+                                                    type="button"
+                                                    onClick={(event) => handleDeleteNotification(event, n)}
+                                                    disabled={pendingDeleteId === n.id}
+                                                >
+                                                    Löschen
+                                                </ConfirmDeleteButton>
+                                                <CancelDeleteButton
+                                                    type="button"
+                                                    onClick={cancelDeleteNotification}
+                                                    disabled={pendingDeleteId === n.id}
+                                                >
+                                                    Abbrechen
+                                                </CancelDeleteButton>
+                                            </ConfirmationRow>
+                                        )}
+                                    </NotificationContent>
+                                    <ItemActions>
+                                        <DeleteIconButton
+                                            type="button"
+                                            onClick={(event) => armDeleteNotification(event, n.id)}
+                                            disabled={pendingDeleteId === n.id}
+                                            title="Benachrichtigung löschen"
+                                            aria-label="Benachrichtigung löschen"
+                                        >
+                                            <Trash2 size={16} />
+                                        </DeleteIconButton>
+                                    </ItemActions>
                                 </NotificationItem>
                             ))}
                         </NotificationList>
@@ -351,22 +500,50 @@ const DropdownCloseButton = styled.button`
 `;
 
 const NotificationItem = styled.li`
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 10px;
   border-bottom: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 10px;
-  background: ${({ gelesen }) => (gelesen ? "rgba(47, 33, 0, 0.03)" : "rgba(255, 181, 34, 0.12)")};
-  cursor: pointer;
-  transition: background 0.2s;
+  background: ${({ $gelesen, $confirming, $error }) => {
+    if ($error) return "rgba(217, 45, 32, 0.17)";
+    if ($confirming) return "rgba(217, 45, 32, 0.12)";
+    return $gelesen ? "rgba(47, 33, 0, 0.03)" : "rgba(255, 181, 34, 0.12)";
+  }};
+  cursor: ${({ $confirming, $pending }) => ($confirming || $pending ? "default" : "pointer")};
+  opacity: ${({ $pending }) => ($pending ? 0.62 : 1)};
+  transition: background 0.2s, opacity 0.2s;
   margin-bottom: 2px;
 
   &:hover {
-    background: ${({ gelesen }) => (gelesen ? "rgba(47, 33, 0, 0.07)" : "rgba(255, 181, 34, 0.22)")};
+    background: ${({ $gelesen, $confirming, $error }) => {
+      if ($error) return "rgba(217, 45, 32, 0.22)";
+      if ($confirming) return "rgba(217, 45, 32, 0.16)";
+      return $gelesen ? "rgba(47, 33, 0, 0.07)" : "rgba(255, 181, 34, 0.22)";
+    }};
+  }
+
+  &:hover button,
+  &:focus-within button {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   &:last-child {
     border-bottom: none;
     margin-bottom: 0;
   }
+
+  @media (max-width: 480px) {
+    padding: 12px 10px;
+  }
+`;
+
+const NotificationContent = styled.div`
+  min-width: 0;
+  flex: 1;
 `;
 
 const Message = styled.div`
@@ -379,6 +556,90 @@ const Time = styled.div`
   font-size: 12px;
   color: rgba(47, 33, 0, 0.6);
   margin-top: 4px;
+`;
+
+const ItemActions = styled.div`
+  display: flex;
+  align-items: flex-start;
+  flex: 0 0 auto;
+`;
+
+const DeleteIconButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(47, 33, 0, 0.04);
+  color: rgba(47, 33, 0, 0.58);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: background 0.18s, color 0.18s, opacity 0.18s;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(217, 45, 32, 0.1);
+    color: #b42318;
+    opacity: 1;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  @media (max-width: 480px) {
+    opacity: 0;
+  }
+`;
+
+const ConfirmationRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 9px;
+`;
+
+const ConfirmDeleteButton = styled.button`
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #d92d20;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+`;
+
+const CancelDeleteButton = styled.button`
+  border: 1px solid rgba(47, 33, 0, 0.16);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fffaf0;
+  color: #2f2100;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+`;
+
+const DeleteError = styled.div`
+  margin-top: 7px;
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 700;
 `;
 
 const EmptyMessage = styled.div`

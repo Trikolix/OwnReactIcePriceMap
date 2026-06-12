@@ -112,7 +112,7 @@ const GroupModal = ({
           {groupModal.mode === 'active' && activeModalMatch && (
             <S.ModalVoteWrapper>
               {modalSides.map((side) => {
-                const country = showCountryBadges ? getPhotoChallengeCountry(side.title) : null;
+                const country = showCountryBadges ? getPhotoChallengeCountry(side) : null;
                 return (
                 <S.ModalVoteCard
                   key={side.id}
@@ -157,7 +157,7 @@ const GroupModal = ({
           {groupModal.mode === 'upcoming' && (
             <S.PreviewGrid>
               {activeModalGroup.entries.map((entry) => {
-                const country = showCountryBadges ? getPhotoChallengeCountry(entry.title) : null;
+                const country = showCountryBadges ? getPhotoChallengeCountry(entry) : null;
                 return (
                 <S.PreviewCard
                   key={entry.image_id}
@@ -184,7 +184,7 @@ const GroupModal = ({
             <S.ResultsList>
               {activeModalGroup.results && activeModalGroup.results.length ? (
                 activeModalGroup.results.map((result) => {
-                  const country = showCountryBadges ? getPhotoChallengeCountry(result.title) : null;
+                  const country = showCountryBadges ? getPhotoChallengeCountry(result) : null;
                   return (
                   <S.ResultItem
                     key={result.image_id}

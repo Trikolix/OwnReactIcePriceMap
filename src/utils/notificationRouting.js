@@ -54,6 +54,52 @@ export const buildNotificationDeeplink = (notification, userId) => {
       const targetUserId = userId || notification?.empfaenger_id;
       return targetUserId ? `/user/${targetUserId}?mentionNotificationId=${notification?.id}` : null;
     }
+    case "like": {
+      const entityType = data.entity_type || "";
+      const entityId = data.entity_id || 0;
+      if (entityType === "checkin") {
+        const checkinId = data.checkin_id || entityId;
+        return data.eisdiele_id && checkinId
+          ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${checkinId}`
+          : null;
+      } else if (entityType === "bewertung") {
+        const reviewId = data.bewertung_id || entityId;
+        return data.eisdiele_id && reviewId
+          ? `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${reviewId}`
+          : null;
+      } else if (entityType === "route") {
+        const routeId = data.route_id || entityId;
+        return data.route_autor_id && routeId
+          ? `/user/${data.route_autor_id}?tab=routes&focusRoute=${routeId}`
+          : null;
+      } else if (entityType === "kommentar") {
+        const commentId = data.kommentar_id || entityId;
+        const commentQuery = commentId ? `&focusComment=${commentId}` : "";
+        if (data.checkin_id && data.eisdiele_id) {
+          return `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}${commentQuery}`;
+        }
+        if (data.bewertung_id && data.eisdiele_id) {
+          return `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}${commentQuery}`;
+        }
+        if (data.route_id && data.route_autor_id) {
+          return `/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}${commentQuery}`;
+        }
+        if (data.user_registration_id) {
+          return `/dashboard?focusNewUser=${data.user_registration_id}${commentQuery}`;
+        }
+        if (data.user_award_id) {
+          return `/dashboard?focusAward=${data.user_award_id}${commentQuery}`;
+        }
+        return null;
+      } else if (entityType === "user_registration") {
+        const targetUserId = data.user_registration_id || entityId;
+        return targetUserId ? `/dashboard?focusNewUser=${targetUserId}` : null;
+      } else if (entityType === "user_award") {
+        const awardId = data.user_award_id || entityId;
+        return awardId ? `/dashboard?focusAward=${awardId}` : null;
+      }
+      return null;
+    }
     case "mention": {
       const referenceId = data.reference_id || notification?.referenz_id;
       const commentQuery = data.kommentar_id ? `&focusComment=${data.kommentar_id}` : "";
