@@ -46,6 +46,10 @@ function ensureUserNotificationSettingsSchema(PDO $pdo): void
         'notify_team_challenge_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_news_push',
         'notify_photo_challenge' => 'TINYINT(1) DEFAULT 1 AFTER notify_team_challenge_push',
         'notify_photo_challenge_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_photo_challenge',
+        'notify_mention' => 'TINYINT(1) DEFAULT 1 AFTER notify_photo_challenge_push',
+        'notify_mention_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_mention',
+        'notify_like' => 'TINYINT(1) DEFAULT 0 AFTER notify_mention_push',
+        'notify_like_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_like',
     ];
 
     foreach ($columns as $column_name => $column_def) {

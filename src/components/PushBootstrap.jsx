@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { PushNotifications } from "@capacitor/push-notifications";
 import {
   initializeNativePush,
+  reportNativePushClick,
   registerPushServiceWorker,
   syncPushConfigToServiceWorker,
 } from "../services/pushNotifications";
@@ -22,6 +23,7 @@ const PushBootstrap = () => {
         "pushNotificationActionPerformed",
         (action) => {
           const data = action.notification.data;
+          reportNativePushClick(data?.delivery_id);
           const deeplink = data?.deeplink;
           if (deeplink) {
             console.log("Navigating to deeplink:", deeplink);
@@ -58,7 +60,7 @@ const PushBootstrap = () => {
 
     const initializeIfEnabled = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php?user_id=${userId}`);
+        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
         const json = await response.json();
         if (cancelled || Number(json?.push_enabled_android || 0) !== 1) return;
 

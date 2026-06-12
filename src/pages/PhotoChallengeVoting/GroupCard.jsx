@@ -1,8 +1,21 @@
 import React from 'react';
 import * as S from './PhotoChallengeVoting.styles';
-import { buildAssetUrl } from './utils';
+import { buildAssetUrl, getPhotoChallengeCountry } from './utils';
 
-const GroupCard = ({ group, openGroupModal }) => {
+const CountryFlagBadge = ({ country, compact = false }) => {
+  if (!country) return null;
+  return (
+    <S.CountryFlagBadge
+      $compact={compact}
+      title={country.name}
+      aria-label={country.name}
+    >
+      <img src={country.flagUrl} srcSet={country.flagSrcSet} alt="" loading="lazy" />
+    </S.CountryFlagBadge>
+  );
+};
+
+const GroupCard = ({ group, openGroupModal, showCountryBadges = false }) => {
   const totalMatches = group.matches.length;
   const completedMatches = group.user_votes ?? group.matches.filter((match) => match.has_voted).length;
   const statusVariant = group.status === 'finished' ? 'closed' : group.status === 'upcoming' ? 'upcoming' : 'open';
@@ -32,14 +45,19 @@ const GroupCard = ({ group, openGroupModal }) => {
       </S.GroupHeader>
       <S.StatusChip $variant={statusVariant}>{group.status_label}</S.StatusChip>
       {!!previewEntries.length && (
-        <S.GroupPreviewStrip aria-hidden="true">
-          {previewEntries.map((entry) => (
-            <S.GroupPreviewThumb
-              key={entry.image_id}
-              src={buildAssetUrl(entry.url)}
-              alt=""
-            />
-          ))}
+        <S.GroupPreviewStrip>
+          {previewEntries.map((entry) => {
+            const country = showCountryBadges ? getPhotoChallengeCountry(entry) : null;
+            return (
+              <S.CountryImageFrame key={entry.image_id}>
+                <S.GroupPreviewThumb
+                  src={buildAssetUrl(entry.url)}
+                  alt={entry.title || `Bild ${entry.image_id}`}
+                />
+                <CountryFlagBadge country={country} compact />
+              </S.CountryImageFrame>
+            );
+          })}
         </S.GroupPreviewStrip>
       )}
       <S.GroupCardHint>{cardHint}</S.GroupCardHint>

@@ -1,7 +1,7 @@
 import Header from './../Header';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
@@ -37,12 +37,12 @@ function UserSite() {
   const { userId: userIdFromContext } = useUser();
   const viewerUserId = userIdFromContext || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
   const [activeTab, setActiveTab] = useState('checkins');
-  const isOwnProfile = userIdFromUrl === viewerUserId;
+  const finalUserId = userIdFromUrl || userIdFromContext;
+  const isOwnProfile = Boolean(finalUserId && viewerUserId && String(finalUserId) === String(viewerUserId));
   const [showToast, setShowToast] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const finalUserId = userIdFromUrl || userIdFromContext;
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [checkinPage, setCheckinPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
@@ -70,7 +70,20 @@ function UserSite() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('openSettings') === '1') {
-      setShowSettings(true);
+      if (isOwnProfile) {
+        setShowSettings(true);
+      } else {
+        setShowSettings(false);
+        params.delete('openSettings');
+        params.delete('openDelete');
+        navigate(
+          {
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+          },
+          { replace: true }
+        );
+      }
     }
     if (params.get('tab') === 'routes') {
       setActiveTab('routen');
@@ -78,7 +91,7 @@ function UserSite() {
     if (params.get('tab') === 'stats') {
       setActiveTab('stats');
     }
-  }, [location.search]);
+  }, [isOwnProfile, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -386,6 +399,30 @@ function UserSite() {
     }
   };
 
+  const getActivityRegionLabel = (item) =>
+    item.land || item.bundesland || item.landkreis || 'Unbekannt';
+
+  const getActivityRegionPath = (item) => {
+    if (item.landkreis_id) {
+      return `/region/landkreis/${item.landkreis_id}`;
+    }
+    if (item.bundesland_id) {
+      return `/region/bundesland/${item.bundesland_id}`;
+    }
+    return null;
+  };
+
+  const renderActivityRegionName = (item) => {
+    const label = getActivityRegionLabel(item);
+    const path = getActivityRegionPath(item);
+
+    if (!path) {
+      return label;
+    }
+
+    return <ActivityRegionLink to={path}>{label}</ActivityRegionLink>;
+  };
+
   const buildFlavorKey = (sortenname, category = 'flavor') =>
     `${category}__${sortenname}`;
 
@@ -543,8 +580,8 @@ function UserSite() {
       </thead>
       <tbody>
         {items.map((item, index) => (
-          <tr key={`${item.land || item.bundesland || item.landkreis || 'region'}-${index}`}>
-            <td>{item.land || item.bundesland || item.landkreis || 'Unbekannt'}</td>
+          <tr key={`${getActivityRegionLabel(item)}-${index}`}>
+            <td>{renderActivityRegionName(item)}</td>
             <td>{item.checkins}</td>
             <td>{item.eisdielen}</td>
           </tr>
@@ -1013,24 +1050,7 @@ function UserSite() {
                 </ActivityTabs>
                 {activeActivityData.length ? (
                   <>
-                    <ActivityTable>
-                      <thead>
-                        <tr>
-                          <th>Region</th>
-                          <th>Check-ins</th>
-                          <th>Eisdielen</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activityPreview.map((item, index) => (
-                          <tr key={`${activityLevel}-${index}`}>
-                            <td>{item.land || item.bundesland || item.landkreis || 'Unbekannt'}</td>
-                            <td>{item.checkins}</td>
-                            <td>{item.eisdielen}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </ActivityTable>
+                    {renderActivityTable(activityPreview)}
                     {activeActivityData.length > PREVIEW_COUNT && (
                       <ListToggle
                         onClick={() => openListModal({ title: 'Aktivität nach Region', type: 'activity' })}
@@ -1088,11 +1108,12 @@ function UserSite() {
                     <EmptyState>Noch keine Routen vorhanden.</EmptyState>
                   )}
                   {displayedRoutes.map((route, index) => (
-                    <div
+                    <FocusedFeedItem
                       key={route.id || index}
                       ref={el => {
                         if (route.id) routeRefs.current[route.id] = el;
                       }}
+                      data-focused={String(route.id) === String(focusRouteId)}
                     >
                     <RouteCard
                       route={route}
@@ -1102,7 +1123,7 @@ function UserSite() {
                       showComments={String(route.id) === String(focusRouteId)}
                       focusCommentId={String(route.id) === String(focusRouteId) ? focusCommentId : null}
                     />
-                    </div>
+                    </FocusedFeedItem>
                   ))}
                   {displayedRoutes.length < routes.length && (
                     <LoadMoreButton onClick={loadMoreRoutes}>Mehr Routen laden</LoadMoreButton>
@@ -1853,6 +1874,18 @@ const ActivityTable = styled.table`
   }
 `;
 
+const ActivityRegionLink = styled(Link)`
+  color: #7a4a00;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: #4f3000;
+    text-decoration: underline;
+  }
+`;
+
 const TabContent = styled.div`
   margin-top: 1rem;
   background: rgba(255, 252, 243, 0.94);
@@ -1860,6 +1893,16 @@ const TabContent = styled.div`
   border-radius: 18px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem;
+`;
+
+const FocusedFeedItem = styled.div`
+  border-radius: 22px;
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+
+  &[data-focused="true"] {
+    background: rgba(255, 181, 34, 0.12);
+    box-shadow: 0 0 0 3px rgba(255, 181, 34, 0.34);
+  }
 `;
 
 const LoadMoreButton = styled.button`

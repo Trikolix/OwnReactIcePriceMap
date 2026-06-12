@@ -709,6 +709,7 @@ const Header = ({ refreshShops }) => {
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
                   {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
                   {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
+                  {userId == 2 && (<MenuItemLink to="/admin/push-stats" onClick={closeMenu}>Push-Statistik</MenuItemLink>)}
                   <MenuActionButton
                     type="button"
                     onClick={() => {
@@ -725,6 +726,7 @@ const Header = ({ refreshShops }) => {
                     <MenuSection>
                       <MenuSectionTitle>Admin</MenuSectionTitle>
                       <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>
+                      <MenuItemLink to="/admin/push-stats" onClick={closeMenu}>Push-Statistik</MenuItemLink>
                       <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
                       <MenuSubmenuButton
                         type="button"

@@ -3,6 +3,9 @@ import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { DeleteIcon, Pencil, Trash2 } from "lucide-react";
 import LoginModal from "../LoginModal";
+import MentionTextarea from "./MentionTextarea";
+import MentionFormatter from "../components/MentionFormatter";
+import LikeButton from "./LikeButton";
 
 // type: "checkin" | "bewertung" | "route" | "user_registration" | "award"
 const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, userAwardId, type = "checkin", focusCommentId = null, focusLatestComment = false }) => {
@@ -214,7 +217,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                         {editingId === kom.id ? (
                             <>
                                 <InputSection>
-                                    <textarea
+                                    <MentionTextarea
                                         value={editingText}
                                         onChange={(e) => setEditingText(e.target.value)}
                                     />
@@ -237,7 +240,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                             <KommentarText>
                                 {kom.kommentar.split("\n").map((line, i) => (
                                     <span key={i}>
-                                        {line}
+                                        <MentionFormatter text={line} />
                                         <br />
                                     </span>
                                 ))}
@@ -253,6 +256,9 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
                                 <button onClick={() => handleDelete(kom.id)}><Trash2 size={14} /></button>
                             </ActionButtons>
                         )}
+                        <BottomActionRow>
+                            <LikeButton entityType="kommentar" entityId={kom.id} />
+                        </BottomActionRow>
                     </li>
 
                 ))}
@@ -260,7 +266,7 @@ const CommentSection = ({ checkinId, bewertungId, routeId, userRegistrationId, u
 
             {isLoggedIn ? (
             <InputSection>
-                <textarea
+                <MentionTextarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Kommentar schreiben..."
@@ -427,4 +433,10 @@ const ErrorMessage = styled.div`
   border: 1px solid #d73a49;
   border-radius: 4px;
   margin: 1rem 0;
+`;
+
+const BottomActionRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.25rem;
 `;

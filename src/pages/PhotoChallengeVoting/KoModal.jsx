@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import * as S from './PhotoChallengeVoting.styles';
-import { buildAssetUrl } from './utils';
+import { buildAssetUrl, getPhotoChallengeCountry } from './utils';
 
 const ZoomIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -10,6 +10,19 @@ const ZoomIcon = () => (
     <path d="M8.5 11H13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
+
+const CountryFlagBadge = ({ country, compact = false }) => {
+  if (!country) return null;
+  return (
+    <S.CountryFlagBadge
+      $compact={compact}
+      title={country.name}
+      aria-label={country.name}
+    >
+      <img src={country.flagUrl} srcSet={country.flagSrcSet} alt="" loading="lazy" />
+    </S.CountryFlagBadge>
+  );
+};
 
 const KoModal = ({
   koModal,
@@ -22,6 +35,7 @@ const KoModal = ({
   getKoRoundLabel,
   setImagePreview,
   isLoggedIn,
+  showCountryBadges = false,
 }) => {
   useEffect(() => {
     if (!koModal || !activeKoModalMatch) {
@@ -76,7 +90,9 @@ const KoModal = ({
         </S.ModalNavRow>
         <S.ModalBody $lockScroll={activeKoModalMatch.status === 'open'}>
           <S.ModalVoteWrapper>
-            {koModalSides.map((side) => (
+            {koModalSides.map((side) => {
+              const country = showCountryBadges ? getPhotoChallengeCountry(side) : null;
+              return (
               <S.ModalVoteCard
                 key={side.id}
                 $disabled={activeKoModalMatch.status !== 'open' || !isLoggedIn}
@@ -91,6 +107,7 @@ const KoModal = ({
                   >
                     <S.ModalVoteImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
                   </S.ModalVotePreviewButton>
+                  <CountryFlagBadge country={country} />
                   <S.ModalZoomButton
                     type="button"
                     onClick={() => openPreview(side.url, side.title || `Bild #${side.id}`)}
@@ -112,11 +129,14 @@ const KoModal = ({
                   )}
                 </S.ModalVoteMeta>
               </S.ModalVoteCard>
-            ))}
+              );
+            })}
           </S.ModalVoteWrapper>
           {activeKoModalMatch.status !== 'open' && (
             <S.ResultsList>
-              {koModalSides.map((side) => (
+              {koModalSides.map((side) => {
+                const country = showCountryBadges ? getPhotoChallengeCountry(side) : null;
+                return (
                 <S.ResultItem
                   key={side.id}
                   type="button"
@@ -126,6 +146,7 @@ const KoModal = ({
                   <S.ResultInfo>
                     <S.ResultImageButton>
                       <S.ResultImage src={buildAssetUrl(side.url)} alt={side.title || `Bild ${side.id}`} />
+                      <CountryFlagBadge country={country} compact />
                     </S.ResultImageButton>
                     <div>
                       <strong>{side.title || `Bild #${side.id}`}</strong>
@@ -135,7 +156,8 @@ const KoModal = ({
                   </S.ResultInfo>
                   <S.ResultWins>{side.votes} Stimme(n)</S.ResultWins>
                 </S.ResultItem>
-              ))}
+                );
+              })}
             </S.ResultsList>
           )}
         </S.ModalBody>

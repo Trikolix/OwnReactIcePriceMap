@@ -10,6 +10,8 @@ import CommentSection from "./CommentSection";
 import { Modal } from "./Modal";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
 import UserAvatar from "./UserAvatar";
+import MentionFormatter from "./MentionFormatter";
+import LikeButton from "./LikeButton";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focusCommentId = null }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -127,7 +129,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
               </ArrivalInfo>
             )}
 
-            {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}>{checkin.kommentar}</p>}
+            {checkin.kommentar && <p style={{ whiteSpace: 'pre-wrap' }}><MentionFormatter text={checkin.kommentar} /></p>}
             {Number(checkin.nutzer_id) === Number(userId) && (
               <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
             )}
@@ -142,12 +144,15 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
             />
           </MediaColumn>
         </StyledContentWrapper>
-        <CommentToggle
-          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-          onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-        >
-          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
-        </CommentToggle>
+        <ActionRow>
+          <LikeButton entityType="checkin" entityId={checkin.id} />
+          <CommentToggle
+            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+            onClick={() => setAreCommentsVisible(!areCommentsVisible)}
+          >
+            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
+          </CommentToggle>
+        </ActionRow>
         {areCommentsVisible && (
           <CommentSection
             checkinId={checkin.id}
@@ -183,6 +188,13 @@ export default CheckinCard;
 const CleanLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const ActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 `;
 
 const CardMetaRow = styled.div`

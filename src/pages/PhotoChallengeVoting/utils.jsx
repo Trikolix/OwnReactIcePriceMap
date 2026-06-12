@@ -47,3 +47,114 @@ export const shuffleArray = (items = []) => {
   }
   return arr;
 };
+
+const COUNTRY_BY_LABEL = [
+  ['Deutschland', 'DE'],
+  ['Italien', 'IT'],
+  ['Frankreich', 'FR'],
+  ['Zypern', 'CY'],
+  ['Schweiz', 'CH'],
+  ['Tschechien', 'CZ'],
+  ['Portugal', 'PT'],
+  ['Malta', 'MT'],
+  ['Österreich', 'AT'],
+  ['Kroatien', 'HR'],
+  ['Vereinigtes Königreich', 'GB'],
+  ['Spanien', 'ES'],
+  ['Niederlande', 'NL'],
+  ['China', 'CN'],
+  ['Vereinigte Staaten von Amerika', 'US'],
+  ['Polen', 'PL'],
+  ['Japan', 'JP'],
+  ['Ungarn', 'HU'],
+  ['Britische Jungferninseln', 'VG'],
+  ['Belgien', 'BE'],
+  ['Südkorea', 'KR'],
+  ['Griechenland', 'GR'],
+  ['St. Kitts und Nevis', 'KN'],
+  ['Island', 'IS'],
+  ['Kasachstan', 'KZ'],
+  ['Türkei', 'TR'],
+  ['Usbekistan', 'UZ'],
+];
+
+const COUNTRY_ALIASES = {
+  gb: 'Vereinigtes Königreich',
+  uk: 'Vereinigtes Königreich',
+  grossbritannien: 'Vereinigtes Königreich',
+  großbritannien: 'Vereinigtes Königreich',
+  'vereinigte staaten': 'Vereinigte Staaten von Amerika',
+  usa: 'Vereinigte Staaten von Amerika',
+  us: 'Vereinigte Staaten von Amerika',
+  amerika: 'Vereinigte Staaten von Amerika',
+  bvi: 'Britische Jungferninseln',
+  'british virgin islands': 'Britische Jungferninseln',
+  korea: 'Südkorea',
+  suedkorea: 'Südkorea',
+  'süd korea': 'Südkorea',
+  'st kitts nevis': 'St. Kitts und Nevis',
+  'saint kitts und nevis': 'St. Kitts und Nevis',
+  'saint kitts and nevis': 'St. Kitts und Nevis',
+};
+
+const normalizeCountryLabel = (value = '') =>
+  String(value)
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’'`´]/g, '')
+    .replace(/&/g, ' und ')
+    .replace(/\bst[.]/gi, 'st')
+    .replace(/[^a-z0-9]+/gi, ' ')
+    .trim()
+    .toLowerCase();
+
+const countryByNormalizedLabel = new Map(
+  COUNTRY_BY_LABEL.map(([name, code]) => [normalizeCountryLabel(name), { name, code }])
+);
+
+Object.entries(COUNTRY_ALIASES).forEach(([alias, name]) => {
+  const target = COUNTRY_BY_LABEL.find(([countryName]) => countryName === name);
+  if (target) {
+    countryByNormalizedLabel.set(normalizeCountryLabel(alias), { name: target[0], code: target[1] });
+  }
+});
+
+const buildCountryPayload = ({ name, code }) => {
+  const normalizedCode = String(code || '').trim().toLowerCase();
+  if (!name || !normalizedCode) return null;
+  return {
+    name,
+    code: String(code || '').trim().toUpperCase(),
+    flagUrl: `https://flagcdn.com/w80/${normalizedCode}.png`,
+    flagSrcSet: `https://flagcdn.com/w80/${normalizedCode}.png 1x, https://flagcdn.com/w160/${normalizedCode}.png 2x`,
+  };
+};
+
+export const getPhotoChallengeCountry = (source) => {
+  if (source && typeof source === 'object') {
+    const countryName = source.country_name || source.countryName || source.title || '';
+    const countryCode = source.country_code || source.countryCode || '';
+    const directCountry = buildCountryPayload({ name: countryName, code: countryCode });
+    if (directCountry) return directCountry;
+    source = countryName;
+  }
+
+  const normalizedTitle = normalizeCountryLabel(source);
+  if (!normalizedTitle) return null;
+  const country = countryByNormalizedLabel.get(normalizedTitle);
+  if (!country) return null;
+  return buildCountryPayload(country);
+};
+
+export const isWorldCupPhotoChallenge = (challenge) => {
+  const normalizedText = normalizeCountryLabel(`${challenge?.title || ''} ${challenge?.description || ''}`);
+  if (!normalizedText) return false;
+  const tokens = normalizedText.split(/\s+/);
+  return (
+    tokens.includes('wm') ||
+    normalizedText.includes('weltmeisterschaft') ||
+    normalizedText.includes('world cup') ||
+    normalizedText.includes('worldcup')
+  );
+};

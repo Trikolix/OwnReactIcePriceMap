@@ -9,21 +9,41 @@ function iceapp_build_mail_headers(string $contentType, string $from = 'Ice-App 
 {
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: {$contentType}; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: 8bit\r\n";
+    $headers .= "Content-Transfer-Encoding: quoted-printable\r\n";
     $headers .= "From: {$from}\r\n";
     $headers .= "Reply-To: {$replyTo}\r\n";
 
     return $headers;
 }
 
+function iceapp_normalize_mail_line_endings(string $body): string
+{
+    return preg_replace("/\r\n|\r|\n/", "\r\n", $body) ?? $body;
+}
+
+function iceapp_encode_quoted_printable_part(string $body): string
+{
+    return quoted_printable_encode(iceapp_normalize_mail_line_endings($body));
+}
+
 function iceapp_send_utf8_text_mail(string $to, string $subjectText, string $body, string $from = 'Ice-App <noreply@ice-app.de>'): bool
 {
-    return mail($to, iceapp_encode_mail_subject($subjectText), $body, iceapp_build_mail_headers('text/plain', $from));
+    return mail(
+        $to,
+        iceapp_encode_mail_subject($subjectText),
+        iceapp_encode_quoted_printable_part($body),
+        iceapp_build_mail_headers('text/plain', $from)
+    );
 }
 
 function iceapp_send_utf8_html_mail(string $to, string $subjectText, string $body, string $from = 'Ice-App <noreply@ice-app.de>'): bool
 {
-    return mail($to, iceapp_encode_mail_subject($subjectText), $body, iceapp_build_mail_headers('text/html', $from));
+    return mail(
+        $to,
+        iceapp_encode_mail_subject($subjectText),
+        iceapp_encode_quoted_printable_part($body),
+        iceapp_build_mail_headers('text/html', $from)
+    );
 }
 
 function iceapp_build_multipart_headers(string $boundary, string $from = 'Ice-App <noreply@ice-app.de>', string $replyTo = 'noreply@ice-app.de'): string
@@ -40,12 +60,12 @@ function iceapp_build_multipart_message(string $plainBody, string $htmlBody, str
 {
     $message = "--{$boundary}\r\n";
     $message .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $message .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-    $message .= $plainBody . "\r\n\r\n";
+    $message .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $message .= iceapp_encode_quoted_printable_part($plainBody) . "\r\n\r\n";
     $message .= "--{$boundary}\r\n";
     $message .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $message .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-    $message .= $htmlBody . "\r\n\r\n";
+    $message .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $message .= iceapp_encode_quoted_printable_part($htmlBody) . "\r\n\r\n";
     $message .= "--{$boundary}--";
 
     return $message;
@@ -315,6 +335,16 @@ function iceapp_mail_is_safe_http_url(string $url): bool
 function iceapp_render_admin_markdown_inline_html(string $text): string
 {
     $tokens = [];
+    $text = preg_replace_callback('/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/i', static function (array $matches) use (&$tokens): string {
+        $url = trim($matches[2]);
+        if (!iceapp_mail_is_safe_http_url($url)) {
+            return iceapp_mail_escape($matches[0]);
+        }
+        $key = '%%ICEAPP_TOKEN_' . count($tokens) . '%%';
+        $alt = iceapp_mail_escape(trim($matches[1]));
+        $tokens[$key] = '<img src="' . iceapp_mail_escape($url) . '" alt="' . $alt . '" style="max-width:100%; border-radius:12px; margin:16px 0; display:block; box-shadow:0 4px 12px rgba(0,0,0,0.1);" />';
+        return $key;
+    }, $text);
     $text = preg_replace_callback('/\[button:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', static function (array $matches) use (&$tokens): string {
         $url = trim($matches[2]);
         if (!iceapp_mail_is_safe_http_url($url)) {
@@ -341,6 +371,7 @@ function iceapp_render_admin_markdown_inline_html(string $text): string
 
 function iceapp_render_admin_markdown_inline_plain(string $text): string
 {
+    $text = preg_replace('/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/i', '[Bild: $1] $2', $text);
     $text = preg_replace('/\[button:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', '$1: $2', $text);
     $text = preg_replace('/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/i', '$1: $2', $text);
     return preg_replace('/\*\*([^*]+)\*\*/', '$1', $text);

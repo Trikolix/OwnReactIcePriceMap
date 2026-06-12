@@ -316,6 +316,13 @@ export const GroupPreviewStrip = styled.div`
   gap: 0.45rem;
 `;
 
+export const CountryImageFrame = styled.span`
+  position: relative;
+  display: ${({ $thumb }) => ($thumb ? 'inline-block' : 'block')};
+  width: ${({ $thumb }) => ($thumb ? 'fit-content' : '100%')};
+  min-width: 0;
+`;
+
 export const GroupPreviewThumb = styled.img`
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -324,6 +331,31 @@ export const GroupPreviewThumb = styled.img`
   background: #f3f4f8;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 6px 18px rgba(15, 18, 63, 0.08);
+`;
+
+export const CountryFlagBadge = styled.span`
+  position: absolute;
+  top: ${({ $compact }) => ($compact ? '0.25rem' : '0.55rem')};
+  left: ${({ $compact }) => ($compact ? '0.25rem' : '0.55rem')};
+  width: ${({ $compact }) => ($compact ? '1.8rem' : '2.35rem')};
+  height: ${({ $compact }) => ($compact ? '1.8rem' : '2.35rem')};
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 20px rgba(15, 18, 63, 0.22);
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
 `;
 
 export const GroupCardHint = styled.small`

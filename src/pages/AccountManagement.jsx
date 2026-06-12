@@ -4,11 +4,13 @@ import { useUser } from '../context/UserContext';
 import styled from 'styled-components';
 
 const AccountManagement = () => {
-  const { userId } = useUser();
+  const { userId, authReady } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    if (!authReady) return;
+
     // Wenn eingeloggt, leiten wir zum eigenen Profil weiter und hängen die Query-Parameter an
     if (userId) {
       const searchParams = new URLSearchParams(location.search);
@@ -27,7 +29,7 @@ const AccountManagement = () => {
       // Wenn NICHT eingeloggt, leiten wir zur Startseite weiter
       navigate('/', { replace: true });
     }
-  }, [userId, navigate, location]);
+  }, [authReady, userId, navigate, location]);
 
   return (
     <Container>

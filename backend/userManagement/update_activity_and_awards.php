@@ -4,6 +4,7 @@ require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/ReferredUsersEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryVisitEvaluator.php';
 require_once __DIR__ . '/../evaluators/CommentCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/ReviewCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/WeekStreakEvaluator.php';
 require_once __DIR__ . '/../evaluators/IcePortionsPerWeekEvaluator.php';
 require_once __DIR__ . '/../evaluators/DetailedCheckinEvaluator.php';
@@ -48,6 +49,7 @@ try {
         new ReferredUsersEvaluator(),
         new CountryVisitEvaluator(),
         new CommentCountEvaluator(),
+        new ReviewCountEvaluator(),
         new WeekStreakEvaluator(),
         new IcePortionsPerWeekEvaluator(),
         new DetailedCheckinEvaluator(),

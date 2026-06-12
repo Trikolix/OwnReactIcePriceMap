@@ -1,18 +1,29 @@
 <?php
 require_once '../db_connect.php';
+require_once '../lib/auth.php';
 require_once '../lib/user_notification_settings.php';
 header('Content-Type: application/json');
 
 ensureUserNotificationSettingsSchema($pdo);
 
-$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+$authData = requireAuth($pdo);
+$currentUserId = (int)$authData['user_id'];
+$requestedUserId = isset($_GET['user_id']) ? intval($_GET['user_id']) : $currentUserId;
+
+if ($requestedUserId !== $currentUserId) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Zugriff verweigert']);
+    exit;
+}
+
+$user_id = $currentUserId;
 if ($user_id <= 0) {
     echo json_encode(['error' => 'Ungültige Nutzer-ID']);
     exit;
 }
 
 
-$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, notify_checkin_mention_push, notify_comment_push, notify_comment_participated_push, notify_news_push, notify_team_challenge_push, notify_photo_challenge, notify_photo_challenge_push, push_enabled_web, push_enabled_android FROM user_notification_settings WHERE user_id = :user_id";
+$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, notify_checkin_mention_push, notify_comment_push, notify_comment_participated_push, notify_news_push, notify_team_challenge_push, notify_photo_challenge, notify_photo_challenge_push, notify_like, notify_like_push, push_enabled_web, push_enabled_android FROM user_notification_settings WHERE user_id = :user_id";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['user_id' => $user_id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -34,6 +45,8 @@ if ($row) {
         'notify_team_challenge_push' => 1,
         'notify_photo_challenge' => 1,
         'notify_photo_challenge_push' => 1,
+        'notify_like' => 0,
+        'notify_like_push' => 1,
         'push_enabled_web' => 0,
         'push_enabled_android' => 0,
     ]);

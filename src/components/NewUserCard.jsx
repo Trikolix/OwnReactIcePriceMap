@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { MessageCircle, Sparkles, UserPlus } from "lucide-react";
 import UserAvatar from "./UserAvatar";
 import CommentSection from "./CommentSection";
+import LikeButton from "./LikeButton";
 import { Card, CommentToggle } from "../styles/SharedStyles";
 
 const formatCreatedAt = (value) => {
@@ -70,12 +71,15 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
         <ProfileLink to={`/user/${user.id}`}>Profil ansehen</ProfileLink>
       </ActionRow>
 
-      <CommentToggle
-        title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-        onClick={() => setAreCommentsVisible((prev) => !prev)}
-      >
-        <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: "text-bottom" }} /> {user.commentCount || 0} Kommentar(e)
-      </CommentToggle>
+      <SocialActionRow>
+        <LikeButton entityType="user_registration" entityId={user.id} />
+        <CommentToggle
+          title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
+          onClick={() => setAreCommentsVisible((prev) => !prev)}
+        >
+          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: "text-bottom" }} /> {user.commentCount || 0} Kommentar(e)
+        </CommentToggle>
+      </SocialActionRow>
       {areCommentsVisible && (
         <CommentSection
           userRegistrationId={user.id}
@@ -174,6 +178,13 @@ const ActionRow = styled.div`
   margin-top: 0.85rem;
   display: flex;
   justify-content: flex-start;
+`;
+
+const SocialActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 `;
 
 const ProfileLink = styled(Link)`

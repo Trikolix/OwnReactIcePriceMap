@@ -9,7 +9,7 @@ if (empty($token)) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT id, username, invited_by FROM nutzer WHERE verification_token = :token");
+    $stmt = $pdo->prepare("SELECT id, username, email, invited_by FROM nutzer WHERE verification_token = :token");
     $stmt->execute(['token' => $token]);
     $user = $stmt->fetch();
 
@@ -17,9 +17,13 @@ try {
         $userId = (int)$user['id'];
         $invitedBy = $user['invited_by'] !== null ? (int)$user['invited_by'] : null;
         $username = (string)$user['username'];
+        $email = (string)$user['email'];
 
         $stmt = $pdo->prepare("UPDATE nutzer SET is_verified = 1, verification_token = NULL WHERE id = :id");
         $stmt->execute(['id' => $userId]);
+
+        require_once __DIR__ . '/lib/user_lifecycle_mails.php';
+        iceapp_send_welcome_mail_to_user($pdo, $userId);
 
         if ($invitedBy !== null) {
             createNotification(

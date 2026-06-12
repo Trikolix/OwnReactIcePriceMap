@@ -186,16 +186,24 @@ const SubmitReviewModal = ({ showForm, setShowForm, userId, shop, setShowPriceFo
                 throw new Error(data?.message || `Upload fehlgeschlagen (${response.status})`);
             }
             if (data.status === "success") {
+                const newAwards = Array.isArray(data.new_awards) ? data.new_awards : [];
+                if (newAwards.length > 0) {
+                    setAwards(newAwards);
+                }
                 setMessage("Bewertung erfolgreich gespeichert!");
                 onSuccess && onSuccess();
                 setSubmitted(true);
-                setTimeout(() => {
-                    if (setShowPriceForm && askForPriceUpdate(shop?.preise)) {
-                        setPreisfrage(true);
-                    } else {
-                        setShowForm(false);
-                    }
-                }, 1000);
+                if (newAwards.length === 0) {
+                    setTimeout(() => {
+                        if (setShowPriceForm && askForPriceUpdate(shop?.preise)) {
+                            setPreisfrage(true);
+                        } else {
+                            setShowForm(false);
+                        }
+                    }, 1000);
+                } else if (setShowPriceForm && askForPriceUpdate(shop?.preise)) {
+                    setPreisfrage(true);
+                }
             } else {
                 setMessage(`Fehler: ${data.message || 'Upload fehlgeschlagen.'}`);
             }
