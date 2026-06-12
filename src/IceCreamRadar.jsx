@@ -18,6 +18,7 @@ import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
 import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
+import TourDeGlaceMapEggs from './features/seasonal/TourDeGlaceMapEggs';
 import { Capacitor } from "@capacitor/core";
 import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
@@ -43,6 +44,11 @@ const DEFAULT_DISCOVERY_META = {
   hiddenFalsePositive: 0,
   truncated: false,
 };
+
+const isTourDeGlaceShadowWindow = (now = new Date()) => (
+  now >= new Date('2026-06-12T00:00:00+02:00')
+  && now < new Date('2026-07-04T00:00:00+02:00')
+);
 
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -643,7 +649,7 @@ const DiscoveryToggleControl = ({ isDiscoveryVisible, onToggle }) => {
   return null;
 };
 
-const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
+const SeasonalViewToggleControl = ({ enabled, active, onToggle, label = 'Ei', titleActive = 'Saisonansicht ausblenden', titleInactive = 'Saisonansicht einblenden' }) => {
   const map = useMap();
   const buttonRef = useRef(null);
 
@@ -655,7 +661,7 @@ const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
       const container = L.DomUtil.create('div', 'leaflet-bar');
       const button = L.DomUtil.create('a', 'leaflet-control-seasonal-toggle', container);
       button.href = '#';
-      button.textContent = 'Ei';
+      button.textContent = label;
       button.style.fontWeight = '800';
       button.style.fontSize = '12px';
       buttonRef.current = button;
@@ -678,19 +684,19 @@ const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
       buttonRef.current = null;
       seasonalControl.remove();
     };
-  }, [enabled, map, onToggle]);
+  }, [enabled, label, map, onToggle]);
 
   useEffect(() => {
     const button = buttonRef.current;
     if (!button) return;
 
-    button.title = active ? 'Osteransicht ausblenden' : 'Osteransicht einblenden';
+    button.title = active ? titleActive : titleInactive;
     if (active) {
       L.DomUtil.addClass(button, 'leaflet-active');
     } else {
       L.DomUtil.removeClass(button, 'leaflet-active');
     }
-  }, [active]);
+  }, [active, titleActive, titleInactive]);
 
   return null;
 };
@@ -744,7 +750,7 @@ const IceCreamRadar = () => {
   const shopListRequestRef = useRef(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
-  const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+  const { userId, isLoggedIn, userPosition, login, setUserPosition, authToken } = useUser();
   const [initialCenter, setInitialCenter] = useState(userPosition || [50.833707, 12.919187]);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
@@ -1888,9 +1894,15 @@ const IceCreamRadar = () => {
   );
   const easterCampaignDefinition = getCampaignDefinition('easter_2026');
   const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
+  const isTourDeGlaceAdmin = Number(userId) === 1;
+  const tourDeGlaceActive = getCampaignStatus('tour_de_glace_2026') === CAMPAIGN_STATUS.ACTIVE
+    || (isTourDeGlaceAdmin && isTourDeGlaceShadowWindow());
+  const tourDeGlaceAdminVisible = tourDeGlaceActive && isTourDeGlaceAdmin;
   const easterMapRules = easterCampaignDefinition?.mapRules || {};
   const seasonalMapVisible = easterCampaignActive && seasonalMapEnabled;
-  const seasonalMarkerVariant = seasonalMapVisible ? 'easter' : null;
+  const easterMapVisible = easterCampaignActive && seasonalMapVisible;
+  const tourDeGlaceMapVisible = tourDeGlaceAdminVisible;
+  const seasonalMarkerVariant = easterMapVisible ? 'easter' : null;
   const clusterIconCreateFunction = seasonalMarkerVariant === 'easter'
     ? createEasterClusterIcon(easterEncounterState.bunnyShopId ?? null)
     : createDefaultClusterIcon;
@@ -2137,6 +2149,9 @@ const IceCreamRadar = () => {
             enabled={easterCampaignActive}
             active={seasonalMapVisible}
             onToggle={() => setSeasonalMapEnabled((previous) => !previous)}
+            label="Ei"
+            titleActive="Osteransicht ausblenden"
+            titleInactive="Osteransicht einblenden"
           />
           <ZoomControl position="topright" />
           <LocateControl userPosition={userPosition} />
@@ -2149,7 +2164,7 @@ const IceCreamRadar = () => {
           {easterCampaignActive && (
             <EasterMapEncounter
               enabled={easterCampaignActive}
-              visible={seasonalMapVisible}
+              visible={easterMapVisible}
               shops={mapDisplayShops}
               currentZoom={currentZoom}
               bunnyMinZoom={easterMapRules.bunnyMinZoom ?? 9}
@@ -2159,9 +2174,16 @@ const IceCreamRadar = () => {
               onStateChange={setEasterEncounterState}
             />
           )}
+          <TourDeGlaceMapEggs
+            enabled={tourDeGlaceMapVisible}
+            currentZoom={currentZoom}
+            isLoggedIn={isLoggedIn}
+            authToken={authToken}
+            setShowLoginModal={setShowLoginModal}
+          />
           {clustering ? ( // show the clustered
             <MarkerClusterGroup
-              key={`${seasonalMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
+              key={`${easterMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
               maxClusterRadius={25}
               iconCreateFunction={clusterIconCreateFunction}
             >
@@ -2182,7 +2204,7 @@ const IceCreamRadar = () => {
                     isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                     seasonalVariant={seasonalMarkerVariant}
                     encounterBunny={
-                      seasonalMapVisible
+                      easterMapVisible
                       && Number(easterEncounterState.bunnyShopId) === Number(shop.eisdielen_id)
                     }
                   />
@@ -2207,7 +2229,7 @@ const IceCreamRadar = () => {
                   isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                   seasonalVariant={seasonalMarkerVariant}
                   encounterBunny={
-                    seasonalMapVisible
+                    easterMapVisible
                     && Number(easterEncounterState.bunnyShopId) === Number(shop.eisdielen_id)
                   }
                 />

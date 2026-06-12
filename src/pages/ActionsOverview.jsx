@@ -8,6 +8,7 @@ import {
 } from '../features/seasonal/campaigns';
 import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
+import TourDeGlacePanel from '../features/seasonal/TourDeGlacePanel';
 
 const POINT_LABELS = {
   login_active: 'App geöffnet & eingeloggt',
@@ -53,6 +54,11 @@ const formatCampaignDate = (date) => {
     year: 'numeric',
   }).format(date);
 };
+
+const isTourDeGlaceShadowWindow = (now = new Date()) => (
+  now >= new Date('2026-06-12T00:00:00+02:00')
+  && now < new Date('2026-07-04T00:00:00+02:00')
+);
 
 const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -155,13 +161,37 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const visibleBirthdayLeaderboard = isBirthdayExpanded
     ? birthdayLeaderboard
     : birthdayLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT);
-  const activeCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
-  const upcomingCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
-  const hasPastEvents = campaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
+  const isTourDeGlaceAdmin = Number(userId) === 1;
+  const displayCampaigns = campaigns.map((campaign) => {
+    if (campaign.id !== 'tour_de_glace_2026') {
+      return campaign;
+    }
+    if (isTourDeGlaceAdmin && isTourDeGlaceShadowWindow()) {
+      return { ...campaign, status: CAMPAIGN_STATUS.ACTIVE };
+    }
+    if (!isTourDeGlaceAdmin && campaign.status === CAMPAIGN_STATUS.ACTIVE) {
+      return { ...campaign, status: CAMPAIGN_STATUS.UPCOMING };
+    }
+    return campaign;
+  });
+  const activeCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
+  const upcomingCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
+  const hasPastEvents = displayCampaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
   const renderCampaignPanel = (campaign) => {
     if (campaign.id === 'summer_2026') {
       return (
         <SummerCampaignPanel
+          key={campaign.id}
+          campaign={campaign}
+          isLoggedIn={isLoggedIn}
+          onLogin={onLogin}
+        />
+      );
+    }
+
+    if (campaign.id === 'tour_de_glace_2026') {
+      return (
+        <TourDeGlacePanel
           key={campaign.id}
           campaign={campaign}
           isLoggedIn={isLoggedIn}

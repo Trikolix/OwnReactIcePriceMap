@@ -8,6 +8,7 @@ require_once __DIR__ . '/../lib/mention_utils.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
 require_once __DIR__ . '/../lib/external_shop_discovery.php';
 require_once __DIR__ . '/../lib/user_notification_settings.php';
+require_once __DIR__ . '/../lib/tour_de_glace.php';
 require_once __DIR__ . '/../evaluators/CountyCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/CountryCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotosCountEvaluator.php';
@@ -266,6 +267,11 @@ try {
     ensureUserNotificationSettingsSchema($pdo);
     ensurePushInfrastructureSchema($pdo);
     ensureExternalShopDiscoverySchema($pdo);
+    try {
+        ensureTourDeGlaceTables($pdo);
+    } catch (Throwable $e) {
+        error_log('Tour de Glace schema init failed: ' . $e->getMessage());
+    }
     ensureShopMaintenanceSchema($pdo);
 
     // -------------------------
@@ -626,6 +632,18 @@ try {
         $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
     }
 
+    $shopCheckinCountStmt = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE nutzer_id = ? AND eisdiele_id = ?");
+    $shopCheckinCountStmt->execute([(int)$userId, (int)$shopId]);
+    $tourDeGlacePoints = recordTourDeGlaceCheckin($pdo, (int)$userId, (int)$checkinId, [
+        'type' => $type,
+        'anreise' => $anreise,
+        'has_photo' => !empty($bildUrls),
+        'group_id' => $groupId,
+        'sorten_count' => count($sorten),
+        'is_new_shop' => ((int)$shopCheckinCountStmt->fetchColumn()) <= 1,
+        'is_on_site' => (int)$isOnSite,
+    ]);
+
     // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.
     if ($referencedCheckinId) {
         $acceptReferencedStmt = $pdo->prepare("
@@ -669,7 +687,8 @@ try {
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
         'completed_challenge' => $completedChallenge ?? null,
-        'completed_team_challenge' => $completedTeamChallenge
+        'completed_team_challenge' => $completedTeamChallenge,
+        'tour_de_glace_points' => $tourDeGlacePoints
     ]);
 
 } catch (Exception $e) {

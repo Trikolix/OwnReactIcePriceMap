@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/notification_dispatcher.php';
+require_once __DIR__ . '/tour_de_glace.php';
 
 function getLikeEntityTypes(): array
 {
@@ -62,6 +63,13 @@ function addLike(PDO $pdo, int $userId, string $entityType, int $entityId): bool
         $stmt->execute([$userId, $entityType, $entityId]);
 
         if ($stmt->rowCount() > 0) {
+            $likeId = (int)$pdo->lastInsertId();
+            if ($likeId > 0) {
+                recordTourDeGlaceLike($pdo, $userId, $likeId, [
+                    'entity_type' => $entityType,
+                    'entity_id' => $entityId,
+                ]);
+            }
             dispatchLikeNotification($pdo, $userId, $entityType, $entityId);
             return true;
         }

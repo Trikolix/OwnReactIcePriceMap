@@ -50,9 +50,10 @@ const Header = ({ refreshShops }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
-  const seasonalState = getResolvedSeasonalCampaigns();
+  const isAdmin = Number(userId) === 1;
+  const seasonalState = getResolvedSeasonalCampaigns(new Date(), { isAdmin });
   const featuredCampaign = seasonalState.featuredCampaign;
-  const promoIconSrc = featuredCampaign?.teaserIcon ? buildPublicAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
+  const promoIconSrc = featuredCampaign?.resolvedTeaserIcon ? buildPublicAssetUrl(featuredCampaign.resolvedTeaserIcon) : userOfTheMonthImg;
   const promoIconAlt = featuredCampaign
     ? `${featuredCampaign.title} öffnen`
     : 'Aktionen & Ergebnisse öffnen';
@@ -65,7 +66,6 @@ const Header = ({ refreshShops }) => {
     setMenuOpen((isOpen) => !isOpen);
   };
   const closeMenu = () => setMenuOpen(false);
-  const isAdmin = Number(userId) === 1;
   const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
   const isAwardsActionsActive = location.pathname === '/awards-admin' || location.pathname === '/summer-campaign-admin' || location.pathname === '/admin/summer-campaign';
 

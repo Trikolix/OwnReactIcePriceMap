@@ -3,6 +3,15 @@ import headerWideEaster from '../../header_wide_easter.png';
 import headerWide from '../../header_wide.png';
 
 const isWithinRange = (now, start, endExclusive) => now >= start && now < endExclusive;
+const TOUR_DE_GLACE_SHADOW_START = new Date('2026-06-12T00:00:00+02:00');
+const isLocalDevHost = () => (
+  import.meta.env.DEV
+  && typeof window !== 'undefined'
+  && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+);
+const getTourDeGlaceNow = (now) => (isLocalDevHost() ? new Date('2026-07-04T12:00:00+02:00') : now);
+const isTourDeGlaceShadowPhase = (now, campaign) =>
+  isWithinRange(now, TOUR_DE_GLACE_SHADOW_START, campaign.schedule.start);
 
 const EASTER_WINDOWS = {
   2026: {
@@ -125,6 +134,37 @@ export const seasonalCampaignDefinitions = [
       return CAMPAIGN_STATUS.RESULTS;
     },
   },
+  {
+    id: 'tour_de_glace_2026',
+    title: 'Tour de Glace 2026',
+    kind: 'campaign',
+    promoPriority: 20,
+    teaserIcon(now = new Date(), { isAdmin = false } = {}) {
+      const effectiveNow = getTourDeGlaceNow(now);
+      return isWithinRange(effectiveNow, this.schedule.start, this.schedule.endExclusive)
+        && (!isTourDeGlaceShadowPhase(now, this) || isAdmin)
+        ? '/assets/tour-de-glace/tour_egg.png'
+        : '/assets/summer_action_logo2.png';
+    },
+    schedule: {
+      preStart: new Date('2026-06-27T00:00:00+02:00'),
+      start: new Date('2026-07-04T00:00:00+02:00'),
+      endExclusive: new Date('2026-07-27T00:00:00+02:00'),
+    },
+    api: {
+      progress: '/api/tour_de_glace_progress.php',
+    },
+    getStatus(now = new Date()) {
+      const effectiveNow = getTourDeGlaceNow(now);
+      if (effectiveNow < this.schedule.preStart) {
+        return CAMPAIGN_STATUS.UPCOMING;
+      }
+      if (isWithinRange(effectiveNow, this.schedule.preStart, this.schedule.endExclusive)) {
+        return CAMPAIGN_STATUS.ACTIVE;
+      }
+      return CAMPAIGN_STATUS.RESULTS;
+    },
+  },
 ];
 
 export const getCampaignDefinition = (campaignId) =>
@@ -133,15 +173,25 @@ export const getCampaignDefinition = (campaignId) =>
 export const getCampaignStatus = (campaignId, now = new Date()) =>
   getCampaignDefinition(campaignId)?.getStatus(now) || CAMPAIGN_STATUS.INACTIVE;
 
-export const getResolvedSeasonalCampaigns = (now = new Date()) => {
+export const getResolvedSeasonalCampaigns = (now = new Date(), context = {}) => {
   const campaigns = seasonalCampaignDefinitions.map((campaign) => ({
     ...campaign,
     status: campaign.getStatus(now),
+    resolvedTeaserIcon: typeof campaign.teaserIcon === 'function'
+      ? campaign.teaserIcon(now, context)
+      : campaign.teaserIcon,
+    resolvedHeaderLogo: typeof campaign.headerLogo === 'function'
+      ? campaign.headerLogo(now)
+      : campaign.headerLogo,
   }));
   const activeCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
-  const featuredCampaign = activeCampaigns[0] || null;
+  const featuredCampaign = [...activeCampaigns]
+    .filter((campaign) => campaign.resolvedTeaserIcon)
+    .sort((left, right) => (right.promoPriority || 0) - (left.promoPriority || 0))[0]
+    || activeCampaigns[0]
+    || null;
   const visualCampaign = campaigns.find(
-    (campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE && campaign.headerLogo
+    (campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE && campaign.resolvedHeaderLogo
   ) || null;
 
   return {
@@ -149,7 +199,7 @@ export const getResolvedSeasonalCampaigns = (now = new Date()) => {
     featuredCampaign,
     activeCampaigns,
     visualTheme: visualCampaign?.visualTheme || null,
-    headerLogo: visualCampaign?.headerLogo || headerWide,
+    headerLogo: visualCampaign?.resolvedHeaderLogo || headerWide,
   };
 };
 
