@@ -800,6 +800,63 @@ const IceCreamRadar = () => {
   const canAccessExternalDiscovery = useMemo(() => canUseExternalDiscovery(userId), [userId]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousHtmlHeight = html.style.height;
+    const previousBodyHeight = body.style.height;
+    const previousHtmlOverscroll = html.style.overscrollBehavior;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+    let frameId = null;
+
+    const syncViewport = () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      frameId = window.requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        mapRef.current?.invalidateSize?.();
+        frameId = null;
+      });
+    };
+
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    html.style.height = '100%';
+    body.style.height = '100%';
+    html.style.overscrollBehavior = 'none';
+    body.style.overscrollBehavior = 'none';
+
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener('resize', syncViewport);
+    visualViewport?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+    syncViewport();
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      visualViewport?.removeEventListener('resize', syncViewport);
+      visualViewport?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      html.style.height = previousHtmlHeight;
+      body.style.height = previousBodyHeight;
+      html.style.overscrollBehavior = previousHtmlOverscroll;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -1947,15 +2004,7 @@ const IceCreamRadar = () => {
           },
         ]}
       />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100dvh',
-          minHeight: '100vh',
-          backgroundColor: '#ffb522',
-        }}
-      >
+      <MapPageShell>
       <Header
         refreshShops={refreshShops}
       />
@@ -2577,12 +2626,28 @@ const IceCreamRadar = () => {
           onClose={handleCloseShopDetails}
         />
       )}
-      </div>
+      </MapPageShell>
     </>
   );
 };
 
 export default IceCreamRadar;
+
+const MapPageShell = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  background-color: #ffb522;
+  overscroll-behavior: none;
+
+  @supports (height: 100dvh) {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+`;
 
 const LogoContainer = styled.div`
   display: ruby;
@@ -2646,8 +2711,10 @@ const DateTimeInput = styled.input`
 const MapSection = styled.div`
   position: relative;
   flex: 1;
+  min-height: 0;
   width: 100%;
   display: flex;
+  overflow: hidden;
 `;
 
 const MapContextMenu = styled.div`
