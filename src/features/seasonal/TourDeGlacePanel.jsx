@@ -26,44 +26,31 @@ const ACTION_LABELS = {
   like: 'Likes',
   review: 'Bewertungen',
   daily_visit: 'Tagesbesuch',
+  profile_image: 'Profilbild vorhanden',
   easter_egg: 'Easter-Eggs',
   route: 'Routen',
   referral: 'Geworbene Nutzer',
   photo_vote: 'Foto-Votes',
 };
-const isLocalTourSimulation = () => (
-  import.meta.env.DEV
-  && typeof window !== 'undefined'
-  && ['localhost', '127.0.0.1'].includes(window.location.hostname)
-);
-const LOCAL_FIRST_STAGE = {
-  stage_number: 1,
-  date: '2026-07-04',
-  start: 'Barcelona',
-  finish: 'Barcelona',
-  lat: 41.3874,
-  lng: 2.1686,
-  hint: 'Die Tour startet in Barcelona.',
-};
 const JERSEY_EXPLANATIONS = {
   yellow: 'Gesamtwertung: Check-ins, Fotos, Fahrrad-Anreise, Bewertungen, Gruppenaktionen und Routen zahlen reduziert ein.',
   green: 'Sprintwertung: täglicher Besuch, Likes, Kommentare und Easter-Eggs bringen Punkte.',
   mountain: 'Bergwertung: Fahrrad-Anreise, Gruppen-Check-ins mit Fahrrad und Routen sind hier stark.',
-  ice: 'Genusswertung: echte Eis-Check-ins, Fotos, neue Eisdielen, Sorten und Bewertungen zählen besonders.',
+  ice: 'Genusswertung: echte Eis-Check-ins, Fotos, neue Eisdielen und Bewertungen zählen besonders.',
   white: 'Nachwuchswertung: zählt nur für Nutzer mit weniger als 5 Check-ins vor Tourstart und belohnt erste Aktionen.',
 };
 const JERSEY_DETAILS = {
   yellow: 'Das Gelbe Trikot ist die Allround-Wertung. Es sammelt reduzierte Punkte aus vielen Bereichen und belohnt konstant aktive Nutzer.',
   green: 'Das Grüne Trikot ist die Sprintwertung. Es ist für tägliche Aktivität und Community-Interaktion gedacht, auch ohne jeden Tag Eis zu essen.',
   mountain: 'Das Bergtrikot belohnt Fahrrad-Anreise und sportliche Tour-Aktionen. Fahrradbonus und Routen wirken hier besonders stark.',
-  ice: 'Das Eiscreme-Trikot ist die Genusswertung. Check-ins, Fotos, neue Eisdielen, Sorten und Bewertungen zahlen hier besonders ein.',
+  ice: 'Das Eiscreme-Trikot ist die Genusswertung. Check-ins, Fotos, neue Eisdielen und Bewertungen zahlen hier besonders ein.',
   white: 'Das Weiße Trikot ist die Nachwuchswertung. Es zählt nur für Nutzer mit weniger als 5 Check-ins vor dem Tourstart.',
 };
 const NEXT_ACTIONS = {
   yellow: 'Mach einen Check-in, ergänze ein Foto, schreibe eine Bewertung oder reiche eine Route ein.',
   green: 'Öffne die Tour täglich, like Beiträge, kommentiere sinnvoll oder finde das Etappen-Easter-Egg.',
   mountain: 'Setze beim Check-in die Fahrrad-Anreise oder reiche eine passende Route ein.',
-  ice: 'Mach einen Eis-Check-in mit Foto, probiere Sorten aus oder bewerte eine Eisdiele.',
+  ice: 'Mach einen Eis-Check-in mit Foto, besuche eine neue Eisdiele oder bewerte eine Eisdiele.',
   white: 'Starte mit deinem ersten Check-in, Profilbild, Kommentar oder deiner ersten Bewertung während der Tour.',
 };
 const INFO_TEXTS = {
@@ -78,11 +65,11 @@ const POINT_RULES = [
   { action: 'Check-in: Kugel oder Softeis', yellow: 10, green: 0, mountain: 0, ice: 20, white: 30, note: 'unlimitiert' },
   { action: 'Check-in: Eisbecher', yellow: 10, green: 0, mountain: 0, ice: 25, white: 30, note: 'unlimitiert' },
   { action: 'Check-in mit Foto', yellow: 3, green: 0, mountain: 0, ice: 10, white: 20, note: 'Zusatzpunkte' },
-  { action: 'Neue Eisdiele beim Check-in', yellow: 0, green: 0, mountain: 0, ice: 15, white: 0, note: 'Zusatzpunkte' },
-  { action: 'Neue Sorte im Check-in', yellow: 0, green: 0, mountain: 0, ice: 5, white: 0, note: 'pro Sorte' },
+  { action: 'Neue Eisdiele beim Check-in', yellow: 0, green: 0, mountain: 0, ice: 15, white: 0, note: 'erstmals von dir besucht' },
   { action: 'Fahrrad-Anreise', yellow: 5, green: 0, mountain: 25, ice: 5, white: 0, note: 'unlimitiert' },
   { action: 'Fahrrad + Gruppen-Check-in', yellow: 0, green: 0, mountain: 10, ice: 0, white: 0, note: 'Zusatzpunkte' },
   { action: 'Fahrrad + neue Eisdiele', yellow: 0, green: 0, mountain: 10, ice: 0, white: 0, note: 'Zusatzpunkte' },
+  { action: 'Profilbild vorhanden', yellow: 0, green: 10, mountain: 0, ice: 0, white: 0, note: 'einmalig' },
   { action: 'Bewertung', yellow: 8, green: 0, mountain: 0, ice: 8, white: 20, note: 'max. 10 im Aktionszeitraum' },
   { action: 'Route eingereicht', yellow: 10, green: 0, mountain: 30, ice: 0, white: 0, note: 'max. 3 im Aktionszeitraum' },
 ];
@@ -106,7 +93,7 @@ const formatDateTime = (value) => {
 };
 
 const InfoHint = ({ id, label, children, text, expandedInfo, onToggle }) => (
-  <InfoWrap>
+  <InfoWrap data-tour-info>
     <InfoButton
       type="button"
       aria-label={label}
@@ -129,6 +116,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const [tips, setTips] = useState({});
   const [message, setMessage] = useState('');
   const [selectedJersey, setSelectedJersey] = useState('yellow');
+  const [selectedLeaderboardEntry, setSelectedLeaderboardEntry] = useState(null);
   const [expandedInfo, setExpandedInfo] = useState(null);
   const [expandedLeaderboards, setExpandedLeaderboards] = useState({});
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
@@ -194,7 +182,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   }, [authToken]);
 
   const data = state.data;
-  const phase = isLocalTourSimulation() ? 'active' : (data?.campaign?.phase || campaign?.status);
+  const phase = data?.campaign?.phase || campaign?.status;
   const riderTypes = data?.rider_types || {};
   const myScores = data?.my_scores || {};
   const myBreakdown = data?.my_breakdown || {};
@@ -202,11 +190,13 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const compactLeaderboards = data?.leaderboards || {};
   const leaders = data?.leaders || {};
   const selectedRiderType = data?.profile?.rider_type || null;
-  const currentStage = isLocalTourSimulation() ? LOCAL_FIRST_STAGE : data?.stage;
+  const currentStage = data?.stage;
   const selectedMeta = JERSEY_META[selectedJersey] || JERSEY_META.yellow;
   const selectedLeaderboard = expandedLeaderboards[selectedJersey] || compactLeaderboards[selectedJersey] || [];
   const selectedRank = myRanks[selectedJersey] || null;
-  const selectedBreakdown = myBreakdown[selectedJersey] || {};
+  const selectedEntryBreakdown = selectedLeaderboardEntry?.breakdown?.[selectedJersey] || null;
+  const selectedBreakdown = selectedEntryBreakdown || myBreakdown[selectedJersey] || {};
+  const selectedBreakdownUser = selectedEntryBreakdown ? selectedLeaderboardEntry : selectedRank;
   const selectedLeader = leaders[selectedJersey]?.official || null;
   const selectedRawLeader = leaders[selectedJersey]?.raw || null;
 
@@ -217,6 +207,35 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
     ), 'yellow');
     setSelectedJersey(Number(data.my_scores[bestJersey] || 0) > 0 ? bestJersey : 'yellow');
   }, [data?.campaign?.phase]);
+
+  useEffect(() => {
+    setSelectedLeaderboardEntry(null);
+  }, [selectedJersey, data?.campaign?.phase]);
+
+  useEffect(() => {
+    if (!expandedInfo) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (event.target?.closest?.('[data-tour-info]')) {
+        return;
+      }
+      setExpandedInfo(null);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setExpandedInfo(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [expandedInfo]);
 
   const phaseLabel = useMemo(() => {
     if (phase === 'pre') return 'Vorabphase';
@@ -407,7 +426,11 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
 
                 <DetailGrid>
                   <BreakdownSection>
-                    <SubHeading>Deine Punkte</SubHeading>
+                    <SubHeading>
+                      {selectedEntryBreakdown
+                        ? `Punkte von ${selectedLeaderboardEntry.username}`
+                        : 'Deine Punkte'}
+                    </SubHeading>
                     {!isLoggedIn ? (
                       <EmptyState>Logge dich ein, um deine Punkteaufschlüsselung und deinen Rang zu sehen.</EmptyState>
                     ) : Object.keys(selectedBreakdown).length > 0 ? (
@@ -424,9 +447,9 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                     ) : (
                       <EmptyState>Noch keine Punkte in {selectedMeta.label}. {NEXT_ACTIONS[selectedJersey]}</EmptyState>
                     )}
-                    {selectedRank && (
+                    {selectedBreakdownUser && (
                       <CurrentRank>
-                        Du: #{selectedRank.rank}, {selectedRank.points} Punkte
+                        {selectedEntryBreakdown ? selectedLeaderboardEntry.username : 'Du'}: #{selectedBreakdownUser.rank}, {selectedBreakdownUser.points} Punkte
                       </CurrentRank>
                     )}
                   </BreakdownSection>
@@ -445,7 +468,13 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                     {selectedLeaderboard.length > 0 ? (
                       <RankingList>
                         {selectedLeaderboard.map((entry) => (
-                          <RankingRow key={`${selectedJersey}-${entry.user_id}`} $highlight={selectedRank?.user_id === entry.user_id}>
+                          <RankingRow
+                            key={`${selectedJersey}-${entry.user_id}`}
+                            type="button"
+                            $highlight={selectedRank?.user_id === entry.user_id}
+                            $selected={selectedLeaderboardEntry?.user_id === entry.user_id}
+                            onClick={() => setSelectedLeaderboardEntry(entry)}
+                          >
                             <span>#{entry.rank}</span>
                             <strong>{entry.username}</strong>
                             <span>{entry.points}</span>
@@ -817,18 +846,21 @@ const InfoWrap = styled.span`
 `;
 
 const InfoOverlay = styled.div`
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
-  z-index: 30;
-  width: min(280px, calc(100vw - 2rem));
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 10050;
+  width: min(360px, calc(100vw - 2rem));
   max-width: calc(100vw - 2rem);
+  max-height: min(72vh, 520px);
+  overflow-y: auto;
   border: 1px solid #cfe0ff;
   border-radius: 8px;
   background: #ffffff;
   color: #17436f;
   box-shadow: 0 10px 26px rgba(23, 67, 111, 0.18);
   padding: 0.65rem 0.75rem;
+  transform: translate(-50%, -50%);
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1.4;
@@ -846,14 +878,13 @@ const InfoOverlay = styled.div`
   }
 
   @media (max-width: 520px) {
-    position: fixed;
     top: auto;
     right: 1rem;
     left: 1rem;
     bottom: 1rem;
     width: auto;
     max-height: min(70vh, 420px);
-    overflow-y: auto;
+    transform: none;
   }
 `;
 
@@ -1008,17 +1039,32 @@ const RankingList = styled.div`
   gap: 0.35rem;
 `;
 
-const RankingRow = styled.div`
+const RankingRow = styled.button`
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
+  width: 100%;
+  border: 1px solid ${({ $selected }) => ($selected ? '#1f6feb' : 'transparent')};
   border-radius: 8px;
-  background: ${({ $highlight }) => ($highlight ? '#fff8ea' : '#f5f7fb')};
+  background: ${({ $highlight, $selected }) => ($selected ? '#eef5ff' : ($highlight ? '#fff8ea' : '#f5f7fb'))};
+  color: #202124;
   padding: 0.5rem 0.6rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 
   strong {
     overflow-wrap: anywhere;
+  }
+
+  &:hover {
+    border-color: #9db9e8;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(31, 111, 235, 0.35);
+    outline-offset: 2px;
   }
 `;
 

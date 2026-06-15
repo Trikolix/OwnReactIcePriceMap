@@ -5,6 +5,7 @@ require_once __DIR__ . '/../lib/preset_avatars.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
+require_once __DIR__ . '/../lib/tour_de_glace.php';
 require_once __DIR__ . '/../evaluators/ProfileAvatarEvaluator.php';
 
 $authData = requireAuth($pdo);
@@ -29,6 +30,7 @@ function evaluateProfileAvatarAwardResponse(PDO $pdo, int $userId, ?string $avat
     $evaluator = new ProfileAvatarEvaluator();
     $newAwards = $evaluator->evaluate($userId);
     $levelChange = updateUserLevelIfChanged($pdo, $userId);
+    $tourDeGlacePoints = $avatarPath ? recordTourDeGlaceProfileImage($pdo, $userId) : null;
 
     return [
         'success' => true,
@@ -38,6 +40,7 @@ function evaluateProfileAvatarAwardResponse(PDO $pdo, int $userId, ?string $avat
         'new_level' => ($levelChange['level_up'] ?? false) ? ($levelChange['new_level'] ?? null) : null,
         'current_level' => $levelChange['new_level'] ?? null,
         'level_name' => ($levelChange['level_up'] ?? false) ? ($levelChange['level_name'] ?? null) : null,
+        'tour_de_glace_points' => $tourDeGlacePoints,
     ];
 }
 

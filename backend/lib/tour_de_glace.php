@@ -87,10 +87,6 @@ function tourDeGlaceConfig(): array
 
 function getTourDeGlaceNow(): DateTimeImmutable
 {
-    if (isTourDeGlaceLocalDevRequest()) {
-        return new DateTimeImmutable('2026-07-04 12:00:00', tourDeGlaceTimezone());
-    }
-
     return new DateTimeImmutable('now', tourDeGlaceTimezone());
 }
 
@@ -530,14 +526,13 @@ function recordTourDeGlaceCheckin(PDO $pdo, int $userId, int $checkinId, array $
     $isBike = (($context['anreise'] ?? '') === 'Fahrrad');
     $isNewShopForUser = !empty($context['is_new_shop']);
     $hasGroup = !empty($context['group_id']);
-    $sortenCount = max(0, (int)($context['sorten_count'] ?? 0));
 
     $iceBase = $type === 'Eisbecher' ? 25 : 20;
     $base = [
         'yellow' => 10 + ($hasPhoto ? 3 : 0) + ($hasGroup ? 8 : 0),
         'green' => 0,
         'mountain' => 0,
-        'ice' => $iceBase + ($hasPhoto ? 10 : 0) + ($isNewShopForUser ? 15 : 0) + ($sortenCount * 5),
+        'ice' => $iceBase + ($hasPhoto ? 10 : 0) + ($isNewShopForUser ? 15 : 0),
         'white' => 30 + ($hasPhoto ? 20 : 0),
     ];
     $events = [];
@@ -612,6 +607,35 @@ function recordTourDeGlaceDailyVisit(PDO $pdo, int $userId): ?array
     ]);
 }
 
+function userHasTourDeGlaceProfileImage(PDO $pdo, int $userId): bool
+{
+    $stmt = $pdo->prepare(
+        "SELECT 1
+         FROM user_profile_images
+         WHERE user_id = ?
+           AND avatar_path IS NOT NULL
+           AND avatar_path <> ''
+         LIMIT 1"
+    );
+    $stmt->execute([$userId]);
+    return (bool)$stmt->fetchColumn();
+}
+
+function recordTourDeGlaceProfileImage(PDO $pdo, int $userId): ?array
+{
+    if (!userHasTourDeGlaceProfileImage($pdo, $userId)) {
+        return null;
+    }
+
+    return recordTourDeGlacePointEvent($pdo, $userId, 'profile_image', 'profile', 'user', $userId, [
+        'yellow' => 0,
+        'green' => 10,
+        'mountain' => 0,
+        'ice' => 0,
+        'white' => 0,
+    ]);
+}
+
 function fetchTourDeGlaceTotals(PDO $pdo, ?int $userId = null): array
 {
     ensureTourDeGlaceTables($pdo);
@@ -649,7 +673,7 @@ function fetchTourDeGlaceTotals(PDO $pdo, ?int $userId = null): array
     return $totals;
 }
 
-function getTourDeGlaceLeaderboard(PDO $pdo, string $jersey = 'yellow', int $limit = 50): array
+function getTourDeGlaceLeaderboard(PDO $pdo, string $jersey = 'yellow', int $limit = 50, bool $includeBreakdown = true): array
 {
     ensureTourDeGlaceTables($pdo);
     $allowed = ['yellow', 'green', 'mountain', 'ice', 'white'];
@@ -675,15 +699,19 @@ function getTourDeGlaceLeaderboard(PDO $pdo, string $jersey = 'yellow', int $lim
     $stmt->execute();
 
     $rank = 0;
-    return array_map(static function (array $row) use (&$rank): array {
+    return array_map(function (array $row) use (&$rank, $pdo, $includeBreakdown): array {
         $rank++;
-        return [
+        $entry = [
             'rank' => $rank,
             'user_id' => (int)$row['user_id'],
             'username' => $row['username'],
             'avatar_path' => $row['avatar_path'],
             'points' => (int)$row['points'],
         ];
+        if ($includeBreakdown) {
+            $entry['breakdown'] = getTourDeGlaceUserBreakdown($pdo, (int)$row['user_id']);
+        }
+        return $entry;
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
@@ -793,7 +821,7 @@ function getTourDeGlaceOfficialLeaders(PDO $pdo): array
     usort($jerseys, static fn($a, $b) => $config['jerseys'][$a]['priority'] <=> $config['jerseys'][$b]['priority']);
 
     foreach ($jerseys as $jersey) {
-        $leaderboard = getTourDeGlaceLeaderboard($pdo, $jersey, 100);
+        $leaderboard = getTourDeGlaceLeaderboard($pdo, $jersey, 100, false);
         $rawLeader = $leaderboard[0] ?? null;
         $official = null;
         foreach ($leaderboard as $entry) {
@@ -816,7 +844,11 @@ function getCurrentTourDeGlaceStage(?DateTimeImmutable $now = null): ?array
     $config = tourDeGlaceConfig();
     $reference = $now ?? getTourDeGlaceNow();
     if (isTourDeGlaceShadowTestNow($reference)) {
-        return ['stage_number' => 1] + array_merge($config['stages'][1], ['date' => $reference->format('Y-m-d')]);
+        $shadowStart = new DateTimeImmutable(TOUR_DE_GLACE_SHADOW_TEST_START, tourDeGlaceTimezone());
+        $stageNumbers = array_keys($config['stages']);
+        $daysSinceShadowStart = (int)$shadowStart->setTime(0, 0)->diff($reference->setTime(0, 0))->days;
+        $stageNumber = (int)$stageNumbers[$daysSinceShadowStart % count($stageNumbers)];
+        return ['stage_number' => $stageNumber] + array_merge($config['stages'][$stageNumber], ['date' => $reference->format('Y-m-d')]);
     }
     $today = $reference->format('Y-m-d');
     foreach ($config['stages'] as $number => $stage) {
@@ -896,7 +928,11 @@ function getTourDeGlaceAvailableEasterEgg(PDO $pdo, ?int $stageNumber = null): ?
     }
 
     $now = getTourDeGlaceNow();
-    if (isTourDeGlaceShadowTestNow($now) && (int)$stage['stage_number'] === 1) {
+    if (isTourDeGlaceShadowTestNow($now)) {
+        $shadowStage = getCurrentTourDeGlaceStage($now);
+        if (!$shadowStage || (int)$stage['stage_number'] !== (int)$shadowStage['stage_number']) {
+            return null;
+        }
         $stage['date'] = $now->format('Y-m-d');
     }
     $stageDate = new DateTimeImmutable($stage['date'] . ' 00:00:00', tourDeGlaceTimezone());
@@ -979,6 +1015,7 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
     $profile = $userId ? getTourDeGlaceProfile($pdo, $userId) : null;
     if ($userId && isTourDeGlacePointCollectionActive()) {
         recordTourDeGlaceDailyVisit($pdo, $userId);
+        recordTourDeGlaceProfileImage($pdo, $userId);
     }
     $totals = $userId ? (fetchTourDeGlaceTotals($pdo, $userId)[$userId] ?? ['yellow' => 0, 'green' => 0, 'mountain' => 0, 'ice' => 0, 'white' => 0]) : null;
     $currentStage = getCurrentTourDeGlaceStage();

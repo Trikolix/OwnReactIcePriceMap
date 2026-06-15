@@ -639,7 +639,6 @@ try {
         'anreise' => $anreise,
         'has_photo' => !empty($bildUrls),
         'group_id' => $groupId,
-        'sorten_count' => count($sorten),
         'is_new_shop' => ((int)$shopCheckinCountStmt->fetchColumn()) <= 1,
         'is_on_site' => (int)$isOnSite,
     ]);
