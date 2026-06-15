@@ -4,12 +4,6 @@ import headerWide from '../../header_wide.png';
 
 const isWithinRange = (now, start, endExclusive) => now >= start && now < endExclusive;
 const TOUR_DE_GLACE_SHADOW_START = new Date('2026-06-12T00:00:00+02:00');
-const isLocalDevHost = () => (
-  import.meta.env.DEV
-  && typeof window !== 'undefined'
-  && ['localhost', '127.0.0.1'].includes(window.location.hostname)
-);
-const getTourDeGlaceNow = (now) => (isLocalDevHost() ? new Date('2026-07-04T12:00:00+02:00') : now);
 const isTourDeGlaceShadowPhase = (now, campaign) =>
   isWithinRange(now, TOUR_DE_GLACE_SHADOW_START, campaign.schedule.start);
 
@@ -140,8 +134,7 @@ export const seasonalCampaignDefinitions = [
     kind: 'campaign',
     promoPriority: 20,
     teaserIcon(now = new Date(), { isAdmin = false } = {}) {
-      const effectiveNow = getTourDeGlaceNow(now);
-      return isWithinRange(effectiveNow, this.schedule.start, this.schedule.endExclusive)
+      return isWithinRange(now, this.schedule.start, this.schedule.endExclusive)
         && (!isTourDeGlaceShadowPhase(now, this) || isAdmin)
         ? '/assets/tour-de-glace/tour_egg.png'
         : '/assets/summer_action_logo2.png';
@@ -155,11 +148,10 @@ export const seasonalCampaignDefinitions = [
       progress: '/api/tour_de_glace_progress.php',
     },
     getStatus(now = new Date()) {
-      const effectiveNow = getTourDeGlaceNow(now);
-      if (effectiveNow < this.schedule.preStart) {
+      if (now < this.schedule.preStart) {
         return CAMPAIGN_STATUS.UPCOMING;
       }
-      if (isWithinRange(effectiveNow, this.schedule.preStart, this.schedule.endExclusive)) {
+      if (isWithinRange(now, this.schedule.preStart, this.schedule.endExclusive)) {
         return CAMPAIGN_STATUS.ACTIVE;
       }
       return CAMPAIGN_STATUS.RESULTS;

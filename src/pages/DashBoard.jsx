@@ -21,6 +21,9 @@ import {
   writeActivityFeedSeenAt,
 } from '../utils/activityFeed';
 
+const getTodayKey = () => new Date().toISOString().slice(0, 10);
+const getFeedActionDismissKey = () => `action-feed-nudge-dismissed:${getTodayKey()}`;
+
 function DashBoard() {
   const { userId } = useUser();
   const location = useLocation();
@@ -30,6 +33,10 @@ function DashBoard() {
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [showActionNudge, setShowActionNudge] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(getFeedActionDismissKey()) !== '1';
+  });
 
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState(() => {
@@ -165,6 +172,18 @@ function DashBoard() {
     fetchActivities(false, 0);
   };
 
+  const dismissActionNudge = () => {
+    setShowActionNudge(false);
+    try {
+      window.localStorage.setItem(getFeedActionDismissKey(), '1');
+    } catch (error) {
+      console.warn('Aktionshinweis konnte nicht gespeichert werden:', error);
+    }
+  };
+  const openActionsHub = () => {
+    window.dispatchEvent(new CustomEvent('actions-hub:open'));
+  };
+
   return (
     <Page>
       <Header />
@@ -225,6 +244,17 @@ function DashBoard() {
             Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
           </Subtitle>
         </HeroCard>
+
+        {showActionNudge && (
+          <ActionNudge>
+            <div>
+              <strong>Heute aktiv</strong>
+              <span>Foto-Challenges, Sammelaktionen und Tagesaufgaben findest du im kompakten Aktions-Hub.</span>
+            </div>
+            <ActionNudgeButton type="button" onClick={openActionsHub}>Aktions-Hub öffnen</ActionNudgeButton>
+            <ActionNudgeClose type="button" onClick={dismissActionNudge} aria-label="Aktionshinweis ausblenden">×</ActionNudgeClose>
+          </ActionNudge>
+        )}
 
         {/* Initial-Loader: nur Platzhalter innerhalb des Containers */}
         {loadingInitial && activities.length === 0 && (
@@ -466,4 +496,64 @@ const Subtitle = styled.p`
   text-align: center;
   color: rgba(47, 33, 0, 0.68);
   font-size: 0.95rem;
+`;
+
+const ActionNudge = styled.div`
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  border: 1px solid rgba(31, 111, 235, 0.18);
+  border-left: 4px solid #1f6feb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
+  padding: 0.75rem 2.4rem 0.75rem 0.85rem;
+  color: #2f2100;
+
+  div {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  span {
+    color: rgba(47, 33, 0, 0.68);
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ActionNudgeButton = styled.button`
+  justify-self: end;
+  border: none;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+
+  @media (max-width: 620px) {
+    justify-self: start;
+  }
+`;
+
+const ActionNudgeClose = styled.button`
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  border: none;
+  background: transparent;
+  color: rgba(47, 33, 0, 0.58);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
 `;

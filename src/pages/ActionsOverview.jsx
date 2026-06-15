@@ -10,6 +10,22 @@ import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
 import TourDeGlacePanel from '../features/seasonal/TourDeGlacePanel';
 
+const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
+  'active',
+  'submission_open',
+  'submission_closed',
+  'group_running',
+  'ko_running',
+]);
+
+const PHOTO_CHALLENGE_ACTION_LABELS = {
+  active: 'Jetzt abstimmen',
+  group_running: 'Jetzt voten',
+  ko_running: 'Jetzt voten',
+  submission_open: 'Bild einreichen',
+  submission_closed: 'Voting startet bald',
+};
+
 const POINT_LABELS = {
   login_active: 'App geöffnet & eingeloggt',
   login_days: 'Login-Tage',
@@ -79,6 +95,11 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const [activeBirthdayBreakdownUserId, setActiveBirthdayBreakdownUserId] = useState(null);
   const [breakdownByUser, setBreakdownByUser] = useState({});
   const [activeBreakdownUserId, setActiveBreakdownUserId] = useState(null);
+  const [photoChallenges, setPhotoChallenges] = useState([]);
+  const [isPhotoChallengesLoading, setIsPhotoChallengesLoading] = useState(false);
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+  const [activeDetailPanel, setActiveDetailPanel] = useState(null);
   const LEADERBOARD_COLLAPSED_COUNT = 10;
 
   useEffect(() => {
@@ -151,6 +172,24 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       .finally(() => setIsBirthdayLoading(false));
   }, [apiUrl, open, userId]);
 
+  useEffect(() => {
+    if (!open || !apiUrl) {
+      return;
+    }
+
+    setIsPhotoChallengesLoading(true);
+    fetch(`${apiUrl}/photo_challenge/list_public_challenges.php`)
+      .then((res) => res.json())
+      .then((data) => {
+        setPhotoChallenges(Array.isArray(data?.data) ? data.data : []);
+      })
+      .catch((error) => {
+        console.error('Fehler beim Laden der Fotochallenges:', error);
+        setPhotoChallenges([]);
+      })
+      .finally(() => setIsPhotoChallengesLoading(false));
+  }, [apiUrl, open]);
+
   if (!open) {
     return null;
   }
@@ -177,6 +216,55 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const activeCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
   const upcomingCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
   const hasPastEvents = displayCampaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
+  const activePhotoChallenges = photoChallenges.filter((challenge) =>
+    ACTIVE_PHOTO_CHALLENGE_STATUSES.has(challenge?.status)
+  );
+  const tourCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_2026');
+  const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
+  const taskItems = [
+    activePhotoChallenges.length > 0 && {
+      id: 'photo-challenges',
+      type: 'photo_challenge',
+      title: activePhotoChallenges.length === 1
+        ? activePhotoChallenges[0].title || 'Foto-Challenge'
+        : `${activePhotoChallenges.length} Foto-Challenges warten`,
+      description: activePhotoChallenges.length === 1
+        ? 'Stimme ab oder schau dir die aktuelle Challenge an.'
+        : 'Mehrere Foto-Challenges sind gerade aktiv.',
+      statusLabel: activePhotoChallenges.length === 1
+        ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Aktiv')
+        : `${activePhotoChallenges.length} aktiv`,
+      priority: 1,
+      ctaLabel: activePhotoChallenges.length === 1
+        ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Öffnen')
+        : 'Challenges ansehen',
+      ctaTarget: activePhotoChallenges.length === 1
+        ? `/photo-challenge/${activePhotoChallenges[0].id}`
+        : '/photo-challenge',
+    },
+    tourCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
+      id: 'tour-de-glace-daily',
+      type: 'tour_de_glace',
+      title: 'Tour de Glace Tagesetappe',
+      description: 'Sammle Tagespunkte und suche das Etappen-Easter-Egg auf der Karte.',
+      statusLabel: 'Heute verfügbar',
+      priority: 2,
+      ctaLabel: 'Zur Karte',
+      ctaTarget: '/',
+    },
+    summerCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
+      id: 'summer-campaign',
+      type: 'summer',
+      title: 'Sommer-Sammelaktion',
+      description: 'Behalte deinen Sammelfortschritt im Blick.',
+      statusLabel: 'Läuft',
+      priority: 3,
+      ctaLabel: 'Fortschritt ansehen',
+      onClick: () => setActiveDetailPanel('summer_2026'),
+    },
+  ].filter(Boolean).sort((left, right) => left.priority - right.priority);
+  const visibleTasks = showAllTasks ? taskItems : taskItems.slice(0, 3);
+  const runningCampaignCards = activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id));
   const renderCampaignPanel = (campaign) => {
     if (campaign.id === 'summer_2026') {
       return (
@@ -215,78 +303,128 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       <Overlay>
         <CloseButton onClick={onClose}>&times;</CloseButton>
 
-        <MainHeading>Aktionen & Ergebnisse</MainHeading>
+        <MainHeading>Heute in der Ice-App</MainHeading>
+        <IntroText>Alles Wichtige auf einen Blick. Karte, Check-ins und Feed bleiben im Fokus.</IntroText>
 
-        {activeCampaigns.length > 0 && (
-          <CampaignsBlock>
-            <CategoryHeading>Laufende Events</CategoryHeading>
-            {activeCampaigns.map(renderCampaignPanel)}
-          </CampaignsBlock>
-        )}
+        <HubSection>
+          <HubSectionHeader>
+            <div>
+              <HubKicker>Heute zu tun</HubKicker>
+              <HubTitle>Offene Aktionen</HubTitle>
+            </div>
+            {taskItems.length > 0 && <TaskCount>{taskItems.length}</TaskCount>}
+          </HubSectionHeader>
+          {isPhotoChallengesLoading && taskItems.length === 0 ? (
+            <EmptyHubState>Lade aktuelle Aufgaben...</EmptyHubState>
+          ) : visibleTasks.length > 0 ? (
+            <TaskList>
+              {visibleTasks.map((task) => (
+                <TaskCard key={task.id} $type={task.type}>
+                  <TaskIcon>{task.type === 'photo_challenge' ? '📸' : task.type === 'tour_de_glace' ? '🚲' : '🍦'}</TaskIcon>
+                  <TaskContent>
+                    <TaskTitleRow>
+                      <strong>{task.title}</strong>
+                      <TaskStatus>{task.statusLabel}</TaskStatus>
+                    </TaskTitleRow>
+                    <p>{task.description}</p>
+                  </TaskContent>
+                  {task.ctaTarget ? (
+                    <TaskLink to={task.ctaTarget} onClick={onClose}>{task.ctaLabel}</TaskLink>
+                  ) : (
+                    <TaskButton type="button" onClick={task.onClick}>{task.ctaLabel}</TaskButton>
+                  )}
+                </TaskCard>
+              ))}
+            </TaskList>
+          ) : (
+            <EmptyHubState>Heute ist nichts Dringendes offen. Schau später wieder rein.</EmptyHubState>
+          )}
+          {taskItems.length > 3 && (
+            <InlineToggle type="button" onClick={() => setShowAllTasks((previous) => !previous)}>
+              {showAllTasks ? 'Weniger anzeigen' : `${taskItems.length - 3} weitere anzeigen`}
+            </InlineToggle>
+          )}
+        </HubSection>
 
-        <SectionTitle>Nutzer/in des Monats</SectionTitle>
-        {isUserOfMonthLoading ? (
-          <Hint>Lade Nutzer/innen des Monats...</Hint>
-        ) : !currentUser && pastUsers.length === 0 ? (
-          <Hint>Keine Daten vorhanden.</Hint>
-        ) : (
-          <>
-            {currentUser && (
-              <CurrentUserWrapper>
-                <UserLink to={`/user/${currentUser.id}`} onClick={onClose}>
-                  <CurrentUserCard>
-                    <Month>{currentUser.month}</Month>
-                    <CurrentUserImage src={currentUser.image} alt={currentUser.name} />
-                    <strong>{currentUser.name}</strong>
-                  </CurrentUserCard>
-                </UserLink>
-              </CurrentUserWrapper>
+        {runningCampaignCards.length > 0 && (
+          <HubSection>
+            <HubSectionHeader>
+              <div>
+                <HubKicker>Meine laufenden Aktionen</HubKicker>
+                <HubTitle>Fortschritt ansehen</HubTitle>
+              </div>
+            </HubSectionHeader>
+            <CampaignSummaryGrid>
+              {runningCampaignCards.map((campaign) => (
+                <CampaignSummaryCard key={campaign.id}>
+                  <strong>{campaign.title}</strong>
+                  <span>
+                    {campaign.id === 'tour_de_glace_2026'
+                      ? 'Trikots, Etappen und Tagespunkte'
+                      : 'Sammelfortschritt und Aufgaben'}
+                  </span>
+                  <TaskButton type="button" onClick={() => setActiveDetailPanel((current) => (current === campaign.id ? null : campaign.id))}>
+                    {activeDetailPanel === campaign.id ? 'Einklappen' : 'Details'}
+                  </TaskButton>
+                </CampaignSummaryCard>
+              ))}
+            </CampaignSummaryGrid>
+            {activeDetailPanel && (
+              <DetailPanelWrap>
+                {renderCampaignPanel(runningCampaignCards.find((campaign) => campaign.id === activeDetailPanel))}
+              </DetailPanelWrap>
             )}
-            {pastUsers.length > 0 && (
-              <>
-                <SubTitle>Vorherige Nutzer/innen des Monats</SubTitle>
-                <CardGrid>
-                  {pastUsers.map((user) => (
-                    <UserLink key={`${user.month}-${user.id}`} to={`/user/${user.id}`} onClick={onClose}>
-                      <UserCard>
-                        <Month>{user.month}</Month>
-                        <UserImage src={user.image} alt={user.name} />
-                        <strong>{user.name}</strong>
-                      </UserCard>
-                    </UserLink>
-                  ))}
-                </CardGrid>
-              </>
-            )}
-          </>
+          </HubSection>
         )}
 
         {upcomingCampaigns.length > 0 && (
-          <>
-            <CategoryHeading>Anstehende Events</CategoryHeading>
-            {upcomingCampaigns.map((campaign) => (
-              <Section key={campaign.id}>
-                <SectionTitle>{campaign.title}</SectionTitle>
-                <Hint>
-                  {campaign.schedule?.start ? (
-                    <>
-                      Start geplant am <strong>{formatCampaignDate(campaign.schedule.start)}</strong>.
-                    </>
-                  ) : (
-                    'Ein Starttermin folgt.'
-                  )}
-                </Hint>
-                <Hint>
-                  Weitere Informationen zum Event findest du hier, sobald es gestartet ist. Schau gerne später nochmal vorbei!
-                </Hint>
-              </Section>
-            ))}
-          </>
+          <HubSection>
+            <HubSectionHeader>
+              <div>
+                <HubKicker>Bald</HubKicker>
+                <HubTitle>Anstehende Events</HubTitle>
+              </div>
+            </HubSectionHeader>
+            <CompactList>
+              {upcomingCampaigns.map((campaign) => (
+                <CompactListItem key={campaign.id}>
+                  <strong>{campaign.title}</strong>
+                  <span>{campaign.schedule?.start ? `Start: ${formatCampaignDate(campaign.schedule.start)}` : 'Starttermin folgt'}</span>
+                </CompactListItem>
+              ))}
+            </CompactList>
+          </HubSection>
         )}
 
-        {hasPastEvents && <CategoryHeading>Vergangene Events</CategoryHeading>}
+        <HubSection>
+          <HubSectionHeader>
+            <div>
+              <HubKicker>Community</HubKicker>
+              <HubTitle>Nutzer/in des Monats</HubTitle>
+            </div>
+          </HubSectionHeader>
+          {isUserOfMonthLoading ? (
+            <EmptyHubState>Lade Community-Highlight...</EmptyHubState>
+          ) : currentUser ? (
+            <CommunityCard to={`/user/${currentUser.id}`} onClick={onClose}>
+              <CommunityImage src={currentUser.image} alt={currentUser.name} />
+              <div>
+                <strong>{currentUser.name}</strong>
+                <span>{currentUser.month}</span>
+              </div>
+            </CommunityCard>
+          ) : (
+            <EmptyHubState>Aktuell kein Community-Highlight verfügbar.</EmptyHubState>
+          )}
+        </HubSection>
 
         {hasPastEvents && (
+          <ArchiveToggle type="button" onClick={() => setShowArchive((previous) => !previous)}>
+            {showArchive ? 'Archiv ausblenden' : 'Archiv & Ergebnisse anzeigen'}
+          </ArchiveToggle>
+        )}
+
+        {hasPastEvents && showArchive && (
           <>
             <Section>
               <SectionTitle>Ice-App Geburtstagschallenge 2026 - Ergebnisse</SectionTitle>
@@ -426,16 +564,19 @@ const OverlayBackground = styled.div`
 const Overlay = styled.div`
   position: relative;
   background: white;
-  padding: 2rem 2.5rem;
+  padding: 1.4rem;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  max-width: 90%;
-  width: 760px;
-  max-height: 84vh;
+  width: min(640px, calc(100vw - 24px));
+  max-height: min(84vh, calc(100dvh - 24px));
   overflow-y: auto;
-  text-align: center;
+  text-align: left;
   @media (max-width: 720px) {
-    padding: 1rem 0.5rem;
+    width: 100vw;
+    max-height: 92dvh;
+    align-self: flex-end;
+    border-radius: 18px 18px 0 0;
+    padding: 1rem;
   }
 `;
 
@@ -468,8 +609,258 @@ const SectionTitle = styled.h3`
 `;
 
 const MainHeading = styled.h2`
-  margin: 1.2rem 0 0.4rem;
-  text-align: center;
+  margin: 0.4rem 2rem 0.2rem 0;
+  text-align: left;
+  color: #202124;
+`;
+
+const IntroText = styled.p`
+  margin: 0 0 1rem;
+  color: #5b6270;
+  line-height: 1.4;
+`;
+
+const HubSection = styled.section`
+  border-top: 1px solid #edf0f5;
+  padding-top: 0.9rem;
+  margin-top: 0.9rem;
+`;
+
+const HubSectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.65rem;
+`;
+
+const HubKicker = styled.span`
+  display: block;
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const HubTitle = styled.h3`
+  margin: 0.1rem 0 0;
+  color: #202124;
+  font-size: 1rem;
+`;
+
+const TaskCount = styled.span`
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  background: #ffb522;
+  color: #2f2100;
+  font-weight: 900;
+`;
+
+const TaskList = styled.div`
+  display: grid;
+  gap: 0.55rem;
+`;
+
+const TaskCard = styled.article`
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  border: 1px solid #e1e6ee;
+  border-left: 4px solid ${({ $type }) => ($type === 'photo_challenge' ? '#7c3aed' : $type === 'tour_de_glace' ? '#1f9d55' : '#ffb522')};
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.65rem;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+
+    a,
+    button {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+`;
+
+const TaskIcon = styled.div`
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 8px;
+  background: #f5f7fb;
+  font-size: 1.05rem;
+`;
+
+const TaskContent = styled.div`
+  min-width: 0;
+
+  p {
+    margin: 0.2rem 0 0;
+    color: #5b6270;
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+`;
+
+const TaskTitleRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+
+  strong {
+    overflow-wrap: anywhere;
+  }
+`;
+
+const TaskStatus = styled.span`
+  border-radius: 999px;
+  background: #eef5ff;
+  color: #17436f;
+  padding: 0.18rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+`;
+
+const TaskLink = styled(Link)`
+  justify-self: end;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  padding: 0.48rem 0.65rem;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+`;
+
+const TaskButton = styled.button`
+  justify-self: end;
+  border: none;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  padding: 0.48rem 0.65rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+`;
+
+const InlineToggle = styled.button`
+  margin-top: 0.55rem;
+  border: none;
+  background: transparent;
+  color: #1f6feb;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0.25rem 0;
+`;
+
+const EmptyHubState = styled.div`
+  border-radius: 8px;
+  background: #f5f7fb;
+  color: #5b6270;
+  padding: 0.75rem;
+  line-height: 1.4;
+`;
+
+const CampaignSummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.6rem;
+`;
+
+const CampaignSummaryCard = styled.article`
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #fbfcff;
+  padding: 0.7rem;
+
+  span {
+    color: #5b6270;
+    font-size: 0.86rem;
+  }
+
+  button {
+    justify-self: start;
+  }
+`;
+
+const DetailPanelWrap = styled.div`
+  margin-top: 0.75rem;
+`;
+
+const CompactList = styled.div`
+  display: grid;
+  gap: 0.45rem;
+`;
+
+const CompactListItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 8px;
+  background: #f5f7fb;
+  padding: 0.55rem 0.65rem;
+
+  span {
+    color: #5b6270;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 520px) {
+    display: grid;
+  }
+`;
+
+const CommunityCard = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.55rem 0.7rem;
+  color: inherit;
+  text-decoration: none;
+
+  div {
+    display: grid;
+  }
+
+  span {
+    color: #5b6270;
+    font-size: 0.84rem;
+  }
+`;
+
+const CommunityImage = styled.img`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const ArchiveToggle = styled.button`
+  width: 100%;
+  margin-top: 1rem;
+  border: 1px solid #d7dce4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #303746;
+  padding: 0.65rem;
+  font-weight: 800;
+  cursor: pointer;
 `;
 
 const CategoryHeading = styled.h3`

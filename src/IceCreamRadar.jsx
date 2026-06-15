@@ -35,6 +35,8 @@ const DEFAULT_CONTEXT_MENU_STATE = {
   mode: 'menu',
   message: '',
 };
+const getTodayKey = () => new Date().toISOString().slice(0, 10);
+const getMapActionDismissKey = () => `action-map-nudge-dismissed:${getTodayKey()}`;
 const DISCOVERY_SLOT_LIMIT = 5;
 const SEARCH_PLACE_MIN_QUERY_LENGTH = 3;
 const SEARCH_PLACE_DEBOUNCE_MS = 450;
@@ -769,6 +771,10 @@ const IceCreamRadar = () => {
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(true);
+  const [showMapActionNudge, setShowMapActionNudge] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(getMapActionDismissKey()) !== '1';
+  });
 
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
@@ -1977,6 +1983,14 @@ const IceCreamRadar = () => {
     'Eisbecher Bewertung',
     'Eis Ranking',
   ];
+  const dismissMapActionNudge = () => {
+    setShowMapActionNudge(false);
+    try {
+      window.localStorage.setItem(getMapActionDismissKey(), '1');
+    } catch (error) {
+      console.warn('Karten-Aktionshinweis konnte nicht gespeichert werden:', error);
+    }
+  };
 
   return (
     <>
@@ -2172,6 +2186,15 @@ const IceCreamRadar = () => {
               </MapContextMenuHint>
             )}
           </MapContextMenu>
+        )}
+        {tourDeGlaceMapVisible && showMapActionNudge && (
+          <MapActionNudge>
+            <div>
+              <strong>Tour de Glace auf der Karte</strong>
+              <span>Heute gibt es ein Etappen-Easter-Egg. Suche den Tour-Marker am Etappenziel.</span>
+            </div>
+            <MapActionClose type="button" onClick={dismissMapActionNudge} aria-label="Karten-Aktionshinweis ausblenden">×</MapActionClose>
+          </MapActionNudge>
         )}
         <MapContainer
           center={initialCenter}
@@ -2726,6 +2749,53 @@ const MapContextMenu = styled.div`
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   pointer-events: auto;
+`;
+
+const MapActionNudge = styled.div`
+  position: absolute;
+  left: 14px;
+  bottom: 18px;
+  z-index: 1050;
+  display: grid;
+  max-width: min(340px, calc(100vw - 28px));
+  border: 1px solid rgba(31, 111, 235, 0.18);
+  border-left: 4px solid #1f6feb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.14);
+  padding: 0.75rem 2.25rem 0.75rem 0.85rem;
+  color: #2f2100;
+  pointer-events: auto;
+
+  div {
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  span {
+    color: rgba(47, 33, 0, 0.68);
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 620px) {
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    max-width: none;
+  }
+`;
+
+const MapActionClose = styled.button`
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  border: none;
+  background: transparent;
+  color: rgba(47, 33, 0, 0.58);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
 `;
 
 const MapContextMenuButton = styled.button`

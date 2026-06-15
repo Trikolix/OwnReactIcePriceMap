@@ -30,6 +30,8 @@ const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'group_running',
   'ko_running',
 ]);
+const TOUR_DE_GLACE_SHADOW_START = new Date('2026-06-12T00:00:00+02:00');
+const TOUR_DE_GLACE_START = new Date('2026-07-04T00:00:00+02:00');
 
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,18 +49,24 @@ const Header = ({ refreshShops }) => {
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
   const [hasActivePhotoChallenge, setHasActivePhotoChallenge] = useState(false);
+  const [activePhotoChallengeCount, setActivePhotoChallengeCount] = useState(0);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = Number(userId) === 1;
-  const seasonalState = getResolvedSeasonalCampaigns(new Date(), { isAdmin });
+  const now = new Date();
+  const seasonalState = getResolvedSeasonalCampaigns(now, { isAdmin });
   const featuredCampaign = seasonalState.featuredCampaign;
+  const tourShadowVisible = isAdmin && now >= TOUR_DE_GLACE_SHADOW_START && now < TOUR_DE_GLACE_START;
+  const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)).length
+    + (tourShadowVisible && !seasonalState.activeCampaigns.some((campaign) => campaign.id === 'tour_de_glace_2026') ? 1 : 0);
+  const actionHubCount = (activePhotoChallengeCount > 0 ? 1 : 0)
+    + seasonalActionCount;
   const promoIconSrc = featuredCampaign?.resolvedTeaserIcon ? buildPublicAssetUrl(featuredCampaign.resolvedTeaserIcon) : userOfTheMonthImg;
   const promoIconAlt = featuredCampaign
     ? `${featuredCampaign.title} öffnen`
     : 'Aktionen & Ergebnisse öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
-  const now = new Date();
   const showIceTourNewBadge = now <= new Date(2026, 4, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
@@ -72,6 +80,7 @@ const Header = ({ refreshShops }) => {
   useEffect(() => {
     if (!apiUrl) {
       setHasActivePhotoChallenge(false);
+      setActivePhotoChallengeCount(0);
       return;
     }
 
@@ -86,17 +95,19 @@ const Header = ({ refreshShops }) => {
 
         const data = await response.json();
         const challenges = Array.isArray(data?.data) ? data.data : [];
-        const hasActiveChallenge = challenges.some((challenge) =>
+        const activeChallengeCount = challenges.filter((challenge) =>
           ACTIVE_PHOTO_CHALLENGE_STATUSES.has(challenge?.status)
-        );
+        ).length;
 
         if (!cancelled) {
-          setHasActivePhotoChallenge(hasActiveChallenge);
+          setHasActivePhotoChallenge(activeChallengeCount > 0);
+          setActivePhotoChallengeCount(activeChallengeCount);
         }
       } catch (error) {
         console.error('Fotochallenge-Badge konnte nicht aktualisiert werden:', error);
         if (!cancelled) {
           setHasActivePhotoChallenge(false);
+          setActivePhotoChallengeCount(0);
         }
       }
     };
@@ -127,6 +138,14 @@ const Header = ({ refreshShops }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    const handleOpenActionsHub = () => {
+      setShowActionsOverview(true);
+    };
+    window.addEventListener('actions-hub:open', handleOpenActionsHub);
+    return () => window.removeEventListener('actions-hub:open', handleOpenActionsHub);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -595,6 +614,7 @@ const Header = ({ refreshShops }) => {
         <PromoIconsContainer>
           <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
             <img src={promoIconSrc} alt={promoIconAlt} />
+            {actionHubCount > 0 && <ActionHubBadge>{actionHubCount}</ActionHubBadge>}
           </GewinnspielIcon>
         </PromoIconsContainer>
 
@@ -1438,6 +1458,7 @@ const ButtonWrapper = styled.div`
 `;
 
 const GewinnspielIcon = styled.div`
+  position: relative;
   cursor: pointer;
   margin-right: 8px;
   width: 80px;
@@ -1467,6 +1488,28 @@ const GewinnspielIcon = styled.div`
     margin-right: 0;
     width: 42px;
     height: 42px;
+  }
+`;
+
+const ActionHubBadge = styled.span`
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: #d93025;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+
+  @media (max-width: 768px) {
+    top: -2px;
+    right: -4px;
   }
 `;
 
