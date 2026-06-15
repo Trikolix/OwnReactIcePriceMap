@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { Bike, Camera, ChevronDown, History, IceCreamBowl, Trophy } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import {
   CAMPAIGN_STATUS,
@@ -24,6 +25,12 @@ const PHOTO_CHALLENGE_ACTION_LABELS = {
   ko_running: 'Jetzt voten',
   submission_open: 'Bild einreichen',
   submission_closed: 'Voting startet bald',
+};
+
+const TASK_ICONS = {
+  photo_challenge: Camera,
+  tour_de_glace: Bike,
+  summer: IceCreamBowl,
 };
 
 const POINT_LABELS = {
@@ -99,6 +106,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const [isPhotoChallengesLoading, setIsPhotoChallengesLoading] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const [showPastUsers, setShowPastUsers] = useState(false);
   const [activeDetailPanel, setActiveDetailPanel] = useState(null);
   const LEADERBOARD_COLLAPSED_COUNT = 10;
 
@@ -320,7 +328,12 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
             <TaskList>
               {visibleTasks.map((task) => (
                 <TaskCard key={task.id} $type={task.type}>
-                  <TaskIcon>{task.type === 'photo_challenge' ? '📸' : task.type === 'tour_de_glace' ? '🚲' : '🍦'}</TaskIcon>
+                  <TaskIcon $type={task.type}>
+                    {(() => {
+                      const Icon = TASK_ICONS[task.type] || Trophy;
+                      return <Icon size={18} strokeWidth={2.2} />;
+                    })()}
+                  </TaskIcon>
                   <TaskContent>
                     <TaskTitleRow>
                       <strong>{task.title}</strong>
@@ -406,13 +419,47 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           {isUserOfMonthLoading ? (
             <EmptyHubState>Lade Community-Highlight...</EmptyHubState>
           ) : currentUser ? (
-            <CommunityCard to={`/user/${currentUser.id}`} onClick={onClose}>
-              <CommunityImage src={currentUser.image} alt={currentUser.name} />
-              <div>
-                <strong>{currentUser.name}</strong>
-                <span>{currentUser.month}</span>
-              </div>
-            </CommunityCard>
+            <CommunityBlock>
+              <FeaturedCommunityCard to={`/user/${currentUser.id}`} onClick={onClose}>
+                <FeaturedBadge>
+                  <Trophy size={18} strokeWidth={2.3} />
+                  <span>Aktuell</span>
+                </FeaturedBadge>
+                <FeaturedCommunityImage src={currentUser.image} alt={currentUser.name} />
+                <FeaturedCommunityText>
+                  <strong>{currentUser.name}</strong>
+                  <span>{currentUser.month}</span>
+                </FeaturedCommunityText>
+              </FeaturedCommunityCard>
+
+              {pastUsers.length > 0 && (
+                <>
+                  <CommunityHistoryToggle
+                    type="button"
+                    onClick={() => setShowPastUsers((previous) => !previous)}
+                    $expanded={showPastUsers}
+                  >
+                    <History size={17} strokeWidth={2.2} />
+                    <span>Vergangene Nutzer des Monats</span>
+                    <ChevronDown size={17} strokeWidth={2.2} />
+                  </CommunityHistoryToggle>
+
+                  {showPastUsers && (
+                    <CommunityHistoryList>
+                      {pastUsers.map((user) => (
+                        <CommunityHistoryItem key={`${user.id}-${user.month}`} to={`/user/${user.id}`} onClick={onClose}>
+                          <CommunityHistoryImage src={user.image} alt={user.name} />
+                          <div>
+                            <strong>{user.name}</strong>
+                            <span>{user.month}</span>
+                          </div>
+                        </CommunityHistoryItem>
+                      ))}
+                    </CommunityHistoryList>
+                  )}
+                </>
+              )}
+            </CommunityBlock>
           ) : (
             <EmptyHubState>Aktuell kein Community-Highlight verfügbar.</EmptyHubState>
           )}
@@ -693,8 +740,8 @@ const TaskIcon = styled.div`
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 8px;
-  background: #f5f7fb;
-  font-size: 1.05rem;
+  background: ${({ $type }) => ($type === 'photo_challenge' ? '#f3e8ff' : $type === 'tour_de_glace' ? '#e9f8ef' : '#fff4d7')};
+  color: ${({ $type }) => ($type === 'photo_challenge' ? '#6d28d9' : $type === 'tour_de_glace' ? '#147d44' : '#9a5d00')};
 `;
 
 const TaskContent = styled.div`
@@ -823,19 +870,121 @@ const CompactListItem = styled.div`
   }
 `;
 
-const CommunityCard = styled(Link)`
+const CommunityBlock = styled.div`
+  display: grid;
+  gap: 0.7rem;
+  justify-items: center;
+`;
+
+const FeaturedCommunityCard = styled(Link)`
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  width: min(100%, 340px);
+  border: 1px solid #e1e6ee;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  box-shadow: 0 12px 28px rgba(24, 39, 75, 0.10);
+  padding: 1rem;
+  color: inherit;
+  text-decoration: none;
+  text-align: center;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+
+  &:hover {
+    border-color: #ffb522;
+    box-shadow: 0 16px 34px rgba(24, 39, 75, 0.14);
+    transform: translateY(-1px);
+  }
+`;
+
+const FeaturedBadge = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.35rem;
+  border-radius: 999px;
+  background: #fff4d7;
+  color: #7a4a00;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+`;
+
+const FeaturedCommunityImage = styled.img`
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #ffffff;
+  box-shadow: 0 8px 22px rgba(24, 39, 75, 0.18);
+`;
+
+const FeaturedCommunityText = styled.div`
+  display: grid;
+  gap: 0.2rem;
+
+  strong {
+    color: #202124;
+    font-size: 1.18rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    color: #5b6270;
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+`;
+
+const CommunityHistoryToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid #d7dce4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #303746;
+  padding: 0.52rem 0.78rem;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  svg:last-child {
+    transition: transform 0.2s;
+    transform: rotate(${({ $expanded }) => ($expanded ? '180deg' : '0deg')});
+  }
+`;
+
+const CommunityHistoryList = styled.div`
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem;
+`;
+
+const CommunityHistoryItem = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   border: 1px solid #e1e6ee;
   border-radius: 8px;
-  background: #ffffff;
-  padding: 0.55rem 0.7rem;
+  background: #fbfcff;
+  padding: 0.55rem;
   color: inherit;
   text-decoration: none;
 
   div {
+    min-width: 0;
     display: grid;
+  }
+
+  strong {
+    overflow-wrap: anywhere;
   }
 
   span {
@@ -844,9 +993,10 @@ const CommunityCard = styled(Link)`
   }
 `;
 
-const CommunityImage = styled.img`
-  width: 44px;
-  height: 44px;
+const CommunityHistoryImage = styled.img`
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
   border-radius: 50%;
   object-fit: cover;
 `;
