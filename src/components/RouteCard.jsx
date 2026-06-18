@@ -298,7 +298,12 @@ return (
           />
         )}
         <ActionRow>
-          <LikeButton entityType="route" entityId={route.id} />
+          <LikeButton
+            entityType="route"
+            entityId={route.id}
+            initialLikesCount={route.likes_count}
+            initialHasLiked={route.has_liked}
+          />
           <CommentToggle
             title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
             onClick={() => setAreCommentsVisible(!areCommentsVisible)}

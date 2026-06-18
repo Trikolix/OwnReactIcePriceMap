@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/db_connect.php';
-require_once __DIR__ . '/lib/notification_dispatcher.php';
 require_once __DIR__ . '/lib/mail.php';
 require_once __DIR__ . '/lib/user_notification_settings.php';
 
@@ -32,6 +31,30 @@ function ensureSystemmeldungSchema(PDO $pdo): void
             $pdo->exec("ALTER TABLE systemmeldungen ADD COLUMN {$column} {$definition}");
         }
     }
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS systemmeldung_mail_queue (
+            id INT NOT NULL AUTO_INCREMENT,
+            systemmeldung_id INT NOT NULL,
+            user_id INT NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            subject VARCHAR(180) NOT NULL,
+            heading VARCHAR(180) NOT NULL,
+            body MEDIUMTEXT NOT NULL,
+            buttons_json TEXT NULL DEFAULT NULL,
+            include_settings_hint TINYINT(1) NOT NULL DEFAULT 1,
+            status ENUM('pending','sending','sent','failed') NOT NULL DEFAULT 'pending',
+            attempts INT NOT NULL DEFAULT 0,
+            last_error TEXT NULL DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            sent_at DATETIME NULL DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uniq_system_mail_recipient (systemmeldung_id, user_id, email),
+            KEY idx_system_mail_queue_status (status, attempts, created_at),
+            KEY idx_system_mail_queue_systemmeldung (systemmeldung_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
 }
 
 ensureSystemmeldungSchema($pdo);
@@ -121,6 +144,185 @@ function sendSystemMailBatch(array $recipients, string $subject, string $heading
     return ['sent' => $sent, 'failed' => $failed, 'total' => count($recipients)];
 }
 
+function enqueueSystemMailBatch(PDO $pdo, int $systemmeldungId, array $recipients, string $subject, string $heading, string $body, array $buttons, bool $includeSettingsHint): array
+{
+    $stmt = $pdo->prepare("
+        INSERT IGNORE INTO systemmeldung_mail_queue
+            (systemmeldung_id, user_id, email, subject, heading, body, buttons_json, include_settings_hint)
+        VALUES
+            (:systemmeldung_id, :user_id, :email, :subject, :heading, :body, :buttons_json, :include_settings_hint)
+    ");
+
+    $queued = 0;
+    $skipped = 0;
+    $buttonsJson = !empty($buttons) ? json_encode($buttons) : null;
+
+    foreach ($recipients as $recipient) {
+        $email = trim((string)($recipient['email'] ?? ''));
+        $userId = (int)($recipient['id'] ?? 0);
+        if ($email === '' || $userId <= 0) {
+            $skipped++;
+            continue;
+        }
+
+        $stmt->execute([
+            'systemmeldung_id' => $systemmeldungId,
+            'user_id' => $userId,
+            'email' => $email,
+            'subject' => $subject,
+            'heading' => $heading,
+            'body' => $body,
+            'buttons_json' => $buttonsJson,
+            'include_settings_hint' => $includeSettingsHint ? 1 : 0,
+        ]);
+
+        if ($stmt->rowCount() > 0) {
+            $queued++;
+        } else {
+            $skipped++;
+        }
+    }
+
+    return ['queued' => $queued, 'skipped' => $skipped, 'total' => count($recipients), 'sent' => 0, 'failed' => 0];
+}
+
+function processSystemMailQueue(PDO $pdo, int $limit = 20, int $maxAttempts = 3): array
+{
+    $limit = max(1, min(100, $limit));
+    $maxAttempts = max(1, $maxAttempts);
+
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM systemmeldung_mail_queue
+        WHERE attempts < :max_attempts
+          AND (
+              status = 'pending'
+              OR status = 'failed'
+              OR (status = 'sending' AND updated_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE))
+          )
+        ORDER BY created_at ASC, id ASC
+        LIMIT :limit
+    ");
+    $stmt->bindValue(':max_attempts', $maxAttempts, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $sent = 0;
+    $failed = 0;
+
+    $markSending = $pdo->prepare("
+        UPDATE systemmeldung_mail_queue
+        SET status = 'sending', attempts = attempts + 1, last_error = NULL
+        WHERE id = :id
+          AND attempts < :max_attempts
+          AND (
+              status IN ('pending', 'failed')
+              OR (status = 'sending' AND updated_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE))
+          )
+    ");
+    $markSent = $pdo->prepare("
+        UPDATE systemmeldung_mail_queue
+        SET status = 'sent', sent_at = NOW(), last_error = NULL
+        WHERE id = :id
+    ");
+    $markFailed = $pdo->prepare("
+        UPDATE systemmeldung_mail_queue
+        SET status = 'failed', last_error = :last_error
+        WHERE id = :id
+    ");
+
+    foreach ($jobs as $job) {
+        $markSending->execute([
+            'id' => (int)$job['id'],
+            'max_attempts' => $maxAttempts,
+        ]);
+        if ($markSending->rowCount() === 0) {
+            continue;
+        }
+
+        $buttons = [];
+        if (!empty($job['buttons_json'])) {
+            $decoded = json_decode((string)$job['buttons_json'], true);
+            if (is_array($decoded)) {
+                $buttons = $decoded;
+            }
+        }
+
+        try {
+            $ok = iceapp_send_branded_admin_markdown_mail(
+                (string)$job['email'],
+                (string)$job['subject'],
+                (string)$job['heading'],
+                (string)$job['body'],
+                $buttons,
+                !empty($job['include_settings_hint'])
+            );
+        } catch (Throwable $e) {
+            $ok = false;
+            $lastError = $e->getMessage();
+        }
+
+        if ($ok) {
+            $markSent->execute(['id' => (int)$job['id']]);
+            $sent++;
+        } else {
+            $markFailed->execute([
+                'id' => (int)$job['id'],
+                'last_error' => isset($lastError) ? substr($lastError, 0, 1000) : 'mail() returned false',
+            ]);
+            $failed++;
+        }
+        unset($lastError);
+    }
+
+    return [
+        'processed' => $sent + $failed,
+        'sent' => $sent,
+        'failed' => $failed,
+        'remaining' => countPendingSystemMails($pdo, $maxAttempts),
+    ];
+}
+
+function countPendingSystemMails(PDO $pdo, int $maxAttempts = 3): int
+{
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM systemmeldung_mail_queue
+        WHERE attempts < ?
+          AND status IN ('pending', 'failed', 'sending')
+    ");
+    $stmt->execute([max(1, $maxAttempts)]);
+    return (int)$stmt->fetchColumn();
+}
+
+function createSystemmeldungNotifications(PDO $pdo, int $systemmeldungId, string $title, array $extraData): int
+{
+    $nutzer = $pdo->query("SELECT id FROM nutzer")->fetchAll(PDO::FETCH_COLUMN);
+    if (empty($nutzer)) {
+        return 0;
+    }
+
+    $stmt = $pdo->prepare("
+        INSERT INTO benachrichtigungen (empfaenger_id, typ, referenz_id, text, ist_gelesen, zusatzdaten)
+        VALUES (:recipient_id, 'systemmeldung', :reference_id, :text, 0, :extra_data)
+    ");
+    $extraJson = json_encode($extraData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $created = 0;
+
+    foreach ($nutzer as $userId) {
+        $stmt->execute([
+            'recipient_id' => (int)$userId,
+            'reference_id' => $systemmeldungId,
+            'text' => $title,
+            'extra_data' => $extraJson,
+        ]);
+        $created += $stmt->rowCount();
+    }
+
+    return $created;
+}
+
 function fetchSystemmeldungMeta(PDO $pdo): array
 {
     $allUsers = (int)$pdo->query("SELECT COUNT(*) FROM nutzer")->fetchColumn();
@@ -143,6 +345,7 @@ function fetchSystemmeldungMeta(PDO $pdo): array
         'email_all' => $mailAll,
         'email_subscribers' => $mailSubscribers,
         'admin_email' => $adminEmail,
+        'mail_queue_pending' => countPendingSystemMails($pdo),
     ];
 }
 
@@ -235,28 +438,18 @@ if ($action === 'create') {
         'link_label' => $linkLabel !== '' ? $linkLabel : null
     ];
 
-    $nutzer = $pdo->query("SELECT id FROM nutzer")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($nutzer as $row) {
-        createNotification(
-            $pdo,
-            (int)$row['id'],
-            'systemmeldung',
-            $systemmeldungId,
-            $title,
-            $notificationExtra
-        );
-    }
-
-    $mailResult = ['sent' => 0, 'failed' => 0, 'total' => 0];
+    $mailResult = ['sent' => 0, 'failed' => 0, 'queued' => 0, 'skipped' => 0, 'total' => 0];
     if ($mailMode !== 'none') {
         $recipients = fetchSystemMailRecipients($pdo, $mailMode);
-        $mailResult = sendSystemMailBatch($recipients, $emailSubject, $emailHeading, $emailBody, $emailButtons, $mailMode === 'subscribers');
+        $mailResult = enqueueSystemMailBatch($pdo, $systemmeldungId, $recipients, $emailSubject, $emailHeading, $emailBody, $emailButtons, $mailMode === 'subscribers');
     }
+
+    $notificationCount = createSystemmeldungNotifications($pdo, $systemmeldungId, $title, $notificationExtra);
 
     respondJson([
         "status" => "success",
         "systemmeldung_id" => $systemmeldungId,
-        "notification_count" => count($nutzer),
+        "notification_count" => $notificationCount,
         "mail" => $mailResult,
     ]);
 }

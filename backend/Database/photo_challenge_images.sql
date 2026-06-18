@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 10.35.233.205:3306
--- Erstellungszeit: 10. Jun 2026 um 12:31
+-- Erstellungszeit: 18. Jun 2026 um 14:19
 -- Server-Version: 8.0.46
 -- PHP-Version: 8.4.20
 

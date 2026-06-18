@@ -312,7 +312,12 @@ export default function SystemmeldungForm() {
       if (editingId) {
         setSuccess("Systemmeldung aktualisiert.");
       } else {
-        setSuccess(`Systemmeldung erstellt. Benachrichtigungen: ${data.notification_count ?? 0}. E-Mails: ${data.mail?.sent ?? 0}/${data.mail?.total ?? 0}.`);
+        const queued = Number(data.mail?.queued ?? 0);
+        const total = Number(data.mail?.total ?? 0);
+        const mailMessage = queued > 0
+          ? `E-Mails für den Versand eingereiht: ${queued}/${total}.`
+          : `E-Mails: ${data.mail?.sent ?? 0}/${total}.`;
+        setSuccess(`Systemmeldung erstellt. Benachrichtigungen: ${data.notification_count ?? 0}. ${mailMessage}`);
         resetForm();
       }
       await loadHistory();

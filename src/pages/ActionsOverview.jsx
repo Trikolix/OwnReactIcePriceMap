@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { Bike, Camera, ChevronDown, History, IceCreamBowl, Trophy } from 'lucide-react';
+import { ChevronDown, History, Trophy } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { buildPublicAssetUrl } from '../utils/assets.jsx';
 import {
   CAMPAIGN_STATUS,
   getActionsOverviewCampaigns,
@@ -27,10 +28,12 @@ const PHOTO_CHALLENGE_ACTION_LABELS = {
   submission_closed: 'Voting startet bald',
 };
 
-const TASK_ICONS = {
-  photo_challenge: Camera,
-  tour_de_glace: Bike,
-  summer: IceCreamBowl,
+const formatVoteCount = (count) => `${count} ${count === 1 ? 'Stimme' : 'Stimmen'}`;
+
+const TASK_IMAGES = {
+  photo_challenge: '/assets/photo_challenge_icon.png',
+  tour_de_glace: '/assets/tour-de-glace/tour_egg.png',
+  summer: '/assets/summer_action_logo2.png',
 };
 
 const POINT_LABELS = {
@@ -82,6 +85,26 @@ const isTourDeGlaceShadowWindow = (now = new Date()) => (
   now >= new Date('2026-06-12T00:00:00+02:00')
   && now < new Date('2026-07-04T00:00:00+02:00')
 );
+
+const getPhotoChallengeVoteSummary = (challenges = []) => challenges.reduce((summary, challenge) => {
+  const progress = challenge?.vote_progress || {};
+  const availableVotes = Number(progress.available_votes || 0);
+  const castVotes = Number(progress.cast_votes || 0);
+  const remainingVotes = Number(progress.remaining_votes || 0);
+  return {
+    activeChallenges: summary.activeChallenges + 1,
+    votingChallenges: summary.votingChallenges + (availableVotes > 0 ? 1 : 0),
+    availableVotes: summary.availableVotes + availableVotes,
+    castVotes: summary.castVotes + castVotes,
+    remainingVotes: summary.remainingVotes + remainingVotes,
+  };
+}, {
+  activeChallenges: 0,
+  votingChallenges: 0,
+  availableVotes: 0,
+  castVotes: 0,
+  remainingVotes: 0,
+});
 
 const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -186,7 +209,12 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     }
 
     setIsPhotoChallengesLoading(true);
-    fetch(`${apiUrl}/photo_challenge/list_public_challenges.php`)
+    const params = new URLSearchParams();
+    if (userId) {
+      params.set('nutzer_id', userId);
+    }
+    const query = params.toString();
+    fetch(`${apiUrl}/photo_challenge/list_public_challenges.php${query ? `?${query}` : ''}`)
       .then((res) => res.json())
       .then((data) => {
         setPhotoChallenges(Array.isArray(data?.data) ? data.data : []);
@@ -196,7 +224,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
         setPhotoChallenges([]);
       })
       .finally(() => setIsPhotoChallengesLoading(false));
-  }, [apiUrl, open]);
+  }, [apiUrl, open, userId]);
 
   if (!open) {
     return null;
@@ -227,23 +255,44 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const activePhotoChallenges = photoChallenges.filter((challenge) =>
     ACTIVE_PHOTO_CHALLENGE_STATUSES.has(challenge?.status)
   );
+  const photoVoteSummary = getPhotoChallengeVoteSummary(activePhotoChallenges);
+  const hasPhotoVotesAvailable = photoVoteSummary.availableVotes > 0;
+  const hasOpenPhotoVotes = photoVoteSummary.remainingVotes > 0;
+  const canTrackPhotoVotes = Boolean(userId);
+  const singlePhotoChallengeTitle = activePhotoChallenges.length === 1
+    ? activePhotoChallenges[0].title || 'Foto-Challenge'
+    : null;
   const tourCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_2026');
   const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
   const taskItems = [
     activePhotoChallenges.length > 0 && {
       id: 'photo-challenges',
       type: 'photo_challenge',
-      title: activePhotoChallenges.length === 1
-        ? activePhotoChallenges[0].title || 'Foto-Challenge'
-        : `${activePhotoChallenges.length} Foto-Challenges warten`,
-      description: activePhotoChallenges.length === 1
-        ? 'Stimme ab oder schau dir die aktuelle Challenge an.'
-        : 'Mehrere Foto-Challenges sind gerade aktiv.',
-      statusLabel: activePhotoChallenges.length === 1
-        ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Aktiv')
-        : `${activePhotoChallenges.length} aktiv`,
+      title: hasOpenPhotoVotes
+        ? (singlePhotoChallengeTitle || `${activePhotoChallenges.length} Foto-Challenges warten`)
+        : (singlePhotoChallengeTitle || `${activePhotoChallenges.length} Foto-Challenges aktiv`),
+      description: hasPhotoVotesAvailable
+        ? (!canTrackPhotoVotes
+          ? `Aktuell sind ${formatVoteCount(photoVoteSummary.availableVotes)} verfügbar. Logge dich ein, um abzustimmen.`
+          : hasOpenPhotoVotes
+          ? `Du hast noch ${formatVoteCount(photoVoteSummary.remainingVotes)} offen. Bisher vergeben: ${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes}.`
+          : `Alle aktuell verfügbaren Votes sind vergeben: ${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes}.`)
+        : (activePhotoChallenges.length === 1
+          ? 'Schau dir die aktuelle Challenge an.'
+          : 'Mehrere Foto-Challenges sind gerade aktiv.'),
+      statusLabel: hasPhotoVotesAvailable
+        ? (!canTrackPhotoVotes
+          ? `${photoVoteSummary.availableVotes} verfügbar`
+          : hasOpenPhotoVotes
+          ? `${photoVoteSummary.remainingVotes} offen`
+          : `${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes} Votes`)
+        : (activePhotoChallenges.length === 1
+          ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Aktiv')
+          : `${activePhotoChallenges.length} aktiv`),
       priority: 1,
-      ctaLabel: activePhotoChallenges.length === 1
+      ctaLabel: hasOpenPhotoVotes
+        ? 'Stimmen abgeben'
+        : activePhotoChallenges.length === 1
         ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Öffnen')
         : 'Challenges ansehen',
       ctaTarget: activePhotoChallenges.length === 1
@@ -329,10 +378,11 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
               {visibleTasks.map((task) => (
                 <TaskCard key={task.id} $type={task.type}>
                   <TaskIcon $type={task.type}>
-                    {(() => {
-                      const Icon = TASK_ICONS[task.type] || Trophy;
-                      return <Icon size={18} strokeWidth={2.2} />;
-                    })()}
+                    {TASK_IMAGES[task.type] ? (
+                      <img src={buildPublicAssetUrl(TASK_IMAGES[task.type])} alt="" />
+                    ) : (
+                      <Trophy size={18} strokeWidth={2.2} />
+                    )}
                   </TaskIcon>
                   <TaskContent>
                     <TaskTitleRow>
@@ -370,15 +420,23 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
             <CampaignSummaryGrid>
               {runningCampaignCards.map((campaign) => (
                 <CampaignSummaryCard key={campaign.id}>
-                  <strong>{campaign.title}</strong>
-                  <span>
-                    {campaign.id === 'tour_de_glace_2026'
-                      ? 'Trikots, Etappen und Tagespunkte'
-                      : 'Sammelfortschritt und Aufgaben'}
-                  </span>
-                  <TaskButton type="button" onClick={() => setActiveDetailPanel((current) => (current === campaign.id ? null : campaign.id))}>
-                    {activeDetailPanel === campaign.id ? 'Einklappen' : 'Details'}
-                  </TaskButton>
+                  <CampaignSummaryImage
+                    src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
+                      ? TASK_IMAGES.tour_de_glace
+                      : TASK_IMAGES.summer)}
+                    alt=""
+                  />
+                  <CampaignSummaryBody>
+                    <strong>{campaign.title}</strong>
+                    <span>
+                      {campaign.id === 'tour_de_glace_2026'
+                        ? 'Trikots, Etappen und Tagespunkte'
+                        : 'Sammelfortschritt und Aufgaben'}
+                    </span>
+                    <TaskButton type="button" onClick={() => setActiveDetailPanel((current) => (current === campaign.id ? null : campaign.id))}>
+                      {activeDetailPanel === campaign.id ? 'Einklappen' : 'Details'}
+                    </TaskButton>
+                  </CampaignSummaryBody>
                 </CampaignSummaryCard>
               ))}
             </CampaignSummaryGrid>
@@ -714,8 +772,8 @@ const TaskList = styled.div`
 
 const TaskCard = styled.article`
   display: grid;
-  grid-template-columns: 2.4rem minmax(0, 1fr) auto;
-  gap: 0.65rem;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
   align-items: center;
   border: 1px solid #e1e6ee;
   border-left: 4px solid ${({ $type }) => ($type === 'photo_challenge' ? '#7c3aed' : $type === 'tour_de_glace' ? '#1f9d55' : '#ffb522')};
@@ -724,7 +782,7 @@ const TaskCard = styled.article`
   padding: 0.65rem;
 
   @media (max-width: 560px) {
-    grid-template-columns: 2.2rem minmax(0, 1fr);
+    grid-template-columns: 3.5rem minmax(0, 1fr);
 
     a,
     button {
@@ -737,11 +795,16 @@ const TaskCard = styled.article`
 const TaskIcon = styled.div`
   display: grid;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 3.25rem;
+  height: 3.25rem;
   border-radius: 8px;
-  background: ${({ $type }) => ($type === 'photo_challenge' ? '#f3e8ff' : $type === 'tour_de_glace' ? '#e9f8ef' : '#fff4d7')};
-  color: ${({ $type }) => ($type === 'photo_challenge' ? '#6d28d9' : $type === 'tour_de_glace' ? '#147d44' : '#9a5d00')};
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const TaskContent = styled.div`
@@ -827,11 +890,29 @@ const CampaignSummaryGrid = styled.div`
 
 const CampaignSummaryCard = styled.article`
   display: grid;
-  gap: 0.35rem;
+  grid-template-columns: 4.1rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
   border: 1px solid #e1e6ee;
   border-radius: 8px;
   background: #fbfcff;
   padding: 0.7rem;
+`;
+
+const CampaignSummaryImage = styled.img`
+  width: 4.1rem;
+  height: 4.1rem;
+  object-fit: contain;
+`;
+
+const CampaignSummaryBody = styled.div`
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+
+  strong {
+    overflow-wrap: anywhere;
+  }
 
   span {
     color: #5b6270;

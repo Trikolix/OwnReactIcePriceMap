@@ -227,24 +227,45 @@ try {
         }
         // Stimmen pro Bild berechnen und als votes-Feld ergänzen
         $votesMap = [];
+        $votesAgainstMap = [];
+        $winsMap = [];
         foreach ($group['matches'] as $match) {
             if (isset($match['image_a_id'])) {
                 $imgA = $match['image_a_id'];
                 $votesMap[$imgA] = ($votesMap[$imgA] ?? 0) + intval($match['votes_a'] ?? 0);
+                $votesAgainstMap[$imgA] = ($votesAgainstMap[$imgA] ?? 0) + intval($match['votes_b'] ?? 0);
             }
             if (isset($match['image_b_id'])) {
                 $imgB = $match['image_b_id'];
                 $votesMap[$imgB] = ($votesMap[$imgB] ?? 0) + intval($match['votes_b'] ?? 0);
+                $votesAgainstMap[$imgB] = ($votesAgainstMap[$imgB] ?? 0) + intval($match['votes_a'] ?? 0);
+            }
+            if (($match['winner'] ?? null) !== null) {
+                $winnerId = (int)$match['winner'];
+                $winsMap[$winnerId] = ($winsMap[$winnerId] ?? 0) + 1;
             }
         }
         foreach ($group['entries'] as &$entry) {
             $entry['votes'] = isset($votesMap[$entry['image_id']]) ? $votesMap[$entry['image_id']] : 0;
+            $entry['votes_against'] = $votesAgainstMap[$entry['image_id']] ?? 0;
+            $entry['wins'] = $winsMap[$entry['image_id']] ?? 0;
         }
         unset($entry);
 
         $entriesSorted = $group['entries'];
         usort($entriesSorted, function($a, $b) {
-            return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+            if (($a['votes'] ?? 0) !== ($b['votes'] ?? 0)) {
+                return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+            }
+            $diffA = ($a['votes'] ?? 0) - ($a['votes_against'] ?? 0);
+            $diffB = ($b['votes'] ?? 0) - ($b['votes_against'] ?? 0);
+            if ($diffA !== $diffB) {
+                return $diffB <=> $diffA;
+            }
+            if (($a['wins'] ?? 0) !== ($b['wins'] ?? 0)) {
+                return ($b['wins'] ?? 0) <=> ($a['wins'] ?? 0);
+            }
+            return ($a['image_id'] ?? 0) <=> ($b['image_id'] ?? 0);
         });
 
         $advancers = array_slice(array_column($entriesSorted, 'image_id'), 0, $groupAdvancers);
@@ -257,6 +278,8 @@ try {
                     $allLuckyCandidates[] = [
                         'image_id' => $entry['image_id'],
                         'votes' => $entry['votes'] ?? 0,
+                        'votes_against' => $entry['votes_against'] ?? 0,
+                        'wins' => $entry['wins'] ?? 0,
                         'group_id' => $groupId,
                     ];
                 }
@@ -275,12 +298,27 @@ try {
                     'country_name' => $entry['country_name'] ?? null,
                     'country_code' => $entry['country_code'] ?? null,
                     'votes' => $entry['votes'] ?? 0,
+                    'votes_against' => $entry['votes_against'] ?? 0,
+                    'wins' => $entry['wins'] ?? 0,
                     'is_advancer' => in_array($entry['image_id'], $advancers, true),
                     'is_lucky_loser' => false,
                 ];
             }
             // Sortiere nach Stimmen absteigend
-            usort($results, fn($a, $b) => $b['votes'] <=> $a['votes']);
+            usort($results, function ($a, $b) {
+                if (($a['votes'] ?? 0) !== ($b['votes'] ?? 0)) {
+                    return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+                }
+                $diffA = ($a['votes'] ?? 0) - ($a['votes_against'] ?? 0);
+                $diffB = ($b['votes'] ?? 0) - ($b['votes_against'] ?? 0);
+                if ($diffA !== $diffB) {
+                    return $diffB <=> $diffA;
+                }
+                if (($a['wins'] ?? 0) !== ($b['wins'] ?? 0)) {
+                    return ($b['wins'] ?? 0) <=> ($a['wins'] ?? 0);
+                }
+                return ($a['image_id'] ?? 0) <=> ($b['image_id'] ?? 0);
+            });
             $group['results'] = array_values($results);
         } else {
             $group['results'] = [];
@@ -293,6 +331,14 @@ try {
         usort($allLuckyCandidates, function($a, $b) {
             if (($a['votes'] ?? 0) !== ($b['votes'] ?? 0)) {
                 return ($b['votes'] ?? 0) <=> ($a['votes'] ?? 0);
+            }
+            $diffA = ($a['votes'] ?? 0) - ($a['votes_against'] ?? 0);
+            $diffB = ($b['votes'] ?? 0) - ($b['votes_against'] ?? 0);
+            if ($diffA !== $diffB) {
+                return $diffB <=> $diffA;
+            }
+            if (($a['wins'] ?? 0) !== ($b['wins'] ?? 0)) {
+                return ($b['wins'] ?? 0) <=> ($a['wins'] ?? 0);
             }
             if (($a['group_id'] ?? 0) !== ($b['group_id'] ?? 0)) {
                 return ($a['group_id'] ?? 0) <=> ($b['group_id'] ?? 0);

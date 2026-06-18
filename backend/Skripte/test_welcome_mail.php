@@ -2,7 +2,7 @@
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(403);
-    echo "Dieses Skript darf nur per CLI ausgefuehrt werden.\n";
+    echo "Dieses Skript darf nur per CLI ausgeführt werden.\n";
     exit(1);
 }
 

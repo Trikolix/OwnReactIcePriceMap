@@ -23,6 +23,12 @@ import {
 
 const getTodayKey = () => new Date().toISOString().slice(0, 10);
 const getFeedActionDismissKey = () => `action-feed-nudge-dismissed:${getTodayKey()}`;
+const activityNeedsLikeState = (activity) => ['checkin', 'bewertung', 'route', 'award', 'new_user'].includes(activity?.typ);
+const cachedActivitiesHaveLikeState = (activities = []) => activities.every((activity) => {
+  if (!activityNeedsLikeState(activity)) return true;
+  const data = activity?.data || {};
+  return data.likes_count !== undefined && data.has_liked !== undefined;
+});
 
 function DashBoard() {
   const { userId } = useUser();
@@ -155,7 +161,7 @@ function DashBoard() {
   // Initial laden
   useEffect(() => {
     const cachedFeed = readActivityFeedCache(userId);
-    if (cachedFeed?.activities?.length) {
+    if (cachedFeed?.activities?.length && cachedActivitiesHaveLikeState(cachedFeed.activities)) {
       setActivities(cachedFeed.activities);
       setOffset(Number.isFinite(cachedFeed.nextOffset) ? cachedFeed.nextOffset : 0);
       setHasMore(Boolean(cachedFeed.hasMore));
@@ -248,10 +254,10 @@ function DashBoard() {
         {showActionNudge && (
           <ActionNudge>
             <div>
-              <strong>Heute aktiv</strong>
-              <span>Foto-Challenges, Sammelaktionen und Tagesaufgaben findest du im kompakten Aktions-Hub.</span>
+              <strong>Aktive Aktionen</strong>
+              <span>Aktuell laufen Foto-Challenges, Sammelaktionen und Tagesaufgaben. Hier geht es zu den Aktionen.</span>
             </div>
-            <ActionNudgeButton type="button" onClick={openActionsHub}>Aktions-Hub öffnen</ActionNudgeButton>
+            <ActionNudgeButton type="button" onClick={openActionsHub}>Zu den aktiven Aktionen</ActionNudgeButton>
             <ActionNudgeClose type="button" onClick={dismissActionNudge} aria-label="Aktionshinweis ausblenden">×</ActionNudgeClose>
           </ActionNudge>
         )}

@@ -64,6 +64,7 @@ try {
                 'label' => $group['group_name'] . ' – Platz ' . ($rank + 1),
                 'wins' => (int)($entry['wins'] ?? 0),
                 'votes_for' => (int)($entry['votes_for'] ?? 0),
+                'votes_against' => (int)($entry['votes_against'] ?? 0),
                 'group_rank' => $rank + 1,
                 'is_lucky' => false,
             ];
@@ -76,6 +77,7 @@ try {
                 'label' => $group['group_name'] . ' – Platz ' . ($rank + 1),
                 'wins' => (int)($entry['wins'] ?? 0),
                 'votes_for' => (int)($entry['votes_for'] ?? 0),
+                'votes_against' => (int)($entry['votes_against'] ?? 0),
                 'group_rank' => $rank + 1,
                 'is_lucky' => true,
             ];
@@ -88,11 +90,16 @@ try {
     }
 
     usort($luckyCandidates, function ($a, $b) {
-        if ($a['wins'] !== $b['wins']) {
-            return $b['wins'] <=> $a['wins'];
-        }
         if ($a['votes_for'] !== $b['votes_for']) {
             return $b['votes_for'] <=> $a['votes_for'];
+        }
+        $diffA = $a['votes_for'] - $a['votes_against'];
+        $diffB = $b['votes_for'] - $b['votes_against'];
+        if ($diffA !== $diffB) {
+            return $diffB <=> $diffA;
+        }
+        if ($a['wins'] !== $b['wins']) {
+            return $b['wins'] <=> $a['wins'];
         }
         if ($a['group_rank'] !== $b['group_rank']) {
             return $a['group_rank'] <=> $b['group_rank'];
@@ -145,11 +152,16 @@ try {
         if ($a['group_rank'] !== $b['group_rank']) {
             return $a['group_rank'] <=> $b['group_rank'];
         }
-        if ($a['wins'] !== $b['wins']) {
-            return $b['wins'] <=> $a['wins'];
-        }
         if ($a['votes_for'] !== $b['votes_for']) {
             return $b['votes_for'] <=> $a['votes_for'];
+        }
+        $diffA = $a['votes_for'] - $a['votes_against'];
+        $diffB = $b['votes_for'] - $b['votes_against'];
+        if ($diffA !== $diffB) {
+            return $diffB <=> $diffA;
+        }
+        if ($a['wins'] !== $b['wins']) {
+            return $b['wins'] <=> $a['wins'];
         }
         if (($a['is_lucky'] ?? false) !== ($b['is_lucky'] ?? false)) {
             return ($a['is_lucky'] ?? false) <=> ($b['is_lucky'] ?? false);

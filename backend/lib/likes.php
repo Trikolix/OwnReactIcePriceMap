@@ -56,6 +56,81 @@ function hasUserLiked(PDO $pdo, int $userId, string $entityType, int $entityId):
     return (bool)$stmt->fetchColumn();
 }
 
+function buildLikeStateKey(string $entityType, int $entityId): string
+{
+    return $entityType . ':' . $entityId;
+}
+
+function getLikeStatesForEntities(PDO $pdo, array $entities, ?int $userId = null): array
+{
+    ensureLikesSchema($pdo);
+
+    $grouped = [];
+    foreach ($entities as $entity) {
+        $entityType = (string)($entity['entity_type'] ?? '');
+        $entityId = (int)($entity['entity_id'] ?? 0);
+        if (!isValidLikeEntityType($entityType) || $entityId <= 0) {
+            continue;
+        }
+        $grouped[$entityType][$entityId] = $entityId;
+    }
+
+    if (empty($grouped)) {
+        return [];
+    }
+
+    $states = [];
+    $whereParts = [];
+    $params = [];
+    foreach ($grouped as $entityType => $ids) {
+        foreach ($ids as $entityId) {
+            $states[buildLikeStateKey($entityType, (int)$entityId)] = [
+                'likes_count' => 0,
+                'has_liked' => false,
+            ];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $whereParts[] = "(entity_type = ? AND entity_id IN ({$placeholders}))";
+        $params[] = $entityType;
+        foreach ($ids as $entityId) {
+            $params[] = (int)$entityId;
+        }
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT entity_type, entity_id, COUNT(*) AS likes_count
+        FROM likes
+        WHERE " . implode(' OR ', $whereParts) . "
+        GROUP BY entity_type, entity_id
+    ");
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $key = buildLikeStateKey((string)$row['entity_type'], (int)$row['entity_id']);
+        if (isset($states[$key])) {
+            $states[$key]['likes_count'] = (int)$row['likes_count'];
+        }
+    }
+
+    if ($userId) {
+        $likedParams = array_merge([$userId], $params);
+        $stmtLiked = $pdo->prepare("
+            SELECT entity_type, entity_id
+            FROM likes
+            WHERE user_id = ? AND (" . implode(' OR ', $whereParts) . ")
+        ");
+        $stmtLiked->execute($likedParams);
+        foreach ($stmtLiked->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $key = buildLikeStateKey((string)$row['entity_type'], (int)$row['entity_id']);
+            if (isset($states[$key])) {
+                $states[$key]['has_liked'] = true;
+            }
+        }
+    }
+
+    return $states;
+}
+
 function addLike(PDO $pdo, int $userId, string $entityType, int $entityId): bool {
     ensureLikesSchema($pdo);
     try {

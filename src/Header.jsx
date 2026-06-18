@@ -62,10 +62,10 @@ const Header = ({ refreshShops }) => {
     + (tourShadowVisible && !seasonalState.activeCampaigns.some((campaign) => campaign.id === 'tour_de_glace_2026') ? 1 : 0);
   const actionHubCount = (activePhotoChallengeCount > 0 ? 1 : 0)
     + seasonalActionCount;
-  const promoIconSrc = featuredCampaign?.resolvedTeaserIcon ? buildPublicAssetUrl(featuredCampaign.resolvedTeaserIcon) : userOfTheMonthImg;
+  const promoIconSrc = buildPublicAssetUrl('/assets/action_icon.png');
   const promoIconAlt = featuredCampaign
-    ? `${featuredCampaign.title} öffnen`
-    : 'Aktionen & Ergebnisse öffnen';
+    ? `Aktions-Hub öffnen: ${featuredCampaign.title}`
+    : 'Aktions-Hub öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const showIceTourNewBadge = now <= new Date(2026, 4, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
