@@ -1,5 +1,5 @@
 import Header from '../Header';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styled from "styled-components";
 import { Settings } from "lucide-react";
 import ReviewCard from "../components/ReviewCard";
@@ -29,6 +29,27 @@ const cachedActivitiesHaveLikeState = (activities = []) => activities.every((act
   const data = activity?.data || {};
   return data.likes_count !== undefined && data.has_liked !== undefined;
 });
+
+const activityContainsAward = (activity, awardId) => {
+  if (!awardId || !activity) return false;
+  const targetId = String(awardId);
+
+  if (activity.typ === 'award') {
+    return String(activity.data?.id) === targetId;
+  }
+
+  if (activity.typ === 'award_bundle') {
+    return Array.isArray(activity.data)
+      && activity.data.some((award) => String(award?.id) === targetId);
+  }
+
+  if (activity.typ === 'award_wave') {
+    return Array.isArray(activity.data?.recipients)
+      && activity.data.recipients.some((award) => String(award?.id) === targetId);
+  }
+
+  return false;
+};
 
 function DashBoard() {
   const { userId } = useUser();
@@ -64,6 +85,9 @@ function DashBoard() {
   });
 
   const filterMenuRef = useRef(null);
+  const focusedActivityRef = useRef(null);
+  const hasScrolledToFocusRef = useRef(false);
+  const focusLoadAttemptsRef = useRef(0);
 
   useEffect(() => {
     localStorage.setItem('dashboardFilters', JSON.stringify(filters));
@@ -93,6 +117,23 @@ function DashBoard() {
   const focusAwardId = queryParams.get('focusAward');
   const focusNewUserId = queryParams.get('focusNewUser');
   const focusCommentId = queryParams.get('focusComment');
+  const groupedActivities = useMemo(() => groupActivities(activities), [activities]);
+  const visibleActivities = useMemo(() => (
+    groupedActivities.filter(activity => {
+      const { typ } = activity;
+      if (focusAwardId && ['award', 'award_bundle', 'award_wave'].includes(typ) && activityContainsAward(activity, focusAwardId)) {
+        return true;
+      }
+      if (['checkin', 'group_checkin'].includes(typ)) return filters.checkin;
+      if (typ === 'bewertung') return filters.bewertung;
+      if (typ === 'eisdiele') return filters.eisdiele;
+      if (['award', 'award_bundle', 'award_wave'].includes(typ)) return filters.award;
+      if (typ === 'new_user') return filters.new_user;
+      return true;
+    })
+  ), [filters, focusAwardId, groupedActivities]);
+  const hasFocusedAward = Boolean(focusAwardId)
+    && groupedActivities.some((activity) => activityContainsAward(activity, focusAwardId));
 
   const markDashboardSeen = (activitiesToMark = []) => {
     const latestTimestamp = getLatestActivityTimestamp(activitiesToMark) || new Date().toISOString();
@@ -102,14 +143,21 @@ function DashBoard() {
 
   const fetchActivities = async (append = false, customOffset = null) => {
     const hasCachedActivities = Boolean(readActivityFeedCache(userId)?.activities?.length);
-    append ? setLoadingMore(true) : setLoadingInitial(!hasCachedActivities && activities.length === 0);
+    append ? setLoadingMore(true) : setLoadingInitial(Boolean(focusAwardId) || (!hasCachedActivities && activities.length === 0));
     setError(null);
     try {
       const usedOffset = customOffset !== null ? customOffset : offset;
 
-      const res = await fetch(
-        `${apiUrl}/activity_feed.php?days=${days}&minimum=${minimum}&offset=${usedOffset}`
-      );
+      const params = new URLSearchParams({
+        days: String(days),
+        minimum: String(minimum),
+        offset: String(usedOffset),
+      });
+      if (!append && focusAwardId) {
+        params.set('focusAward', focusAwardId);
+      }
+
+      const res = await fetch(`${apiUrl}/activity_feed.php?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
@@ -160,6 +208,16 @@ function DashBoard() {
 
   // Initial laden
   useEffect(() => {
+    hasScrolledToFocusRef.current = false;
+    focusLoadAttemptsRef.current = 0;
+  }, [focusAwardId, focusNewUserId, focusCommentId]);
+
+  useEffect(() => {
+    if (!focusAwardId || filters.award) return;
+    setFilters((prev) => ({ ...prev, award: true }));
+  }, [filters.award, focusAwardId]);
+
+  useEffect(() => {
     const cachedFeed = readActivityFeedCache(userId);
     if (cachedFeed?.activities?.length && cachedActivitiesHaveLikeState(cachedFeed.activities)) {
       setActivities(cachedFeed.activities);
@@ -169,7 +227,34 @@ function DashBoard() {
     }
 
     fetchActivities(false, 0);
-  }, [userId]);
+  }, [userId, focusAwardId]);
+
+  useEffect(() => {
+    if (!focusAwardId || hasFocusedAward || loadingInitial || loadingMore || !hasMore) return;
+    if (focusLoadAttemptsRef.current >= 8) return;
+
+    focusLoadAttemptsRef.current += 1;
+    fetchActivities(true, offset);
+  }, [focusAwardId, hasFocusedAward, hasMore, loadingInitial, loadingMore, offset]);
+
+  useEffect(() => {
+    if (!focusAwardId || hasScrolledToFocusRef.current || !focusedActivityRef.current) return;
+
+    hasScrolledToFocusRef.current = true;
+    const scrollToFocusedActivity = () => {
+      focusedActivityRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    };
+
+    const animationFrame = window.requestAnimationFrame(scrollToFocusedActivity);
+    const timeout = window.setTimeout(scrollToFocusedActivity, 350);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(timeout);
+    };
+  }, [focusAwardId, visibleActivities]);
 
 
   const reload = () => {
@@ -273,16 +358,15 @@ function DashBoard() {
         )}
 
         <Section>
-          {groupActivities(activities).filter(activity => {
-            const { typ } = activity;
-            if (['checkin', 'group_checkin'].includes(typ)) return filters.checkin;
-            if (typ === 'bewertung') return filters.bewertung;
-            if (typ === 'eisdiele') return filters.eisdiele;
-            if (['award', 'award_bundle', 'award_wave'].includes(typ)) return filters.award;
-            if (typ === 'new_user') return filters.new_user;
-            return true; // route defaults to true since it's not in the requirements to be toggleable
-          }).map((activity) => {
+          {visibleActivities.map((activity) => {
             const { typ, id, data } = activity;
+            const isFocusedAwardActivity = activityContainsAward(activity, focusAwardId);
+            const wrapActivity = (node) => isFocusedAwardActivity ? (
+              <FocusedActivityAnchor ref={focusedActivityRef} key={`focus-${id}`}>
+                {node}
+              </FocusedActivityAnchor>
+            ) : node;
+
             switch (typ) {
               case 'checkin':
                 return <CheckinCard key={`checkin-${id}`} checkin={data} onSuccess={reload} />;
@@ -295,7 +379,7 @@ function DashBoard() {
               case 'eisdiele':
                 return <ShopCard key={`eisdiele-${id}`} iceShop={data} onSuccess={reload} />;
               case 'award':
-                return (
+                return wrapActivity(
                   <AwardCard
                     key={`award-${id}`}
                     award={data}
@@ -304,7 +388,7 @@ function DashBoard() {
                   />
                 );
               case 'award_wave':
-                return (
+                return wrapActivity(
                   <AwardWaveCard
                     key={`award-wave-${id}`}
                     wave={data}
@@ -324,7 +408,7 @@ function DashBoard() {
               case 'award_bundle': {
                 const firstAward = Array.isArray(data) ? data[0] : null;
                 const latestAward = Array.isArray(data) ? data[data.length - 1] : null;
-                return (
+                return wrapActivity(
                   <AwardBundleCard
                     key={id}
                     awards={data}
@@ -397,6 +481,10 @@ const Title = styled.h2`
 
 const Section = styled.div`
   width: 100%;
+`;
+
+const FocusedActivityAnchor = styled.div`
+  scroll-margin-top: 96px;
 `;
 
 const Controls = styled.div`

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { ChevronDown, History, Trophy } from 'lucide-react';
@@ -131,6 +131,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const [showArchive, setShowArchive] = useState(false);
   const [showPastUsers, setShowPastUsers] = useState(false);
   const [activeDetailPanel, setActiveDetailPanel] = useState(null);
+  const detailPanelRef = useRef(null);
   const LEADERBOARD_COLLAPSED_COUNT = 10;
 
   useEffect(() => {
@@ -264,6 +265,18 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     : null;
   const tourCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_2026');
   const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
+  const openCampaignDetail = (campaignId) => {
+    setActiveDetailPanel((current) => (current === campaignId ? null : campaignId));
+  };
+  const openTourDeGlaceAction = () => {
+    setActiveDetailPanel('tour_de_glace_2026');
+    window.requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
   const taskItems = [
     activePhotoChallenges.length > 0 && {
       id: 'photo-challenges',
@@ -306,8 +319,8 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       description: 'Sammle Tagespunkte und suche das Etappen-Easter-Egg auf der Karte.',
       statusLabel: 'Heute verfügbar',
       priority: 2,
-      ctaLabel: 'Zur Karte',
-      ctaTarget: '/',
+      ctaLabel: 'Zur Aktion',
+      onClick: openTourDeGlaceAction,
     },
     summerCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'summer-campaign',
@@ -433,7 +446,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                         ? 'Trikots, Etappen und Tagespunkte'
                         : 'Sammelfortschritt und Aufgaben'}
                     </span>
-                    <TaskButton type="button" onClick={() => setActiveDetailPanel((current) => (current === campaign.id ? null : campaign.id))}>
+                    <TaskButton type="button" onClick={() => openCampaignDetail(campaign.id)}>
                       {activeDetailPanel === campaign.id ? 'Einklappen' : 'Details'}
                     </TaskButton>
                   </CampaignSummaryBody>
@@ -441,7 +454,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
               ))}
             </CampaignSummaryGrid>
             {activeDetailPanel && (
-              <DetailPanelWrap>
+              <DetailPanelWrap ref={detailPanelRef}>
                 {renderCampaignPanel(runningCampaignCards.find((campaign) => campaign.id === activeDetailPanel))}
               </DetailPanelWrap>
             )}

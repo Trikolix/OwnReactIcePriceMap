@@ -1508,8 +1508,20 @@ const ActionHubBadge = styled.span`
   line-height: 1;
 
   @media (max-width: 768px) {
-    top: -2px;
-    right: -4px;
+    top: -6px;
+    right: -8px;
+    min-width: 1.08rem;
+    height: 1.08rem;
+    border-width: 1.5px;
+    font-size: 0.6rem;
+  }
+
+  @media (max-width: 420px) {
+    top: -7px;
+    right: -9px;
+    min-width: 1rem;
+    height: 1rem;
+    font-size: 0.56rem;
   }
 `;
 
