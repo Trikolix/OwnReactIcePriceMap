@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/user_notification_settings.php';
+require_once __DIR__ . '/tour_de_glace.php';
+require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 
 function socialAuthGetEnv(string $key, ?string $default = null): ?string {
     $value = getenv($key);
@@ -461,7 +463,7 @@ function socialAuthCreateUniqueUsername(PDO $pdo, string $preferred, string $ema
 
 function socialAuthFindIdentity(PDO $pdo, string $provider, string $providerUserId): ?array {
     $stmt = $pdo->prepare("
-        SELECT n.id, n.username, n.email, n.is_verified
+        SELECT n.id, n.username, n.email, n.is_verified, n.invited_by
         FROM social_auth_identities s
         JOIN nutzer n ON n.id = s.user_id
         WHERE s.provider = :provider AND s.provider_user_id = :provider_user_id
@@ -477,10 +479,26 @@ function socialAuthFindIdentity(PDO $pdo, string $provider, string $providerUser
 }
 
 function socialAuthFindUserByEmail(PDO $pdo, string $email): ?array {
-    $stmt = $pdo->prepare('SELECT id, username, email, is_verified, current_level FROM nutzer WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, username, email, is_verified, invited_by, current_level FROM nutzer WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;
+}
+
+function socialAuthRecordTourDeGlaceReferral(PDO $pdo, ?int $invitedById, int $userId, string $source): void {
+    if ($invitedById === null || $invitedById <= 0) {
+        return;
+    }
+
+    recordTourDeGlaceReferral($pdo, $invitedById, $userId, [
+        'verification_source' => $source,
+    ]);
+
+    try {
+        (new TourDeGlaceAwardEvaluator())->evaluate($invitedById);
+    } catch (Throwable $e) {
+        error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+    }
 }
 
 function socialAuthFindResolvedUser(PDO $pdo, array $identity): ?array {
@@ -561,6 +579,7 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
     if ($isVerified) {
         require_once __DIR__ . '/user_lifecycle_mails.php';
         iceapp_send_welcome_mail_to_user($pdo, $userId);
+        socialAuthRecordTourDeGlaceReferral($pdo, $invitedById, $userId, 'social_auth_registration');
     }
 
     return [
@@ -568,6 +587,7 @@ function socialAuthCreateUser(PDO $pdo, array $identity, ?string $inviteCode = n
         'username' => $username,
         'email' => $identity['email'],
         'is_verified' => $isVerified,
+        'invited_by' => $invitedById,
         'current_level' => 0,
     ];
 }
@@ -591,6 +611,12 @@ function socialAuthResolveUser(PDO $pdo, array $identity, ?string $inviteCode = 
                 $stmt = $pdo->prepare('UPDATE nutzer SET is_verified = 1, verification_token = NULL WHERE id = ?');
                 $stmt->execute([(int) $user['id']]);
                 $user['is_verified'] = 1;
+                socialAuthRecordTourDeGlaceReferral(
+                    $pdo,
+                    isset($user['invited_by']) ? (int) $user['invited_by'] : null,
+                    (int) $user['id'],
+                    'social_auth_verification'
+                );
             }
         }
 

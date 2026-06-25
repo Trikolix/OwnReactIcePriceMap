@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/notification_dispatcher.php';
+require_once __DIR__ . '/tour_de_glace.php';
 
 function teamChallengeColumnExists(PDO $pdo, string $table, string $column): bool
 {
@@ -753,6 +754,10 @@ function teamChallengeCompleteFromCheckin(PDO $pdo, int $userId, int $shopId, in
         WHERE id = :id AND status = 'shop_finalized'
     ");
     $update->execute(['id' => (int)$challenge['id']]);
+    if ($update->rowCount() > 0) {
+        syncTourDeGlaceChallengePoints($pdo, (int)$challenge['inviter_user_id']);
+        syncTourDeGlaceChallengePoints($pdo, (int)$challenge['invitee_user_id']);
+    }
 
     $message = 'Eure Team-Challenge wurde erfolgreich abgeschlossen.';
     teamChallengeInsertNotification($pdo, (int)$challenge['inviter_user_id'], (int)$challenge['id'], $message, 'completed', 'completed');

@@ -49,6 +49,7 @@ require_once __DIR__ . '/../evaluators/TeamChallengeCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/MultipleVehicleEvaluator.php';
 require_once __DIR__ . '/../evaluators/SeasonalPresentEvaluator.php';
 require_once __DIR__ . '/../evaluators/Event2026CompletionEvaluator.php';
+require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 
 // Preflight OPTIONS-Request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -642,6 +643,18 @@ try {
         'is_new_shop' => ((int)$shopCheckinCountStmt->fetchColumn()) <= 1,
         'is_on_site' => (int)$isOnSite,
     ]);
+    if (!empty($completedChallenge['id'])) {
+        foreach (syncTourDeGlaceChallengePoints($pdo, (int)$userId) as $challengeTourPoints) {
+            $tourDeGlacePoints[] = $challengeTourPoints;
+        }
+    }
+
+    try {
+        $evaluated = (new TourDeGlaceAwardEvaluator())->evaluate((int)$userId);
+        $newAwards = array_merge($newAwards, $evaluated);
+    } catch (Exception $e) {
+        error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+    }
 
     // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.
     if ($referencedCheckinId) {

@@ -3,12 +3,48 @@
 require_once __DIR__ . '/auth.php';
 
 const TOUR_DE_GLACE_ID = 'tour_de_glace_2026';
-const TOUR_DE_GLACE_TIP_DEADLINE = '2026-07-03 23:59:59';
+const TOUR_DE_GLACE_TIP_DEADLINE = '2026-07-04 16:30:00';
+const TOUR_DE_GLACE_ADMIN_PREVIEW_START = '2026-06-27 00:00:00';
 const TOUR_DE_GLACE_SHADOW_TEST_START = '2026-06-12 00:00:00';
+const TOUR_DE_GLACE_SHADOW_TEST_ENABLED = false;
 
 function tourDeGlaceTimezone(): DateTimeZone
 {
     return new DateTimeZone('Europe/Berlin');
+}
+
+function tourDeGlacePointRules(): array
+{
+    return [
+        'daily_visit' => ['action' => 'Tagesbesuch der Tour-Seite', 'yellow' => 0, 'green' => 5, 'mountain' => 0, 'ice' => 0, 'white' => 0, 'note' => '1x pro Tag'],
+        'like' => ['action' => 'Like auf fremden Beitrag', 'yellow' => 0, 'green' => 1, 'mountain' => 0, 'ice' => 0, 'white' => 0, 'note' => 'max. 20 pro Tag'],
+        'comment' => ['action' => 'Kommentar', 'yellow' => 2, 'green' => 5, 'mountain' => 0, 'ice' => 0, 'white' => 10, 'note' => 'max. 5 pro Tag'],
+        'easter_egg' => ['action' => 'Etappe gesichtet', 'yellow' => 0, 'green' => 10, 'mountain' => 0, 'ice' => 0, 'white' => 0, 'note' => '1x pro Etappentag'],
+        'referral' => ['action' => 'Neuen Nutzer geworben', 'yellow' => 40, 'green' => 100, 'mountain' => 0, 'ice' => 0, 'white' => 80, 'note' => 'nach Account-Verifizierung'],
+        'challenge_completed' => ['action' => 'Challenge abgeschlossen', 'yellow' => 25, 'green' => 5, 'mountain' => 25, 'ice' => 0, 'white' => 35, 'note' => 'beste 3 Challenges gesamt'],
+        'team_challenge_completed' => ['action' => 'Team-Challenge abgeschlossen', 'yellow' => 40, 'green' => 10, 'mountain' => 55, 'ice' => 0, 'white' => 50, 'note' => 'beste 3 Challenges gesamt'],
+        'checkin_scoop_softice' => ['action' => 'Check-in: Kugel oder Softeis', 'yellow' => 10, 'green' => 0, 'mountain' => 0, 'ice' => 20, 'white' => 30, 'note' => 'unlimitiert'],
+        'checkin_sundae' => ['action' => 'Check-in: Eisbecher', 'yellow' => 10, 'green' => 0, 'mountain' => 0, 'ice' => 25, 'white' => 30, 'note' => 'unlimitiert'],
+        'checkin_photo' => ['action' => 'Check-in mit Foto', 'yellow' => 3, 'green' => 0, 'mountain' => 0, 'ice' => 10, 'white' => 20, 'note' => 'Zusatzpunkte'],
+        'new_shop_checkin' => ['action' => 'Neue Eisdiele beim Check-in', 'yellow' => 0, 'green' => 0, 'mountain' => 0, 'ice' => 15, 'white' => 0, 'note' => 'erstmals von dir besucht'],
+        'bike_bonus' => ['action' => 'Fahrrad-Anreise', 'yellow' => 5, 'green' => 0, 'mountain' => 25, 'ice' => 5, 'white' => 0, 'note' => 'unlimitiert'],
+        'group_checkin' => ['action' => 'Gruppen-Check-in', 'yellow' => 8, 'green' => 3, 'mountain' => 10, 'ice' => 0, 'white' => 10, 'note' => 'Zusatzpunkte'],
+        'profile_image' => ['action' => 'Profilbild vorhanden', 'yellow' => 0, 'green' => 10, 'mountain' => 0, 'ice' => 0, 'white' => 0, 'note' => 'einmalig'],
+        'review' => ['action' => 'Bewertung', 'yellow' => 8, 'green' => 0, 'mountain' => 0, 'ice' => 8, 'white' => 20, 'note' => 'max. 10 im Aktionszeitraum'],
+        'route' => ['action' => 'Route eingereicht', 'yellow' => 10, 'green' => 0, 'mountain' => 30, 'ice' => 0, 'white' => 0, 'note' => 'max. 3 im Aktionszeitraum'],
+    ];
+}
+
+function tourDeGlaceRulePoints(string $ruleKey): array
+{
+    $rule = tourDeGlacePointRules()[$ruleKey] ?? [];
+    return [
+        'yellow' => (int)($rule['yellow'] ?? 0),
+        'green' => (int)($rule['green'] ?? 0),
+        'mountain' => (int)($rule['mountain'] ?? 0),
+        'ice' => (int)($rule['ice'] ?? 0),
+        'white' => (int)($rule['white'] ?? 0),
+    ];
 }
 
 function tourDeGlaceConfig(): array
@@ -16,7 +52,7 @@ function tourDeGlaceConfig(): array
     return [
         'id' => TOUR_DE_GLACE_ID,
         'title' => 'Tour de Glace 2026',
-        'pre_start' => '2026-06-27 00:00:00',
+        'pre_start' => '2026-06-28 00:00:00',
         'start' => '2026-07-04 00:00:00',
         'end' => '2026-07-26 23:59:59',
         'tip_deadline' => TOUR_DE_GLACE_TIP_DEADLINE,
@@ -31,32 +67,32 @@ function tourDeGlaceConfig(): array
             'sprinter' => [
                 'name' => 'Sprinter',
                 'description' => 'Stark bei Likes, Kommentaren und Tagesaufgaben.',
-                'multipliers' => ['likes' => 1.8, 'comments' => 1.5, 'checkins' => 0.9, 'bike' => 0.7, 'routes' => 0.8, 'reviews' => 1.0, 'profile' => 1.1, 'easter' => 1.1],
+                'multipliers' => ['daily' => 1.5, 'likes' => 1.8, 'comments' => 1.5, 'checkins' => 0.8, 'bike' => 0.7, 'routes' => 0.8, 'reviews' => 1.0, 'profile' => 1.1, 'easter' => 1.3, 'groups' => 0.9, 'referrals' => 1.0, 'challenges' => 0.8],
             ],
             'bergfloh' => [
                 'name' => 'Bergfloh',
                 'description' => 'Stark bei Fahrrad-Anreise und sportlichen Aktionen.',
-                'multipliers' => ['likes' => 0.7, 'comments' => 0.8, 'checkins' => 1.0, 'bike' => 2.0, 'routes' => 1.5, 'reviews' => 0.9, 'profile' => 1.0, 'easter' => 1.0],
+                'multipliers' => ['daily' => 1.0, 'likes' => 0.7, 'comments' => 0.8, 'checkins' => 1.0, 'bike' => 2.0, 'routes' => 1.5, 'reviews' => 0.9, 'profile' => 1.0, 'easter' => 1.0, 'groups' => 1.2, 'referrals' => 1.0, 'challenges' => 1.1],
             ],
             'connaisseur' => [
                 'name' => 'Eis-Connaisseur',
                 'description' => 'Stark bei Check-ins, Sorten und Bewertungen.',
-                'multipliers' => ['likes' => 0.8, 'comments' => 1.0, 'checkins' => 1.8, 'bike' => 1.0, 'routes' => 1.0, 'reviews' => 1.6, 'profile' => 1.0, 'easter' => 1.0],
+                'multipliers' => ['daily' => 0.9, 'likes' => 0.8, 'comments' => 1.0, 'checkins' => 1.8, 'bike' => 1.0, 'routes' => 1.0, 'reviews' => 1.6, 'profile' => 1.0, 'easter' => 1.0, 'groups' => 0.9, 'referrals' => 1.0, 'challenges' => 1.0],
             ],
             'domestique' => [
                 'name' => 'Domestique',
                 'description' => 'Stark bei Community- und Gruppenaktionen.',
-                'multipliers' => ['likes' => 1.2, 'comments' => 1.8, 'checkins' => 1.0, 'bike' => 1.2, 'routes' => 1.0, 'reviews' => 1.0, 'profile' => 1.1, 'easter' => 1.1],
+                'multipliers' => ['daily' => 1.1, 'likes' => 1.2, 'comments' => 1.8, 'checkins' => 1.0, 'bike' => 1.0, 'routes' => 1.0, 'reviews' => 1.0, 'profile' => 1.1, 'easter' => 1.1, 'groups' => 1.5, 'referrals' => 1.2, 'challenges' => 1.1],
             ],
             'fotograf' => [
                 'name' => 'Fotograf',
                 'description' => 'Stark bei Foto- und visuellen Aktionen.',
-                'multipliers' => ['likes' => 1.5, 'comments' => 1.2, 'checkins' => 1.2, 'bike' => 0.9, 'routes' => 0.9, 'reviews' => 1.1, 'profile' => 1.2, 'easter' => 1.1],
+                'multipliers' => ['daily' => 1.0, 'likes' => 1.5, 'comments' => 1.2, 'checkins' => 1.2, 'bike' => 0.9, 'routes' => 0.9, 'reviews' => 1.1, 'profile' => 1.2, 'easter' => 1.1, 'groups' => 1.0, 'referrals' => 1.0, 'challenges' => 0.9],
             ],
             'rookie' => [
                 'name' => 'Rookie',
                 'description' => 'Einsteigerfreundlich mit soliden Boni auf einfache Aktionen.',
-                'multipliers' => ['likes' => 1.2, 'comments' => 1.2, 'checkins' => 1.2, 'bike' => 1.0, 'routes' => 1.0, 'reviews' => 1.2, 'profile' => 1.5, 'easter' => 1.2],
+                'multipliers' => ['daily' => 1.2, 'likes' => 1.2, 'comments' => 1.2, 'checkins' => 1.2, 'bike' => 1.0, 'routes' => 1.0, 'reviews' => 1.2, 'profile' => 1.5, 'easter' => 1.2, 'groups' => 1.0, 'referrals' => 1.0, 'challenges' => 1.1],
             ],
         ],
         'stages' => [
@@ -88,6 +124,33 @@ function tourDeGlaceConfig(): array
 function getTourDeGlaceNow(): DateTimeImmutable
 {
     return new DateTimeImmutable('now', tourDeGlaceTimezone());
+}
+
+function tourDeGlaceStageFunTexts(): array
+{
+    return [
+        1 => 'Du hast den Prolog erspaeht. Die Beine sind frisch, das Eis hoffentlich auch.',
+        2 => 'Barcelona ruft nochmal. Dein Spuersinn faehrt schon im Gelben.',
+        3 => 'Bergsichtung gesichert. Sauerstoff knapp, Kugel Moral voll.',
+        4 => 'Zwischen Burgstadt und Pyrenaeen gesichtet. Sehr ritterlich, sehr eisig.',
+        5 => 'Pau gesichtet. Klassiker-Punkte fuer klassische Sucharbeit.',
+        6 => 'Gavarnie-Gedre meldet: Bergluft drin, Sichtung gesichert.',
+        7 => 'Sprintsichtung! Kurz angetippt, schnell kassiert.',
+        8 => 'Dordogne-Tag, Sichtung im Gepaeck. Bergerac waere stolz auf diese Nase.',
+        9 => 'Massif-Central-Sichtung. Unebenes Profil, glatte Leistung.',
+        10 => 'Die Sichtung macht Pause vom Pausieren.',
+        11 => 'Vichy nach Nevers, Sichtung nicht verpasst. Das Peloton schaut kurz rueber.',
+        12 => 'Magny-Cours-Gefuehl: Boxenstopp gemacht, Etappe gesichtet.',
+        13 => 'Belfort markiert den Weg. Du markierst die Sichtung.',
+        14 => 'Vogesen-Sichtung gesichert. Der Berg wollte sich verstecken, hat aber verloren.',
+        15 => 'Plateau-Finish, Plateau-Sichtung. Oben schmeckt das Eis theoretisch besser.',
+        16 => 'Zeitfahrsichtung! Keine Windschattenhilfe, trotzdem getroffen.',
+        17 => 'Alpenrand nach Voiron. Sichtung am Rand entdeckt, sauber markiert.',
+        18 => 'Orcieres-Merlette ruft. Dein Suchtempo antwortet.',
+        19 => '21 Kehren, eine Sichtung. Deine Kletterform ist fragwuerdig, dein Spuersinn nicht.',
+        20 => 'Nochmal Alpe dHuez. Die Sichtung wollte Revanche, du warst schneller.',
+        21 => 'Finalsichtung! Champs-Elysees, Zielstrich, Gehirnfrost.',
+    ];
 }
 
 function isTourDeGlaceLocalDevRequest(): bool
@@ -315,6 +378,23 @@ function getTourDeGlacePhase(?DateTimeImmutable $now = null): string
     return 'results';
 }
 
+function canUseTourDeGlaceAdminPreview(?int $userId): bool
+{
+    return in_array((int)$userId, [1], true);
+}
+
+function getTourDeGlacePhaseForUser(?int $userId = null, ?DateTimeImmutable $now = null): string
+{
+    $phase = getTourDeGlacePhase($now);
+    if ($phase !== 'upcoming' || !canUseTourDeGlaceAdminPreview($userId)) {
+        return $phase;
+    }
+
+    $reference = $now ?? getTourDeGlaceNow();
+    $adminPreviewStart = new DateTimeImmutable(TOUR_DE_GLACE_ADMIN_PREVIEW_START, tourDeGlaceTimezone());
+    return $reference >= $adminPreviewStart ? 'pre' : $phase;
+}
+
 function getTourDeGlaceProfile(PDO $pdo, int $userId): ?array
 {
     ensureTourDeGlaceTables($pdo);
@@ -364,6 +444,10 @@ function isTourDeGlaceActiveNow(): bool
 
 function isTourDeGlaceShadowTestNow(?DateTimeImmutable $now = null): bool
 {
+    if (!TOUR_DE_GLACE_SHADOW_TEST_ENABLED) {
+        return false;
+    }
+
     $reference = $now ?? getTourDeGlaceNow();
     $tz = tourDeGlaceTimezone();
     $shadowStart = new DateTimeImmutable(TOUR_DE_GLACE_SHADOW_TEST_START, $tz);
@@ -371,14 +455,19 @@ function isTourDeGlaceShadowTestNow(?DateTimeImmutable $now = null): bool
     return $reference >= $shadowStart && $reference < $officialStart;
 }
 
-function isTourDeGlacePointCollectionActive(): bool
+function canUseTourDeGlaceShadowTest(?int $userId): bool
 {
-    return isTourDeGlaceActiveNow() || isTourDeGlaceShadowTestNow();
+    return TOUR_DE_GLACE_SHADOW_TEST_ENABLED && in_array((int)$userId, [1, 23], true);
 }
 
-function getTourDeGlacePointScopeValue(): int
+function isTourDeGlacePointCollectionActive(?int $userId = null): bool
 {
-    return isTourDeGlaceShadowTestNow() ? 1 : 0;
+    return isTourDeGlaceActiveNow() || (canUseTourDeGlaceShadowTest($userId) && isTourDeGlaceShadowTestNow());
+}
+
+function getTourDeGlacePointScopeValue(?int $userId = null): int
+{
+    return canUseTourDeGlaceShadowTest($userId) && isTourDeGlaceShadowTestNow() ? 1 : 0;
 }
 
 function tourDeGlaceDailyLimitForAction(string $actionType): ?int
@@ -403,7 +492,7 @@ function tourDeGlaceCampaignLimitForAction(string $actionType): ?int
 
 function getTourDeGlaceActionCount(PDO $pdo, int $userId, string $actionType, string $scope): int
 {
-    $scopeValue = getTourDeGlacePointScopeValue();
+    $scopeValue = getTourDeGlacePointScopeValue($userId);
     if ($scope === 'day') {
         $stmt = $pdo->prepare(
             "SELECT COUNT(*)
@@ -456,7 +545,7 @@ function applyTourDeGlaceMultiplier(array $basePoints, float $multiplier, bool $
     return $result;
 }
 
-function recordTourDeGlacePointEvent(PDO $pdo, int $userId, string $actionType, string $category, string $sourceType, int $sourceId, array $basePoints, array $metadata = []): ?array
+function recordTourDeGlacePointEvent(PDO $pdo, int $userId, string $actionType, string $category, string $sourceType, int $sourceId, array $basePoints, array $metadata = [], ?string $createdAt = null): ?array
 {
     try {
         if (!isset($GLOBALS['__tour_de_glace_schema_initialized']) && $pdo->inTransaction()) {
@@ -464,7 +553,7 @@ function recordTourDeGlacePointEvent(PDO $pdo, int $userId, string $actionType, 
         }
 
         ensureTourDeGlaceTables($pdo);
-        if (!isTourDeGlacePointCollectionActive()) {
+        if (!isTourDeGlacePointCollectionActive($userId)) {
             return null;
         }
 
@@ -489,14 +578,16 @@ function recordTourDeGlacePointEvent(PDO $pdo, int $userId, string $actionType, 
             return null;
         }
 
+        $createdAtSql = $createdAt !== null ? ', created_at' : '';
+        $createdAtPlaceholder = $createdAt !== null ? ', ?' : '';
         $stmt = $pdo->prepare(
             "INSERT IGNORE INTO tour_de_glace_point_events (
                 campaign_id, user_id, action_type, action_category, source_type, source_id,
-                points_yellow, points_green, points_mountain, points_ice, points_white, is_shadow_test, metadata_json
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                points_yellow, points_green, points_mountain, points_ice, points_white, is_shadow_test, metadata_json{$createdAtSql}
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?{$createdAtPlaceholder})"
         );
-        $isShadowTest = getTourDeGlacePointScopeValue();
-        $stmt->execute([
+        $isShadowTest = getTourDeGlacePointScopeValue($userId);
+        $params = [
             TOUR_DE_GLACE_ID,
             $userId,
             $actionType,
@@ -510,7 +601,11 @@ function recordTourDeGlacePointEvent(PDO $pdo, int $userId, string $actionType, 
             $points['white'],
             $isShadowTest,
             $metadata ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
-        ]);
+        ];
+        if ($createdAt !== null) {
+            $params[] = $createdAt;
+        }
+        $stmt->execute($params);
 
         return $stmt->rowCount() > 0 ? $points : null;
     } catch (Throwable $e) {
@@ -527,25 +622,28 @@ function recordTourDeGlaceCheckin(PDO $pdo, int $userId, int $checkinId, array $
     $isNewShopForUser = !empty($context['is_new_shop']);
     $hasGroup = !empty($context['group_id']);
 
-    $iceBase = $type === 'Eisbecher' ? 25 : 20;
-    $base = [
-        'yellow' => 10 + ($hasPhoto ? 3 : 0) + ($hasGroup ? 8 : 0),
-        'green' => 0,
-        'mountain' => 0,
-        'ice' => $iceBase + ($hasPhoto ? 10 : 0) + ($isNewShopForUser ? 15 : 0),
-        'white' => 30 + ($hasPhoto ? 20 : 0),
-    ];
+    $base = $type === 'Eisbecher'
+        ? tourDeGlaceRulePoints('checkin_sundae')
+        : tourDeGlaceRulePoints('checkin_scoop_softice');
+    if ($hasPhoto) {
+        foreach (tourDeGlaceRulePoints('checkin_photo') as $jersey => $points) {
+            $base[$jersey] = ($base[$jersey] ?? 0) + $points;
+        }
+    }
+    if ($isNewShopForUser) {
+        foreach (tourDeGlaceRulePoints('new_shop_checkin') as $jersey => $points) {
+            $base[$jersey] = ($base[$jersey] ?? 0) + $points;
+        }
+    }
     $events = [];
     $events[] = recordTourDeGlacePointEvent($pdo, $userId, 'checkin', 'checkins', 'checkin', $checkinId, $base, $context);
 
     if ($isBike) {
-        $events[] = recordTourDeGlacePointEvent($pdo, $userId, 'bike_bonus', 'bike', 'checkin', $checkinId, [
-            'yellow' => 5,
-            'green' => 0,
-            'mountain' => 25 + ($hasGroup ? 10 : 0) + ($isNewShopForUser ? 10 : 0),
-            'ice' => 5,
-            'white' => 0,
-        ], $context);
+        $events[] = recordTourDeGlacePointEvent($pdo, $userId, 'bike_bonus', 'bike', 'checkin', $checkinId, tourDeGlaceRulePoints('bike_bonus'), $context);
+    }
+
+    if ($hasGroup) {
+        $events[] = recordTourDeGlacePointEvent($pdo, $userId, 'group_checkin', 'groups', 'checkin', $checkinId, tourDeGlaceRulePoints('group_checkin'), $context);
     }
 
     return array_values(array_filter($events));
@@ -553,58 +651,178 @@ function recordTourDeGlaceCheckin(PDO $pdo, int $userId, int $checkinId, array $
 
 function recordTourDeGlaceReview(PDO $pdo, int $userId, int $reviewId, array $context = []): ?array
 {
-    return recordTourDeGlacePointEvent($pdo, $userId, 'review', 'reviews', 'review', $reviewId, [
-        'yellow' => 8,
-        'green' => 0,
-        'mountain' => 0,
-        'ice' => 8,
-        'white' => 20,
-    ], $context);
+    return recordTourDeGlacePointEvent($pdo, $userId, 'review', 'reviews', 'review', $reviewId, tourDeGlaceRulePoints('review'), $context);
 }
 
 function recordTourDeGlaceComment(PDO $pdo, int $userId, int $commentId, array $context = []): ?array
 {
-    return recordTourDeGlacePointEvent($pdo, $userId, 'comment', 'comments', 'comment', $commentId, [
-        'yellow' => 2,
-        'green' => 5,
-        'mountain' => 0,
-        'ice' => 0,
-        'white' => 10,
-    ], $context);
+    return recordTourDeGlacePointEvent($pdo, $userId, 'comment', 'comments', 'comment', $commentId, tourDeGlaceRulePoints('comment'), $context);
 }
 
 function recordTourDeGlaceLike(PDO $pdo, int $userId, int $likeSourceId, array $context = []): ?array
 {
-    return recordTourDeGlacePointEvent($pdo, $userId, 'like', 'likes', 'like', $likeSourceId, [
-        'yellow' => 0,
-        'green' => 1,
-        'mountain' => 0,
-        'ice' => 0,
-        'white' => 0,
-    ], $context);
+    return recordTourDeGlacePointEvent($pdo, $userId, 'like', 'likes', 'like', $likeSourceId, tourDeGlaceRulePoints('like'), $context);
 }
 
 function recordTourDeGlaceRoute(PDO $pdo, int $userId, int $routeId, array $context = []): ?array
 {
-    return recordTourDeGlacePointEvent($pdo, $userId, 'route', 'routes', 'route', $routeId, [
-        'yellow' => 10,
-        'green' => 0,
-        'mountain' => 30,
-        'ice' => 0,
-        'white' => 0,
-    ], $context);
+    return recordTourDeGlacePointEvent($pdo, $userId, 'route', 'routes', 'route', $routeId, tourDeGlaceRulePoints('route'), $context);
+}
+
+function recordTourDeGlaceReferral(PDO $pdo, int $inviterUserId, int $invitedUserId, array $context = []): ?array
+{
+    if ($inviterUserId <= 0 || $invitedUserId <= 0 || $inviterUserId === $invitedUserId) {
+        return null;
+    }
+
+    return recordTourDeGlacePointEvent($pdo, $inviterUserId, 'referral', 'referrals', 'user', $invitedUserId, tourDeGlaceRulePoints('referral'), array_merge($context, ['invited_user_id' => $invitedUserId]));
+}
+
+function recordTourDeGlaceChallengeCompleted(PDO $pdo, int $userId, int $challengeId, array $context = []): ?array
+{
+    if ($userId <= 0 || $challengeId <= 0) {
+        return null;
+    }
+
+    foreach (syncTourDeGlaceChallengePoints($pdo, $userId) as $event) {
+        if (($event['action_type'] ?? '') === 'challenge_completed' && (int)($event['source_id'] ?? 0) === $challengeId) {
+            return $event;
+        }
+    }
+    return null;
+}
+
+function tourDeGlaceChallengeBasePoints(string $actionType): array
+{
+    return tourDeGlaceRulePoints($actionType === 'team_challenge_completed' ? 'team_challenge_completed' : 'challenge_completed');
+}
+
+function recordTourDeGlaceTeamChallengeCompleted(PDO $pdo, int $userId, int $teamChallengeId, array $context = []): ?array
+{
+    if ($userId <= 0 || $teamChallengeId <= 0) {
+        return null;
+    }
+
+    foreach (syncTourDeGlaceChallengePoints($pdo, $userId) as $event) {
+        if (($event['action_type'] ?? '') === 'team_challenge_completed' && (int)($event['source_id'] ?? 0) === $teamChallengeId) {
+            return $event;
+        }
+    }
+    return null;
+}
+
+function syncTourDeGlaceChallengePoints(PDO $pdo, int $userId): array
+{
+    if ($userId <= 0 || !isTourDeGlacePointCollectionActive($userId)) {
+        return [];
+    }
+
+    ensureTourDeGlaceTables($pdo);
+    $config = tourDeGlaceConfig();
+    $scopeValue = getTourDeGlacePointScopeValue($userId);
+    $candidates = [];
+
+    $soloStmt = $pdo->prepare(
+        "SELECT id, type, difficulty, eisdiele_id, completed_at
+         FROM challenges
+         WHERE nutzer_id = ?
+           AND completed = 1
+           AND completed_at IS NOT NULL
+           AND completed_at BETWEEN ? AND ?"
+    );
+    $soloStmt->execute([$userId, $config['start'], $config['end']]);
+    foreach ($soloStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $basePoints = tourDeGlaceChallengeBasePoints('challenge_completed');
+        $candidates[] = [
+            'action_type' => 'challenge_completed',
+            'source_type' => 'challenge',
+            'source_id' => (int)$row['id'],
+            'completed_at' => (string)$row['completed_at'],
+            'score' => array_sum($basePoints),
+            'base_points' => $basePoints,
+            'metadata' => [
+                'type' => $row['type'] ?? null,
+                'difficulty' => $row['difficulty'] ?? null,
+                'shop_id' => isset($row['eisdiele_id']) ? (int)$row['eisdiele_id'] : null,
+            ],
+        ];
+    }
+
+    $teamStmt = $pdo->prepare(
+        "SELECT id, type, difficulty, final_shop_id, completed_at
+         FROM team_challenges
+         WHERE status = 'completed'
+           AND completed_at IS NOT NULL
+           AND completed_at BETWEEN ? AND ?
+           AND (inviter_user_id = ? OR invitee_user_id = ?)"
+    );
+    $teamStmt->execute([$config['start'], $config['end'], $userId, $userId]);
+    foreach ($teamStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $basePoints = tourDeGlaceChallengeBasePoints('team_challenge_completed');
+        $candidates[] = [
+            'action_type' => 'team_challenge_completed',
+            'source_type' => 'team_challenge',
+            'source_id' => (int)$row['id'],
+            'completed_at' => (string)$row['completed_at'],
+            'score' => array_sum($basePoints),
+            'base_points' => $basePoints,
+            'metadata' => [
+                'type' => $row['type'] ?? null,
+                'difficulty' => $row['difficulty'] ?? null,
+                'shop_id' => isset($row['final_shop_id']) ? (int)$row['final_shop_id'] : null,
+            ],
+        ];
+    }
+
+    usort($candidates, static function (array $a, array $b): int {
+        if ($a['score'] !== $b['score']) {
+            return $b['score'] <=> $a['score'];
+        }
+        $dateCompare = strcmp($a['completed_at'], $b['completed_at']);
+        if ($dateCompare !== 0) {
+            return $dateCompare;
+        }
+        return $a['source_id'] <=> $b['source_id'];
+    });
+    $selected = array_slice($candidates, 0, 3);
+
+    $deleteStmt = $pdo->prepare(
+        "DELETE FROM tour_de_glace_point_events
+         WHERE campaign_id = ?
+           AND user_id = ?
+           AND is_shadow_test = ?
+           AND action_type IN ('challenge_completed', 'team_challenge_completed')"
+    );
+    $deleteStmt->execute([TOUR_DE_GLACE_ID, $userId, $scopeValue]);
+
+    $events = [];
+    foreach ($selected as $candidate) {
+        $points = recordTourDeGlacePointEvent(
+            $pdo,
+            $userId,
+            $candidate['action_type'],
+            'challenges',
+            $candidate['source_type'],
+            $candidate['source_id'],
+            $candidate['base_points'],
+            array_merge($candidate['metadata'], ['challenge_ranked_score' => $candidate['score']]),
+            $candidate['completed_at']
+        );
+        if ($points !== null) {
+            $events[] = array_merge($points, [
+                'action_type' => $candidate['action_type'],
+                'source_id' => $candidate['source_id'],
+            ]);
+        }
+    }
+
+    return $events;
 }
 
 function recordTourDeGlaceDailyVisit(PDO $pdo, int $userId): ?array
 {
     $dateKey = (int)getTourDeGlaceNow()->format('Ymd');
-    return recordTourDeGlacePointEvent($pdo, $userId, 'daily_visit', 'profile', 'tour_day', $dateKey, [
-        'yellow' => 0,
-        'green' => 5,
-        'mountain' => 0,
-        'ice' => 0,
-        'white' => 0,
-    ]);
+    return recordTourDeGlacePointEvent($pdo, $userId, 'daily_visit', 'daily', 'tour_day', $dateKey, tourDeGlaceRulePoints('daily_visit'));
 }
 
 function userHasTourDeGlaceProfileImage(PDO $pdo, int $userId): bool
@@ -627,20 +845,14 @@ function recordTourDeGlaceProfileImage(PDO $pdo, int $userId): ?array
         return null;
     }
 
-    return recordTourDeGlacePointEvent($pdo, $userId, 'profile_image', 'profile', 'user', $userId, [
-        'yellow' => 0,
-        'green' => 10,
-        'mountain' => 0,
-        'ice' => 0,
-        'white' => 0,
-    ]);
+    return recordTourDeGlacePointEvent($pdo, $userId, 'profile_image', 'profile', 'user', $userId, tourDeGlaceRulePoints('profile_image'));
 }
 
 function fetchTourDeGlaceTotals(PDO $pdo, ?int $userId = null): array
 {
     ensureTourDeGlaceTables($pdo);
     $where = "campaign_id = ? AND is_shadow_test = ?";
-    $params = [TOUR_DE_GLACE_ID, getTourDeGlacePointScopeValue()];
+    $params = [TOUR_DE_GLACE_ID, getTourDeGlacePointScopeValue($userId)];
     if ($userId !== null) {
         $where .= " AND user_id = ?";
         $params[] = $userId;
@@ -735,7 +947,7 @@ function getTourDeGlaceUserRank(PDO $pdo, string $jersey, int $userId): ?array
          HAVING points > 0
          ORDER BY points DESC, p.user_id ASC"
     );
-    $stmt->execute([TOUR_DE_GLACE_ID, getTourDeGlacePointScopeValue()]);
+    $stmt->execute([TOUR_DE_GLACE_ID, getTourDeGlacePointScopeValue($userId)]);
 
     $rank = 0;
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -780,7 +992,7 @@ function getTourDeGlaceUserBreakdown(PDO $pdo, int $userId): array
          GROUP BY action_type
          ORDER BY action_type ASC"
     );
-    $stmt->execute([TOUR_DE_GLACE_ID, $userId, getTourDeGlacePointScopeValue()]);
+    $stmt->execute([TOUR_DE_GLACE_ID, $userId, getTourDeGlacePointScopeValue($userId)]);
 
     $breakdown = [
         'yellow' => [],
@@ -871,8 +1083,15 @@ function getTourDeGlaceTips(PDO $pdo, int $userId): ?array
 function submitTourDeGlaceTips(PDO $pdo, int $userId, array $tips): array
 {
     ensureTourDeGlaceTables($pdo);
+    $config = tourDeGlaceConfig();
     $now = getTourDeGlaceNow();
+    $preStart = canUseTourDeGlaceAdminPreview($userId)
+        ? new DateTimeImmutable(TOUR_DE_GLACE_ADMIN_PREVIEW_START, tourDeGlaceTimezone())
+        : new DateTimeImmutable($config['pre_start'], tourDeGlaceTimezone());
     $deadline = new DateTimeImmutable(TOUR_DE_GLACE_TIP_DEADLINE, tourDeGlaceTimezone());
+    if ($now < $preStart) {
+        throw new RuntimeException('Die Tippabgabe ist noch nicht geoeffnet.');
+    }
     if ($now > $deadline) {
         throw new RuntimeException('Die Tippabgabe ist geschlossen.');
     }
@@ -881,6 +1100,18 @@ function submitTourDeGlaceTips(PDO $pdo, int $userId, array $tips): array
     foreach (['tip_gc_winner', 'tip_gc_second', 'tip_gc_third', 'tip_green_winner', 'tip_mountain_winner', 'tip_white_winner'] as $key) {
         $value = trim((string)($tips[$key] ?? ''));
         $clean[$key] = $value !== '' ? substr($value, 0, 160) : null;
+    }
+    $seenTipNames = [];
+    foreach (['tip_gc_winner', 'tip_gc_second', 'tip_gc_third'] as $key) {
+        $value = $clean[$key] ?? null;
+        if ($value === null || $value === '') {
+            continue;
+        }
+        $normalizedValue = strtolower((string)preg_replace('/\s+/', ' ', trim($value)));
+        if (isset($seenTipNames[$normalizedValue])) {
+            throw new RuntimeException('Ein Fahrer darf in der Gesamtwertung nur einmal auf Platz 1, 2 oder 3 getippt werden.');
+        }
+        $seenTipNames[$normalizedValue] = true;
     }
 
     $stmt = $pdo->prepare(
@@ -944,7 +1175,11 @@ function getTourDeGlaceAvailableEasterEgg(PDO $pdo, ?int $stageNumber = null): ?
     $stmt = $pdo->prepare("SELECT * FROM tour_de_glace_easter_eggs WHERE campaign_id = ? AND stage_number = ? AND is_active = 1 LIMIT 1");
     $stmt->execute([TOUR_DE_GLACE_ID, (int)$stage['stage_number']]);
     $egg = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $egg ? array_merge($egg, ['expires_at' => $expiresAt->format('Y-m-d H:i:s')]) : null;
+    $funTexts = tourDeGlaceStageFunTexts();
+    return $egg ? array_merge($egg, [
+        'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+        'fun_text' => $funTexts[(int)$stage['stage_number']] ?? null,
+    ]) : null;
 }
 
 function getTourDeGlaceFoundEggIds(PDO $pdo, int $userId): array
@@ -957,37 +1192,100 @@ function getTourDeGlaceFoundEggIds(PDO $pdo, int $userId): array
            AND user_id = ?
            AND is_shadow_test = ?"
     );
-    $stmt->execute([TOUR_DE_GLACE_ID, $userId, getTourDeGlacePointScopeValue()]);
+    $stmt->execute([TOUR_DE_GLACE_ID, $userId, getTourDeGlacePointScopeValue($userId)]);
     return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+}
+
+function getTourDeGlaceSightedStages(PDO $pdo, int $userId): array
+{
+    ensureTourDeGlaceTables($pdo);
+    $stmt = $pdo->prepare(
+        "SELECT e.id,
+                e.stage_number,
+                e.stage_date,
+                e.start_location,
+                e.finish_location,
+                u.found_at
+         FROM tour_de_glace_user_easter_eggs u
+         JOIN tour_de_glace_easter_eggs e ON e.id = u.easter_egg_id
+         WHERE u.campaign_id = ?
+           AND u.user_id = ?
+           AND u.is_shadow_test = ?
+         ORDER BY e.stage_number ASC"
+    );
+    $stmt->execute([TOUR_DE_GLACE_ID, $userId, getTourDeGlacePointScopeValue($userId)]);
+
+    return array_map(static fn(array $row): array => [
+        'id' => (int)$row['id'],
+        'stage_number' => (int)$row['stage_number'],
+        'stage_date' => $row['stage_date'],
+        'start_location' => $row['start_location'],
+        'finish_location' => $row['finish_location'],
+        'found_at' => $row['found_at'],
+    ], $stmt->fetchAll(PDO::FETCH_ASSOC));
+}
+
+function getTourDeGlaceAwards(PDO $pdo, ?int $userId = null): array
+{
+    $params = [];
+    $userAwardJoin = '';
+    if ($userId !== null) {
+        $userAwardJoin = "LEFT JOIN user_awards ua
+            ON ua.award_id = al.award_id
+           AND ua.level = al.level
+           AND ua.user_id = ?";
+        $params[] = $userId;
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT al.award_id,
+                al.level,
+                al.threshold,
+                al.icon_path,
+                al.title_de,
+                al.description_de,
+                al.ep" . ($userId !== null ? ", ua.id AS user_award_id, ua.awarded_at" : "") . "
+         FROM award_levels al
+         {$userAwardJoin}
+         WHERE al.award_id IN (72, 73)
+         ORDER BY CASE al.award_id WHEN 72 THEN 1 WHEN 73 THEN 2 ELSE 3 END, al.level ASC"
+    );
+    $stmt->execute($params);
+
+    return array_map(static fn(array $row): array => [
+        'award_id' => (int)$row['award_id'],
+        'level' => (int)$row['level'],
+        'threshold' => isset($row['threshold']) ? (int)$row['threshold'] : null,
+        'icon_path' => $row['icon_path'],
+        'title_de' => $row['title_de'],
+        'description_de' => $row['description_de'],
+        'ep' => isset($row['ep']) ? (int)$row['ep'] : 0,
+        'achieved' => $userId !== null && !empty($row['user_award_id']),
+        'awarded_at' => $row['awarded_at'] ?? null,
+    ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function findTourDeGlaceEasterEgg(PDO $pdo, int $userId, int $stageNumber, string $secretCode): array
 {
     ensureTourDeGlaceTables($pdo);
-    if (!isTourDeGlacePointCollectionActive()) {
+    if (!isTourDeGlacePointCollectionActive($userId)) {
         throw new RuntimeException('Die Aktion ist aktuell nicht aktiv.');
     }
     $egg = getTourDeGlaceAvailableEasterEgg($pdo, $stageNumber);
     $submittedCode = trim($secretCode);
     if (!$egg || $submittedCode === '' || !hash_equals((string)$egg['secret_code'], $submittedCode)) {
-        throw new RuntimeException('Dieses Etappen-Easter-Egg ist nicht verfuegbar.');
+        throw new RuntimeException('Diese Etappensichtung ist nicht verfuegbar.');
     }
 
     $stmt = $pdo->prepare(
         "INSERT IGNORE INTO tour_de_glace_user_easter_eggs (campaign_id, easter_egg_id, user_id, is_shadow_test)
          VALUES (?, ?, ?, ?)"
     );
-    $stmt->execute([TOUR_DE_GLACE_ID, (int)$egg['id'], $userId, getTourDeGlacePointScopeValue()]);
+    $stmt->execute([TOUR_DE_GLACE_ID, (int)$egg['id'], $userId, getTourDeGlacePointScopeValue($userId)]);
     $isNew = $stmt->rowCount() > 0;
     $points = null;
     if ($isNew) {
-        $points = recordTourDeGlacePointEvent($pdo, $userId, 'easter_egg', 'easter', 'easter_egg', (int)$egg['id'], [
-            'yellow' => 0,
-            'green' => 8,
-            'mountain' => 0,
-            'ice' => 0,
-            'white' => 0,
-        ], ['stage_number' => (int)$egg['stage_number']]);
+        $points = recordTourDeGlacePointEvent($pdo, $userId, 'easter_egg', 'easter', 'easter_egg', (int)$egg['id'], tourDeGlaceRulePoints('easter_egg'), ['stage_number' => (int)$egg['stage_number']]);
     }
 
     return [
@@ -1002,6 +1300,7 @@ function findTourDeGlaceEasterEgg(PDO $pdo, int $userId, int $stageNumber, strin
             'finish_location' => $egg['finish_location'],
             'latitude' => isset($egg['latitude']) ? (float)$egg['latitude'] : null,
             'longitude' => isset($egg['longitude']) ? (float)$egg['longitude'] : null,
+            'fun_text' => $egg['fun_text'] ?? null,
         ],
     ];
 }
@@ -1010,17 +1309,18 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
 {
     ensureTourDeGlaceTables($pdo);
     $config = tourDeGlaceConfig();
-    $phase = getTourDeGlacePhase();
-    $isShadowTest = isTourDeGlaceShadowTestNow();
+    $phase = getTourDeGlacePhaseForUser($userId);
+    $isShadowTest = canUseTourDeGlaceShadowTest($userId) && isTourDeGlaceShadowTestNow();
     $profile = $userId ? getTourDeGlaceProfile($pdo, $userId) : null;
-    if ($userId && isTourDeGlacePointCollectionActive()) {
+    if ($userId && isTourDeGlacePointCollectionActive($userId)) {
         recordTourDeGlaceDailyVisit($pdo, $userId);
         recordTourDeGlaceProfileImage($pdo, $userId);
     }
     $totals = $userId ? (fetchTourDeGlaceTotals($pdo, $userId)[$userId] ?? ['yellow' => 0, 'green' => 0, 'mountain' => 0, 'ice' => 0, 'white' => 0]) : null;
-    $currentStage = getCurrentTourDeGlaceStage();
-    $availableEgg = getTourDeGlaceAvailableEasterEgg($pdo);
+    $currentStage = ($phase === 'active' || $isShadowTest) ? getCurrentTourDeGlaceStage() : null;
+    $availableEgg = ($phase === 'active' || $isShadowTest) ? getTourDeGlaceAvailableEasterEgg($pdo) : null;
     $foundEggIds = $userId ? getTourDeGlaceFoundEggIds($pdo, $userId) : [];
+    $sightedStages = $userId ? getTourDeGlaceSightedStages($pdo, $userId) : [];
 
     return [
         'campaign' => [
@@ -1029,13 +1329,14 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
             'phase' => $isShadowTest ? 'active' : $phase,
             'official_phase' => $phase,
             'shadow_test' => $isShadowTest,
-            'point_collection_active' => isTourDeGlacePointCollectionActive(),
+            'point_collection_active' => isTourDeGlacePointCollectionActive($userId),
             'pre_start' => $config['pre_start'],
             'start' => $config['start'],
             'end' => $config['end'],
             'tip_deadline' => $config['tip_deadline'],
         ],
         'rider_types' => $config['rider_types'],
+        'point_rules' => array_values(tourDeGlacePointRules()),
         'jerseys' => $config['jerseys'],
         'profile' => $profile ? [
             'rider_type' => $profile['rider_type'],
@@ -1059,11 +1360,14 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
             'latitude' => isset($availableEgg['latitude']) ? (float)$availableEgg['latitude'] : null,
             'longitude' => isset($availableEgg['longitude']) ? (float)$availableEgg['longitude'] : null,
             'hint_text' => $availableEgg['hint_text'],
+            'fun_text' => $availableEgg['fun_text'] ?? null,
             'map_secret_code' => $availableEgg['secret_code'],
             'expires_at' => $availableEgg['expires_at'],
             'found' => in_array((int)$availableEgg['id'], $foundEggIds, true),
         ] : null,
         'found_easter_eggs' => count($foundEggIds),
+        'sighted_stages' => $sightedStages,
+        'awards' => getTourDeGlaceAwards($pdo, $userId),
         'leaders' => getTourDeGlaceOfficialLeaders($pdo),
     ];
 }

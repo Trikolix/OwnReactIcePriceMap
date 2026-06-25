@@ -13,7 +13,6 @@ const eggIcon = L.divIcon({
   className: 'tour-de-glace-egg-marker',
   html: `
     <div style="position:relative; width:74px; height:86px;">
-      <div style="position:absolute; left:50%; top:0; transform:translateX(-50%); width:54px; height:68px; border-radius:50% 50% 46% 46%; background:linear-gradient(160deg,#ffffff 0%,#f7d758 34%,#59b96b 35%,#59b96b 54%,#f08caf 55%,#f08caf 74%,#ffffff 75%); border:3px solid #202124; box-shadow:0 12px 20px rgba(0,0,0,0.26);"></div>
       <img
         src="${TOUR_EGG_IMAGE}"
         alt=""
@@ -50,7 +49,7 @@ const TourDeGlaceMapEggs = ({
       const data = await fetchTourDeGlaceProgress(authToken);
       setState({ loading: false, error: '', data });
     } catch (error) {
-      setState({ loading: false, error: error.message || 'Tour-Easter-Egg konnte nicht geladen werden.', data: null });
+      setState({ loading: false, error: error.message || 'Etappensichtung konnte nicht geladen werden.', data: null });
     }
   }, [authToken, enabled]);
 
@@ -70,13 +69,18 @@ const TourDeGlaceMapEggs = ({
   const position = useMemo(() => {
     const lat = Number(egg?.latitude);
     const lng = Number(egg?.longitude);
-    if (!enabled || Number(currentZoom) < TOUR_EGG_MIN_ZOOM || !egg || egg.found || Number.isNaN(lat) || Number.isNaN(lng)) {
+    if (!enabled || Number(currentZoom) < TOUR_EGG_MIN_ZOOM || !egg || Number.isNaN(lat) || Number.isNaN(lng)) {
       return null;
     }
     return [lat, lng];
   }, [currentZoom, egg, enabled]);
 
   const handleFind = async () => {
+    const funText = egg?.fun_text || 'Das Peloton nickt anerkennend.';
+    if (egg?.found) {
+      setMessage('Du hast diese Etappe schon gesichtet.');
+      return;
+    }
     if (!isLoggedIn) {
       setShowLoginModal?.(true);
       return;
@@ -88,11 +92,10 @@ const TourDeGlaceMapEggs = ({
     setMessage('');
     try {
       await findTourDeGlaceEasterEgg(authToken, egg.stage_number, egg.map_secret_code);
-      setMessage('Etappen-Easter-Egg gefunden.');
       window.dispatchEvent(new CustomEvent('seasonal:tour-de-glace-progress-updated'));
       await loadProgress();
     } catch (error) {
-      setMessage(error.message || 'Easter-Egg konnte nicht gespeichert werden.');
+      setMessage(error.message || 'Etappensichtung konnte nicht gespeichert werden.');
     }
   };
 
@@ -110,11 +113,15 @@ const TourDeGlaceMapEggs = ({
     <Marker position={position} icon={eggIcon} eventHandlers={{ click: handleCenter }}>
       <Popup>
         <div style={{ minWidth: '210px' }}>
-          <strong>Tour de Glace Easter-Egg</strong>
+          <strong>Tour de Glace Etappensichtung</strong>
           <p style={{ margin: '0.45rem 0' }}>
             Etappe {egg.stage_number}: {egg.start_location} &rarr; {egg.finish_location}
           </p>
-          <p style={{ margin: '0 0 0.65rem', color: '#5b6270' }}>{egg.hint_text}</p>
+          <p style={{ margin: '0 0 0.65rem', color: '#5b6270' }}>
+            {egg.found
+              ? `Gesichert! ${egg.fun_text || 'Das Peloton nickt anerkennend.'}`
+              : egg.hint_text}
+          </p>
           {state.error && <p style={{ color: '#b42318' }}>{state.error}</p>}
           {message && <p style={{ color: '#14532d', fontWeight: 800 }}>{message}</p>}
           <button
@@ -131,7 +138,7 @@ const TourDeGlaceMapEggs = ({
               cursor: 'pointer',
             }}
           >
-            {isLoggedIn ? 'Easter-Egg einsammeln' : 'Einloggen zum Einsammeln'}
+            {egg.found ? 'Schon gesichtet' : isLoggedIn ? 'Etappe sichten' : 'Einloggen zum Sichten'}
           </button>
         </div>
       </Popup>

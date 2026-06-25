@@ -81,11 +81,6 @@ const formatCampaignDate = (date) => {
   }).format(date);
 };
 
-const isTourDeGlaceShadowWindow = (now = new Date()) => (
-  now >= new Date('2026-06-12T00:00:00+02:00')
-  && now < new Date('2026-07-04T00:00:00+02:00')
-);
-
 const getPhotoChallengeVoteSummary = (challenges = []) => challenges.reduce((summary, challenge) => {
   const progress = challenge?.vote_progress || {};
   const availableVotes = Number(progress.available_votes || 0);
@@ -109,7 +104,8 @@ const getPhotoChallengeVoteSummary = (challenges = []) => challenges.reduce((sum
 const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const { userId } = useUser();
-  const campaigns = useMemo(() => getActionsOverviewCampaigns(), []);
+  const isAdmin = Number(userId) === 1;
+  const campaigns = useMemo(() => getActionsOverviewCampaigns(new Date(), { isAdmin }), [isAdmin]);
   const [currentUser, setCurrentUser] = useState(null);
   const [pastUsers, setPastUsers] = useState([]);
   const [isUserOfMonthLoading, setIsUserOfMonthLoading] = useState(false);
@@ -132,7 +128,32 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const [showPastUsers, setShowPastUsers] = useState(false);
   const [activeDetailPanel, setActiveDetailPanel] = useState(null);
   const detailPanelRef = useRef(null);
+  const shouldScrollToDetailRef = useRef(false);
   const LEADERBOARD_COLLAPSED_COUNT = 10;
+
+  const openDetailPanel = (campaignId, { toggle = false } = {}) => {
+    shouldScrollToDetailRef.current = true;
+    setActiveDetailPanel((current) => {
+      if (toggle && current === campaignId) {
+        shouldScrollToDetailRef.current = false;
+        return null;
+      }
+      return campaignId;
+    });
+  };
+
+  useEffect(() => {
+    if (!activeDetailPanel || !shouldScrollToDetailRef.current) {
+      return;
+    }
+
+    const handle = window.requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      shouldScrollToDetailRef.current = false;
+    });
+
+    return () => window.cancelAnimationFrame(handle);
+  }, [activeDetailPanel]);
 
   useEffect(() => {
     if (!open || !apiUrl) {
@@ -237,19 +258,15 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const visibleBirthdayLeaderboard = isBirthdayExpanded
     ? birthdayLeaderboard
     : birthdayLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT);
-  const isTourDeGlaceAdmin = Number(userId) === 1;
   const displayCampaigns = campaigns.map((campaign) => {
     if (campaign.id !== 'tour_de_glace_2026') {
       return campaign;
     }
-    if (isTourDeGlaceAdmin && isTourDeGlaceShadowWindow()) {
-      return { ...campaign, status: CAMPAIGN_STATUS.ACTIVE };
-    }
-    if (!isTourDeGlaceAdmin && campaign.status === CAMPAIGN_STATUS.ACTIVE) {
-      return { ...campaign, status: CAMPAIGN_STATUS.UPCOMING };
+    if (campaign.status === CAMPAIGN_STATUS.UPCOMING) {
+      return null;
     }
     return campaign;
-  });
+  }).filter(Boolean);
   const activeCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
   const upcomingCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
   const hasPastEvents = displayCampaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
@@ -264,6 +281,9 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     ? activePhotoChallenges[0].title || 'Foto-Challenge'
     : null;
   const tourCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_2026');
+  const tourOfficialActive = tourCampaign
+    ? new Date() >= tourCampaign.schedule.start
+    : false;
   const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
   const openCampaignDetail = (campaignId) => {
     setActiveDetailPanel((current) => (current === campaignId ? null : campaignId));
@@ -302,6 +322,9 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
         : (activePhotoChallenges.length === 1
           ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Aktiv')
           : `${activePhotoChallenges.length} aktiv`),
+      statusTone: hasPhotoVotesAvailable
+        ? (!canTrackPhotoVotes ? 'available' : hasOpenPhotoVotes ? 'open' : 'done')
+        : 'active',
       priority: 1,
       ctaLabel: hasOpenPhotoVotes
         ? 'Stimmen abgeben'
@@ -315,12 +338,15 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     tourCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'tour-de-glace-daily',
       type: 'tour_de_glace',
-      title: 'Tour de Glace Tagesetappe',
-      description: 'Sammle Tagespunkte und suche das Etappen-Easter-Egg auf der Karte.',
-      statusLabel: 'Heute verfügbar',
+      title: tourOfficialActive ? 'Tour de Glace Tagesetappe' : 'Tour de Glace Preview',
+      description: tourOfficialActive
+        ? 'Sammle Tagespunkte und suche die Etappensichtung auf der Karte.'
+        : 'Das Tippspiel ist geoeffnet. Wertung und Etappensichtungen starten am 04.07.',
+      statusLabel: tourOfficialActive ? 'Heute verfuegbar' : 'Tipps offen',
+      statusTone: tourOfficialActive ? 'available' : 'active',
       priority: 2,
-      ctaLabel: 'Zur Aktion',
-      onClick: openTourDeGlaceAction,
+      ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Einklappen' : 'Zur Aktion',
+      onClick: () => openDetailPanel('tour_de_glace_2026', { toggle: true }),
     },
     summerCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'summer-campaign',
@@ -328,9 +354,10 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       title: 'Sommer-Sammelaktion',
       description: 'Behalte deinen Sammelfortschritt im Blick.',
       statusLabel: 'Läuft',
+      statusTone: 'active',
       priority: 3,
       ctaLabel: 'Fortschritt ansehen',
-      onClick: () => setActiveDetailPanel('summer_2026'),
+      onClick: () => openDetailPanel('summer_2026'),
     },
   ].filter(Boolean).sort((left, right) => left.priority - right.priority);
   const visibleTasks = showAllTasks ? taskItems : taskItems.slice(0, 3);
@@ -400,7 +427,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                   <TaskContent>
                     <TaskTitleRow>
                       <strong>{task.title}</strong>
-                      <TaskStatus>{task.statusLabel}</TaskStatus>
+                      <TaskStatus $tone={task.statusTone}>{task.statusLabel}</TaskStatus>
                     </TaskTitleRow>
                     <p>{task.description}</p>
                   </TaskContent>
@@ -446,7 +473,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                         ? 'Trikots, Etappen und Tagespunkte'
                         : 'Sammelfortschritt und Aufgaben'}
                     </span>
-                    <TaskButton type="button" onClick={() => openCampaignDetail(campaign.id)}>
+                    <TaskButton type="button" onClick={() => openDetailPanel(campaign.id, { toggle: true })}>
                       {activeDetailPanel === campaign.id ? 'Einklappen' : 'Details'}
                     </TaskButton>
                   </CampaignSummaryBody>
@@ -844,8 +871,18 @@ const TaskTitleRow = styled.div`
 
 const TaskStatus = styled.span`
   border-radius: 999px;
-  background: #eef5ff;
-  color: #17436f;
+  background: ${({ $tone }) => {
+    if ($tone === 'open') return '#ffe0b2';
+    if ($tone === 'done') return '#dff4e6';
+    if ($tone === 'available') return '#e8ddff';
+    return '#eef5ff';
+  }};
+  color: ${({ $tone }) => {
+    if ($tone === 'open') return '#8a4b00';
+    if ($tone === 'done') return '#14532d';
+    if ($tone === 'available') return '#4c1d95';
+    return '#17436f';
+  }};
   padding: 0.18rem 0.45rem;
   font-size: 0.72rem;
   font-weight: 800;

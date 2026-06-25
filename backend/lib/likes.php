@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/notification_dispatcher.php';
 require_once __DIR__ . '/tour_de_glace.php';
+require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 
 function getLikeEntityTypes(): array
 {
@@ -144,6 +145,11 @@ function addLike(PDO $pdo, int $userId, string $entityType, int $entityId): bool
                     'entity_type' => $entityType,
                     'entity_id' => $entityId,
                 ]);
+                try {
+                    (new TourDeGlaceAwardEvaluator())->evaluate($userId);
+                } catch (Exception $e) {
+                    error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+                }
             }
             dispatchLikeNotification($pdo, $userId, $entityType, $entityId);
             return true;

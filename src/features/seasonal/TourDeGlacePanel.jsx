@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { Bike, Flag, IceCreamBowl, Info, Search, Shirt, Trophy } from 'lucide-react';
+import { Bike, Flag, Info, Search, Shirt } from 'lucide-react';
 import { CAMPAIGN_STATUS } from './campaigns';
 import {
   fetchTourDeGlaceProgress,
@@ -8,7 +8,9 @@ import {
   selectTourDeGlaceRiderType,
   submitTourDeGlaceTips,
 } from './tourDeGlaceApi';
+import { TOUR_DE_GLACE_STARTERS } from './tourDeGlaceStarters';
 import { useUser } from '../../context/UserContext';
+import { getAwardIconSources, handleAwardIconFallback } from '../../utils/awardIcons';
 
 const JERSEY_META = {
   yellow: { label: 'Gelb', color: '#f6c945', image: '/assets/tour-de-glace/jersey_yellow.png' },
@@ -27,28 +29,45 @@ const ACTION_LABELS = {
   review: 'Bewertungen',
   daily_visit: 'Tagesbesuch',
   profile_image: 'Profilbild vorhanden',
-  easter_egg: 'Easter-Eggs',
+  easter_egg: 'Etappensichtungen',
+  group_checkin: 'Gruppen-Check-ins',
   route: 'Routen',
   referral: 'Geworbene Nutzer',
+  challenge_completed: 'Challenges abgeschlossen',
+  team_challenge_completed: 'Team-Challenges abgeschlossen',
   photo_vote: 'Foto-Votes',
+};
+const MULTIPLIER_LABELS = {
+  daily: 'Tagesbesuche',
+  likes: 'Likes',
+  comments: 'Kommentare',
+  checkins: 'Check-ins',
+  bike: 'Fahrrad',
+  routes: 'Routen',
+  reviews: 'Bewertungen',
+  profile: 'Profil',
+  easter: 'Etappensichtungen',
+  groups: 'Gruppenaktionen',
+  referrals: 'Geworbene Nutzer',
+  challenges: 'Challenges',
 };
 const JERSEY_EXPLANATIONS = {
   yellow: 'Gesamtwertung: Check-ins, Fotos, Fahrrad-Anreise, Bewertungen, Gruppenaktionen und Routen zahlen reduziert ein.',
-  green: 'Sprintwertung: täglicher Besuch, Likes, Kommentare und Easter-Eggs bringen Punkte.',
-  mountain: 'Bergwertung: Fahrrad-Anreise, Gruppen-Check-ins mit Fahrrad und Routen sind hier stark.',
+  green: 'Sprintwertung: täglicher Besuch, Likes, Kommentare, Etappensichtungen und geworbene Nutzer bringen Punkte.',
+  mountain: 'Bergwertung: Fahrrad-Anreise, Gruppen-Check-ins und Routen sind hier stark.',
   ice: 'Genusswertung: echte Eis-Check-ins, Fotos, neue Eisdielen und Bewertungen zählen besonders.',
   white: 'Nachwuchswertung: zählt nur für Nutzer mit weniger als 5 Check-ins vor Tourstart und belohnt erste Aktionen.',
 };
 const JERSEY_DETAILS = {
   yellow: 'Das Gelbe Trikot ist die Allround-Wertung. Es sammelt reduzierte Punkte aus vielen Bereichen und belohnt konstant aktive Nutzer.',
-  green: 'Das Grüne Trikot ist die Sprintwertung. Es ist für tägliche Aktivität und Community-Interaktion gedacht, auch ohne jeden Tag Eis zu essen.',
+  green: 'Das Grüne Trikot ist die Sprintwertung. Es ist für tägliche App-Aktivität, Community-Interaktion und Einladungen gedacht, auch ohne jeden Tag Eis zu essen.',
   mountain: 'Das Bergtrikot belohnt Fahrrad-Anreise und sportliche Tour-Aktionen. Fahrradbonus und Routen wirken hier besonders stark.',
   ice: 'Das Eiscreme-Trikot ist die Genusswertung. Check-ins, Fotos, neue Eisdielen und Bewertungen zahlen hier besonders ein.',
   white: 'Das Weiße Trikot ist die Nachwuchswertung. Es zählt nur für Nutzer mit weniger als 5 Check-ins vor dem Tourstart.',
 };
 const NEXT_ACTIONS = {
   yellow: 'Mach einen Check-in, ergänze ein Foto, schreibe eine Bewertung oder reiche eine Route ein.',
-  green: 'Öffne die Tour täglich, like Beiträge, kommentiere sinnvoll oder finde das Etappen-Easter-Egg.',
+  green: 'Öffne die Tour täglich, like Beiträge, kommentiere sinnvoll, sichte die Tagesetappe oder wirb neue Nutzer.',
   mountain: 'Setze beim Check-in die Fahrrad-Anreise oder reiche eine passende Route ein.',
   ice: 'Mach einen Eis-Check-in mit Foto, besuche eine neue Eisdiele oder bewerte eine Eisdiele.',
   white: 'Starte mit deinem ersten Check-in, Profilbild, Kommentar oder deiner ersten Bewertung während der Tour.',
@@ -61,18 +80,46 @@ const POINT_RULES = [
   { action: 'Tagesbesuch der Tour-Seite', yellow: 0, green: 5, mountain: 0, ice: 0, white: 0, note: '1x pro Tag' },
   { action: 'Like auf fremden Beitrag', yellow: 0, green: 1, mountain: 0, ice: 0, white: 0, note: 'max. 20 pro Tag' },
   { action: 'Kommentar', yellow: 2, green: 5, mountain: 0, ice: 0, white: 10, note: 'max. 5 pro Tag' },
-  { action: 'Easter-Egg gefunden', yellow: 0, green: 8, mountain: 0, ice: 0, white: 0, note: '1x pro Etappentag' },
+  { action: 'Etappe gesichtet', yellow: 0, green: 10, mountain: 0, ice: 0, white: 0, note: '1x pro Etappentag' },
+  { action: 'Neuen Nutzer geworben', yellow: 40, green: 100, mountain: 0, ice: 0, white: 80, note: 'nach Account-Verifizierung' },
+  { action: 'Challenge abgeschlossen', yellow: 25, green: 5, mountain: 25, ice: 0, white: 35, note: 'beste 3 Challenges gesamt' },
+  { action: 'Team-Challenge abgeschlossen', yellow: 40, green: 10, mountain: 55, ice: 0, white: 50, note: 'beste 3 Challenges gesamt' },
   { action: 'Check-in: Kugel oder Softeis', yellow: 10, green: 0, mountain: 0, ice: 20, white: 30, note: 'unlimitiert' },
   { action: 'Check-in: Eisbecher', yellow: 10, green: 0, mountain: 0, ice: 25, white: 30, note: 'unlimitiert' },
   { action: 'Check-in mit Foto', yellow: 3, green: 0, mountain: 0, ice: 10, white: 20, note: 'Zusatzpunkte' },
   { action: 'Neue Eisdiele beim Check-in', yellow: 0, green: 0, mountain: 0, ice: 15, white: 0, note: 'erstmals von dir besucht' },
   { action: 'Fahrrad-Anreise', yellow: 5, green: 0, mountain: 25, ice: 5, white: 0, note: 'unlimitiert' },
-  { action: 'Fahrrad + Gruppen-Check-in', yellow: 0, green: 0, mountain: 10, ice: 0, white: 0, note: 'Zusatzpunkte' },
-  { action: 'Fahrrad + neue Eisdiele', yellow: 0, green: 0, mountain: 10, ice: 0, white: 0, note: 'Zusatzpunkte' },
+  { action: 'Gruppen-Check-in', yellow: 8, green: 3, mountain: 10, ice: 0, white: 10, note: 'Zusatzpunkte' },
   { action: 'Profilbild vorhanden', yellow: 0, green: 10, mountain: 0, ice: 0, white: 0, note: 'einmalig' },
   { action: 'Bewertung', yellow: 8, green: 0, mountain: 0, ice: 8, white: 20, note: 'max. 10 im Aktionszeitraum' },
   { action: 'Route eingereicht', yellow: 10, green: 0, mountain: 30, ice: 0, white: 0, note: 'max. 3 im Aktionszeitraum' },
 ];
+const TIP_POINT_RULES = [
+  ['Gesamtwertung Platz 1 exakt', '50 Punkte'],
+  ['Gesamtwertung Platz 2 exakt', '25 Punkte'],
+  ['Gesamtwertung Platz 3 exakt', '25 Punkte'],
+  ['Fahrer in realer Top 3, aber falsche Position', '10 Punkte'],
+  ['Grünes Trikot exakt', '35 Punkte'],
+  ['Bergtrikot exakt', '35 Punkte'],
+  ['Weißes Trikot exakt', '35 Punkte'],
+];
+const TIP_FIELDS = [
+  ['tip_gc_winner', 'Gesamtwertung Platz 1'],
+  ['tip_gc_second', 'Gesamtwertung Platz 2'],
+  ['tip_gc_third', 'Gesamtwertung Platz 3'],
+  ['tip_green_winner', 'Gr\u00fcnes Trikot'],
+  ['tip_mountain_winner', 'Bergtrikot'],
+  ['tip_white_winner', 'Wei\u00dfes Trikot'],
+];
+const GC_TIP_KEYS = ['tip_gc_winner', 'tip_gc_second', 'tip_gc_third'];
+const normalizeTipName = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('de-DE');
+
+const AWARD_SHORT_DESCRIPTIONS = {
+  '72-1': 'an 3 Etappentagen aktiv',
+  '72-2': 'an 7 Etappentagen aktiv',
+  '72-3': 'an 15 Etappentagen aktiv',
+  '73-1': '3 Etappen gesichtet',
+};
 const RIDER_DETAILS = {
   sprinter: 'Passt, wenn du oft in den Feed schaust, Likes vergibst, kommentierst und Tagesaktionen mitnimmst. Schwächer bei Fahrrad- und Bergpunkten.',
   bergfloh: 'Passt, wenn deine Check-ins häufig mit Fahrrad-Anreise oder Routen verbunden sind. Schwächer bei reinen Social-Aktionen.',
@@ -109,6 +156,57 @@ const InfoHint = ({ id, label, children, text, expandedInfo, onToggle }) => (
   </InfoWrap>
 );
 
+const MIN_RIDER_SUGGEST_CHARS = 2;
+
+const RiderSuggestInput = ({ id, label, value, onChange, disabled = false }) => {
+  const [focused, setFocused] = useState(false);
+  const normalizedValue = value.trim().toLocaleLowerCase('de-DE');
+  const canSuggest = normalizedValue.length >= MIN_RIDER_SUGGEST_CHARS;
+  const suggestions = canSuggest
+    ? TOUR_DE_GLACE_STARTERS
+        .filter((starter) =>
+          `${starter.name} ${starter.team}`.toLocaleLowerCase('de-DE').includes(normalizedValue)
+        )
+        .slice(0, 8)
+    : [];
+  const showSuggestions = focused && TOUR_DE_GLACE_STARTERS.length > 0 && suggestions.length > 0;
+
+  return (
+    <TipField htmlFor={id}>
+      <span>{label}</span>
+      <SuggestWrap>
+        <input
+          id={id}
+          value={value}
+          autoComplete="off"
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+        />
+        {!disabled && showSuggestions && (
+          <SuggestList>
+            {suggestions.map((starter) => (
+              <SuggestOption
+                key={`${starter.name}-${starter.team}`}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onChange(starter.name);
+                  setFocused(false);
+                }}
+              >
+                <strong>{starter.name}</strong>
+                <span>{starter.team}</span>
+              </SuggestOption>
+            ))}
+          </SuggestList>
+        )}
+      </SuggestWrap>
+    </TipField>
+  );
+};
+
 const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const { authToken } = useUser();
   const [activeTab, setActiveTab] = useState('overview');
@@ -117,6 +215,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const [message, setMessage] = useState('');
   const [selectedJersey, setSelectedJersey] = useState('yellow');
   const [selectedLeaderboardEntry, setSelectedLeaderboardEntry] = useState(null);
+  const [selectedAward, setSelectedAward] = useState(null);
   const [expandedInfo, setExpandedInfo] = useState(null);
   const [expandedLeaderboards, setExpandedLeaderboards] = useState({});
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
@@ -184,6 +283,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const data = state.data;
   const phase = data?.campaign?.phase || campaign?.status;
   const riderTypes = data?.rider_types || {};
+  const pointRules = Array.isArray(data?.point_rules) && data.point_rules.length > 0 ? data.point_rules : POINT_RULES;
   const myScores = data?.my_scores || {};
   const myBreakdown = data?.my_breakdown || {};
   const myRanks = data?.my_ranks || {};
@@ -199,6 +299,36 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const selectedBreakdownUser = selectedEntryBreakdown ? selectedLeaderboardEntry : selectedRank;
   const selectedLeader = leaders[selectedJersey]?.official || null;
   const selectedRawLeader = leaders[selectedJersey]?.raw || null;
+  const officialPhase = data?.campaign?.official_phase || phase;
+  const isPreviewPhase = officialPhase === 'pre';
+  const canUseTourActions = officialPhase === 'active' || Boolean(data?.campaign?.shadow_test);
+  const tipDeadline = data?.campaign?.tip_deadline
+    ? new Date(String(data.campaign.tip_deadline).replace(' ', 'T'))
+    : null;
+  const tipsClosed = tipDeadline instanceof Date
+    && !Number.isNaN(tipDeadline.getTime())
+    && new Date() > tipDeadline;
+  const duplicateTipNames = useMemo(() => {
+    const seen = new Map();
+    const duplicates = new Set();
+    GC_TIP_KEYS.forEach((key) => {
+      const rawName = String(tips[key] || '').trim().replace(/\s+/g, ' ');
+      if (!rawName) {
+        return;
+      }
+      const normalizedName = normalizeTipName(rawName);
+      if (seen.has(normalizedName)) {
+        duplicates.add(seen.get(normalizedName));
+      } else {
+        seen.set(normalizedName, rawName);
+      }
+    });
+    return Array.from(duplicates);
+  }, [tips]);
+  const hasDuplicateTips = duplicateTipNames.length > 0;
+  const duplicateTipMessage = hasDuplicateTips
+    ? `Ein Fahrer darf in der Gesamtwertung nur einmal auf Platz 1, 2 oder 3 getippt werden. Doppelt: ${duplicateTipNames.join(', ')}.`
+    : '';
 
   useEffect(() => {
     if (!data?.my_scores) return;
@@ -270,6 +400,10 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
       return;
     }
     setMessage('');
+    if (hasDuplicateTips) {
+      setMessage(duplicateTipMessage);
+      return;
+    }
     try {
       await submitTourDeGlaceTips(authToken, tips);
       setMessage('Tipps gespeichert.');
@@ -312,7 +446,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
       {!isLoggedIn && (
         <GuestBox>
           <strong>Login erforderlich für Teilnahme.</strong>
-          <p>Regeln und Ranglisten sind sichtbar, Punkte, Tipps und Easter-Eggs werden nach dem Login gespeichert.</p>
+          <p>Regeln und Ranglisten sind sichtbar, Punkte, Tipps und Etappensichtungen werden nach dem Login gespeichert.</p>
           <ActionButton type="button" onClick={onLogin}>Login / Registrieren</ActionButton>
         </GuestBox>
       )}
@@ -328,7 +462,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
               ['overview', 'Übersicht'],
               ['rider', 'Fahrertyp'],
               ['tips', 'Tippspiel'],
-              ['eggs', 'Easter-Eggs'],
+              ['eggs', 'Sichtungen'],
               ['awards', 'Awards'],
               ['rules', 'Regeln'],
             ].map(([key, label]) => (
@@ -344,6 +478,16 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                 <strong>{formatDateTime(data.campaign.start)} bis {formatDateTime(data.campaign.end)}</strong>
                 <span>{selectedRiderType ? `Dein Fahrertyp: ${riderTypes[selectedRiderType]?.name || selectedRiderType}` : 'Noch kein Fahrertyp gewählt'}</span>
               </InfoBand>
+              {isPreviewPhase && (
+                <PreviewBox>
+                  <strong>Preview bis zum Tourstart</strong>
+                  <span>Das Tippspiel ist geoeffnet. Punktewertung, Etappensichtungen und Tagesaktionen starten am 04.07.2026 um 00:00 Uhr.</span>
+                </PreviewBox>
+              )}
+              <GroupRideBox>
+                <Bike size={18} />
+                <span>Zum Finale am 26.07. ist ein gemeinsamer Group Ride mit 2-3 Eis-Stopps geplant. Details folgen.</span>
+              </GroupRideBox>
               {currentStage && (
                 <StageBox>
                   <Bike size={18} />
@@ -505,7 +649,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
             <Stack>
               <InfoBand>
                 <strong>Bis zu 3 Wechsel möglich</strong>
-                <span>Noch {data.profile?.rider_type_changes_remaining ?? 3} Wechsel übrig.</span>
+                <span>{canUseTourActions ? `Noch ${data.profile?.rider_type_changes_remaining ?? 3} Wechsel uebrig.` : 'Auswahl und Wechsel sind ab dem Tourstart moeglich.'}</span>
               </InfoBand>
               <RiderGrid>
                 {Object.entries(riderTypes).map(([key, rider]) => (
@@ -520,7 +664,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                           {Object.entries(rider.multipliers || {})
                             .filter(([, value]) => Number(value) !== 1)
                             .map(([name, value]) => (
-                              <span key={name}>{name}: {value}x</span>
+                              <span key={name}>{MULTIPLIER_LABELS[name] || name}: {value}x</span>
                             ))}
                         </OverlayMultiplierList>
                       </InfoHint>
@@ -528,10 +672,10 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                     <p>{rider.description}</p>
                     <ActionButton
                       type="button"
-                      disabled={selectedRiderType === key || (data.profile && (data.profile.rider_type_changes_remaining ?? 0) <= 0)}
+                      disabled={!canUseTourActions || selectedRiderType === key || (data.profile && (data.profile.rider_type_changes_remaining ?? 0) <= 0)}
                       onClick={() => handleSelectRider(key)}
                     >
-                      {selectedRiderType === key ? 'Gewählt' : selectedRiderType ? 'Wechseln' : 'Auswählen'}
+                      {!canUseTourActions ? 'Ab Tourstart' : selectedRiderType === key ? 'Gewaehlt' : selectedRiderType ? 'Wechseln' : 'Auswaehlen'}
                     </ActionButton>
                   </RiderCard>
                 ))}
@@ -541,56 +685,147 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
 
           {activeTab === 'tips' && (
             <TipForm onSubmit={handleSubmitTips}>
-              <Hint>Tipps können bis 03.07.2026, 23:59 Uhr geändert werden.</Hint>
-              {[
-                ['tip_gc_winner', 'Gesamtwertung Platz 1'],
-                ['tip_gc_second', 'Gesamtwertung Platz 2'],
-                ['tip_gc_third', 'Gesamtwertung Platz 3'],
-                ['tip_green_winner', 'Grünes Trikot'],
-                ['tip_mountain_winner', 'Bergtrikot'],
-                ['tip_white_winner', 'Weißes Trikot'],
-              ].map(([key, label]) => (
-                <label key={key}>
-                  <span>{label}</span>
-                  <input value={tips[key] || ''} onChange={(event) => handleTipChange(key, event.target.value)} />
-                </label>
+              <TipHeader>
+                <SubHeading>Tippspiel</SubHeading>
+                <InfoHint id="tip-point-rules" label="Punkte-Regeln für das Tippspiel anzeigen" expandedInfo={expandedInfo} onToggle={toggleInfo}>
+                  <strong>Punkte-Regeln</strong>
+                  <TipRulesList>
+                    {TIP_POINT_RULES.map(([rule, points]) => (
+                      <li key={rule}>
+                        <span>{rule}</span>
+                        <strong>{points}</strong>
+                      </li>
+                    ))}
+                  </TipRulesList>
+                  <small>Tie-Breaker: mehr exakte Treffer, dann GC-Sieger korrekt, dann frühere letzte Tippabgabe, danach geteilter Rang.</small>
+                </InfoHint>
+              </TipHeader>
+              <Hint>
+                {tipsClosed
+                  ? 'Die Tippabgabe ist geschlossen.'
+                  : 'Tipps können bis 04.07.2026, 16:30 Uhr geändert werden.'}
+              </Hint>
+              {duplicateTipMessage && <Hint>{duplicateTipMessage}</Hint>}
+              {TIP_FIELDS.map(([key, label]) => (
+                <RiderSuggestInput
+                  key={key}
+                  id={`tour-tip-${key}`}
+                  label={label}
+                  value={tips[key] || ''}
+                  onChange={(value) => handleTipChange(key, value)}
+                  disabled={tipsClosed}
+                />
               ))}
-              <ActionButton type="submit">Tipps speichern</ActionButton>
+              <ActionButton type="submit" disabled={tipsClosed || hasDuplicateTips}>Tipps speichern</ActionButton>
             </TipForm>
           )}
 
           {activeTab === 'eggs' && (
             <Stack>
               <InfoBand>
-                <strong>{data.found_easter_eggs || 0} Easter-Eggs gefunden</strong>
-                <span>Etappen-Easter-Eggs bleiben 48 Stunden verfügbar.</span>
+                <strong>{data.found_easter_eggs || 0} Etappen gesichtet</strong>
+                <span>{data.sighted_stages?.length ? 'Deine gesichteten Etappen' : 'Noch keine Etappe gesichtet'}</span>
               </InfoBand>
+              {data.sighted_stages?.length > 0 && (
+                <SightedStageList>
+                  {data.sighted_stages.map((stage) => (
+                    <SightedStageItem key={stage.id || stage.stage_number}>
+                      <strong>Etappe {stage.stage_number}</strong>
+                      <span>{stage.start_location} → {stage.finish_location}</span>
+                    </SightedStageItem>
+                  ))}
+                </SightedStageList>
+              )}
               {data.easter_egg ? (
                 <EggBox>
                   <Search size={20} />
                   <div>
                     <strong>Etappe {data.easter_egg.stage_number}: {data.easter_egg.start_location} → {data.easter_egg.finish_location}</strong>
-                    <p>{data.easter_egg.found ? 'Heute bereits gefunden.' : data.easter_egg.hint_text}</p>
+                    <p>{data.easter_egg.found ? 'Diese Etappe hast du bereits gesichtet.' : data.easter_egg.hint_text}</p>
                     {!data.easter_egg.found && (
-                      <Hint>Öffne die Karte und sammle den Tour-Marker am Etappenziel ein.</Hint>
+                      <Hint>Öffne die Karte und tippe den Tour-Marker am Etappenziel an.</Hint>
                     )}
                   </div>
                 </EggBox>
               ) : (
-                <Hint>Aktuell ist kein Etappen-Easter-Egg verfügbar.</Hint>
+                <Hint>Aktuell ist keine Etappensichtung verfügbar.</Hint>
               )}
             </Stack>
           )}
 
           {activeTab === 'awards' && (
             <AwardGrid>
-              <AwardItem><Trophy size={18} /><span>Etappenstarter</span><small>an 1 Etappentag aktiv</small></AwardItem>
-              <AwardItem><Trophy size={18} /><span>Etappenjäger</span><small>an 7 Etappentagen aktiv</small></AwardItem>
-              <AwardItem><Trophy size={18} /><span>Grand Tour Finisher</span><small>an 15 Etappentagen aktiv</small></AwardItem>
-              <AwardItem><IceCreamBowl size={18} /><span>Goldene Kugel</span><small>Gewinner Eiscreme-Trikot</small></AwardItem>
-              <AwardItem><Search size={18} /><span>Tour-Spürnase</span><small>3 Easter-Eggs gefunden</small></AwardItem>
-              <AwardItem><Flag size={18} /><span>App-Orakel</span><small>mindestens einen Tipp richtig</small></AwardItem>
+              {data.awards?.length ? data.awards.map((award) => {
+                const iconSources = getAwardIconSources(award.icon_path, 512);
+                return (
+                  <AwardItem
+                    key={`${award.award_id}-${award.level}`}
+                    type="button"
+                    $achieved={Boolean(award.achieved)}
+                    onClick={() => setSelectedAward({ ...award, iconSources })}
+                  >
+                    <AwardImageWrap $achieved={Boolean(award.achieved)}>
+                      {iconSources.src ? (
+                        <AwardImage
+                          src={iconSources.src}
+                          data-fallback-src={iconSources.fallbackSrc || ''}
+                          onError={handleAwardIconFallback}
+                          loading="lazy"
+                          decoding="async"
+                          alt={award.title_de || 'Award'}
+                        />
+                      ) : (
+                        <Search size={22} />
+                      )}
+                    </AwardImageWrap>
+                    <span>{award.title_de}</span>
+                    <small>{AWARD_SHORT_DESCRIPTIONS[`${award.award_id}-${award.level}`] || award.description_de}</small>
+                    <AwardStatus $achieved={Boolean(award.achieved)}>
+                      {award.achieved ? 'Erreicht' : `Noch offen${award.threshold ? ` · Schwelle ${award.threshold}` : ''}`}
+                    </AwardStatus>
+                  </AwardItem>
+                );
+              }) : (
+                <Hint>Award-Daten konnten noch nicht geladen werden.</Hint>
+              )}
             </AwardGrid>
+          )}
+
+          {selectedAward && (
+            <AwardDetailOverlay onClick={() => setSelectedAward(null)}>
+              <AwardDetailCard
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tour-award-detail-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <AwardDetailClose type="button" onClick={() => setSelectedAward(null)} aria-label="Award-Details schließen">
+                  ×
+                </AwardDetailClose>
+                <AwardDetailImageWrap $achieved={Boolean(selectedAward.achieved)}>
+                  {selectedAward.iconSources?.src ? (
+                    <AwardDetailImage
+                      src={selectedAward.iconSources.src}
+                      data-fallback-src={selectedAward.iconSources.fallbackSrc || ''}
+                      onError={handleAwardIconFallback}
+                      alt={selectedAward.title_de || 'Award'}
+                    />
+                  ) : (
+                    <Search size={54} />
+                  )}
+                </AwardDetailImageWrap>
+                <AwardDetailText>
+                  <AwardStatus $achieved={Boolean(selectedAward.achieved)}>
+                    {selectedAward.achieved ? 'Erreicht' : `Noch offen${selectedAward.threshold ? ` · Schwelle ${selectedAward.threshold}` : ''}`}
+                  </AwardStatus>
+                  <h3 id="tour-award-detail-title">{selectedAward.title_de}</h3>
+                  <p>{selectedAward.description_de || 'Keine Beschreibung vorhanden.'}</p>
+                  {selectedAward.awarded_at && (
+                    <small>Vergeben am {new Date(selectedAward.awarded_at).toLocaleDateString()}</small>
+                  )}
+                </AwardDetailText>
+              </AwardDetailCard>
+            </AwardDetailOverlay>
           )}
 
           {activeTab === 'rules' && (
@@ -620,7 +855,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {POINT_RULES.map((rule) => (
+                    {pointRules.map((rule) => (
                       <tr key={rule.action}>
                         <td>{rule.action}</td>
                         <td>{rule.yellow || '-'}</td>
@@ -755,12 +990,26 @@ const InfoBand = styled.div`
   color: #303746;
 `;
 
+const PreviewBox = styled(InfoBand)`
+  background: #fff7e6;
+  border: 1px solid #f4d38c;
+  color: #6f4b00;
+`;
+
 const StageBox = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
   color: #17436f;
   font-weight: 800;
+`;
+
+const GroupRideBox = styled(StageBox)`
+  border-radius: 10px;
+  background: #edf7ef;
+  border: 1px solid #c8e6cf;
+  color: #1f4d2c;
+  padding: 0.75rem;
 `;
 
 const ScoreGrid = styled.div`
@@ -1131,18 +1380,123 @@ const TipForm = styled.form`
   gap: 0.75rem;
   margin-top: 1rem;
 
-  label {
-    display: grid;
-    gap: 0.3rem;
-    color: #303746;
-    font-weight: 800;
-  }
-
   input {
+    width: 100%;
     border: 1px solid #cfd6df;
     border-radius: 8px;
     padding: 0.6rem 0.7rem;
     font: inherit;
+    box-sizing: border-box;
+  }
+`;
+
+const TipHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  ${SubHeading} {
+    margin: 0;
+  }
+`;
+
+const TipField = styled.label`
+  display: grid;
+  gap: 0.3rem;
+  color: #303746;
+  font-weight: 800;
+`;
+
+const SuggestWrap = styled.div`
+  position: relative;
+`;
+
+const SuggestList = styled.div`
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 0.2rem;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #cfd6df;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(24, 39, 75, 0.14);
+  padding: 0.3rem;
+`;
+
+const SuggestOption = styled.button`
+  display: grid;
+  gap: 0.12rem;
+  width: 100%;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #202124;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  cursor: pointer;
+
+  strong {
+    font-size: 0.92rem;
+  }
+
+  span {
+    color: #5b6270;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: #eef5ff;
+    outline: none;
+  }
+`;
+
+const TipRulesList = styled.ul`
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-radius: 6px;
+    background: #f5f7fb;
+    color: #303746;
+    padding: 0.35rem 0.45rem;
+  }
+`;
+
+const SightedStageList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`;
+
+const SightedStageItem = styled.div`
+  display: grid;
+  gap: 0.1rem;
+  border: 1px solid #d7dce4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.5rem 0.65rem;
+
+  strong {
+    color: #202124;
+    font-size: 0.86rem;
+  }
+
+  span {
+    color: #5b6270;
+    font-size: 0.78rem;
   }
 `;
 
@@ -1216,19 +1570,34 @@ const PointRulesTable = styled.table`
 
 const AwardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 0.75rem;
   margin-top: 1rem;
 `;
 
-const AwardItem = styled.div`
+const AwardItem = styled.button`
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.25rem 0.5rem;
-  align-items: center;
-  border: 1px solid #d7dce4;
+  grid-template-columns: 82px 1fr;
+  gap: 0.3rem 0.75rem;
+  align-items: start;
+  width: 100%;
+  border: 1px solid ${({ $achieved }) => ($achieved ? '#6ec58d' : '#d7dce4')};
   border-radius: 8px;
+  background: ${({ $achieved }) => ($achieved ? '#effaf2' : '#ffffff')};
+  color: #303746;
   padding: 0.75rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: ${({ $achieved }) => ($achieved ? '#43a967' : '#aeb7c4')};
+    box-shadow: 0 8px 20px rgba(31, 77, 44, 0.1);
+    outline: none;
+    transform: translateY(-1px);
+  }
 
   span {
     font-weight: 800;
@@ -1236,6 +1605,141 @@ const AwardItem = styled.div`
 
   small {
     grid-column: 2;
+    color: inherit;
+    line-height: 1.35;
+  }
+`;
+
+const AwardImageWrap = styled.div`
+  grid-row: span 3;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f3f5f8;
+  color: #7a828e;
+  overflow: hidden;
+  filter: ${({ $achieved }) => ($achieved ? 'none' : 'grayscale(1)')};
+  opacity: ${({ $achieved }) => ($achieved ? 1 : 0.48)};
+`;
+
+const AwardImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const AwardStatus = styled.strong`
+  grid-column: 2;
+  justify-self: start;
+  border-radius: 999px;
+  background: ${({ $achieved }) => ($achieved ? '#2d8f47' : '#e2e5ea')};
+  color: ${({ $achieved }) => ($achieved ? '#ffffff' : '#68707c')};
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+`;
+
+const AwardDetailOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: grid;
+  place-items: center;
+  background: rgba(22, 28, 38, 0.58);
+  padding: 1rem;
+`;
+
+const AwardDetailCard = styled.div`
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  gap: 1.25rem;
+  width: min(720px, 100%);
+  max-height: min(84vh, 680px);
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 1.25rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 1rem;
+  }
+`;
+
+const AwardDetailClose = styled.button`
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #eef1f5;
+  color: #303746;
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: #dce3ec;
+    outline: none;
+  }
+`;
+
+const AwardDetailImageWrap = styled.div`
+  display: grid;
+  place-items: center;
+  align-self: start;
+  width: min(220px, 72vw);
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #f3f5f8;
+  color: #7a828e;
+  overflow: hidden;
+  filter: ${({ $achieved }) => ($achieved ? 'none' : 'grayscale(1)')};
+  opacity: ${({ $achieved }) => ($achieved ? 1 : 0.52)};
+`;
+
+const AwardDetailImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const AwardDetailText = styled.div`
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  padding-right: 1.6rem;
+
+  h3 {
+    margin: 0;
+    color: #202124;
+    font-size: clamp(1.25rem, 4vw, 1.8rem);
+  }
+
+  p {
+    margin: 0;
+    color: #303746;
+    line-height: 1.55;
+    white-space: pre-line;
+  }
+
+  small {
     color: #5b6270;
+    font-weight: 700;
+  }
+
+  ${AwardStatus} {
+    grid-column: auto;
+  }
+
+  @media (max-width: 620px) {
+    padding-right: 0;
   }
 `;

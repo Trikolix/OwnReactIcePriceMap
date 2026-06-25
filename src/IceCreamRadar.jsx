@@ -47,11 +47,6 @@ const DEFAULT_DISCOVERY_META = {
   truncated: false,
 };
 
-const isTourDeGlaceShadowWindow = (now = new Date()) => (
-  now >= new Date('2026-06-12T00:00:00+02:00')
-  && now < new Date('2026-07-04T00:00:00+02:00')
-);
-
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -754,6 +749,8 @@ const IceCreamRadar = () => {
   const [showDetailsView, setShowDetailsView] = useState(true);
   const { userId, isLoggedIn, userPosition, login, setUserPosition, authToken } = useUser();
   const [initialCenter, setInitialCenter] = useState(userPosition || [50.833707, 12.919187]);
+  const latestUserPositionRef = useRef(userPosition);
+  const latestLocationAccuracyRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
   const [openFilterMode, setOpenFilterMode] = useState('all');
@@ -1894,38 +1891,87 @@ const IceCreamRadar = () => {
     openFilterDateTime,
   ]);
 
-  // Geoposition des Nutzers laden
   useEffect(() => {
-    const fetchPosition = async () => {
-      if (!userPosition && navigator.geolocation) {
-        try {
-          if (Capacitor.isNativePlatform()) {
-            const { Geolocation } = await import('@capacitor/geolocation');
-            const permissions = await Geolocation.checkPermissions();
-            if (permissions.location !== 'granted') {
-              const request = await Geolocation.requestPermissions();
-              if (request.location !== 'granted') return;
-            }
-          }
-        } catch (e) {
-          console.error("Geolocation init error:", e);
-        }
+    latestUserPositionRef.current = userPosition;
+  }, [userPosition]);
 
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-          const newPos = [latitude, longitude];
-          setUserPosition(newPos); // speichert im localStorage
-          setInitialCenter(newPos); // nur einmal fürs initiale Laden
-        },
-        (error) => {
-          console.error('Fehler beim Abrufen der Position:', error);
+  const updateUserLocation = useCallback((position) => {
+    const { latitude, longitude, accuracy } = position.coords;
+    const newPos = [latitude, longitude];
+    const previousPos = latestUserPositionRef.current;
+    const previousAccuracy = latestLocationAccuracyRef.current;
+    const movedEnough = !previousPos
+      || Math.abs(previousPos[0] - latitude) > 0.00005
+      || Math.abs(previousPos[1] - longitude) > 0.00005;
+    const accuracyImproved = Number.isFinite(accuracy)
+      && (!Number.isFinite(previousAccuracy) || accuracy < previousAccuracy - 10);
+
+    if (!movedEnough && !accuracyImproved) {
+      return;
+    }
+
+    latestUserPositionRef.current = newPos;
+    latestLocationAccuracyRef.current = Number.isFinite(accuracy) ? accuracy : previousAccuracy;
+    setUserPosition(newPos); // speichert im localStorage
+
+    if (!previousPos) {
+      setInitialCenter(newPos);
+    }
+  }, [setUserPosition]);
+
+  // Geoposition des Nutzers laden und anschliessend per Watch verfeinern
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return undefined;
+    }
+
+    let watchId = null;
+    let cancelled = false;
+
+    const startGeolocation = async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const { Geolocation } = await import('@capacitor/geolocation');
+          const permissions = await Geolocation.checkPermissions();
+          if (permissions.location !== 'granted') {
+            const request = await Geolocation.requestPermissions();
+            if (request.location !== 'granted') return;
+          }
         }
-        );
+      } catch (e) {
+        console.error("Geolocation init error:", e);
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        updateUserLocation,
+        (error) => {
+          console.error('Fehler beim schnellen Abrufen der Position:', error);
+        },
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 30000 }
+      );
+
+      watchId = navigator.geolocation.watchPosition(
+        updateUserLocation,
+        (error) => {
+          console.error('Fehler beim Aktualisieren der Position:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    };
+
+    startGeolocation();
+
+    return () => {
+      cancelled = true;
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
       }
     };
-    fetchPosition();
-  }, [userPosition, setUserPosition]);
+  }, [updateUserLocation]);
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
@@ -1958,8 +2004,7 @@ const IceCreamRadar = () => {
   const easterCampaignDefinition = getCampaignDefinition('easter_2026');
   const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
   const isTourDeGlaceAdmin = Number(userId) === 1;
-  const tourDeGlaceActive = getCampaignStatus('tour_de_glace_2026') === CAMPAIGN_STATUS.ACTIVE
-    || (isTourDeGlaceAdmin && isTourDeGlaceShadowWindow());
+  const tourDeGlaceActive = getCampaignStatus('tour_de_glace_2026') === CAMPAIGN_STATUS.ACTIVE;
   const tourDeGlaceAdminVisible = tourDeGlaceActive && isTourDeGlaceAdmin;
   const easterMapRules = easterCampaignDefinition?.mapRules || {};
   const seasonalMapVisible = easterCampaignActive && seasonalMapEnabled;
@@ -2191,7 +2236,7 @@ const IceCreamRadar = () => {
           <MapActionNudge>
             <div>
               <strong>Tour de Glace auf der Karte</strong>
-              <span>Heute gibt es ein Etappen-Easter-Egg. Suche den Tour-Marker am Etappenziel.</span>
+              <span>Heute gibt es eine Etappensichtung. Suche den Tour-Marker am Etappenziel.</span>
             </div>
             <MapActionClose type="button" onClick={dismissMapActionNudge} aria-label="Karten-Aktionshinweis ausblenden">×</MapActionClose>
           </MapActionNudge>

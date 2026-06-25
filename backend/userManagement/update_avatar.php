@@ -7,6 +7,7 @@ require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/tour_de_glace.php';
 require_once __DIR__ . '/../evaluators/ProfileAvatarEvaluator.php';
+require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -29,8 +30,13 @@ function deleteUploadedAvatarIfOwned(?string $path): void {
 function evaluateProfileAvatarAwardResponse(PDO $pdo, int $userId, ?string $avatarPath): array {
     $evaluator = new ProfileAvatarEvaluator();
     $newAwards = $evaluator->evaluate($userId);
-    $levelChange = updateUserLevelIfChanged($pdo, $userId);
     $tourDeGlacePoints = $avatarPath ? recordTourDeGlaceProfileImage($pdo, $userId) : null;
+    try {
+        $newAwards = array_merge($newAwards, (new TourDeGlaceAwardEvaluator())->evaluate($userId));
+    } catch (Exception $e) {
+        error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+    }
+    $levelChange = updateUserLevelIfChanged($pdo, $userId);
 
     return [
         'success' => true,

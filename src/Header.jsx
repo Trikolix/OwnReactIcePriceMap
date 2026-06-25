@@ -30,9 +30,6 @@ const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'group_running',
   'ko_running',
 ]);
-const TOUR_DE_GLACE_SHADOW_START = new Date('2026-06-12T00:00:00+02:00');
-const TOUR_DE_GLACE_START = new Date('2026-07-04T00:00:00+02:00');
-
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [awardsActionsOpen, setAwardsActionsOpen] = useState(false);
@@ -57,9 +54,7 @@ const Header = ({ refreshShops }) => {
   const now = new Date();
   const seasonalState = getResolvedSeasonalCampaigns(now, { isAdmin });
   const featuredCampaign = seasonalState.featuredCampaign;
-  const tourShadowVisible = isAdmin && now >= TOUR_DE_GLACE_SHADOW_START && now < TOUR_DE_GLACE_START;
-  const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)).length
-    + (tourShadowVisible && !seasonalState.activeCampaigns.some((campaign) => campaign.id === 'tour_de_glace_2026') ? 1 : 0);
+  const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)).length;
   const actionHubCount = (activePhotoChallengeCount > 0 ? 1 : 0)
     + seasonalActionCount;
   const promoIconSrc = buildPublicAssetUrl('/assets/action_icon.png');
@@ -1508,20 +1503,20 @@ const ActionHubBadge = styled.span`
   line-height: 1;
 
   @media (max-width: 768px) {
-    top: -6px;
-    right: -8px;
-    min-width: 1.08rem;
-    height: 1.08rem;
+    top: -9px;
+    right: -10px;
+    min-width: 0.95rem;
+    height: 0.95rem;
     border-width: 1.5px;
-    font-size: 0.6rem;
+    font-size: 0.54rem;
   }
 
   @media (max-width: 420px) {
-    top: -7px;
-    right: -9px;
-    min-width: 1rem;
-    height: 1rem;
-    font-size: 0.56rem;
+    top: -10px;
+    right: -11px;
+    min-width: 0.85rem;
+    height: 0.85rem;
+    font-size: 0.5rem;
   }
 `;
 

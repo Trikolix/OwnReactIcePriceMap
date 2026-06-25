@@ -5,6 +5,7 @@ require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/tour_de_glace.php';
 require_once __DIR__ . '/../evaluators/ReviewCountEvaluator.php';
+require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -249,6 +250,11 @@ try {
             'has_photo' => !empty($bildUrls) || !empty($bestehende_bilder),
             'is_on_site' => (int)$isOnSite,
         ]);
+        try {
+            $newAwards = array_merge($newAwards, (new TourDeGlaceAwardEvaluator())->evaluate($currentUserId));
+        } catch (Exception $e) {
+            error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+        }
     }
     $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
 
