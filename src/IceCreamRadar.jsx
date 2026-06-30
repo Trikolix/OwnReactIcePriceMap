@@ -809,12 +809,21 @@ const IceCreamRadar = () => {
 
     const html = document.documentElement;
     const body = document.body;
+    const root = document.getElementById('root');
     const previousHtmlOverflow = html.style.overflow;
     const previousBodyOverflow = body.style.overflow;
+    const previousRootOverflow = root?.style.overflow;
     const previousHtmlHeight = html.style.height;
     const previousBodyHeight = body.style.height;
+    const previousRootHeight = root?.style.height;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
     const previousHtmlOverscroll = html.style.overscrollBehavior;
     const previousBodyOverscroll = body.style.overscrollBehavior;
+    const previousViewportHeight = html.style.getPropertyValue('--ice-app-viewport-height');
     let frameId = null;
 
     const syncViewport = () => {
@@ -822,6 +831,10 @@ const IceCreamRadar = () => {
         window.cancelAnimationFrame(frameId);
       }
       frameId = window.requestAnimationFrame(() => {
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        if (Number.isFinite(viewportHeight) && viewportHeight > 0) {
+          html.style.setProperty('--ice-app-viewport-height', `${Math.round(viewportHeight)}px`);
+        }
         window.scrollTo(0, 0);
         mapRef.current?.invalidateSize?.();
         frameId = null;
@@ -832,6 +845,15 @@ const IceCreamRadar = () => {
     body.style.overflow = 'hidden';
     html.style.height = '100%';
     body.style.height = '100%';
+    if (root) {
+      root.style.overflow = 'hidden';
+      root.style.height = '100%';
+    }
+    body.style.position = 'fixed';
+    body.style.top = '0';
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
     html.style.overscrollBehavior = 'none';
     body.style.overscrollBehavior = 'none';
 
@@ -852,10 +874,26 @@ const IceCreamRadar = () => {
       window.removeEventListener('orientationchange', syncViewport);
       html.style.overflow = previousHtmlOverflow;
       body.style.overflow = previousBodyOverflow;
+      if (root) {
+        root.style.overflow = previousRootOverflow || '';
+      }
       html.style.height = previousHtmlHeight;
       body.style.height = previousBodyHeight;
+      if (root) {
+        root.style.height = previousRootHeight || '';
+      }
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
       html.style.overscrollBehavior = previousHtmlOverscroll;
       body.style.overscrollBehavior = previousBodyOverscroll;
+      if (previousViewportHeight) {
+        html.style.setProperty('--ice-app-viewport-height', previousViewportHeight);
+      } else {
+        html.style.removeProperty('--ice-app-viewport-height');
+      }
     };
   }, []);
 
@@ -2244,7 +2282,7 @@ const IceCreamRadar = () => {
         <MapContainer
           center={initialCenter}
           zoom={14}
-          style={{ flex: 1, width: '100%' }}
+          style={{ flex: '1 1 auto', width: '100%', height: '100%', minHeight: 0 }}
           ref={mapRef}
           zoomControl={false}
           whenCreated={(mapInstance) => {
@@ -2702,18 +2740,21 @@ const IceCreamRadar = () => {
 export default IceCreamRadar;
 
 const MapPageShell = styled.div`
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
+  width: 100%;
+  height: var(--ice-app-viewport-height, 100vh);
+  max-height: var(--ice-app-viewport-height, 100vh);
   min-height: 0;
   overflow: hidden;
   background-color: #ffb522;
   overscroll-behavior: none;
 
   @supports (height: 100dvh) {
-    height: 100dvh;
-    max-height: 100dvh;
+    height: var(--ice-app-viewport-height, 100dvh);
+    max-height: var(--ice-app-viewport-height, 100dvh);
   }
 `;
 
@@ -2778,11 +2819,20 @@ const DateTimeInput = styled.input`
 
 const MapSection = styled.div`
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   width: 100%;
   display: flex;
   overflow: hidden;
+  overscroll-behavior: contain;
+
+  .leaflet-container {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
 `;
 
 const MapContextMenu = styled.div`
