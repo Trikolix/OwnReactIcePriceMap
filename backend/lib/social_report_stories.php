@@ -114,7 +114,8 @@ function iceSocialReportRenderHighlights($image, array $report): void
     iceSocialReportHeader($image, $report, $report['label'] . 'report');
 
     $portionen = (int)$report['metrics']['portionen'];
-    $headline = iceSocialReportFormatNumber($portionen) . ' Eisportionen im ' . iceSocialReportPeriodLabel($report);
+    $periodPrefix = (($report['type'] ?? '') === 'monthly') ? 'im ' : 'in ';
+    $headline = iceSocialReportFormatNumber($portionen) . ' Eisportionen ' . $periodPrefix . iceSocialReportPeriodLabel($report);
     iceSocialReportWrapText($image, $headline, 90, 430, 900, 64, '#2f2100', 'bold', 1.08);
 
     iceSocialReportHeroNumberPanel(
@@ -220,7 +221,7 @@ function iceSocialReportRenderDistribution($image, array $report): void
 
 function iceSocialReportRenderTotals($image, array $report): void
 {
-    iceSocialReportHeader($image, $report, 'Optional');
+    iceSocialReportHeader($image, $report, 'Gesamtstatistik');
     iceSocialReportText($image, 'Die Ice-App wächst', 90, 405, 62, '#2f2100', 'bold');
     iceSocialReportWrapText($image, 'Gesamtstand der Community-Karte', 90, 475, 880, 34, '#503000', 'regular', 1.15);
 
@@ -427,7 +428,9 @@ function iceSocialReportBestHeadline(array $report): string
 function iceSocialReportLogo($image, int $x, int $y, int $size): void
 {
     $paths = [
+        iceSocialReportProjectRoot() . '/logo512.png',
         iceSocialReportProjectRoot() . '/public/logo512.png',
+        dirname(__DIR__) . '/logo512.png',
         dirname(__DIR__) . '/public/logo512.png',
         __DIR__ . '/../../public/logo512.png',
     ];

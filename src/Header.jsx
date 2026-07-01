@@ -70,7 +70,10 @@ const Header = ({ refreshShops }) => {
   };
   const closeMenu = () => setMenuOpen(false);
   const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
-  const isAwardsActionsActive = location.pathname === '/awards-admin' || location.pathname === '/summer-campaign-admin' || location.pathname === '/admin/summer-campaign';
+  const isAwardsActionsActive = location.pathname === '/awards-admin'
+    || location.pathname === '/summer-campaign-admin'
+    || location.pathname === '/admin/summer-campaign'
+    || location.pathname === '/admin/tour-de-glace';
 
   useEffect(() => {
     if (!apiUrl) {
@@ -756,6 +759,7 @@ const Header = ({ refreshShops }) => {
                         <MenuSubmenu>
                           <MenuSubItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuSubItemLink>
                           <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}>Sommer-QR-Aktion verwalten</MenuSubItemLink>
+                          <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}>Tour de Glace verwalten</MenuSubItemLink>
                         </MenuSubmenu>
                       )}
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
@@ -1503,20 +1507,20 @@ const ActionHubBadge = styled.span`
   line-height: 1;
 
   @media (max-width: 768px) {
-    top: -9px;
-    right: -10px;
-    min-width: 0.95rem;
-    height: 0.95rem;
+    top: -10px;
+    right: -11px;
+    min-width: 1.16rem;
+    height: 1.16rem;
     border-width: 1.5px;
-    font-size: 0.54rem;
+    font-size: 0.64rem;
   }
 
   @media (max-width: 420px) {
-    top: -10px;
-    right: -11px;
-    min-width: 0.85rem;
-    height: 0.85rem;
-    font-size: 0.5rem;
+    top: -11px;
+    right: -12px;
+    min-width: 1.08rem;
+    height: 1.08rem;
+    font-size: 0.6rem;
   }
 `;
 

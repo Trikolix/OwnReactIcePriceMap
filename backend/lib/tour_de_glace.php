@@ -1090,7 +1090,7 @@ function submitTourDeGlaceTips(PDO $pdo, int $userId, array $tips): array
         : new DateTimeImmutable($config['pre_start'], tourDeGlaceTimezone());
     $deadline = new DateTimeImmutable(TOUR_DE_GLACE_TIP_DEADLINE, tourDeGlaceTimezone());
     if ($now < $preStart) {
-        throw new RuntimeException('Die Tippabgabe ist noch nicht geoeffnet.');
+        throw new RuntimeException('Die Tippabgabe ist noch nicht geöffnet.');
     }
     if ($now > $deadline) {
         throw new RuntimeException('Die Tippabgabe ist geschlossen.');

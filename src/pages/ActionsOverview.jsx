@@ -341,7 +341,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       title: tourOfficialActive ? 'Tour de Glace Tagesetappe' : 'Tour de Glace Preview',
       description: tourOfficialActive
         ? 'Sammle Tagespunkte und suche die Etappensichtung auf der Karte.'
-        : 'Das Tippspiel ist geoeffnet. Wertung und Etappensichtungen starten am 04.07.',
+        : 'Das Tippspiel ist geöffnet. Wertung und Etappensichtungen starten am 04.07.',
       statusLabel: tourOfficialActive ? 'Heute verfuegbar' : 'Tipps offen',
       statusTone: tourOfficialActive ? 'available' : 'active',
       priority: 2,

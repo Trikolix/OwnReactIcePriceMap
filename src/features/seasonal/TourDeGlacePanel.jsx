@@ -481,7 +481,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
               {isPreviewPhase && (
                 <PreviewBox>
                   <strong>Preview bis zum Tourstart</strong>
-                  <span>Das Tippspiel ist geoeffnet. Punktewertung, Etappensichtungen und Tagesaktionen starten am 04.07.2026 um 00:00 Uhr.</span>
+                  <span>Das Tippspiel ist geöffnet. Punktewertung, Etappensichtungen und Tagesaktionen starten am 04.07.2026 um 00:00 Uhr.</span>
                 </PreviewBox>
               )}
               <GroupRideBox>
