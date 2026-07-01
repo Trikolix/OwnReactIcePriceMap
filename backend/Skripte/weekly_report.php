@@ -8,6 +8,7 @@ if (!isset($_SERVER['REQUEST_METHOD'])) {
 }
 
 require_once  __DIR__ . '/../db_connect.php';
+require_once  __DIR__ . '/../lib/social_report_stories.php';
 
 $empfaenger1 = 'ch_helbig@mail.de';
 $empfaenger2 = 'Bocki00@web.de';
@@ -95,6 +96,32 @@ $gesamtCheckins = $pdo->query("SELECT COUNT(*) FROM checkins")->fetchColumn();
 // 12. Gesamtanzahl Eisdielen
 $gesamtEisdielen = $pdo->query("SELECT COUNT(*) FROM eisdielen")->fetchColumn();
 
+$storyReport = [
+    'type' => 'weekly',
+    'label' => 'Wochen',
+    'start' => $wochenstart,
+    'end' => $wochenende,
+    'period' => $wochenstart->format('d.m.Y') . ' bis ' . $wochenende->format('d.m.Y'),
+    'metrics' => [
+        'neue_nutzer' => $neueNutzer,
+        'neue_eisdielen' => $neueEisdielen,
+        'aktive_nutzer' => $aktiveNutzer,
+        'checkins' => $checkins,
+        'portionen' => $portionen,
+        'laender_mit_checkins' => $laenderMitCheckins,
+        'neue_awards' => $neueAwards,
+        'gesamt_nutzer' => $gesamtNutzer,
+        'gesamt_checkins' => $gesamtCheckins,
+        'gesamt_eisdielen' => $gesamtEisdielen,
+    ],
+    'distributions' => [
+        'typ' => $checkinsNachTyp,
+        'anreise' => $checkinsNachAnreise,
+        'bild' => $checkinsNachBild,
+    ],
+];
+$storyPaths = iceSocialReportGenerateStories($storyReport);
+
 // --- Mailtext erstellen ---
 $betreff_raw = "Ice-App Wochenreport: " . $wochenstart->format('d.m.Y') . " – " . $wochenende->format('d.m.Y');
 
@@ -152,6 +179,13 @@ Frostige Grüße ❄️
 Deine Ice-App
 EOT;
 
+if (!empty($storyPaths)) {
+    $nachricht .= "\n\nInstagram-Story-Grafiken wurden erstellt:\n";
+    foreach ($storyPaths as $path) {
+        $nachricht .= "  - " . iceSocialReportStoryMailLabel($path) . "\n";
+    }
+}
+
 // Insert in die Statistik-Tabelle
 $stmt = $pdo->prepare("\n    INSERT INTO wochenstatistiken (
         start_datum, end_datum,
@@ -189,13 +223,11 @@ $stmt->execute([
 // --- E-Mail versenden ---
 $nachricht_html = "<html><body style='font-family:sans-serif;color:#222;'>" . nl2br(htmlspecialchars($nachricht)) . "</body></html>";
 
-$headers = "MIME-Version: 1.0\r\n";
-$headers .= "Content-type: text/html; charset=UTF-8\r\n";
-$headers .= "From: noreply@ice-app.de\r\n";
+[$headers, $mailBody] = iceSocialReportBuildMultipartMail($nachricht_html, $storyPaths);
 
 // Betreff für Sonderzeichen kodieren
 $betreff_encoded = '=?UTF-8?B?' . base64_encode($betreff_raw) . '?=';
 
-mail($empfaenger1, $betreff_encoded, $nachricht_html, $headers);
-mail($empfaenger2, $betreff_encoded, $nachricht_html, $headers);
+mail($empfaenger1, $betreff_encoded, $mailBody, $headers);
+mail($empfaenger2, $betreff_encoded, $mailBody, $headers);
 ?>
