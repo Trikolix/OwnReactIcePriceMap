@@ -20,7 +20,11 @@ try {
 
     $stageNumber = (int)($payload['stage_number'] ?? 0);
     $stageWinner = (string)($payload['stage_winner'] ?? '');
-    $result = saveTourDeGlaceStageResult($pdo, (int)$auth['user_id'], $stageNumber, $stageWinner);
+    $top10 = $payload['stage_top10'] ?? [];
+    if (!is_array($top10)) {
+        $top10 = [];
+    }
+    $result = saveTourDeGlaceStageResult($pdo, (int)$auth['user_id'], $stageNumber, $stageWinner, $top10);
 
     echo json_encode([
         'status' => 'success',

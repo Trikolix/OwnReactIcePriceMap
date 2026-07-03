@@ -9,11 +9,12 @@ try {
     $userId = $auth ? (int)$auth['user_id'] : null;
     $jersey = (string)($_GET['jersey'] ?? 'yellow');
     $limit = (int)($_GET['limit'] ?? 50);
+    $isStageTipLeaderboard = $jersey === 'stage_tips';
     echo json_encode([
         'status' => 'success',
         'jersey' => $jersey,
-        'leaderboard' => getTourDeGlaceLeaderboard($pdo, $jersey, $limit),
-        'current_user_rank' => $userId ? getTourDeGlaceUserRank($pdo, $jersey, $userId) : null,
+        'leaderboard' => $isStageTipLeaderboard ? getTourDeGlaceStageTipLeaderboard($pdo, $limit) : getTourDeGlaceLeaderboard($pdo, $jersey, $limit),
+        'current_user_rank' => $userId ? ($isStageTipLeaderboard ? getTourDeGlaceStageTipUserRank($pdo, $userId) : getTourDeGlaceUserRank($pdo, $jersey, $userId)) : null,
         'leaders' => getTourDeGlaceOfficialLeaders($pdo),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {

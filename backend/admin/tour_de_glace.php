@@ -69,7 +69,7 @@ function fetchTourDeGlaceAdminStageTips(PDO $pdo): array
     $stmt->execute([TOUR_DE_GLACE_ID]);
     $results = getTourDeGlaceStageResults($pdo);
 
-    return array_map(static fn(array $row): array => formatTourDeGlaceStageTipRow($row, $results), $stmt->fetchAll(PDO::FETCH_ASSOC));
+    return array_map(static fn(array $row): array => formatTourDeGlaceStageTipRow($row, $results, null, $pdo), $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function fetchTourDeGlaceAdminStageResults(PDO $pdo): array
@@ -85,6 +85,7 @@ function fetchTourDeGlaceAdminStageResults(PDO $pdo): array
             'start_location' => $stage['start'],
             'finish_location' => $stage['finish'],
             'stage_winner' => $result['stage_winner'] ?? '',
+            'stage_top10' => $result['top10'] ?? [],
             'updated_by_user_id' => $result['updated_by_user_id'] ?? null,
             'updated_at' => $result['updated_at'] ?? null,
         ];

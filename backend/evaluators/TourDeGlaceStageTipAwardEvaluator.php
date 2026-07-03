@@ -4,7 +4,7 @@ require_once __DIR__ . '/../lib/tour_de_glace.php';
 
 class TourDeGlaceStageTipAwardEvaluator extends BaseAwardEvaluator {
     // TODO: Replace with the real award_id after creating award_levels for stage-tip hits.
-    const AWARD_ID = 0;
+    const AWARD_ID = 74;
 
     public function evaluate(int $userId): array {
         global $pdo;

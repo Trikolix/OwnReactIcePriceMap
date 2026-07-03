@@ -19,7 +19,10 @@ export const fetchTourDeGlaceAdminState = async (authToken) => {
   return toJson(response);
 };
 
-export const saveTourDeGlaceStageResult = async (authToken, stageNumber, stageWinner) => {
+export const saveTourDeGlaceStageResult = async (authToken, stageNumber, stageTop10) => {
+  const cleanTop10 = Array.isArray(stageTop10)
+    ? Array.from({ length: 10 }, (_, index) => String(stageTop10[index] || '').trim())
+    : [];
   const response = await fetch(`${getApiBase()}/admin/tour_de_glace_stage_result.php`, {
     method: 'POST',
     headers: {
@@ -28,7 +31,8 @@ export const saveTourDeGlaceStageResult = async (authToken, stageNumber, stageWi
     },
     body: JSON.stringify({
       stage_number: stageNumber,
-      stage_winner: stageWinner,
+      stage_winner: cleanTop10[0] || '',
+      stage_top10: cleanTop10,
     }),
   });
   return toJson(response);

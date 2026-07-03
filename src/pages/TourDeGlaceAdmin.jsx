@@ -7,6 +7,10 @@ import {
   fetchTourDeGlaceAdminState,
   saveTourDeGlaceStageResult,
 } from '../features/seasonal/tourDeGlaceAdminApi';
+import {
+  TOUR_DE_GLACE_STARTERS,
+  normalizeTourDeGlaceStarterSearch,
+} from '../features/seasonal/tourDeGlaceStarters';
 
 const JERSEY_LABELS = {
   yellow: 'Gelb',
@@ -57,6 +61,80 @@ const formatDateTime = (value) => {
     minute: '2-digit',
   }).format(date);
 };
+const normalizeStageTop10 = (result) => {
+  const top10 = Array.isArray(result?.stage_top10) ? result.stage_top10 : [];
+  const values = top10.length > 0 ? top10 : [result?.stage_winner || ''];
+  return Array.from({ length: 10 }, (_, index) => String(values[index] || ''));
+};
+const KNOWN_TEAMS = Array.from(new Set(TOUR_DE_GLACE_STARTERS.map((starter) => starter.team).filter(Boolean)))
+  .sort((left, right) => right.length - left.length);
+
+const stripResultNoise = (value) => String(value || '')
+  .replace(/^\s*\d{1,2}\s*(?:[.)-]|\s)\s*/u, '')
+  .replace(/\s+(?:\+?\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?\s*$/u, '')
+  .replace(/\s+\+\d+(?:['’]\d{2}")?\s*$/u, '')
+  .replace(/\s+\d+\s*(?:pts?|Punkte)\s*$/iu, '')
+  .trim();
+
+const parseStageResultTop10 = (rawText) => {
+  const text = String(rawText || '');
+  if (!text.trim()) {
+    return [];
+  }
+
+  const normalizedText = normalizeTourDeGlaceStarterSearch(text);
+  const knownMatches = TOUR_DE_GLACE_STARTERS
+    .map((starter) => ({
+      name: starter.name,
+      index: normalizedText.indexOf(normalizeTourDeGlaceStarterSearch(starter.name)),
+    }))
+    .filter((entry) => entry.index >= 0)
+    .sort((left, right) => left.index - right.index);
+
+  const parsed = [];
+  const seen = new Set();
+  knownMatches.forEach((entry) => {
+    const key = normalizeTourDeGlaceStarterSearch(entry.name);
+    if (!seen.has(key) && parsed.length < 10) {
+      parsed.push(entry.name);
+      seen.add(key);
+    }
+  });
+  if (parsed.length >= 10) {
+    return parsed;
+  }
+
+  text.split(/\r?\n/u).forEach((line) => {
+    if (parsed.length >= 10) {
+      return;
+    }
+    const cells = line.split(/\t|;/u).map((cell) => cell.trim()).filter(Boolean);
+    let candidate = '';
+    if (cells.length >= 2 && /^\d{1,2}[.)]?$/.test(cells[0])) {
+      candidate = cells[1];
+    } else {
+      candidate = stripResultNoise(line);
+      const normalizedCandidate = normalizeTourDeGlaceStarterSearch(candidate);
+      const team = KNOWN_TEAMS.find((teamName) => normalizedCandidate.includes(normalizeTourDeGlaceStarterSearch(teamName)));
+      if (team) {
+        const teamIndex = normalizedCandidate.indexOf(normalizeTourDeGlaceStarterSearch(team));
+        const beforeTeam = candidate.slice(0, Math.max(0, teamIndex)).trim();
+        if (beforeTeam) {
+          candidate = beforeTeam;
+        }
+      }
+    }
+
+    candidate = stripResultNoise(candidate);
+    const key = normalizeTourDeGlaceStarterSearch(candidate);
+    if (key && key.split(' ').length >= 2 && candidate.length <= 80 && !seen.has(key)) {
+      parsed.push(candidate);
+      seen.add(key);
+    }
+  });
+
+  return parsed.slice(0, 10);
+};
 
 export default function TourDeGlaceAdmin() {
   const { userId, authToken, isLoggedIn } = useUser();
@@ -66,6 +144,7 @@ export default function TourDeGlaceAdmin() {
   const [loading, setLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState('');
   const [stageResults, setStageResults] = useState({});
+  const [stageResultPaste, setStageResultPaste] = useState({});
   const [savingStageResult, setSavingStageResult] = useState(null);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -79,7 +158,7 @@ export default function TourDeGlaceAdmin() {
       setState(data);
       setStageResults(Object.fromEntries((data.stage_results || []).map((result) => [
         String(result.stage_number),
-        result.stage_winner || '',
+        normalizeStageTop10(result),
       ])));
     } catch (err) {
       setError(err.message || 'Tour-de-Glace Admin-Daten konnten nicht geladen werden.');
@@ -111,13 +190,34 @@ export default function TourDeGlaceAdmin() {
     }
   };
 
-  const handleStageResultChange = (stageNumber, value) => {
-    setStageResults((previous) => ({ ...previous, [String(stageNumber)]: value }));
+  const handleStageResultChange = (stageNumber, rankIndex, value) => {
+    setStageResults((previous) => {
+      const key = String(stageNumber);
+      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(previous[key]?.[index] || ''));
+      nextTop10[rankIndex] = value;
+      return { ...previous, [key]: nextTop10 };
+    });
+  };
+
+  const handleStageResultPasteText = (stageNumber, value) => {
+    setStageResultPaste((previous) => ({ ...previous, [String(stageNumber)]: value }));
+    const parsedTop10 = parseStageResultTop10(value);
+    if (parsedTop10.length === 0) {
+      return;
+    }
+    setStageResults((previous) => {
+      const key = String(stageNumber);
+      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(previous[key]?.[index] || ''));
+      parsedTop10.forEach((name, index) => {
+        nextTop10[index] = name;
+      });
+      return { ...previous, [key]: nextTop10 };
+    });
   };
 
   const handleSaveStageResult = async (stageNumber) => {
-    const winner = String(stageResults[String(stageNumber)] || '').trim();
-    if (!winner) {
+    const top10 = (stageResults[String(stageNumber)] || []).map((name) => String(name || '').trim());
+    if (!top10[0]) {
       setError('Bitte Etappensieger eintragen.');
       return;
     }
@@ -125,7 +225,7 @@ export default function TourDeGlaceAdmin() {
     setError('');
     setInfo('');
     try {
-      await saveTourDeGlaceStageResult(authToken, stageNumber, winner);
+      await saveTourDeGlaceStageResult(authToken, stageNumber, top10);
       setInfo(`Etappenergebnis ${stageNumber} gespeichert.`);
       await load();
     } catch (err) {
@@ -248,16 +348,30 @@ export default function TourDeGlaceAdmin() {
               <StageResultGrid>
                 {(state.stage_results || []).map((result) => {
                   const stageNumber = Number(result.stage_number);
+                  const top10 = stageResults[String(stageNumber)] || normalizeStageTop10(result);
                   return (
                     <StageResultCard key={stageNumber}>
                       <strong>Etappe {stageNumber}</strong>
                       <span>{result.start_location} → {result.finish_location}</span>
                       <small>Start: {formatDateTime(result.start_at)}</small>
-                      <input
-                        value={stageResults[String(stageNumber)] || ''}
-                        onChange={(event) => handleStageResultChange(stageNumber, event.target.value)}
-                        placeholder="Realer Etappensieger"
+                      <StageResultPaste
+                        value={stageResultPaste[String(stageNumber)] || ''}
+                        onChange={(event) => handleStageResultPasteText(stageNumber, event.target.value)}
+                        placeholder="Top 10 Ergebnisliste hier einfuegen"
+                        rows={4}
                       />
+                      <StageTop10Grid>
+                        {Array.from({ length: 10 }, (_, index) => (
+                          <label key={index}>
+                            <span>{index + 1}</span>
+                            <input
+                              value={top10[index] || ''}
+                              onChange={(event) => handleStageResultChange(stageNumber, index, event.target.value)}
+                              placeholder={index === 0 ? 'Etappensieger' : `Platz ${index + 1}`}
+                            />
+                          </label>
+                        ))}
+                      </StageTop10Grid>
                       <Button
                         type="button"
                         onClick={() => handleSaveStageResult(stageNumber)}
@@ -281,6 +395,8 @@ export default function TourDeGlaceAdmin() {
                       <th>Nutzer</th>
                       <th>Tipp</th>
                       <th>Ergebnis</th>
+                      <th>Rang</th>
+                      <th>EP</th>
                       <th>Status</th>
                       <th>Geändert</th>
                     </tr>
@@ -292,15 +408,17 @@ export default function TourDeGlaceAdmin() {
                         <td><strong>{tip.username}</strong></td>
                         <td>{tip.tip_stage_winner || '-'}</td>
                         <td>{tip.stage_winner || '-'}</td>
+                        <td>{tip.predicted_rank ? `#${tip.predicted_rank}` : '-'}</td>
+                        <td>{tip.has_result ? `${formatNumber(tip.final_ep)} EP` : '-'}</td>
                         <td>
                           {tip.stage_winner
-                            ? <ResultPill $correct={Boolean(tip.is_correct)}>{tip.is_correct ? 'Richtig' : 'Falsch'}</ResultPill>
+                            ? <ResultPill $correct={Boolean(tip.scored)}>{tip.scored ? (tip.has_stage_egg ? 'Gewertet + Egg' : 'Gewertet') : '0 EP'}</ResultPill>
                             : 'Offen'}
                         </td>
                         <td>{formatDateTime(tip.updated_at)}</td>
                       </tr>
                     ))}
-                    {(!state.stage_tips || state.stage_tips.length === 0) && <EmptyRow colSpan={6}>Noch keine Etappensieger-Tipps vorhanden.</EmptyRow>}
+                    {(!state.stage_tips || state.stage_tips.length === 0) && <EmptyRow colSpan={8}>Noch keine Etappensieger-Tipps vorhanden.</EmptyRow>}
                   </tbody>
                 </Table>
               </TableWrap>
@@ -613,6 +731,49 @@ const StageResultCard = styled.div`
     border-radius: 8px;
     padding: 0.65rem 0.75rem;
     font: inherit;
+  }
+`;
+
+const StageResultPaste = styled.textarea`
+  width: 100%;
+  min-height: 96px;
+  box-sizing: border-box;
+  border: 1px solid #d8c9a8;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #2f2100;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  resize: vertical;
+
+  &:focus {
+    border-color: #ffb522;
+    outline: 3px solid rgba(255, 181, 34, 0.25);
+  }
+`;
+
+const StageTop10Grid = styled.div`
+  display: grid;
+  gap: 0.35rem;
+
+  label {
+    display: grid;
+    grid-template-columns: 1.6rem minmax(0, 1fr);
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  label > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 6px;
+    background: #fff0c4;
+    color: #2f2100;
+    font-size: 0.78rem;
+    font-weight: 800;
   }
 `;
 

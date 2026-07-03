@@ -114,6 +114,32 @@ const TIP_FIELDS = [
 ];
 const GC_TIP_KEYS = ['tip_gc_winner', 'tip_gc_second', 'tip_gc_third'];
 const normalizeTipName = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('de-DE');
+const getTrendDisplay = (rankChange, rankDelta) => {
+  if (rankChange === 'up') {
+    return { symbol: '\u2191', label: `${rankDelta || 1}`, tone: 'up' };
+  }
+  if (rankChange === 'down') {
+    return { symbol: '\u2193', label: `${rankDelta || 1}`, tone: 'down' };
+  }
+  if (rankChange === 'same') {
+    return { symbol: '=', label: '', tone: 'same' };
+  }
+  if (rankChange === 'new') {
+    return { symbol: 'Neu', label: '', tone: 'new' };
+  }
+  return null;
+};
+const RankTrend = ({ trend }) => {
+  if (!trend) {
+    return null;
+  }
+  return (
+    <RankTrendBadge $tone={trend.tone}>
+      <span>{trend.symbol}</span>
+      {trend.label && <small>{trend.label}</small>}
+    </RankTrendBadge>
+  );
+};
 
 const AWARD_SHORT_DESCRIPTIONS = {
   '72-1': 'an 3 Etappentagen aktiv',
@@ -304,6 +330,9 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const myRanks = data?.my_ranks || {};
   const compactLeaderboards = data?.leaderboards || {};
   const leaders = data?.leaders || {};
+  const stageTipSummary = data?.stage_tip_summary || {};
+  const stageTipRank = data?.stage_tip_rank || null;
+  const stageTipLeaderboard = compactLeaderboards.stage_tips || [];
   const selectedRiderType = data?.profile?.rider_type || null;
   const currentStage = data?.stage;
   const selectedMeta = JERSEY_META[selectedJersey] || JERSEY_META.yellow;
@@ -661,7 +690,10 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                             $selected={selectedLeaderboardEntry?.user_id === entry.user_id}
                             onClick={() => setSelectedLeaderboardEntry(entry)}
                           >
-                            <span>#{entry.rank}</span>
+                            <RankCell>
+                              <span>#{entry.rank}</span>
+                              <RankTrend trend={getTrendDisplay(entry.rank_change, entry.rank_delta)} />
+                            </RankCell>
                             <strong>{entry.username}</strong>
                             <span>{entry.points}</span>
                           </RankingRow>
@@ -792,6 +824,43 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
               ) : (
                 <Hint>Aktuell ist keine Etappensichtung verfügbar.</Hint>
               )}
+              <StageTipLeaderboardBox>
+                <div>
+                  <SubHeading>Directeur Sportif</SubHeading>
+                  <Hint>Tippe für jede Etappe einen Fahrer bei dem du denkst, dass er die Etappe gewinnt. Falls er gewinnt bekommst du 100 Punkte. Aber auch wenn er in den Top 10 landet, erhälst du Punkte.</Hint>
+                </div>
+                <StageTipSummaryGrid>
+                  <SummaryTile>
+                    <span>Deine Tipp-EP</span>
+                    <strong>{stageTipSummary.points || 0}</strong>
+                    <small>{stageTipRank ? `Rang #${stageTipRank.rank}` : 'Noch kein Rang'}</small>
+                  </SummaryTile>
+                  <SummaryTile>
+                    <span>Sieger</span>
+                    <strong>{stageTipSummary.winner_hits || 0}</strong>
+                    <small>exakte Treffer</small>
+                  </SummaryTile>
+                  <SummaryTile>
+                    <span>Top 10</span>
+                    <strong>{stageTipSummary.top10_hits || 0}</strong>
+                    <small>gewertete Tipps</small>
+                  </SummaryTile>
+                </StageTipSummaryGrid>
+                {stageTipLeaderboard.length > 0 && (
+                  <StageTipRankingList>
+                    {stageTipLeaderboard.map((entry) => (
+                      <RankingRow key={`stage-tip-${entry.user_id}`} as="div">
+                        <RankCell>
+                          <span>#{entry.rank}</span>
+                          <RankTrend trend={getTrendDisplay(entry.rank_change, entry.rank_delta)} />
+                        </RankCell>
+                        <strong>{entry.username}</strong>
+                        <span>{entry.points} EP</span>
+                      </RankingRow>
+                    ))}
+                  </StageTipRankingList>
+                )}
+              </StageTipLeaderboardBox>
               <StageTipsPanel>
                 <SubHeading>Etappensieger tippen</SubHeading>
                 <Hint>Jeder Etappentipp kann bis zum Start der jeweiligen Etappe gespeichert werden.</Hint>
@@ -806,9 +875,11 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                           <strong>Etappe {stageNumber}</strong>
                           <span>{stageTip.start_location} → {stageTip.finish_location}</span>
                           <small>Start: {formatStageStart(stageTip.start_at)}</small>
-                          {stageTip.stage_winner && (
-                            <StageTipStatus $correct={Boolean(stageTip.is_correct)}>
-                              {stageTip.is_correct ? 'Richtig getippt' : `Sieger: ${stageTip.stage_winner}`}
+                          {stageTip.has_result && (
+                            <StageTipStatus $correct={Boolean(stageTip.scored)}>
+                              {stageTip.scored
+                                ? `#${stageTip.predicted_rank} · ${stageTip.base_ep} EP${stageTip.egg_bonus_ep ? ` + ${stageTip.egg_bonus_ep} Egg = ${stageTip.final_ep} EP` : ''}`
+                                : `Sieger: ${stageTip.stage_winner} · 0 EP`}
                             </StageTipStatus>
                           )}
                         </StageTipMeta>
@@ -1373,7 +1444,7 @@ const RankingList = styled.div`
 
 const RankingRow = styled.button`
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
   width: 100%;
@@ -1397,6 +1468,43 @@ const RankingRow = styled.button`
   &:focus-visible {
     outline: 3px solid rgba(31, 111, 235, 0.35);
     outline-offset: 2px;
+  }
+`;
+
+const RankCell = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+`;
+
+const RankTrendBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 1.9rem;
+  border-radius: 999px;
+  padding: 0.12rem 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+  background: ${({ $tone }) => {
+    if ($tone === 'up') return 'rgba(15, 124, 47, 0.12)';
+    if ($tone === 'down') return 'rgba(191, 38, 0, 0.12)';
+    if ($tone === 'new') return 'rgba(255, 181, 34, 0.18)';
+    if ($tone === 'same') return 'rgba(30, 64, 175, 0.14)';
+    return 'rgba(47, 33, 0, 0.08)';
+  }};
+  color: ${({ $tone }) => {
+    if ($tone === 'up') return '#0f7c2f';
+    if ($tone === 'down') return '#bf2600';
+    if ($tone === 'new') return '#8a5a00';
+    if ($tone === 'same') return '#1d4ed8';
+    return '#6f5b3a';
+  }};
+
+  small {
+    font-size: 0.66rem;
   }
 `;
 
@@ -1596,6 +1704,50 @@ const EggBox = styled.div`
     margin: 0.35rem 0 0;
     color: #5b6270;
   }
+`;
+
+const StageTipLeaderboardBox = styled.section`
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #d7dce4;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.85rem;
+
+  ${Hint} {
+    margin-top: 0;
+  }
+`;
+
+const StageTipSummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.55rem;
+`;
+
+const SummaryTile = styled.div`
+  display: grid;
+  gap: 0.12rem;
+  border: 1px solid #e1e5eb;
+  border-radius: 8px;
+  background: #f7f8fa;
+  padding: 0.65rem;
+
+  span,
+  small {
+    color: #5b6270;
+    font-weight: 700;
+  }
+
+  strong {
+    color: #202124;
+    font-size: 1.35rem;
+  }
+`;
+
+const StageTipRankingList = styled.div`
+  display: grid;
+  gap: 0.35rem;
 `;
 
 const StageTipsPanel = styled.section`
