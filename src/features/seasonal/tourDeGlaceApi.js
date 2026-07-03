@@ -43,6 +43,21 @@ export const submitTourDeGlaceTips = async (authToken, tips) => {
   return toJson(response);
 };
 
+export const submitTourDeGlaceStageTip = async (authToken, stageNumber, tipStageWinner) => {
+  const response = await fetch(`${getApiBase()}/api/tour_de_glace_submit_stage_tip.php`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(authToken),
+    },
+    body: JSON.stringify({
+      stage_number: stageNumber,
+      tip_stage_winner: tipStageWinner,
+    }),
+  });
+  return toJson(response);
+};
+
 export const findTourDeGlaceEasterEgg = async (authToken, stageNumber, secretCode) => {
   const response = await fetch(`${getApiBase()}/api/tour_de_glace_find_easter_egg.php`, {
     method: 'POST',

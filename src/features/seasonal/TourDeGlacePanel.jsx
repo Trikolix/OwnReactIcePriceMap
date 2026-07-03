@@ -6,9 +6,10 @@ import {
   fetchTourDeGlaceProgress,
   fetchTourDeGlaceLeaderboard,
   selectTourDeGlaceRiderType,
+  submitTourDeGlaceStageTip,
   submitTourDeGlaceTips,
 } from './tourDeGlaceApi';
-import { TOUR_DE_GLACE_STARTERS } from './tourDeGlaceStarters';
+import { TOUR_DE_GLACE_STARTERS, getTourDeGlaceStarterSuggestions } from './tourDeGlaceStarters';
 import { useUser } from '../../context/UserContext';
 import { getAwardIconSources, handleAwardIconFallback } from '../../utils/awardIcons';
 
@@ -138,6 +139,17 @@ const formatDateTime = (value) => {
     year: 'numeric',
   }).format(date);
 };
+const formatStageStart = (value) => {
+  if (!value) return '';
+  const date = new Date(String(value).replace(' ', 'T'));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 const InfoHint = ({ id, label, children, text, expandedInfo, onToggle }) => (
   <InfoWrap data-tour-info>
@@ -160,15 +172,8 @@ const MIN_RIDER_SUGGEST_CHARS = 2;
 
 const RiderSuggestInput = ({ id, label, value, onChange, disabled = false }) => {
   const [focused, setFocused] = useState(false);
-  const normalizedValue = value.trim().toLocaleLowerCase('de-DE');
-  const canSuggest = normalizedValue.length >= MIN_RIDER_SUGGEST_CHARS;
-  const suggestions = canSuggest
-    ? TOUR_DE_GLACE_STARTERS
-        .filter((starter) =>
-          `${starter.name} ${starter.team}`.toLocaleLowerCase('de-DE').includes(normalizedValue)
-        )
-        .slice(0, 8)
-    : [];
+  const canSuggest = value.trim().length >= MIN_RIDER_SUGGEST_CHARS;
+  const suggestions = canSuggest ? getTourDeGlaceStarterSuggestions(value, 8) : [];
   const showSuggestions = focused && TOUR_DE_GLACE_STARTERS.length > 0 && suggestions.length > 0;
 
   return (
@@ -212,6 +217,8 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [state, setState] = useState({ loading: false, error: '', data: null });
   const [tips, setTips] = useState({});
+  const [stageTips, setStageTips] = useState({});
+  const [savingStageTip, setSavingStageTip] = useState(null);
   const [message, setMessage] = useState('');
   const [selectedJersey, setSelectedJersey] = useState('yellow');
   const [selectedLeaderboardEntry, setSelectedLeaderboardEntry] = useState(null);
@@ -233,6 +240,10 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
         tip_mountain_winner: data?.tips?.tip_mountain_winner || '',
         tip_white_winner: data?.tips?.tip_white_winner || '',
       });
+      setStageTips(Object.fromEntries((data?.stage_tips || []).map((tip) => [
+        String(tip.stage_number),
+        tip.tip_stage_winner || '',
+      ])));
     } catch (error) {
       setState({ loading: false, error: error.message || 'Tour de Glace konnte nicht geladen werden.', data: null });
     }
@@ -257,6 +268,10 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
             tip_mountain_winner: data?.tips?.tip_mountain_winner || '',
             tip_white_winner: data?.tips?.tip_white_winner || '',
           });
+          setStageTips(Object.fromEntries((data?.stage_tips || []).map((tip) => [
+            String(tip.stage_number),
+            tip.tip_stage_winner || '',
+          ])));
         }
       } catch (error) {
         if (!cancelled) {
@@ -393,6 +408,33 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
     setTips((previous) => ({ ...previous, [key]: value }));
   };
 
+  const handleStageTipChange = (stageNumber, value) => {
+    setStageTips((previous) => ({ ...previous, [String(stageNumber)]: value }));
+  };
+
+  const handleSubmitStageTip = async (stageNumber) => {
+    if (!isLoggedIn) {
+      onLogin?.();
+      return;
+    }
+    setMessage('');
+    const tipValue = String(stageTips[String(stageNumber)] || '').trim();
+    if (!tipValue) {
+      setMessage('Bitte gib einen Etappensieger ein.');
+      return;
+    }
+    setSavingStageTip(stageNumber);
+    try {
+      await submitTourDeGlaceStageTip(authToken, stageNumber, tipValue);
+      setMessage(`Etappentipp ${stageNumber} gespeichert.`);
+      await load();
+    } catch (error) {
+      setMessage(error.message || 'Etappentipp konnte nicht gespeichert werden.');
+    } finally {
+      setSavingStageTip(null);
+    }
+  };
+
   const handleSubmitTips = async (event) => {
     event.preventDefault();
     if (!isLoggedIn) {
@@ -481,7 +523,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
               {isPreviewPhase && (
                 <PreviewBox>
                   <strong>Preview bis zum Tourstart</strong>
-                  <span>Das Tippspiel ist geöffnet. Punktewertung, Etappensichtungen und Tagesaktionen starten am 04.07.2026 um 00:00 Uhr.</span>
+                  <span>Das Tippspiel ist geöffnet. Die erste Etappensichtung ist bereits sichtbar; Punktewertung und Tagesaktionen starten am 04.07.2026 um 00:00 Uhr.</span>
                 </PreviewBox>
               )}
               <GroupRideBox>
@@ -649,7 +691,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
             <Stack>
               <InfoBand>
                 <strong>Bis zu 3 Wechsel möglich</strong>
-                <span>{canUseTourActions ? `Noch ${data.profile?.rider_type_changes_remaining ?? 3} Wechsel uebrig.` : 'Auswahl und Wechsel sind ab dem Tourstart moeglich.'}</span>
+                <span>{canUseTourActions ? `Noch ${data.profile?.rider_type_changes_remaining ?? 3} Wechsel übrig.` : 'Auswahl und Wechsel sind ab dem Tourstart möglich.'}</span>
               </InfoBand>
               <RiderGrid>
                 {Object.entries(riderTypes).map(([key, rider]) => (
@@ -675,7 +717,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                       disabled={!canUseTourActions || selectedRiderType === key || (data.profile && (data.profile.rider_type_changes_remaining ?? 0) <= 0)}
                       onClick={() => handleSelectRider(key)}
                     >
-                      {!canUseTourActions ? 'Ab Tourstart' : selectedRiderType === key ? 'Gewaehlt' : selectedRiderType ? 'Wechseln' : 'Auswaehlen'}
+                      {!canUseTourActions ? 'Ab Tourstart' : selectedRiderType === key ? 'Gewählt' : selectedRiderType ? 'Wechseln' : 'Auswählen'}
                     </ActionButton>
                   </RiderCard>
                 ))}
@@ -750,6 +792,47 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
               ) : (
                 <Hint>Aktuell ist keine Etappensichtung verfügbar.</Hint>
               )}
+              <StageTipsPanel>
+                <SubHeading>Etappensieger tippen</SubHeading>
+                <Hint>Jeder Etappentipp kann bis zum Start der jeweiligen Etappe gespeichert werden.</Hint>
+                <StageTipList>
+                  {(data.stage_tips || []).map((stageTip) => {
+                    const stageNumber = Number(stageTip.stage_number);
+                    const closed = Boolean(stageTip.closed);
+                    const value = stageTips[String(stageNumber)] ?? stageTip.tip_stage_winner ?? '';
+                    return (
+                      <StageTipItem key={stageNumber} $closed={closed}>
+                        <StageTipMeta>
+                          <strong>Etappe {stageNumber}</strong>
+                          <span>{stageTip.start_location} → {stageTip.finish_location}</span>
+                          <small>Start: {formatStageStart(stageTip.start_at)}</small>
+                          {stageTip.stage_winner && (
+                            <StageTipStatus $correct={Boolean(stageTip.is_correct)}>
+                              {stageTip.is_correct ? 'Richtig getippt' : `Sieger: ${stageTip.stage_winner}`}
+                            </StageTipStatus>
+                          )}
+                        </StageTipMeta>
+                        <StageTipControls>
+                          <RiderSuggestInput
+                            id={`tour-stage-tip-${stageNumber}`}
+                            label="Etappensieger"
+                            value={value}
+                            onChange={(nextValue) => handleStageTipChange(stageNumber, nextValue)}
+                            disabled={closed || savingStageTip === stageNumber}
+                          />
+                          <ActionButton
+                            type="button"
+                            disabled={closed || savingStageTip === stageNumber || !String(value).trim()}
+                            onClick={() => handleSubmitStageTip(stageNumber)}
+                          >
+                            {closed ? 'Geschlossen' : savingStageTip === stageNumber ? 'Speichert...' : 'Speichern'}
+                          </ActionButton>
+                        </StageTipControls>
+                      </StageTipItem>
+                    );
+                  })}
+                </StageTipList>
+              </StageTipsPanel>
             </Stack>
           )}
 
@@ -1513,6 +1596,73 @@ const EggBox = styled.div`
     margin: 0.35rem 0 0;
     color: #5b6270;
   }
+`;
+
+const StageTipsPanel = styled.section`
+  border: 1px solid #d7dce4;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.85rem;
+
+  ${Hint} {
+    margin-top: 0;
+  }
+`;
+
+const StageTipList = styled.div`
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+`;
+
+const StageTipItem = styled.article`
+  display: grid;
+  grid-template-columns: minmax(190px, 0.7fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  border: 1px solid ${({ $closed }) => ($closed ? '#e1e5eb' : '#cfe0ff')};
+  border-radius: 8px;
+  background: ${({ $closed }) => ($closed ? '#f7f8fa' : '#fafdff')};
+  padding: 0.7rem;
+
+  @media (max-width: 680px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const StageTipMeta = styled.div`
+  display: grid;
+  align-content: start;
+  gap: 0.18rem;
+
+  strong {
+    color: #202124;
+  }
+
+  span,
+  small {
+    color: #5b6270;
+    font-weight: 700;
+  }
+`;
+
+const StageTipControls = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: end;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const StageTipStatus = styled.strong`
+  justify-self: start;
+  border-radius: 999px;
+  background: ${({ $correct }) => ($correct ? '#dcfce7' : '#fff3cd')};
+  color: ${({ $correct }) => ($correct ? '#166534' : '#6f4b00')};
+  padding: 0.18rem 0.48rem;
+  font-size: 0.76rem;
 `;
 
 const RulesList = styled.ul`

@@ -59,9 +59,9 @@ function tourDeGlaceConfig(): array
         'jerseys' => [
             'yellow' => ['label' => 'Gelbes Trikot', 'priority' => 1],
             'mountain' => ['label' => 'Bergtrikot', 'priority' => 2],
-            'green' => ['label' => 'Gruenes Trikot', 'priority' => 3],
+            'green' => ['label' => 'Grünes Trikot', 'priority' => 3],
             'ice' => ['label' => 'Eiscreme-Trikot', 'priority' => 4],
-            'white' => ['label' => 'Weisses Trikot', 'priority' => 5],
+            'white' => ['label' => 'Weißes Trikot', 'priority' => 5],
         ],
         'rider_types' => [
             'sprinter' => [
@@ -96,27 +96,27 @@ function tourDeGlaceConfig(): array
             ],
         ],
         'stages' => [
-            1 => ['date' => '2026-07-04', 'start' => 'Barcelona', 'finish' => 'Barcelona', 'lat' => 41.3874, 'lng' => 2.1686, 'hint' => 'Die Tour startet in Barcelona.'],
-            2 => ['date' => '2026-07-05', 'start' => 'Tarragona', 'finish' => 'Barcelona', 'lat' => 41.3874, 'lng' => 2.1686, 'hint' => 'Die Etappe endet wieder in Barcelona.'],
-            3 => ['date' => '2026-07-06', 'start' => 'Granollers', 'finish' => 'Les Angles', 'lat' => 42.5797, 'lng' => 2.0747, 'hint' => 'Heute geht es in Richtung Pyrenaeen.'],
-            4 => ['date' => '2026-07-07', 'start' => 'Carcassonne', 'finish' => 'Foix', 'lat' => 42.9653, 'lng' => 1.6072, 'hint' => 'Suche zwischen Burgstadt und Pyrenaeen.'],
-            5 => ['date' => '2026-07-08', 'start' => 'Lannemezan', 'finish' => 'Pau', 'lat' => 43.2951, 'lng' => -0.3708, 'hint' => 'Pau ist ein Klassiker der Tour.'],
-            6 => ['date' => '2026-07-09', 'start' => 'Pau', 'finish' => 'Gavarnie-Gedre', 'lat' => 42.7353, 'lng' => -0.0099, 'hint' => 'Bergluft und Pyrenaeen warten.'],
-            7 => ['date' => '2026-07-10', 'start' => 'Hagetmau', 'finish' => 'Bordeaux', 'lat' => 44.8378, 'lng' => -0.5792, 'hint' => 'Heute führt die Spur nach Bordeaux.'],
-            8 => ['date' => '2026-07-11', 'start' => 'Perigueux', 'finish' => 'Bergerac', 'lat' => 44.8536, 'lng' => 0.4830, 'hint' => 'Dordogne-Tag mit Ziel Bergerac.'],
-            9 => ['date' => '2026-07-12', 'start' => 'Malemort', 'finish' => 'Ussel', 'lat' => 45.5480, 'lng' => 2.3090, 'hint' => 'Massif-Central-Gefuehl in Ussel.'],
-            10 => ['date' => '2026-07-14', 'start' => 'Aurillac', 'finish' => 'Le Lioran', 'lat' => 45.0919, 'lng' => 2.7515, 'hint' => 'Nach dem Ruhetag wartet Le Lioran.'],
-            11 => ['date' => '2026-07-15', 'start' => 'Vichy', 'finish' => 'Nevers', 'lat' => 46.9896, 'lng' => 3.1590, 'hint' => 'Von Vichy nach Nevers.'],
-            12 => ['date' => '2026-07-16', 'start' => 'Nevers Magny-Cours', 'finish' => 'Chalon-sur-Saone', 'lat' => 46.7808, 'lng' => 4.8539, 'hint' => 'Motorsport-Start, Saone-Ziel.'],
-            13 => ['date' => '2026-07-17', 'start' => 'Dole', 'finish' => 'Belfort', 'lat' => 47.6397, 'lng' => 6.8638, 'hint' => 'Belfort markiert den Weg in die Vogesen.'],
-            14 => ['date' => '2026-07-18', 'start' => 'Mulhouse', 'finish' => 'Le Markstein', 'lat' => 47.9230, 'lng' => 7.0300, 'hint' => 'Vogesen-Bergtag am Le Markstein.'],
-            15 => ['date' => '2026-07-19', 'start' => 'Champagnole', 'finish' => 'Plateau de Solaison', 'lat' => 46.0240, 'lng' => 6.4090, 'hint' => 'Plateau-Finish vor dem Ruhetag.'],
-            16 => ['date' => '2026-07-21', 'start' => 'Evian-les-Bains', 'finish' => 'Thonon-les-Bains', 'lat' => 46.3705, 'lng' => 6.4798, 'hint' => 'Zeitfahr-Spur am Genfersee.'],
-            17 => ['date' => '2026-07-22', 'start' => 'Chambery', 'finish' => 'Voiron', 'lat' => 45.3630, 'lng' => 5.5920, 'hint' => 'Alpenrand nach Voiron.'],
-            18 => ['date' => '2026-07-23', 'start' => 'Voiron', 'finish' => 'Orcieres-Merlette', 'lat' => 44.6970, 'lng' => 6.3270, 'hint' => 'Orcieres-Merlette ruft.'],
-            19 => ['date' => '2026-07-24', 'start' => 'Gap', 'finish' => 'Alpe dHuez', 'lat' => 45.0910, 'lng' => 6.0680, 'hint' => 'Die berühmten Kehren warten.'],
-            20 => ['date' => '2026-07-25', 'start' => 'Le Bourg-dOisans', 'finish' => 'Alpe dHuez', 'lat' => 45.0910, 'lng' => 6.0680, 'hint' => 'Noch einmal Alpe dHuez.'],
-            21 => ['date' => '2026-07-26', 'start' => 'Thoiry', 'finish' => 'Paris Champs-Elysees', 'lat' => 48.8698, 'lng' => 2.3076, 'hint' => 'Finale in Paris.'],
+            1 => ['date' => '2026-07-04', 'start_at' => '2026-07-04 17:05:00', 'start' => 'Barcelona', 'finish' => 'Barcelona', 'lat' => 41.3874, 'lng' => 2.1686, 'hint' => 'Die Tour startet in Barcelona.'],
+            2 => ['date' => '2026-07-05', 'start_at' => '2026-07-05 13:45:00', 'start' => 'Tarragona', 'finish' => 'Barcelona', 'lat' => 41.3874, 'lng' => 2.1686, 'hint' => 'Die Etappe endet wieder in Barcelona.'],
+            3 => ['date' => '2026-07-06', 'start_at' => '2026-07-06 12:10:00', 'start' => 'Granollers', 'finish' => 'Les Angles', 'lat' => 42.5797, 'lng' => 2.0747, 'hint' => 'Heute geht es in Richtung Pyrenäen.'],
+            4 => ['date' => '2026-07-07', 'start_at' => '2026-07-07 13:10:00', 'start' => 'Carcassonne', 'finish' => 'Foix', 'lat' => 42.9653, 'lng' => 1.6072, 'hint' => 'Suche zwischen Burgstadt und Pyrenäen.'],
+            5 => ['date' => '2026-07-08', 'start_at' => '2026-07-08 14:05:00', 'start' => 'Lannemezan', 'finish' => 'Pau', 'lat' => 43.2951, 'lng' => -0.3708, 'hint' => 'Pau ist ein Klassiker der Tour.'],
+            6 => ['date' => '2026-07-09', 'start_at' => '2026-07-09 12:25:00', 'start' => 'Pau', 'finish' => 'Gavarnie-Gèdre', 'lat' => 42.7353, 'lng' => -0.0099, 'hint' => 'Bergluft und Pyrenäen warten.'],
+            7 => ['date' => '2026-07-10', 'start_at' => '2026-07-10 13:15:00', 'start' => 'Hagetmau', 'finish' => 'Bordeaux', 'lat' => 44.8378, 'lng' => -0.5792, 'hint' => 'Heute führt die Spur nach Bordeaux.'],
+            8 => ['date' => '2026-07-11', 'start_at' => '2026-07-11 13:15:00', 'start' => 'Périgueux', 'finish' => 'Bergerac', 'lat' => 44.8536, 'lng' => 0.4830, 'hint' => 'Dordogne-Tag mit Ziel Bergerac.'],
+            9 => ['date' => '2026-07-12', 'start_at' => '2026-07-12 13:35:00', 'start' => 'Malemort', 'finish' => 'Ussel', 'lat' => 45.5480, 'lng' => 2.3090, 'hint' => 'Massif-Central-Gefühl in Ussel.'],
+            10 => ['date' => '2026-07-14', 'start_at' => '2026-07-14 13:10:00', 'start' => 'Aurillac', 'finish' => 'Le Lioran', 'lat' => 45.0919, 'lng' => 2.7515, 'hint' => 'Nach dem Ruhetag wartet Le Lioran.'],
+            11 => ['date' => '2026-07-15', 'start_at' => '2026-07-15 13:50:00', 'start' => 'Vichy', 'finish' => 'Nevers', 'lat' => 46.9896, 'lng' => 3.1590, 'hint' => 'Von Vichy nach Nevers.'],
+            12 => ['date' => '2026-07-16', 'start_at' => '2026-07-16 13:30:00', 'start' => 'Nevers Magny-Cours', 'finish' => 'Chalon-sur-Saône', 'lat' => 46.7808, 'lng' => 4.8539, 'hint' => 'Motorsport-Start, Saône-Ziel.'],
+            13 => ['date' => '2026-07-17', 'start_at' => '2026-07-17 13:00:00', 'start' => 'Dole', 'finish' => 'Belfort', 'lat' => 47.6397, 'lng' => 6.8638, 'hint' => 'Belfort markiert den Weg in die Vogesen.'],
+            14 => ['date' => '2026-07-18', 'start_at' => '2026-07-18 13:10:00', 'start' => 'Mulhouse', 'finish' => 'Le Markstein', 'lat' => 47.9230, 'lng' => 7.0300, 'hint' => 'Vogesen-Bergtag am Le Markstein.'],
+            15 => ['date' => '2026-07-19', 'start_at' => '2026-07-19 13:10:00', 'start' => 'Champagnole', 'finish' => 'Plateau de Solaison', 'lat' => 46.0240, 'lng' => 6.4090, 'hint' => 'Plateau-Finish vor dem Ruhetag.'],
+            16 => ['date' => '2026-07-21', 'start_at' => '2026-07-21 13:00:00', 'start' => 'Evian-les-Bains', 'finish' => 'Thonon-les-Bains', 'lat' => 46.3705, 'lng' => 6.4798, 'hint' => 'Zeitfahr-Spur am Genfersee.'],
+            17 => ['date' => '2026-07-22', 'start_at' => '2026-07-22 13:20:00', 'start' => 'Chambéry', 'finish' => 'Voiron', 'lat' => 45.3630, 'lng' => 5.5920, 'hint' => 'Alpenrand nach Voiron.'],
+            18 => ['date' => '2026-07-23', 'start_at' => '2026-07-23 12:35:00', 'start' => 'Voiron', 'finish' => 'Orcières-Merlette', 'lat' => 44.6970, 'lng' => 6.3270, 'hint' => 'Orcières-Merlette ruft.'],
+            19 => ['date' => '2026-07-24', 'start_at' => '2026-07-24 14:00:00', 'start' => 'Gap', 'finish' => "Alpe d'Huez", 'lat' => 45.0910, 'lng' => 6.0680, 'hint' => 'Die berühmten Kehren warten.'],
+            20 => ['date' => '2026-07-25', 'start_at' => '2026-07-25 11:20:00', 'start' => "Le Bourg-d'Oisans", 'finish' => "Alpe d'Huez", 'lat' => 45.0910, 'lng' => 6.0680, 'hint' => "Noch einmal Alpe d'Huez."],
+            21 => ['date' => '2026-07-26', 'start_at' => '2026-07-26 16:15:00', 'start' => 'Thoiry', 'finish' => 'Paris Champs-Élysées', 'lat' => 48.8698, 'lng' => 2.3076, 'hint' => 'Finale in Paris.'],
         ],
     ];
 }
@@ -129,27 +129,27 @@ function getTourDeGlaceNow(): DateTimeImmutable
 function tourDeGlaceStageFunTexts(): array
 {
     return [
-        1 => 'Du hast den Prolog erspaeht. Die Beine sind frisch, das Eis hoffentlich auch.',
-        2 => 'Barcelona ruft nochmal. Dein Spuersinn faehrt schon im Gelben.',
+        1 => 'Du hast den Prolog erspäht. Die Beine sind frisch, das Eis hoffentlich auch.',
+        2 => 'Barcelona ruft nochmal. Dein Spürsinn fährt schon im Gelben.',
         3 => 'Bergsichtung gesichert. Sauerstoff knapp, Kugel Moral voll.',
-        4 => 'Zwischen Burgstadt und Pyrenaeen gesichtet. Sehr ritterlich, sehr eisig.',
-        5 => 'Pau gesichtet. Klassiker-Punkte fuer klassische Sucharbeit.',
+        4 => 'Zwischen Burgstadt und Pyrenäen gesichtet. Sehr ritterlich, sehr eisig.',
+        5 => 'Pau gesichtet. Klassiker-Punkte für klassische Sucharbeit.',
         6 => 'Gavarnie-Gedre meldet: Bergluft drin, Sichtung gesichert.',
         7 => 'Sprintsichtung! Kurz angetippt, schnell kassiert.',
-        8 => 'Dordogne-Tag, Sichtung im Gepaeck. Bergerac waere stolz auf diese Nase.',
+        8 => 'Dordogne-Tag, Sichtung im Gepäck. Bergerac wäre stolz auf diese Nase.',
         9 => 'Massif-Central-Sichtung. Unebenes Profil, glatte Leistung.',
         10 => 'Die Sichtung macht Pause vom Pausieren.',
-        11 => 'Vichy nach Nevers, Sichtung nicht verpasst. Das Peloton schaut kurz rueber.',
-        12 => 'Magny-Cours-Gefuehl: Boxenstopp gemacht, Etappe gesichtet.',
+        11 => 'Vichy nach Nevers, Sichtung nicht verpasst. Das Peloton schaut kurz rüber.',
+        12 => 'Magny-Cours-Gefühl: Boxenstopp gemacht, Etappe gesichtet.',
         13 => 'Belfort markiert den Weg. Du markierst die Sichtung.',
         14 => 'Vogesen-Sichtung gesichert. Der Berg wollte sich verstecken, hat aber verloren.',
         15 => 'Plateau-Finish, Plateau-Sichtung. Oben schmeckt das Eis theoretisch besser.',
         16 => 'Zeitfahrsichtung! Keine Windschattenhilfe, trotzdem getroffen.',
         17 => 'Alpenrand nach Voiron. Sichtung am Rand entdeckt, sauber markiert.',
-        18 => 'Orcieres-Merlette ruft. Dein Suchtempo antwortet.',
-        19 => '21 Kehren, eine Sichtung. Deine Kletterform ist fragwuerdig, dein Spuersinn nicht.',
-        20 => 'Nochmal Alpe dHuez. Die Sichtung wollte Revanche, du warst schneller.',
-        21 => 'Finalsichtung! Champs-Elysees, Zielstrich, Gehirnfrost.',
+        18 => 'Orcières-Merlette ruft. Dein Suchtempo antwortet.',
+        19 => '21 Kehren, eine Sichtung. Deine Kletterform ist fragwürdig, dein Spürsinn nicht.',
+        20 => "Nochmal Alpe d'Huez. Die Sichtung wollte Revanche, du warst schneller.",
+        21 => 'Finalsichtung! Champs-Élysées, Zielstrich, Gehirnfrost.',
     ];
 }
 
@@ -247,6 +247,38 @@ function ensureTourDeGlaceTables(PDO $pdo): void
     );
     ensureTourDeGlaceColumn($pdo, 'tour_de_glace_tips', 'tip_gc_second', 'VARCHAR(160) DEFAULT NULL AFTER tip_gc_winner');
     ensureTourDeGlaceColumn($pdo, 'tour_de_glace_tips', 'tip_gc_third', 'VARCHAR(160) DEFAULT NULL AFTER tip_gc_second');
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS tour_de_glace_stage_tips (
+            id INT NOT NULL AUTO_INCREMENT,
+            campaign_id VARCHAR(64) NOT NULL,
+            user_id INT NOT NULL,
+            stage_number INT NOT NULL,
+            tip_stage_winner VARCHAR(160) NOT NULL,
+            submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uniq_tdg_stage_tip (campaign_id, user_id, stage_number),
+            KEY idx_tdg_stage_tips_user (campaign_id, user_id),
+            KEY idx_tdg_stage_tips_stage (campaign_id, stage_number),
+            CONSTRAINT fk_tdg_stage_tip_user FOREIGN KEY (user_id) REFERENCES nutzer(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS tour_de_glace_stage_results (
+            id INT NOT NULL AUTO_INCREMENT,
+            campaign_id VARCHAR(64) NOT NULL,
+            stage_number INT NOT NULL,
+            stage_winner VARCHAR(160) NOT NULL,
+            updated_by_user_id INT DEFAULT NULL,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uniq_tdg_stage_result (campaign_id, stage_number),
+            KEY idx_tdg_stage_results_user (updated_by_user_id),
+            CONSTRAINT fk_tdg_stage_result_user FOREIGN KEY (updated_by_user_id) REFERENCES nutzer(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS tour_de_glace_easter_eggs (
@@ -409,7 +441,7 @@ function selectTourDeGlaceRiderType(PDO $pdo, int $userId, string $riderType): a
     ensureTourDeGlaceTables($pdo);
     $config = tourDeGlaceConfig();
     if (!isset($config['rider_types'][$riderType])) {
-        throw new InvalidArgumentException('Ungueltiger Fahrertyp.');
+        throw new InvalidArgumentException('Ungültiger Fahrertyp.');
     }
 
     $existing = getTourDeGlaceProfile($pdo, $userId);
@@ -1071,6 +1103,56 @@ function getCurrentTourDeGlaceStage(?DateTimeImmutable $now = null): ?array
     return null;
 }
 
+function normalizeTourDeGlaceTipName(string $value): string
+{
+    $normalized = preg_replace('/\s+/u', ' ', trim($value));
+    if (function_exists('mb_strtolower')) {
+        return mb_strtolower((string)$normalized, 'UTF-8');
+    }
+    return strtolower((string)$normalized);
+}
+
+function getTourDeGlaceStage(int $stageNumber): ?array
+{
+    $config = tourDeGlaceConfig();
+    if (!isset($config['stages'][$stageNumber])) {
+        return null;
+    }
+    return ['stage_number' => $stageNumber] + $config['stages'][$stageNumber];
+}
+
+function getTourDeGlaceStageStart(array $stage): DateTimeImmutable
+{
+    $startAt = (string)($stage['start_at'] ?? (($stage['date'] ?? getTourDeGlaceNow()->format('Y-m-d')) . ' 12:00:00'));
+    return new DateTimeImmutable($startAt, tourDeGlaceTimezone());
+}
+
+function formatTourDeGlaceStageTipRow(array $row, array $resultsByStage = [], ?DateTimeImmutable $now = null): array
+{
+    $stageNumber = (int)$row['stage_number'];
+    $stage = getTourDeGlaceStage($stageNumber);
+    $startAt = $stage ? getTourDeGlaceStageStart($stage) : null;
+    $reference = $now ?? getTourDeGlaceNow();
+    $winner = $resultsByStage[$stageNumber]['stage_winner'] ?? null;
+    $tip = (string)($row['tip_stage_winner'] ?? '');
+
+    return [
+        'user_id' => isset($row['user_id']) ? (int)$row['user_id'] : null,
+        'username' => $row['username'] ?? null,
+        'stage_number' => $stageNumber,
+        'stage_date' => $stage['date'] ?? ($row['stage_date'] ?? null),
+        'start_at' => $startAt ? $startAt->format('Y-m-d H:i:s') : null,
+        'start_location' => $stage['start'] ?? ($row['start_location'] ?? null),
+        'finish_location' => $stage['finish'] ?? ($row['finish_location'] ?? null),
+        'tip_stage_winner' => $tip,
+        'stage_winner' => $winner,
+        'closed' => $startAt ? $reference > $startAt : true,
+        'is_correct' => $winner !== null && normalizeTourDeGlaceTipName($tip) === normalizeTourDeGlaceTipName((string)$winner),
+        'submitted_at' => $row['submitted_at'] ?? null,
+        'updated_at' => $row['updated_at'] ?? null,
+    ];
+}
+
 function getTourDeGlaceTips(PDO $pdo, int $userId): ?array
 {
     ensureTourDeGlaceTables($pdo);
@@ -1141,10 +1223,141 @@ function submitTourDeGlaceTips(PDO $pdo, int $userId, array $tips): array
     return getTourDeGlaceTips($pdo, $userId) ?: [];
 }
 
+function getTourDeGlaceStageResults(PDO $pdo): array
+{
+    ensureTourDeGlaceTables($pdo);
+    $stmt = $pdo->prepare(
+        "SELECT stage_number, stage_winner, updated_by_user_id, updated_at
+         FROM tour_de_glace_stage_results
+         WHERE campaign_id = ?
+         ORDER BY stage_number ASC"
+    );
+    $stmt->execute([TOUR_DE_GLACE_ID]);
+
+    $results = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $stageNumber = (int)$row['stage_number'];
+        $results[$stageNumber] = [
+            'stage_number' => $stageNumber,
+            'stage_winner' => $row['stage_winner'],
+            'updated_by_user_id' => isset($row['updated_by_user_id']) ? (int)$row['updated_by_user_id'] : null,
+            'updated_at' => $row['updated_at'],
+        ];
+    }
+    return $results;
+}
+
+function submitTourDeGlaceStageTip(PDO $pdo, int $userId, int $stageNumber, string $tipStageWinner): array
+{
+    ensureTourDeGlaceTables($pdo);
+    $stage = getTourDeGlaceStage($stageNumber);
+    if (!$stage) {
+        throw new RuntimeException('Ungültige Etappe.');
+    }
+
+    $now = getTourDeGlaceNow();
+    if ($now > getTourDeGlaceStageStart($stage)) {
+        throw new RuntimeException('Die Tippabgabe für diese Etappe ist geschlossen.');
+    }
+
+    $cleanTip = trim((string)preg_replace('/\s+/u', ' ', $tipStageWinner));
+    if ($cleanTip === '') {
+        throw new RuntimeException('Bitte gib einen Etappensieger ein.');
+    }
+    $cleanTip = substr($cleanTip, 0, 160);
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO tour_de_glace_stage_tips (campaign_id, user_id, stage_number, tip_stage_winner, submitted_at)
+         VALUES (?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE
+            tip_stage_winner = VALUES(tip_stage_winner),
+            updated_at = NOW()"
+    );
+    $stmt->execute([TOUR_DE_GLACE_ID, $userId, $stageNumber, $cleanTip]);
+
+    $tips = getTourDeGlaceStageTipsForUser($pdo, $userId);
+    foreach ($tips as $tip) {
+        if ((int)$tip['stage_number'] === $stageNumber) {
+            return $tip;
+        }
+    }
+    return [];
+}
+
+function saveTourDeGlaceStageResult(PDO $pdo, int $adminUserId, int $stageNumber, string $stageWinner): array
+{
+    ensureTourDeGlaceTables($pdo);
+    if (!getTourDeGlaceStage($stageNumber)) {
+        throw new RuntimeException('Ungültige Etappe.');
+    }
+
+    $cleanWinner = trim((string)preg_replace('/\s+/u', ' ', $stageWinner));
+    if ($cleanWinner === '') {
+        throw new RuntimeException('Bitte gib einen Etappensieger ein.');
+    }
+    $cleanWinner = substr($cleanWinner, 0, 160);
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO tour_de_glace_stage_results (campaign_id, stage_number, stage_winner, updated_by_user_id, updated_at)
+         VALUES (?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE
+            stage_winner = VALUES(stage_winner),
+            updated_by_user_id = VALUES(updated_by_user_id),
+            updated_at = NOW()"
+    );
+    $stmt->execute([TOUR_DE_GLACE_ID, $stageNumber, $cleanWinner, $adminUserId]);
+
+    return getTourDeGlaceStageResults($pdo)[$stageNumber] ?? [];
+}
+
+function getTourDeGlaceStageTipsForUser(PDO $pdo, int $userId): array
+{
+    ensureTourDeGlaceTables($pdo);
+    $stmt = $pdo->prepare(
+        "SELECT user_id, stage_number, tip_stage_winner, submitted_at, updated_at
+         FROM tour_de_glace_stage_tips
+         WHERE campaign_id = ?
+           AND user_id = ?
+         ORDER BY stage_number ASC"
+    );
+    $stmt->execute([TOUR_DE_GLACE_ID, $userId]);
+
+    $results = getTourDeGlaceStageResults($pdo);
+    $tipsByStage = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $tipsByStage[(int)$row['stage_number']] = $row;
+    }
+
+    $stageTips = [];
+    foreach (tourDeGlaceConfig()['stages'] as $stageNumber => $stage) {
+        $row = $tipsByStage[(int)$stageNumber] ?? [
+            'user_id' => $userId,
+            'stage_number' => (int)$stageNumber,
+            'tip_stage_winner' => '',
+            'submitted_at' => null,
+            'updated_at' => null,
+        ];
+        $stageTips[] = formatTourDeGlaceStageTipRow($row, $results);
+    }
+    return $stageTips;
+}
+
+function getTourDeGlaceCorrectStageTipCount(PDO $pdo, int $userId): int
+{
+    $count = 0;
+    foreach (getTourDeGlaceStageTipsForUser($pdo, $userId) as $tip) {
+        if (!empty($tip['is_correct'])) {
+            $count++;
+        }
+    }
+    return $count;
+}
+
 function getTourDeGlaceAvailableEasterEgg(PDO $pdo, ?int $stageNumber = null): ?array
 {
     ensureTourDeGlaceTables($pdo);
     $stage = null;
+    $now = getTourDeGlaceNow();
     if ($stageNumber !== null) {
         $config = tourDeGlaceConfig();
         if (!isset($config['stages'][$stageNumber])) {
@@ -1153,12 +1366,14 @@ function getTourDeGlaceAvailableEasterEgg(PDO $pdo, ?int $stageNumber = null): ?
         $stage = ['stage_number' => $stageNumber] + $config['stages'][$stageNumber];
     } else {
         $stage = getCurrentTourDeGlaceStage();
+        if (!$stage && getTourDeGlacePhase($now) === 'pre') {
+            $stage = getTourDeGlaceStage(1);
+        }
     }
     if (!$stage) {
         return null;
     }
 
-    $now = getTourDeGlaceNow();
     if (isTourDeGlaceShadowTestNow($now)) {
         $shadowStage = getCurrentTourDeGlaceStage($now);
         if (!$shadowStage || (int)$stage['stage_number'] !== (int)$shadowStage['stage_number']) {
@@ -1167,8 +1382,15 @@ function getTourDeGlaceAvailableEasterEgg(PDO $pdo, ?int $stageNumber = null): ?
         $stage['date'] = $now->format('Y-m-d');
     }
     $stageDate = new DateTimeImmutable($stage['date'] . ' 00:00:00', tourDeGlaceTimezone());
+    $availableFrom = $stageDate->modify('-6 hours');
+    if ((int)$stage['stage_number'] === 1) {
+        $preStart = new DateTimeImmutable(tourDeGlaceConfig()['pre_start'], tourDeGlaceTimezone());
+        if ($now >= $preStart && $now < $stageDate) {
+            $availableFrom = $preStart;
+        }
+    }
     $expiresAt = $stageDate->modify('+2 days');
-    if ($now < $stageDate || $now > $expiresAt) {
+    if ($now < $availableFrom || $now > $expiresAt) {
         return null;
     }
 
@@ -1268,13 +1490,16 @@ function getTourDeGlaceAwards(PDO $pdo, ?int $userId = null): array
 function findTourDeGlaceEasterEgg(PDO $pdo, int $userId, int $stageNumber, string $secretCode): array
 {
     ensureTourDeGlaceTables($pdo);
-    if (!isTourDeGlacePointCollectionActive($userId)) {
+    $egg = getTourDeGlaceAvailableEasterEgg($pdo, $stageNumber);
+    if (!$egg) {
+        throw new RuntimeException('Diese Etappensichtung ist nicht verfügbar.');
+    }
+    if (!isTourDeGlacePointCollectionActive($userId) && (int)$egg['stage_number'] !== 1) {
         throw new RuntimeException('Die Aktion ist aktuell nicht aktiv.');
     }
-    $egg = getTourDeGlaceAvailableEasterEgg($pdo, $stageNumber);
     $submittedCode = trim($secretCode);
     if (!$egg || $submittedCode === '' || !hash_equals((string)$egg['secret_code'], $submittedCode)) {
-        throw new RuntimeException('Diese Etappensichtung ist nicht verfuegbar.');
+        throw new RuntimeException('Diese Etappensichtung ist nicht verfügbar.');
     }
 
     $stmt = $pdo->prepare(
@@ -1318,9 +1543,10 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
     }
     $totals = $userId ? (fetchTourDeGlaceTotals($pdo, $userId)[$userId] ?? ['yellow' => 0, 'green' => 0, 'mountain' => 0, 'ice' => 0, 'white' => 0]) : null;
     $currentStage = ($phase === 'active' || $isShadowTest) ? getCurrentTourDeGlaceStage() : null;
-    $availableEgg = ($phase === 'active' || $isShadowTest) ? getTourDeGlaceAvailableEasterEgg($pdo) : null;
+    $availableEgg = ($phase === 'active' || $phase === 'pre' || $isShadowTest) ? getTourDeGlaceAvailableEasterEgg($pdo) : null;
     $foundEggIds = $userId ? getTourDeGlaceFoundEggIds($pdo, $userId) : [];
     $sightedStages = $userId ? getTourDeGlaceSightedStages($pdo, $userId) : [];
+    $stageTips = $userId ? getTourDeGlaceStageTipsForUser($pdo, $userId) : [];
 
     return [
         'campaign' => [
@@ -1350,6 +1576,7 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
         'my_ranks' => $userId ? getTourDeGlaceUserRanks($pdo, $userId) : null,
         'leaderboards' => getTourDeGlaceCompactLeaderboards($pdo, 5),
         'tips' => $userId ? getTourDeGlaceTips($pdo, $userId) : null,
+        'stage_tips' => $stageTips,
         'stage' => $currentStage,
         'easter_egg' => $availableEgg ? [
             'id' => (int)$availableEgg['id'],

@@ -52,6 +52,46 @@ function fetchTourDeGlaceAdminTips(PDO $pdo): array
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
+function fetchTourDeGlaceAdminStageTips(PDO $pdo): array
+{
+    $stmt = $pdo->prepare("
+        SELECT t.user_id,
+               n.username,
+               t.stage_number,
+               t.tip_stage_winner,
+               t.submitted_at,
+               t.updated_at
+        FROM tour_de_glace_stage_tips t
+        JOIN nutzer n ON n.id = t.user_id
+        WHERE t.campaign_id = ?
+        ORDER BY t.stage_number ASC, t.updated_at DESC, n.username ASC
+    ");
+    $stmt->execute([TOUR_DE_GLACE_ID]);
+    $results = getTourDeGlaceStageResults($pdo);
+
+    return array_map(static fn(array $row): array => formatTourDeGlaceStageTipRow($row, $results), $stmt->fetchAll(PDO::FETCH_ASSOC));
+}
+
+function fetchTourDeGlaceAdminStageResults(PDO $pdo): array
+{
+    $results = getTourDeGlaceStageResults($pdo);
+    $rows = [];
+    foreach (tourDeGlaceConfig()['stages'] as $stageNumber => $stage) {
+        $result = $results[(int)$stageNumber] ?? [];
+        $rows[] = [
+            'stage_number' => (int)$stageNumber,
+            'stage_date' => $stage['date'],
+            'start_at' => getTourDeGlaceStageStart(['stage_number' => (int)$stageNumber] + $stage)->format('Y-m-d H:i:s'),
+            'start_location' => $stage['start'],
+            'finish_location' => $stage['finish'],
+            'stage_winner' => $result['stage_winner'] ?? '',
+            'updated_by_user_id' => $result['updated_by_user_id'] ?? null,
+            'updated_at' => $result['updated_at'] ?? null,
+        ];
+    }
+    return $rows;
+}
+
 function fetchTourDeGlaceAdminRiders(PDO $pdo, array $config): array
 {
     $stmt = $pdo->prepare("
@@ -214,6 +254,8 @@ try {
         'rider_types' => $config['rider_types'],
         'summary' => fetchTourDeGlaceAdminSummary($pdo, $scopeValue),
         'tips' => fetchTourDeGlaceAdminTips($pdo),
+        'stage_tips' => fetchTourDeGlaceAdminStageTips($pdo),
+        'stage_results' => fetchTourDeGlaceAdminStageResults($pdo),
         'riders' => fetchTourDeGlaceAdminRiders($pdo, $config),
         'rider_distribution' => fetchTourDeGlaceAdminRiderDistribution($pdo, $config),
         'recent_events' => fetchTourDeGlaceAdminRecentEvents($pdo, $scopeValue),

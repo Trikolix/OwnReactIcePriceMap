@@ -183,3 +183,46 @@ export const TOUR_DE_GLACE_STARTERS = [
   { name: 'Simone Velasco', team: 'XDS Astana Team', status: 'official' },
   { name: 'Nicolas Vinokurov', team: 'XDS Astana Team', status: 'official' }
 ];
+
+export const normalizeTourDeGlaceStarterSearch = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('de-DE');
+
+const starterMatchRank = (starter, query) => {
+  const name = normalizeTourDeGlaceStarterSearch(starter.name);
+  const team = normalizeTourDeGlaceStarterSearch(starter.team);
+  const nameWords = name.split(' ');
+
+  if (name.startsWith(query)) return 0;
+  if (nameWords.some((word) => word.startsWith(query))) return 1;
+  if (name.includes(query)) return 2;
+  if (team.startsWith(query)) return 3;
+  if (team.split(' ').some((word) => word.startsWith(query))) return 4;
+  if (team.includes(query)) return 5;
+  return 99;
+};
+
+export const getTourDeGlaceStarterSuggestions = (value, limit = 8) => {
+  const query = normalizeTourDeGlaceStarterSearch(value);
+  if (query.length < 2) {
+    return [];
+  }
+
+  return TOUR_DE_GLACE_STARTERS
+    .map((starter, index) => ({
+      starter,
+      index,
+      rank: starterMatchRank(starter, query),
+    }))
+    .filter((entry) => entry.rank < 99)
+    .sort((left, right) => {
+      if (left.rank !== right.rank) return left.rank - right.rank;
+      return left.index - right.index;
+    })
+    .slice(0, limit)
+    .map((entry) => entry.starter);
+};

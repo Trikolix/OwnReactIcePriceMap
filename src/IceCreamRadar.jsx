@@ -2041,13 +2041,11 @@ const IceCreamRadar = () => {
   );
   const easterCampaignDefinition = getCampaignDefinition('easter_2026');
   const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
-  const isTourDeGlaceAdmin = Number(userId) === 1;
   const tourDeGlaceActive = getCampaignStatus('tour_de_glace_2026') === CAMPAIGN_STATUS.ACTIVE;
-  const tourDeGlaceAdminVisible = tourDeGlaceActive && isTourDeGlaceAdmin;
   const easterMapRules = easterCampaignDefinition?.mapRules || {};
   const seasonalMapVisible = easterCampaignActive && seasonalMapEnabled;
   const easterMapVisible = easterCampaignActive && seasonalMapVisible;
-  const tourDeGlaceMapVisible = tourDeGlaceAdminVisible;
+  const tourDeGlaceMapVisible = tourDeGlaceActive;
   const seasonalMarkerVariant = easterMapVisible ? 'easter' : null;
   const clusterIconCreateFunction = seasonalMarkerVariant === 'easter'
     ? createEasterClusterIcon(easterEncounterState.bunnyShopId ?? null)

@@ -5,6 +5,7 @@ import { useUser } from '../context/UserContext';
 import {
   downloadTourDeGlaceStoryPack,
   fetchTourDeGlaceAdminState,
+  saveTourDeGlaceStageResult,
 } from '../features/seasonal/tourDeGlaceAdminApi';
 
 const JERSEY_LABELS = {
@@ -64,6 +65,8 @@ export default function TourDeGlaceAdmin() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState('');
+  const [stageResults, setStageResults] = useState({});
+  const [savingStageResult, setSavingStageResult] = useState(null);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
@@ -74,6 +77,10 @@ export default function TourDeGlaceAdmin() {
     try {
       const data = await fetchTourDeGlaceAdminState(authToken);
       setState(data);
+      setStageResults(Object.fromEntries((data.stage_results || []).map((result) => [
+        String(result.stage_number),
+        result.stage_winner || '',
+      ])));
     } catch (err) {
       setError(err.message || 'Tour-de-Glace Admin-Daten konnten nicht geladen werden.');
     } finally {
@@ -101,6 +108,30 @@ export default function TourDeGlaceAdmin() {
       setError(err.message || 'Story-ZIP konnte nicht erstellt werden.');
     } finally {
       setDownloadLoading('');
+    }
+  };
+
+  const handleStageResultChange = (stageNumber, value) => {
+    setStageResults((previous) => ({ ...previous, [String(stageNumber)]: value }));
+  };
+
+  const handleSaveStageResult = async (stageNumber) => {
+    const winner = String(stageResults[String(stageNumber)] || '').trim();
+    if (!winner) {
+      setError('Bitte Etappensieger eintragen.');
+      return;
+    }
+    setSavingStageResult(stageNumber);
+    setError('');
+    setInfo('');
+    try {
+      await saveTourDeGlaceStageResult(authToken, stageNumber, winner);
+      setInfo(`Etappenergebnis ${stageNumber} gespeichert.`);
+      await load();
+    } catch (err) {
+      setError(err.message || 'Etappenergebnis konnte nicht gespeichert werden.');
+    } finally {
+      setSavingStageResult(null);
     }
   };
 
@@ -184,32 +215,97 @@ export default function TourDeGlaceAdmin() {
         )}
 
         {!loading && state && activeTab === 'tips' && (
-          <Card>
-            <SectionTitle>Tippspiel</SectionTitle>
-            <TableWrap>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Nutzer</th>
-                    {Object.values(TIP_LABELS).map((label) => <th key={label}>{label}</th>)}
-                    <th>Abgabe</th>
-                    <th>Geändert</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(state.tips || []).map((tip) => (
-                    <tr key={tip.user_id}>
-                      <td><strong>{tip.username}</strong></td>
-                      {Object.keys(TIP_LABELS).map((key) => <td key={key}>{tip[key] || '-'}</td>)}
-                      <td>{formatDateTime(tip.submitted_at)}</td>
-                      <td>{formatDateTime(tip.updated_at)}</td>
+          <>
+            <Card>
+              <SectionTitle>Gesamt- und Trikot-Tipps</SectionTitle>
+              <TableWrap>
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>Nutzer</th>
+                      {Object.values(TIP_LABELS).map((label) => <th key={label}>{label}</th>)}
+                      <th>Abgabe</th>
+                      <th>Geändert</th>
                     </tr>
-                  ))}
-                  {(!state.tips || state.tips.length === 0) && <EmptyRow colSpan={9}>Noch keine Tipps vorhanden.</EmptyRow>}
-                </tbody>
-              </Table>
-            </TableWrap>
-          </Card>
+                  </thead>
+                  <tbody>
+                    {(state.tips || []).map((tip) => (
+                      <tr key={tip.user_id}>
+                        <td><strong>{tip.username}</strong></td>
+                        {Object.keys(TIP_LABELS).map((key) => <td key={key}>{tip[key] || '-'}</td>)}
+                        <td>{formatDateTime(tip.submitted_at)}</td>
+                        <td>{formatDateTime(tip.updated_at)}</td>
+                      </tr>
+                    ))}
+                    {(!state.tips || state.tips.length === 0) && <EmptyRow colSpan={9}>Noch keine Tipps vorhanden.</EmptyRow>}
+                  </tbody>
+                </Table>
+              </TableWrap>
+            </Card>
+
+            <Card>
+              <SectionTitle>Etappensieger-Ergebnisse</SectionTitle>
+              <StageResultGrid>
+                {(state.stage_results || []).map((result) => {
+                  const stageNumber = Number(result.stage_number);
+                  return (
+                    <StageResultCard key={stageNumber}>
+                      <strong>Etappe {stageNumber}</strong>
+                      <span>{result.start_location} → {result.finish_location}</span>
+                      <small>Start: {formatDateTime(result.start_at)}</small>
+                      <input
+                        value={stageResults[String(stageNumber)] || ''}
+                        onChange={(event) => handleStageResultChange(stageNumber, event.target.value)}
+                        placeholder="Realer Etappensieger"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => handleSaveStageResult(stageNumber)}
+                        disabled={savingStageResult === stageNumber}
+                      >
+                        {savingStageResult === stageNumber ? 'Speichert...' : 'Speichern'}
+                      </Button>
+                    </StageResultCard>
+                  );
+                })}
+              </StageResultGrid>
+            </Card>
+
+            <Card>
+              <SectionTitle>Etappensieger-Tipps</SectionTitle>
+              <TableWrap>
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>Etappe</th>
+                      <th>Nutzer</th>
+                      <th>Tipp</th>
+                      <th>Ergebnis</th>
+                      <th>Status</th>
+                      <th>Geändert</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(state.stage_tips || []).map((tip) => (
+                      <tr key={`${tip.stage_number}-${tip.user_id}`}>
+                        <td>{tip.stage_number}</td>
+                        <td><strong>{tip.username}</strong></td>
+                        <td>{tip.tip_stage_winner || '-'}</td>
+                        <td>{tip.stage_winner || '-'}</td>
+                        <td>
+                          {tip.stage_winner
+                            ? <ResultPill $correct={Boolean(tip.is_correct)}>{tip.is_correct ? 'Richtig' : 'Falsch'}</ResultPill>
+                            : 'Offen'}
+                        </td>
+                        <td>{formatDateTime(tip.updated_at)}</td>
+                      </tr>
+                    ))}
+                    {(!state.stage_tips || state.stage_tips.length === 0) && <EmptyRow colSpan={6}>Noch keine Etappensieger-Tipps vorhanden.</EmptyRow>}
+                  </tbody>
+                </Table>
+              </TableWrap>
+            </Card>
+          </>
         )}
 
         {!loading && state && activeTab === 'riders' && (
@@ -490,4 +586,41 @@ const DownloadCard = styled.div`
   span {
     color: #676070;
   }
+`;
+
+const StageResultGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.85rem;
+`;
+
+const StageResultCard = styled.div`
+  display: grid;
+  gap: 0.4rem;
+  border: 1px solid #f0e1b8;
+  border-radius: 12px;
+  padding: 0.85rem;
+
+  span,
+  small {
+    color: #676070;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ddd4bd;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+    font: inherit;
+  }
+`;
+
+const ResultPill = styled.span`
+  display: inline-flex;
+  border-radius: 999px;
+  background: ${({ $correct }) => ($correct ? '#dcfce7' : '#fee2e2')};
+  color: ${({ $correct }) => ($correct ? '#166534' : '#991b1b')};
+  padding: 0.2rem 0.55rem;
+  font-weight: 800;
 `;

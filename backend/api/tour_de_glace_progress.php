@@ -3,6 +3,7 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/tour_de_glace.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
+require_once __DIR__ . '/../evaluators/TourDeGlaceStageTipAwardEvaluator.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,10 @@ try {
 
     if ($userId !== null) {
         try {
-            $newAwards = (new TourDeGlaceAwardEvaluator())->evaluate($userId);
+            $newAwards = array_merge(
+                (new TourDeGlaceAwardEvaluator())->evaluate($userId),
+                (new TourDeGlaceStageTipAwardEvaluator())->evaluate($userId)
+            );
             $levelChange = updateUserLevelIfChanged($pdo, $userId);
         } catch (Throwable $e) {
             error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
