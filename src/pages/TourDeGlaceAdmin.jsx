@@ -62,7 +62,9 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 const normalizeStageTop10 = (result) => {
-  const top10 = Array.isArray(result?.stage_top10) ? result.stage_top10 : [];
+  const top10 = Array.isArray(result?.stage_top10)
+    ? result.stage_top10
+    : (Array.isArray(result?.top10) ? result.top10 : []);
   const values = top10.length > 0 ? top10 : [result?.stage_winner || ''];
   return Array.from({ length: 10 }, (_, index) => String(values[index] || ''));
 };
@@ -193,7 +195,9 @@ export default function TourDeGlaceAdmin() {
   const handleStageResultChange = (stageNumber, rankIndex, value) => {
     setStageResults((previous) => {
       const key = String(stageNumber);
-      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(previous[key]?.[index] || ''));
+      const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
+      const baseTop10 = previous[key] || normalizeStageTop10(existingResult);
+      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(baseTop10[index] || ''));
       nextTop10[rankIndex] = value;
       return { ...previous, [key]: nextTop10 };
     });
@@ -207,7 +211,9 @@ export default function TourDeGlaceAdmin() {
     }
     setStageResults((previous) => {
       const key = String(stageNumber);
-      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(previous[key]?.[index] || ''));
+      const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
+      const baseTop10 = previous[key] || normalizeStageTop10(existingResult);
+      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(baseTop10[index] || ''));
       parsedTop10.forEach((name, index) => {
         nextTop10[index] = name;
       });
