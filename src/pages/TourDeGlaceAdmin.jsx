@@ -216,7 +216,9 @@ export default function TourDeGlaceAdmin() {
   };
 
   const handleSaveStageResult = async (stageNumber) => {
-    const top10 = (stageResults[String(stageNumber)] || []).map((name) => String(name || '').trim());
+    const key = String(stageNumber);
+    const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
+    const top10 = (stageResults[key] || normalizeStageTop10(existingResult)).map((name) => String(name || '').trim());
     if (!top10[0]) {
       setError('Bitte Etappensieger eintragen.');
       return;
@@ -227,6 +229,7 @@ export default function TourDeGlaceAdmin() {
     try {
       await saveTourDeGlaceStageResult(authToken, stageNumber, top10);
       setInfo(`Etappenergebnis ${stageNumber} gespeichert.`);
+      setStageResultPaste((previous) => ({ ...previous, [key]: '' }));
       await load();
     } catch (err) {
       setError(err.message || 'Etappenergebnis konnte nicht gespeichert werden.');
@@ -357,7 +360,7 @@ export default function TourDeGlaceAdmin() {
                       <StageResultPaste
                         value={stageResultPaste[String(stageNumber)] || ''}
                         onChange={(event) => handleStageResultPasteText(stageNumber, event.target.value)}
-                        placeholder="Top 10 Ergebnisliste hier einfuegen"
+                        placeholder="Top-10-Ergebnisliste hier einfügen"
                         rows={4}
                       />
                       <StageTop10Grid>

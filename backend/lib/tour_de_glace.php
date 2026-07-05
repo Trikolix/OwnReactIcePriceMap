@@ -1621,22 +1621,45 @@ function saveTourDeGlaceStageResult(PDO $pdo, int $adminUserId, int $stageNumber
         throw new RuntimeException('Bitte gib einen Etappensieger ein.');
     }
 
-    $stmt = $pdo->prepare(
-        "INSERT INTO tour_de_glace_stage_results (campaign_id, stage_number, stage_winner, top10_json, updated_by_user_id, updated_at)
-         VALUES (?, ?, ?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE
-            stage_winner = VALUES(stage_winner),
-            top10_json = VALUES(top10_json),
-            updated_by_user_id = VALUES(updated_by_user_id),
-            updated_at = NOW()"
-    );
-    $stmt->execute([
-        TOUR_DE_GLACE_ID,
-        $stageNumber,
-        $cleanWinner,
-        json_encode($cleanTop10, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        $adminUserId,
-    ]);
+    $top10Json = json_encode($cleanTop10, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($top10Json === false) {
+        throw new RuntimeException('Etappenergebnis konnte nicht verarbeitet werden.');
+    }
+
+    $startedTransaction = !$pdo->inTransaction();
+    if ($startedTransaction) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        $deleteStmt = $pdo->prepare(
+            "DELETE FROM tour_de_glace_stage_results
+             WHERE campaign_id = ?
+               AND stage_number = ?"
+        );
+        $deleteStmt->execute([TOUR_DE_GLACE_ID, $stageNumber]);
+
+        $insertStmt = $pdo->prepare(
+            "INSERT INTO tour_de_glace_stage_results (campaign_id, stage_number, stage_winner, top10_json, updated_by_user_id, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW())"
+        );
+        $insertStmt->execute([
+            TOUR_DE_GLACE_ID,
+            $stageNumber,
+            $cleanWinner,
+            $top10Json,
+            $adminUserId,
+        ]);
+
+        if ($startedTransaction) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($startedTransaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 
     return getTourDeGlaceStageResults($pdo)[$stageNumber] ?? [];
 }
