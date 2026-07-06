@@ -24,6 +24,15 @@ try {
     if (!is_array($top10)) {
         $top10 = [];
     }
+    if (!isset($top10[0]) || trim((string)$top10[0]) === '') {
+        $top10[0] = $stageWinner;
+    }
+    for ($place = 2; $place <= 10; $place++) {
+        $index = $place - 1;
+        if ((!isset($top10[$index]) || trim((string)$top10[$index]) === '') && isset($payload['stage_place_' . $place])) {
+            $top10[$index] = (string)$payload['stage_place_' . $place];
+        }
+    }
     $result = saveTourDeGlaceStageResult($pdo, (int)$auth['user_id'], $stageNumber, $stageWinner, $top10);
 
     echo json_encode([

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import Header from '../Header';
 import { useUser } from '../context/UserContext';
@@ -150,6 +150,7 @@ export default function TourDeGlaceAdmin() {
   const [savingStageResult, setSavingStageResult] = useState(null);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const stageResultInputRefs = useRef({});
 
   const load = async () => {
     if (!authToken || !isAdmin) return;
@@ -224,7 +225,9 @@ export default function TourDeGlaceAdmin() {
   const handleSaveStageResult = async (stageNumber) => {
     const key = String(stageNumber);
     const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
-    const top10 = (stageResults[key] || normalizeStageTop10(existingResult)).map((name) => String(name || '').trim());
+    const inputTop10 = Array.from({ length: 10 }, (_, index) => stageResultInputRefs.current[key]?.[index]?.value);
+    const stateTop10 = stageResults[key] || normalizeStageTop10(existingResult);
+    const top10 = Array.from({ length: 10 }, (_, index) => String(inputTop10[index] ?? stateTop10[index] ?? '').trim());
     if (!top10[0]) {
       setError('Bitte Etappensieger eintragen.');
       return;
@@ -374,6 +377,12 @@ export default function TourDeGlaceAdmin() {
                           <label key={index}>
                             <span>{index + 1}</span>
                             <input
+                              ref={(node) => {
+                                if (!stageResultInputRefs.current[String(stageNumber)]) {
+                                  stageResultInputRefs.current[String(stageNumber)] = [];
+                                }
+                                stageResultInputRefs.current[String(stageNumber)][index] = node;
+                              }}
                               value={top10[index] || ''}
                               onChange={(event) => handleStageResultChange(stageNumber, index, event.target.value)}
                               placeholder={index === 0 ? 'Etappensieger' : `Platz ${index + 1}`}
