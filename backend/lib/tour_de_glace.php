@@ -288,6 +288,15 @@ function ensureTourDeGlaceTables(PDO $pdo): void
             campaign_id VARCHAR(64) NOT NULL,
             stage_number INT NOT NULL,
             stage_winner VARCHAR(160) NOT NULL,
+            stage_place_2 VARCHAR(160) DEFAULT NULL,
+            stage_place_3 VARCHAR(160) DEFAULT NULL,
+            stage_place_4 VARCHAR(160) DEFAULT NULL,
+            stage_place_5 VARCHAR(160) DEFAULT NULL,
+            stage_place_6 VARCHAR(160) DEFAULT NULL,
+            stage_place_7 VARCHAR(160) DEFAULT NULL,
+            stage_place_8 VARCHAR(160) DEFAULT NULL,
+            stage_place_9 VARCHAR(160) DEFAULT NULL,
+            stage_place_10 VARCHAR(160) DEFAULT NULL,
             top10_json JSON DEFAULT NULL,
             updated_by_user_id INT DEFAULT NULL,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -297,6 +306,10 @@ function ensureTourDeGlaceTables(PDO $pdo): void
             CONSTRAINT fk_tdg_stage_result_user FOREIGN KEY (updated_by_user_id) REFERENCES nutzer(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    for ($place = 2; $place <= 10; $place++) {
+        $previousColumn = $place === 2 ? 'stage_winner' : 'stage_place_' . ($place - 1);
+        ensureTourDeGlaceColumn($pdo, 'tour_de_glace_stage_results', 'stage_place_' . $place, 'VARCHAR(160) DEFAULT NULL AFTER ' . $previousColumn);
+    }
     ensureTourDeGlaceColumn($pdo, 'tour_de_glace_stage_results', 'top10_json', 'JSON DEFAULT NULL AFTER stage_winner');
 
     $pdo->exec(
@@ -1367,6 +1380,24 @@ function decodeTourDeGlaceStageTop10(?string $json, string $fallbackWinner = '')
     return normalizeTourDeGlaceStageTop10($decoded, $fallbackWinner);
 }
 
+function buildTourDeGlaceStageTop10FromRow(array $row): array
+{
+    $top10 = decodeTourDeGlaceStageTop10($row['top10_json'] ?? null, (string)($row['stage_winner'] ?? ''));
+    $columnTop10 = [(string)($row['stage_winner'] ?? '')];
+    for ($place = 2; $place <= 10; $place++) {
+        $columnTop10[] = (string)($row['stage_place_' . $place] ?? '');
+    }
+    $columnTop10 = normalizeTourDeGlaceStageTop10($columnTop10, (string)($row['stage_winner'] ?? ''));
+
+    foreach ($columnTop10 as $index => $name) {
+        if ($name !== '') {
+            $top10[$index] = $name;
+        }
+    }
+
+    return normalizeTourDeGlaceStageTop10($top10, (string)($row['stage_winner'] ?? ''));
+}
+
 function hasTourDeGlaceStageEgg(PDO $pdo, int $userId, int $stageNumber): bool
 {
     if ($userId <= 0 || $stageNumber <= 0) {
@@ -1549,7 +1580,20 @@ function getTourDeGlaceStageResults(PDO $pdo): array
 {
     ensureTourDeGlaceTables($pdo);
     $stmt = $pdo->prepare(
-        "SELECT stage_number, stage_winner, top10_json, updated_by_user_id, updated_at
+        "SELECT stage_number,
+                stage_winner,
+                stage_place_2,
+                stage_place_3,
+                stage_place_4,
+                stage_place_5,
+                stage_place_6,
+                stage_place_7,
+                stage_place_8,
+                stage_place_9,
+                stage_place_10,
+                top10_json,
+                updated_by_user_id,
+                updated_at
          FROM tour_de_glace_stage_results
          WHERE campaign_id = ?
          ORDER BY stage_number ASC"
@@ -1559,7 +1603,7 @@ function getTourDeGlaceStageResults(PDO $pdo): array
     $results = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $stageNumber = (int)$row['stage_number'];
-        $top10 = decodeTourDeGlaceStageTop10($row['top10_json'] ?? null, (string)$row['stage_winner']);
+        $top10 = buildTourDeGlaceStageTop10FromRow($row);
         $results[$stageNumber] = [
             'stage_number' => $stageNumber,
             'stage_winner' => $top10[0] ?? $row['stage_winner'],
@@ -1639,17 +1683,35 @@ function saveTourDeGlaceStageResult(PDO $pdo, int $adminUserId, int $stageNumber
         );
         $deleteStmt->execute([TOUR_DE_GLACE_ID, $stageNumber]);
 
+        $placeColumns = [];
+        $placePlaceholders = [];
+        $placeValues = [];
+        for ($place = 2; $place <= 10; $place++) {
+            $placeColumns[] = 'stage_place_' . $place;
+            $placePlaceholders[] = '?';
+            $placeValues[] = ($cleanTop10[$place - 1] ?? '') !== '' ? $cleanTop10[$place - 1] : null;
+        }
+
         $insertStmt = $pdo->prepare(
-            "INSERT INTO tour_de_glace_stage_results (campaign_id, stage_number, stage_winner, top10_json, updated_by_user_id, updated_at)
-             VALUES (?, ?, ?, ?, ?, NOW())"
+            "INSERT INTO tour_de_glace_stage_results (
+                campaign_id,
+                stage_number,
+                stage_winner,
+                " . implode(",\n                ", $placeColumns) . ",
+                top10_json,
+                updated_by_user_id,
+                updated_at
+             )
+             VALUES (?, ?, ?, " . implode(', ', $placePlaceholders) . ", ?, ?, NOW())"
         );
-        $insertStmt->execute([
+        $insertStmt->execute(array_merge([
             TOUR_DE_GLACE_ID,
             $stageNumber,
             $cleanWinner,
+        ], $placeValues, [
             $top10Json,
             $adminUserId,
-        ]);
+        ]));
 
         if ($startedTransaction) {
             $pdo->commit();
