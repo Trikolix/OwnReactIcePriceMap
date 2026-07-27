@@ -91,6 +91,10 @@ try {
         }
     }
 
+    // Schema-Checks koennen implizite Commits ausloesen (z. B. ALTER TABLE).
+    // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
+    ensurePushInfrastructureSchema($pdo);
+
     // Start der Transaktion
     $pdo->beginTransaction();
 
@@ -202,9 +206,12 @@ try {
         $meta = $metaStmt->fetch(PDO::FETCH_ASSOC);
 
         // Mentions einfügen + Notifications
-        $stmtMention = $pdo->prepare("INSERT INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
+        $stmtMention = $pdo->prepare("INSERT IGNORE INTO checkin_mentions (checkin_id, mentioned_user_id, status) VALUES (?, ?, 'pending')");
         foreach ($mentionedUsers as $mentionedUserId) {
             $stmtMention->execute([(int)$checkinId, (int)$mentionedUserId]);
+            if ($stmtMention->rowCount() === 0) {
+                continue;
+            }
             $mentionId = (int)$pdo->lastInsertId();
 
             $notifText = "{$inviterName} hat dich bei einem Checkin erwähnt.";
@@ -241,6 +248,10 @@ try {
 
     if (!empty($kommentar)) {
         processTextMentions($pdo, $kommentar, $userId, 'checkin', $checkinId, ['eisdiele_id' => $shopId, 'checkin_id' => $checkinId]);
+    }
+
+    if (!$pdo->inTransaction()) {
+        throw new Exception("Transaktion wurde vor dem Commit unerwartet beendet (impliziter Commit?).");
     }
 
     // Commit der Transaktion

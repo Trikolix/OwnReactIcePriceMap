@@ -333,6 +333,9 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const stageTipSummary = data?.stage_tip_summary || {};
   const stageTipRank = data?.stage_tip_rank || null;
   const stageTipLeaderboard = compactLeaderboards.stage_tips || [];
+  const overallTipSummary = data?.overall_tip_summary || null;
+  const overallTipRank = data?.overall_tip_rank || null;
+  const overallTipLeaderboard = compactLeaderboards.overall_tips || [];
   const selectedRiderType = data?.profile?.rider_type || null;
   const currentStage = data?.stage;
   const selectedMeta = JERSEY_META[selectedJersey] || JERSEY_META.yellow;
@@ -557,7 +560,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
               )}
               <GroupRideBox>
                 <Bike size={18} />
-                <span>Zum Finale am 26.07. ist ein gemeinsamer Group Ride mit 2-3 Eis-Stopps geplant. Details folgen.</span>
+                <span>Der geplante Group-Ride zum Finale der Aktion am 26.07 musste leider krankheitsbedingt abgesagt werden.</span>
               </GroupRideBox>
               {currentStage && (
                 <StageBox>
@@ -758,7 +761,8 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
           )}
 
           {activeTab === 'tips' && (
-            <TipForm onSubmit={handleSubmitTips}>
+            <Stack>
+              <TipForm onSubmit={handleSubmitTips}>
               <TipHeader>
                 <SubHeading>Tippspiel</SubHeading>
                 <InfoHint id="tip-point-rules" label="Punkte-Regeln für das Tippspiel anzeigen" expandedInfo={expandedInfo} onToggle={toggleInfo}>
@@ -790,8 +794,45 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                   disabled={tipsClosed}
                 />
               ))}
-              <ActionButton type="submit" disabled={tipsClosed || hasDuplicateTips}>Tipps speichern</ActionButton>
-            </TipForm>
+                <ActionButton type="submit" disabled={tipsClosed || hasDuplicateTips}>Tipps speichern</ActionButton>
+              </TipForm>
+              {data.final_results && (
+                <StageTipLeaderboardBox>
+                  <div>
+                    <SubHeading>Gesamtwertung ausgewertet</SubHeading>
+                    <Hint>Die offiziellen Gesamt- und Trikot-Ergebnisse sind eingetragen. Diese Punkte zählen nur für das Tippspiel.</Hint>
+                  </div>
+                  <StageTipSummaryGrid>
+                    <SummaryTile>
+                      <span>Deine Tipp-Punkte</span>
+                      <strong>{overallTipSummary?.points || 0}</strong>
+                      <small>{overallTipRank ? `Rang #${overallTipRank.rank}` : 'Kein Tipp abgegeben'}</small>
+                    </SummaryTile>
+                    <SummaryTile>
+                      <span>Exakte Treffer</span>
+                      <strong>{overallTipSummary?.exact_hits || 0}</strong>
+                      <small>GC und Trikots</small>
+                    </SummaryTile>
+                    <SummaryTile>
+                      <span>GC Top 3</span>
+                      <strong>{overallTipSummary?.gc_top3_hits || 0}</strong>
+                      <small>richtige Fahrer</small>
+                    </SummaryTile>
+                  </StageTipSummaryGrid>
+                  {overallTipLeaderboard.length > 0 && (
+                    <StageTipRankingList>
+                      {overallTipLeaderboard.map((entry) => (
+                        <RankingRow key={`overall-tip-${entry.user_id}`} as="div">
+                          <RankCell><span>#{entry.rank}</span></RankCell>
+                          <strong>{entry.username}</strong>
+                          <span>{entry.points} Punkte</span>
+                        </RankingRow>
+                      ))}
+                    </StageTipRankingList>
+                  )}
+                </StageTipLeaderboardBox>
+              )}
+            </Stack>
           )}
 
           {activeTab === 'eggs' && (
@@ -1160,9 +1201,9 @@ const StageBox = styled.div`
 
 const GroupRideBox = styled(StageBox)`
   border-radius: 10px;
-  background: #edf7ef;
-  border: 1px solid #c8e6cf;
-  color: #1f4d2c;
+  background: #f7eded;
+  border: 1px solid #e6c8c8;
+  color: #89261d;
   padding: 0.75rem;
 `;
 

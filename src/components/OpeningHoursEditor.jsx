@@ -40,6 +40,22 @@ const OpeningHoursEditor = ({ value, onChange }) => {
     updateHours(updated);
   };
 
+  const handleCopyToAll = (sourceWeekday) => {
+    const sourceDay = hydrated.days.find((day) => day.weekday === sourceWeekday);
+    if (!sourceDay || sourceDay.ranges.length === 0) {
+      return;
+    }
+
+    const copiedRanges = sourceDay.ranges.map((range) => ({ ...range }));
+    updateHours({
+      ...hydrated,
+      days: hydrated.days.map((day) => ({
+        ...day,
+        ranges: copiedRanges.map((range) => ({ ...range })),
+      })),
+    });
+  };
+
   const handleNoteChange = (event) => {
     updateHours({ ...hydrated, note: event.target.value });
   };
@@ -96,13 +112,23 @@ const OpeningHoursEditor = ({ value, onChange }) => {
                   </RemoveButton>
                 </RangeRow>
               ))}
-              <AddRangeButton
-                type="button"
-                onClick={() => handleAddRange(day.weekday)}
-                disabled={dayData.ranges.length >= MAX_RANGES_PER_DAY}
-              >
-                + Zeitspanne hinzufügen
-              </AddRangeButton>
+              <DayActions>
+                <AddRangeButton
+                  type="button"
+                  onClick={() => handleAddRange(day.weekday)}
+                  disabled={dayData.ranges.length >= MAX_RANGES_PER_DAY}
+                >
+                  + Zeitspanne hinzufügen
+                </AddRangeButton>
+                {dayData.ranges.length > 0 && (
+                  <CopyToAllButton
+                    type="button"
+                    onClick={() => handleCopyToAll(day.weekday)}
+                  >
+                    Auf alle übertragen
+                  </CopyToAllButton>
+                )}
+              </DayActions>
             </RangeColumn>
           </DayRow>
         );
@@ -184,17 +210,37 @@ const TimeInput = styled.input`
   font-size: 0.85rem;
 `;
 
+const DayActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.2rem;
+`;
+
 const AddRangeButton = styled.button`
-  align-self: flex-start;
   border: none;
   background: transparent;
   color: #1f6f43;
   font-weight: 600;
   cursor: pointer;
   font-size: 0.85rem;
+  padding: 0;
   &:disabled {
     color: #bbb;
     cursor: not-allowed;
+  }
+`;
+
+const CopyToAllButton = styled.button`
+  border: none;
+  background: transparent;
+  color: #2453c2;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  &:hover {
+    text-decoration: underline;
   }
 `;
 

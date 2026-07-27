@@ -23,6 +23,9 @@ export const saveTourDeGlaceStageResult = async (authToken, stageNumber, stageTo
   const cleanTop10 = Array.isArray(stageTop10)
     ? Array.from({ length: 10 }, (_, index) => String(stageTop10[index] || '').trim())
     : [];
+  const placePayload = Object.fromEntries(
+    Array.from({ length: 9 }, (_, index) => [`stage_place_${index + 2}`, cleanTop10[index + 1] || '']),
+  );
   const response = await fetch(`${getApiBase()}/admin/tour_de_glace_stage_result.php`, {
     method: 'POST',
     headers: {
@@ -33,7 +36,20 @@ export const saveTourDeGlaceStageResult = async (authToken, stageNumber, stageTo
       stage_number: stageNumber,
       stage_winner: cleanTop10[0] || '',
       stage_top10: cleanTop10,
+      ...placePayload,
     }),
+  });
+  return toJson(response);
+};
+
+export const saveTourDeGlaceFinalResults = async (authToken, finalResults) => {
+  const response = await fetch(`${getApiBase()}/admin/tour_de_glace_final_results.php`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(authToken),
+    },
+    body: JSON.stringify(finalResults),
   });
   return toJson(response);
 };

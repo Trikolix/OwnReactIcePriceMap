@@ -5,6 +5,7 @@ import { useUser } from '../context/UserContext';
 import {
   downloadTourDeGlaceStoryPack,
   fetchTourDeGlaceAdminState,
+  saveTourDeGlaceFinalResults,
   saveTourDeGlaceStageResult,
 } from '../features/seasonal/tourDeGlaceAdminApi';
 import {
@@ -28,6 +29,15 @@ const TIP_LABELS = {
   tip_mountain_winner: 'Berg',
   tip_white_winner: 'Weiß',
 };
+
+const FINAL_RESULT_FIELDS = [
+  ['result_gc_winner', 'GC 1'],
+  ['result_gc_second', 'GC 2'],
+  ['result_gc_third', 'GC 3'],
+  ['result_green_winner', 'Grünes Trikot'],
+  ['result_mountain_winner', 'Bergtrikot'],
+  ['result_white_winner', 'Weißes Trikot'],
+];
 
 const ACTION_LABELS = {
   checkin_scoop_softice: 'Kugel/Softeis',
@@ -62,7 +72,9 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 const normalizeStageTop10 = (result) => {
-  const top10 = Array.isArray(result?.stage_top10) ? result.stage_top10 : [];
+  const top10 = Array.isArray(result?.stage_top10)
+    ? result.stage_top10
+    : (Array.isArray(result?.top10) ? result.top10 : []);
   const values = top10.length > 0 ? top10 : [result?.stage_winner || ''];
   return Array.from({ length: 10 }, (_, index) => String(values[index] || ''));
 };
@@ -146,6 +158,8 @@ export default function TourDeGlaceAdmin() {
   const [stageResults, setStageResults] = useState({});
   const [stageResultPaste, setStageResultPaste] = useState({});
   const [savingStageResult, setSavingStageResult] = useState(null);
+  const [finalResults, setFinalResults] = useState({});
+  const [savingFinalResults, setSavingFinalResults] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
@@ -160,6 +174,7 @@ export default function TourDeGlaceAdmin() {
         String(result.stage_number),
         normalizeStageTop10(result),
       ])));
+      setFinalResults(Object.fromEntries(FINAL_RESULT_FIELDS.map(([key]) => [key, data.final_results?.[key] || ''])));
     } catch (err) {
       setError(err.message || 'Tour-de-Glace Admin-Daten konnten nicht geladen werden.');
     } finally {
@@ -193,7 +208,9 @@ export default function TourDeGlaceAdmin() {
   const handleStageResultChange = (stageNumber, rankIndex, value) => {
     setStageResults((previous) => {
       const key = String(stageNumber);
-      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(previous[key]?.[index] || ''));
+      const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
+      const baseTop10 = previous[key] || normalizeStageTop10(existingResult);
+      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(baseTop10[index] || ''));
       nextTop10[rankIndex] = value;
       return { ...previous, [key]: nextTop10 };
     });
@@ -207,7 +224,9 @@ export default function TourDeGlaceAdmin() {
     }
     setStageResults((previous) => {
       const key = String(stageNumber);
-      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(previous[key]?.[index] || ''));
+      const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
+      const baseTop10 = previous[key] || normalizeStageTop10(existingResult);
+      const nextTop10 = Array.from({ length: 10 }, (_, index) => String(baseTop10[index] || ''));
       parsedTop10.forEach((name, index) => {
         nextTop10[index] = name;
       });
@@ -215,8 +234,15 @@ export default function TourDeGlaceAdmin() {
     });
   };
 
-  const handleSaveStageResult = async (stageNumber) => {
-    const top10 = (stageResults[String(stageNumber)] || []).map((name) => String(name || '').trim());
+  const handleSaveStageResult = async (stageNumber, event) => {
+    const key = String(stageNumber);
+    const existingResult = (state?.stage_results || []).find((result) => Number(result.stage_number) === Number(stageNumber));
+    const resultCard = event?.currentTarget?.closest('[data-stage-result-card]');
+    const inputTop10 = Array.from(resultCard?.querySelectorAll('[data-stage-result-rank]') || [])
+      .sort((left, right) => Number(left.dataset.stageResultRank) - Number(right.dataset.stageResultRank))
+      .map((input) => input.value);
+    const stateTop10 = stageResults[key] || normalizeStageTop10(existingResult);
+    const top10 = Array.from({ length: 10 }, (_, index) => String(inputTop10[index] ?? stateTop10[index] ?? '').trim());
     if (!top10[0]) {
       setError('Bitte Etappensieger eintragen.');
       return;
@@ -227,11 +253,27 @@ export default function TourDeGlaceAdmin() {
     try {
       await saveTourDeGlaceStageResult(authToken, stageNumber, top10);
       setInfo(`Etappenergebnis ${stageNumber} gespeichert.`);
+      setStageResultPaste((previous) => ({ ...previous, [key]: '' }));
       await load();
     } catch (err) {
       setError(err.message || 'Etappenergebnis konnte nicht gespeichert werden.');
     } finally {
       setSavingStageResult(null);
+    }
+  };
+
+  const handleSaveFinalResults = async () => {
+    setSavingFinalResults(true);
+    setError('');
+    setInfo('');
+    try {
+      await saveTourDeGlaceFinalResults(authToken, finalResults);
+      setInfo('Gesamt- und Trikot-Ergebnisse gespeichert. Die Tippspiel-Punkte wurden neu berechnet.');
+      await load();
+    } catch (err) {
+      setError(err.message || 'Gesamt- und Trikot-Ergebnisse konnten nicht gespeichert werden.');
+    } finally {
+      setSavingFinalResults(false);
     }
   };
 
@@ -317,6 +359,29 @@ export default function TourDeGlaceAdmin() {
         {!loading && state && activeTab === 'tips' && (
           <>
             <Card>
+              <SectionTitle>Offizielle Gesamt- und Trikot-Ergebnisse</SectionTitle>
+              <Muted>Nach dem Speichern werden die Tippspiel-Punkte automatisch berechnet. Änderungen werden direkt neu ausgewertet.</Muted>
+              <FinalResultGrid>
+                {FINAL_RESULT_FIELDS.map(([key, label]) => (
+                  <label key={key}>
+                    <span>{label}</span>
+                    <input
+                      value={finalResults[key] || ''}
+                      onChange={(event) => setFinalResults((previous) => ({ ...previous, [key]: event.target.value }))}
+                      placeholder="Fahrername"
+                      list="tour-de-glace-starters"
+                    />
+                  </label>
+                ))}
+              </FinalResultGrid>
+              <datalist id="tour-de-glace-starters">
+                {TOUR_DE_GLACE_STARTERS.map((starter) => <option key={starter.name} value={starter.name} />)}
+              </datalist>
+              <Button type="button" onClick={handleSaveFinalResults} disabled={savingFinalResults}>
+                {savingFinalResults ? 'Speichert...' : 'Ergebnisse speichern und Tipps werten'}
+              </Button>
+            </Card>
+            <Card>
               <SectionTitle>Gesamt- und Trikot-Tipps</SectionTitle>
               <TableWrap>
                 <Table>
@@ -350,14 +415,14 @@ export default function TourDeGlaceAdmin() {
                   const stageNumber = Number(result.stage_number);
                   const top10 = stageResults[String(stageNumber)] || normalizeStageTop10(result);
                   return (
-                    <StageResultCard key={stageNumber}>
+                    <StageResultCard key={stageNumber} data-stage-result-card>
                       <strong>Etappe {stageNumber}</strong>
                       <span>{result.start_location} → {result.finish_location}</span>
                       <small>Start: {formatDateTime(result.start_at)}</small>
                       <StageResultPaste
                         value={stageResultPaste[String(stageNumber)] || ''}
                         onChange={(event) => handleStageResultPasteText(stageNumber, event.target.value)}
-                        placeholder="Top 10 Ergebnisliste hier einfuegen"
+                        placeholder="Top-10-Ergebnisliste hier einfügen"
                         rows={4}
                       />
                       <StageTop10Grid>
@@ -365,6 +430,7 @@ export default function TourDeGlaceAdmin() {
                           <label key={index}>
                             <span>{index + 1}</span>
                             <input
+                              data-stage-result-rank={index}
                               value={top10[index] || ''}
                               onChange={(event) => handleStageResultChange(stageNumber, index, event.target.value)}
                               placeholder={index === 0 ? 'Etappensieger' : `Platz ${index + 1}`}
@@ -374,7 +440,7 @@ export default function TourDeGlaceAdmin() {
                       </StageTop10Grid>
                       <Button
                         type="button"
-                        onClick={() => handleSaveStageResult(stageNumber)}
+                        onClick={(event) => handleSaveStageResult(stageNumber, event)}
                         disabled={savingStageResult === stageNumber}
                       >
                         {savingStageResult === stageNumber ? 'Speichert...' : 'Speichern'}
@@ -710,6 +776,29 @@ const StageResultGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 0.85rem;
+`;
+
+const FinalResultGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  label {
+    display: grid;
+    gap: 0.35rem;
+    color: #2f2100;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ddd4bd;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+    font: inherit;
+  }
 `;
 
 const StageResultCard = styled.div`
