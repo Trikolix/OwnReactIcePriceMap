@@ -12,20 +12,36 @@ try {
         throw new InvalidArgumentException('Award und Level fehlen.');
     }
 
-    $recipientStmt = $pdo->prepare(
-        "SELECT n.id AS user_id, n.username, ua.awarded_at, ua.shown_at
-         FROM user_awards ua
-         JOIN nutzer n ON n.id = ua.user_id
-         WHERE ua.award_id = ? AND ua.level = ?
-         ORDER BY n.username ASC"
-    );
-    $recipientStmt->execute([$awardId, $level]);
-    $recipients = array_map(static fn(array $row): array => [
-        'user_id' => (int)$row['user_id'],
-        'username' => $row['username'],
-        'awarded_at' => $row['awarded_at'],
-        'shown_at' => $row['shown_at'],
-    ], $recipientStmt->fetchAll(PDO::FETCH_ASSOC));
+    $includeRecipients = (string)($_GET['recipients'] ?? '1') !== '0';
+    $recipientPage = max(1, (int)($_GET['recipients_page'] ?? 1));
+    $recipientPageSize = min(50, max(5, (int)($_GET['recipients_page_size'] ?? 10)));
+    $recipients = [];
+    $recipientPagination = ['page' => $recipientPage, 'page_size' => $recipientPageSize, 'total' => 0, 'total_pages' => 1];
+
+    if ($includeRecipients) {
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM user_awards WHERE award_id = ? AND level = ?');
+        $countStmt->execute([$awardId, $level]);
+        $recipientPagination['total'] = (int)$countStmt->fetchColumn();
+        $recipientPagination['total_pages'] = max(1, (int)ceil($recipientPagination['total'] / $recipientPageSize));
+        $recipientPage = min($recipientPage, $recipientPagination['total_pages']);
+        $recipientPagination['page'] = $recipientPage;
+        $offset = ($recipientPage - 1) * $recipientPageSize;
+        $recipientStmt = $pdo->prepare(
+            "SELECT n.id AS user_id, n.username, ua.awarded_at, ua.shown_at
+             FROM user_awards ua
+             JOIN nutzer n ON n.id = ua.user_id
+             WHERE ua.award_id = ? AND ua.level = ?
+             ORDER BY ua.awarded_at DESC, n.username ASC
+             LIMIT {$offset}, {$recipientPageSize}"
+        );
+        $recipientStmt->execute([$awardId, $level]);
+        $recipients = array_map(static fn(array $row): array => [
+            'user_id' => (int)$row['user_id'],
+            'username' => $row['username'],
+            'awarded_at' => $row['awarded_at'],
+            'shown_at' => $row['shown_at'],
+        ], $recipientStmt->fetchAll(PDO::FETCH_ASSOC));
+    }
 
     $query = trim((string)($_GET['query'] ?? ''));
     $users = [];
@@ -45,7 +61,7 @@ try {
         ], $userStmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    echo json_encode(['success' => true, 'recipients' => $recipients, 'users' => $users], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => true, 'recipients' => $recipients, 'recipient_pagination' => $recipientPagination, 'users' => $users], JSON_UNESCAPED_UNICODE);
 } catch (InvalidArgumentException $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);

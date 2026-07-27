@@ -30,7 +30,13 @@ try {
     }
 
     $result = grantAwardToUser($pdo, $userId, $awardId, $level, $showPopup);
-    echo json_encode(['success' => true, 'user_id' => $userId] + $result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $recipientStmt = $pdo->prepare('SELECT username FROM nutzer WHERE id = ? LIMIT 1');
+    $recipientStmt->execute([$userId]);
+    echo json_encode(['success' => true, 'user_id' => $userId, 'recipient' => [
+        'user_id' => $userId,
+        'username' => $recipientStmt->fetchColumn() ?: '',
+        'shown_at' => $result['shown_at'] ?? null,
+    ]] + $result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (InvalidArgumentException $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
