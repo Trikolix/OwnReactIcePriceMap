@@ -1,6 +1,7 @@
 <?php
 require_once  __DIR__ . '/AwardEvaluator.php';
 require_once  __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/award_grants.php';
 
 abstract class BaseAwardEvaluator implements AwardEvaluator {
     protected function hasAward(int $userId, int $awardId, int $level): bool {
@@ -19,13 +20,14 @@ abstract class BaseAwardEvaluator implements AwardEvaluator {
     }
 
     protected function storeAwardIfNew(int $userId, int $awardId, int $level): bool {
+        global $pdo;
+        ensureAwardShownAtColumn($pdo);
         if ($this->hasAward($userId, $awardId, $level)) {
             return false;
         }
 
-        global $pdo;
-        $stmt = $pdo->prepare("INSERT INTO user_awards (user_id, award_id, level) 
-                               VALUES (:userId, :awardId, :level)");
+        $stmt = $pdo->prepare("INSERT INTO user_awards (user_id, award_id, level, shown_at)
+                               VALUES (:userId, :awardId, :level, NOW())");
         return $stmt->execute([
             'userId' => $userId,
             'awardId' => $awardId,
@@ -34,13 +36,14 @@ abstract class BaseAwardEvaluator implements AwardEvaluator {
     }
 
     protected function storeAwardIfNewWithDate(int $userId, int $awardId, int $level, string $awardedAt): bool {
+    global $pdo;
+    ensureAwardShownAtColumn($pdo);
     if ($this->hasAward($userId, $awardId, $level)) {
         return false;
     }
 
-    global $pdo;
-    $stmt = $pdo->prepare("INSERT INTO user_awards (user_id, award_id, level, awarded_at) 
-                           VALUES (:userId, :awardId, :level, :awardedAt)");
+    $stmt = $pdo->prepare("INSERT INTO user_awards (user_id, award_id, level, awarded_at, shown_at)
+                           VALUES (:userId, :awardId, :level, :awardedAt, NOW())");
     return $stmt->execute([
         'userId' => $userId,
         'awardId' => $awardId,

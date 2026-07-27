@@ -164,6 +164,83 @@ const LightboxClose = styled.button`
   cursor: pointer;
 `;
 
+const AwardGrantDialog = styled.div`
+  position: relative;
+  width: min(640px, calc(100vw - 2rem));
+  max-height: min(760px, calc(100vh - 2rem));
+  overflow: auto;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.4rem;
+
+  h2 {
+    margin: 0 2.5rem 0.25rem 0;
+  }
+
+  h3 {
+    margin: 1.25rem 0 0.65rem;
+  }
+`;
+
+const RecipientList = styled.ul`
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.15rem 0.6rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.6rem 0.7rem;
+  }
+
+  span,
+  small {
+    color: #64748b;
+  }
+
+  small {
+    grid-column: 1 / -1;
+  }
+`;
+
+const UserSuggestionList = styled.div`
+  display: grid;
+  margin-top: 0.25rem;
+  border: 1px solid #cdd6ea;
+  border-radius: 8px;
+  overflow: hidden;
+
+  button {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.6rem 0.7rem;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  button:last-child {
+    border-bottom: none;
+  }
+
+  button:hover {
+    background: #f1f5f9;
+  }
+
+  span {
+    color: #64748b;
+  }
+`;
+
 function authHeaders(authToken) {
   return {
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -189,6 +266,14 @@ export default function AwardsAdmin() {
   const [titleDe, setTitleDe] = useState("");
   const [descriptionDe, setDescriptionDe] = useState("");
   const [iconFile, setIconFile] = useState(null);
+  const [grantDialog, setGrantDialog] = useState(null);
+  const [grantRecipients, setGrantRecipients] = useState([]);
+  const [grantRecipientsLoading, setGrantRecipientsLoading] = useState(false);
+  const [grantUserSearch, setGrantUserSearch] = useState("");
+  const [grantUserSuggestions, setGrantUserSuggestions] = useState([]);
+  const [selectedGrantUser, setSelectedGrantUser] = useState(null);
+  const [grantShowPopup, setGrantShowPopup] = useState(true);
+  const [grantLoading, setGrantLoading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -281,6 +366,39 @@ export default function AwardsAdmin() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [lightboxSrc]);
 
+  useEffect(() => {
+    if (!grantDialog || grantUserSearch.trim().length < 2) {
+      setGrantUserSuggestions([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          award_id: String(grantDialog.award.id),
+          level: String(grantDialog.level.level),
+          query: grantUserSearch.trim(),
+        });
+        const response = await fetch(`${apiBase}/awards/get_award_assignment_data.php?${params.toString()}`, {
+          headers: authHeaders(authToken),
+        });
+        const data = await response.json();
+        if (!response.ok || data.success !== true) {
+          throw new Error(data?.error || "Nutzersuche fehlgeschlagen.");
+        }
+        if (!cancelled) {
+          setGrantUserSuggestions(Array.isArray(data.users) ? data.users : []);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || "Nutzersuche fehlgeschlagen.");
+      }
+    }, 220);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [apiBase, authToken, grantDialog, grantUserSearch]);
+
   const submitAward = async (e) => {
     e.preventDefault();
     setInfo("");
@@ -340,6 +458,73 @@ export default function AwardsAdmin() {
       await loadAwards();
     } catch (err) {
       setError(err.message || "Unbekannter Fehler");
+    }
+  };
+
+  const loadGrantRecipients = async (awardIdValue, levelValue) => {
+    setGrantRecipientsLoading(true);
+    try {
+      const params = new URLSearchParams({ award_id: String(awardIdValue), level: String(levelValue) });
+      const response = await fetch(`${apiBase}/awards/get_award_assignment_data.php?${params.toString()}`, {
+        headers: authHeaders(authToken),
+      });
+      const data = await response.json();
+      if (!response.ok || data.success !== true) {
+        throw new Error(data?.error || "Bereits vergebene Awards konnten nicht geladen werden.");
+      }
+      setGrantRecipients(Array.isArray(data.recipients) ? data.recipients : []);
+    } catch (err) {
+      setError(err.message || "Award-Daten konnten nicht geladen werden.");
+    } finally {
+      setGrantRecipientsLoading(false);
+    }
+  };
+
+  const openGrantDialog = async (award, levelData) => {
+    setGrantDialog({ award, level: levelData });
+    setGrantRecipients([]);
+    setGrantUserSearch("");
+    setGrantUserSuggestions([]);
+    setSelectedGrantUser(null);
+    setGrantShowPopup(true);
+    await loadGrantRecipients(award.id, levelData.level);
+  };
+
+  const submitGrant = async (event) => {
+    event.preventDefault();
+    if (!grantDialog || !selectedGrantUser) return;
+    setInfo("");
+    setError("");
+    setGrantLoading(true);
+    try {
+      const response = await fetch(`${apiBase}/awards/grant_award.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(authToken),
+        },
+        body: JSON.stringify({
+          award_id: Number(grantDialog.award.id),
+          level: Number(grantDialog.level.level),
+          user_id: Number(selectedGrantUser.user_id),
+          show_popup: grantShowPopup,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.success !== true) {
+        throw new Error(data?.error || "Award konnte nicht vergeben werden.");
+      }
+      setInfo(data.created
+        ? `Award wurde an Nutzer-ID ${data.user_id} vergeben.`
+        : "Der Nutzer hat diesen Award bereits.");
+      setGrantUserSearch("");
+      setGrantUserSuggestions([]);
+      setSelectedGrantUser(null);
+      await loadGrantRecipients(grantDialog.award.id, grantDialog.level.level);
+    } catch (err) {
+      setError(err.message || "Unbekannter Fehler");
+    } finally {
+      setGrantLoading(false);
     }
   };
 
@@ -558,6 +743,7 @@ export default function AwardsAdmin() {
                         <div style={{ color: "#6b7280", fontSize: 14 }}>{lvl.description_de}</div>
                       </div>
                       <SecondaryButton type="button" onClick={() => prefillLevel(award, lvl)}>Bearbeiten</SecondaryButton>
+                      <Button type="button" onClick={() => openGrantDialog(award, lvl)}>Vergeben</Button>
                     </div>
                   );
                 })}
@@ -594,6 +780,59 @@ export default function AwardsAdmin() {
             <LightboxClose type="button" onClick={() => setLightboxSrc("")}>Schließen</LightboxClose>
             <LightboxImage src={lightboxSrc} alt={lightboxTitle || "Award-Icon"} />
           </LightboxCard>
+        </LightboxOverlay>
+      )}
+
+      {grantDialog && (
+        <LightboxOverlay onClick={() => setGrantDialog(null)}>
+          <AwardGrantDialog onClick={(event) => event.stopPropagation()}>
+            <LightboxClose type="button" onClick={() => setGrantDialog(null)}>Schließen</LightboxClose>
+            <h2>{grantDialog.level.title_de || `${grantDialog.award.code} · Level ${grantDialog.level.level}`}</h2>
+            <p>Level {grantDialog.level.level} · {grantDialog.level.ep || 0} EP</p>
+            <h3>Bereits vergeben</h3>
+            {grantRecipientsLoading ? <p>Lade...</p> : (
+              <RecipientList>
+                {grantRecipients.map((recipient) => (
+                  <li key={recipient.user_id}>
+                    <strong>{recipient.username}</strong> <span>ID {recipient.user_id}</span>
+                    <small>{recipient.shown_at ? "Popup angezeigt" : "Popup noch offen"}</small>
+                  </li>
+                ))}
+                {grantRecipients.length === 0 && <li>Noch niemand hat diesen Award-Level.</li>}
+              </RecipientList>
+            )}
+            <form onSubmit={submitGrant}>
+              <Label>Nutzer suchen</Label>
+              <Input
+                value={grantUserSearch}
+                onChange={(event) => {
+                  setGrantUserSearch(event.target.value);
+                  setSelectedGrantUser(null);
+                }}
+                placeholder="Mindestens 2 Zeichen"
+                autoFocus
+              />
+              {grantUserSuggestions.length > 0 && (
+                <UserSuggestionList>
+                  {grantUserSuggestions.map((candidate) => (
+                    <button key={candidate.user_id} type="button" onClick={() => {
+                      setSelectedGrantUser(candidate);
+                      setGrantUserSearch(candidate.username);
+                      setGrantUserSuggestions([]);
+                    }}>
+                      <strong>{candidate.username}</strong><span>ID {candidate.user_id}</span>
+                    </button>
+                  ))}
+                </UserSuggestionList>
+              )}
+              {selectedGrantUser && <p>Ausgewählt: <strong>{selectedGrantUser.username}</strong> · ID {selectedGrantUser.user_id}</p>}
+              <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "0.85rem 0", cursor: "pointer" }}>
+                <input type="checkbox" checked={grantShowPopup} onChange={(event) => setGrantShowPopup(event.target.checked)} />
+                Beim nächsten Login als Award-Popup anzeigen
+              </label>
+              <Button type="submit" disabled={grantLoading || !selectedGrantUser}>{grantLoading ? "Vergibt..." : "Award vergeben"}</Button>
+            </form>
+          </AwardGrantDialog>
         </LightboxOverlay>
       )}
     </Page>

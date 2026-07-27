@@ -218,7 +218,7 @@ const Header = ({ refreshShops }) => {
 
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, [userId]);
+  }, [userId, authToken]);
 
   useEffect(() => {
     const handleAvatarUpdated = (event) => {
@@ -564,7 +564,9 @@ const Header = ({ refreshShops }) => {
 
   const checkForLevelUp = async () => {
     try {
-      const response = await fetch(`${apiUrl}/userManagement/update_activity_and_awards.php?nutzer_id=${userId}`);
+      const response = await fetch(`${apiUrl}/userManagement/update_activity_and_awards.php?nutzer_id=${userId}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      });
       const data = await response.json();
       if (data.current_level != null) {
         setCurrentLevel(data.current_level);
@@ -587,6 +589,29 @@ const Header = ({ refreshShops }) => {
     } catch (error) {
       console.error('Level-Check fehlgeschlagen:', error);
     }
+  };
+
+  const closeAwardOverlay = async () => {
+    const userAwardIds = newAwards
+      .map((award) => Number(award?.user_award_id || 0))
+      .filter((id) => id > 0);
+    if (userAwardIds.length > 0 && authToken) {
+      try {
+        await fetch(`${apiUrl}/awards/mark_awards_shown.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ user_award_ids: userAwardIds }),
+        });
+      } catch (error) {
+        console.warn('Award-Anzeige konnte nicht bestätigt werden:', error);
+      }
+    }
+    setShowOverlay(false);
+    setLevelUpInfo(null);
+    setNewAwards([]);
   };
 
   const headerAvatarSrc = buildAssetUrl(headerAvatarUrl);
@@ -820,11 +845,7 @@ const Header = ({ refreshShops }) => {
       {showOverlay && (
         <OverlayBackground>
           <SharedModal>
-            <CloseButton onClick={() => {
-              setShowOverlay(false);
-              setLevelUpInfo(null);
-              setNewAwards([]);
-            }}>&times;</CloseButton>
+            <CloseButton onClick={closeAwardOverlay}>&times;</CloseButton>
 
             {levelUpInfo && (
               <>
@@ -836,11 +857,7 @@ const Header = ({ refreshShops }) => {
             {levelUpInfo && newAwards.length > 0 && (<hr></hr>)}
             <NewAwards awards={newAwards} />
             <ButtonWrapper>
-              <SubmitButton onClick={() => {
-                setShowOverlay(false);
-                setLevelUpInfo(null);
-                setNewAwards([]);
-              }}>Alles Klar!</SubmitButton>
+              <SubmitButton onClick={closeAwardOverlay}>Alles Klar!</SubmitButton>
             </ButtonWrapper>
           </SharedModal>
         </OverlayBackground>

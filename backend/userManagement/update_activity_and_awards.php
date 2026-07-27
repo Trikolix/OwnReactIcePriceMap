@@ -13,7 +13,6 @@ require_once __DIR__ . '/../evaluators/StammkundeEvaluator.php';
 require_once __DIR__ . '/../evaluators/OeffisCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/EPR2025Evaluator.php';
 require_once __DIR__ . '/../evaluators/TheTasteOfChemnitzEvaluator.php';
-require_once __DIR__ . '/../evaluators/UserOfTheMonthEvaluator.php';
 require_once __DIR__ . '/../evaluators/PhotoChallengeWinnerEvaluator.php';
 require_once __DIR__ . '/../evaluators/IceShopOneByOneEvaluator.php';
 require_once __DIR__ . '/../evaluators/ChallengeCountEvaluator.php';
@@ -29,11 +28,13 @@ require_once __DIR__ . '/../evaluators/SummerCampaignEvaluator.php';
 require_once __DIR__ . '/../evaluators/SummerQrCountEvaluator.php';
 require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
+require_once __DIR__ . '/../lib/award_grants.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
  
 try {
+    ensureAwardShownAtColumn($pdo);
     // Nutzer-ID prüfen
     if ($currentUserId <= 0) {
         http_response_code(400);
@@ -59,7 +60,6 @@ try {
         new OeffisCountEvaluator(),
         new EPR2025Evaluator(),
         new TheTasteOfChemnitzEvaluator(),
-        new UserOfTheMonthEvaluator(),
         new PhotoChallengeWinnerEvaluator(),
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
@@ -86,6 +86,8 @@ try {
             error_log("Fehler beim Evaluator " . get_class($evaluator) . ": " . $e->getMessage());
         }
     }
+
+    $newAwards = array_merge($newAwards, getPendingAwardPopups($pdo, $currentUserId));
  
     // Level-Änderung prüfen
     $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
