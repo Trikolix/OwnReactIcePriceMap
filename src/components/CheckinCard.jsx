@@ -145,7 +145,12 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
           </MediaColumn>
         </StyledContentWrapper>
         <ActionRow>
-          <LikeButton entityType="checkin" entityId={checkin.id} />
+          <LikeButton
+            entityType="checkin"
+            entityId={checkin.id}
+            initialLikesCount={checkin.likes_count}
+            initialHasLiked={checkin.has_liked}
+          />
           <CommentToggle
             title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
             onClick={() => setAreCommentsVisible(!areCommentsVisible)}

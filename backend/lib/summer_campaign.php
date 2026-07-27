@@ -273,6 +273,84 @@ function hasSummerCampaignCheckin(PDO $pdo, int $userId, int $shopId, array $con
     return (bool)$stmt->fetchColumn();
 }
 
+function getSummerCampaignAdminInsights(PDO $pdo, array $config, string $campaignId = SUMMER_CAMPAIGN_ID): array
+{
+    $checkinConditions = ["c.nutzer_id = uqs.user_id", "c.eisdiele_id = scs.eisdiele_id"];
+    $checkinParams = [];
+    if (!empty($config['starts_at'])) {
+        $checkinConditions[] = "c.datum >= :starts_at";
+        $checkinParams['starts_at'] = $config['starts_at'];
+    }
+    if (!empty($config['ends_at'])) {
+        $checkinConditions[] = "c.datum <= :ends_at";
+        $checkinParams['ends_at'] = $config['ends_at'];
+    }
+    $checkinJoin = implode(' AND ', $checkinConditions);
+
+    $awardStmt = $pdo->prepare(
+        "SELECT
+            scs.id AS summer_shop_id,
+            scs.eisdiele_id AS shop_id,
+            scs.award_id,
+            scs.award_level,
+            e.name AS shop_name,
+            COUNT(DISTINCT uqs.user_id) AS scan_count,
+            COUNT(DISTINCT CASE WHEN c.id IS NOT NULL THEN uqs.user_id END) AS checkin_count
+         FROM summer_campaign_shops scs
+         JOIN eisdielen e ON e.id = scs.eisdiele_id
+         LEFT JOIN user_qr_scans uqs ON uqs.qr_code_id = scs.qr_code_id
+         LEFT JOIN checkins c ON {$checkinJoin}
+         WHERE scs.campaign_id = :campaign_id
+           AND scs.is_active = 1
+         GROUP BY scs.id, scs.eisdiele_id, scs.award_id, scs.award_level, e.name
+         ORDER BY COALESCE(scs.sort_order, 0), e.name"
+    );
+    $awardStmt->execute(array_merge($checkinParams, ['campaign_id' => $campaignId]));
+    $awards = array_map(static fn(array $row): array => [
+        'summer_shop_id' => (int)$row['summer_shop_id'],
+        'shop_id' => (int)$row['shop_id'],
+        'shop_name' => $row['shop_name'],
+        'award_id' => $row['award_id'] !== null ? (int)$row['award_id'] : null,
+        'award_level' => $row['award_id'] !== null ? (int)$row['award_level'] : null,
+        'scan_count' => (int)$row['scan_count'],
+        'checkin_count' => (int)$row['checkin_count'],
+    ], $awardStmt->fetchAll(PDO::FETCH_ASSOC));
+
+    $rankingStmt = $pdo->prepare(
+        "SELECT
+            n.id AS user_id,
+            n.username,
+            COUNT(DISTINCT scs.id) AS scan_count,
+            COUNT(DISTINCT CASE WHEN c.id IS NOT NULL THEN scs.id END) AS checkin_count
+         FROM user_qr_scans uqs
+         JOIN summer_campaign_shops scs ON scs.qr_code_id = uqs.qr_code_id
+         JOIN nutzer n ON n.id = uqs.user_id
+         LEFT JOIN checkins c ON {$checkinJoin}
+         WHERE scs.campaign_id = :campaign_id
+           AND scs.is_active = 1
+         GROUP BY n.id, n.username
+         HAVING scan_count > 0
+         ORDER BY scan_count DESC, checkin_count DESC, n.username ASC"
+    );
+    $rankingStmt->execute(array_merge($checkinParams, ['campaign_id' => $campaignId]));
+    $rank = 0;
+    $ranking = array_map(static function (array $row) use (&$rank): array {
+        $rank++;
+        return [
+            'rank' => $rank,
+            'user_id' => (int)$row['user_id'],
+            'username' => $row['username'],
+            'scan_count' => (int)$row['scan_count'],
+            'checkin_count' => (int)$row['checkin_count'],
+        ];
+    }, $rankingStmt->fetchAll(PDO::FETCH_ASSOC));
+
+    return [
+        'awards' => $awards,
+        'ranking' => $ranking,
+    ];
+}
+
 function getSummerCampaignProgress(PDO $pdo, ?int $userId = null, string $campaignId = SUMMER_CAMPAIGN_ID): array
 {
     ensureSummerCampaignTables($pdo);
@@ -373,7 +451,7 @@ function getSummerCampaignProgress(PDO $pdo, ?int $userId = null, string $campai
         ];
     }
 
-    return [
+    $response = [
         'campaign' => [
             'id' => $config['campaign_id'],
             'title' => $config['title'],
@@ -391,6 +469,12 @@ function getSummerCampaignProgress(PDO $pdo, ?int $userId = null, string $campai
         'categories' => $categories,
         'shops' => $items,
     ];
+
+    if ((int)$userId === 1) {
+        $response['admin_insights'] = getSummerCampaignAdminInsights($pdo, $config, $campaignId);
+    }
+
+    return $response;
 }
 
 function buildSummerAwardPayload(PDO $pdo, int $awardId, int $awardLevel): ?array

@@ -1,6 +1,8 @@
 <?php
 require 'db_connect.php';
 require_once __DIR__ . '/lib/notification_dispatcher.php';
+require_once __DIR__ . '/lib/tour_de_glace.php';
+require_once __DIR__ . '/evaluators/TourDeGlaceAwardEvaluator.php';
 
 $token = $_GET['token'] ?? '';
 
@@ -26,6 +28,16 @@ try {
         iceapp_send_welcome_mail_to_user($pdo, $userId);
 
         if ($invitedBy !== null) {
+            recordTourDeGlaceReferral($pdo, $invitedBy, $userId, [
+                'verification_source' => 'email',
+                'invited_username' => $username,
+            ]);
+            try {
+                (new TourDeGlaceAwardEvaluator())->evaluate($invitedBy);
+            } catch (Throwable $e) {
+                error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+            }
+
             createNotification(
                 $pdo,
                 $invitedBy,

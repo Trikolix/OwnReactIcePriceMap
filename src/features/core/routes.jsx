@@ -10,6 +10,7 @@ import AwardsAdmin from "../../pages/AwardsAdmin";
 import AdminWeeklyStats from "../../pages/AdminWeeklyStats";
 import AdminPushStats from "../../pages/AdminPushStats";
 import SummerCampaignAdmin from "../../pages/SummerCampaignAdmin";
+import TourDeGlaceAdmin from "../../pages/TourDeGlaceAdmin";
 
 export const coreRoutes = [
   { path: "/dashboard", element: <DashBoard /> },
@@ -24,4 +25,5 @@ export const coreRoutes = [
   { path: "/shop-change-requests", element: <ShopChangeRequestsAdmin /> },
   { path: "/admin/weekly-stats", element: <AdminWeeklyStats /> },
   { path: "/admin/push-stats", element: <AdminPushStats /> },
+  { path: "/admin/tour-de-glace", element: <TourDeGlaceAdmin /> },
 ];

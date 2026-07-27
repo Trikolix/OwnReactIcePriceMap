@@ -83,19 +83,90 @@ function fetchPublicChallengeWinnerImage(PDO $pdo, int $challengeId): ?array
     ];
 }
 
+function fetchPublicChallengeVoteProgress(PDO $pdo, array $challengeIds, int $viewerId = 0): array
+{
+    $challengeIds = array_values(array_unique(array_map('intval', $challengeIds)));
+    $challengeIds = array_values(array_filter($challengeIds, static fn(int $id): bool => $id > 0));
+    if (empty($challengeIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($challengeIds), '?'));
+    $stmt = $pdo->prepare("
+        SELECT m.challenge_id,
+               COUNT(*) AS available_votes,
+               SUM(CASE WHEN v.id IS NULL THEN 0 ELSE 1 END) AS cast_votes
+        FROM photo_challenge_matches m
+        JOIN photo_challenges ch ON ch.id = m.challenge_id
+        LEFT JOIN photo_challenge_groups g ON g.id = m.group_id
+        LEFT JOIN photo_challenge_votes v
+          ON v.match_id = m.id
+         AND v.nutzer_id = ?
+        WHERE m.challenge_id IN ({$placeholders})
+          AND m.status = 'open'
+          AND (
+            (
+              ch.status = 'group_running'
+              AND m.phase = 'group'
+              AND (g.start_at IS NULL OR g.start_at <= NOW())
+              AND (g.end_at IS NULL OR g.end_at >= NOW())
+            )
+            OR (
+              ch.status = 'ko_running'
+              AND m.phase = 'ko'
+            )
+          )
+        GROUP BY m.challenge_id
+    ");
+    $stmt->execute(array_merge([$viewerId], $challengeIds));
+
+    $progress = [];
+    foreach ($challengeIds as $challengeId) {
+        $progress[$challengeId] = [
+            'available_votes' => 0,
+            'cast_votes' => 0,
+            'remaining_votes' => 0,
+            'is_complete' => false,
+        ];
+    }
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $challengeId = (int)$row['challenge_id'];
+        $availableVotes = (int)$row['available_votes'];
+        $castVotes = (int)$row['cast_votes'];
+        $remainingVotes = max(0, $availableVotes - $castVotes);
+        $progress[$challengeId] = [
+            'available_votes' => $availableVotes,
+            'cast_votes' => $castVotes,
+            'remaining_votes' => $remainingVotes,
+            'is_complete' => $availableVotes > 0 && $remainingVotes === 0,
+        ];
+    }
+
+    return $progress;
+}
+
 try {
     ensurePhotoChallengeSchema($pdo);
+    $viewerId = isset($_GET['nutzer_id']) ? (int)$_GET['nutzer_id'] : 0;
     $challenges = array_values(array_filter(
         fetchChallenges($pdo),
         fn($challenge) => ($challenge['status'] ?? '') !== 'draft'
     ));
+    $voteProgress = fetchPublicChallengeVoteProgress($pdo, array_column($challenges, 'id'), $viewerId);
 
-    $challenges = array_map(static function (array $challenge) use ($pdo): array {
+    $challenges = array_map(static function (array $challenge) use ($pdo, $voteProgress): array {
         $challengeId = (int)$challenge['id'];
         $challenge['preview_images'] = fetchPublicChallengePreviewImages($pdo, $challengeId);
         $challenge['winner_image'] = ($challenge['status'] ?? '') === 'finished'
             ? fetchPublicChallengeWinnerImage($pdo, $challengeId)
             : null;
+        $challenge['vote_progress'] = $voteProgress[$challengeId] ?? [
+            'available_votes' => 0,
+            'cast_votes' => 0,
+            'remaining_votes' => 0,
+            'is_complete' => false,
+        ];
         return $challenge;
     }, $challenges);
 

@@ -3,6 +3,9 @@ import headerWideEaster from '../../header_wide_easter.png';
 import headerWide from '../../header_wide.png';
 
 const isWithinRange = (now, start, endExclusive) => now >= start && now < endExclusive;
+const TOUR_DE_GLACE_ADMIN_PREVIEW_START = new Date('2026-06-27T00:00:00+02:00');
+const isTourDeGlaceAdminPreview = (now, campaign, context = {}) =>
+  Boolean(context.isAdmin) && isWithinRange(now, TOUR_DE_GLACE_ADMIN_PREVIEW_START, campaign.schedule.preStart);
 
 const EASTER_WINDOWS = {
   2026: {
@@ -125,23 +128,69 @@ export const seasonalCampaignDefinitions = [
       return CAMPAIGN_STATUS.RESULTS;
     },
   },
+  {
+    id: 'tour_de_glace_2026',
+    title: 'Tour de Glace 2026',
+    kind: 'campaign',
+    promoPriority: 20,
+    teaserIcon(now = new Date(), { isAdmin = false } = {}) {
+      return isWithinRange(now, this.schedule.preStart, this.schedule.endExclusive)
+        ? '/assets/tour-de-glace/tour_egg.png'
+        : '/assets/summer_action_logo2.png';
+    },
+    schedule: {
+      preStart: new Date('2026-06-28T00:00:00+02:00'),
+      start: new Date('2026-07-04T00:00:00+02:00'),
+      endExclusive: new Date('2026-07-27T00:00:00+02:00'),
+      resultsHighlightEnd: new Date('2026-08-03T00:00:00+02:00'),
+    },
+    api: {
+      progress: '/api/tour_de_glace_progress.php',
+    },
+    getStatus(now = new Date(), context = {}) {
+      if (isTourDeGlaceAdminPreview(now, this, context)) {
+        return CAMPAIGN_STATUS.ACTIVE;
+      }
+      if (now < this.schedule.preStart) {
+        return CAMPAIGN_STATUS.UPCOMING;
+      }
+      if (isWithinRange(now, this.schedule.preStart, this.schedule.endExclusive)) {
+        return CAMPAIGN_STATUS.ACTIVE;
+      }
+      return CAMPAIGN_STATUS.RESULTS;
+    },
+  },
 ];
 
 export const getCampaignDefinition = (campaignId) =>
   seasonalCampaignDefinitions.find((campaign) => campaign.id === campaignId) || null;
 
-export const getCampaignStatus = (campaignId, now = new Date()) =>
-  getCampaignDefinition(campaignId)?.getStatus(now) || CAMPAIGN_STATUS.INACTIVE;
+export const isTourDeGlaceResultsHighlight = (now = new Date(), campaign = getCampaignDefinition('tour_de_glace_2026')) =>
+  Boolean(campaign?.schedule?.endExclusive && campaign?.schedule?.resultsHighlightEnd)
+  && isWithinRange(now, campaign.schedule.endExclusive, campaign.schedule.resultsHighlightEnd);
 
-export const getResolvedSeasonalCampaigns = (now = new Date()) => {
+export const getCampaignStatus = (campaignId, now = new Date(), context = {}) =>
+  getCampaignDefinition(campaignId)?.getStatus(now, context) || CAMPAIGN_STATUS.INACTIVE;
+
+export const getResolvedSeasonalCampaigns = (now = new Date(), context = {}) => {
   const campaigns = seasonalCampaignDefinitions.map((campaign) => ({
     ...campaign,
-    status: campaign.getStatus(now),
+    status: campaign.getStatus(now, context),
+    resolvedTeaserIcon: typeof campaign.teaserIcon === 'function'
+      ? campaign.teaserIcon(now, context)
+      : campaign.teaserIcon,
+    resolvedHeaderLogo: typeof campaign.headerLogo === 'function'
+      ? campaign.headerLogo(now)
+      : campaign.headerLogo,
   }));
   const activeCampaigns = campaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
-  const featuredCampaign = activeCampaigns[0] || null;
+  const featuredCampaign = [...activeCampaigns]
+    .filter((campaign) => campaign.resolvedTeaserIcon)
+    .sort((left, right) => (right.promoPriority || 0) - (left.promoPriority || 0))[0]
+    || activeCampaigns[0]
+    || null;
   const visualCampaign = campaigns.find(
-    (campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE && campaign.headerLogo
+    (campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE && campaign.resolvedHeaderLogo
   ) || null;
 
   return {
@@ -149,14 +198,14 @@ export const getResolvedSeasonalCampaigns = (now = new Date()) => {
     featuredCampaign,
     activeCampaigns,
     visualTheme: visualCampaign?.visualTheme || null,
-    headerLogo: visualCampaign?.headerLogo || headerWide,
+    headerLogo: visualCampaign?.resolvedHeaderLogo || headerWide,
   };
 };
 
 export const getSpecialTime = (now = new Date()) => getResolvedSeasonalCampaigns(now).visualTheme;
 
-export const getActionsOverviewCampaigns = (now = new Date()) =>
-  getResolvedSeasonalCampaigns(now).campaigns.filter((campaign) => (
+export const getActionsOverviewCampaigns = (now = new Date(), context = {}) =>
+  getResolvedSeasonalCampaigns(now, context).campaigns.filter((campaign) => (
     campaign.status === CAMPAIGN_STATUS.ACTIVE
     || campaign.status === CAMPAIGN_STATUS.UPCOMING
     || campaign.status === CAMPAIGN_STATUS.RESULTS

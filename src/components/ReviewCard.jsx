@@ -115,7 +115,12 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
           </MediaColumn>
         </StyledContentWrapper>
         <ActionRow>
-          <LikeButton entityType="bewertung" entityId={review.id} />
+          <LikeButton
+            entityType="bewertung"
+            entityId={review.id}
+            initialLikesCount={review.likes_count}
+            initialHasLiked={review.has_liked}
+          />
           <CommentToggle
             title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
             onClick={() => setAreCommentsVisible(!areCommentsVisible)}

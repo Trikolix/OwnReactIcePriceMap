@@ -30,7 +30,6 @@ const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'group_running',
   'ko_running',
 ]);
-
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [awardsActionsOpen, setAwardsActionsOpen] = useState(false);
@@ -47,17 +46,22 @@ const Header = ({ refreshShops }) => {
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
   const [hasActivePhotoChallenge, setHasActivePhotoChallenge] = useState(false);
+  const [activePhotoChallengeCount, setActivePhotoChallengeCount] = useState(0);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const location = useLocation();
   const navigate = useNavigate();
-  const seasonalState = getResolvedSeasonalCampaigns();
-  const featuredCampaign = seasonalState.featuredCampaign;
-  const promoIconSrc = featuredCampaign?.teaserIcon ? buildPublicAssetUrl(featuredCampaign.teaserIcon) : userOfTheMonthImg;
-  const promoIconAlt = featuredCampaign
-    ? `${featuredCampaign.title} öffnen`
-    : 'Aktionen & Ergebnisse öffnen';
-  const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
+  const isAdmin = Number(userId) === 1;
   const now = new Date();
+  const seasonalState = getResolvedSeasonalCampaigns(now, { isAdmin });
+  const featuredCampaign = seasonalState.featuredCampaign;
+  const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)).length;
+  const actionHubCount = (activePhotoChallengeCount > 0 ? 1 : 0)
+    + seasonalActionCount;
+  const promoIconSrc = buildPublicAssetUrl('/assets/action_icon.png');
+  const promoIconAlt = featuredCampaign
+    ? `Aktions-Hub öffnen: ${featuredCampaign.title}`
+    : 'Aktions-Hub öffnen';
+  const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const showIceTourNewBadge = now <= new Date(2026, 4, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
@@ -65,13 +69,16 @@ const Header = ({ refreshShops }) => {
     setMenuOpen((isOpen) => !isOpen);
   };
   const closeMenu = () => setMenuOpen(false);
-  const isAdmin = Number(userId) === 1;
   const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
-  const isAwardsActionsActive = location.pathname === '/awards-admin' || location.pathname === '/summer-campaign-admin' || location.pathname === '/admin/summer-campaign';
+  const isAwardsActionsActive = location.pathname === '/awards-admin'
+    || location.pathname === '/summer-campaign-admin'
+    || location.pathname === '/admin/summer-campaign'
+    || location.pathname === '/admin/tour-de-glace';
 
   useEffect(() => {
     if (!apiUrl) {
       setHasActivePhotoChallenge(false);
+      setActivePhotoChallengeCount(0);
       return;
     }
 
@@ -86,17 +93,19 @@ const Header = ({ refreshShops }) => {
 
         const data = await response.json();
         const challenges = Array.isArray(data?.data) ? data.data : [];
-        const hasActiveChallenge = challenges.some((challenge) =>
+        const activeChallengeCount = challenges.filter((challenge) =>
           ACTIVE_PHOTO_CHALLENGE_STATUSES.has(challenge?.status)
-        );
+        ).length;
 
         if (!cancelled) {
-          setHasActivePhotoChallenge(hasActiveChallenge);
+          setHasActivePhotoChallenge(activeChallengeCount > 0);
+          setActivePhotoChallengeCount(activeChallengeCount);
         }
       } catch (error) {
         console.error('Fotochallenge-Badge konnte nicht aktualisiert werden:', error);
         if (!cancelled) {
           setHasActivePhotoChallenge(false);
+          setActivePhotoChallengeCount(0);
         }
       }
     };
@@ -127,6 +136,14 @@ const Header = ({ refreshShops }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    const handleOpenActionsHub = () => {
+      setShowActionsOverview(true);
+    };
+    window.addEventListener('actions-hub:open', handleOpenActionsHub);
+    return () => window.removeEventListener('actions-hub:open', handleOpenActionsHub);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -595,6 +612,7 @@ const Header = ({ refreshShops }) => {
         <PromoIconsContainer>
           <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
             <img src={promoIconSrc} alt={promoIconAlt} />
+            {actionHubCount > 0 && <ActionHubBadge>{actionHubCount}</ActionHubBadge>}
           </GewinnspielIcon>
         </PromoIconsContainer>
 
@@ -741,6 +759,7 @@ const Header = ({ refreshShops }) => {
                         <MenuSubmenu>
                           <MenuSubItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuSubItemLink>
                           <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}>Sommer-QR-Aktion verwalten</MenuSubItemLink>
+                          <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}>Tour de Glace verwalten</MenuSubItemLink>
                         </MenuSubmenu>
                       )}
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
@@ -1438,6 +1457,7 @@ const ButtonWrapper = styled.div`
 `;
 
 const GewinnspielIcon = styled.div`
+  position: relative;
   cursor: pointer;
   margin-right: 8px;
   width: 80px;
@@ -1467,6 +1487,40 @@ const GewinnspielIcon = styled.div`
     margin-right: 0;
     width: 42px;
     height: 42px;
+  }
+`;
+
+const ActionHubBadge = styled.span`
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: #d93025;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+
+  @media (max-width: 768px) {
+    top: -10px;
+    right: -11px;
+    min-width: 1.16rem;
+    height: 1.16rem;
+    border-width: 1.5px;
+    font-size: 0.64rem;
+  }
+
+  @media (max-width: 420px) {
+    top: -11px;
+    right: -12px;
+    min-width: 1.08rem;
+    height: 1.08rem;
+    font-size: 0.6rem;
   }
 `;
 

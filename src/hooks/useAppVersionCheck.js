@@ -27,9 +27,8 @@ export function useAppVersionCheck() {
           return;
         }
         setRemoteInfo(remote);
-        const hasBuildMismatch = remote?.buildId && remote.buildId !== APP_BUILD_ID;
         const hasVersionMismatch = remote?.appVersion && remote.appVersion !== APP_VERSION;
-        if (hasBuildMismatch || hasVersionMismatch) {
+        if (hasVersionMismatch) {
           setUpdateAvailable(true);
         }
       } catch {

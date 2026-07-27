@@ -122,7 +122,12 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
             </TextContent>
           </ContentWrapper>
           <ActionRow>
-            <LikeButton entityType="user_award" entityId={award.id} />
+            <LikeButton
+              entityType="user_award"
+              entityId={award.id}
+              initialLikesCount={award.likes_count}
+              initialHasLiked={award.has_liked}
+            />
             <CommentToggle
               title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
               onClick={(event) => {

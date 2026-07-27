@@ -72,7 +72,12 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
       </ActionRow>
 
       <SocialActionRow>
-        <LikeButton entityType="user_registration" entityId={user.id} />
+        <LikeButton
+          entityType="user_registration"
+          entityId={user.id}
+          initialLikesCount={user.likes_count}
+          initialHasLiked={user.has_liked}
+        />
         <CommentToggle
           title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
           onClick={() => setAreCommentsVisible((prev) => !prev)}

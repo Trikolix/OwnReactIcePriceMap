@@ -3,9 +3,11 @@ require_once  __DIR__ . '/../db_connect.php';
 require_once  __DIR__ . '/../lib/levelsystem.php';
 require_once  __DIR__ . '/../evaluators/PublicRouteCountEvaluator.php';
 require_once  __DIR__ . '/../evaluators/PrivateRouteCountEvaluator.php';
+require_once  __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/route_utils.php';
 require_once __DIR__ . '/../lib/mention_utils.php';
+require_once __DIR__ . '/../lib/tour_de_glace.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -137,11 +139,19 @@ try {
     }
 
     $pdo->commit();
+    $tourDeGlacePoints = recordTourDeGlaceRoute($pdo, (int)$currentUserId, (int)$routeId, [
+        'type' => $typ,
+        'is_public' => (bool)$ist_oeffentlich,
+        'shop_ids' => $normalizedIds,
+        'laenge_km' => $laenge_km,
+        'hoehenmeter' => $hoehenmeter,
+    ]);
 
     // Evaluatoren
     $evaluators = [
         new PublicRouteCountEvaluator(),
-        new PrivateRouteCountEvaluator()
+        new PrivateRouteCountEvaluator(),
+        new TourDeGlaceAwardEvaluator()
     ];
 
     $newAwards = [];
@@ -162,7 +172,8 @@ try {
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,
-        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null
+        'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
+        'tour_de_glace_points' => $tourDeGlacePoints
     ]);
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) {

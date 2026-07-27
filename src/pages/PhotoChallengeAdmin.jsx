@@ -290,6 +290,12 @@ function PhotoChallengeAdmin() {
     return openMatches.filter((match) => (Number(match.round) || 1) === firstOpenRound);
   }, [overview?.ko_matches]);
   const isFinalKoRound = challengeStatus === 'ko_running' && activeKoMatches.length === 1;
+  const hasStoryGroups = Boolean(overview?.groups?.length);
+  const hasStoryKoMatches = activeKoMatches.length > 0;
+  const hasStoryResults = Boolean(
+    overview?.winner || overview?.groups?.some((group) => group.status === 'finished' && group.results?.length)
+  );
+  const hasAnyStoryDownload = hasStoryGroups || hasStoryKoMatches || hasStoryResults;
 
   const getGroupTimeDraft = useCallback(
     (groupId) => {
@@ -575,6 +581,19 @@ function PhotoChallengeAdmin() {
     setImageResults([]);
     setImageSearchPage(1);
     setImageSearchHasMore(false);
+  };
+
+  const handleStoryDownload = (pack) => {
+    if (!apiUrl || !selectedChallengeId || !userId) {
+      showFeedback('Bitte zuerst eine Challenge auswählen.', 'error');
+      return;
+    }
+    const params = new URLSearchParams({
+      challenge_id: String(selectedChallengeId),
+      nutzer_id: String(userId),
+      pack,
+    });
+    window.location.href = `${apiUrl}/photo_challenge/download_story_pack.php?${params.toString()}`;
   };
 
   const openImageLightbox = (image) => {
@@ -1147,6 +1166,44 @@ function PhotoChallengeAdmin() {
                             : 'Aktuelle KO-Runde abschließen'}
                       </SecondaryButton>
                     </ActionButtonRow>
+                    <StoryDownloadBox>
+                      <div>
+                        <strong>Instagram-Storys</strong>
+                        <FormHint>
+                          Kuratierte 9:16-PNGs mit Challenge-Bildern als ZIP herunterladen.
+                        </FormHint>
+                      </div>
+                      <StoryDownloadActions>
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => handleStoryDownload('groups')}
+                          disabled={!hasStoryGroups}
+                        >
+                          Gruppen-Stories
+                        </SecondaryButton>
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => handleStoryDownload('ko')}
+                          disabled={!hasStoryKoMatches}
+                        >
+                          KO-Stories
+                        </SecondaryButton>
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => handleStoryDownload('results')}
+                          disabled={!hasStoryResults}
+                        >
+                          Ergebnis-Stories
+                        </SecondaryButton>
+                        <PrimaryButton
+                          type="button"
+                          onClick={() => handleStoryDownload('all')}
+                          disabled={!hasAnyStoryDownload}
+                        >
+                          Alle Storys
+                        </PrimaryButton>
+                      </StoryDownloadActions>
+                    </StoryDownloadBox>
                     <FormHint>Einreichphase schließen, Turnier konfigurieren und Gruppenstart findest du im Planungs-Wizard darunter.</FormHint>
                   </>
                 )}
@@ -2153,6 +2210,26 @@ const ChallengeStats = styled.div`
   flex-wrap: wrap;
   gap: 1rem;
   font-weight: 600;
+`;
+
+const StoryDownloadBox = styled.div`
+  border: 1px solid #ffe0b3;
+  background: #fffaf0;
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+`;
+
+const StoryDownloadActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  button {
+    min-width: 0;
+  }
 `;
 
 const SearchRow = styled.form`

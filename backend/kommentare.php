@@ -5,6 +5,8 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/comment_registration.php';
 require_once __DIR__ . '/lib/comment_award.php';
 require_once __DIR__ . '/lib/mention_utils.php';
+require_once __DIR__ . '/lib/tour_de_glace.php';
+require_once __DIR__ . '/evaluators/TourDeGlaceAwardEvaluator.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -120,6 +122,20 @@ function createKommentar($pdo, $currentUserId) {
         handleUserAwardKommentarBenachrichtigungen($pdo, $userAwardId, $currentUserId, $kommentarId);
     }
 
+    $tourDeGlacePoints = recordTourDeGlaceComment($pdo, (int)$currentUserId, (int)$kommentarId, [
+        'checkin_id' => $checkinId,
+        'bewertung_id' => $bewertungId,
+        'route_id' => $routeId,
+        'user_registration_id' => $userRegistrationId,
+        'user_award_id' => $userAwardId,
+    ]);
+    $newAwards = [];
+    try {
+        $newAwards = (new TourDeGlaceAwardEvaluator())->evaluate((int)$currentUserId);
+    } catch (Exception $e) {
+        error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+    }
+
     // Process mentions in the comment text
     if ($checkinId) {
         $stmtMeta = $pdo->prepare("SELECT eisdiele_id FROM checkins WHERE id = ?");
@@ -144,7 +160,9 @@ function createKommentar($pdo, $currentUserId) {
 
     echo json_encode([
         "status" => "success",
-        "kommentar_id" => $kommentarId
+        "kommentar_id" => $kommentarId,
+        "new_awards" => $newAwards,
+        "tour_de_glace_points" => $tourDeGlacePoints
     ]);
 }
 

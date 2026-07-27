@@ -50,18 +50,26 @@ const CountButton = styled.button.attrs({ type: "button" })`
   }
 `;
 
-const LikeButton = ({ entityType, entityId }) => {
+const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHasLiked = null }) => {
   const { isLoggedIn } = useUser();
-  const [likesCount, setLikesCount] = useState(0);
-  const [hasLiked, setHasLiked] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const hasInitialLikeState = initialLikesCount !== null && initialHasLiked !== null;
+  const [likesCount, setLikesCount] = useState(() => Number(initialLikesCount ?? 0));
+  const [hasLiked, setHasLiked] = useState(() => Boolean(initialHasLiked));
+  const [isLoading, setIsLoading] = useState(!hasInitialLikeState);
   const [showLikersModal, setShowLikersModal] = useState(false);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     if (!entityId || !entityType) return;
+    if (hasInitialLikeState) {
+      setLikesCount(Number(initialLikesCount || 0));
+      setHasLiked(Boolean(initialHasLiked));
+      setIsLoading(false);
+      return;
+    }
 
     const fetchLikeState = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch(`${apiUrl}/likes.php?entity_type=${entityType}&entity_id=${entityId}`);
         const data = await response.json();
@@ -77,7 +85,7 @@ const LikeButton = ({ entityType, entityId }) => {
     };
 
     fetchLikeState();
-  }, [apiUrl, entityId, entityType]);
+  }, [apiUrl, entityId, entityType, hasInitialLikeState, initialHasLiked, initialLikesCount]);
 
   const handleCountClick = (e) => {
     e.stopPropagation();

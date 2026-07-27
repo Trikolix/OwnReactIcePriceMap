@@ -751,9 +751,6 @@ function fetchGroupStandings(PDO $pdo, int $challengeId): array
     foreach ($groupStats as &$group) {
         $group['entries'] = array_values($group['entries']);
         usort($group['entries'], function ($a, $b) {
-            if ($a['wins'] !== $b['wins']) {
-                return $b['wins'] <=> $a['wins'];
-            }
             if ($a['votes_for'] !== $b['votes_for']) {
                 return $b['votes_for'] <=> $a['votes_for'];
             }
@@ -761,6 +758,9 @@ function fetchGroupStandings(PDO $pdo, int $challengeId): array
             $diffB = $b['votes_for'] - $b['votes_against'];
             if ($diffA !== $diffB) {
                 return $diffB <=> $diffA;
+            }
+            if ($a['wins'] !== $b['wins']) {
+                return $b['wins'] <=> $a['wins'];
             }
             return $a['image_id'] <=> $b['image_id'];
         });

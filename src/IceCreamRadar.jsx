@@ -18,6 +18,7 @@ import MapCenterOnShop from './components/MapCenterOnShop';
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
 import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
+import TourDeGlaceMapEggs from './features/seasonal/TourDeGlaceMapEggs';
 import { Capacitor } from "@capacitor/core";
 import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
@@ -34,6 +35,8 @@ const DEFAULT_CONTEXT_MENU_STATE = {
   mode: 'menu',
   message: '',
 };
+const getTodayKey = () => new Date().toISOString().slice(0, 10);
+const getMapActionDismissKey = () => `action-map-nudge-dismissed:${getTodayKey()}`;
 const DISCOVERY_SLOT_LIMIT = 5;
 const SEARCH_PLACE_MIN_QUERY_LENGTH = 3;
 const SEARCH_PLACE_DEBOUNCE_MS = 450;
@@ -643,7 +646,7 @@ const DiscoveryToggleControl = ({ isDiscoveryVisible, onToggle }) => {
   return null;
 };
 
-const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
+const SeasonalViewToggleControl = ({ enabled, active, onToggle, label = 'Ei', titleActive = 'Saisonansicht ausblenden', titleInactive = 'Saisonansicht einblenden' }) => {
   const map = useMap();
   const buttonRef = useRef(null);
 
@@ -655,7 +658,7 @@ const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
       const container = L.DomUtil.create('div', 'leaflet-bar');
       const button = L.DomUtil.create('a', 'leaflet-control-seasonal-toggle', container);
       button.href = '#';
-      button.textContent = 'Ei';
+      button.textContent = label;
       button.style.fontWeight = '800';
       button.style.fontSize = '12px';
       buttonRef.current = button;
@@ -678,19 +681,19 @@ const SeasonalViewToggleControl = ({ enabled, active, onToggle }) => {
       buttonRef.current = null;
       seasonalControl.remove();
     };
-  }, [enabled, map, onToggle]);
+  }, [enabled, label, map, onToggle]);
 
   useEffect(() => {
     const button = buttonRef.current;
     if (!button) return;
 
-    button.title = active ? 'Osteransicht ausblenden' : 'Osteransicht einblenden';
+    button.title = active ? titleActive : titleInactive;
     if (active) {
       L.DomUtil.addClass(button, 'leaflet-active');
     } else {
       L.DomUtil.removeClass(button, 'leaflet-active');
     }
-  }, [active]);
+  }, [active, titleActive, titleInactive]);
 
   return null;
 };
@@ -744,8 +747,10 @@ const IceCreamRadar = () => {
   const shopListRequestRef = useRef(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDetailsView, setShowDetailsView] = useState(true);
-  const { userId, isLoggedIn, userPosition, login, setUserPosition } = useUser();
+  const { userId, isLoggedIn, userPosition, login, setUserPosition, authToken } = useUser();
   const [initialCenter, setInitialCenter] = useState(userPosition || [50.833707, 12.919187]);
+  const latestUserPositionRef = useRef(userPosition);
+  const latestLocationAccuracyRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
   const [openFilterMode, setOpenFilterMode] = useState('all');
@@ -763,6 +768,10 @@ const IceCreamRadar = () => {
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(true);
+  const [showMapActionNudge, setShowMapActionNudge] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(getMapActionDismissKey()) !== '1';
+  });
 
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
@@ -792,6 +801,101 @@ const IceCreamRadar = () => {
   const [externalDiscoveryMinZoom, setExternalDiscoveryMinZoom] = useState(EXTERNAL_DISCOVERY_MIN_ZOOM_FALLBACK);
   const activeShopRequestRef = useRef(0);
   const canAccessExternalDiscovery = useMemo(() => canUseExternalDiscovery(userId), [userId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousRootOverflow = root?.style.overflow;
+    const previousHtmlHeight = html.style.height;
+    const previousBodyHeight = body.style.height;
+    const previousRootHeight = root?.style.height;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
+    const previousHtmlOverscroll = html.style.overscrollBehavior;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+    const previousViewportHeight = html.style.getPropertyValue('--ice-app-viewport-height');
+    let frameId = null;
+
+    const syncViewport = () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      frameId = window.requestAnimationFrame(() => {
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        if (Number.isFinite(viewportHeight) && viewportHeight > 0) {
+          html.style.setProperty('--ice-app-viewport-height', `${Math.round(viewportHeight)}px`);
+        }
+        window.scrollTo(0, 0);
+        mapRef.current?.invalidateSize?.();
+        frameId = null;
+      });
+    };
+
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    html.style.height = '100%';
+    body.style.height = '100%';
+    if (root) {
+      root.style.overflow = 'hidden';
+      root.style.height = '100%';
+    }
+    body.style.position = 'fixed';
+    body.style.top = '0';
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    html.style.overscrollBehavior = 'none';
+    body.style.overscrollBehavior = 'none';
+
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener('resize', syncViewport);
+    visualViewport?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+    syncViewport();
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      visualViewport?.removeEventListener('resize', syncViewport);
+      visualViewport?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      if (root) {
+        root.style.overflow = previousRootOverflow || '';
+      }
+      html.style.height = previousHtmlHeight;
+      body.style.height = previousBodyHeight;
+      if (root) {
+        root.style.height = previousRootHeight || '';
+      }
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
+      html.style.overscrollBehavior = previousHtmlOverscroll;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+      if (previousViewportHeight) {
+        html.style.setProperty('--ice-app-viewport-height', previousViewportHeight);
+      } else {
+        html.style.removeProperty('--ice-app-viewport-height');
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1825,38 +1929,87 @@ const IceCreamRadar = () => {
     openFilterDateTime,
   ]);
 
-  // Geoposition des Nutzers laden
   useEffect(() => {
-    const fetchPosition = async () => {
-      if (!userPosition && navigator.geolocation) {
-        try {
-          if (Capacitor.isNativePlatform()) {
-            const { Geolocation } = await import('@capacitor/geolocation');
-            const permissions = await Geolocation.checkPermissions();
-            if (permissions.location !== 'granted') {
-              const request = await Geolocation.requestPermissions();
-              if (request.location !== 'granted') return;
-            }
-          }
-        } catch (e) {
-          console.error("Geolocation init error:", e);
-        }
+    latestUserPositionRef.current = userPosition;
+  }, [userPosition]);
 
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-          const newPos = [latitude, longitude];
-          setUserPosition(newPos); // speichert im localStorage
-          setInitialCenter(newPos); // nur einmal fürs initiale Laden
-        },
-        (error) => {
-          console.error('Fehler beim Abrufen der Position:', error);
+  const updateUserLocation = useCallback((position) => {
+    const { latitude, longitude, accuracy } = position.coords;
+    const newPos = [latitude, longitude];
+    const previousPos = latestUserPositionRef.current;
+    const previousAccuracy = latestLocationAccuracyRef.current;
+    const movedEnough = !previousPos
+      || Math.abs(previousPos[0] - latitude) > 0.00005
+      || Math.abs(previousPos[1] - longitude) > 0.00005;
+    const accuracyImproved = Number.isFinite(accuracy)
+      && (!Number.isFinite(previousAccuracy) || accuracy < previousAccuracy - 10);
+
+    if (!movedEnough && !accuracyImproved) {
+      return;
+    }
+
+    latestUserPositionRef.current = newPos;
+    latestLocationAccuracyRef.current = Number.isFinite(accuracy) ? accuracy : previousAccuracy;
+    setUserPosition(newPos); // speichert im localStorage
+
+    if (!previousPos) {
+      setInitialCenter(newPos);
+    }
+  }, [setUserPosition]);
+
+  // Geoposition des Nutzers laden und anschliessend per Watch verfeinern
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return undefined;
+    }
+
+    let watchId = null;
+    let cancelled = false;
+
+    const startGeolocation = async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const { Geolocation } = await import('@capacitor/geolocation');
+          const permissions = await Geolocation.checkPermissions();
+          if (permissions.location !== 'granted') {
+            const request = await Geolocation.requestPermissions();
+            if (request.location !== 'granted') return;
+          }
         }
-        );
+      } catch (e) {
+        console.error("Geolocation init error:", e);
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        updateUserLocation,
+        (error) => {
+          console.error('Fehler beim schnellen Abrufen der Position:', error);
+        },
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 30000 }
+      );
+
+      watchId = navigator.geolocation.watchPosition(
+        updateUserLocation,
+        (error) => {
+          console.error('Fehler beim Aktualisieren der Position:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    };
+
+    startGeolocation();
+
+    return () => {
+      cancelled = true;
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
       }
     };
-    fetchPosition();
-  }, [userPosition, setUserPosition]);
+  }, [updateUserLocation]);
 
   // Zentriere die Karte auf den Benutzerstandort, wenn die Position verfügbar ist
   useEffect(() => {
@@ -1888,9 +2041,12 @@ const IceCreamRadar = () => {
   );
   const easterCampaignDefinition = getCampaignDefinition('easter_2026');
   const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
+  const tourDeGlaceActive = getCampaignStatus('tour_de_glace_2026') === CAMPAIGN_STATUS.ACTIVE;
   const easterMapRules = easterCampaignDefinition?.mapRules || {};
   const seasonalMapVisible = easterCampaignActive && seasonalMapEnabled;
-  const seasonalMarkerVariant = seasonalMapVisible ? 'easter' : null;
+  const easterMapVisible = easterCampaignActive && seasonalMapVisible;
+  const tourDeGlaceMapVisible = tourDeGlaceActive;
+  const seasonalMarkerVariant = easterMapVisible ? 'easter' : null;
   const clusterIconCreateFunction = seasonalMarkerVariant === 'easter'
     ? createEasterClusterIcon(easterEncounterState.bunnyShopId ?? null)
     : createDefaultClusterIcon;
@@ -1908,6 +2064,14 @@ const IceCreamRadar = () => {
     'Eisbecher Bewertung',
     'Eis Ranking',
   ];
+  const dismissMapActionNudge = () => {
+    setShowMapActionNudge(false);
+    try {
+      window.localStorage.setItem(getMapActionDismissKey(), '1');
+    } catch (error) {
+      console.warn('Karten-Aktionshinweis konnte nicht gespeichert werden:', error);
+    }
+  };
 
   return (
     <>
@@ -1935,15 +2099,7 @@ const IceCreamRadar = () => {
           },
         ]}
       />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100dvh',
-          minHeight: '100vh',
-          backgroundColor: '#ffb522',
-        }}
-      >
+      <MapPageShell>
       <Header
         refreshShops={refreshShops}
       />
@@ -2112,10 +2268,19 @@ const IceCreamRadar = () => {
             )}
           </MapContextMenu>
         )}
+        {tourDeGlaceMapVisible && showMapActionNudge && (
+          <MapActionNudge>
+            <div>
+              <strong>Tour de Glace auf der Karte</strong>
+              <span>Heute gibt es eine Etappensichtung. Suche den Tour-Marker am Etappenziel.</span>
+            </div>
+            <MapActionClose type="button" onClick={dismissMapActionNudge} aria-label="Karten-Aktionshinweis ausblenden">×</MapActionClose>
+          </MapActionNudge>
+        )}
         <MapContainer
           center={initialCenter}
           zoom={14}
-          style={{ flex: 1, width: '100%' }}
+          style={{ flex: '1 1 auto', width: '100%', height: '100%', minHeight: 0 }}
           ref={mapRef}
           zoomControl={false}
           whenCreated={(mapInstance) => {
@@ -2137,6 +2302,9 @@ const IceCreamRadar = () => {
             enabled={easterCampaignActive}
             active={seasonalMapVisible}
             onToggle={() => setSeasonalMapEnabled((previous) => !previous)}
+            label="Ei"
+            titleActive="Osteransicht ausblenden"
+            titleInactive="Osteransicht einblenden"
           />
           <ZoomControl position="topright" />
           <LocateControl userPosition={userPosition} />
@@ -2149,7 +2317,7 @@ const IceCreamRadar = () => {
           {easterCampaignActive && (
             <EasterMapEncounter
               enabled={easterCampaignActive}
-              visible={seasonalMapVisible}
+              visible={easterMapVisible}
               shops={mapDisplayShops}
               currentZoom={currentZoom}
               bunnyMinZoom={easterMapRules.bunnyMinZoom ?? 9}
@@ -2159,9 +2327,16 @@ const IceCreamRadar = () => {
               onStateChange={setEasterEncounterState}
             />
           )}
+          <TourDeGlaceMapEggs
+            enabled={tourDeGlaceMapVisible}
+            currentZoom={currentZoom}
+            isLoggedIn={isLoggedIn}
+            authToken={authToken}
+            setShowLoginModal={setShowLoginModal}
+          />
           {clustering ? ( // show the clustered
             <MarkerClusterGroup
-              key={`${seasonalMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
+              key={`${easterMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
               maxClusterRadius={25}
               iconCreateFunction={clusterIconCreateFunction}
             >
@@ -2182,7 +2357,7 @@ const IceCreamRadar = () => {
                     isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                     seasonalVariant={seasonalMarkerVariant}
                     encounterBunny={
-                      seasonalMapVisible
+                      easterMapVisible
                       && Number(easterEncounterState.bunnyShopId) === Number(shop.eisdielen_id)
                     }
                   />
@@ -2207,7 +2382,7 @@ const IceCreamRadar = () => {
                   isFocused={activeShopId !== null && String(activeShopId) === String(shop.eisdielen_id)}
                   seasonalVariant={seasonalMarkerVariant}
                   encounterBunny={
-                    seasonalMapVisible
+                    easterMapVisible
                     && Number(easterEncounterState.bunnyShopId) === Number(shop.eisdielen_id)
                   }
                 />
@@ -2555,12 +2730,31 @@ const IceCreamRadar = () => {
           onClose={handleCloseShopDetails}
         />
       )}
-      </div>
+      </MapPageShell>
     </>
   );
 };
 
 export default IceCreamRadar;
+
+const MapPageShell = styled.div`
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--ice-app-viewport-height, 100vh);
+  max-height: var(--ice-app-viewport-height, 100vh);
+  min-height: 0;
+  overflow: hidden;
+  background-color: #ffb522;
+  overscroll-behavior: none;
+
+  @supports (height: 100dvh) {
+    height: var(--ice-app-viewport-height, 100dvh);
+    max-height: var(--ice-app-viewport-height, 100dvh);
+  }
+`;
 
 const LogoContainer = styled.div`
   display: ruby;
@@ -2623,9 +2817,20 @@ const DateTimeInput = styled.input`
 
 const MapSection = styled.div`
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   display: flex;
+  overflow: hidden;
+  overscroll-behavior: contain;
+
+  .leaflet-container {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
 `;
 
 const MapContextMenu = styled.div`
@@ -2637,6 +2842,53 @@ const MapContextMenu = styled.div`
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   pointer-events: auto;
+`;
+
+const MapActionNudge = styled.div`
+  position: absolute;
+  left: 14px;
+  bottom: 18px;
+  z-index: 1050;
+  display: grid;
+  max-width: min(340px, calc(100vw - 28px));
+  border: 1px solid rgba(31, 111, 235, 0.18);
+  border-left: 4px solid #1f6feb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.14);
+  padding: 0.75rem 2.25rem 0.75rem 0.85rem;
+  color: #2f2100;
+  pointer-events: auto;
+
+  div {
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  span {
+    color: rgba(47, 33, 0, 0.68);
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 620px) {
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    max-width: none;
+  }
+`;
+
+const MapActionClose = styled.button`
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  border: none;
+  background: transparent;
+  color: rgba(47, 33, 0, 0.58);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
 `;
 
 const MapContextMenuButton = styled.button`
