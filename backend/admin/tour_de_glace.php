@@ -255,6 +255,7 @@ try {
         'rider_types' => $config['rider_types'],
         'summary' => fetchTourDeGlaceAdminSummary($pdo, $scopeValue),
         'tips' => fetchTourDeGlaceAdminTips($pdo),
+        'final_results' => getTourDeGlaceFinalResults($pdo),
         'stage_tips' => fetchTourDeGlaceAdminStageTips($pdo),
         'stage_results' => fetchTourDeGlaceAdminStageResults($pdo),
         'riders' => fetchTourDeGlaceAdminRiders($pdo, $config),

@@ -7,6 +7,7 @@ import { buildPublicAssetUrl } from '../utils/assets.jsx';
 import {
   CAMPAIGN_STATUS,
   getActionsOverviewCampaigns,
+  isTourDeGlaceResultsHighlight,
 } from '../features/seasonal/campaigns';
 import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
@@ -105,7 +106,8 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const { userId } = useUser();
   const isAdmin = Number(userId) === 1;
-  const campaigns = useMemo(() => getActionsOverviewCampaigns(new Date(), { isAdmin }), [isAdmin]);
+  const now = useMemo(() => new Date(), [open]);
+  const campaigns = useMemo(() => getActionsOverviewCampaigns(now, { isAdmin }), [isAdmin, now]);
   const [currentUser, setCurrentUser] = useState(null);
   const [pastUsers, setPastUsers] = useState([]);
   const [isUserOfMonthLoading, setIsUserOfMonthLoading] = useState(false);
@@ -267,7 +269,6 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     }
     return campaign;
   }).filter(Boolean);
-  const activeCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.ACTIVE);
   const upcomingCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
   const hasPastEvents = displayCampaigns.some((campaign) => campaign.status === CAMPAIGN_STATUS.RESULTS);
   const activePhotoChallenges = photoChallenges.filter((challenge) =>
@@ -281,22 +282,13 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     ? activePhotoChallenges[0].title || 'Foto-Challenge'
     : null;
   const tourCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_2026');
+  const tourResultsHighlighted = tourCampaign?.status === CAMPAIGN_STATUS.RESULTS
+    && isTourDeGlaceResultsHighlight(now, tourCampaign);
+  const tourResultsArchived = tourCampaign?.status === CAMPAIGN_STATUS.RESULTS && !tourResultsHighlighted;
   const tourOfficialActive = tourCampaign
-    ? new Date() >= tourCampaign.schedule.start
+    ? now >= tourCampaign.schedule.start
     : false;
   const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
-  const openCampaignDetail = (campaignId) => {
-    setActiveDetailPanel((current) => (current === campaignId ? null : campaignId));
-  };
-  const openTourDeGlaceAction = () => {
-    setActiveDetailPanel('tour_de_glace_2026');
-    window.requestAnimationFrame(() => {
-      detailPanelRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    });
-  };
   const taskItems = [
     activePhotoChallenges.length > 0 && {
       id: 'photo-challenges',
@@ -348,6 +340,17 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Einklappen' : 'Zur Aktion',
       onClick: () => openDetailPanel('tour_de_glace_2026', { toggle: true }),
     },
+    tourResultsHighlighted && {
+      id: 'tour-de-glace-results',
+      type: 'tour_de_glace',
+      title: 'Tour de Glace Ergebnisse',
+      description: 'Die Tour ist beendet. Ranglisten, Trikots, Etappentipps und Awards bleiben diese Woche im Blick.',
+      statusLabel: 'Nachlese',
+      statusTone: 'done',
+      priority: 2,
+      ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Einklappen' : 'Ergebnisse ansehen',
+      onClick: () => openDetailPanel('tour_de_glace_2026', { toggle: true }),
+    },
     summerCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'summer-campaign',
       type: 'summer',
@@ -361,7 +364,14 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     },
   ].filter(Boolean).sort((left, right) => left.priority - right.priority);
   const visibleTasks = showAllTasks ? taskItems : taskItems.slice(0, 3);
-  const runningCampaignCards = activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id));
+  const actionCampaignCards = displayCampaigns.filter((campaign) => (
+    ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)
+    && (
+      campaign.status === CAMPAIGN_STATUS.ACTIVE
+      || (campaign.id === 'tour_de_glace_2026' && tourResultsHighlighted)
+    )
+  ));
+  const activeActionCampaign = actionCampaignCards.find((campaign) => campaign.id === activeDetailPanel);
   const renderCampaignPanel = (campaign) => {
     if (campaign.id === 'summer_2026') {
       return (
@@ -449,16 +459,16 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           )}
         </HubSection>
 
-        {runningCampaignCards.length > 0 && (
+        {actionCampaignCards.length > 0 && (
           <HubSection>
             <HubSectionHeader>
               <div>
-                <HubKicker>Meine laufenden Aktionen</HubKicker>
+                <HubKicker>Aktionen & Ergebnisse</HubKicker>
                 <HubTitle>Fortschritt ansehen</HubTitle>
               </div>
             </HubSectionHeader>
             <CampaignSummaryGrid>
-              {runningCampaignCards.map((campaign) => (
+              {actionCampaignCards.map((campaign) => (
                 <CampaignSummaryCard key={campaign.id}>
                   <CampaignSummaryImage
                     src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
@@ -470,7 +480,9 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                     <strong>{campaign.title}</strong>
                     <span>
                       {campaign.id === 'tour_de_glace_2026'
-                        ? 'Trikots, Etappen und Tagespunkte'
+                        ? (campaign.status === CAMPAIGN_STATUS.RESULTS
+                          ? 'Finale Trikots, Etappen und Tipps'
+                          : 'Trikots, Etappen und Tagespunkte')
                         : 'Sammelfortschritt und Aufgaben'}
                     </span>
                     <TaskButton type="button" onClick={() => openDetailPanel(campaign.id, { toggle: true })}>
@@ -480,9 +492,9 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                 </CampaignSummaryCard>
               ))}
             </CampaignSummaryGrid>
-            {activeDetailPanel && (
+            {activeActionCampaign && (
               <DetailPanelWrap ref={detailPanelRef}>
-                {renderCampaignPanel(runningCampaignCards.find((campaign) => campaign.id === activeDetailPanel))}
+                {renderCampaignPanel(activeActionCampaign)}
               </DetailPanelWrap>
             )}
           </HubSection>
@@ -627,6 +639,19 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                 </Hint>
               )}
             </Section>
+
+            {tourResultsArchived && (
+              <Section>
+                <SectionTitle>Tour de Glace 2026 - Ergebnisse</SectionTitle>
+                <Hint>
+                  Die Tour de Glace lief vom <strong>4. Juli 2026</strong> bis zum <strong>26. Juli 2026</strong>.
+                  Ranglisten, Trikots, Etappentipps und Awards bleiben hier historisch sichtbar.
+                </Hint>
+                <TourArchivePanelWrap>
+                  {renderCampaignPanel(tourCampaign)}
+                </TourArchivePanelWrap>
+              </Section>
+            )}
 
             <Section>
               <SectionTitle>Eis-Winterolympiade 2026 - Ergebnisse</SectionTitle>
@@ -976,6 +1001,14 @@ const CampaignSummaryBody = styled.div`
 
 const DetailPanelWrap = styled.div`
   margin-top: 0.75rem;
+`;
+
+const TourArchivePanelWrap = styled.div`
+  margin-top: 0.75rem;
+
+  > section {
+    margin-top: 0;
+  }
 `;
 
 const CompactList = styled.div`

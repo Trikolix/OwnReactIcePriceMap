@@ -40,6 +40,22 @@ const OpeningHoursEditor = ({ value, onChange }) => {
     updateHours(updated);
   };
 
+  const handleCopyToAll = (sourceWeekday) => {
+    const sourceDay = hydrated.days.find((day) => day.weekday === sourceWeekday);
+    if (!sourceDay || sourceDay.ranges.length === 0) {
+      return;
+    }
+
+    const copiedRanges = sourceDay.ranges.map((range) => ({ ...range }));
+    updateHours({
+      ...hydrated,
+      days: hydrated.days.map((day) => ({
+        ...day,
+        ranges: copiedRanges.map((range) => ({ ...range })),
+      })),
+    });
+  };
+
   const handleNoteChange = (event) => {
     updateHours({ ...hydrated, note: event.target.value });
   };

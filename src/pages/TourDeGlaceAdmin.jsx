@@ -5,6 +5,7 @@ import { useUser } from '../context/UserContext';
 import {
   downloadTourDeGlaceStoryPack,
   fetchTourDeGlaceAdminState,
+  saveTourDeGlaceFinalResults,
   saveTourDeGlaceStageResult,
 } from '../features/seasonal/tourDeGlaceAdminApi';
 import {
@@ -28,6 +29,15 @@ const TIP_LABELS = {
   tip_mountain_winner: 'Berg',
   tip_white_winner: 'Weiß',
 };
+
+const FINAL_RESULT_FIELDS = [
+  ['result_gc_winner', 'GC 1'],
+  ['result_gc_second', 'GC 2'],
+  ['result_gc_third', 'GC 3'],
+  ['result_green_winner', 'Grünes Trikot'],
+  ['result_mountain_winner', 'Bergtrikot'],
+  ['result_white_winner', 'Weißes Trikot'],
+];
 
 const ACTION_LABELS = {
   checkin_scoop_softice: 'Kugel/Softeis',
@@ -148,6 +158,8 @@ export default function TourDeGlaceAdmin() {
   const [stageResults, setStageResults] = useState({});
   const [stageResultPaste, setStageResultPaste] = useState({});
   const [savingStageResult, setSavingStageResult] = useState(null);
+  const [finalResults, setFinalResults] = useState({});
+  const [savingFinalResults, setSavingFinalResults] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
@@ -162,6 +174,7 @@ export default function TourDeGlaceAdmin() {
         String(result.stage_number),
         normalizeStageTop10(result),
       ])));
+      setFinalResults(Object.fromEntries(FINAL_RESULT_FIELDS.map(([key]) => [key, data.final_results?.[key] || ''])));
     } catch (err) {
       setError(err.message || 'Tour-de-Glace Admin-Daten konnten nicht geladen werden.');
     } finally {
@@ -249,6 +262,21 @@ export default function TourDeGlaceAdmin() {
     }
   };
 
+  const handleSaveFinalResults = async () => {
+    setSavingFinalResults(true);
+    setError('');
+    setInfo('');
+    try {
+      await saveTourDeGlaceFinalResults(authToken, finalResults);
+      setInfo('Gesamt- und Trikot-Ergebnisse gespeichert. Die Tippspiel-Punkte wurden neu berechnet.');
+      await load();
+    } catch (err) {
+      setError(err.message || 'Gesamt- und Trikot-Ergebnisse konnten nicht gespeichert werden.');
+    } finally {
+      setSavingFinalResults(false);
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <Page>
@@ -330,6 +358,29 @@ export default function TourDeGlaceAdmin() {
 
         {!loading && state && activeTab === 'tips' && (
           <>
+            <Card>
+              <SectionTitle>Offizielle Gesamt- und Trikot-Ergebnisse</SectionTitle>
+              <Muted>Nach dem Speichern werden die Tippspiel-Punkte automatisch berechnet. Änderungen werden direkt neu ausgewertet.</Muted>
+              <FinalResultGrid>
+                {FINAL_RESULT_FIELDS.map(([key, label]) => (
+                  <label key={key}>
+                    <span>{label}</span>
+                    <input
+                      value={finalResults[key] || ''}
+                      onChange={(event) => setFinalResults((previous) => ({ ...previous, [key]: event.target.value }))}
+                      placeholder="Fahrername"
+                      list="tour-de-glace-starters"
+                    />
+                  </label>
+                ))}
+              </FinalResultGrid>
+              <datalist id="tour-de-glace-starters">
+                {TOUR_DE_GLACE_STARTERS.map((starter) => <option key={starter.name} value={starter.name} />)}
+              </datalist>
+              <Button type="button" onClick={handleSaveFinalResults} disabled={savingFinalResults}>
+                {savingFinalResults ? 'Speichert...' : 'Ergebnisse speichern und Tipps werten'}
+              </Button>
+            </Card>
             <Card>
               <SectionTitle>Gesamt- und Trikot-Tipps</SectionTitle>
               <TableWrap>
@@ -725,6 +776,29 @@ const StageResultGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 0.85rem;
+`;
+
+const FinalResultGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  label {
+    display: grid;
+    gap: 0.35rem;
+    color: #2f2100;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ddd4bd;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+    font: inherit;
+  }
 `;
 
 const StageResultCard = styled.div`

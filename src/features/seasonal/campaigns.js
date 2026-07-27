@@ -142,6 +142,7 @@ export const seasonalCampaignDefinitions = [
       preStart: new Date('2026-06-28T00:00:00+02:00'),
       start: new Date('2026-07-04T00:00:00+02:00'),
       endExclusive: new Date('2026-07-27T00:00:00+02:00'),
+      resultsHighlightEnd: new Date('2026-08-03T00:00:00+02:00'),
     },
     api: {
       progress: '/api/tour_de_glace_progress.php',
@@ -163,6 +164,10 @@ export const seasonalCampaignDefinitions = [
 
 export const getCampaignDefinition = (campaignId) =>
   seasonalCampaignDefinitions.find((campaign) => campaign.id === campaignId) || null;
+
+export const isTourDeGlaceResultsHighlight = (now = new Date(), campaign = getCampaignDefinition('tour_de_glace_2026')) =>
+  Boolean(campaign?.schedule?.endExclusive && campaign?.schedule?.resultsHighlightEnd)
+  && isWithinRange(now, campaign.schedule.endExclusive, campaign.schedule.resultsHighlightEnd);
 
 export const getCampaignStatus = (campaignId, now = new Date(), context = {}) =>
   getCampaignDefinition(campaignId)?.getStatus(now, context) || CAMPAIGN_STATUS.INACTIVE;
