@@ -19,6 +19,7 @@ import ResetPasswordModal from "./components/ResetPasswordModal";
 import SubmitIceShopModal from './SubmitIceShopModal';
 import EasterMapEncounter from './features/seasonal/EasterMapEncounter';
 import TourDeGlaceMapEggs from './features/seasonal/TourDeGlaceMapEggs';
+import TourDeGlaceFemmeMapEggs from './features/seasonal/TourDeGlaceFemmeMapEggs';
 import { Capacitor } from "@capacitor/core";
 import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
@@ -2042,10 +2043,12 @@ const IceCreamRadar = () => {
   const easterCampaignDefinition = getCampaignDefinition('easter_2026');
   const easterCampaignActive = getCampaignStatus('easter_2026') === CAMPAIGN_STATUS.ACTIVE;
   const tourDeGlaceActive = getCampaignStatus('tour_de_glace_2026') === CAMPAIGN_STATUS.ACTIVE;
+  const tourDeGlaceFemmeActive = getCampaignStatus('tour_de_glace_femme_2026') === CAMPAIGN_STATUS.ACTIVE;
   const easterMapRules = easterCampaignDefinition?.mapRules || {};
   const seasonalMapVisible = easterCampaignActive && seasonalMapEnabled;
   const easterMapVisible = easterCampaignActive && seasonalMapVisible;
   const tourDeGlaceMapVisible = tourDeGlaceActive;
+  const tourDeGlaceFemmeMapVisible = tourDeGlaceFemmeActive;
   const seasonalMarkerVariant = easterMapVisible ? 'easter' : null;
   const clusterIconCreateFunction = seasonalMarkerVariant === 'easter'
     ? createEasterClusterIcon(easterEncounterState.bunnyShopId ?? null)
@@ -2329,6 +2332,13 @@ const IceCreamRadar = () => {
           )}
           <TourDeGlaceMapEggs
             enabled={tourDeGlaceMapVisible}
+            currentZoom={currentZoom}
+            isLoggedIn={isLoggedIn}
+            authToken={authToken}
+            setShowLoginModal={setShowLoginModal}
+          />
+          <TourDeGlaceFemmeMapEggs
+            enabled={tourDeGlaceFemmeMapVisible}
             currentZoom={currentZoom}
             isLoggedIn={isLoggedIn}
             authToken={authToken}

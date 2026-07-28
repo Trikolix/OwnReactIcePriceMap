@@ -12,6 +12,7 @@ import {
 import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
 import TourDeGlacePanel from '../features/seasonal/TourDeGlacePanel';
+import TourDeGlaceFemmePanel from '../features/seasonal/TourDeGlaceFemmePanel';
 
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
@@ -34,6 +35,7 @@ const formatVoteCount = (count) => `${count} ${count === 1 ? 'Stimme' : 'Stimmen
 const TASK_IMAGES = {
   photo_challenge: '/assets/photo_challenge_icon.png',
   tour_de_glace: '/assets/tour-de-glace/tour_egg.png',
+  tour_de_glace_femme: '/assets/tour-de-glace/TourDeGlaceFemmes.png',
   summer: '/assets/summer_action_logo2.png',
 };
 
@@ -289,6 +291,9 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     ? now >= tourCampaign.schedule.start
     : false;
   const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
+  const femmeCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_femme_2026');
+  const femmeResultsHighlighted = femmeCampaign?.status === CAMPAIGN_STATUS.RESULTS
+    && now < femmeCampaign.schedule.resultsHighlightEnd;
   const taskItems = [
     activePhotoChallenges.length > 0 && {
       id: 'photo-challenges',
@@ -351,6 +356,28 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Einklappen' : 'Ergebnisse ansehen',
       onClick: () => openDetailPanel('tour_de_glace_2026', { toggle: true }),
     },
+    femmeCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
+      id: 'tour-de-glace-femme',
+      type: 'tour_de_glace_femme',
+      title: 'Tour de Glace Femme',
+      description: 'Vorabtipps, tägliche Etappentipps und Easter-Egg-Boni in einer Wertung.',
+      statusLabel: now < femmeCampaign.schedule.start ? 'Tipps offen' : 'Heute aktiv',
+      statusTone: now < femmeCampaign.schedule.start ? 'active' : 'available',
+      priority: 2,
+      ctaLabel: activeDetailPanel === 'tour_de_glace_femme_2026' ? 'Einklappen' : 'Zur Aktion',
+      onClick: () => openDetailPanel('tour_de_glace_femme_2026', { toggle: true }),
+    },
+    femmeResultsHighlighted && {
+      id: 'tour-de-glace-femme-results',
+      type: 'tour_de_glace_femme',
+      title: 'Tour de Glace Femme Ergebnisse',
+      description: 'Die kombinierte Tippspiel-Rangliste bleibt diese Woche sichtbar.',
+      statusLabel: 'Nachlese',
+      statusTone: 'done',
+      priority: 2,
+      ctaLabel: activeDetailPanel === 'tour_de_glace_femme_2026' ? 'Einklappen' : 'Ergebnisse ansehen',
+      onClick: () => openDetailPanel('tour_de_glace_femme_2026', { toggle: true }),
+    },
     summerCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'summer-campaign',
       type: 'summer',
@@ -365,10 +392,11 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   ].filter(Boolean).sort((left, right) => left.priority - right.priority);
   const visibleTasks = showAllTasks ? taskItems : taskItems.slice(0, 3);
   const actionCampaignCards = displayCampaigns.filter((campaign) => (
-    ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)
+    ['summer_2026', 'tour_de_glace_2026', 'tour_de_glace_femme_2026'].includes(campaign.id)
     && (
       campaign.status === CAMPAIGN_STATUS.ACTIVE
       || (campaign.id === 'tour_de_glace_2026' && tourResultsHighlighted)
+      || (campaign.id === 'tour_de_glace_femme_2026' && femmeResultsHighlighted)
     )
   ));
   const activeActionCampaign = actionCampaignCards.find((campaign) => campaign.id === activeDetailPanel);
@@ -387,6 +415,17 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     if (campaign.id === 'tour_de_glace_2026') {
       return (
         <TourDeGlacePanel
+          key={campaign.id}
+          campaign={campaign}
+          isLoggedIn={isLoggedIn}
+          onLogin={onLogin}
+        />
+      );
+    }
+
+    if (campaign.id === 'tour_de_glace_femme_2026') {
+      return (
+        <TourDeGlaceFemmePanel
           key={campaign.id}
           campaign={campaign}
           isLoggedIn={isLoggedIn}
@@ -473,7 +512,9 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                   <CampaignSummaryImage
                     src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
                       ? TASK_IMAGES.tour_de_glace
-                      : TASK_IMAGES.summer)}
+                      : campaign.id === 'tour_de_glace_femme_2026'
+                        ? TASK_IMAGES.tour_de_glace_femme
+                        : TASK_IMAGES.summer)}
                     alt=""
                   />
                   <CampaignSummaryBody>
@@ -483,6 +524,10 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                         ? (campaign.status === CAMPAIGN_STATUS.RESULTS
                           ? 'Finale Trikots, Etappen und Tipps'
                           : 'Trikots, Etappen und Tagespunkte')
+                        : campaign.id === 'tour_de_glace_femme_2026'
+                          ? (campaign.status === CAMPAIGN_STATUS.RESULTS
+                            ? 'Kombinierte Schlusswertung und Awards'
+                            : 'Vorabtipps, Etappen und Tages-Eggs')
                         : 'Sammelfortschritt und Aufgaben'}
                     </span>
                     <TaskButton type="button" onClick={() => openDetailPanel(campaign.id, { toggle: true })}>
@@ -841,7 +886,7 @@ const TaskCard = styled.article`
   gap: 0.75rem;
   align-items: center;
   border: 1px solid #e1e6ee;
-  border-left: 4px solid ${({ $type }) => ($type === 'photo_challenge' ? '#7c3aed' : $type === 'tour_de_glace' ? '#1f9d55' : '#ffb522')};
+  border-left: 4px solid ${({ $type }) => ($type === 'photo_challenge' ? '#7c3aed' : $type === 'tour_de_glace' ? '#1f9d55' : $type === 'tour_de_glace_femme' ? '#e86691' : '#ffb522')};
   border-radius: 8px;
   background: #ffffff;
   padding: 0.65rem;

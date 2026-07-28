@@ -11,6 +11,7 @@ import AdminWeeklyStats from "../../pages/AdminWeeklyStats";
 import AdminPushStats from "../../pages/AdminPushStats";
 import SummerCampaignAdmin from "../../pages/SummerCampaignAdmin";
 import TourDeGlaceAdmin from "../../pages/TourDeGlaceAdmin";
+import TourDeGlaceFemmeAdmin from "../../pages/TourDeGlaceFemmeAdmin";
 
 export const coreRoutes = [
   { path: "/dashboard", element: <DashBoard /> },
@@ -26,4 +27,5 @@ export const coreRoutes = [
   { path: "/admin/weekly-stats", element: <AdminWeeklyStats /> },
   { path: "/admin/push-stats", element: <AdminPushStats /> },
   { path: "/admin/tour-de-glace", element: <TourDeGlaceAdmin /> },
+  { path: "/admin/tour-de-glace-femme", element: <TourDeGlaceFemmeAdmin /> },
 ];

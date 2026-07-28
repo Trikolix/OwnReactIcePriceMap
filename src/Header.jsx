@@ -54,7 +54,7 @@ const Header = ({ refreshShops }) => {
   const now = new Date();
   const seasonalState = getResolvedSeasonalCampaigns(now, { isAdmin });
   const featuredCampaign = seasonalState.featuredCampaign;
-  const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026'].includes(campaign.id)).length;
+  const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026', 'tour_de_glace_femme_2026'].includes(campaign.id)).length;
   const actionHubCount = (activePhotoChallengeCount > 0 ? 1 : 0)
     + seasonalActionCount;
   const promoIconSrc = buildPublicAssetUrl('/assets/action_icon.png');
@@ -73,7 +73,8 @@ const Header = ({ refreshShops }) => {
   const isAwardsActionsActive = location.pathname === '/awards-admin'
     || location.pathname === '/summer-campaign-admin'
     || location.pathname === '/admin/summer-campaign'
-    || location.pathname === '/admin/tour-de-glace';
+    || location.pathname === '/admin/tour-de-glace'
+    || location.pathname === '/admin/tour-de-glace-femme';
 
   useEffect(() => {
     if (!apiUrl) {
@@ -785,6 +786,7 @@ const Header = ({ refreshShops }) => {
                           <MenuSubItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuSubItemLink>
                           <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}>Sommer-QR-Aktion verwalten</MenuSubItemLink>
                           <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}>Tour de Glace verwalten</MenuSubItemLink>
+                          <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}>Tour de Glace Femme verwalten</MenuSubItemLink>
                         </MenuSubmenu>
                       )}
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>

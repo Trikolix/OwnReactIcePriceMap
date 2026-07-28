@@ -160,6 +160,25 @@ export const seasonalCampaignDefinitions = [
       return CAMPAIGN_STATUS.RESULTS;
     },
   },
+  {
+    id: 'tour_de_glace_femme_2026',
+    title: 'Tour de Glace Femme 2026',
+    kind: 'campaign',
+    promoPriority: 19,
+    teaserIcon: '/assets/tour-de-glace/TourDeGlaceFemmes.png',
+    schedule: {
+      preStart: new Date('2026-07-28T00:00:00+02:00'),
+      start: new Date('2026-08-01T00:00:00+02:00'),
+      endExclusive: new Date('2026-08-10T00:00:00+02:00'),
+      resultsHighlightEnd: new Date('2026-08-17T00:00:00+02:00'),
+    },
+    api: { progress: '/api/tour_de_glace_femme_progress.php' },
+    getStatus(now = new Date()) {
+      if (now < this.schedule.preStart) return CAMPAIGN_STATUS.UPCOMING;
+      if (isWithinRange(now, this.schedule.preStart, this.schedule.endExclusive)) return CAMPAIGN_STATUS.ACTIVE;
+      return CAMPAIGN_STATUS.RESULTS;
+    },
+  },
 ];
 
 export const getCampaignDefinition = (campaignId) =>
