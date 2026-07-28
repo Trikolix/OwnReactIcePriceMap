@@ -24,6 +24,13 @@ const formatStageDeadline = (stage) => {
   const deadline = stage.tip_deadline_at ? parseLocalDateTime(stage.tip_deadline_at) : new Date(parseLocalDateTime(stage.start_at).getTime() - 5 * 60 * 1000);
   return `${deadline.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`;
 };
+const rankTrend = (entry) => {
+  if (!entry || entry.rank_change == null) return { label: '—', description: 'Noch kein Vergleich verfügbar.' };
+  if (entry.rank_change === 'new') return { label: 'NEU', description: 'Erstmals in der Rangliste.' };
+  if (entry.rank_change === 'up') return { label: `▲ ${entry.rank_delta}`, description: `${entry.rank_delta} Plätze gestiegen` };
+  if (entry.rank_change === 'down') return { label: `▼ ${entry.rank_delta}`, description: `${entry.rank_delta} Plätze gefallen` };
+  return { label: '—', description: 'Rang unverändert' };
+};
 
 const RiderInput = ({ id, label, value, onChange, disabled }) => {
   const [focused, setFocused] = useState(false);
@@ -57,6 +64,8 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
   const [savingStage, setSavingStage] = useState(null);
   const [fullLeaderboard, setFullLeaderboard] = useState({ loading: false, entries: null, error: '' });
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [ranking, setRanking] = useState({ loading: false, entries: [], current: null, error: '' });
+  const [selectedRankingEntry, setSelectedRankingEntry] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -87,6 +96,15 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
       .catch((error) => !cancelled && setFullLeaderboard({ loading: false, entries: null, error: error.message || 'Rangliste konnte nicht geladen werden.' }));
     return () => { cancelled = true; };
   }, [authToken, data?.final_results]);
+  useEffect(() => {
+    if (activeTab !== 'ranking' || !data) return undefined;
+    let cancelled = false;
+    setRanking({ loading: true, entries: [], current: null, error: '' });
+    fetchTourDeGlaceFemmeLeaderboard(authToken, data.final_results ? 'combined' : 'stage', 10)
+      .then((result) => !cancelled && setRanking({ loading: false, entries: result.leaderboard || [], current: result.current_user_rank || null, error: '' }))
+      .catch((error) => !cancelled && setRanking({ loading: false, entries: [], current: null, error: error.message || 'Rangliste konnte nicht geladen werden.' }));
+    return () => { cancelled = true; };
+  }, [activeTab, authToken, data]);
 
   const final = Boolean(data?.final_results);
   const tipsClosed = final || data?.campaign?.phase !== 'pre';
@@ -131,6 +149,7 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
     <Tabs>
       <Tab type="button" $active={activeTab === 'tips'} onClick={() => setActiveTab('tips')}>Tour-Tipps</Tab>
       <Tab type="button" $active={activeTab === 'stages'} onClick={() => setActiveTab('stages')}>Etappentipps</Tab>
+      <Tab type="button" $active={activeTab === 'ranking'} onClick={() => setActiveTab('ranking')}>Rangliste</Tab>
     </Tabs>
 
     {activeTab === 'tips' && <Stack>
@@ -174,7 +193,7 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
         <div>
           <h3>Etappensiegerin tippen</h3>
           <Muted>Tippe vor jeder Etappe, welche Fahrerin den Tagessieg holt. Dein Tipp kann bis kurz vor dem jeweiligen Etappenstart abgegeben oder geändert werden.</Muted>
-          <PointHint>Je nach Platzierung deiner getippten Fahrerin erhältst du <strong>25 / 18 / 14 / 11 / 9 / 7 / 5 / 4 / 3 / 2 EP</strong>. Findest du am Etappentag das Tages-Egg am Zielort, werden deine erzielten Etappen-EP um <strong>25 %</strong> erhöht.</PointHint>
+          <PointHint>Je nach Platzierung deiner getippten Fahrerin erhältst du 25 / 18 / 14 / 11 / 9 / 7 / 5 / 4 / 3 / 2 EP. Findest du am Etappentag das verstecke Easter-Egg auf der Karte, werden deine erzielten Etappen-EP um 25 % erhöht.</PointHint>
         </div>
         <Summary>
           <Tile><span>Etappen-EP</span><strong>{data?.stage_tip_summary?.points || 0}</strong><small>{data?.stage_tip_rank ? `Aktuell Rang #${data.stage_tip_rank.rank}` : 'Noch keine Platzierung'}</small></Tile>
@@ -204,7 +223,27 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
       })}</StageList>
     </Stack>}
 
+    {activeTab === 'ranking' && <Stack>
+      <ResultsBox>
+        <div><h3>Gesamtwertung</h3><Muted>Die Rangliste kombiniert deine EP aus Tour-Tipps, Etappentipps und Tages-Egg-Boni. Sie wird nach jeder ausgewerteten Etappe aktualisiert.</Muted></div>
+        {ranking.loading && <Muted>Rangliste wird geladen...</Muted>}
+        {ranking.error && <Notice>{ranking.error}</Notice>}
+        {!ranking.loading && !ranking.error && ranking.entries.length === 0 && <Muted>Die erste Rangliste erscheint nach der Auswertung von Etappe 1.</Muted>}
+        {!ranking.loading && !ranking.error && ranking.entries.length > 0 && <>
+          <Summary>
+            <Tile><span>Dein Rang</span><strong>{ranking.current ? `#${ranking.current.rank}` : '—'}</strong><small>{rankTrend(ranking.current).description}</small></Tile>
+            <Tile><span>Deine EP</span><strong>{ranking.current ? `${ranking.current.points} EP` : '0 EP'}</strong><small>{ranking.current?.egg_bonus_ep ? `davon ${ranking.current.egg_bonus_ep} Bonus-EP` : 'Noch keine Bonus-EP'}</small></Tile>
+            <Tile><span>Deine Treffer</span><strong>{ranking.current ? `${ranking.current.winner_hits || 0} Volltreffer` : '0 Volltreffer'}</strong><small>{ranking.current ? `${ranking.current.top10_hits || 0} Top-10-Tipps` : 'Noch keine Top-10-Tipps'}</small></Tile>
+          </Summary>
+          <RankHint>Die Veränderung zeigt den Vergleich zur Rangliste nach der vorherigen Etappenauswertung.</RankHint>
+          <Ranking>{ranking.entries.map((entry) => <FemmeRankingRow key={entry.user_id} type="button" $own={entry.user_id === ranking.current?.user_id} onClick={() => setSelectedRankingEntry(entry)}><Trend $tone={entry.rank_change} title={rankTrend(entry).description}>{rankTrend(entry).label}</Trend><span>#{entry.rank}</span><Avatar>{String(entry.username || '?').slice(0, 1).toUpperCase()}</Avatar><div><strong>{entry.username}{entry.user_id === ranking.current?.user_id && <OwnLabel>Du</OwnLabel>}</strong><small>{entry.winner_hits || 0} Volltreffer · {entry.top10_hits || 0} Top-10-Treffer</small></div><strong>{entry.points} EP</strong></FemmeRankingRow>)}</Ranking>
+          {ranking.current && !ranking.entries.some((entry) => entry.user_id === ranking.current.user_id) && <><OwnPosition>Deine Position</OwnPosition><FemmeRankingRow type="button" $own onClick={() => setSelectedRankingEntry(ranking.current)}><Trend $tone={ranking.current.rank_change} title={rankTrend(ranking.current).description}>{rankTrend(ranking.current).label}</Trend><span>#{ranking.current.rank}</span><Avatar>{String(ranking.current.username || '?').slice(0, 1).toUpperCase()}</Avatar><div><strong>{ranking.current.username}<OwnLabel>Du</OwnLabel></strong><small>{ranking.current.winner_hits || 0} Volltreffer · {ranking.current.top10_hits || 0} Top-10-Treffer</small></div><strong>{ranking.current.points} EP</strong></FemmeRankingRow></>}
+        </>}
+      </ResultsBox>
+    </Stack>}
+
     {selectedEntry && <Overlay onClick={() => setSelectedEntry(null)}><Dialog role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><Close type="button" onClick={() => setSelectedEntry(null)} aria-label="Details schließen">×</Close><DialogHeader><div><h3>{selectedEntry.username}</h3><span>Rang #{selectedEntry.rank}</span></div><strong>{selectedEntry.points} Punkte</strong></DialogHeader><Summary><Tile><span>Gesamtwertung &amp; Trikots</span><strong>{selectedEntry.overall_points}</strong><small>GC und Trikots</small></Tile><Tile><span>Etappentipps</span><strong>{selectedEntry.stage_points}</strong><small>inklusive Egg-Bonus</small></Tile></Summary><h4>Gesamtwertung &amp; Trikots</h4><Details>{(selectedEntry.overall_breakdown || []).map((item) => <DetailRow key={item.key} $positive={item.points > 0}><div><strong>{TIP_LABELS[item.key]}</strong><span>Tipp: {item.tip || '-'}</span><span>Ergebnis: {item.result || '-'}</span></div><div><strong>{item.points} P</strong><small>{OUTCOMES[item.outcome] || 'Nicht gewertet'}</small></div></DetailRow>)}</Details><h4>Etappentipps</h4><Details>{(selectedEntry.stage_breakdown || []).map((item) => <DetailRow key={item.stage_number} $positive={item.points > 0}><div><strong>Etappe {item.stage_number}</strong><span>{item.start_location} → {item.finish_location}</span><span>Tipp: {item.tip || '-'}</span><span>{item.predicted_rank ? `Offiziell: #${item.predicted_rank} ${item.official_result}` : `Siegerin: ${item.result || '-'}`}</span></div><div><strong>{item.points} EP</strong><small>{item.predicted_rank ? `Platz #${item.predicted_rank}` : 'Nicht Top 10'}{item.egg_bonus_ep ? ` · +${item.egg_bonus_ep} Egg` : ''}</small></div></DetailRow>)}</Details></Dialog></Overlay>}
+    {selectedRankingEntry && <Overlay onClick={() => setSelectedRankingEntry(null)}><Dialog role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><Close type="button" onClick={() => setSelectedRankingEntry(null)} aria-label="Details schließen">×</Close><DialogHeader><div><h3>{selectedRankingEntry.username}</h3><span>Rang #{selectedRankingEntry.rank}</span></div><strong>{selectedRankingEntry.points} EP</strong></DialogHeader><Details><DetailRow $positive><div><strong>Etappentipps</strong><span>Erzielte EP aus allen ausgewerteten Etappen</span></div><div><strong>{selectedRankingEntry.stage_points ?? selectedRankingEntry.points} EP</strong></div></DetailRow><DetailRow $positive={Boolean(selectedRankingEntry.egg_bonus_ep)}><div><strong>Tages-Egg-Boni</strong><span>Gefundene Eggs: {selectedRankingEntry.egg_count || 0}/9</span></div><div><strong>{selectedRankingEntry.egg_bonus_ep || 0} EP</strong></div></DetailRow><DetailRow $positive={Boolean(selectedRankingEntry.overall_points)}><div><strong>Tour-Tipps</strong><span>{final ? 'Gesamtwertung und Trikots' : 'Noch nicht ausgewertet'}</span></div><div><strong>{final ? `${selectedRankingEntry.overall_points || 0} EP` : '—'}</strong></div></DetailRow><DetailRow $positive><div><strong>Treffer</strong><span>Exakte Etappensiegerinnen und Top-10-Tipps</span></div><div><strong>{selectedRankingEntry.winner_hits || 0} / {selectedRankingEntry.top10_hits || 0}</strong></div></DetailRow></Details></Dialog></Overlay>}
   </Panel>;
 }
 
@@ -227,7 +266,13 @@ const ActionButton = styled.button`justify-self:start; border:0; border-radius:6
 const Summary = styled.div`display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.55rem;`;
 const Tile = styled.div`display:grid;gap:.12rem;border:1px solid #e1e5eb;border-radius:7px;background:#f7f8fa;padding:.6rem;span,small{color:#5b6270;font-weight:700}strong{font-size:1.25rem}`;
 const Ranking = styled.div`display:grid;gap:.35rem;`;
-const RankingRow = styled.button`display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:.5rem;align-items:center;width:100%;border:1px solid transparent;border-radius:7px;background:#f4f6fa;color:#202124;padding:.55rem .6rem;text-align:left;font:inherit;cursor:pointer;&:hover{border-color:#9db9e8}strong{overflow-wrap:anywhere}`;
+const RankingRow = styled.button`display:grid;grid-template-columns:minmax(70px,auto) minmax(0,1fr) auto;gap:.5rem;align-items:center;width:100%;border:1px solid transparent;border-radius:8px;background:#f5f7fb;color:#202124;padding:.5rem .6rem;text-align:left;font:inherit;cursor:pointer;strong{overflow-wrap:anywhere}&:hover{border-color:#9db9e8}&:focus-visible{outline:3px solid rgba(31,111,235,.35);outline-offset:2px}`;
+const RankHint = styled.p`margin:0;color:#5b6270;font-size:.84rem;font-weight:600;line-height:1.4;`;
+const FemmeRankingRow = styled.button`display:grid;grid-template-columns:42px 38px 32px minmax(0,1fr) auto;gap:.45rem;align-items:center;width:100%;border:1px solid ${({ $own }) => $own ? '#ee7aa4' : 'transparent'};border-left:4px solid ${({ $own }) => $own ? '#e75a8d' : 'transparent'};border-radius:8px;background:${({ $own }) => $own ? '#fff1f5' : '#f5f7fb'};color:#202124;padding:.5rem .6rem;text-align:left;font:inherit;cursor:pointer;&:hover{border-color:#9db9e8}&:focus-visible{outline:3px solid rgba(31,111,235,.35);outline-offset:2px}div{display:grid;gap:.12rem;min-width:0}small{color:#5b6270;font-weight:600;overflow-wrap:anywhere}strong{overflow-wrap:anywhere}@media(max-width:520px){grid-template-columns:38px 32px 28px minmax(0,1fr) auto;gap:.28rem;font-size:.9rem;small{font-size:.76rem}}`;
+const Trend = styled.span`display:inline-flex;align-items:center;justify-content:center;min-width:1.9rem;border-radius:999px;background:${({ $tone }) => $tone === 'up' ? 'rgba(15,124,47,.12)' : $tone === 'down' ? 'rgba(191,38,0,.12)' : $tone === 'new' ? 'rgba(255,181,34,.18)' : 'rgba(30,64,175,.1)'};color:${({ $tone }) => $tone === 'up' ? '#0f7c2f' : $tone === 'down' ? '#bf2600' : $tone === 'new' ? '#8a5a00' : '#1d4ed8'};padding:.12rem .35rem;font-size:.7rem;font-weight:900;white-space:nowrap;`;
+const Avatar = styled.span`display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#dbeafe;color:#174ea6;font-size:.78rem;font-weight:900;`;
+const OwnLabel = styled.em`margin-left:.35rem;border-radius:999px;background:#f7c6d6;color:#8f1749;padding:.1rem .32rem;font-size:.68rem;font-style:normal;font-weight:800;vertical-align:middle;`;
+const OwnPosition = styled.h4`margin:.45rem 0 0;padding-top:.7rem;border-top:1px solid #e1e5eb;`;
 const LoginHint = styled.div`display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.8rem;border:1px solid #cfe0ff;border-radius:8px;background:#f5f9ff;padding:.7rem;button{border:0;border-radius:6px;background:#1f6feb;color:#fff;padding:.45rem .6rem;font:inherit;font-weight:800;cursor:pointer}`;
 const Notice = styled.div`border-radius:7px;background:#fff3cd;color:#6f4b00;padding:.55rem .65rem;font-weight:700;`;
 const Muted = styled.p`margin:0;color:#5b6270;font-weight:600;line-height:1.4;`;
@@ -237,9 +282,9 @@ const StageCard = styled.article`display:grid;grid-template-columns:minmax(190px
 const StageMeta = styled.div`display:grid;align-content:start;gap:.18rem;span,small{color:#5b6270;font-weight:600}em{font-style:normal;color:#166534;font-weight:800;font-size:.82rem}`;
 const StageControl = styled.div`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.55rem;align-items:end;@media(max-width:520px){grid-template-columns:1fr}`;
 const StageTipStatus = styled.div`grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.35rem .7rem;color:${({ $closed }) => $closed ? '#6b7280' : '#176238'};font-size:.86rem;font-weight:700;line-height:1.35;span{color:#5b6270}`;
-const Overlay = styled.div`position:fixed;inset:0;z-index:2600;display:grid;place-items:center;background:rgba(22,28,38,.58);padding:1rem;`;
-const Dialog = styled.div`position:relative;display:grid;gap:.8rem;width:min(760px,100%);max-height:84vh;overflow:auto;border-radius:10px;background:#fff;padding:1rem;box-shadow:0 24px 70px rgba(0,0,0,.28);h4{margin:.2rem 0 0}`;
-const Close = styled.button`position:absolute;top:.5rem;right:.6rem;width:32px;height:32px;border:0;border-radius:50%;background:#eef1f5;font-size:1.35rem;cursor:pointer;`;
-const DialogHeader = styled.div`display:flex;justify-content:space-between;gap:1rem;padding-right:2rem;h3{margin:0}span{color:#5b6270;font-weight:700}>strong{font-size:1.2rem;white-space:nowrap}`;
+const Overlay = styled.div`position:fixed;inset:0;z-index:2500;display:grid;place-items:center;background:rgba(22,28,38,.58);padding:1rem;`;
+const Dialog = styled.div`position:relative;display:grid;gap:.9rem;width:min(760px,100%);max-height:min(84vh,720px);overflow-y:auto;border-radius:12px;background:#fff;padding:1.25rem;box-shadow:0 24px 70px rgba(0,0,0,.28);h4{margin:.2rem 0 0}@media(max-width:520px){padding:1rem}`;
+const Close = styled.button`position:absolute;top:.55rem;right:.65rem;width:32px;height:32px;border:0;border-radius:50%;background:#eef1f5;color:#202124;font-size:1.35rem;cursor:pointer;&:focus-visible{outline:3px solid rgba(31,111,235,.35);outline-offset:2px}`;
+const DialogHeader = styled.div`display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding-right:2rem;h3{margin:0;color:#202124}span{color:#5b6270;font-weight:700}>strong{color:#202124;font-size:1.2rem;white-space:nowrap}`;
 const Details = styled.div`display:grid;gap:.45rem;`;
-const DetailRow = styled.article`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.7rem;align-items:center;border:1px solid ${({ $positive }) => $positive ? '#b8dfc2' : '#e1e5eb'};border-radius:7px;background:${({ $positive }) => $positive ? '#f2fbf4' : '#f7f8fa'};padding:.6rem;>div{display:grid;gap:.13rem;min-width:0}>div:last-child{justify-items:end;text-align:right}span,small{color:#5b6270;overflow-wrap:anywhere}@media(max-width:520px){grid-template-columns:1fr;>div:last-child{justify-items:start;text-align:left}}`;
+const DetailRow = styled.article`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.8rem;align-items:center;border:1px solid ${({ $positive }) => $positive ? '#b8dfc2' : '#e1e5eb'};border-radius:8px;background:${({ $positive }) => $positive ? '#f2fbf4' : '#f7f8fa'};padding:.65rem;>div{display:grid;gap:.16rem;min-width:0}>div:last-child{justify-items:end;text-align:right}strong{color:#202124}span,small{color:#5b6270;overflow-wrap:anywhere}@media(max-width:520px){grid-template-columns:1fr;>div:last-child{justify-items:start;text-align:left}}`;

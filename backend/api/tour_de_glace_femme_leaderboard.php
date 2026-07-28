@@ -9,13 +9,16 @@ try {
     $canShowCombined = $combined && hasTourDeGlaceFemmeCompleteResults($pdo);
     $entries = $canShowCombined
         ? getTourDeGlaceFemmeCombinedLeaderboard($pdo, $limit, true)
-        : getTourDeGlaceFemmeStageLeaderboard($pdo, $limit, false);
+        : getTourDeGlaceFemmeStageLeaderboard($pdo, $limit, true);
+    $entries = applyTourDeGlaceFemmeRankTrends($pdo, $entries);
     $userId = $auth ? (int)$auth['user_id'] : null;
+    $currentUserRank = $userId ? getTourDeGlaceFemmeUserRank($pdo, $userId, $canShowCombined, true) : null;
+    if ($currentUserRank) $currentUserRank = applyTourDeGlaceFemmeRankTrends($pdo, [$currentUserRank])[0];
     echo json_encode([
         'status' => 'success',
         'mode' => $canShowCombined ? 'combined' : 'stage',
         'leaderboard' => $entries,
-        'current_user_rank' => $userId ? getTourDeGlaceFemmeUserRank($pdo, $userId, $canShowCombined) : null,
+        'current_user_rank' => $currentUserRank,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);

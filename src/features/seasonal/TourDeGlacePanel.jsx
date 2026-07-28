@@ -771,6 +771,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                           <RankingRow
                             key={`${selectedJersey}-${entry.user_id}`}
                             type="button"
+                            $interactive
                             $highlight={selectedRank?.user_id === entry.user_id}
                             $selected={selectedLeaderboardEntry?.user_id === entry.user_id}
                             onClick={() => setSelectedLeaderboardEntry(entry)}
@@ -876,6 +877,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                         <RankingRow
                           key={`overall-tip-${entry.user_id}`}
                           type="button"
+                          $interactive
                           onClick={() => setSelectedOverallTipEntry(entry)}
                         >
                           <RankCell><span>#{entry.rank}</span></RankCell>
@@ -993,6 +995,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                         key={`stage-tip-${entry.user_id}`}
                         as={data.final_results ? undefined : 'div'}
                         type={data.final_results ? 'button' : undefined}
+                        $interactive={Boolean(data.final_results)}
                         onClick={data.final_results ? () => setSelectedStageTipEntry(entry) : undefined}
                       >
                         <RankCell>
@@ -1711,14 +1714,23 @@ const RankingRow = styled.button`
   padding: 0.5rem 0.6rem;
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: ${({ $interactive }) => ($interactive ? 'pointer' : 'default')};
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 
   strong {
     overflow-wrap: anywhere;
   }
 
-  &:hover {
-    border-color: #9db9e8;
+  ${({ $interactive }) => $interactive && `
+    &:hover {
+      border-color: #78a8e7;
+      background: #eef5ff;
+      transform: translateY(-1px);
+    }
+  `}
+
+  &:active {
+    transform: ${({ $interactive }) => ($interactive ? 'translateY(0)' : 'none')};
   }
 
   &:focus-visible {
@@ -2231,14 +2243,21 @@ const AwardDetailCard = styled.div`
 const OverallTipDetailCard = styled.div`
   position: relative;
   display: grid;
-  gap: 0.9rem;
-  width: min(760px, 100%);
-  max-height: min(84vh, 720px);
+  gap: 0.75rem;
+  width: min(640px, 100%);
+  max-height: min(78vh, 620px);
   overflow-y: auto;
-  border-radius: 12px;
+  border: 1px solid #d7dce4;
+  border-radius: 8px;
   background: #ffffff;
-  padding: 1.25rem;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  padding: 1rem;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26);
+
+  @media (max-width: 520px) {
+    width: min(100%, 460px);
+    max-height: 84vh;
+    padding: 0.9rem;
+  }
 `;
 
 const OverallTipDetailHeader = styled.div`
