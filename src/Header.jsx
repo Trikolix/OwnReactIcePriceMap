@@ -786,7 +786,7 @@ const Header = ({ refreshShops }) => {
                           <MenuSubItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuSubItemLink>
                           <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}>Sommer-QR-Aktion verwalten</MenuSubItemLink>
                           <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}>Tour de Glace verwalten</MenuSubItemLink>
-                          <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}>Tour de Glace Femme verwalten</MenuSubItemLink>
+                          <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}>Tour de Glace Femmes verwalten</MenuSubItemLink>
                         </MenuSubmenu>
                       )}
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>

@@ -162,7 +162,7 @@ export const seasonalCampaignDefinitions = [
   },
   {
     id: 'tour_de_glace_femme_2026',
-    title: 'Tour de Glace Femme 2026',
+    title: 'Tour de Glace Femmes 2026',
     kind: 'campaign',
     promoPriority: 19,
     teaserIcon: '/assets/tour-de-glace/TourDeGlaceFemmes.png',

@@ -7,6 +7,6 @@ try {
     echo json_encode(['status' => 'success', 'authenticated' => $auth !== null, ...buildTourDeGlaceFemmeProgress($pdo, $auth ? (int)$auth['user_id'] : null)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Tour de Glace Femme konnte nicht geladen werden.', 'detail' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['status' => 'error', 'message' => 'Tour de Glace Femmes konnte nicht geladen werden.', 'detail' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }
 ?>

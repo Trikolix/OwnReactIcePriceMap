@@ -306,7 +306,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           ? `Aktuell sind ${formatVoteCount(photoVoteSummary.availableVotes)} verfügbar. Logge dich ein, um abzustimmen.`
           : hasOpenPhotoVotes
           ? `Du hast noch ${formatVoteCount(photoVoteSummary.remainingVotes)} offen. Bisher vergeben: ${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes}.`
-          : `Alle aktuell verfügbaren Votes sind vergeben: ${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes}.`)
+          : `Du hast alle verfügbaren Stimmen abgegeben: ${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes}.`)
         : (activePhotoChallenges.length === 1
           ? 'Schau dir die aktuelle Challenge an.'
           : 'Mehrere Foto-Challenges sind gerade aktiv.'),
@@ -315,7 +315,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           ? `${photoVoteSummary.availableVotes} verfügbar`
           : hasOpenPhotoVotes
           ? `${photoVoteSummary.remainingVotes} offen`
-          : `${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes} Votes`)
+          : `${photoVoteSummary.castVotes}/${photoVoteSummary.availableVotes} Stimmen`)
         : (activePhotoChallenges.length === 1
           ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Aktiv')
           : `${activePhotoChallenges.length} aktiv`),
@@ -323,11 +323,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
         ? (!canTrackPhotoVotes ? 'available' : hasOpenPhotoVotes ? 'open' : 'done')
         : 'active',
       priority: 1,
-      ctaLabel: hasOpenPhotoVotes
-        ? 'Stimmen abgeben'
-        : activePhotoChallenges.length === 1
-        ? (PHOTO_CHALLENGE_ACTION_LABELS[activePhotoChallenges[0].status] || 'Öffnen')
-        : 'Challenges ansehen',
+      ctaLabel: 'Challenges öffnen',
       ctaTarget: activePhotoChallenges.length === 1
         ? `/photo-challenge/${activePhotoChallenges[0].id}`
         : '/photo-challenge',
@@ -342,52 +338,52 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       statusLabel: tourOfficialActive ? 'Heute verfuegbar' : 'Tipps offen',
       statusTone: tourOfficialActive ? 'available' : 'active',
       priority: 2,
-      ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Einklappen' : 'Zur Aktion',
+      ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Schließen' : 'Tour öffnen',
       onClick: () => openDetailPanel('tour_de_glace_2026', { toggle: true }),
     },
     tourResultsHighlighted && {
       id: 'tour-de-glace-results',
       type: 'tour_de_glace',
-      title: 'Tour de Glace Ergebnisse',
-      description: 'Die Tour ist beendet. Ranglisten, Trikots, Etappentipps und Awards bleiben diese Woche im Blick.',
+      title: 'Tour de Glace 2026 – Rückblick',
+      description: 'Entdecke die finalen Ranglisten, Wertungstrikots, Etappentipps und Awards.',
       statusLabel: 'Nachlese',
       statusTone: 'done',
       priority: 2,
-      ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Einklappen' : 'Ergebnisse ansehen',
+      ctaLabel: activeDetailPanel === 'tour_de_glace_2026' ? 'Schließen' : 'Rückblick öffnen',
       onClick: () => openDetailPanel('tour_de_glace_2026', { toggle: true }),
     },
     femmeCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'tour-de-glace-femme',
       type: 'tour_de_glace_femme',
-      title: 'Tour de Glace Femme',
-      description: 'Vorabtipps, tägliche Etappentipps und Easter-Egg-Boni in einer Wertung.',
+      title: 'Tour de Glace Femmes',
+      description: 'Tour-Tipps, tägliche Etappentipps und tägliche Easter-Eggs auf der Karte zur Tour de France Femmes 2026.',
       statusLabel: now < femmeCampaign.schedule.start ? 'Tipps offen' : 'Heute aktiv',
       statusTone: now < femmeCampaign.schedule.start ? 'active' : 'available',
       priority: 2,
-      ctaLabel: activeDetailPanel === 'tour_de_glace_femme_2026' ? 'Einklappen' : 'Zur Aktion',
+      ctaLabel: activeDetailPanel === 'tour_de_glace_femme_2026' ? 'Schließen' : 'Tippspiel öffnen',
       onClick: () => openDetailPanel('tour_de_glace_femme_2026', { toggle: true }),
     },
     femmeResultsHighlighted && {
       id: 'tour-de-glace-femme-results',
       type: 'tour_de_glace_femme',
-      title: 'Tour de Glace Femme Ergebnisse',
+      title: 'Tour de Glace Femmes Ergebnisse',
       description: 'Die kombinierte Tippspiel-Rangliste bleibt diese Woche sichtbar.',
       statusLabel: 'Nachlese',
       statusTone: 'done',
       priority: 2,
-      ctaLabel: activeDetailPanel === 'tour_de_glace_femme_2026' ? 'Einklappen' : 'Ergebnisse ansehen',
+      ctaLabel: activeDetailPanel === 'tour_de_glace_femme_2026' ? 'Schließen' : 'Rückblick öffnen',
       onClick: () => openDetailPanel('tour_de_glace_femme_2026', { toggle: true }),
     },
     summerCampaign?.status === CAMPAIGN_STATUS.ACTIVE && {
       id: 'summer-campaign',
       type: 'summer',
-      title: 'Sommer-Sammelaktion',
-      description: 'Behalte deinen Sammelfortschritt im Blick.',
+      title: 'Sommer-Sammelaktion 2026',
+      description: 'Scanne QR Codes bei Partner Eisdielen, fülle dein Album mit dem passenden Award und behalte deinen Fortschritt im Blick.',
       statusLabel: 'Läuft',
       statusTone: 'active',
       priority: 3,
-      ctaLabel: 'Fortschritt ansehen',
-      onClick: () => openDetailPanel('summer_2026'),
+      ctaLabel: activeDetailPanel === 'summer_2026' ? 'Schließen' : 'Sammlung öffnen',
+      onClick: () => openDetailPanel('summer_2026', { toggle: true }),
     },
   ].filter(Boolean).sort((left, right) => left.priority - right.priority);
   const visibleTasks = showAllTasks ? taskItems : taskItems.slice(0, 3);
@@ -455,8 +451,8 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
         <HubSection>
           <HubSectionHeader>
             <div>
-              <HubKicker>Heute zu tun</HubKicker>
-              <HubTitle>Offene Aktionen</HubTitle>
+                <HubKicker>Aktuell</HubKicker>
+                <HubTitle>Aktuell in der Ice-App</HubTitle>
             </div>
             {taskItems.length > 0 && <TaskCount>{taskItems.length}</TaskCount>}
           </HubSectionHeader>
@@ -502,38 +498,42 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           <HubSection>
             <HubSectionHeader>
               <div>
-                <HubKicker>Aktionen & Ergebnisse</HubKicker>
-                <HubTitle>Fortschritt ansehen</HubTitle>
+                <HubKicker>Aktionsübersicht</HubKicker>
+                <HubTitle>Alle Aktionen und Rückblicke</HubTitle>
               </div>
             </HubSectionHeader>
             <CampaignSummaryGrid>
               {actionCampaignCards.map((campaign) => (
                 <CampaignSummaryCard key={campaign.id}>
-                  <CampaignSummaryImage
-                    src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
-                      ? TASK_IMAGES.tour_de_glace
-                      : campaign.id === 'tour_de_glace_femme_2026'
-                        ? TASK_IMAGES.tour_de_glace_femme
-                        : TASK_IMAGES.summer)}
-                    alt=""
-                  />
-                  <CampaignSummaryBody>
-                    <strong>{campaign.title}</strong>
-                    <span>
-                      {campaign.id === 'tour_de_glace_2026'
-                        ? (campaign.status === CAMPAIGN_STATUS.RESULTS
-                          ? 'Finale Trikots, Etappen und Tipps'
-                          : 'Trikots, Etappen und Tagespunkte')
+                  <CampaignSummaryTop>
+                    <CampaignSummaryImage
+                      src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
+                        ? TASK_IMAGES.tour_de_glace
                         : campaign.id === 'tour_de_glace_femme_2026'
-                          ? (campaign.status === CAMPAIGN_STATUS.RESULTS
-                            ? 'Kombinierte Schlusswertung und Awards'
-                            : 'Vorabtipps, Etappen und Tages-Eggs')
-                        : 'Sammelfortschritt und Aufgaben'}
-                    </span>
-                    <TaskButton type="button" onClick={() => openDetailPanel(campaign.id, { toggle: true })}>
-                      {activeDetailPanel === campaign.id ? 'Einklappen' : 'Details'}
-                    </TaskButton>
-                  </CampaignSummaryBody>
+                          ? TASK_IMAGES.tour_de_glace_femme
+                          : TASK_IMAGES.summer)}
+                      alt=""
+                    />
+                    <CampaignSummaryBody>
+                      <strong>{campaign.title}</strong>
+                      <span>
+                        {campaign.id === 'tour_de_glace_2026'
+                          ? 'Ranglisten, Trikots, Etappentipps und Awards'
+                          : campaign.id === 'tour_de_glace_femme_2026'
+                            ? 'Tour-Tipps, Etappentipps und tägliche Easter-Eggs'
+                            : 'Sammelalbum, Aufgaben und Fortschritt'}
+                      </span>
+                    </CampaignSummaryBody>
+                  </CampaignSummaryTop>
+                  <TaskButton type="button" onClick={() => openDetailPanel(campaign.id, { toggle: true })}>
+                    {activeDetailPanel === campaign.id
+                      ? 'Schließen'
+                      : campaign.id === 'tour_de_glace_2026'
+                        ? 'Rückblick öffnen'
+                        : campaign.id === 'tour_de_glace_femme_2026'
+                          ? 'Tippspiel öffnen'
+                          : 'Sammlung öffnen'}
+                  </TaskButton>
                 </CampaignSummaryCard>
               ))}
             </CampaignSummaryGrid>
@@ -1010,13 +1010,26 @@ const CampaignSummaryGrid = styled.div`
 
 const CampaignSummaryCard = styled.article`
   display: grid;
-  grid-template-columns: 4.1rem minmax(0, 1fr);
-  gap: 0.8rem;
-  align-items: center;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.65rem;
   border: 1px solid #e1e6ee;
   border-radius: 8px;
   background: #fbfcff;
   padding: 0.7rem;
+
+  > button {
+    justify-self: stretch;
+    width: 100%;
+    min-height: 2.4rem;
+    white-space: normal;
+  }
+`;
+
+const CampaignSummaryTop = styled.div`
+  display: grid;
+  grid-template-columns: 4.1rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
 `;
 
 const CampaignSummaryImage = styled.img`
@@ -1039,9 +1052,6 @@ const CampaignSummaryBody = styled.div`
     font-size: 0.86rem;
   }
 
-  button {
-    justify-self: start;
-  }
 `;
 
 const DetailPanelWrap = styled.div`

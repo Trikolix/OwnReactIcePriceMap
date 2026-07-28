@@ -264,6 +264,7 @@ function ensureTourDeGlaceTables(PDO $pdo): void
             tip_green_winner VARCHAR(160) DEFAULT NULL,
             tip_mountain_winner VARCHAR(160) DEFAULT NULL,
             tip_white_winner VARCHAR(160) DEFAULT NULL,
+            tip_team_winner VARCHAR(160) DEFAULT NULL,
             submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -273,6 +274,7 @@ function ensureTourDeGlaceTables(PDO $pdo): void
     );
     ensureTourDeGlaceColumn($pdo, 'tour_de_glace_tips', 'tip_gc_second', 'VARCHAR(160) DEFAULT NULL AFTER tip_gc_winner');
     ensureTourDeGlaceColumn($pdo, 'tour_de_glace_tips', 'tip_gc_third', 'VARCHAR(160) DEFAULT NULL AFTER tip_gc_second');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_tips', 'tip_team_winner', 'VARCHAR(160) DEFAULT NULL AFTER tip_white_winner');
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS tour_de_glace_final_results (
@@ -283,6 +285,15 @@ function ensureTourDeGlaceTables(PDO $pdo): void
             result_green_winner VARCHAR(160) NOT NULL,
             result_mountain_winner VARCHAR(160) NOT NULL,
             result_white_winner VARCHAR(160) NOT NULL,
+            result_green_second VARCHAR(160) DEFAULT NULL,
+            result_green_third VARCHAR(160) DEFAULT NULL,
+            result_mountain_second VARCHAR(160) DEFAULT NULL,
+            result_mountain_third VARCHAR(160) DEFAULT NULL,
+            result_white_second VARCHAR(160) DEFAULT NULL,
+            result_white_third VARCHAR(160) DEFAULT NULL,
+            result_team_winner VARCHAR(160) DEFAULT NULL,
+            result_team_second VARCHAR(160) DEFAULT NULL,
+            result_team_third VARCHAR(160) DEFAULT NULL,
             updated_by_user_id INT DEFAULT NULL,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (campaign_id),
@@ -290,6 +301,15 @@ function ensureTourDeGlaceTables(PDO $pdo): void
             CONSTRAINT fk_tdg_final_results_user FOREIGN KEY (updated_by_user_id) REFERENCES nutzer(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_green_second', 'VARCHAR(160) DEFAULT NULL AFTER result_green_winner');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_green_third', 'VARCHAR(160) DEFAULT NULL AFTER result_green_second');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_mountain_second', 'VARCHAR(160) DEFAULT NULL AFTER result_mountain_winner');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_mountain_third', 'VARCHAR(160) DEFAULT NULL AFTER result_mountain_second');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_white_second', 'VARCHAR(160) DEFAULT NULL AFTER result_white_winner');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_white_third', 'VARCHAR(160) DEFAULT NULL AFTER result_white_second');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_team_winner', 'VARCHAR(160) DEFAULT NULL AFTER result_white_third');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_team_second', 'VARCHAR(160) DEFAULT NULL AFTER result_team_winner');
+    ensureTourDeGlaceColumn($pdo, 'tour_de_glace_final_results', 'result_team_third', 'VARCHAR(160) DEFAULT NULL AFTER result_team_second');
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS tour_de_glace_stage_tips (

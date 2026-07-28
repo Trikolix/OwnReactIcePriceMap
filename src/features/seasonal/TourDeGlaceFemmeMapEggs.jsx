@@ -67,7 +67,7 @@ export default function TourDeGlaceFemmeMapEggs({ enabled, currentZoom, isLogged
   return <Marker position={position} icon={eggIcon} eventHandlers={{ click: () => map.flyTo(position, Math.max(map.getZoom(), 12), { duration: 0.8 }) }}>
     <Popup>
       <div style={{ minWidth: '210px' }}>
-        <strong>Tour de Glace Femme Egg</strong>
+        <strong>Tour de Glace Femmes Egg</strong>
         <p style={{ margin: '0.45rem 0' }}>Etappe {state.egg.stage_number}: {state.egg.start_location} &rarr; {state.egg.finish_location}</p>
         <p style={{ margin: '0 0 0.65rem', color: '#5b6270' }}>{state.egg.found ? 'Gefunden: Der Bonus ist fuer deinen heutigen Etappentipp aktiv.' : state.egg.hint_text}</p>
         {state.error && <p style={{ color: '#b42318' }}>{state.error}</p>}

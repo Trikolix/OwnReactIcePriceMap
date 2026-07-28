@@ -22,7 +22,7 @@ function tourDeGlaceFemmeConfig(): array
 {
     return [
         'id' => TOUR_DE_GLACE_FEMME_ID,
-        'title' => 'Tour de Glace Femme 2026',
+        'title' => 'Tour de Glace Femmes 2026',
         'pre_start' => '2026-07-28 00:00:00',
         'start' => '2026-08-01 00:00:00',
         'end' => '2026-08-09 23:59:59',
@@ -48,7 +48,12 @@ function tourDeGlaceFemmeStageTipPointRules(): array
 
 function tourDeGlaceFemmeOverallTipPointRules(): array
 {
-    return ['gc_exact' => [1 => 50, 2 => 25, 3 => 25], 'gc_top3_wrong_position' => 10, 'jersey_exact' => 35];
+    return [
+        'gc_exact' => [1 => 50, 2 => 30, 3 => 20],
+        'gc_top3_wrong_position' => 10,
+        'jersey_rank' => [1 => 35, 2 => 15, 3 => 10],
+        'team_rank' => [1 => 25, 2 => 10, 3 => 5],
+    ];
 }
 
 function ensureTourDeGlaceFemmeTables(PDO $pdo): void
@@ -99,6 +104,11 @@ function getTourDeGlaceFemmeStage(int $stageNumber): ?array
 function getTourDeGlaceFemmeStageStart(array $stage): DateTimeImmutable
 {
     return new DateTimeImmutable((string)$stage['start_at'], tourDeGlaceFemmeTimezone());
+}
+
+function getTourDeGlaceFemmeStageTipDeadline(array $stage): DateTimeImmutable
+{
+    return getTourDeGlaceFemmeStageStart($stage)->modify('-5 minutes');
 }
 
 function normalizeTourDeGlaceFemmeName(string $value): string
@@ -189,7 +199,7 @@ function assertTourDeGlaceFemmeAwardConfiguration(PDO $pdo): array
         $missing = $configuration['award_id'] === null
             ? 'der Award-Code ' . TOUR_DE_GLACE_FEMME_AWARD_CODE
             : 'die Level ' . implode(', ', $configuration['missing_levels']);
-        throw new RuntimeException('Die Award-Reihe Tour de Glace Femme 2026 ist unvollstaendig: Bitte ' . $missing . ' im Award-Admin anlegen.');
+        throw new RuntimeException('Die Award-Reihe Tour de Glace Femmes 2026 ist unvollstaendig: Bitte ' . $missing . ' im Award-Admin anlegen.');
     }
     return $configuration;
 }
@@ -232,17 +242,32 @@ function scoreTourDeGlaceFemmeOverallTips(array $tips, ?array $results): array
         $summary['points'] += $points;
         $summary['breakdown'][] = ['key' => $tipKey, 'tip' => $tipValue, 'result' => $results[$resultKeys[$index]], 'points' => $points, 'outcome' => $outcome];
     }
-    foreach (['tip_green_winner' => 'result_green_winner', 'tip_mountain_winner' => 'result_mountain_winner', 'tip_white_winner' => 'result_white_winner'] as $tipKey => $resultKey) {
+    $rankedClassifications = [
+        'tip_green_winner' => ['result_green_winner', 'result_green_second', 'result_green_third'],
+        'tip_mountain_winner' => ['result_mountain_winner', 'result_mountain_second', 'result_mountain_third'],
+        'tip_white_winner' => ['result_white_winner', 'result_white_second', 'result_white_third'],
+        'tip_team_winner' => ['result_team_winner', 'result_team_second', 'result_team_third'],
+    ];
+    foreach ($rankedClassifications as $tipKey => $resultKeys) {
         $tipValue = trim((string)($tips[$tipKey] ?? ''));
         $points = 0;
         $outcome = $tipValue === '' ? 'no_tip' : 'miss';
-        if ($tipValue !== '' && normalizeTourDeGlaceFemmeName($tipValue) === normalizeTourDeGlaceFemmeName((string)$results[$resultKey])) {
-            $points = $rules['jersey_exact'];
-            $outcome = 'exact';
-            $summary['exact_hits']++;
+        $rank = null;
+        foreach ($resultKeys as $index => $resultKey) {
+            if ($tipValue !== '' && normalizeTourDeGlaceFemmeName($tipValue) === normalizeTourDeGlaceFemmeName((string)($results[$resultKey] ?? ''))) {
+                $rank = $index + 1;
+                break;
+            }
+        }
+        if ($rank !== null) {
+            $points = $tipKey === 'tip_team_winner' ? $rules['team_rank'][$rank] : $rules['jersey_rank'][$rank];
+            $outcome = 'rank_' . $rank;
+            if ($rank === 1) {
+                $summary['exact_hits']++;
+            }
         }
         $summary['points'] += $points;
-        $summary['breakdown'][] = ['key' => $tipKey, 'tip' => $tipValue, 'result' => $results[$resultKey], 'points' => $points, 'outcome' => $outcome];
+        $summary['breakdown'][] = ['key' => $tipKey, 'tip' => $tipValue, 'result' => implode(' · ', array_map(static fn(string $key, int $index): string => '#' . ($index + 1) . ' ' . (string)($results[$key] ?? '-'), $resultKeys, array_keys($resultKeys))), 'points' => $points, 'outcome' => $outcome];
     }
     return $summary;
 }
@@ -292,10 +317,11 @@ function getTourDeGlaceFemmeStageTipsForUser(PDO $pdo, int $userId): array
             'stage_number' => $stageNumber,
             'stage_date' => $stage['date'],
             'start_at' => $stage['start_at'],
+            'tip_deadline_at' => getTourDeGlaceFemmeStageTipDeadline($stage)->format('Y-m-d H:i:s'),
             'start_location' => $stage['start'],
             'finish_location' => $stage['finish'],
             'tip_stage_winner' => $tip,
-            'closed' => $now >= getTourDeGlaceFemmeStageStart($stage),
+            'closed' => $now >= getTourDeGlaceFemmeStageTipDeadline($stage),
             'has_egg' => in_array($stageNumber, $foundStages, true),
             'stage_winner' => $top10[0] ?? null,
             'stage_top10' => $top10,
@@ -444,7 +470,7 @@ function getTourDeGlaceFemmeFinisherUserIds(PDO $pdo): array
          JOIN tour_de_glace_stage_tips s ON s.user_id = t.user_id AND s.campaign_id = t.campaign_id
          WHERE t.campaign_id = ?
            AND LENGTH(TRIM(t.tip_gc_winner)) > 0 AND LENGTH(TRIM(t.tip_gc_second)) > 0 AND LENGTH(TRIM(t.tip_gc_third)) > 0
-           AND LENGTH(TRIM(t.tip_green_winner)) > 0 AND LENGTH(TRIM(t.tip_mountain_winner)) > 0 AND LENGTH(TRIM(t.tip_white_winner)) > 0
+           AND LENGTH(TRIM(t.tip_green_winner)) > 0 AND LENGTH(TRIM(t.tip_mountain_winner)) > 0 AND LENGTH(TRIM(t.tip_white_winner)) > 0 AND LENGTH(TRIM(t.tip_team_winner)) > 0
            AND LENGTH(TRIM(s.tip_stage_winner)) > 0
          GROUP BY t.user_id
          HAVING COUNT(DISTINCT s.stage_number) = 9'
@@ -504,17 +530,17 @@ function grantTourDeGlaceFemmeAwards(PDO $pdo, int $awardId): array
 function submitTourDeGlaceFemmeTips(PDO $pdo, int $userId, array $tips): array
 {
     ensureTourDeGlaceFemmeTables($pdo);
-    if (getTourDeGlaceFemmeNow() >= new DateTimeImmutable(TOUR_DE_GLACE_FEMME_TIP_DEADLINE, tourDeGlaceFemmeTimezone())) throw new RuntimeException('Die Vorabtipps sind geschlossen.');
-    $fields = ['tip_gc_winner', 'tip_gc_second', 'tip_gc_third', 'tip_green_winner', 'tip_mountain_winner', 'tip_white_winner'];
+    if (getTourDeGlaceFemmeNow() >= new DateTimeImmutable(TOUR_DE_GLACE_FEMME_TIP_DEADLINE, tourDeGlaceFemmeTimezone())) throw new RuntimeException('Die Tour-Tipps sind geschlossen.');
+    $fields = ['tip_gc_winner', 'tip_gc_second', 'tip_gc_third', 'tip_green_winner', 'tip_mountain_winner', 'tip_white_winner', 'tip_team_winner'];
     $clean = [];
     foreach ($fields as $field) {
         $value = trim((string)preg_replace('/\s+/u', ' ', (string)($tips[$field] ?? '')));
-        if ($value === '') throw new RuntimeException('Bitte alle Vorabtipps ausfuellen.');
+        if ($value === '') throw new RuntimeException('Bitte alle Tour-Tipps ausfuellen.');
         $clean[$field] = function_exists('mb_substr') ? mb_substr($value, 0, 160, 'UTF-8') : substr($value, 0, 160);
     }
     $gc = array_map('normalizeTourDeGlaceFemmeName', [$clean['tip_gc_winner'], $clean['tip_gc_second'], $clean['tip_gc_third']]);
     if (count(array_unique($gc)) !== 3) throw new RuntimeException('Eine Fahrerin darf in der GC Top 3 nur einmal getippt werden.');
-    $stmt = $pdo->prepare('INSERT INTO tour_de_glace_tips (campaign_id, user_id, tip_gc_winner, tip_gc_second, tip_gc_third, tip_green_winner, tip_mountain_winner, tip_white_winner, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE tip_gc_winner = VALUES(tip_gc_winner), tip_gc_second = VALUES(tip_gc_second), tip_gc_third = VALUES(tip_gc_third), tip_green_winner = VALUES(tip_green_winner), tip_mountain_winner = VALUES(tip_mountain_winner), tip_white_winner = VALUES(tip_white_winner), updated_at = NOW()');
+    $stmt = $pdo->prepare('INSERT INTO tour_de_glace_tips (campaign_id, user_id, tip_gc_winner, tip_gc_second, tip_gc_third, tip_green_winner, tip_mountain_winner, tip_white_winner, tip_team_winner, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE tip_gc_winner = VALUES(tip_gc_winner), tip_gc_second = VALUES(tip_gc_second), tip_gc_third = VALUES(tip_gc_third), tip_green_winner = VALUES(tip_green_winner), tip_mountain_winner = VALUES(tip_mountain_winner), tip_white_winner = VALUES(tip_white_winner), tip_team_winner = VALUES(tip_team_winner), updated_at = NOW()');
     $stmt->execute([TOUR_DE_GLACE_FEMME_ID, $userId, ...array_values($clean)]);
     return getTourDeGlaceFemmeTips($pdo, $userId) ?: [];
 }
@@ -524,7 +550,7 @@ function submitTourDeGlaceFemmeStageTip(PDO $pdo, int $userId, int $stageNumber,
     ensureTourDeGlaceFemmeTables($pdo);
     $stage = getTourDeGlaceFemmeStage($stageNumber);
     if (!$stage) throw new RuntimeException('Ungueltige Etappe.');
-    if (getTourDeGlaceFemmeNow() >= getTourDeGlaceFemmeStageStart($stage)) throw new RuntimeException('Die Tippabgabe fuer diese Etappe ist geschlossen.');
+    if (getTourDeGlaceFemmeNow() >= getTourDeGlaceFemmeStageTipDeadline($stage)) throw new RuntimeException('Die Tippabgabe fuer diese Etappe ist geschlossen.');
     $clean = trim((string)preg_replace('/\s+/u', ' ', $tip));
     if ($clean === '') throw new RuntimeException('Bitte tippe eine Etappensiegerin.');
     $stmt = $pdo->prepare('INSERT INTO tour_de_glace_stage_tips (campaign_id, user_id, stage_number, tip_stage_winner, submitted_at) VALUES (?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE tip_stage_winner = VALUES(tip_stage_winner), updated_at = NOW()');
@@ -565,7 +591,7 @@ function saveTourDeGlaceFemmeStageResult(PDO $pdo, int $adminUserId, int $stageN
 function saveTourDeGlaceFemmeFinalResults(PDO $pdo, int $adminUserId, array $results): array
 {
     ensureTourDeGlaceFemmeTables($pdo);
-    $fields = ['result_gc_winner', 'result_gc_second', 'result_gc_third', 'result_green_winner', 'result_mountain_winner', 'result_white_winner'];
+    $fields = ['result_gc_winner', 'result_gc_second', 'result_gc_third', 'result_green_winner', 'result_green_second', 'result_green_third', 'result_mountain_winner', 'result_mountain_second', 'result_mountain_third', 'result_white_winner', 'result_white_second', 'result_white_third', 'result_team_winner', 'result_team_second', 'result_team_third'];
     $clean = [];
     foreach ($fields as $field) {
         $value = trim((string)preg_replace('/\s+/u', ' ', (string)($results[$field] ?? '')));
@@ -584,7 +610,7 @@ function saveTourDeGlaceFemmeFinalResults(PDO $pdo, int $adminUserId, array $res
         $pdo->beginTransaction();
     }
     try {
-        $stmt = $pdo->prepare('INSERT INTO tour_de_glace_final_results (campaign_id, result_gc_winner, result_gc_second, result_gc_third, result_green_winner, result_mountain_winner, result_white_winner, updated_by_user_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE result_gc_winner = VALUES(result_gc_winner), result_gc_second = VALUES(result_gc_second), result_gc_third = VALUES(result_gc_third), result_green_winner = VALUES(result_green_winner), result_mountain_winner = VALUES(result_mountain_winner), result_white_winner = VALUES(result_white_winner), updated_by_user_id = VALUES(updated_by_user_id), updated_at = NOW()');
+        $stmt = $pdo->prepare('INSERT INTO tour_de_glace_final_results (campaign_id, ' . implode(', ', $fields) . ', updated_by_user_id, updated_at) VALUES (?, ' . implode(', ', array_fill(0, count($fields), '?')) . ', ?, NOW()) ON DUPLICATE KEY UPDATE ' . implode(', ', array_map(static fn(string $field): string => $field . ' = VALUES(' . $field . ')', $fields)) . ', updated_by_user_id = VALUES(updated_by_user_id), updated_at = NOW()');
         $stmt->execute([TOUR_DE_GLACE_FEMME_ID, ...array_values($clean), $adminUserId]);
         $awardGrants = grantTourDeGlaceFemmeAwards($pdo, (int)$awardConfiguration['award_id']);
         $finalResults = getTourDeGlaceFemmeFinalResults($pdo) ?: [];

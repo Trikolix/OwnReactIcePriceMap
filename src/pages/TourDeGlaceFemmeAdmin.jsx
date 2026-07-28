@@ -5,7 +5,13 @@ import { useUser } from '../context/UserContext';
 import { fetchTourDeGlaceFemmeAdmin, saveTourDeGlaceFemmeFinalResults, saveTourDeGlaceFemmeStageResult } from '../features/seasonal/tourDeGlaceFemmeApi';
 import { TOUR_DE_GLACE_FEMME_STARTERS } from '../features/seasonal/tourDeGlaceFemmeStarters';
 
-const FINAL_FIELDS = [['result_gc_winner', 'GC 1'], ['result_gc_second', 'GC 2'], ['result_gc_third', 'GC 3'], ['result_green_winner', 'Grünes Trikot'], ['result_mountain_winner', 'Bergtrikot'], ['result_white_winner', 'Weißes Trikot']];
+const FINAL_FIELDS = [
+  ['result_gc_winner', 'GC 1'], ['result_gc_second', 'GC 2'], ['result_gc_third', 'GC 3'],
+  ['result_green_winner', 'Grünes Trikot #1'], ['result_green_second', 'Grünes Trikot #2'], ['result_green_third', 'Grünes Trikot #3'],
+  ['result_mountain_winner', 'Bergtrikot #1'], ['result_mountain_second', 'Bergtrikot #2'], ['result_mountain_third', 'Bergtrikot #3'],
+  ['result_white_winner', 'Weißes Trikot #1'], ['result_white_second', 'Weißes Trikot #2'], ['result_white_third', 'Weißes Trikot #3'],
+  ['result_team_winner', 'Mannschaftswertung #1', 'team'], ['result_team_second', 'Mannschaftswertung #2', 'team'], ['result_team_third', 'Mannschaftswertung #3', 'team'],
+];
 
 export default function TourDeGlaceFemmeAdmin() {
   const { authToken, isLoggedIn, userId } = useUser();
@@ -47,11 +53,11 @@ export default function TourDeGlaceFemmeAdmin() {
   };
   if (!isLoggedIn || !isAdmin) return <Page><Header /><Main><Card>Kein Zugriff.</Card></Main></Page>;
   return <Page><Header /><Main>
-    <Title>Tour de Glace Femme Admin</Title>
-    <Lead>Neun vollstaendige, unterschiedliche Top 10 eintragen und danach die Gesamt- und Trikot-Ergebnisse pflegen.</Lead>
+    <Title>Tour de Glace Femmes Admin</Title>
+    <Lead>Neun vollstaendige, unterschiedliche Top 10 eintragen und danach die Gesamt-, Trikot- und Mannschafts-Ergebnisse pflegen.</Lead>
     {message && <Notice>{message}</Notice>}
     <Button type="button" onClick={load} disabled={loading}>{loading ? 'Lade...' : 'Aktualisieren'}</Button>
-    <Card><h2>Endergebnisse</h2>{state && !state.award_configuration?.configured && <Notice>Vor der Finalisierung muss die Award-Reihe <strong>tour_de_glace_femme_2026</strong> mit den Leveln {state.award_configuration?.missing_levels?.join(', ') || '1 bis 6'} im Award-Admin angelegt werden.</Notice>}<Grid>{FINAL_FIELDS.map(([key, label]) => <label key={key}>{label}<input value={finalResults[key] || ''} onChange={(event) => setFinalResults((previous) => ({ ...previous, [key]: event.target.value }))} list="femme-starters" /></label>)}</Grid><Button type="button" onClick={saveFinal} disabled={saving === 'final' || (state !== null && !state.award_configuration?.configured)}>{saving === 'final' ? 'Speichert...' : 'Endergebnisse finalisieren'}</Button></Card>
+    <Card><h2>Endergebnisse</h2>{state && !state.award_configuration?.configured && <Notice>Vor der Finalisierung muss die Award-Reihe <strong>tour_de_glace_femme_2026</strong> mit den Leveln {state.award_configuration?.missing_levels?.join(', ') || '1 bis 6'} im Award-Admin angelegt werden.</Notice>}<Grid>{FINAL_FIELDS.map(([key, label, type]) => <label key={key}>{label}<input value={finalResults[key] || ''} onChange={(event) => setFinalResults((previous) => ({ ...previous, [key]: event.target.value }))} list={type === 'team' ? undefined : 'femme-starters'} /></label>)}</Grid><Button type="button" onClick={saveFinal} disabled={saving === 'final' || (state !== null && !state.award_configuration?.configured)}>{saving === 'final' ? 'Speichert...' : 'Endergebnisse finalisieren'}</Button></Card>
     <datalist id="femme-starters">{TOUR_DE_GLACE_FEMME_STARTERS.map((starter) => <option key={`${starter.name}-${starter.team}`} value={starter.name} />)}</datalist>
     <StageGrid>{(state?.campaign?.stages || []).map((stage) => <Card key={stage.stage_number}><h2>Etappe {stage.stage_number}</h2><p>{stage.start} → {stage.finish} · {stage.start_at}</p><TopTen>{Array.from({ length: 10 }, (_, index) => <label key={index}><span>#{index + 1}</span><input value={stageResults[stage.stage_number]?.[index] || ''} onChange={(event) => setStageResults((previous) => ({ ...previous, [stage.stage_number]: Array.from({ length: 10 }, (_, position) => position === index ? event.target.value : (previous[stage.stage_number]?.[position] || '')) }))} list="femme-starters" /></label>)}</TopTen><Button type="button" onClick={() => saveStage(stage.stage_number)} disabled={saving === `stage-${stage.stage_number}`}>{saving === `stage-${stage.stage_number}` ? 'Speichert...' : 'Top 10 speichern'}</Button></Card>)}</StageGrid>
   </Main></Page>;
