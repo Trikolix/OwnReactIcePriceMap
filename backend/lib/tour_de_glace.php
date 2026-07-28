@@ -1121,7 +1121,7 @@ function applyTourDeGlaceRankTrends(PDO $pdo, array $entries, string $snapshotTy
     return $entries;
 }
 
-function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50): array
+function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50, bool $includeBreakdown = false): array
 {
     ensureTourDeGlaceTables($pdo);
     $stmt = $pdo->prepare(
@@ -1129,8 +1129,7 @@ function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50): array
                 n.username,
                 up.avatar_path,
                 t.stage_number,
-                t.tip_stage_winner,
-                t.updated_at
+                t.tip_stage_winner
          FROM tour_de_glace_stage_tips t
          JOIN nutzer n ON n.id = t.user_id
          LEFT JOIN user_profile_images up ON up.user_id = t.user_id
@@ -1163,8 +1162,10 @@ function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50): array
                 'winner_hits' => 0,
                 'top3_hits' => 0,
                 'top10_hits' => 0,
-                'last_tip_at' => null,
             ];
+            if ($includeBreakdown) {
+                $entries[$userId]['breakdown'] = [];
+            }
         }
         $entries[$userId]['points'] += (int)$score['final_ep'];
         if ((int)($score['predicted_rank'] ?? 0) === 1) {
@@ -1176,26 +1177,44 @@ function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50): array
         if (!empty($score['scored'])) {
             $entries[$userId]['top10_hits']++;
         }
-        if ($row['updated_at'] && ($entries[$userId]['last_tip_at'] === null || strcmp((string)$row['updated_at'], (string)$entries[$userId]['last_tip_at']) > 0)) {
-            $entries[$userId]['last_tip_at'] = $row['updated_at'];
+        if ($includeBreakdown) {
+            $stage = getTourDeGlaceStage($stageNumber);
+            $entries[$userId]['breakdown'][] = [
+                'stage_number' => $stageNumber,
+                'start_location' => $stage['start'] ?? null,
+                'finish_location' => $stage['finish'] ?? null,
+                'tip' => trim((string)$row['tip_stage_winner']),
+                'result' => $top10[0] ?? null,
+                'predicted_rank' => $score['predicted_rank'],
+                'base_ep' => (int)$score['base_ep'],
+                'egg_bonus_ep' => (int)$score['egg_bonus_ep'],
+                'points' => (int)$score['final_ep'],
+                'outcome' => !$score['scored'] ? 'miss' : ((int)$score['predicted_rank'] === 1 ? 'exact' : 'top10'),
+            ];
         }
     }
 
-    $entries = array_values(array_filter($entries, static fn(array $entry): bool => (int)$entry['points'] > 0));
+    if (!$includeBreakdown) {
+        $entries = array_filter($entries, static fn(array $entry): bool => (int)$entry['points'] > 0);
+    }
+
+    return applyTourDeGlaceRankTrends(
+        $pdo,
+        rankTourDeGlaceStageTipEntries(array_values($entries), $limit),
+        tourDeGlaceSnapshotType('stage_tips')
+    );
+}
+
+function rankTourDeGlaceStageTipEntries(array $entries, int $limit = 50): array
+{
     usort($entries, static function (array $left, array $right): int {
-        foreach (['points', 'winner_hits', 'top3_hits', 'top10_hits'] as $key) {
-            $diff = (int)$right[$key] <=> (int)$left[$key];
-            if ($diff !== 0) {
-                return $diff;
-            }
+        $pointsDiff = (int)$right['points'] <=> (int)$left['points'];
+        if ($pointsDiff !== 0) {
+            return $pointsDiff;
         }
-        $leftTime = (string)($left['last_tip_at'] ?? '9999-12-31 23:59:59');
-        $rightTime = (string)($right['last_tip_at'] ?? '9999-12-31 23:59:59');
-        $timeDiff = strcmp($leftTime, $rightTime);
-        if ($timeDiff !== 0) {
-            return $timeDiff;
-        }
-        return (int)$left['user_id'] <=> (int)$right['user_id'];
+
+        $nameDiff = strcasecmp((string)$left['username'], (string)$right['username']);
+        return $nameDiff !== 0 ? $nameDiff : ((int)$left['user_id'] <=> (int)$right['user_id']);
     });
 
     $ranked = [];
@@ -1203,13 +1222,7 @@ function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50): array
     $rank = 0;
     $maxRows = $limit > 0 ? max(1, min(100, $limit)) : null;
     foreach ($entries as $index => $entry) {
-        $rankFields = [
-            'points' => (int)$entry['points'],
-            'winner_hits' => (int)$entry['winner_hits'],
-            'top3_hits' => (int)$entry['top3_hits'],
-            'top10_hits' => (int)$entry['top10_hits'],
-            'last_tip_at' => $entry['last_tip_at'],
-        ];
+        $rankFields = [(int)$entry['points']];
         if ($previousRankFields !== $rankFields) {
             $rank = $index + 1;
             $previousRankFields = $rankFields;
@@ -1221,12 +1234,12 @@ function getTourDeGlaceStageTipLeaderboard(PDO $pdo, int $limit = 50): array
         }
     }
 
-    return applyTourDeGlaceRankTrends($pdo, $ranked, tourDeGlaceSnapshotType('stage_tips'));
+    return $ranked;
 }
 
-function getTourDeGlaceStageTipUserRank(PDO $pdo, int $userId): ?array
+function getTourDeGlaceStageTipUserRank(PDO $pdo, int $userId, bool $includeBreakdown = false): ?array
 {
-    foreach (getTourDeGlaceStageTipLeaderboard($pdo, 0) as $entry) {
+    foreach (getTourDeGlaceStageTipLeaderboard($pdo, 0, $includeBreakdown) as $entry) {
         if ((int)$entry['user_id'] === $userId) {
             return $entry;
         }
@@ -1267,7 +1280,7 @@ function getTourDeGlaceOverallTipLeaderboard(PDO $pdo, int $limit = 50): array
 
     $stmt = $pdo->prepare(
         "SELECT t.user_id, n.username, up.avatar_path, t.tip_gc_winner, t.tip_gc_second, t.tip_gc_third,
-                t.tip_green_winner, t.tip_mountain_winner, t.tip_white_winner, t.updated_at
+                t.tip_green_winner, t.tip_mountain_winner, t.tip_white_winner
          FROM tour_de_glace_tips t
          JOIN nutzer n ON n.id = t.user_id
          LEFT JOIN user_profile_images up ON up.user_id = t.user_id
@@ -1282,19 +1295,22 @@ function getTourDeGlaceOverallTipLeaderboard(PDO $pdo, int $limit = 50): array
             'user_id' => (int)$row['user_id'],
             'username' => $row['username'],
             'avatar_path' => $row['avatar_path'],
-            'last_tip_at' => $row['updated_at'],
         ], $score);
     }
 
+    return rankTourDeGlaceOverallTipEntries($entries, $limit);
+}
+
+function rankTourDeGlaceOverallTipEntries(array $entries, int $limit = 50): array
+{
     usort($entries, static function (array $left, array $right): int {
-        foreach (['points', 'exact_hits', 'gc_winner_correct', 'gc_top3_hits'] as $key) {
-            $diff = (int)$right[$key] <=> (int)$left[$key];
-            if ($diff !== 0) {
-                return $diff;
-            }
+        $pointsDiff = (int)$right['points'] <=> (int)$left['points'];
+        if ($pointsDiff !== 0) {
+            return $pointsDiff;
         }
-        $timeDiff = strcmp((string)$left['last_tip_at'], (string)$right['last_tip_at']);
-        return $timeDiff !== 0 ? $timeDiff : ((int)$left['user_id'] <=> (int)$right['user_id']);
+
+        $nameDiff = strcasecmp((string)$left['username'], (string)$right['username']);
+        return $nameDiff !== 0 ? $nameDiff : ((int)$left['user_id'] <=> (int)$right['user_id']);
     });
 
     $ranked = [];
@@ -1302,7 +1318,7 @@ function getTourDeGlaceOverallTipLeaderboard(PDO $pdo, int $limit = 50): array
     $rank = 0;
     $maxRows = $limit > 0 ? max(1, min(100, $limit)) : null;
     foreach ($entries as $index => $entry) {
-        $rankFields = [$entry['points'], $entry['exact_hits'], $entry['gc_winner_correct'], $entry['gc_top3_hits'], $entry['last_tip_at']];
+        $rankFields = [$entry['points']];
         if ($previousRankFields !== $rankFields) {
             $rank = $index + 1;
             $previousRankFields = $rankFields;
@@ -1553,6 +1569,7 @@ function scoreTourDeGlaceOverallTips(array $tips, ?array $results): array
         'gc_winner_correct' => false,
         'gc_top3_hits' => 0,
         'scored' => false,
+        'breakdown' => [],
     ];
     if (!$results) {
         return $summary;
@@ -1565,21 +1582,49 @@ function scoreTourDeGlaceOverallTips(array $tips, ?array $results): array
         normalizeTourDeGlaceTipName((string)($results['result_gc_third'] ?? '')),
     ];
     foreach (['tip_gc_winner', 'tip_gc_second', 'tip_gc_third'] as $index => $tipKey) {
-        $tip = normalizeTourDeGlaceTipName((string)($tips[$tipKey] ?? ''));
+        $tipValue = trim((string)($tips[$tipKey] ?? ''));
+        $resultKey = ['result_gc_winner', 'result_gc_second', 'result_gc_third'][$index];
+        $resultValue = trim((string)($results[$resultKey] ?? ''));
+        $tip = normalizeTourDeGlaceTipName($tipValue);
+        $points = 0;
+        $outcome = 'no_tip';
+
         if ($tip === '') {
+            $summary['breakdown'][] = [
+                'key' => $tipKey,
+                'tip' => $tipValue,
+                'result' => $resultValue,
+                'points' => $points,
+                'outcome' => $outcome,
+            ];
             continue;
         }
+
         if ($tip === $actualTop3[$index]) {
-            $summary['points'] += (int)$rules['gc_exact'][$index + 1];
+            $points = (int)$rules['gc_exact'][$index + 1];
+            $outcome = 'exact';
+            $summary['points'] += $points;
             $summary['exact_hits']++;
             $summary['gc_top3_hits']++;
             if ($index === 0) {
                 $summary['gc_winner_correct'] = true;
             }
         } elseif (in_array($tip, $actualTop3, true)) {
-            $summary['points'] += (int)$rules['gc_top3_wrong_position'];
+            $points = (int)$rules['gc_top3_wrong_position'];
+            $outcome = 'top3_wrong_position';
+            $summary['points'] += $points;
             $summary['gc_top3_hits']++;
+        } else {
+            $outcome = 'miss';
         }
+
+        $summary['breakdown'][] = [
+            'key' => $tipKey,
+            'tip' => $tipValue,
+            'result' => $resultValue,
+            'points' => $points,
+            'outcome' => $outcome,
+        ];
     }
 
     foreach ([
@@ -1587,12 +1632,25 @@ function scoreTourDeGlaceOverallTips(array $tips, ?array $results): array
         'tip_mountain_winner' => 'result_mountain_winner',
         'tip_white_winner' => 'result_white_winner',
     ] as $tipKey => $resultKey) {
-        $tip = normalizeTourDeGlaceTipName((string)($tips[$tipKey] ?? ''));
-        $result = normalizeTourDeGlaceTipName((string)($results[$resultKey] ?? ''));
+        $tipValue = trim((string)($tips[$tipKey] ?? ''));
+        $resultValue = trim((string)($results[$resultKey] ?? ''));
+        $tip = normalizeTourDeGlaceTipName($tipValue);
+        $result = normalizeTourDeGlaceTipName($resultValue);
+        $points = 0;
+        $outcome = $tip === '' ? 'no_tip' : 'miss';
         if ($tip !== '' && $tip === $result) {
-            $summary['points'] += (int)$rules['jersey_exact'];
+            $points = (int)$rules['jersey_exact'];
+            $outcome = 'exact';
+            $summary['points'] += $points;
             $summary['exact_hits']++;
         }
+        $summary['breakdown'][] = [
+            'key' => $tipKey,
+            'tip' => $tipValue,
+            'result' => $resultValue,
+            'points' => $points,
+            'outcome' => $outcome,
+        ];
     }
 
     $summary['scored'] = true;
@@ -2204,7 +2262,7 @@ function buildTourDeGlaceProgress(PDO $pdo, ?int $userId = null): array
         'tips' => $userId ? getTourDeGlaceTips($pdo, $userId) : null,
         'stage_tips' => $stageTips,
         'stage_tip_summary' => $stageTipSummary,
-        'stage_tip_rank' => $userId ? getTourDeGlaceStageTipUserRank($pdo, $userId) : null,
+        'stage_tip_rank' => $userId ? getTourDeGlaceStageTipUserRank($pdo, $userId, (bool)$finalResults) : null,
         'final_results' => $finalResults,
         'overall_tip_summary' => $overallTipSummary,
         'overall_tip_rank' => $userId && $finalResults ? getTourDeGlaceOverallTipUserRank($pdo, $userId) : null,

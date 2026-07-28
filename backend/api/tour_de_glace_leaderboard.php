@@ -10,11 +10,19 @@ try {
     $jersey = (string)($_GET['jersey'] ?? 'yellow');
     $limit = (int)($_GET['limit'] ?? 50);
     $isStageTipLeaderboard = $jersey === 'stage_tips';
+    $isOverallTipLeaderboard = $jersey === 'overall_tips';
+    $includeStageTipBreakdown = $isStageTipLeaderboard && (bool)getTourDeGlaceFinalResults($pdo);
     echo json_encode([
         'status' => 'success',
         'jersey' => $jersey,
-        'leaderboard' => $isStageTipLeaderboard ? getTourDeGlaceStageTipLeaderboard($pdo, $limit) : getTourDeGlaceLeaderboard($pdo, $jersey, $limit),
-        'current_user_rank' => $userId ? ($isStageTipLeaderboard ? getTourDeGlaceStageTipUserRank($pdo, $userId) : getTourDeGlaceUserRank($pdo, $jersey, $userId)) : null,
+        'leaderboard' => $isOverallTipLeaderboard
+            ? getTourDeGlaceOverallTipLeaderboard($pdo, $limit)
+            : ($isStageTipLeaderboard ? getTourDeGlaceStageTipLeaderboard($pdo, $limit, $includeStageTipBreakdown) : getTourDeGlaceLeaderboard($pdo, $jersey, $limit)),
+        'current_user_rank' => $userId
+            ? ($isOverallTipLeaderboard
+                ? getTourDeGlaceOverallTipUserRank($pdo, $userId)
+                : ($isStageTipLeaderboard ? getTourDeGlaceStageTipUserRank($pdo, $userId, $includeStageTipBreakdown) : getTourDeGlaceUserRank($pdo, $jersey, $userId)))
+            : null,
         'leaders' => getTourDeGlaceOfficialLeaders($pdo),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {

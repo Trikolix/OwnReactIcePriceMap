@@ -112,6 +112,18 @@ const TIP_FIELDS = [
   ['tip_mountain_winner', 'Bergtrikot'],
   ['tip_white_winner', 'Wei\u00dfes Trikot'],
 ];
+const OVERALL_TIP_FIELD_LABELS = Object.fromEntries(TIP_FIELDS);
+const OVERALL_TIP_OUTCOMES = {
+  exact: 'Exakt getroffen',
+  top3_wrong_position: 'Top 3, falsche Position',
+  miss: 'Kein Treffer',
+  no_tip: 'Kein Tipp abgegeben',
+};
+const STAGE_TIP_OUTCOMES = {
+  exact: 'Etappensieger getroffen',
+  top10: 'Top 10 getroffen',
+  miss: 'Nicht in den Top 10',
+};
 const GC_TIP_KEYS = ['tip_gc_winner', 'tip_gc_second', 'tip_gc_third'];
 const normalizeTipName = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('de-DE');
 const getTrendDisplay = (rankChange, rankDelta) => {
@@ -248,10 +260,14 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const [message, setMessage] = useState('');
   const [selectedJersey, setSelectedJersey] = useState('yellow');
   const [selectedLeaderboardEntry, setSelectedLeaderboardEntry] = useState(null);
+  const [selectedOverallTipEntry, setSelectedOverallTipEntry] = useState(null);
+  const [selectedStageTipEntry, setSelectedStageTipEntry] = useState(null);
   const [selectedAward, setSelectedAward] = useState(null);
   const [expandedInfo, setExpandedInfo] = useState(null);
   const [expandedLeaderboards, setExpandedLeaderboards] = useState({});
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [overallTipLeaderboardState, setOverallTipLeaderboardState] = useState({ loading: false, error: '', entries: null });
+  const [stageTipLeaderboardState, setStageTipLeaderboardState] = useState({ loading: false, error: '', entries: null });
 
   const load = async () => {
     setState((previous) => ({ ...previous, loading: true, error: '' }));
@@ -332,10 +348,10 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const leaders = data?.leaders || {};
   const stageTipSummary = data?.stage_tip_summary || {};
   const stageTipRank = data?.stage_tip_rank || null;
-  const stageTipLeaderboard = compactLeaderboards.stage_tips || [];
+  const stageTipLeaderboard = stageTipLeaderboardState.entries || compactLeaderboards.stage_tips || [];
   const overallTipSummary = data?.overall_tip_summary || null;
   const overallTipRank = data?.overall_tip_rank || null;
-  const overallTipLeaderboard = compactLeaderboards.overall_tips || [];
+  const overallTipLeaderboard = overallTipLeaderboardState.entries || compactLeaderboards.overall_tips || [];
   const selectedRiderType = data?.profile?.rider_type || null;
   const currentStage = data?.stage;
   const selectedMeta = JERSEY_META[selectedJersey] || JERSEY_META.yellow;
@@ -355,6 +371,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   const tipsClosed = tipDeadline instanceof Date
     && !Number.isNaN(tipDeadline.getTime())
     && new Date() > tipDeadline;
+  const tipsReadOnly = tipsClosed || Boolean(data?.final_results);
   const duplicateTipNames = useMemo(() => {
     const seen = new Map();
     const duplicates = new Set();
@@ -388,6 +405,71 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
   useEffect(() => {
     setSelectedLeaderboardEntry(null);
   }, [selectedJersey, data?.campaign?.phase]);
+
+  useEffect(() => {
+    if (!data?.final_results || activeTab !== 'tips') {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setOverallTipLeaderboardState({ loading: true, error: '', entries: null });
+    fetchTourDeGlaceLeaderboard(authToken, 'overall_tips', 0)
+      .then((result) => {
+        if (!cancelled) {
+          setOverallTipLeaderboardState({ loading: false, error: '', entries: result.leaderboard || [] });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setOverallTipLeaderboardState({
+            loading: false,
+            error: error.message || 'Tippspiel-Rangliste konnte nicht geladen werden.',
+            entries: null,
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, authToken, data?.final_results]);
+
+  useEffect(() => {
+    if (!data?.final_results || activeTab !== 'eggs') {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setStageTipLeaderboardState({ loading: true, error: '', entries: null });
+    fetchTourDeGlaceLeaderboard(authToken, 'stage_tips', 0)
+      .then((result) => {
+        if (!cancelled) {
+          setStageTipLeaderboardState({ loading: false, error: '', entries: result.leaderboard || [] });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setStageTipLeaderboardState({
+            loading: false,
+            error: error.message || 'Etappentipp-Rangliste konnte nicht geladen werden.',
+            entries: null,
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, authToken, data?.final_results]);
+
+  useEffect(() => {
+    if (!data?.final_results) {
+      setOverallTipLeaderboardState({ loading: false, error: '', entries: null });
+      setSelectedOverallTipEntry(null);
+      setStageTipLeaderboardState({ loading: false, error: '', entries: null });
+      setSelectedStageTipEntry(null);
+    }
+  }, [data?.final_results]);
 
   useEffect(() => {
     if (!expandedInfo) {
@@ -762,40 +844,6 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
 
           {activeTab === 'tips' && (
             <Stack>
-              <TipForm onSubmit={handleSubmitTips}>
-              <TipHeader>
-                <SubHeading>Tippspiel</SubHeading>
-                <InfoHint id="tip-point-rules" label="Punkte-Regeln für das Tippspiel anzeigen" expandedInfo={expandedInfo} onToggle={toggleInfo}>
-                  <strong>Punkte-Regeln</strong>
-                  <TipRulesList>
-                    {TIP_POINT_RULES.map(([rule, points]) => (
-                      <li key={rule}>
-                        <span>{rule}</span>
-                        <strong>{points}</strong>
-                      </li>
-                    ))}
-                  </TipRulesList>
-                  <small>Tie-Breaker: mehr exakte Treffer, dann GC-Sieger korrekt, dann frühere letzte Tippabgabe, danach geteilter Rang.</small>
-                </InfoHint>
-              </TipHeader>
-              <Hint>
-                {tipsClosed
-                  ? 'Die Tippabgabe ist geschlossen.'
-                  : 'Tipps können bis 04.07.2026, 16:30 Uhr geändert werden.'}
-              </Hint>
-              {duplicateTipMessage && <Hint>{duplicateTipMessage}</Hint>}
-              {TIP_FIELDS.map(([key, label]) => (
-                <RiderSuggestInput
-                  key={key}
-                  id={`tour-tip-${key}`}
-                  label={label}
-                  value={tips[key] || ''}
-                  onChange={(value) => handleTipChange(key, value)}
-                  disabled={tipsClosed}
-                />
-              ))}
-                <ActionButton type="submit" disabled={tipsClosed || hasDuplicateTips}>Tipps speichern</ActionButton>
-              </TipForm>
               {data.final_results && (
                 <StageTipLeaderboardBox>
                   <div>
@@ -819,10 +867,17 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                       <small>richtige Fahrer</small>
                     </SummaryTile>
                   </StageTipSummaryGrid>
-                  {overallTipLeaderboard.length > 0 && (
+                  <Hint>Bei gleicher Punktzahl wird der Platz geteilt.</Hint>
+                  {overallTipLeaderboardState.loading && <Hint>Vollständige Tipp-Rangliste wird geladen...</Hint>}
+                  {overallTipLeaderboardState.error && <Hint>{overallTipLeaderboardState.error}</Hint>}
+                  {!overallTipLeaderboardState.loading && !overallTipLeaderboardState.error && overallTipLeaderboard.length > 0 && (
                     <StageTipRankingList>
                       {overallTipLeaderboard.map((entry) => (
-                        <RankingRow key={`overall-tip-${entry.user_id}`} as="div">
+                        <RankingRow
+                          key={`overall-tip-${entry.user_id}`}
+                          type="button"
+                          onClick={() => setSelectedOverallTipEntry(entry)}
+                        >
                           <RankCell><span>#{entry.rank}</span></RankCell>
                           <strong>{entry.username}</strong>
                           <span>{entry.points} Punkte</span>
@@ -830,8 +885,49 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                       ))}
                     </StageTipRankingList>
                   )}
+                  {!overallTipLeaderboardState.loading && !overallTipLeaderboardState.error && overallTipLeaderboard.length === 0 && (
+                    <Hint>Es wurden noch keine Tipps abgegeben.</Hint>
+                  )}
                 </StageTipLeaderboardBox>
               )}
+              <TipForm onSubmit={handleSubmitTips}>
+              <TipHeader>
+                <SubHeading>{data.final_results ? 'Deine abgegebenen Tipps' : 'Tippspiel'}</SubHeading>
+                <InfoHint id="tip-point-rules" label="Punkte-Regeln für das Tippspiel anzeigen" expandedInfo={expandedInfo} onToggle={toggleInfo}>
+                  <strong>Punkte-Regeln</strong>
+                  <TipRulesList>
+                    {TIP_POINT_RULES.map(([rule, points]) => (
+                      <li key={rule}>
+                        <span>{rule}</span>
+                        <strong>{points}</strong>
+                      </li>
+                    ))}
+                  </TipRulesList>
+                  <small>Bei gleicher Punktzahl wird der Platz geteilt.</small>
+                </InfoHint>
+              </TipHeader>
+              <Hint>
+                {data.final_results
+                  ? 'Die Tipps sind ausgewertet und können nicht mehr geändert werden.'
+                  : tipsClosed
+                  ? 'Die Tippabgabe ist geschlossen.'
+                  : 'Tipps können bis 04.07.2026, 16:30 Uhr geändert werden.'}
+              </Hint>
+              {duplicateTipMessage && <Hint>{duplicateTipMessage}</Hint>}
+              {TIP_FIELDS.map(([key, label]) => (
+                <RiderSuggestInput
+                  key={key}
+                  id={`tour-tip-${key}`}
+                  label={label}
+                  value={tips[key] || ''}
+                  onChange={(value) => handleTipChange(key, value)}
+                  disabled={tipsReadOnly}
+                />
+              ))}
+                {!data.final_results && (
+                  <ActionButton type="submit" disabled={tipsReadOnly || hasDuplicateTips}>Tipps speichern</ActionButton>
+                )}
+              </TipForm>
             </Stack>
           )}
 
@@ -870,7 +966,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                   <SubHeading>Directeur Sportif</SubHeading>
                   <Hint>Tippe für jede Etappe einen Fahrer bei dem du denkst, dass er die Etappe gewinnt. Falls er gewinnt bekommst du 100 Punkte. Aber auch wenn er in den Top 10 landet, erhälst du Punkte.</Hint>
                 </div>
-                <StageTipSummaryGrid>
+              <StageTipSummaryGrid>
                   <SummaryTile>
                     <span>Deine Tipp-EP</span>
                     <strong>{stageTipSummary.points || 0}</strong>
@@ -885,12 +981,20 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                     <span>Top 10</span>
                     <strong>{stageTipSummary.top10_hits || 0}</strong>
                     <small>gewertete Tipps</small>
-                  </SummaryTile>
-                </StageTipSummaryGrid>
-                {stageTipLeaderboard.length > 0 && (
+                </SummaryTile>
+              </StageTipSummaryGrid>
+              {data.final_results && <Hint>Bei gleicher EP-Zahl wird der Platz geteilt.</Hint>}
+              {data.final_results && stageTipLeaderboardState.loading && <Hint>Vollständige Etappentipp-Rangliste wird geladen...</Hint>}
+              {data.final_results && stageTipLeaderboardState.error && <Hint>{stageTipLeaderboardState.error}</Hint>}
+                {(!data.final_results || (!stageTipLeaderboardState.loading && !stageTipLeaderboardState.error)) && stageTipLeaderboard.length > 0 && (
                   <StageTipRankingList>
                     {stageTipLeaderboard.map((entry) => (
-                      <RankingRow key={`stage-tip-${entry.user_id}`} as="div">
+                      <RankingRow
+                        key={`stage-tip-${entry.user_id}`}
+                        as={data.final_results ? undefined : 'div'}
+                        type={data.final_results ? 'button' : undefined}
+                        onClick={data.final_results ? () => setSelectedStageTipEntry(entry) : undefined}
+                      >
                         <RankCell>
                           <span>#{entry.rank}</span>
                           <RankTrend trend={getTrendDisplay(entry.rank_change, entry.rank_delta)} />
@@ -901,6 +1005,9 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                     ))}
                   </StageTipRankingList>
                 )}
+              {data.final_results && !stageTipLeaderboardState.loading && !stageTipLeaderboardState.error && stageTipLeaderboard.length === 0 && (
+                <Hint>Es wurden noch keine Etappentipps abgegeben.</Hint>
+              )}
               </StageTipLeaderboardBox>
               <StageTipsPanel>
                 <SubHeading>Etappensieger tippen</SubHeading>
@@ -1020,6 +1127,114 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
                   )}
                 </AwardDetailText>
               </AwardDetailCard>
+            </AwardDetailOverlay>
+          )}
+
+          {selectedOverallTipEntry && (
+            <AwardDetailOverlay onClick={() => setSelectedOverallTipEntry(null)}>
+              <OverallTipDetailCard
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tour-overall-tip-detail-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <AwardDetailClose type="button" onClick={() => setSelectedOverallTipEntry(null)} aria-label="Tipp-Details schließen">
+                  ×
+                </AwardDetailClose>
+                <OverallTipDetailHeader>
+                  <div>
+                    <h3 id="tour-overall-tip-detail-title">{selectedOverallTipEntry.username}</h3>
+                    <span>Rang #{selectedOverallTipEntry.rank}</span>
+                  </div>
+                  <strong>{selectedOverallTipEntry.points} Punkte</strong>
+                </OverallTipDetailHeader>
+                <StageTipSummaryGrid>
+                  <SummaryTile>
+                    <span>Exakte Treffer</span>
+                    <strong>{selectedOverallTipEntry.exact_hits || 0}</strong>
+                    <small>GC und Trikots</small>
+                  </SummaryTile>
+                  <SummaryTile>
+                    <span>GC Top 3</span>
+                    <strong>{selectedOverallTipEntry.gc_top3_hits || 0}</strong>
+                    <small>richtige Fahrer</small>
+                  </SummaryTile>
+                </StageTipSummaryGrid>
+                <OverallTipBreakdownList>
+                  {(selectedOverallTipEntry.breakdown || []).map((item) => (
+                    <OverallTipBreakdownRow key={item.key} $points={Number(item.points || 0)}>
+                      <div>
+                        <strong>{OVERALL_TIP_FIELD_LABELS[item.key] || item.key}</strong>
+                        <span>Tipp: {item.tip || 'Kein Tipp abgegeben'}</span>
+                        <span>Ergebnis: {item.result || '-'}</span>
+                      </div>
+                      <div>
+                        <strong>{item.points || 0} Punkte</strong>
+                        <small>{OVERALL_TIP_OUTCOMES[item.outcome] || 'Nicht gewertet'}</small>
+                      </div>
+                    </OverallTipBreakdownRow>
+                  ))}
+                </OverallTipBreakdownList>
+              </OverallTipDetailCard>
+            </AwardDetailOverlay>
+          )}
+
+          {selectedStageTipEntry && (
+            <AwardDetailOverlay onClick={() => setSelectedStageTipEntry(null)}>
+              <OverallTipDetailCard
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tour-stage-tip-detail-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <AwardDetailClose type="button" onClick={() => setSelectedStageTipEntry(null)} aria-label="Etappentipp-Details schließen">
+                  ×
+                </AwardDetailClose>
+                <OverallTipDetailHeader>
+                  <div>
+                    <h3 id="tour-stage-tip-detail-title">{selectedStageTipEntry.username}</h3>
+                    <span>Rang #{selectedStageTipEntry.rank}</span>
+                  </div>
+                  <strong>{selectedStageTipEntry.points} EP</strong>
+                </OverallTipDetailHeader>
+                <StageTipSummaryGrid>
+                  <SummaryTile>
+                    <span>Sieger</span>
+                    <strong>{selectedStageTipEntry.winner_hits || 0}</strong>
+                    <small>exakte Treffer</small>
+                  </SummaryTile>
+                  <SummaryTile>
+                    <span>Top 3</span>
+                    <strong>{selectedStageTipEntry.top3_hits || 0}</strong>
+                    <small>richtige Fahrer</small>
+                  </SummaryTile>
+                  <SummaryTile>
+                    <span>Top 10</span>
+                    <strong>{selectedStageTipEntry.top10_hits || 0}</strong>
+                    <small>gewertete Tipps</small>
+                  </SummaryTile>
+                </StageTipSummaryGrid>
+                <OverallTipBreakdownList>
+                  {(selectedStageTipEntry.breakdown || []).map((item) => (
+                    <OverallTipBreakdownRow key={item.stage_number} $points={Number(item.points || 0)}>
+                      <div>
+                        <strong>Etappe {item.stage_number}</strong>
+                        {item.start_location && item.finish_location && <span>{item.start_location} → {item.finish_location}</span>}
+                        <span>Tipp: {item.tip || 'Kein Tipp abgegeben'}</span>
+                        <span>Sieger: {item.result || '-'}</span>
+                      </div>
+                      <div>
+                        <strong>{item.points || 0} EP</strong>
+                        <small>
+                          {STAGE_TIP_OUTCOMES[item.outcome] || 'Nicht gewertet'}
+                          {item.predicted_rank ? ` · Platz #${item.predicted_rank}` : ''}
+                          {item.egg_bonus_ep ? ` · +${item.egg_bonus_ep} Egg` : ''}
+                        </small>
+                      </div>
+                    </OverallTipBreakdownRow>
+                  ))}
+                </OverallTipBreakdownList>
+              </OverallTipDetailCard>
             </AwardDetailOverlay>
           )}
 
@@ -2010,6 +2225,93 @@ const AwardDetailCard = styled.div`
     grid-template-columns: 1fr;
     justify-items: center;
     padding: 1rem;
+  }
+`;
+
+const OverallTipDetailCard = styled.div`
+  position: relative;
+  display: grid;
+  gap: 0.9rem;
+  width: min(760px, 100%);
+  max-height: min(84vh, 720px);
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 1.25rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+`;
+
+const OverallTipDetailHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-right: 2rem;
+
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h3 {
+    color: #202124;
+  }
+
+  span {
+    color: #5b6270;
+    font-weight: 700;
+  }
+
+  > strong {
+    color: #202124;
+    font-size: 1.2rem;
+    white-space: nowrap;
+  }
+`;
+
+const OverallTipBreakdownList = styled.div`
+  display: grid;
+  gap: 0.5rem;
+`;
+
+const OverallTipBreakdownRow = styled.article`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid ${({ $points }) => ($points > 0 ? '#b8dfc2' : '#e1e5eb')};
+  border-radius: 8px;
+  background: ${({ $points }) => ($points > 0 ? '#f2fbf4' : '#f7f8fa')};
+  padding: 0.65rem;
+
+  > div {
+    display: grid;
+    gap: 0.16rem;
+    min-width: 0;
+  }
+
+  > div:last-child {
+    justify-items: end;
+    text-align: right;
+  }
+
+  strong {
+    color: #202124;
+  }
+
+  span,
+  small {
+    color: #5b6270;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+
+    > div:last-child {
+      justify-items: start;
+      text-align: left;
+    }
   }
 `;
 
