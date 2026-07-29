@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db_connect.php';
+// `backend_dev/api/price_statistics.php` loads its own development connection
+// before including this endpoint. The production endpoint initializes it here.
+if (!defined('PRICE_STATISTICS_PDO_READY')) {
+    require_once __DIR__ . '/../db_connect.php';
+}
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -52,8 +56,14 @@ try {
 $cutoff = $asOf->modify('-' . $freshnessDays . ' days');
 
 try {
-    $snapshotStmt = $pdo->prepare("\n        SELECT e.id AS shop_id, e.land_id, e.bundesland_id, e.landkreis_id,\n               land.name AS land_name, bundesland.name AS bundesland_name, landkreis.name AS landkreis_name,\n               p.gemeldet_am,\n               CASE WHEN w.code = 'EUR' THEN p.preis\n                    ELSE ROUND(p.preis * COALESCE(rate.kurs, 1), 2) END AS price_eur\n        FROM (\n          SELECT ranked.*\n          FROM (\n            SELECT p.*, ROW_NUMBER() OVER (PARTITION BY p.eisdiele_id, p.typ ORDER BY p.gemeldet_am DESC, p.id DESC) AS row_number\n            FROM preise p\n            WHERE p.typ = 'kugel' AND p.gemeldet_am <= :as_of\n          ) ranked\n          WHERE ranked.row_number = 1\n        ) p\n        JOIN eisdielen e ON e.id = p.eisdiele_id\n        LEFT JOIN laender land ON land.id = e.land_id\n        LEFT JOIN bundeslaender bundesland ON bundesland.id = e.bundesland_id\n        LEFT JOIN landkreise landkreis ON landkreis.id = e.landkreis_id\n        LEFT JOIN waehrungen w ON w.id = p.waehrung_id\n        LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = p.waehrung_id\n          AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)\n        WHERE p.gemeldet_am >= :cutoff\n          AND COALESCE(e.status, 'open') <> 'permanent_closed'\n          AND land.id IS NOT NULL\n    ");
-    $snapshotStmt->execute([':as_of' => $asOf->format('Y-m-d H:i:s'), ':cutoff' => $cutoff->format('Y-m-d H:i:s')]);
+    // No window function: this also runs on older MySQL/MariaDB instances.
+    // The anti-join rule makes the latest (gemeldet_am, id) event authoritative.
+    $snapshotStmt = $pdo->prepare("\n        SELECT e.id AS shop_id, e.land_id, e.bundesland_id, e.landkreis_id,\n               land.name AS land_name, bundesland.name AS bundesland_name, landkreis.name AS landkreis_name,\n               p.gemeldet_am,\n               CASE WHEN w.code = 'EUR' THEN p.preis\n                    ELSE ROUND(p.preis * COALESCE(rate.kurs, 1), 2) END AS price_eur\n        FROM preise p\n        JOIN eisdielen e ON e.id = p.eisdiele_id\n        LEFT JOIN laender land ON land.id = e.land_id\n        LEFT JOIN bundeslaender bundesland ON bundesland.id = e.bundesland_id\n        LEFT JOIN landkreise landkreis ON landkreis.id = e.landkreis_id\n        LEFT JOIN waehrungen w ON w.id = p.waehrung_id\n        LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = p.waehrung_id\n          AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)\n        WHERE p.typ = 'kugel'\n          AND p.gemeldet_am <= :as_of\n          AND NOT EXISTS (\n              SELECT 1\n              FROM preise newer\n              WHERE newer.eisdiele_id = p.eisdiele_id\n                AND newer.typ = p.typ\n                AND newer.gemeldet_am <= :as_of_newer\n                AND (\n                    newer.gemeldet_am > p.gemeldet_am\n                    OR (newer.gemeldet_am = p.gemeldet_am AND newer.id > p.id)\n                )\n          )\n          AND p.gemeldet_am >= :cutoff\n          AND COALESCE(e.status, 'open') <> 'permanent_closed'\n          AND land.id IS NOT NULL\n    ");
+    $snapshotStmt->execute([
+        ':as_of' => $asOf->format('Y-m-d H:i:s'),
+        ':as_of_newer' => $asOf->format('Y-m-d H:i:s'),
+        ':cutoff' => $cutoff->format('Y-m-d H:i:s'),
+    ]);
     $snapshotRows = $snapshotStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $reportStmt = $pdo->prepare("\n        SELECT p.eisdiele_id, COUNT(*) AS report_count\n        FROM preise p\n        WHERE p.typ = 'kugel' AND p.gemeldet_am BETWEEN :from_date AND :to_date\n        GROUP BY p.eisdiele_id\n    ");
@@ -112,6 +122,7 @@ try {
         'hierarchy' => $hierarchy,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $exception) {
+    error_log('price_statistics.php: ' . $exception->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Preisstatistik konnte nicht geladen werden.']);
 }
