@@ -6,6 +6,7 @@ import { useUser } from "../context/UserContext";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 import { formatDateTimeLocalInputValue } from "../utils/dateTimeLocal";
 import Seo from "../components/Seo";
+import { Calculator, ChartNoAxesCombined, ShieldCheck, UsersRound } from "lucide-react";
 
 const EARTH_RADIUS_KM = 6371;
 const FILTERS_COMPACT_BREAKPOINT_PX = 768;
@@ -28,6 +29,103 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
         Math.sin(lonDiff / 2) * Math.sin(lonDiff / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return Math.round(EARTH_RADIUS_KM * c * 10) / 10;
+};
+
+const rankingExplanationCopy = {
+    kugel: {
+        label: 'Kugeleis',
+        individual: 'Der Geschmacksfaktor besteht bei vorhandener Waffel zu 80 % aus Geschmack und zu 20 % aus Waffel. Er zählt zu 70 %, Preis-Leistung – ersatzweise die Größenbewertung – zu 30 %.',
+        reliability: 'Mindestens 3 unterschiedliche Nutzer',
+        stabilizer: 3,
+    },
+    softeis: {
+        label: 'Softeis',
+        individual: 'Der Geschmacksfaktor besteht bei vorhandener Waffel zu 80 % aus Geschmack und zu 20 % aus Waffel. Er zählt zu 70 %, die direkt bewertete Preis-Leistung zu 30 %.',
+        reliability: 'Mindestens 2 unterschiedliche Nutzer',
+        stabilizer: 2,
+    },
+    eisbecher: {
+        label: 'Eisbecher',
+        individual: 'Geschmack zählt zu 70 %, die direkt bewertete Preis-Leistung zu 30 %.',
+        reliability: 'Mindestens 2 unterschiedliche Nutzer',
+        stabilizer: 2,
+    },
+};
+
+const rankingStepIconStyles = {
+    amber: { color: '#8a5000', background: 'rgba(255, 181, 34, 0.2)' },
+    blue: { color: '#155d8d', background: 'rgba(77, 169, 224, 0.18)' },
+    violet: { color: '#5b3f9a', background: 'rgba(143, 108, 214, 0.16)' },
+    green: { color: '#176844', background: 'rgba(71, 177, 117, 0.17)' },
+};
+
+const RankingScoreExplanation = ({ type }) => {
+    const copy = rankingExplanationCopy[type];
+
+    return (
+        <Explanation>
+            <ScoreExplanation>
+                <ExplanationKicker>Transparentes Community-Ranking</ExplanationKicker>
+                <ExplanationTitle>So entsteht das {copy.label}-Ranking</ExplanationTitle>
+                <ExplanationLead>
+                    Die Spalte „Ranking“ zeigt einen stabilisierten Score. Er belohnt gute Bewertungen,
+                    ohne einzelne oder wenige Bewertungen zu stark zu überbewerten.
+                </ExplanationLead>
+
+                <ExplanationSteps>
+                    <ExplanationStep>
+                        <StepIcon style={rankingStepIconStyles.amber}><Calculator size={20} aria-hidden="true" /></StepIcon>
+                        <StepContent>
+                            <h3>1. Einzelbewertung</h3>
+                            <p>{copy.individual}</p>
+                            <Formula>0,7 × Geschmacksfaktor + 0,3 × Preis-Leistung</Formula>
+                        </StepContent>
+                    </ExplanationStep>
+
+                    <ExplanationStep>
+                        <StepIcon style={rankingStepIconStyles.blue}><UsersRound size={20} aria-hidden="true" /></StepIcon>
+                        <StepContent>
+                            <h3>2. Fairer Nutzer-Durchschnitt</h3>
+                            <p>
+                                Pro Nutzer und Eisdiele werden die Check-ins zunächst gemittelt. Dieses
+                                Nutzer-Ergebnis erhält das Gewicht <FormulaInline>√(Anzahl Check-ins)</FormulaInline> –
+                                mehr Erfahrung zählt also, aber mit abnehmendem Einfluss.
+                            </p>
+                        </StepContent>
+                    </ExplanationStep>
+
+                    <ExplanationStep>
+                        <StepIcon style={rankingStepIconStyles.violet}><ChartNoAxesCombined size={20} aria-hidden="true" /></StepIcon>
+                        <StepContent>
+                            <h3>3. Rohwert der Eisdiele</h3>
+                            <p>
+                                Die gewichteten Nutzer-Durchschnitte werden zum Rohwert zusammengeführt:
+                            </p>
+                            <Formula>Σ(Nutzer-Score × Nutzer-Gewicht) / Σ(Nutzer-Gewichte)</Formula>
+                        </StepContent>
+                    </ExplanationStep>
+
+                    <ExplanationStep>
+                        <StepIcon style={rankingStepIconStyles.green}><ShieldCheck size={20} aria-hidden="true" /></StepIcon>
+                        <StepContent>
+                            <h3>4. Stabilisierung nach Nutzerzahl</h3>
+                            <p>
+                                Der finale Ranking-Score wird bei wenigen unterschiedlichen Nutzern zum
+                                Durchschnitt aller {copy.label}-Eisdielen hingezogen. Mit wachsender
+                                Nutzerzahl nähert er sich dem Rohwert an.
+                            </p>
+                            <Formula>n/(n + {copy.stabilizer}) × Rohwert + {copy.stabilizer}/(n + {copy.stabilizer}) × Kategorien-Durchschnitt</Formula>
+                        </StepContent>
+                    </ExplanationStep>
+                </ExplanationSteps>
+
+                <ExplanationNote>
+                    <ShieldCheck size={18} aria-hidden="true" />
+                    <span><strong>Verlässliche Datenbasis:</strong> Der Standardfilter zeigt nur Eisdielen mit {copy.reliability}. Die Stabilisierung bleibt auch bei „Alle inklusive weniger Daten“ aktiv.</span>
+                </ExplanationNote>
+            </ScoreExplanation>
+        </Explanation>
+    );
 };
 
 const Ranking = () => {
@@ -732,65 +830,7 @@ const Ranking = () => {
                         </tbody>
                                 </Table>
                             </TableScrollArea>
-                            <Explanation>
-                            <h1>Erklärung zum Ranking</h1>
-                            <LeftAlign>
-                                <ScoreExplanation>
-                                    <h2>Wie wird das Rating für Kugeleis berechnet?</h2>
-
-                                    <h3>1. Einzelbewertung je Check-in</h3>
-                                    <p>
-                                        Für jeden Check-in für Kugeleis wird ein Score berechnet:<br />
-                                        Dieser Score setzt sich aus zwei Faktoren zusammen:
-                                        <ul>
-                                            <li>
-                                                <strong>Geschmacksfaktor:</strong> Der Geschmack zählt viermal so viel wie die Waffel. Wenn keine Waffel bewertet wurde, zählt nur der Geschmack.
-                                            </li>
-                                            <li>
-                                                <strong>Preis-Leistungs-Faktor:</strong> Seit dem <code>27.08.2025</code> wird dieser Wert direkt vom Nutzer vergeben und liegt zwischen <code>1.0</code> und <code>5.0</code>.
-                                                <br />
-                                                Zuvor wurde der Preis-Leistungs-Faktor automatisch aus der Kugelgröße im Verhältnis zum Preis berechnet.
-                                                Eine Kugel mit Größe <code>5.0</code> bei einem Preis von <code>1,50 €</code> ergab beispielsweise den Wert <code>5.0</code>.
-                                                Dabei konnten bei großen Kugeln und Preisen unter 1,50 € Werte von über 5 entstehen, während bei sehr kleinen Kugeln und Preisen über 1,50 € Werte unter 1 möglich waren.
-                                            </li>
-                                            <li>
-                                                <strong>Finaler Score:</strong> Geschmack (70 %) + Preis-Leistung (30 %), gewichtet zu einem Gesamtwert zwischen ca. <code>1.0</code> und <code>5.0</code>.
-                                            </li>
-                                        </ul>
-                                    </p>
-
-
-                                    <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
-                                    <p>
-                                        Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
-                                    </p>
-                                    <ul>
-                                        <li><strong>gewicht:</strong> <code>√(Anzahl Check-ins des Nutzers)</code></li>
-                                        <li><strong>gewichteter Score: </strong> <code>durchschnittlicher Score × gewicht</code></li>
-                                    </ul>
-                                    <p>
-                                        Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
-                                    </p>
-
-                                    <h3>3. Finale Bewertung je Eisdiele</h3>
-                                    <p>
-                                        Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
-                                    </p>
-                                    <ul>
-                                        <li><strong>Rating: </strong><code>Summe aller gewichteter Scores / Summe aller Gewichte</code></li>
-                                    </ul>
-
-                                    <h3>Beispiel:</h3>
-                                    <ul>
-                                        <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
-                                        <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
-                                    </ul>
-                                    <p>
-                                        <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
-                                    </p>
-                                </ScoreExplanation>
-                            </LeftAlign>
-                            </Explanation>
+                            <RankingScoreExplanation type="kugel" />
                         </>
                     )}
                     {activeTab === 'softeis' && (
@@ -872,62 +912,7 @@ const Ranking = () => {
                             </tbody>
                                 </Table>
                             </TableScrollArea>
-                            <Explanation>
-                            <h1>Erklärung zum Ranking</h1>
-                            <LeftAlign>
-                                <ScoreExplanation>
-                                    <h2>Wie wird das Rating für Softeis berechnet?</h2>
-
-                                    <h3>1. Einzelbewertung je Check-in</h3>
-                                    <p>
-                                        Für jeden Check-in für Softeis wird ein Score berechnet:<br />
-                                        Dieser Score setzt sich aus zwei Faktoren zusammen:
-                                        <ul>
-                                            <li>
-                                                <strong>Geschmacksfaktor:</strong> Der Geschmack zählt viermal so viel wie die Waffel. Wenn keine Waffel bewertet wurde, zählt nur der Geschmack.
-                                            </li>
-                                            <li>
-                                                <strong>Preis-Leistungs-Faktor:</strong> Wird direkt durch den Nutzer als Wert zwischen <code>1.0</code> und <code>5.0</code> bewertet.
-                                            </li>
-                                            <li>
-                                                <strong>Finaler Score:</strong> Geschmack (70 %) + Preis-Leistung (30 %), gewichtet zu einem Gesamtwert zwischen ca. <code>1.0</code> und <code>5.0</code>.
-                                            </li>
-                                        </ul>
-                                    </p>
-
-
-                                    <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
-                                    <p>
-                                        Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
-                                    </p>
-                                    <ul>
-                                        <li><strong>gewicht:</strong> <code>√(Anzahl Check-ins des Nutzers)</code></li>
-                                        <li><strong>gewichteter Score: </strong> <code>durchschnittlicher Score × gewicht</code></li>
-                                    </ul>
-                                    <p>
-                                        Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
-                                    </p>
-
-                                    <h3>3. Finale Bewertung je Eisdiele</h3>
-                                    <p>
-                                        Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
-                                    </p>
-                                    <ul>
-                                        <li><strong>Rating: </strong><code>Summe aller gewichteter Scores / Summe aller Gewichte</code></li>
-                                    </ul>
-
-
-                                    <h3>Beispiel:</h3>
-                                    <ul>
-                                        <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
-                                        <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
-                                    </ul>
-                                    <p>
-                                        <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
-                                    </p>
-                                </ScoreExplanation>
-                            </LeftAlign>
-                            </Explanation>
+                            <RankingScoreExplanation type="softeis" />
                         </>
                     )}
                     {activeTab === 'eisbecher' && (
@@ -997,54 +982,7 @@ const Ranking = () => {
                             </tbody>
                                 </Table>
                             </TableScrollArea>
-                            <Explanation>
-                            <h1>Erklärung zum Ranking</h1>
-                            <LeftAlign>
-                                <ScoreExplanation>
-                                    <h2>Wie wird der <em>finale Eisbecher-Score</em> berechnet?</h2>
-
-                                    <h3>1. Einzelbewertung je Check-in</h3>
-                                    <p>
-                                        Für jeden Check-in wird ein Score berechnet:<br />
-                                        <ul>
-                                            <li>
-                                                <strong>Score: </strong><code> Geschmack * 0,7 + Preis-Leistung * 0,3</code><br />
-                                            </li>
-                                        </ul>
-                                    </p>
-
-                                    <h3>2. Durchschnitt je Nutzer &amp; Gewichtung</h3>
-                                    <p>
-                                        Je Nutzer und Eisdiele wird ein Durchschnitt aller Scores berechnet. Aktive Nutzer erhalten ein höheres Gewicht:
-                                    </p>
-                                    <ul>
-                                        <li><strong>gewicht:</strong> <code>√(Anzahl Check-ins des Nutzers)</code></li>
-                                        <li><strong>gewichteter Score: </strong> <code>durchschnittlicher Score × gewicht</code></li>
-                                    </ul>
-                                    <p>
-                                        Dadurch zählt eine einzelne Bewertung weniger als mehrere – aber mit abnehmendem Einfluss.
-                                    </p>
-
-                                    <h3>3. Finale Bewertung je Eisdiele</h3>
-                                    <p>
-                                        Die gewichteten Scores aller Nutzer für eine Eisdiele werden gemittelt:
-                                    </p>
-                                    <ul>
-                                        <li><strong>Rating: </strong><code>Summe aller gewichteter Scores / Summe aller Gewichte</code></li>
-                                    </ul>
-
-
-                                    <h3>Beispiel:</h3>
-                                    <ul>
-                                        <li>Nutzer A: 1 Check-in, Score 4,5 → Gewicht: √1 = 1 → Beitrag: 4,5</li>
-                                        <li>Nutzer B: 4 Check-ins, Ø Score 4,0 → Gewicht: √4 = 2 → Beitrag: 8,0</li>
-                                    </ul>
-                                    <p>
-                                        <strong>Finaler Score:</strong> (4,5 + 8,0) / (1 + 2) = <strong>4,17</strong>
-                                    </p>
-                                </ScoreExplanation>
-                            </LeftAlign>
-                            </Explanation>
+                            <RankingScoreExplanation type="eisbecher" />
                         </>
                     )}
 
@@ -1121,10 +1059,6 @@ const MetaChip = styled.span`
   font-size: 0.8rem;
   font-weight: 700;
 `;
-
-const LeftAlign = styled.p`
-  text-align: left;
-`
 
 const Table = styled.table`
   width: 100%;
@@ -1553,34 +1487,114 @@ const LocationError = styled.span`
 `;
 
 const ScoreExplanation = styled.div`
-  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,250,239,0.95));
-  padding: 1.5rem;
-  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(255,247,226,0.96));
+  padding: clamp(1.1rem, 3vw, 2rem);
+  border-radius: 14px;
   border: 1px solid rgba(47, 33, 0, 0.08);
-  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
-  line-height: 1.6;
-  font-size: 1rem;
+  box-shadow: 0 10px 26px rgba(28, 20, 0, 0.07);
+  text-align: left;
   color: #2f2100;
+`;
+
+const ExplanationKicker = styled.p`
+  margin: 0;
+  color: #966000;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`;
+
+const ExplanationTitle = styled.h2`
+  margin: 0.25rem 0 0;
+  color: #422c00;
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  line-height: 1.25;
+`;
+
+const ExplanationLead = styled.p`
+  margin: 0.7rem 0 1.25rem;
+  max-width: 720px;
+  color: #5f4a23;
+  line-height: 1.6;
+`;
+
+const ExplanationSteps = styled.div`
+  display: grid;
+  gap: 0.75rem;
+`;
+
+const ExplanationStep = styled.article`
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 0.8rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+`;
+
+const StepIcon = styled.div`
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 10px;
+  color: #8a5000;
+  background: rgba(255, 181, 34, 0.2);
+`;
+
+const StepContent = styled.div`
+  min-width: 0;
 
   h3 {
-    margin-top: 0;
-    font-size: 1.25rem;
+    margin: 0;
     color: #4c3400;
+    font-size: 1rem;
   }
 
-  ul {
-    padding-left: 1.2rem;
-    list-style-type: "🍧​ ";
+  p {
+    margin: 0.25rem 0 0;
+    color: #5f4a23;
+    line-height: 1.55;
   }
+`;
 
-  strong {
-    color: #2f2100;
-  }
+const Formula = styled.code`
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.35rem 0.55rem;
+  overflow-x: auto;
+  border-radius: 7px;
+  background: rgba(47, 33, 0, 0.06);
+  color: #4c3400;
+  font-size: 0.84rem;
+  white-space: nowrap;
+`;
 
-  code {
-    background: rgba(47, 33, 0, 0.06);
-    padding: 0.1rem 0.3rem;
-    border-radius: 4px;
-    font-size: 0.95rem;
+const FormulaInline = styled.code`
+  padding: 0.05rem 0.28rem;
+  border-radius: 4px;
+  background: rgba(47, 33, 0, 0.07);
+  color: #4c3400;
+  font-size: 0.9em;
+`;
+
+const ExplanationNote = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(71, 177, 117, 0.1);
+  color: #285e40;
+  font-size: 0.9rem;
+  line-height: 1.5;
+
+  svg {
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
   }
 `;
