@@ -35,14 +35,15 @@ const Ranking = () => {
     const [eisdielenKugel, setEisdielenKugel] = useState([]);
     const [eisdielenSofteis, setEisdielenSofteis] = useState([]);
     const [eisdielenEisbecher, setEisdielenEisbecher] = useState([]);
-    const [sortConfigKugel, setSortConfigKugel] = useState({ key: 'finaler_score', direction: 'descending' });
-    const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'finaler_softeis_score', direction: 'descending' });
-    const [sortConfigEisbecher, setSortConfigEisbehcer] = useState({ key: 'finaler_eisbecher_score', direction: 'descending' });
+    const [sortConfigKugel, setSortConfigKugel] = useState({ key: 'ranking_score', direction: 'descending' });
+    const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'ranking_score', direction: 'descending' });
+    const [sortConfigEisbecher, setSortConfigEisbehcer] = useState({ key: 'ranking_score', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
     const [activeTab, setActiveTab] = useState('kugel');
     const [searchTerm, setSearchTerm] = useState('');
     const [distanceFilter, setDistanceFilter] = useState('any');
     const [ratingScope, setRatingScope] = useState('global');
+    const [reliabilityMode, setReliabilityMode] = useState('reliable');
     const [locationStatus, setLocationStatus] = useState(userPosition ? 'available' : 'idle');
     const [locationError, setLocationError] = useState(null);
     const [attributeOptions, setAttributeOptions] = useState([]);
@@ -208,29 +209,18 @@ const Ranking = () => {
                     return;
                 }
 
-                const queryParts = [];
-                if (ratingUserId !== null) {
-                    queryParts.push(`user_id=${ratingUserId}`);
-                }
+                const queryParts = [`scope=${encodeURIComponent(ratingScope)}`];
+                if (ratingUserId !== null) queryParts.push(`user_id=${ratingUserId}`);
                 if (openFilterQueryString) {
                     queryParts.push(openFilterQueryString);
                 }
                 const query = queryParts.length ? `?${queryParts.join('&')}` : '';
-                const endpoints = [
-                    'get_kugeleis_rating.php',
-                    'get_softeis_rating.php',
-                    'get_eisbecher_rating.php'
-                ];
-
-                const [dataKugel, dataSofteis, dataEisbecher] = await Promise.all(
-                    endpoints.map(async (endpoint) => {
-                        const response = await fetch(`${apiUrl}/${endpoint}${query}`);
-                        if (!response.ok) {
-                            throw new Error(`Fehler beim Abrufen von ${endpoint}`);
-                        }
-                        return response.json();
-                    })
-                );
+                const response = await fetch(`${apiUrl}/api/rankings.php${query}`);
+                if (!response.ok) throw new Error('Fehler beim Abrufen des Rankings');
+                const payload = await response.json();
+                const dataKugel = Array.isArray(payload.kugel) ? payload.kugel : [];
+                const dataSofteis = Array.isArray(payload.softeis) ? payload.softeis : [];
+                const dataEisbecher = Array.isArray(payload.eisbecher) ? payload.eisbecher : [];
 
                 setEisdielenKugel(dataKugel);
                 setEisdielenSofteis(dataSofteis);
@@ -288,6 +278,9 @@ const Ranking = () => {
             return;
         }
         setRatingScope(value);
+        if (value === 'personal') {
+            setReliabilityMode('all');
+        }
     };
 
     const handleAttributeToggle = (attributeId) => {
@@ -384,7 +377,9 @@ const Ranking = () => {
         return lines;
     }, []);
 
-    const applyFiltersAndSort = (items, sortConfig) => {
+    const minimumUsersForTab = (tab) => tab === 'kugel' ? 3 : 2;
+
+    const applyFiltersAndSort = (items, sortConfig, tab) => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const maxDistance = distanceFilter !== 'any' ? parseFloat(distanceFilter) : null;
 
@@ -407,6 +402,8 @@ const Ranking = () => {
             const matchesAttributes =
                 selectedAttributes.length === 0 ||
                 (itemAttributes && selectedAttributes.every((attrId) => itemAttributes.has(attrId)));
+            const uniqueRaters = Number(item.nutzeranzahl ?? item.anzahl_nutzer ?? 0);
+            const matchesReliability = reliabilityMode === 'all' || uniqueRaters >= minimumUsersForTab(tab);
             let matchesOpenState = true;
             if (openFilterMode === 'now') {
                 matchesOpenState = Boolean(item.is_open_now);
@@ -415,7 +412,7 @@ const Ranking = () => {
                     ? true
                     : Boolean(item.is_open_reference);
             }
-            return matchesSearch && matchesDistance && matchesAttributes && matchesOpenState;
+            return matchesSearch && matchesDistance && matchesAttributes && matchesReliability && matchesOpenState;
         });
 
         if (sortConfig.key === null) {
@@ -452,16 +449,16 @@ const Ranking = () => {
     };
 
     const sortedEisdielenKugel = React.useMemo(() => {
-        return applyFiltersAndSort(eisdielenKugel, sortConfigKugel);
-    }, [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
+        return applyFiltersAndSort(eisdielenKugel, sortConfigKugel, 'kugel');
+    }, [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime, reliabilityMode]);
 
     const sortedEisdielenSofteis = React.useMemo(() => {
-        return applyFiltersAndSort(eisdielenSofteis, sortConfigSofteis);
-    }, [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
+        return applyFiltersAndSort(eisdielenSofteis, sortConfigSofteis, 'softeis');
+    }, [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime, reliabilityMode]);
 
     const sortedEisdielenEisbecher = React.useMemo(() => {
-        return applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher);
-    }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
+        return applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher, 'eisbecher');
+    }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime, reliabilityMode]);
 
     const activeResultCount = React.useMemo(() => {
         if (activeTab === 'kugel') return sortedEisdielenKugel.length;
@@ -511,6 +508,16 @@ const Ranking = () => {
                         <option value="gourmetCyclist">TheGourmetCyclist-Rating</option>
                         <option value="personal" disabled={!userId}>Personal-Rating</option>
                     </FilterSelect>
+                </FilterGroup>
+                <FilterGroup>
+                    <FilterLabel htmlFor="ranking-reliability">Datenbasis</FilterLabel>
+                    <FilterSelect id="ranking-reliability" value={reliabilityMode} onChange={(event) => setReliabilityMode(event.target.value)}>
+                        <option value="reliable">Verlässlich (empfohlen)</option>
+                        <option value="all">Alle inklusive weniger Daten</option>
+                    </FilterSelect>
+                    <FilterHint>
+                        {activeTab === 'kugel' ? 'mindestens 3 unterschiedliche Nutzer' : 'mindestens 2 unterschiedliche Nutzer'}
+                    </FilterHint>
                 </FilterGroup>
                 <FilterGroup>
                     <FilterLabel>Öffnungszeiten</FilterLabel>
@@ -612,6 +619,7 @@ const Ranking = () => {
                             {searchTerm.trim() && <MetaChip>Suche: {searchTerm.trim()}</MetaChip>}
                             {distanceFilter !== 'any' && <MetaChip>Entfernung: ≤ {distanceFilter} km</MetaChip>}
                             {selectedAttributes.length > 0 && <MetaChip>{selectedAttributes.length} Attribut-Filter</MetaChip>}
+                            {reliabilityMode === 'reliable' && <MetaChip>Nur verlässliche Bewertungen</MetaChip>}
                         </MetaChips>
                     </HeroCard>
                     <TabContainer>
@@ -671,8 +679,8 @@ const Ranking = () => {
                                 <th onClick={() => sortTableKugel('avg_preisleistung')}>
                                     Preis-Leistung {sortConfigKugel.key === 'avg_preisleistung' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
-                                <th onClick={() => sortTableKugel('finaler_score')}>
-                                    Rating {sortConfigKugel.key === 'finaler_score' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableKugel('ranking_score')}>
+                                    Ranking {sortConfigKugel.key === 'ranking_score' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
                                 </th>
                                 <th onClick={() => sortTableKugel('avg_geschmacksfaktor')}>
                                     Faktor Geschmack {sortConfigKugel.key === 'avg_geschmacksfaktor' ? (sortConfigKugel.direction === 'ascending' ? '▲' : '▼') : ''}
@@ -697,7 +705,7 @@ const Ranking = () => {
                                             {eisdiele.distanceKm !== null && eisdiele.distanceKm !== undefined ? `${Number(eisdiele.distanceKm).toFixed(1)} km` : "–"}
                                         </td>
                                         <td style={sortConfigKugel.key === 'avg_preisleistung' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_preisleistung ? Number(eisdiele.avg_preisleistung).toFixed(2) : "–"}</td>
-                                        <td style={sortConfigKugel.key === 'finaler_score' ? { fontWeight: 'bold' } : {}}>{eisdiele.finaler_score ? Number(eisdiele.finaler_score).toFixed(2) : "–"}</td>
+                                        <td style={sortConfigKugel.key === 'ranking_score' ? { fontWeight: 'bold' } : {}} title={`Rohwert: ${Number(eisdiele.raw_score).toFixed(2)}`}>{eisdiele.ranking_score ? Number(eisdiele.ranking_score).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'avg_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>{eisdiele.avg_geschmacksfaktor ? Number(eisdiele.avg_geschmacksfaktor).toFixed(2) : "–"}</td>
                                         <td style={sortConfigKugel.key === 'checkin_anzahl' ? { fontWeight: 'bold' } : {}}>{eisdiele.checkin_anzahl} (von {eisdiele.nutzeranzahl} Nutzer/n)</td>
                                     </tr>
@@ -801,8 +809,8 @@ const Ranking = () => {
                                     <th onClick={() => sortTableSofteis('avg_preisleistung')}>
                                         Preis-Leistung {sortConfigSofteis.key === 'avg_preisleistung' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
-                                    <th onClick={() => sortTableSofteis('finaler_softeis_score')}>
-                                        Rating {sortConfigSofteis.key === 'finaler_softeis_score' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableSofteis('ranking_score')}>
+                                    Ranking {sortConfigSofteis.key === 'ranking_score' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
                                     <th onClick={() => sortTableSofteis('finaler_geschmacksfaktor')}>
                                         Geschmacksfaktor {sortConfigSofteis.key === 'finaler_geschmacksfaktor' ? (sortConfigSofteis.direction === 'ascending' ? '▲' : '▼') : ''}
@@ -829,8 +837,8 @@ const Ranking = () => {
                                             <td style={sortConfigSofteis.key === 'avg_preisleistung' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.avg_preisleistung ? eisdiele.avg_preisleistung.toFixed(1) : '-'}
                                             </td>
-                                            <td style={sortConfigSofteis.key === 'finaler_softeis_score' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.finaler_softeis_score ? eisdiele.finaler_softeis_score.toFixed(2) : '-'}
+                                            <td style={sortConfigSofteis.key === 'ranking_score' ? { fontWeight: 'bold' } : {}} title={`Rohwert: ${Number(eisdiele.raw_score).toFixed(2)}`}>
+                                                {eisdiele.ranking_score ? Number(eisdiele.ranking_score).toFixed(2) : '-'}
                                             </td>
                                             <td style={sortConfigSofteis.key === 'finaler_geschmacksfaktor' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.finaler_geschmacksfaktor ? eisdiele.finaler_geschmacksfaktor.toFixed(2) : '-'}
@@ -935,8 +943,8 @@ const Ranking = () => {
                                     <th onClick={() => sortTableEisbecher('avg_preisleistung')}>
                                         Preis-Leistung {sortConfigEisbecher.key === 'avg_preisleistung' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
-                                    <th onClick={() => sortTableEisbecher('finaler_eisbecher_score')}>
-                                        Rating {sortConfigEisbecher.key === 'finaler_eisbecher_score' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
+                                <th onClick={() => sortTableEisbecher('ranking_score')}>
+                                    Ranking {sortConfigEisbecher.key === 'ranking_score' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
                                     </th>
                                     <th onClick={() => sortTableEisbecher('distanceKm')}>
                                         Entfernung {sortConfigEisbecher.key === 'distanceKm' ? (sortConfigEisbecher.direction === 'ascending' ? '▲' : '▼') : ''}
@@ -957,8 +965,8 @@ const Ranking = () => {
                                             <td style={sortConfigEisbecher.key === 'avg_preisleistung' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.avg_preisleistung !== null && eisdiele.avg_preisleistung !== undefined ? Number(eisdiele.avg_preisleistung).toFixed(1) : '-'}
                                             </td>
-                                            <td style={sortConfigEisbecher.key === 'finaler_eisbecher_score' ? { fontWeight: 'bold' } : {}}>
-                                                {eisdiele.finaler_eisbecher_score !== null && eisdiele.finaler_eisbecher_score !== undefined ? Number(eisdiele.finaler_eisbecher_score).toFixed(2) : '-'}
+                                            <td style={sortConfigEisbecher.key === 'ranking_score' ? { fontWeight: 'bold' } : {}} title={`Rohwert: ${Number(eisdiele.raw_score).toFixed(2)}`}>
+                                                {eisdiele.ranking_score !== null && eisdiele.ranking_score !== undefined ? Number(eisdiele.ranking_score).toFixed(2) : '-'}
                                             </td>
                                             <td style={sortConfigEisbecher.key === 'distanceKm' ? { fontWeight: 'bold' } : {}}>
                                                 {eisdiele.distanceKm !== null && eisdiele.distanceKm !== undefined ? `${Number(eisdiele.distanceKm).toFixed(1)} km` : '-'}
