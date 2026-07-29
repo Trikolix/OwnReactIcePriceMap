@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db_connect.php';
+// The development wrapper loads its own database connection before including
+// this endpoint. The production endpoint initializes it here.
+if (!defined('RANKINGS_PDO_READY')) {
+    require_once __DIR__ . '/../db_connect.php';
+}
 require_once __DIR__ . '/../lib/attribute.php';
 require_once __DIR__ . '/../lib/opening_hours.php';
 
@@ -95,11 +99,21 @@ WITH eligible AS (
 ), type_means AS (
     SELECT typ, AVG(raw_score) AS global_mean FROM shop_scores GROUP BY typ
 ), latest_kugel_price AS (
-    SELECT ranked.eisdiele_id, ranked.preis, ranked.waehrung_id
-    FROM (
-      SELECT p.*, ROW_NUMBER() OVER (PARTITION BY p.eisdiele_id ORDER BY p.gemeldet_am DESC, p.id DESC) AS row_number
-      FROM preise p WHERE p.typ = 'kugel'
-    ) ranked WHERE ranked.row_number = 1
+    -- The append-only price history is ordered by report time and then id.
+    -- NOT EXISTS avoids requiring window functions on older MySQL/MariaDB.
+    SELECT p.eisdiele_id, p.preis, p.waehrung_id
+    FROM preise p
+    WHERE p.typ = 'kugel'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM preise newer
+          WHERE newer.eisdiele_id = p.eisdiele_id
+            AND newer.typ = 'kugel'
+            AND (
+                newer.gemeldet_am > p.gemeldet_am
+                OR (newer.gemeldet_am = p.gemeldet_am AND newer.id > p.id)
+            )
+      )
 )
 SELECT s.eisdiele_id, s.typ, e.name, e.adresse, e.openingHours, e.opening_hours_note,
        e.status, e.latitude, e.longitude,
@@ -161,5 +175,9 @@ ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.na
 } catch (Throwable $exception) {
     error_log('rankings.php: ' . $exception->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Ranking konnte nicht geladen werden.']);
+    $response = ['error' => 'Ranking konnte nicht geladen werden.'];
+    if (($DEBUG_MODE ?? false) === true) {
+        $response['detail'] = $exception->getMessage();
+    }
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
 }
