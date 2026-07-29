@@ -11,3 +11,13 @@ export const getTourDeGlaceFemmeStarterSuggestions = (value, limit = 8) => {
     .filter((starter) => normalize(starter.name).includes(query) || normalize(starter.team).includes(query))
     .slice(0, limit);
 };
+
+export const TOUR_DE_GLACE_FEMME_TEAMS = [...new Set(TOUR_DE_GLACE_FEMME_STARTERS.map(({ team }) => team))];
+
+export const getTourDeGlaceFemmeTeamSuggestions = (value, limit = 8) => {
+  const query = normalize(value);
+  if (query.length < 2) return [];
+  return TOUR_DE_GLACE_FEMME_TEAMS
+    .filter((team) => normalize(team).includes(query))
+    .slice(0, limit);
+};

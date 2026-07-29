@@ -8,7 +8,7 @@ import {
   submitTourDeGlaceFemmeStageTip,
   submitTourDeGlaceFemmeTips,
 } from './tourDeGlaceFemmeApi';
-import { getTourDeGlaceFemmeStarterSuggestions } from './tourDeGlaceFemmeStarters';
+import { getTourDeGlaceFemmeStarterSuggestions, getTourDeGlaceFemmeTeamSuggestions } from './tourDeGlaceFemmeStarters';
 
 const TIP_FIELDS = [
   ['tip_gc_winner', 'Gesamtwertung – Platz 1'], ['tip_gc_second', 'Gesamtwertung – Platz 2'], ['tip_gc_third', 'Gesamtwertung – Platz 3'],
@@ -48,10 +48,21 @@ const RiderInput = ({ id, label, value, onChange, disabled }) => {
   </Field>;
 };
 
-const TeamInput = ({ id, label, value, onChange, disabled }) => <Field>
-  <label htmlFor={id}>{label}</label>
-  <input id={id} value={value} disabled={disabled} autoComplete="off" onChange={(event) => onChange(event.target.value)} />
-</Field>;
+const TeamInput = ({ id, label, value, onChange, disabled }) => {
+  const [focused, setFocused] = useState(false);
+  const suggestions = getTourDeGlaceFemmeTeamSuggestions(value);
+  return <Field>
+    <label htmlFor={id}>{label}</label>
+    <SuggestWrap>
+      <input id={id} value={value} disabled={disabled} autoComplete="off" onChange={(event) => onChange(event.target.value)} onFocus={() => setFocused(true)} onBlur={() => window.setTimeout(() => setFocused(false), 120)} />
+      {!disabled && focused && suggestions.length > 0 && <SuggestList>
+        {suggestions.map((team) => <button key={team} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange(team); setFocused(false); }}>
+          <strong>{team}</strong>
+        </button>)}
+      </SuggestList>}
+    </SuggestWrap>
+  </Field>;
+};
 
 export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin }) {
   const { authToken } = useUser();
@@ -60,6 +71,7 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
   const [tips, setTips] = useState({});
   const [stageValues, setStageValues] = useState({});
   const [message, setMessage] = useState('');
+  const [tipsMessage, setTipsMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [savingStage, setSavingStage] = useState(null);
   const [fullLeaderboard, setFullLeaderboard] = useState({ loading: false, entries: null, error: '' });
@@ -117,12 +129,17 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
   const saveTips = async (event) => {
     event.preventDefault();
     if (!isLoggedIn) return onLogin?.();
-    if (duplicateGcTips) return setMessage('Eine Fahrerin darf in der GC Top 3 nur einmal getippt werden.');
+    if (duplicateGcTips) return;
     try {
       await submitTourDeGlaceFemmeTips(authToken, tips);
-      setMessage('Tour-Tipps gespeichert.');
+      setTipsMessage('Tour-Tipps gespeichert.');
       await load();
-    } catch (error) { setMessage(error.message || 'Tour-Tipps konnten nicht gespeichert werden.'); }
+    } catch (error) { setTipsMessage(error.message || 'Tour-Tipps konnten nicht gespeichert werden.'); }
+  };
+
+  const updateTip = (key, value) => {
+    setTips((previous) => ({ ...previous, [key]: value }));
+    setTipsMessage('');
   };
 
   const saveStage = async (stageNumber) => {
@@ -179,11 +196,12 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
           </PointHint>
         </FormHeader>
         {TIP_FIELDS.map(([key, label, type]) => (type === 'team'
-          ? <TeamInput key={key} id={`femme-${key}`} label={label} value={tips[key] || ''} onChange={(value) => setTips((previous) => ({ ...previous, [key]: value }))} disabled={tipsClosed} />
-          : <RiderInput key={key} id={`femme-${key}`} label={label} value={tips[key] || ''} onChange={(value) => setTips((previous) => ({ ...previous, [key]: value }))} disabled={tipsClosed} />
+          ? <TeamInput key={key} id={`femme-${key}`} label={label} value={tips[key] || ''} onChange={(value) => updateTip(key, value)} disabled={tipsClosed} />
+          : <RiderInput key={key} id={`femme-${key}`} label={label} value={tips[key] || ''} onChange={(value) => updateTip(key, value)} disabled={tipsClosed} />
         ))}
-        {duplicateGcTips && <Notice>Die GC Top 3 darf keine Fahrerin doppelt enthalten.</Notice>}
         {!tipsClosed && <ActionButton type="submit">Tour-Tipps speichern</ActionButton>}
+        {duplicateGcTips && <TipSaveNotice $error>Für die Plätze 1 bis 3 darf jede Fahrerin nur einmal gewählt werden.</TipSaveNotice>}
+        {tipsMessage && !tipsClosed && <TipSaveNotice $error={tipsMessage !== 'Tour-Tipps gespeichert.'}>{tipsMessage}</TipSaveNotice>}
         <DeadlineHint>{tipsClosed ? 'Die Tour-Tipps sind geschlossen. Deine abgegebenen Tipps bleiben hier sichtbar.' : 'Deine Tour-Tipps können bis zum Start der ersten Etappe geändert werden.'}</DeadlineHint>
       </Form>
     </Stack>}
@@ -259,6 +277,7 @@ const ResultsBox = styled.section`display:grid; gap:.75rem; border:1px solid #d7
 const FormHeader = styled.div`display:grid;gap:.38rem;h3{margin:0}`;
 const PointHint = styled.div`display:grid;gap:.18rem;color:#4b5563;font-size:.88rem;font-weight:600;line-height:1.4;strong{color:#303746}`;
 const DeadlineHint = styled.p`margin:0;color:#5b6270;font-size:.88rem;font-weight:600;line-height:1.4;`;
+const TipSaveNotice = styled.div`border-radius:7px;background:${({ $error }) => $error ? '#fff3cd' : '#edf9f0'};color:${({ $error }) => $error ? '#6f4b00' : '#176238'};padding:.55rem .65rem;font-weight:700;`;
 const Field = styled.div`display:grid; gap:.3rem; label{font-weight:800;color:#303746} input{width:100%; box-sizing:border-box; border:1px solid #cfd6df; border-radius:6px; padding:.55rem .6rem; font:inherit} input:disabled{background:#f4f6f8;color:#68707c}`;
 const SuggestWrap = styled.div`position:relative;`;
 const SuggestList = styled.div`position:absolute; z-index:20; top:calc(100% + 3px); left:0; right:0; display:grid; max-height:190px; overflow:auto; border:1px solid #cfd6df; border-radius:6px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.14); padding:.25rem; button{border:0;background:transparent;text-align:left;padding:.45rem;display:grid;gap:.1rem;cursor:pointer;border-radius:5px} button:hover{background:#f3f6fb} span{color:#5b6270;font-size:.78rem;font-weight:600}`;

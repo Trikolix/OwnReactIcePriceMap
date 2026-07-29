@@ -199,7 +199,7 @@ function assertTourDeGlaceFemmeAwardConfiguration(PDO $pdo): array
         $missing = $configuration['award_id'] === null
             ? 'der Award-Code ' . TOUR_DE_GLACE_FEMME_AWARD_CODE
             : 'die Level ' . implode(', ', $configuration['missing_levels']);
-        throw new RuntimeException('Die Award-Reihe Tour de Glace Femmes 2026 ist unvollstaendig: Bitte ' . $missing . ' im Award-Admin anlegen.');
+        throw new RuntimeException('Die Award-Reihe Tour de Glace Femmes 2026 ist unvollständig: Bitte ' . $missing . ' im Award-Admin anlegen.');
     }
     return $configuration;
 }
@@ -608,11 +608,10 @@ function submitTourDeGlaceFemmeTips(PDO $pdo, int $userId, array $tips): array
     $clean = [];
     foreach ($fields as $field) {
         $value = trim((string)preg_replace('/\s+/u', ' ', (string)($tips[$field] ?? '')));
-        if ($value === '') throw new RuntimeException('Bitte alle Tour-Tipps ausfuellen.');
         $clean[$field] = function_exists('mb_substr') ? mb_substr($value, 0, 160, 'UTF-8') : substr($value, 0, 160);
     }
-    $gc = array_map('normalizeTourDeGlaceFemmeName', [$clean['tip_gc_winner'], $clean['tip_gc_second'], $clean['tip_gc_third']]);
-    if (count(array_unique($gc)) !== 3) throw new RuntimeException('Eine Fahrerin darf in der GC Top 3 nur einmal getippt werden.');
+    $gc = array_filter(array_map('normalizeTourDeGlaceFemmeName', [$clean['tip_gc_winner'], $clean['tip_gc_second'], $clean['tip_gc_third']]), static fn(string $tip): bool => $tip !== '');
+    if (count($gc) !== count(array_unique($gc))) throw new RuntimeException('Eine Fahrerin darf in der GC Top 3 nur einmal getippt werden.');
     $stmt = $pdo->prepare('INSERT INTO tour_de_glace_tips (campaign_id, user_id, tip_gc_winner, tip_gc_second, tip_gc_third, tip_green_winner, tip_mountain_winner, tip_white_winner, tip_team_winner, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE tip_gc_winner = VALUES(tip_gc_winner), tip_gc_second = VALUES(tip_gc_second), tip_gc_third = VALUES(tip_gc_third), tip_green_winner = VALUES(tip_green_winner), tip_mountain_winner = VALUES(tip_mountain_winner), tip_white_winner = VALUES(tip_white_winner), tip_team_winner = VALUES(tip_team_winner), updated_at = NOW()');
     $stmt->execute([TOUR_DE_GLACE_FEMME_ID, $userId, ...array_values($clean)]);
     return getTourDeGlaceFemmeTips($pdo, $userId) ?: [];
@@ -622,8 +621,8 @@ function submitTourDeGlaceFemmeStageTip(PDO $pdo, int $userId, int $stageNumber,
 {
     ensureTourDeGlaceFemmeTables($pdo);
     $stage = getTourDeGlaceFemmeStage($stageNumber);
-    if (!$stage) throw new RuntimeException('Ungueltige Etappe.');
-    if (getTourDeGlaceFemmeNow() >= getTourDeGlaceFemmeStageTipDeadline($stage)) throw new RuntimeException('Die Tippabgabe fuer diese Etappe ist geschlossen.');
+    if (!$stage) throw new RuntimeException('Ungültige Etappe.');
+    if (getTourDeGlaceFemmeNow() >= getTourDeGlaceFemmeStageTipDeadline($stage)) throw new RuntimeException('Die Tippabgabe für diese Etappe ist geschlossen.');
     $clean = trim((string)preg_replace('/\s+/u', ' ', $tip));
     if ($clean === '') throw new RuntimeException('Bitte tippe eine Etappensiegerin.');
     $stmt = $pdo->prepare('INSERT INTO tour_de_glace_stage_tips (campaign_id, user_id, stage_number, tip_stage_winner, submitted_at) VALUES (?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE tip_stage_winner = VALUES(tip_stage_winner), updated_at = NOW()');
@@ -635,7 +634,7 @@ function findTourDeGlaceFemmeEgg(PDO $pdo, int $userId, int $stageNumber, string
 {
     ensureTourDeGlaceFemmeTables($pdo);
     $stage = getTourDeGlaceFemmeStage($stageNumber);
-    if (!$stage || getTourDeGlaceFemmeNow()->format('Y-m-d') !== $stage['date']) throw new RuntimeException('Dieses Easter Egg ist heute nicht verfuegbar.');
+    if (!$stage || getTourDeGlaceFemmeNow()->format('Y-m-d') !== $stage['date']) throw new RuntimeException('Dieses Easter Egg ist heute nicht verfügbar.');
     $stmt = $pdo->prepare('SELECT * FROM tour_de_glace_easter_eggs WHERE campaign_id = ? AND stage_number = ? AND is_active = 1 LIMIT 1');
     $stmt->execute([TOUR_DE_GLACE_FEMME_ID, $stageNumber]);
     $egg = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -648,7 +647,7 @@ function findTourDeGlaceFemmeEgg(PDO $pdo, int $userId, int $stageNumber, string
 function saveTourDeGlaceFemmeStageResult(PDO $pdo, int $adminUserId, int $stageNumber, array $top10): array
 {
     ensureTourDeGlaceFemmeTables($pdo);
-    if (!getTourDeGlaceFemmeStage($stageNumber)) throw new RuntimeException('Ungueltige Etappe.');
+    if (!getTourDeGlaceFemmeStage($stageNumber)) throw new RuntimeException('Ungültige Etappe.');
     $clean = normalizeTourDeGlaceStageTop10($top10, (string)($top10[0] ?? ''));
     if (count($clean) !== 10 || count(array_unique(array_map('normalizeTourDeGlaceFemmeName', $clean))) !== 10) {
         throw new RuntimeException('Bitte alle zehn unterschiedlichen Fahrerinnen der Etappen-Top-10 eintragen.');
@@ -674,7 +673,7 @@ function saveTourDeGlaceFemmeFinalResults(PDO $pdo, int $adminUserId, array $res
     }
     if (count(array_unique(array_map('normalizeTourDeGlaceFemmeName', [$clean['result_gc_winner'], $clean['result_gc_second'], $clean['result_gc_third']]))) !== 3) throw new RuntimeException('Eine Fahrerin darf in der GC Top 3 nur einmal stehen.');
     if (!hasTourDeGlaceFemmeCompleteStageResults($pdo)) {
-        throw new RuntimeException('Bitte zuerst die vollstaendigen Top 10 aller neun Etappen speichern.');
+        throw new RuntimeException('Bitte zuerst die vollständigen Top 10 aller neun Etappen speichern.');
     }
     $awardConfiguration = assertTourDeGlaceFemmeAwardConfiguration($pdo);
     ensureAwardShownAtColumn($pdo);
