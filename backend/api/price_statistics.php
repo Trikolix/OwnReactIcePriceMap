@@ -124,5 +124,9 @@ try {
 } catch (Throwable $exception) {
     error_log('price_statistics.php: ' . $exception->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Preisstatistik konnte nicht geladen werden.']);
+    $response = ['error' => 'Preisstatistik konnte nicht geladen werden.'];
+    if (($DEBUG_MODE ?? false) === true) {
+        $response['detail'] = $exception->getMessage();
+    }
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
 }
