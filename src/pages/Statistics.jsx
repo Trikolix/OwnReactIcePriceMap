@@ -5,6 +5,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import UserAvatar from '../components/UserAvatar';
 import { useUser } from '../context/UserContext';
 import Seo from '../components/Seo';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ChevronDown, History, SlidersHorizontal } from 'lucide-react';
 
 const getNumericPrice = (node) => {
   if (!node) {
@@ -49,6 +51,25 @@ const sortLaender = (laender = []) =>
     }))
     .sort(compareNodesByPrice);
 
+const flattenPriceRegions = (hierarchy = []) => hierarchy.flatMap((land) => [
+  { level: 'land', id: land.id, name: land.name, label: land.name },
+  ...(land.bundeslaender || []).flatMap((bundesland) => [
+    { level: 'bundesland', id: bundesland.id, name: bundesland.name, label: land.name + ' · ' + bundesland.name },
+    ...(bundesland.landkreise || []).map((landkreis) => ({
+      level: 'landkreis',
+      id: landkreis.id,
+      name: landkreis.name,
+      label: land.name + ' · ' + bundesland.name + ' · ' + landkreis.name,
+    })),
+  ]),
+]);
+
+const formatPriceDate = (value) => {
+  if (!value) return null;
+  const date = new Date(String(value).replace(' ', 'T'));
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString('de-DE');
+};
+
 
 
 function Statistics() {
@@ -64,6 +85,18 @@ function Statistics() {
   const [priceHierarchy, setPriceHierarchy] = useState([]);
   const [priceSearch, setPriceSearch] = useState('');
   const [expandedNodes, setExpandedNodes] = useState({});
+  const today = new Date().toISOString().slice(0, 10);
+  const [priceTo, setPriceTo] = useState(today);
+  const [priceFreshnessDays, setPriceFreshnessDays] = useState('all');
+  const [priceMinShops, setPriceMinShops] = useState('3');
+  const [priceStatsMeta, setPriceStatsMeta] = useState(null);
+  const [showPriceAnalysis, setShowPriceAnalysis] = useState(false);
+  const [priceTimelineRange, setPriceTimelineRange] = useState('12m');
+  const [priceTimelineRegion, setPriceTimelineRegion] = useState(null);
+  const [priceTimeline, setPriceTimeline] = useState([]);
+  const [priceTimelineMeta, setPriceTimelineMeta] = useState(null);
+  const [priceTimelineLoading, setPriceTimelineLoading] = useState(false);
+  const [priceTimelineError, setPriceTimelineError] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -129,11 +162,13 @@ function Statistics() {
   }, [activeTab, rankingArchiveKey, rankingPeriod, searchParams, setSearchParams]);
 
   const fetchDashboard = async () => {
-    setLoading(true);
+    if (!priceStatsMeta) {
+      setLoading(true);
+    }
     try {
       const [statsRes, hierarchyRes] = await Promise.all([
         fetch(`${apiUrl}/statistics.php`),
-        fetch(`${apiUrl}/api/get_preise_hierarchisch.php`),
+        fetch(apiUrl + '/api/price_statistics.php?to=' + encodeURIComponent(priceTo) + '&freshness_days=' + encodeURIComponent(priceFreshnessDays) + '&min_shops=' + encodeURIComponent(priceMinShops)),
       ]);
 
       if (!statsRes.ok) {
@@ -148,8 +183,9 @@ function Statistics() {
       const hierarchyJson = await hierarchyRes.json();
 
       setData(statsJson);
-      const parsedHierarchy = Array.isArray(hierarchyJson) ? hierarchyJson : [];
+      const parsedHierarchy = Array.isArray(hierarchyJson?.hierarchy) ? hierarchyJson.hierarchy : [];
       setPriceHierarchy(sortLaender(parsedHierarchy));
+      setPriceStatsMeta(hierarchyJson?.meta || null);
       setLoading(false);
     } catch (err) {
       console.error("Fehler beim Laden der Dashboard-Daten:", err);
@@ -160,7 +196,7 @@ function Statistics() {
 
   useEffect(() => {
     fetchDashboard();
-  }, [apiUrl]);
+  }, [apiUrl, priceFreshnessDays, priceMinShops, priceTo]);
 
   useEffect(() => {
     if (activeTab !== 'activeUsers' || rankingPeriod === 'overall') {
@@ -283,6 +319,63 @@ function Statistics() {
       landkreise,
     };
   }, [filteredPriceHierarchy]);
+
+  const priceRegionOptions = useMemo(() => flattenPriceRegions(priceHierarchy), [priceHierarchy]);
+
+  useEffect(() => {
+    if (priceTimelineRegion || priceRegionOptions.length === 0) {
+      return;
+    }
+    const germany = priceRegionOptions.find((region) => region.level === 'land' && region.name === 'Deutschland');
+    setPriceTimelineRegion(germany || priceRegionOptions[0]);
+  }, [priceRegionOptions, priceTimelineRegion]);
+
+  useEffect(() => {
+    if (!showPriceAnalysis || !priceTimelineRegion || !apiUrl) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadTimeline = async () => {
+      setPriceTimelineLoading(true);
+      setPriceTimelineError(null);
+      try {
+        const params = new URLSearchParams({
+          level: priceTimelineRegion.level,
+          id: String(priceTimelineRegion.id),
+          range: priceTimelineRange,
+          to: priceTo,
+          freshness_days: priceFreshnessDays,
+          min_shops: priceMinShops,
+        });
+        const response = await fetch(apiUrl + '/api/price_statistics_timeline.php?' + params.toString());
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+        const json = await response.json();
+        if (!cancelled) {
+          setPriceTimeline(Array.isArray(json?.series) ? json.series : []);
+          setPriceTimelineMeta(json?.meta || null);
+        }
+      } catch (timelineError) {
+        if (!cancelled) {
+          console.error('Fehler beim Laden der Preiszeitreihe:', timelineError);
+          setPriceTimeline([]);
+          setPriceTimelineMeta(null);
+          setPriceTimelineError(timelineError);
+        }
+      } finally {
+        if (!cancelled) {
+          setPriceTimelineLoading(false);
+        }
+      }
+    };
+
+    loadTimeline();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, priceFreshnessDays, priceMinShops, priceTimelineRange, priceTimelineRegion, priceTo, showPriceAnalysis]);
 
   const formatCurrencyValue = (value, symbol = '€') => {
     if (value === null || value === undefined || value === '0.00') {
@@ -422,10 +515,10 @@ function Statistics() {
               <PriceOverviewToolbar>
                 <div>
                   <SectionTitle style={{ textAlign: 'left', marginBottom: '0.35rem' }}>
-                    Durchschnittlicher Kugelpreis je Region
+                    Typischer Kugelpreis je Region
                   </SectionTitle>
                   <PriceOverviewSubline>
-                    Hierarchische Preisübersicht von Land bis Landkreis, sortiert nach Ø Kugelpreis.
+                    Letzte bekannte Kugelpreise der Community. Auch ältere Preisstände können enthalten sein.
                   </PriceOverviewSubline>
                 </div>
                 <SearchContainer>
@@ -442,14 +535,121 @@ function Statistics() {
                 <MetaPill>{priceOverviewStats.bundeslaender} Bundesländer</MetaPill>
                 <MetaPill>{priceOverviewStats.landkreise} Landkreise</MetaPill>
                 {searchActive && <MetaPill $accent>Filter aktiv: „{priceSearch.trim()}“</MetaPill>}
+                {priceStatsMeta?.eligible_shops !== undefined && <MetaPill>{priceStatsMeta.eligible_shops} Eisdielen mit Preis</MetaPill>}
               </PriceOverviewMeta>
+              <PriceDataHint>
+                <History size={16} aria-hidden="true" />
+                <span>
+                  Datenstand: {formatPriceDate(priceStatsMeta?.latest_reported_at) || formatPriceDate(priceStatsMeta?.newest_reported_at) || 'letzte bekannte Meldungen'}
+                  {(formatPriceDate(priceStatsMeta?.oldest_reported_at) || formatPriceDate(priceStatsMeta?.oldest_report_date)) && (
+                    <> · ältester berücksichtigter Preis: {formatPriceDate(priceStatsMeta?.oldest_reported_at) || formatPriceDate(priceStatsMeta?.oldest_report_date)}</>
+                  )}
+                  {Number(priceStatsMeta?.shops_with_report_older_than_180_days || 0) > 0 && (
+                    <> · {priceStatsMeta.shops_with_report_older_than_180_days} Preisstände älter als 180 Tage</>
+                  )}
+                </span>
+              </PriceDataHint>
+              <PriceAnalysisToggle
+                type="button"
+                onClick={() => setShowPriceAnalysis((current) => !current)}
+                $expanded={showPriceAnalysis}
+                aria-expanded={showPriceAnalysis}
+              >
+                <span><SlidersHorizontal size={17} aria-hidden="true" /> Preisverlauf analysieren</span>
+                <ChevronDown size={18} aria-hidden="true" />
+              </PriceAnalysisToggle>
+              {showPriceAnalysis && (
+                <PriceAnalysisPanel>
+                  <PriceAnalysisHeader>
+                    <div>
+                      <PriceAnalysisTitle>Preisentwicklung im Zeitverlauf</PriceAnalysisTitle>
+                      <PriceOverviewSubline>
+                        Jeder Punkt zeigt den typischen Preis zum Monatsende – aus dem zuletzt bekannten Preis je Eisdiele.
+                      </PriceOverviewSubline>
+                    </div>
+                  </PriceAnalysisHeader>
+                  <PriceAnalysisControls>
+                    <PriceFilterLabel>
+                      Region
+                      <PriceFilterSelect
+                        value={priceTimelineRegion ? priceTimelineRegion.level + ':' + priceTimelineRegion.id : ''}
+                        onChange={(event) => {
+                          const [level, id] = event.target.value.split(':');
+                          const region = priceRegionOptions.find((candidate) => candidate.level === level && String(candidate.id) === id);
+                          setPriceTimelineRegion(region || null);
+                        }}
+                      >
+                        {priceRegionOptions.map((region) => (
+                          <option key={region.level + '-' + region.id} value={region.level + ':' + region.id}>{region.label}</option>
+                        ))}
+                      </PriceFilterSelect>
+                    </PriceFilterLabel>
+                    <PriceFilterLabel>
+                      Stichtag
+                      <PriceFilterInput type="date" value={priceTo} max={today} onChange={(event) => setPriceTo(event.target.value)} />
+                    </PriceFilterLabel>
+                    <PriceFilterLabel>
+                      Aktualität
+                      <PriceFilterSelect value={priceFreshnessDays} onChange={(event) => setPriceFreshnessDays(event.target.value)}>
+                        <option value="all">Alle letzten Preise</option>
+                        <option value="90">max. 90 Tage</option>
+                        <option value="180">max. 180 Tage</option>
+                        <option value="365">max. 365 Tage</option>
+                      </PriceFilterSelect>
+                    </PriceFilterLabel>
+                    <PriceFilterLabel>
+                      Mindestbasis
+                      <PriceFilterSelect value={priceMinShops} onChange={(event) => setPriceMinShops(event.target.value)}>
+                        <option value="1">1 Eisdiele</option>
+                        <option value="3">3 Eisdielen</option>
+                        <option value="5">5 Eisdielen</option>
+                        <option value="10">10 Eisdielen</option>
+                      </PriceFilterSelect>
+                    </PriceFilterLabel>
+                  </PriceAnalysisControls>
+                  <TimelineRangeToggle aria-label="Zeitraum für Preisverlauf">
+                    <TimelineRangeButton type="button" style={priceTimelineRange === '12m' ? { background: '#ffb522', borderColor: '#ffb522', color: '#2f2100' } : undefined} onClick={() => setPriceTimelineRange('12m')}>12 Monate</TimelineRangeButton>
+                    <TimelineRangeButton type="button" style={priceTimelineRange === '3y' ? { background: '#ffb522', borderColor: '#ffb522', color: '#2f2100' } : undefined} onClick={() => setPriceTimelineRange('3y')}>3 Jahre</TimelineRangeButton>
+                    <TimelineRangeButton type="button" style={priceTimelineRange === 'all' ? { background: '#ffb522', borderColor: '#ffb522', color: '#2f2100' } : undefined} onClick={() => setPriceTimelineRange('all')}>Seit Beginn</TimelineRangeButton>
+                  </TimelineRangeToggle>
+                  {priceTimelineLoading ? (
+                    <TimelineState>Preisverlauf wird geladen…</TimelineState>
+                  ) : priceTimelineError ? (
+                    <TimelineState $error>Der Preisverlauf konnte nicht geladen werden.</TimelineState>
+                  ) : priceTimeline.length === 0 ? (
+                    <TimelineState>Für diese Region liegen noch keine historischen Preisstände vor.</TimelineState>
+                  ) : (
+                    <TimelineChartWrap>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={priceTimeline}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(47, 33, 0, 0.10)" />
+                          <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={22} />
+                          <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => Number(value).toFixed(2) + ' €'} width={52} />
+                          <Tooltip
+                            formatter={(value, name, item) => {
+                              if (value == null) return ['–', name];
+                              const count = name === 'Deutschland' ? item?.payload?.germany_shop_count : item?.payload?.shop_count;
+                              return [Number(value).toFixed(2) + ' €' + (count ? ' · ' + count + ' Eisdielen' : ''), name];
+                            }}
+                          />
+                          <Legend />
+                          <Line type="monotone" dataKey="median_eur" name={priceTimelineRegion?.name || 'Region'} stroke="#d97706" strokeWidth={3} dot={false} connectNulls={false} />
+                          {priceTimelineMeta?.comparison === 'germany' && (
+                            <Line type="monotone" dataKey="germany_median_eur" name="Deutschland" stroke="#59758c" strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls={false} />
+                          )}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </TimelineChartWrap>
+                  )}
+                </PriceAnalysisPanel>
+              )}
               <TableScrollArea>
               <Table $prioritizeFirstColumn>
                 <thead>
                   <tr>
                     <Th>Region</Th>
-                    <Th>Ø Kugelpreis (€)</Th>
-                    <Th>Anzahl Preismeldungen</Th>
+                    <Th>Typischer Preis (€)</Th>
+                    <Th>Eisdielen mit Preis</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1021,6 +1221,141 @@ const PriceOverviewMeta = styled.div`
   gap: 0.45rem;
   margin: 0 0 0.85rem;
   padding: 0 1rem;
+`;
+
+const PriceDataHint = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: -0.15rem 1rem 0.8rem;
+  color: rgba(95, 63, 0, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.4;
+`;
+
+const PriceAnalysisToggle = styled.button`
+  width: calc(100% - 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 1rem 0.85rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  border-radius: 11px;
+  background: rgba(255, 244, 217, 0.68);
+  color: #754500;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  &:hover {
+    background: rgba(255, 232, 178, 0.8);
+  }
+`;
+
+const PriceAnalysisPanel = styled.section`
+  margin: 0 1rem 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 251, 240, 0.96), rgba(255, 244, 217, 0.66));
+`;
+
+const PriceAnalysisHeader = styled.div`
+  margin-bottom: 0.9rem;
+`;
+
+const PriceAnalysisTitle = styled.h4`
+  margin: 0 0 0.25rem;
+  color: #593700;
+  font-size: 1rem;
+`;
+
+const PriceAnalysisControls = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.65rem;
+`;
+
+const TimelineRangeToggle = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+`;
+
+const TimelineRangeButton = styled.button`
+  border: 1px solid rgba(95, 63, 0, 0.16);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: #6a4908;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+`;
+
+const TimelineState = styled.div`
+  margin-top: 0.9rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #75521b;
+  font-size: 0.9rem;
+  text-align: center;
+`;
+
+const TimelineChartWrap = styled.div`
+  height: 255px;
+  margin-top: 0.9rem;
+  padding: 0.35rem 0 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+`;
+
+const PriceFilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0 1rem;
+  margin: 0 0 0.75rem;
+`;
+
+const PriceFilterLabel = styled.label`
+  display: grid;
+  gap: 0.2rem;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.75rem;
+  font-weight: 800;
+`;
+
+const PriceFilterInput = styled.input`
+  min-height: 2.25rem;
+  border: 1px solid rgba(47, 33, 0, 0.16);
+  border-radius: 9px;
+  padding: 0.35rem 0.5rem;
+  color: #2f2100;
+  background: #fff;
+`;
+
+const PriceFilterSelect = styled.select`
+  width: 100%;
+  min-height: 2.25rem;
+  border: 1px solid rgba(47, 33, 0, 0.16);
+  border-radius: 9px;
+  padding: 0.35rem 0.5rem;
+  color: #2f2100;
+  background: #fff;
+  font: inherit;
 `;
 
 const MetaPill = styled.span`
