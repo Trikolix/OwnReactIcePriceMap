@@ -40,7 +40,11 @@ function priceStatNode(int $id, string $name, array $rows): array {
 $timezone = new DateTimeZone('Europe/Berlin');
 $toInput = $_GET['to'] ?? (new DateTimeImmutable('now', $timezone))->format('Y-m-d');
 $fromInput = $_GET['from'] ?? $toInput;
-$freshnessDays = filter_var($_GET['freshness_days'] ?? 180, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 730]]) ?: 180;
+$freshnessInput = $_GET['freshness_days'] ?? 180;
+$freshnessDays = null;
+if ($freshnessInput !== 'all') {
+    $freshnessDays = filter_var($freshnessInput, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 730]]) ?: 180;
+}
 $minShops = filter_var($_GET['min_shops'] ?? 3, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 100]]) ?: 3;
 
 try {
@@ -53,17 +57,19 @@ try {
     exit;
 }
 
-$cutoff = $asOf->modify('-' . $freshnessDays . ' days');
+$cutoff = $freshnessDays === null ? null : $asOf->modify('-' . $freshnessDays . ' days');
 
 try {
     // No window function: this also runs on older MySQL/MariaDB instances.
     // The anti-join rule makes the latest (gemeldet_am, id) event authoritative.
-    $snapshotStmt = $pdo->prepare("\n        SELECT e.id AS shop_id, e.land_id, e.bundesland_id, e.landkreis_id,\n               land.name AS land_name, bundesland.name AS bundesland_name, landkreis.name AS landkreis_name,\n               p.gemeldet_am,\n               CASE WHEN w.code = 'EUR' THEN p.preis\n                    ELSE ROUND(p.preis * COALESCE(rate.kurs, 1), 2) END AS price_eur\n        FROM preise p\n        JOIN eisdielen e ON e.id = p.eisdiele_id\n        LEFT JOIN laender land ON land.id = e.land_id\n        LEFT JOIN bundeslaender bundesland ON bundesland.id = e.bundesland_id\n        LEFT JOIN landkreise landkreis ON landkreis.id = e.landkreis_id\n        LEFT JOIN waehrungen w ON w.id = p.waehrung_id\n        LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = p.waehrung_id\n          AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)\n        WHERE p.typ = 'kugel'\n          AND p.gemeldet_am <= :as_of\n          AND NOT EXISTS (\n              SELECT 1\n              FROM preise newer\n              WHERE newer.eisdiele_id = p.eisdiele_id\n                AND newer.typ = p.typ\n                AND newer.gemeldet_am <= :as_of_newer\n                AND (\n                    newer.gemeldet_am > p.gemeldet_am\n                    OR (newer.gemeldet_am = p.gemeldet_am AND newer.id > p.id)\n                )\n          )\n          AND p.gemeldet_am >= :cutoff\n          AND COALESCE(e.status, 'open') <> 'permanent_closed'\n          AND land.id IS NOT NULL\n    ");
-    $snapshotStmt->execute([
+    $freshnessCondition = $cutoff === null ? '' : ' AND p.gemeldet_am >= :cutoff';
+    $snapshotStmt = $pdo->prepare("\n        SELECT e.id AS shop_id, e.land_id, e.bundesland_id, e.landkreis_id,\n               land.name AS land_name, bundesland.name AS bundesland_name, landkreis.name AS landkreis_name,\n               p.gemeldet_am,\n               CASE WHEN w.code = 'EUR' THEN p.preis\n                    ELSE ROUND(p.preis * COALESCE(rate.kurs, 1), 2) END AS price_eur\n        FROM preise p\n        JOIN eisdielen e ON e.id = p.eisdiele_id\n        LEFT JOIN laender land ON land.id = e.land_id\n        LEFT JOIN bundeslaender bundesland ON bundesland.id = e.bundesland_id\n        LEFT JOIN landkreise landkreis ON landkreis.id = e.landkreis_id\n        LEFT JOIN waehrungen w ON w.id = p.waehrung_id\n        LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = p.waehrung_id\n          AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)\n        WHERE p.typ = 'kugel'\n          AND p.gemeldet_am <= :as_of\n          AND NOT EXISTS (\n              SELECT 1\n              FROM preise newer\n              WHERE newer.eisdiele_id = p.eisdiele_id\n                AND newer.typ = p.typ\n                AND newer.gemeldet_am <= :as_of_newer\n                AND (\n                    newer.gemeldet_am > p.gemeldet_am\n                    OR (newer.gemeldet_am = p.gemeldet_am AND newer.id > p.id)\n                )\n          )\n          {$freshnessCondition}\n          AND COALESCE(e.status, 'open') <> 'permanent_closed'\n          AND land.id IS NOT NULL\n    ");
+    $snapshotParams = [
         ':as_of' => $asOf->format('Y-m-d H:i:s'),
         ':as_of_newer' => $asOf->format('Y-m-d H:i:s'),
-        ':cutoff' => $cutoff->format('Y-m-d H:i:s'),
-    ]);
+    ];
+    if ($cutoff !== null) $snapshotParams[':cutoff'] = $cutoff->format('Y-m-d H:i:s');
+    $snapshotStmt->execute($snapshotParams);
     $snapshotRows = $snapshotStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $reportStmt = $pdo->prepare("\n        SELECT p.eisdiele_id, COUNT(*) AS report_count\n        FROM preise p\n        WHERE p.typ = 'kugel' AND p.gemeldet_am BETWEEN :from_date AND :to_date\n        GROUP BY p.eisdiele_id\n    ");
@@ -112,11 +118,17 @@ try {
     }
     usort($hierarchy, static fn(array $a, array $b): int => $a['median_eur'] <=> $b['median_eur']);
 
+    $reportedAt = array_values(array_filter(array_map(static fn(array $row): ?string => $row['gemeldet_am'] ?? null, $snapshotRows)));
+    $oldReports = array_filter($reportedAt, static fn(string $reportedAt): bool => $reportedAt < $asOf->modify('-180 days')->format('Y-m-d H:i:s'));
+
     echo json_encode([
         'meta' => [
             'from' => $from->format('Y-m-d'), 'to' => $asOf->format('Y-m-d'),
-            'as_of' => $asOf->format(DATE_ATOM), 'freshness_days' => $freshnessDays,
+            'as_of' => $asOf->format(DATE_ATOM), 'freshness_days' => $freshnessDays ?? 'all',
             'min_shops' => $minShops, 'eligible_shops' => count($snapshotRows),
+            'oldest_reported_at' => $reportedAt ? min($reportedAt) : null,
+            'latest_reported_at' => $reportedAt ? max($reportedAt) : null,
+            'shops_with_report_older_than_180_days' => count($oldReports),
             'suppressed_regions' => $suppressed,
         ],
         'hierarchy' => $hierarchy,
