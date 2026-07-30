@@ -113,6 +113,7 @@ function getOverallEpForUser(PDO $pdo, int $userId): int {
             LEFT JOIN (
                 SELECT gemeldet_von, COUNT(*) AS count
                 FROM preise
+                WHERE is_reward_eligible = 1
                 GROUP BY gemeldet_von
             ) pm ON pm.gemeldet_von = n.id
             -- Routen
@@ -219,6 +220,7 @@ function getEpBreakdownForUser(PDO $pdo, int $userId): array {
             LEFT JOIN (
                 SELECT gemeldet_von, COUNT(*) AS count
                 FROM preise
+                WHERE is_reward_eligible = 1
                 GROUP BY gemeldet_von
             ) pm ON pm.gemeldet_von = n.id
             LEFT JOIN (

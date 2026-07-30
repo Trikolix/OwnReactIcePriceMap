@@ -10,14 +10,14 @@ $sql = "SELECT e.id, e.name, e.adresse, e.latitude, e.longitude,
            (SELECT p1.preis 
             FROM preise p1 
             WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
-            ORDER BY p1.gemeldet_am DESC 
+            ORDER BY p1.gemeldet_am DESC, p1.id DESC 
             LIMIT 1) AS kugel_preis,
            
            -- Letzter gemeldeter Preis für Softeis
            (SELECT p2.preis 
             FROM preise p2 
             WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
-            ORDER BY p2.gemeldet_am DESC 
+            ORDER BY p2.gemeldet_am DESC, p2.id DESC 
             LIMIT 1) AS softeis_preis,
 
             -- Entfernung zur Suchposition
@@ -27,7 +27,6 @@ $sql = "SELECT e.id, e.name, e.adresse, e.latitude, e.longitude,
                SIN(RADIANS(:latitude)) * SIN(RADIANS(e.latitude))
            )) AS entfernung_km
     FROM eisdielen e
-    LEFT JOIN preise p ON e.id = p.eisdiele_id
     WHERE (
         6371 * ACOS(
             COS(RADIANS(:latitude)) * COS(RADIANS(e.latitude)) * 

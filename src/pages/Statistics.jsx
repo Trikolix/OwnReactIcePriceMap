@@ -6,7 +6,7 @@ import UserAvatar from '../components/UserAvatar';
 import { useUser } from '../context/UserContext';
 import Seo from '../components/Seo';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { ChevronDown, History, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, History, Info, SlidersHorizontal } from 'lucide-react';
 
 const getNumericPrice = (node) => {
   if (!node) {
@@ -77,7 +77,10 @@ function Statistics() {
   const [priceFreshnessDays, setPriceFreshnessDays] = useState('all');
   const [priceMinShops, setPriceMinShops] = useState('3');
   const [priceStatsMeta, setPriceStatsMeta] = useState(null);
+  const [showPageIntro, setShowPageIntro] = useState(false);
+  const [showPriceDataBasis, setShowPriceDataBasis] = useState(false);
   const [showPriceAnalysis, setShowPriceAnalysis] = useState(false);
+  const [showPriceAdvancedOptions, setShowPriceAdvancedOptions] = useState(false);
   const [priceTimelineRange, setPriceTimelineRange] = useState('12m');
   const [priceTimelineLandId, setPriceTimelineLandId] = useState('');
   const [priceTimelineBundeslandId, setPriceTimelineBundeslandId] = useState('');
@@ -105,6 +108,7 @@ function Statistics() {
   const [rankingArchiveKey, setRankingArchiveKey] = useState(initialRankingArchiveKey);
   const [rankingsData, setRankingsData] = useState(null);
   const [rankingsLoading, setRankingsLoading] = useState(false);
+  const [expandedRankingEntry, setExpandedRankingEntry] = useState(null);
 
   // Tab wechseln und URL aktualisieren
   const changeTab = (tab) => {
@@ -499,41 +503,72 @@ function Statistics() {
         <Container>
           <HeroCard>
             <Title>Statistiken</Title>
-            <HeroSubtitle>
+            <HeroSubtitle $expanded={showPageIntro}>
               Community-Aktivität, beliebte Sorten und regionale Preisübersichten auf einen Blick.
             </HeroSubtitle>
+            <PageInfoToggle
+              type="button"
+              onClick={() => setShowPageIntro((current) => !current)}
+              aria-expanded={showPageIntro}
+            >
+              <Info size={15} aria-hidden="true" />
+              {showPageIntro ? 'Info ausblenden' : 'Worum geht’s?'}
+              <ChevronDown size={15} aria-hidden="true" />
+            </PageInfoToggle>
           </HeroCard>
-          <TabContainer>
+          <TabContainer role="tablist" aria-label="Statistikbereiche">
             <TabButton
+              type="button"
+              role="tab"
+              id="statistics-tab-active-users"
+              aria-controls="statistics-tabpanel"
+              aria-selected={activeTab === 'activeUsers'}
+              aria-label="Aktivste Nutzer"
               $active={activeTab === 'activeUsers'}
               onClick={() => changeTab('activeUsers')}
             >
-              aktivste Nutzer
+              <TabLabel $mobile> Nutzer</TabLabel>
+              <TabLabel $desktop>aktivste Nutzer</TabLabel>
             </TabButton>
             <TabButton
+              type="button"
+              role="tab"
+              id="statistics-tab-popular-flavours"
+              aria-controls="statistics-tabpanel"
+              aria-selected={activeTab === 'mostPopularFlavours'}
+              aria-label="Beliebteste Eissorten"
               $active={activeTab === 'mostPopularFlavours'}
               onClick={() => changeTab('mostPopularFlavours')}
             >
-              beliebteste Eissorten
+              <TabLabel $mobile>Sorten</TabLabel>
+              <TabLabel $desktop>beliebteste Eissorten</TabLabel>
             </TabButton>
             <TabButton
+              type="button"
+              role="tab"
+              id="statistics-tab-price-hierarchy"
+              aria-controls="statistics-tabpanel"
+              aria-selected={activeTab === 'priceHierarchy'}
+              aria-label="Preisübersicht"
               $active={activeTab === 'priceHierarchy'}
               onClick={() => changeTab('priceHierarchy')}
             >
-              Preisübersicht
+              <TabLabel $mobile>Preise</TabLabel>
+              <TabLabel $desktop>Preisübersicht</TabLabel>
             </TabButton>
           </TabContainer>
 
-          <TabContent>
+          <TabContent
+            role="tabpanel"
+            id="statistics-tabpanel"
+            aria-labelledby={`statistics-tab-${activeTab === 'activeUsers' ? 'active-users' : activeTab === 'mostPopularFlavours' ? 'popular-flavours' : 'price-hierarchy'}`}
+          >
             {activeTab === 'priceHierarchy' && (<SectionCard>
               <PriceOverviewToolbar>
                 <div>
                   <SectionTitle style={{ textAlign: 'left', marginBottom: '0.35rem' }}>
                     Typischer Kugelpreis je Region
                   </SectionTitle>
-                  <PriceOverviewSubline>
-                    Letzte bekannte Kugelpreise der Community. Auch ältere Preisstände können enthalten sein.
-                  </PriceOverviewSubline>
                 </div>
                 <SearchContainer>
                   <SearchInput
@@ -544,25 +579,39 @@ function Statistics() {
                   />
                 </SearchContainer>
               </PriceOverviewToolbar>
-              <PriceOverviewMeta>
-                <MetaPill>{priceOverviewStats.laender} Länder</MetaPill>
-                <MetaPill>{priceOverviewStats.bundeslaender} Bundesländer</MetaPill>
-                <MetaPill>{priceOverviewStats.landkreise} Landkreise</MetaPill>
-                {searchActive && <MetaPill $accent>Filter aktiv: „{priceSearch.trim()}“</MetaPill>}
-                {priceStatsMeta?.eligible_shops !== undefined && <MetaPill>{priceStatsMeta.eligible_shops} Eisdielen mit Preis</MetaPill>}
-              </PriceOverviewMeta>
-              <PriceDataHint>
-                <History size={16} aria-hidden="true" />
-                <span>
-                  Datenstand: {formatPriceDate(priceStatsMeta?.latest_reported_at) || formatPriceDate(priceStatsMeta?.newest_reported_at) || 'letzte bekannte Meldungen'}
-                  {(formatPriceDate(priceStatsMeta?.oldest_reported_at) || formatPriceDate(priceStatsMeta?.oldest_report_date)) && (
-                    <> · ältester berücksichtigter Preis: {formatPriceDate(priceStatsMeta?.oldest_reported_at) || formatPriceDate(priceStatsMeta?.oldest_report_date)}</>
-                  )}
-                  {Number(priceStatsMeta?.shops_with_report_older_than_180_days || 0) > 0 && (
-                    <> · {priceStatsMeta.shops_with_report_older_than_180_days} Preisstände älter als 180 Tage</>
-                  )}
-                </span>
-              </PriceDataHint>
+              <PriceOverviewPrimaryMeta>
+                {priceStatsMeta?.eligible_shops !== undefined && <MetaPill $accent>{priceStatsMeta.eligible_shops} Eisdielen mit Preis</MetaPill>}
+                {searchActive && <MetaPill>Suche: „{priceSearch.trim()}“</MetaPill>}
+              </PriceOverviewPrimaryMeta>
+              <PriceDataBasisToggle
+                type="button"
+                onClick={() => setShowPriceDataBasis((current) => !current)}
+                aria-expanded={showPriceDataBasis}
+              >
+                <span><History size={15} aria-hidden="true" /> Datenbasis · Stand {formatPriceDate(priceStatsMeta?.latest_reported_at) || formatPriceDate(priceStatsMeta?.newest_reported_at) || 'unbekannt'}</span>
+                <ChevronDown size={17} aria-hidden="true" />
+              </PriceDataBasisToggle>
+              {showPriceDataBasis && (
+                <PriceDataBasisPanel>
+                  <PriceOverviewMeta>
+                    <MetaPill>{priceOverviewStats.laender} Länder</MetaPill>
+                    <MetaPill>{priceOverviewStats.bundeslaender} Bundesländer</MetaPill>
+                    <MetaPill>{priceOverviewStats.landkreise} Landkreise</MetaPill>
+                  </PriceOverviewMeta>
+                  <PriceDataHint>
+                    <Info size={16} aria-hidden="true" />
+                    <span>
+                      Letzte bekannte Kugelpreise der Community. Auch ältere Preisstände können enthalten sein.
+                      {(formatPriceDate(priceStatsMeta?.oldest_reported_at) || formatPriceDate(priceStatsMeta?.oldest_report_date)) && (
+                        <> Ältester berücksichtigter Preis: {formatPriceDate(priceStatsMeta?.oldest_reported_at) || formatPriceDate(priceStatsMeta?.oldest_report_date)}.</>
+                      )}
+                      {Number(priceStatsMeta?.shops_with_report_older_than_180_days || 0) > 0 && (
+                        <> {priceStatsMeta.shops_with_report_older_than_180_days} Preisstände sind älter als 180 Tage.</>
+                      )}
+                    </span>
+                  </PriceDataHint>
+                </PriceDataBasisPanel>
+              )}
               <PriceAnalysisToggle
                 type="button"
                 onClick={() => setShowPriceAnalysis((current) => !current)}
@@ -577,12 +626,10 @@ function Statistics() {
                   <PriceAnalysisHeader>
                     <div>
                       <PriceAnalysisTitle>Preisentwicklung im Zeitverlauf</PriceAnalysisTitle>
-                      <PriceOverviewSubline>
-                        Jeder Punkt zeigt den typischen Preis zum Monatsende – aus dem zuletzt bekannten Preis je Eisdiele.
-                      </PriceOverviewSubline>
+                      <PriceOverviewSubline>Typischer Preis zum Monatsende.</PriceOverviewSubline>
                     </div>
                   </PriceAnalysisHeader>
-                  <PriceAnalysisControls>
+                  <PriceAnalysisControls $primary>
                     <PriceFilterLabel>
                       Land
                       <PriceFilterSelect
@@ -629,28 +676,6 @@ function Statistics() {
                         </PriceFilterSelect>
                       </PriceFilterLabel>
                     )}
-                    <PriceFilterLabel>
-                      Stichtag
-                      <PriceFilterInput type="date" value={priceTo} max={today} onChange={(event) => setPriceTo(event.target.value)} />
-                    </PriceFilterLabel>
-                    <PriceFilterLabel>
-                      Aktualität
-                      <PriceFilterSelect value={priceFreshnessDays} onChange={(event) => setPriceFreshnessDays(event.target.value)}>
-                        <option value="all">Alle letzten Preise</option>
-                        <option value="90">max. 90 Tage</option>
-                        <option value="180">max. 180 Tage</option>
-                        <option value="365">max. 365 Tage</option>
-                      </PriceFilterSelect>
-                    </PriceFilterLabel>
-                    <PriceFilterLabel>
-                      Mindestbasis
-                      <PriceFilterSelect value={priceMinShops} onChange={(event) => setPriceMinShops(event.target.value)}>
-                        <option value="1">1 Eisdiele</option>
-                        <option value="3">3 Eisdielen</option>
-                        <option value="5">5 Eisdielen</option>
-                        <option value="10">10 Eisdielen</option>
-                      </PriceFilterSelect>
-                    </PriceFilterLabel>
                   </PriceAnalysisControls>
                   <TimelineRangeToggle aria-label="Zeitraum für Preisverlauf">
                     <TimelineRangeButton type="button" style={priceTimelineRange === '12m' ? { background: '#ffb522', borderColor: '#ffb522', color: '#2f2100' } : undefined} onClick={() => setPriceTimelineRange('12m')}>12 Monate</TimelineRangeButton>
@@ -686,6 +711,41 @@ function Statistics() {
                       </ResponsiveContainer>
                     </TimelineChartWrap>
                   )}
+                  <AnalysisAdvancedToggle
+                    type="button"
+                    onClick={() => setShowPriceAdvancedOptions((current) => !current)}
+                    aria-expanded={showPriceAdvancedOptions}
+                  >
+                    <span><SlidersHorizontal size={15} aria-hidden="true" /> Erweiterte Optionen</span>
+                    <small>Stand {formatPriceDate(priceTo)} · {priceFreshnessDays === 'all' ? 'alle Preise' : `max. ${priceFreshnessDays} Tage`} · {priceMinShops} Shops</small>
+                    <ChevronDown size={17} aria-hidden="true" />
+                  </AnalysisAdvancedToggle>
+                  {showPriceAdvancedOptions && (
+                    <PriceAnalysisControls $advanced>
+                      <PriceFilterLabel>
+                        Stichtag
+                        <PriceFilterInput type="date" value={priceTo} max={today} onChange={(event) => setPriceTo(event.target.value)} />
+                      </PriceFilterLabel>
+                      <PriceFilterLabel>
+                        Aktualität
+                        <PriceFilterSelect value={priceFreshnessDays} onChange={(event) => setPriceFreshnessDays(event.target.value)}>
+                          <option value="all">Alle letzten Preise</option>
+                          <option value="90">max. 90 Tage</option>
+                          <option value="180">max. 180 Tage</option>
+                          <option value="365">max. 365 Tage</option>
+                        </PriceFilterSelect>
+                      </PriceFilterLabel>
+                      <PriceFilterLabel>
+                        Mindestbasis
+                        <PriceFilterSelect value={priceMinShops} onChange={(event) => setPriceMinShops(event.target.value)}>
+                          <option value="1">1 Eisdiele</option>
+                          <option value="3">3 Eisdielen</option>
+                          <option value="5">5 Eisdielen</option>
+                          <option value="10">10 Eisdielen</option>
+                        </PriceFilterSelect>
+                      </PriceFilterLabel>
+                    </PriceAnalysisControls>
+                  )}
                 </PriceAnalysisPanel>
               )}
               <TableScrollArea>
@@ -715,7 +775,17 @@ function Statistics() {
                           <PriceTableRow
                             level="land"
                             clickable={landHasChildren}
+                            role={landHasChildren ? 'button' : undefined}
+                            tabIndex={landHasChildren ? 0 : undefined}
+                            aria-expanded={landHasChildren ? landExpanded : undefined}
                             onClick={landHasChildren ? () => toggleNode(landKey) : undefined}
+                            onKeyDown={landHasChildren ? (event) => {
+                              if (event.target.closest('a')) return;
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                toggleNode(landKey);
+                              }
+                            } : undefined}
                           >
                             <PriceNameCell>
                               <NameWrapper>
@@ -750,12 +820,22 @@ function Statistics() {
                                 <PriceTableRow
                                   level="bundesland"
                                   clickable={bundeslandHasChildren}
+                                  role={bundeslandHasChildren ? 'button' : undefined}
+                                  tabIndex={bundeslandHasChildren ? 0 : undefined}
+                                  aria-expanded={bundeslandHasChildren ? bundeslandExpanded : undefined}
                                   onClick={(e) => {
                                     if (bundeslandHasChildren) {
                                       e.stopPropagation();
                                       toggleNode(bundeslandKey);
                                     }
                                   }}
+                                  onKeyDown={bundeslandHasChildren ? (event) => {
+                                    if (event.target.closest('a')) return;
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                      event.preventDefault();
+                                      toggleNode(bundeslandKey);
+                                    }
+                                  } : undefined}
                                 >
                                   <PriceNameCell>
                                     <NameWrapper>
@@ -821,54 +901,95 @@ function Statistics() {
 
             {activeTab === 'mostPopularFlavours' && (<SectionCard>
               <SectionTitle>Beliebteste Sorten</SectionTitle>
-              <TableScrollArea>
-              <Table $compactColumns>
-                <thead>
-                  <tr>
-                    <Th>Geschmacksrichtung</Th>
-                    <Th>Typ</Th>
-                    <Th>Anzahl</Th>
-                    <Th>Ø Bewertung</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.mostEatenFlavours.map((entry, idx) => {
+              <MobileContent>
+                <MobileCardList>
+                  {data.mostEatenFlavours.map((entry) => {
                     const key = `${entry.sortenname}__${entry.typ}`;
                     const isExpanded = expandedFlavour === key;
                     const details = flavourDetails[key] || [];
-
                     return (
-                      <React.Fragment key={key}>
-                        <tr onClick={() => loadFlavourDetails(entry.sortenname, entry.typ)} style={{ cursor: 'pointer' }}>
-                          <Td>{entry.sortenname}</Td>
-                          <Td>{entry.typ}</Td>
-                          <Td>{entry.anzahl}</Td>
-                          <Td>{parseFloat(entry.bewertung).toFixed(2)}</Td>
-                        </tr>
-                        <tr>
-                          <Td colSpan="4" style={{ padding: 0, border: 'none' }}>
-                            <ExpandContainer expanded={isExpanded}>
-                              {details.length > 0 ? (
-                                <DetailList>
-                                  {details.map((eisdiele) => (
-                                    <li key={eisdiele.eisdiele_id}>
-                                      <strong><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.eisdiele_name}</CleanLink></strong>: Ø {parseFloat(eisdiele.durchschnittsbewertung).toFixed(2)}
-                                    </li>
-                                  ))}
-                                </DetailList>
-                              ) : (
-                                <EmptyText>Keine Daten verfügbar</EmptyText>
-                              )}
-                            </ExpandContainer>
-                          </Td>
-                        </tr>
-                      </React.Fragment>
+                      <MobileFlavourCard key={key}>
+                        <FlavourCardToggle
+                          type="button"
+                          onClick={() => loadFlavourDetails(entry.sortenname, entry.typ)}
+                          aria-expanded={isExpanded}
+                        >
+                          <span>
+                            <strong>{entry.sortenname}</strong>
+                            <small>{entry.typ}</small>
+                          </span>
+                          <FlavourCardValues>
+                            <span>{entry.anzahl}×</span>
+                            <strong>Ø {parseFloat(entry.bewertung).toFixed(2)}</strong>
+                            <ChevronDown size={17} aria-hidden="true" />
+                          </FlavourCardValues>
+                        </FlavourCardToggle>
+                        <ExpandContainer expanded={isExpanded}>
+                          {details.length > 0 ? (
+                            <DetailList>
+                              {details.map((eisdiele) => (
+                                <li key={eisdiele.eisdiele_id}>
+                                  <strong><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.eisdiele_name}</CleanLink></strong>: Ø {parseFloat(eisdiele.durchschnittsbewertung).toFixed(2)}
+                                </li>
+                              ))}
+                            </DetailList>
+                          ) : (
+                            <EmptyText>Keine Daten verfügbar</EmptyText>
+                          )}
+                        </ExpandContainer>
+                      </MobileFlavourCard>
                     );
                   })}
-                </tbody>
-
-              </Table>
-              </TableScrollArea>
+                </MobileCardList>
+              </MobileContent>
+              <DesktopContent>
+                <TableScrollArea>
+                  <Table $compactColumns>
+                    <thead>
+                      <tr>
+                        <Th>Geschmacksrichtung</Th>
+                        <Th>Typ</Th>
+                        <Th>Anzahl</Th>
+                        <Th>Ø Bewertung</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.mostEatenFlavours.map((entry) => {
+                        const key = `${entry.sortenname}__${entry.typ}`;
+                        const isExpanded = expandedFlavour === key;
+                        const details = flavourDetails[key] || [];
+                        return (
+                          <React.Fragment key={key}>
+                            <tr onClick={() => loadFlavourDetails(entry.sortenname, entry.typ)} style={{ cursor: 'pointer' }}>
+                              <Td>{entry.sortenname}</Td>
+                              <Td>{entry.typ}</Td>
+                              <Td>{entry.anzahl}</Td>
+                              <Td>{parseFloat(entry.bewertung).toFixed(2)}</Td>
+                            </tr>
+                            <tr>
+                              <Td colSpan="4" style={{ padding: 0, border: 'none' }}>
+                                <ExpandContainer expanded={isExpanded}>
+                                  {details.length > 0 ? (
+                                    <DetailList>
+                                      {details.map((eisdiele) => (
+                                        <li key={eisdiele.eisdiele_id}>
+                                          <strong><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.eisdiele_name}</CleanLink></strong>: Ø {parseFloat(eisdiele.durchschnittsbewertung).toFixed(2)}
+                                        </li>
+                                      ))}
+                                    </DetailList>
+                                  ) : (
+                                    <EmptyText>Keine Daten verfügbar</EmptyText>
+                                  )}
+                                </ExpandContainer>
+                              </Td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                </TableScrollArea>
+              </DesktopContent>
             </SectionCard>
             )}
 
@@ -934,48 +1055,80 @@ function Statistics() {
                 {rankingPeriod !== 'overall' && rankingsLoading ? (
                   <EmptyText>Lade Rankings…</EmptyText>
                 ) : rankingPeriod === 'overall' ? (
-                  <TableScrollArea>
-                    <Table $stickyFirstColumn>
-                      <thead>
-                        <tr>
-                          <Th>Nutzer</Th>
-                          <Th>EP Gesamt</Th>
-                          <Th>Checkins</Th>
-                          <Th>Bewertungen</Th>
-                          <Th>Preismeldungen</Th>
-                          <Th>Routen</Th>
-                          <Th>EP Eisdielen</Th>
-                          <Th>EP geworbene Nutzer</Th>
-                          <Th>EP Awards</Th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.usersByLevel.map((entry) => (
-                          <tr key={entry.nutzer_id}>
-                            <Td>
-                              <UserInfo>
-                                <UserAvatar
-                                  size={34}
-                                  userId={entry.nutzer_id}
-                                  name={entry.username}
-                                  avatarUrl={entry.avatar_url}
-                                />
-                                <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
-                              </UserInfo>
-                            </Td>
-                            <Td><strong>{entry.ep_gesamt}</strong></Td>
-                            <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
-                            <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
-                            <Td>{entry.anzahl_preismeldungen} ({entry.ep_preismeldungen}EP)</Td>
-                            <Td>{entry.anzahl_routen} ({entry.ep_routen}EP)</Td>
-                            <Td>{entry.ep_eisdielen} EP</Td>
-                            <Td>{entry.ep_geworbene_nutzer} EP</Td>
-                            <Td>{entry.ep_awards} EP</Td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </TableScrollArea>
+                  <>
+                    <MobileContent>
+                      <MobileCardList>
+                        {data.usersByLevel.map((entry, index) => {
+                          const key = `overall-${entry.nutzer_id}`;
+                          const isExpanded = expandedRankingEntry === key;
+                          return (
+                            <MobileRankingCard key={key} $highlighted={Number(userId) === Number(entry.nutzer_id)}>
+                              <RankingCardTop>
+                                <RankingPosition>#{index + 1}</RankingPosition>
+                                <UserInfo>
+                                  <UserAvatar size={38} userId={entry.nutzer_id} name={entry.username} avatarUrl={entry.avatar_url} />
+                                  <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
+                                </UserInfo>
+                                <RankingPoints><strong>{entry.ep_gesamt}</strong><small>EP</small></RankingPoints>
+                              </RankingCardTop>
+                              <RankingCardDetailsToggle type="button" onClick={() => setExpandedRankingEntry(isExpanded ? null : key)} aria-expanded={isExpanded}>
+                                Details <ChevronDown size={16} aria-hidden="true" />
+                              </RankingCardDetailsToggle>
+                              {isExpanded && (
+                                <RankingDetailsGrid>
+                                  <span>Check-ins <strong>{entry.anzahl_checkins}</strong></span>
+                                  <span>Bewertungen <strong>{entry.anzahl_bewertungen}</strong></span>
+                                  <span>Preismeldungen <strong>{entry.anzahl_preismeldungen}</strong></span>
+                                  <span>Routen <strong>{entry.anzahl_routen}</strong></span>
+                                  <span>Eisdielen-EP <strong>{entry.ep_eisdielen}</strong></span>
+                                  <span>Awards-EP <strong>{entry.ep_awards}</strong></span>
+                                </RankingDetailsGrid>
+                              )}
+                            </MobileRankingCard>
+                          );
+                        })}
+                      </MobileCardList>
+                    </MobileContent>
+                    <DesktopContent>
+                      <TableScrollArea>
+                        <Table $stickyFirstColumn>
+                          <thead>
+                            <tr>
+                              <Th>Nutzer</Th>
+                              <Th>EP Gesamt</Th>
+                              <Th>Checkins</Th>
+                              <Th>Bewertungen</Th>
+                              <Th>Preismeldungen</Th>
+                              <Th>Routen</Th>
+                              <Th>EP Eisdielen</Th>
+                              <Th>EP geworbene Nutzer</Th>
+                              <Th>EP Awards</Th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.usersByLevel.map((entry) => (
+                              <tr key={entry.nutzer_id}>
+                                <Td>
+                                  <UserInfo>
+                                    <UserAvatar size={34} userId={entry.nutzer_id} name={entry.username} avatarUrl={entry.avatar_url} />
+                                    <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
+                                  </UserInfo>
+                                </Td>
+                                <Td><strong>{entry.ep_gesamt}</strong></Td>
+                                <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
+                                <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
+                                <Td>{entry.anzahl_preismeldungen} ({entry.ep_preismeldungen}EP)</Td>
+                                <Td>{entry.anzahl_routen} ({entry.ep_routen}EP)</Td>
+                                <Td>{entry.ep_eisdielen} EP</Td>
+                                <Td>{entry.ep_geworbene_nutzer} EP</Td>
+                                <Td>{entry.ep_awards} EP</Td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      </TableScrollArea>
+                    </DesktopContent>
+                  </>
                 ) : (
                   <>
                     {rankingsData?.current_user && (
@@ -999,71 +1152,83 @@ function Statistics() {
                     )}
 
                     {hasRankingEntries ? (
-                      <TableScrollArea>
-                        <Table $stickyFirstColumn>
-                          <thead>
-                            <tr>
-                              <Th>Rang</Th>
-                              <Th>Nutzer</Th>
-                              <Th>EP</Th>
-                              <Th>Check-ins</Th>
-                              <Th>Bewertungen</Th>
-                              <Th>Preise</Th>
-                              <Th>Routen</Th>
-                              <Th>Eisdielen</Th>
-                              <Th>Awards</Th>
-                              <Th>Einladungen</Th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(rankingsData?.leaderboard || []).map((entry) => (
-                              <RankingTableRow key={`period-${entry.user_id}`} $highlighted={Number(userId) === Number(entry.user_id)}>
-                                <Td><strong>#{entry.rank}</strong></Td>
-                                <Td>
-                                  <UserInfo>
-                                    <UserAvatar
-                                      size={34}
-                                      userId={entry.user_id}
-                                      name={entry.username}
-                                      avatarUrl={entry.avatar_url}
-                                    />
-                                    <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
-                                  </UserInfo>
-                                </Td>
-                                <Td><strong>{entry.total_ep}</strong></Td>
-                                <Td>
-                                  {(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}
-                                  <CellSubline>{entry.points.checkins || 0} EP</CellSubline>
-                                </Td>
-                                <Td>
-                                  {entry.counts.reviews || 0}
-                                  <CellSubline>{entry.points.reviews || 0} EP</CellSubline>
-                                </Td>
-                                <Td>
-                                  {entry.counts.price_reports || 0}
-                                  <CellSubline>{entry.points.price_reports || 0} EP</CellSubline>
-                                </Td>
-                                <Td>
-                                  {entry.counts.routes || 0}
-                                  <CellSubline>{entry.points.routes || 0} EP</CellSubline>
-                                </Td>
-                                <Td>
-                                  {entry.counts.shops || 0}
-                                  <CellSubline>{entry.points.shops || 0} EP</CellSubline>
-                                </Td>
-                                <Td>
-                                  {entry.points.awards || 0}
-                                  <CellSubline>{entry.counts.awards_ep || 0} EP</CellSubline>
-                                </Td>
-                                <Td>
-                                  {entry.points.invites || 0}
-                                  <CellSubline>{entry.counts.invites_ep || 0} EP</CellSubline>
-                                </Td>
-                              </RankingTableRow>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </TableScrollArea>
+                      <>
+                        <MobileContent>
+                          <MobileCardList>
+                            {(rankingsData?.leaderboard || []).map((entry) => {
+                              const key = `period-${entry.user_id}`;
+                              const isExpanded = expandedRankingEntry === key;
+                              const checkins = (entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0);
+                              return (
+                                <MobileRankingCard key={key} $highlighted={Number(userId) === Number(entry.user_id)}>
+                                  <RankingCardTop>
+                                    <RankingPosition>#{entry.rank}</RankingPosition>
+                                    <UserInfo>
+                                      <UserAvatar size={38} userId={entry.user_id} name={entry.username} avatarUrl={entry.avatar_url} />
+                                      <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
+                                    </UserInfo>
+                                    <RankingPoints><strong>{entry.total_ep}</strong><small>EP</small></RankingPoints>
+                                  </RankingCardTop>
+                                  <RankingCardDetailsToggle type="button" onClick={() => setExpandedRankingEntry(isExpanded ? null : key)} aria-expanded={isExpanded}>
+                                    Details <ChevronDown size={16} aria-hidden="true" />
+                                  </RankingCardDetailsToggle>
+                                  {isExpanded && (
+                                    <RankingDetailsGrid>
+                                      <span>Check-ins <strong>{checkins}</strong><small>{entry.points.checkins || 0} EP</small></span>
+                                      <span>Bewertungen <strong>{entry.counts.reviews || 0}</strong><small>{entry.points.reviews || 0} EP</small></span>
+                                      <span>Preise <strong>{entry.counts.price_reports || 0}</strong><small>{entry.points.price_reports || 0} EP</small></span>
+                                      <span>Routen <strong>{entry.counts.routes || 0}</strong><small>{entry.points.routes || 0} EP</small></span>
+                                      <span>Eisdielen <strong>{entry.counts.shops || 0}</strong><small>{entry.points.shops || 0} EP</small></span>
+                                      <span>Awards <strong>{entry.counts.awards_ep || 0}</strong><small>{entry.points.awards || 0} EP</small></span>
+                                    </RankingDetailsGrid>
+                                  )}
+                                </MobileRankingCard>
+                              );
+                            })}
+                          </MobileCardList>
+                        </MobileContent>
+                        <DesktopContent>
+                          <TableScrollArea>
+                            <Table $stickyFirstColumn>
+                              <thead>
+                                <tr>
+                                  <Th>Rang</Th>
+                                  <Th>Nutzer</Th>
+                                  <Th>EP</Th>
+                                  <Th>Check-ins</Th>
+                                  <Th>Bewertungen</Th>
+                                  <Th>Preise</Th>
+                                  <Th>Routen</Th>
+                                  <Th>Eisdielen</Th>
+                                  <Th>Awards</Th>
+                                  <Th>Einladungen</Th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(rankingsData?.leaderboard || []).map((entry) => (
+                                  <RankingTableRow key={`period-${entry.user_id}`} $highlighted={Number(userId) === Number(entry.user_id)}>
+                                    <Td><strong>#{entry.rank}</strong></Td>
+                                    <Td>
+                                      <UserInfo>
+                                        <UserAvatar size={34} userId={entry.user_id} name={entry.username} avatarUrl={entry.avatar_url} />
+                                        <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
+                                      </UserInfo>
+                                    </Td>
+                                    <Td><strong>{entry.total_ep}</strong></Td>
+                                    <Td>{(entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0)}<CellSubline>{entry.points.checkins || 0} EP</CellSubline></Td>
+                                    <Td>{entry.counts.reviews || 0}<CellSubline>{entry.points.reviews || 0} EP</CellSubline></Td>
+                                    <Td>{entry.counts.price_reports || 0}<CellSubline>{entry.points.price_reports || 0} EP</CellSubline></Td>
+                                    <Td>{entry.counts.routes || 0}<CellSubline>{entry.points.routes || 0} EP</CellSubline></Td>
+                                    <Td>{entry.counts.shops || 0}<CellSubline>{entry.points.shops || 0} EP</CellSubline></Td>
+                                    <Td>{entry.points.awards || 0}<CellSubline>{entry.counts.awards_ep || 0} EP</CellSubline></Td>
+                                    <Td>{entry.points.invites || 0}<CellSubline>{entry.counts.invites_ep || 0} EP</CellSubline></Td>
+                                  </RankingTableRow>
+                                ))}
+                              </tbody>
+                            </Table>
+                          </TableScrollArea>
+                        </DesktopContent>
+                      </>
                     ) : (
                       <EmptyRankingNotice>{emptyRankingMessage}</EmptyRankingNotice>
                     )}
@@ -1107,6 +1272,11 @@ const HeroCard = styled.div`
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem 1rem 0.9rem;
   margin-bottom: 1rem;
+
+  @media (max-width: 700px) {
+    padding: 0.75rem 0.9rem;
+    margin-bottom: 0.65rem;
+  }
 `;
 
 const HeroSubtitle = styled.p`
@@ -1114,6 +1284,32 @@ const HeroSubtitle = styled.p`
   text-align: center;
   color: rgba(47, 33, 0, 0.68);
   font-size: 0.95rem;
+
+  @media (max-width: 700px) {
+    display: ${({ $expanded }) => ($expanded ? 'block' : 'none')};
+    margin-top: 0.55rem;
+    font-size: 0.86rem;
+  }
+`;
+
+const PageInfoToggle = styled.button`
+  display: none;
+
+  @media (max-width: 700px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 100%;
+    min-height: 32px;
+    margin-top: 0.2rem;
+    border: 0;
+    background: transparent;
+    color: #7a560e;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
 `;
 
 const SectionHeaderRow = styled.div`
@@ -1123,6 +1319,16 @@ const SectionHeaderRow = styled.div`
   align-items: center;
   padding: 0 1rem 0.9rem;
   flex-wrap: wrap;
+
+  @media (max-width: 700px) {
+    align-items: stretch;
+    padding: 0 0.85rem 0.75rem;
+
+    h3 {
+      width: 100%;
+      text-align: left;
+    }
+  }
 `;
 
 const HeaderControls = styled.div`
@@ -1130,6 +1336,12 @@ const HeaderControls = styled.div`
   align-items: center;
   gap: 0.65rem;
   flex-wrap: wrap;
+
+  @media (max-width: 700px) {
+    width: 100%;
+    display: grid;
+    gap: 0.5rem;
+  }
 `;
 
 const PeriodToggle = styled.div`
@@ -1137,6 +1349,11 @@ const PeriodToggle = styled.div`
   background: rgba(47, 33, 0, 0.05);
   border-radius: 999px;
   padding: 4px;
+
+  @media (max-width: 700px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 const ArchiveSelect = styled.select`
@@ -1147,6 +1364,11 @@ const ArchiveSelect = styled.select`
   padding: 0.5rem 0.75rem;
   font-weight: 600;
   min-width: 180px;
+
+  @media (max-width: 700px) {
+    width: 100%;
+    min-height: 44px;
+  }
 `;
 
 const ToggleButton = styled.button`
@@ -1157,6 +1379,11 @@ const ToggleButton = styled.button`
   color: ${({ $active }) => ($active ? '#2f2100' : '#6b5327')};
   font-weight: 800;
   cursor: pointer;
+
+  @media (max-width: 700px) {
+    min-height: 36px;
+    padding: 0.45rem 0.4rem;
+  }
 `;
 
 const RankingHeroCard = styled.div`
@@ -1165,6 +1392,11 @@ const RankingHeroCard = styled.div`
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(255,181,34,0.16), rgba(255,122,24,0.10));
   border: 1px solid rgba(255, 181, 34, 0.25);
+
+  @media (max-width: 700px) {
+    margin: 0 0.75rem 0.75rem;
+    padding: 0.8rem;
+  }
 `;
 
 const RankingHeroMain = styled.div`
@@ -1206,6 +1438,12 @@ const RankingDisclaimer = styled.div`
   color: #8a4b04;
   font-size: 0.92rem;
   line-height: 1.45;
+
+  @media (max-width: 700px) {
+    margin: 0 0.75rem 0.75rem;
+    padding: 0.75rem 0.8rem;
+    font-size: 0.82rem;
+  }
 `;
 
 const RankingHeroMeta = styled.div`
@@ -1229,6 +1467,11 @@ const SectionCard = styled.div`
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem 0rem 0rem 0rem;
   min-width: 0;
+
+  @media (max-width: 700px) {
+    border-radius: 14px;
+    padding-top: 0.8rem;
+  }
 `;
 
 const SectionTitle = styled.h3`
@@ -1260,19 +1503,64 @@ const PriceOverviewSubline = styled.p`
   text-align: left;
 `;
 
+const PriceOverviewPrimaryMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0.85rem 0.55rem;
+`;
+
+const PriceDataBasisToggle = styled.button`
+  width: calc(100% - 2rem);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin: 0 1rem 0.65rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-top: 1px solid rgba(47, 33, 0, 0.08);
+  background: transparent;
+  color: #765116;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.42);
+    outline-offset: 2px;
+  }
+`;
+
+const PriceDataBasisPanel = styled.div`
+  margin: -0.25rem 1rem 0.75rem;
+  padding: 0.7rem;
+  border-radius: 10px;
+  background: rgba(255, 248, 230, 0.68);
+`;
+
 const PriceOverviewMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin: 0 0 0.85rem;
-  padding: 0 1rem;
+  margin: 0 0 0.55rem;
 `;
 
 const PriceDataHint = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 0.45rem;
-  margin: -0.15rem 1rem 0.8rem;
+  margin: 0;
   color: rgba(95, 63, 0, 0.72);
   font-size: 0.78rem;
   line-height: 1.4;
@@ -1294,6 +1582,7 @@ const PriceAnalysisToggle = styled.button`
   font: inherit;
   font-size: 0.9rem;
   font-weight: 800;
+  min-height: 44px;
 
   span {
     display: inline-flex;
@@ -1328,6 +1617,12 @@ const PriceAnalysisControls = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.65rem;
+
+  ${({ $advanced }) => $advanced && `
+    margin-top: 0.65rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid rgba(217, 119, 6, 0.16);
+  `}
 `;
 
 const TimelineRangeToggle = styled.div`
@@ -1347,6 +1642,7 @@ const TimelineRangeButton = styled.button`
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
+  min-height: 36px;
 `;
 
 const TimelineState = styled.div`
@@ -1367,6 +1663,44 @@ const TimelineChartWrap = styled.div`
   background: rgba(255, 255, 255, 0.62);
 `;
 
+const AnalysisAdvancedToggle = styled.button`
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-top: 1px solid rgba(217, 119, 6, 0.16);
+  background: transparent;
+  color: #754500;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  small {
+    color: rgba(95, 63, 0, 0.68);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.42);
+    outline-offset: 2px;
+  }
+`;
+
 const PriceFilterRow = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -1384,7 +1718,7 @@ const PriceFilterLabel = styled.label`
 `;
 
 const PriceFilterInput = styled.input`
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   border: 1px solid rgba(47, 33, 0, 0.16);
   border-radius: 9px;
   padding: 0.35rem 0.5rem;
@@ -1394,7 +1728,7 @@ const PriceFilterInput = styled.input`
 
 const PriceFilterSelect = styled.select`
   width: 100%;
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   border: 1px solid rgba(47, 33, 0, 0.16);
   border-radius: 9px;
   padding: 0.35rem 0.5rem;
@@ -1626,6 +1960,15 @@ const TabContainer = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
+
+  @media (max-width: 700px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.2rem;
+    margin-bottom: 0.65rem;
+    padding: 0.25rem;
+    border-radius: 12px;
+  }
 `;
 
 const TabButton = styled.button`
@@ -1645,6 +1988,25 @@ const TabButton = styled.button`
   &:hover {
     background-color: ${(props) => (props.$active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
   }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.48);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 700px) {
+    min-height: 42px;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.87rem;
+  }
+`;
+
+const TabLabel = styled.span`
+  display: ${({ $mobile }) => ($mobile ? 'none' : 'inline')};
+
+  @media (max-width: 700px) {
+    display: ${({ $mobile }) => ($mobile ? 'inline' : 'none')};
+  }
 `;
 
 
@@ -1655,6 +2017,88 @@ const TabContent = styled.div`
   min-width: 0;
 `;
 
+const MobileContent = styled.div`
+  display: none;
+
+  @media (max-width: 700px) {
+    display: block;
+  }
+`;
+
+const DesktopContent = styled.div`
+  display: block;
+
+  @media (max-width: 700px) {
+    display: none;
+  }
+`;
+
+const MobileCardList = styled.div`
+  display: grid;
+  gap: 0.55rem;
+  padding: 0 0.75rem 0.75rem;
+`;
+
+const MobileFlavourCard = styled.article`
+  overflow: hidden;
+  border: 1px solid rgba(47, 33, 0, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.76);
+`;
+
+const FlavourCardToggle = styled.button`
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.65rem 0.7rem;
+  border: 0;
+  background: transparent;
+  color: #2f2100;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  > span:first-child {
+    display: grid;
+    gap: 0.08rem;
+    min-width: 0;
+  }
+
+  strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: rgba(95, 63, 0, 0.68);
+    font-size: 0.75rem;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.52);
+    outline-offset: -3px;
+  }
+`;
+
+const FlavourCardValues = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  color: #704600;
+  font-size: 0.78rem;
+
+  strong {
+    padding: 0.22rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(255, 181, 34, 0.14);
+  }
+`;
+
 
 
 
@@ -1663,6 +2107,95 @@ const UserInfo = styled.div`
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+`;
+
+const MobileRankingCard = styled.article`
+  border: 1px solid ${({ $highlighted }) => ($highlighted ? 'rgba(255, 181, 34, 0.45)' : 'rgba(47, 33, 0, 0.09)')};
+  border-radius: 12px;
+  background: ${({ $highlighted }) => ($highlighted ? 'rgba(255, 244, 217, 0.66)' : 'rgba(255, 255, 255, 0.76)')};
+  overflow: hidden;
+`;
+
+const RankingCardTop = styled.div`
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.7rem 0.35rem;
+`;
+
+const RankingPosition = styled.strong`
+  min-width: 2.2rem;
+  color: #754500;
+  font-size: 1rem;
+`;
+
+const RankingPoints = styled.span`
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+  color: #754500;
+
+  strong {
+    font-size: 1.05rem;
+  }
+
+  small {
+    margin-top: 0.12rem;
+    color: rgba(95, 63, 0, 0.66);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+`;
+
+const RankingCardDetailsToggle = styled.button`
+  width: calc(100% - 1.4rem);
+  min-height: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0.7rem;
+  padding: 0.2rem 0;
+  border: 0;
+  border-top: 1px solid rgba(47, 33, 0, 0.08);
+  background: transparent;
+  color: #795817;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.5);
+    outline-offset: 2px;
+  }
+`;
+
+const RankingDetailsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0.55rem 0.7rem 0.7rem;
+  background: rgba(255, 248, 230, 0.62);
+
+  span {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.25rem;
+    color: rgba(47, 33, 0, 0.72);
+    font-size: 0.72rem;
+  }
+
+  strong {
+    color: #2f2100;
+  }
+
+  small {
+    grid-column: 1 / -1;
+    color: #8a600c;
+    font-size: 0.68rem;
+  }
 `;
 
 const UserLink = styled(Link)`
@@ -1727,6 +2260,11 @@ const SearchInput = styled.input`
     border-color: #ffb522;
     box-shadow: 0 0 0 2px rgba(255, 181, 34, 0.2);
   }
+
+  @media (max-width: 700px) {
+    min-height: 44px;
+    max-width: none;
+  }
 `;
 
 const PriceTableRow = styled.tr`
@@ -1741,6 +2279,11 @@ const PriceTableRow = styled.tr`
 
   &:hover td {
     background: ${(props) => (props.clickable ? 'rgba(255, 181, 34, 0.10)' : 'transparent')};
+  }
+
+  &:focus-visible td {
+    outline: 2px solid #ffb522;
+    outline-offset: -2px;
   }
 
   td {
@@ -1762,7 +2305,7 @@ const NameWrapper = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
-  min-height: 28px;
+  min-height: 36px;
   min-width: 0;
 `;
 
@@ -1797,8 +2340,8 @@ const Indent = styled.span`
 const ExpandIndicator = styled.span`
   display: inline-grid;
   place-items: center;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.65rem;
+  height: 1.65rem;
   text-align: center;
   font-weight: bold;
   border-radius: 999px;
@@ -1810,7 +2353,7 @@ const ExpandIndicator = styled.span`
 
 const LeafSpacer = styled.span`
   display: inline-block;
-  width: 1.05rem;
+  width: 1.65rem;
 `;
 
 const PriceValueCell = styled(Td)`

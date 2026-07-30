@@ -66,22 +66,29 @@ $eisdiele['is_open_now'] = is_shop_open($openingRows, null, $eisdiele['status'] 
 $eisdiele['open_reference'] = $openReferenceIso;
 $eisdiele['is_open_reference'] = $openMoment instanceof \DateTimeImmutable ? is_shop_open($openingRows, $openMoment, $eisdiele['status'] ?? null) : null;
 
-// 2. Current prices (Kugeleis)
+// 2. Current prices (Kugeleis). Price reports are append-only; the newest
+// `(gemeldet_am, id)` pair is the current observation.
 $stmt = $pdo->prepare("
     SELECT 
         'kugel' AS typ,
         p.preis,
-        MAX(p.gemeldet_am) as letztes_update,
-        MAX(p.beschreibung) AS beschreibung,
-        COUNT(*) as bestaetigungen,
+        p.gemeldet_am AS letztes_update,
+        p.beschreibung,
+        (
+            SELECT COUNT(*)
+            FROM preise bestaetigung
+            WHERE bestaetigung.eisdiele_id = p.eisdiele_id
+              AND bestaetigung.typ = p.typ
+              AND bestaetigung.preis = p.preis
+              AND bestaetigung.waehrung_id = p.waehrung_id
+        ) AS bestaetigungen,
         w.id AS waehrung_id,
         w.code AS waehrung_code,
         w.symbol AS waehrung_symbol
     FROM preise p
     LEFT JOIN waehrungen w ON p.waehrung_id = w.id
     WHERE p.eisdiele_id = ? AND p.typ = 'kugel'
-    GROUP BY p.preis, p.waehrung_id, w.id, w.code, w.symbol
-    ORDER BY letztes_update DESC
+    ORDER BY p.gemeldet_am DESC, p.id DESC
     LIMIT 1
 ");
 $stmt->execute([$eisdiele_id]);
@@ -92,17 +99,23 @@ $stmt = $pdo->prepare("
     SELECT
         'softeis' AS typ,
         p.preis,
-        MAX(p.gemeldet_am) AS letztes_update,
-        MAX(p.beschreibung) AS beschreibung,
-        COUNT(*) AS bestaetigungen,
+        p.gemeldet_am AS letztes_update,
+        p.beschreibung,
+        (
+            SELECT COUNT(*)
+            FROM preise bestaetigung
+            WHERE bestaetigung.eisdiele_id = p.eisdiele_id
+              AND bestaetigung.typ = p.typ
+              AND bestaetigung.preis = p.preis
+              AND bestaetigung.waehrung_id = p.waehrung_id
+        ) AS bestaetigungen,
         w.id AS waehrung_id,
         w.code AS waehrung_code,
         w.symbol AS waehrung_symbol
     FROM preise p
     LEFT JOIN waehrungen w ON p.waehrung_id = w.id
     WHERE p.eisdiele_id = ? AND p.typ = 'softeis'
-    GROUP BY p.preis, p.waehrung_id, w.id, w.code, w.symbol
-    ORDER BY letztes_update DESC
+    ORDER BY p.gemeldet_am DESC, p.id DESC
     LIMIT 1
 ");
 $stmt->execute([$eisdiele_id]);
@@ -120,17 +133,17 @@ if (!empty($nutzer_id)) {
     $letzte_preismeldung_user = $stmt->fetchColumn() ?: null;
 }
 
-// 5. Price history for chart
+// 5. Complete append-only price history for chart.
 $stmt = $pdo->prepare("
     SELECT 
         typ,
         preis,
-        COALESCE(first_time_reported, gemeldet_am) AS datum,
+        gemeldet_am AS datum,
         w.symbol AS waehrung_symbol
     FROM preise p
     LEFT JOIN waehrungen w ON p.waehrung_id = w.id
     WHERE p.eisdiele_id = ?
-    ORDER BY datum ASC
+    ORDER BY p.gemeldet_am ASC, p.id ASC
 ");
 $stmt->execute([$eisdiele_id]);
 $preis_historie = $stmt->fetchAll(PDO::FETCH_ASSOC);

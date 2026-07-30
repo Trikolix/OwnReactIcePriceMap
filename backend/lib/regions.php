@@ -129,28 +129,26 @@ function getRegionTopShops(PDO $pdo, string $level, int $id): array
          LEFT JOIN (
             SELECT p1.eisdiele_id, p1.preis, p1.gemeldet_am
             FROM preise p1
-            JOIN (
-              SELECT eisdiele_id, MAX(gemeldet_am) AS max_reported_at
-              FROM preise
-              WHERE typ = 'kugel'
-              GROUP BY eisdiele_id
-            ) latest
-              ON latest.eisdiele_id = p1.eisdiele_id
-             AND latest.max_reported_at = p1.gemeldet_am
             WHERE p1.typ = 'kugel'
+              AND NOT EXISTS (
+                SELECT 1 FROM preise p2
+                WHERE p2.eisdiele_id = p1.eisdiele_id
+                  AND p2.typ = p1.typ
+                  AND (p2.gemeldet_am > p1.gemeldet_am
+                       OR (p2.gemeldet_am = p1.gemeldet_am AND p2.id > p1.id))
+              )
          ) latest_kugel_price ON latest_kugel_price.eisdiele_id = e.id
          LEFT JOIN (
             SELECT p1.eisdiele_id, p1.preis, p1.gemeldet_am
             FROM preise p1
-            JOIN (
-              SELECT eisdiele_id, MAX(gemeldet_am) AS max_reported_at
-              FROM preise
-              WHERE typ = 'softeis'
-              GROUP BY eisdiele_id
-            ) latest
-              ON latest.eisdiele_id = p1.eisdiele_id
-             AND latest.max_reported_at = p1.gemeldet_am
             WHERE p1.typ = 'softeis'
+              AND NOT EXISTS (
+                SELECT 1 FROM preise p2
+                WHERE p2.eisdiele_id = p1.eisdiele_id
+                  AND p2.typ = p1.typ
+                  AND (p2.gemeldet_am > p1.gemeldet_am
+                       OR (p2.gemeldet_am = p1.gemeldet_am AND p2.id > p1.id))
+              )
          ) latest_softeis_price ON latest_softeis_price.eisdiele_id = e.id
          LEFT JOIN (
             SELECT c.eisdiele_id,
@@ -202,15 +200,14 @@ function getRegionPriceSummary(PDO $pdo, string $level, int $id): array
          FROM (
             SELECT p1.eisdiele_id, p1.preis
             FROM preise p1
-            JOIN (
-              SELECT eisdiele_id, MAX(gemeldet_am) AS max_reported_at
-              FROM preise
-              WHERE typ = 'kugel'
-              GROUP BY eisdiele_id
-            ) latest
-              ON latest.eisdiele_id = p1.eisdiele_id
-             AND latest.max_reported_at = p1.gemeldet_am
             WHERE p1.typ = 'kugel'
+              AND NOT EXISTS (
+                SELECT 1 FROM preise p2
+                WHERE p2.eisdiele_id = p1.eisdiele_id
+                  AND p2.typ = p1.typ
+                  AND (p2.gemeldet_am > p1.gemeldet_am
+                       OR (p2.gemeldet_am = p1.gemeldet_am AND p2.id > p1.id))
+              )
          ) current_prices
          JOIN eisdielen e ON e.id = current_prices.eisdiele_id
          WHERE $scopeWhere
@@ -287,24 +284,25 @@ function getRegionPriceTrend(PDO $pdo, string $level, int $id): array
          FROM (
              SELECT p1.eisdiele_id, p1.preis
              FROM preise p1
-             JOIN (
-                 SELECT eisdiele_id, MAX(gemeldet_am) AS max_reported_at
-                 FROM preise
-                 WHERE typ = 'kugel'
-                   AND gemeldet_am <= ?
-                   AND eisdiele_id IN ($placeholders)
-                 GROUP BY eisdiele_id
-             ) latest
-               ON latest.eisdiele_id = p1.eisdiele_id
-              AND latest.max_reported_at = p1.gemeldet_am
              WHERE p1.typ = 'kugel'
+               AND p1.gemeldet_am <= ?
+               AND p1.eisdiele_id IN ($placeholders)
+               AND NOT EXISTS (
+                 SELECT 1 FROM preise p2
+                 WHERE p2.eisdiele_id = p1.eisdiele_id
+                   AND p2.typ = p1.typ
+                   AND p2.gemeldet_am <= ?
+                   AND (p2.gemeldet_am > p1.gemeldet_am
+                        OR (p2.gemeldet_am = p1.gemeldet_am AND p2.id > p1.id))
+               )
          ) latest_prices"
     );
 
     for ($i = 0; $i < 12; $i += 1) {
         $monthKey = $cursor->format('Y-m');
         $monthEnd = $cursor->modify('last day of this month')->setTime(23, 59, 59);
-        $params = array_merge([$monthEnd->format('Y-m-d H:i:s')], $shopIds);
+        $monthEndValue = $monthEnd->format('Y-m-d H:i:s');
+        $params = array_merge([$monthEndValue], $shopIds, [$monthEndValue]);
         $trendStmt->execute($params);
         $rows = $trendStmt->fetchAll(PDO::FETCH_ASSOC);
         $prices = array_map(static fn(array $row): float => (float)$row['preis'], $rows);

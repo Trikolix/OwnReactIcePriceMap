@@ -71,7 +71,8 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT gemeldet_von, COUNT(*) AS count
     FROM preise
-    WHERE DATE(preise.gemeldet_am) BETWEEN :startDate AND :endDate
+    WHERE is_reward_eligible = 1
+      AND DATE(preise.gemeldet_am) BETWEEN :startDate AND :endDate
     GROUP BY gemeldet_von
 ) pm ON pm.gemeldet_von = n.id
 LEFT JOIN (

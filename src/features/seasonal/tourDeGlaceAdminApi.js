@@ -54,6 +54,7 @@ export const saveTourDeGlaceFinalResults = async (authToken, finalResults) => {
   return toJson(response);
 };
 
+
 export const downloadTourDeGlaceStoryPack = async (authToken, pack = 'all', limit = 5) => {
   const params = new URLSearchParams({
     pack,

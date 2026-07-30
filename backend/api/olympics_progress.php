@@ -66,7 +66,7 @@ try {
     }
 
     $stmt = $pdo->prepare(
-        "SELECT COUNT(*) FROM preise WHERE gemeldet_von = :user_id AND gemeldet_am BETWEEN :start AND :end"
+        "SELECT COUNT(*) FROM preise WHERE gemeldet_von = :user_id AND is_reward_eligible = 1 AND gemeldet_am BETWEEN :start AND :end"
     );
     $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
     $counts['prices'] = (int)$stmt->fetchColumn();

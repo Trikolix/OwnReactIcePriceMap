@@ -46,7 +46,7 @@ FROM (
       SELECT p1.preis
       FROM preise p1
       WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-      ORDER BY p1.gemeldet_am DESC
+      ORDER BY p1.gemeldet_am DESC, p1.id DESC
       LIMIT 1
     ) AS kugel_preis
   FROM eisdielen e
@@ -92,6 +92,7 @@ LEFT JOIN (
 LEFT JOIN (
   SELECT gemeldet_von, COUNT(*) AS price_reports
   FROM preise
+  WHERE is_reward_eligible = 1
   GROUP BY gemeldet_von
 ) p ON u.id = p.gemeldet_von
 LEFT JOIN (
@@ -183,6 +184,7 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT gemeldet_von, COUNT(*) AS count
     FROM preise
+    WHERE is_reward_eligible = 1
     GROUP BY gemeldet_von
 ) pm ON pm.gemeldet_von = n.id
 

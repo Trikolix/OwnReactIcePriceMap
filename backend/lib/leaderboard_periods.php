@@ -273,6 +273,7 @@ function calculatePeriodLeaderboard(PDO $pdo, DateTimeImmutable $start, DateTime
          FROM preise p
          JOIN eisdielen e ON e.id = p.eisdiele_id
          WHERE p.gemeldet_am BETWEEN :start AND :end
+           AND p.is_reward_eligible = 1
            AND $scopeWhere
            AND $activeShopStatusWhere
          GROUP BY p.gemeldet_von"
