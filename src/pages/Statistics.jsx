@@ -51,19 +51,6 @@ const sortLaender = (laender = []) =>
     }))
     .sort(compareNodesByPrice);
 
-const flattenPriceRegions = (hierarchy = []) => hierarchy.flatMap((land) => [
-  { level: 'land', id: land.id, name: land.name, label: land.name },
-  ...(land.bundeslaender || []).flatMap((bundesland) => [
-    { level: 'bundesland', id: bundesland.id, name: bundesland.name, label: land.name + ' · ' + bundesland.name },
-    ...(bundesland.landkreise || []).map((landkreis) => ({
-      level: 'landkreis',
-      id: landkreis.id,
-      name: landkreis.name,
-      label: land.name + ' · ' + bundesland.name + ' · ' + landkreis.name,
-    })),
-  ]),
-]);
-
 const formatPriceDate = (value) => {
   if (!value) return null;
   const date = new Date(String(value).replace(' ', 'T'));
@@ -92,7 +79,9 @@ function Statistics() {
   const [priceStatsMeta, setPriceStatsMeta] = useState(null);
   const [showPriceAnalysis, setShowPriceAnalysis] = useState(false);
   const [priceTimelineRange, setPriceTimelineRange] = useState('12m');
-  const [priceTimelineRegion, setPriceTimelineRegion] = useState(null);
+  const [priceTimelineLandId, setPriceTimelineLandId] = useState('');
+  const [priceTimelineBundeslandId, setPriceTimelineBundeslandId] = useState('');
+  const [priceTimelineLandkreisId, setPriceTimelineLandkreisId] = useState('');
   const [priceTimeline, setPriceTimeline] = useState([]);
   const [priceTimelineMeta, setPriceTimelineMeta] = useState(null);
   const [priceTimelineLoading, setPriceTimelineLoading] = useState(false);
@@ -320,15 +309,40 @@ function Statistics() {
     };
   }, [filteredPriceHierarchy]);
 
-  const priceRegionOptions = useMemo(() => flattenPriceRegions(priceHierarchy), [priceHierarchy]);
+  const priceTimelineLand = useMemo(
+    () => priceHierarchy.find((land) => String(land.id) === priceTimelineLandId) || null,
+    [priceHierarchy, priceTimelineLandId],
+  );
+  const priceTimelineBundeslaender = priceTimelineLand?.bundeslaender || [];
+  const priceTimelineBundesland = useMemo(
+    () => priceTimelineBundeslaender.find((bundesland) => String(bundesland.id) === priceTimelineBundeslandId) || null,
+    [priceTimelineBundeslaender, priceTimelineBundeslandId],
+  );
+  const priceTimelineLandkreise = priceTimelineBundesland?.landkreise || [];
+  const priceTimelineLandkreis = useMemo(
+    () => priceTimelineLandkreise.find((landkreis) => String(landkreis.id) === priceTimelineLandkreisId) || null,
+    [priceTimelineLandkreise, priceTimelineLandkreisId],
+  );
+  const priceTimelineRegion = useMemo(() => {
+    if (priceTimelineLandkreis) {
+      return { level: 'landkreis', id: priceTimelineLandkreis.id, name: priceTimelineLandkreis.name };
+    }
+    if (priceTimelineBundesland) {
+      return { level: 'bundesland', id: priceTimelineBundesland.id, name: priceTimelineBundesland.name };
+    }
+    if (priceTimelineLand) {
+      return { level: 'land', id: priceTimelineLand.id, name: priceTimelineLand.name };
+    }
+    return null;
+  }, [priceTimelineBundesland, priceTimelineLand, priceTimelineLandkreis]);
 
   useEffect(() => {
-    if (priceTimelineRegion || priceRegionOptions.length === 0) {
+    if (priceTimelineLandId || priceHierarchy.length === 0) {
       return;
     }
-    const germany = priceRegionOptions.find((region) => region.level === 'land' && region.name === 'Deutschland');
-    setPriceTimelineRegion(germany || priceRegionOptions[0]);
-  }, [priceRegionOptions, priceTimelineRegion]);
+    const germany = priceHierarchy.find((land) => land.name === 'Deutschland');
+    setPriceTimelineLandId(String((germany || priceHierarchy[0]).id));
+  }, [priceHierarchy, priceTimelineLandId]);
 
   useEffect(() => {
     if (!showPriceAnalysis || !priceTimelineRegion || !apiUrl) {
@@ -570,20 +584,51 @@ function Statistics() {
                   </PriceAnalysisHeader>
                   <PriceAnalysisControls>
                     <PriceFilterLabel>
-                      Region
+                      Land
                       <PriceFilterSelect
-                        value={priceTimelineRegion ? priceTimelineRegion.level + ':' + priceTimelineRegion.id : ''}
+                        value={priceTimelineLandId}
                         onChange={(event) => {
-                          const [level, id] = event.target.value.split(':');
-                          const region = priceRegionOptions.find((candidate) => candidate.level === level && String(candidate.id) === id);
-                          setPriceTimelineRegion(region || null);
+                          setPriceTimelineLandId(event.target.value);
+                          setPriceTimelineBundeslandId('');
+                          setPriceTimelineLandkreisId('');
                         }}
                       >
-                        {priceRegionOptions.map((region) => (
-                          <option key={region.level + '-' + region.id} value={region.level + ':' + region.id}>{region.label}</option>
+                        {priceHierarchy.map((land) => (
+                          <option key={land.id} value={String(land.id)}>{land.name}</option>
                         ))}
                       </PriceFilterSelect>
                     </PriceFilterLabel>
+                    {priceTimelineBundeslaender.length > 0 && (
+                      <PriceFilterLabel>
+                        Bundesland <span>(optional)</span>
+                        <PriceFilterSelect
+                          value={priceTimelineBundeslandId}
+                          onChange={(event) => {
+                            setPriceTimelineBundeslandId(event.target.value);
+                            setPriceTimelineLandkreisId('');
+                          }}
+                        >
+                          <option value="">Ganzes Land</option>
+                          {priceTimelineBundeslaender.map((bundesland) => (
+                            <option key={bundesland.id} value={String(bundesland.id)}>{bundesland.name}</option>
+                          ))}
+                        </PriceFilterSelect>
+                      </PriceFilterLabel>
+                    )}
+                    {priceTimelineBundesland && priceTimelineLandkreise.length > 0 && (
+                      <PriceFilterLabel>
+                        Landkreis <span>(optional)</span>
+                        <PriceFilterSelect
+                          value={priceTimelineLandkreisId}
+                          onChange={(event) => setPriceTimelineLandkreisId(event.target.value)}
+                        >
+                          <option value="">Ganzes Bundesland</option>
+                          {priceTimelineLandkreise.map((landkreis) => (
+                            <option key={landkreis.id} value={String(landkreis.id)}>{landkreis.name}</option>
+                          ))}
+                        </PriceFilterSelect>
+                      </PriceFilterLabel>
+                    )}
                     <PriceFilterLabel>
                       Stichtag
                       <PriceFilterInput type="date" value={priceTo} max={today} onChange={(event) => setPriceTo(event.target.value)} />
