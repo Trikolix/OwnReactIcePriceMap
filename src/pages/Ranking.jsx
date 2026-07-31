@@ -149,6 +149,7 @@ const Ranking = () => {
     const [areFiltersExpanded, setAreFiltersExpanded] = useState(false);
     const [showScoreExplanation, setShowScoreExplanation] = useState(false);
     const [showHeroDescription, setShowHeroDescription] = useState(false);
+    const [showExpandedNearbyResults, setShowExpandedNearbyResults] = useState(true);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const buildDefaultDateTimeValue = React.useCallback(() => {
         return formatDateTimeLocalInputValue();
@@ -455,7 +456,7 @@ const Ranking = () => {
 
     const minimumUsersForTab = (tab) => tab === 'kugel' ? 3 : 2;
 
-    const applyFiltersAndSort = (items, sortConfig, tab) => {
+    const applyFiltersAndSort = (items, sortConfig, tab, reliabilityOverride = reliabilityMode) => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const maxDistance = distanceFilter !== 'any' ? parseFloat(distanceFilter) : null;
 
@@ -479,7 +480,7 @@ const Ranking = () => {
                 selectedAttributes.length === 0 ||
                 (itemAttributes && selectedAttributes.every((attrId) => itemAttributes.has(attrId)));
             const uniqueRaters = Number(item.nutzeranzahl ?? item.anzahl_nutzer ?? 0);
-            const matchesReliability = reliabilityMode === 'all' || uniqueRaters >= minimumUsersForTab(tab);
+            const matchesReliability = reliabilityOverride === 'all' || uniqueRaters >= minimumUsersForTab(tab);
             let matchesOpenState = true;
             if (openFilterMode === 'now') {
                 matchesOpenState = Boolean(item.is_open_now);
@@ -536,21 +537,35 @@ const Ranking = () => {
         return applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher, 'eisbecher');
     }, [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime, reliabilityMode]);
 
-    const activeResultCount = React.useMemo(() => {
-        if (activeTab === 'kugel') return sortedEisdielenKugel.length;
-        if (activeTab === 'softeis') return sortedEisdielenSofteis.length;
-        return sortedEisdielenEisbecher.length;
-    }, [activeTab, sortedEisdielenKugel.length, sortedEisdielenSofteis.length, sortedEisdielenEisbecher.length]);
+    const relaxedEisdielenKugel = React.useMemo(() => applyFiltersAndSort(eisdielenKugel, sortConfigKugel, 'kugel', 'all'), [eisdielenKugel, sortConfigKugel, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
+    const relaxedEisdielenSofteis = React.useMemo(() => applyFiltersAndSort(eisdielenSofteis, sortConfigSofteis, 'softeis', 'all'), [eisdielenSofteis, sortConfigSofteis, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
+    const relaxedEisdielenEisbecher = React.useMemo(() => applyFiltersAndSort(eisdielenEisbecher, sortConfigEisbecher, 'eisbecher', 'all'), [eisdielenEisbecher, sortConfigEisbecher, searchTerm, distanceFilter, userPosition, selectedAttributes, eisdieleAttributes, openFilterMode, openFilterDateTime]);
+
+    useEffect(() => {
+        setShowExpandedNearbyResults(true);
+    }, [activeTab, distanceFilter, searchTerm, selectedAttributes, openFilterMode, openFilterDateTime, ratingScope]);
 
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
     };
 
-    const activeRows = activeTab === 'kugel'
+    const strictActiveRows = activeTab === 'kugel'
         ? sortedEisdielenKugel
         : activeTab === 'softeis'
             ? sortedEisdielenSofteis
             : sortedEisdielenEisbecher;
+    const relaxedActiveRows = activeTab === 'kugel'
+        ? relaxedEisdielenKugel
+        : activeTab === 'softeis'
+            ? relaxedEisdielenSofteis
+            : relaxedEisdielenEisbecher;
+    const shouldExpandNearbyResults = distanceFilter !== 'any'
+        && reliabilityMode === 'reliable'
+        && strictActiveRows.length < 3
+        && relaxedActiveRows.length > strictActiveRows.length
+        && showExpandedNearbyResults;
+    const activeRows = shouldExpandNearbyResults ? relaxedActiveRows : strictActiveRows;
+    const activeResultCount = activeRows.length;
     const activeSortConfig = activeTab === 'kugel'
         ? sortConfigKugel
         : activeTab === 'softeis'
@@ -568,6 +583,7 @@ const Ranking = () => {
         : Number(value).toFixed(digits);
     const getTasteFactor = (shop) => shop[tasteFactorKey] ?? shop.avg_geschmacksfaktor ?? shop.finaler_geschmacksfaktor ?? shop.avg_geschmack;
     const getUniqueRaters = (shop) => Number(shop.nutzeranzahl ?? shop.anzahl_nutzer ?? 0);
+    const isLowConfidence = (shop) => reliabilityMode === 'reliable' && getUniqueRaters(shop) < minimumUsersForTab(activeTab);
     const getPriceLabel = (shop) => {
         if (shop.kugel_preis_eur === null || shop.kugel_preis_eur === undefined) return '–';
         const euro = `${Number(shop.kugel_preis_eur).toFixed(2)} €`;
@@ -695,7 +711,7 @@ const Ranking = () => {
     );
 
     return (
-        <>
+        <RankingPage>
             <Seo
                 title="Eisdielen-Ranking | Bewertungen und Preis-Leistung in der Ice-App"
                 description="Eisdielen-Ranking der Ice-App: Vergleiche Bewertungen, Preis-Leistung und Community-Ratings für Eisdielen in Deutschland."
@@ -716,13 +732,6 @@ const Ranking = () => {
                         <PageSubtitle $expanded={showHeroDescription}>
                           Vergleiche Eisdielen nach Geschmack, Preis-Leistung und Community-Rating.
                         </PageSubtitle>
-                        <MetaChips>
-                            <MetaChip>{activeResultCount} Treffer</MetaChip>
-                            {searchTerm.trim() && <MetaChip>Suche: {searchTerm.trim()}</MetaChip>}
-                            {distanceFilter !== 'any' && <MetaChip>Entfernung: ≤ {distanceFilter} km</MetaChip>}
-                            {selectedAttributes.length > 0 && <MetaChip>{selectedAttributes.length} Attribut-Filter</MetaChip>}
-                            {reliabilityMode === 'reliable' && <MetaChip>Nur verlässliche Bewertungen</MetaChip>}
-                        </MetaChips>
                         <HeroInfoToggle type="button" onClick={() => setShowHeroDescription((current) => !current)} aria-expanded={showHeroDescription}>
                             {showHeroDescription ? 'Info ausblenden' : 'Was wird verglichen?'} <ChevronDown size={15} aria-hidden="true" />
                         </HeroInfoToggle>
@@ -1022,6 +1031,17 @@ const Ranking = () => {
                         </>
                     )}
 
+                    <ResultsContext>
+                        <strong>{activeResultCount} passende Eisdielen</strong>
+                        <span>{distanceFilter !== 'any' ? `im Umkreis von ${distanceFilter} km` : 'ohne Entfernungsfilter'}</span>
+                        {searchTerm.trim() && <span>· Suche: „{searchTerm.trim()}“</span>}
+                    </ResultsContext>
+                    {shouldExpandNearbyResults && (
+                        <NearbyFallbackNotice>
+                            <span>Nur {strictActiveRows.length} verlässliche Treffer im Umkreis. Weitere nahe Eisdielen mit kleiner Datenbasis werden angezeigt.</span>
+                            <button type="button" onClick={() => setShowExpandedNearbyResults(false)}>Nur verlässliche anzeigen</button>
+                        </NearbyFallbackNotice>
+                    )}
                     <MobileResults aria-label="Ranking-Ergebnisse">
                         {activeRows.map((shop, index) => {
                             const detailKey = activeDetailKey(shop, index);
@@ -1030,14 +1050,14 @@ const Ranking = () => {
                                 <RankingCard key={detailKey}>
                                     <RankingCardHeader>
                                         <RankBadge>#{index + 1}</RankBadge>
-                                        <CardShopName>{shop.name}</CardShopName>
+                                        <CardShopName as={Link} to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</CardShopName>
                                         <ScoreBadge><strong>{formatRating(shop.ranking_score)}</strong><small>Ranking</small></ScoreBadge>
                                     </RankingCardHeader>
                                     <CardMetrics>
                                         <Metric><span>Geschmacksfaktor</span><strong>{formatRating(getTasteFactor(shop))}</strong></Metric>
                                         <Metric><span>Preis-Leistung</span><strong>{formatRating(shop.avg_preisleistung)}</strong></Metric>
                                         <Metric><span>Preis</span><strong>{getPriceLabel(shop)}</strong></Metric>
-                                        <Metric><span>Datenbasis</span><strong>{getUniqueRaters(shop)} Nutzer</strong></Metric>
+                                        <Metric><span>Datenbasis</span><strong>{getUniqueRaters(shop)} Nutzer{isLowConfidence(shop) ? ' · niedrig' : ''}</strong></Metric>
                                     </CardMetrics>
                                     <CardDetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>
                                         Details anzeigen <ChevronDown size={17} aria-hidden="true" />
@@ -1069,12 +1089,12 @@ const Ranking = () => {
                                         return (
                                             <React.Fragment key={detailKey}>
                                                 <tr>
-                                                    <td><RankInline>#{index + 1}</RankInline>{shop.name}</td>
+                                                    <td><RankInline>#{index + 1}</RankInline><ShopLink to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</ShopLink></td>
                                                     <td><RankingValue title={`Rohwert: ${formatRating(shop.raw_score)}`}>{formatRating(shop.ranking_score)}</RankingValue></td>
                                                     <td>{formatRating(getTasteFactor(shop))}</td>
                                                     <td>{formatRating(shop.avg_preisleistung)}</td>
                                                     <td>{getPriceLabel(shop)}</td>
-                                                    <td>{shop.checkin_anzahl || 0} Check-ins<SmallValue>{getUniqueRaters(shop)} Nutzer</SmallValue></td>
+                                                    <td>{shop.checkin_anzahl || 0} Check-ins<SmallValue>{getUniqueRaters(shop)} Nutzer{isLowConfidence(shop) && ' · niedrig'}</SmallValue></td>
                                                     <td><DetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>Details <ChevronDown size={16} aria-hidden="true" /></DetailsButton></td>
                                                 </tr>
                                                 {isExpanded && <DetailsRow visible className="details-row"><td colSpan="7">{renderShopDetails(shop)}</td></DetailsRow>}
@@ -1094,7 +1114,7 @@ const Ranking = () => {
 
                 </TableContainer>
             </Container>
-        </>
+        </RankingPage>
     );
 };
 
@@ -1105,12 +1125,17 @@ const CleanLink = styled(Link)`
   color: inherit;
 `;
 
-const Container = styled.div`
-  padding: 0.5rem;
+const RankingPage = styled.div`
+  min-height: 100vh;
   background:
     radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 45%),
     linear-gradient(180deg, #fffaf0 0%, #fff7e5 100%);
-  min-height: 100%;
+`;
+
+const Container = styled.div`
+  padding: 0.5rem;
+  background: transparent;
+  min-height: calc(100vh - 72px);
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
@@ -1119,22 +1144,18 @@ const Container = styled.div`
 
 const TableContainer = styled.div`
   justify-content: center;
-  text-align: center;
+  text-align: left;
   width: 100%;
   max-width: 1440px;
 `;
 
 const HeroCard = styled.div`
-  background: rgba(255, 252, 243, 0.96);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem 1rem 0.9rem;
-  margin-bottom: 1rem;
+  padding: 0.7rem 0.25rem 0.5rem;
+  margin-bottom: 0.25rem;
 
   @media (max-width: 768px) {
-    padding: 0.8rem;
-    margin-bottom: 0.65rem;
+    padding: 0.55rem 0.1rem 0.35rem;
+    margin-bottom: 0.35rem;
   }
 `;
 
@@ -1210,6 +1231,12 @@ const Table = styled.table`
   th, td {
     border-bottom: 1px solid rgba(47, 33, 0, 0.08);
     padding: 10px 10px;
+    text-align: center;
+  }
+
+  th:first-child,
+  td:first-child {
+    text-align: left;
   }
   th {
     cursor: pointer;
@@ -1332,12 +1359,61 @@ const DesktopResults = styled.div`
   }
 `;
 
+const ResultsContext = styled.div`
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.7rem 0 0.45rem;
+  color: #6c4500;
+  font-size: 0.85rem;
+
+  strong {
+    color: #2f2100;
+    font-size: 0.95rem;
+  }
+`;
+
+const NearbyFallbackNotice = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.55rem;
+  padding: 0.6rem 0.7rem;
+  border-left: 3px solid #ffb522;
+  border-radius: 8px;
+  background: rgba(255, 244, 217, 0.62);
+  color: #6b4a08;
+  font-size: 0.82rem;
+  line-height: 1.4;
+
+  button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.88);
+    color: #754500;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+`;
+
 const RankingCard = styled.article`
   overflow: hidden;
   border: 1px solid rgba(47, 33, 0, 0.09);
   border-radius: 14px;
   background: rgba(255, 252, 243, 0.94);
-  box-shadow: 0 6px 16px rgba(28, 20, 0, 0.05);
+  box-shadow: none;
 `;
 
 const RankingCardHeader = styled.div`
@@ -1360,6 +1436,12 @@ const CardShopName = styled.strong`
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #2f2100;
+  text-decoration: none;
+
+  &:hover {
+    color: #8a5600;
+    text-decoration: underline;
+  }
 `;
 
 const ScoreBadge = styled.span`
@@ -1421,6 +1503,16 @@ const RankInline = styled.span`
   min-width: 2.4rem;
   color: #8a5a00;
   font-weight: 800;
+`;
+
+const ShopLink = styled(Link)`
+  color: #2f2100;
+  text-decoration: none;
+
+  &:hover {
+    color: #8a5600;
+    text-decoration: underline;
+  }
 `;
 
 const RankingValue = styled.strong`
@@ -1543,12 +1635,12 @@ const TabContainer = styled.div`
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.4rem;
   padding: 0.35rem;
-  background: rgba(255, 252, 243, 0.88);
-  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(47, 33, 0, 0.06);
   border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
+  box-shadow: none;
 
   @media (max-width: 768px) {
     display: grid;
@@ -1602,17 +1694,18 @@ const QuickFiltersBar = styled.div`
   grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.7fr) auto;
   align-items: end;
   gap: 0.75rem;
-  padding: 0.75rem;
-  margin-bottom: 0.65rem;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 252, 243, 0.94);
-  box-shadow: 0 6px 18px rgba(28, 20, 0, 0.05);
+  padding: 0.65rem 0.1rem;
+  margin-bottom: 0.45rem;
+  border: 0;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr 1fr;
     gap: 0.55rem;
-    padding: 0.65rem;
+    padding: 0.55rem 0.1rem;
   }
 `;
 
