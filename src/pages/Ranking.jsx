@@ -6,18 +6,9 @@ import { useUser } from "../context/UserContext";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 import { formatDateTimeLocalInputValue } from "../utils/dateTimeLocal";
 import Seo from "../components/Seo";
-import { Calculator, ChartNoAxesCombined, ShieldCheck, UsersRound } from "lucide-react";
+import { Calculator, ChartNoAxesCombined, ChevronDown, MapPin, ShieldCheck, SlidersHorizontal, Trophy, UsersRound } from "lucide-react";
 
 const EARTH_RADIUS_KM = 6371;
-const FILTERS_COMPACT_BREAKPOINT_PX = 768;
-
-const isCompactFilterViewport = () => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    return window.innerWidth < FILTERS_COMPACT_BREAKPOINT_PX;
-};
-
 const toRadians = (value) => (value * Math.PI) / 180;
 
 const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
@@ -155,8 +146,9 @@ const Ranking = () => {
         softeis: {},
         eisbecher: {}
     });
-    const [isCompactFilters, setIsCompactFilters] = useState(() => isCompactFilterViewport());
-    const [areFiltersExpanded, setAreFiltersExpanded] = useState(() => !isCompactFilterViewport());
+    const [areFiltersExpanded, setAreFiltersExpanded] = useState(false);
+    const [showScoreExplanation, setShowScoreExplanation] = useState(false);
+    const [showHeroDescription, setShowHeroDescription] = useState(false);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const buildDefaultDateTimeValue = React.useCallback(() => {
         return formatDateTimeLocalInputValue();
@@ -176,20 +168,6 @@ const Ranking = () => {
             setOpenFilterDateTime(buildDefaultDateTimeValue());
         }
     }, [openFilterDateTime, buildDefaultDateTimeValue]);
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-        const handleResize = () => {
-            setIsCompactFilters(isCompactFilterViewport());
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-    useEffect(() => {
-        setAreFiltersExpanded(!isCompactFilters);
-    }, [isCompactFilters]);
-
     const syncAttributeFilters = React.useCallback((datasetsByTab) => {
         const attributeMap = {};
         const attributeOptionsMap = new Map();
@@ -567,34 +545,60 @@ const Ranking = () => {
     const toggleDetails = (index) => {
         setExpandedRow((prevIndex) => (prevIndex === index ? null : index));
     };
-    const filtersContent = (
+
+    const activeRows = activeTab === 'kugel'
+        ? sortedEisdielenKugel
+        : activeTab === 'softeis'
+            ? sortedEisdielenSofteis
+            : sortedEisdielenEisbecher;
+    const activeSortConfig = activeTab === 'kugel'
+        ? sortConfigKugel
+        : activeTab === 'softeis'
+            ? sortConfigSofteis
+            : sortConfigEisbecher;
+    const sortActiveRows = activeTab === 'kugel'
+        ? sortTableKugel
+        : activeTab === 'softeis'
+            ? sortTableSofteis
+            : sortTableEisbecher;
+    const tasteFactorKey = activeTab === 'softeis' ? 'finaler_geschmacksfaktor' : 'avg_geschmacksfaktor';
+    const activeDetailKey = (shop, index) => `${activeTab}-${shop.eisdiele_id || index}`;
+    const formatRating = (value, digits = 2) => value === null || value === undefined || value === ''
+        ? '–'
+        : Number(value).toFixed(digits);
+    const getTasteFactor = (shop) => shop[tasteFactorKey] ?? shop.avg_geschmacksfaktor ?? shop.finaler_geschmacksfaktor ?? shop.avg_geschmack;
+    const getUniqueRaters = (shop) => Number(shop.nutzeranzahl ?? shop.anzahl_nutzer ?? 0);
+    const getPriceLabel = (shop) => {
+        if (shop.kugel_preis_eur === null || shop.kugel_preis_eur === undefined) return '–';
+        const euro = `${Number(shop.kugel_preis_eur).toFixed(2)} €`;
+        if (shop.kugel_waehrung && shop.kugel_waehrung !== '€' && shop.kugel_preis !== null && shop.kugel_preis !== undefined) {
+            return `${euro} (${Number(shop.kugel_preis).toFixed(2)} ${shop.kugel_waehrung})`;
+        }
+        return euro;
+    };
+    const filterSummary = [
+        ratingScope === 'global' ? 'Global' : ratingScope === 'gourmetCyclist' ? 'TheGourmetCyclist' : 'Persönlich',
+        reliabilityMode === 'reliable' ? 'verlässlich' : 'alle Daten',
+        openFilterMode === 'now' ? 'jetzt geöffnet' : openFilterMode === 'custom' ? 'zu Termin geöffnet' : 'alle Zeiten',
+    ].join(' · ');
+    const renderShopDetails = (shop) => (
+        <DetailsContainer>
+            <h3><CleanLink to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</CleanLink></h3>
+            <DetailMetrics>
+                <span>Geschmack <strong>{formatRating(shop.avg_geschmack, 1)}</strong></span>
+                {activeTab !== 'eisbecher' && <span>Waffel <strong>{formatRating(shop.avg_waffel, 1)}</strong></span>}
+                <span>Entfernung <strong>{shop.distanceKm !== null && shop.distanceKm !== undefined ? `${Number(shop.distanceKm).toFixed(1)} km` : '–'}</strong></span>
+                <span>Check-ins <strong>{shop.checkin_anzahl || 0}</strong></span>
+            </DetailMetrics>
+            <strong>Adresse: </strong>{shop.adresse || '–'}<br />
+            <strong>Öffnungszeiten: </strong>{renderOpenStateBadge(shop)}<br />
+            {getOpeningHoursLines(shop).map((time, i) => <React.Fragment key={i}>{time}<br /></React.Fragment>)}
+            {renderAttributeSummary(shop.attributes)}
+        </DetailsContainer>
+    );
+    const advancedFiltersContent = (
         <>
             <FiltersRow>
-                <FilterGroup>
-                    <FilterLabel htmlFor="ranking-search">Suche</FilterLabel>
-                    <FilterInput
-                        id="ranking-search"
-                        type="text"
-                        value={searchTerm}
-                        placeholder="Eisdiele suchen..."
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                    />
-                </FilterGroup>
-                <FilterGroup>
-                    <FilterLabel htmlFor="ranking-distance">Entfernung</FilterLabel>
-                    <FilterSelect
-                        id="ranking-distance"
-                        value={distanceFilter}
-                        onChange={handleDistanceChange}
-                    >
-                        <option value="any">Alle Entfernungen</option>
-                        <option value="2">bis 2 km</option>
-                        <option value="5">bis 5 km</option>
-                        <option value="10">bis 10 km</option>
-                        <option value="25">bis 25 km</option>
-                        <option value="50">bis 50 km</option>
-                    </FilterSelect>
-                </FilterGroup>
                 <FilterGroup>
                     <FilterLabel htmlFor="ranking-rating">Rating-Quelle</FilterLabel>
                     <FilterSelect
@@ -671,7 +675,7 @@ const Ranking = () => {
                     )}
                 </AttributeFilterSection>
             )}
-            {!userPosition && (
+            {!userPosition && locationStatus !== 'idle' && (
                 <LocationHint>
                     <span>Teile deinen Standort, um Entfernungen anzeigen und filtern zu können.</span>
                     <LocationButton
@@ -708,9 +712,9 @@ const Ranking = () => {
             <Container>
                 <TableContainer className="container">
                     <HeroCard>
-                        <PageTitle>🏆 Eisdielen-Ranking</PageTitle>
-                        <PageSubtitle>
-                            Vergleiche Eisdielen nach Geschmack, Preis-Leistung und Community-Rating.
+                        <PageTitle><Trophy size={31} aria-hidden="true" /> Eisdielen-Ranking</PageTitle>
+                        <PageSubtitle $expanded={showHeroDescription}>
+                          Vergleiche Eisdielen nach Geschmack, Preis-Leistung und Community-Rating.
                         </PageSubtitle>
                         <MetaChips>
                             <MetaChip>{activeResultCount} Treffer</MetaChip>
@@ -719,43 +723,75 @@ const Ranking = () => {
                             {selectedAttributes.length > 0 && <MetaChip>{selectedAttributes.length} Attribut-Filter</MetaChip>}
                             {reliabilityMode === 'reliable' && <MetaChip>Nur verlässliche Bewertungen</MetaChip>}
                         </MetaChips>
+                        <HeroInfoToggle type="button" onClick={() => setShowHeroDescription((current) => !current)} aria-expanded={showHeroDescription}>
+                            {showHeroDescription ? 'Info ausblenden' : 'Was wird verglichen?'} <ChevronDown size={15} aria-hidden="true" />
+                        </HeroInfoToggle>
                     </HeroCard>
-                    <TabContainer>
+                    <TabContainer role="tablist" aria-label="Art des Eises">
                         <TabButton
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'kugel'}
                             $active={activeTab === 'kugel'}
                             onClick={() => setActiveTab('kugel')}
                         >
                             Kugeleis
                         </TabButton>
                         <TabButton
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'softeis'}
                             $active={activeTab === 'softeis'}
                             onClick={() => setActiveTab('softeis')}
                         >
                             Softeis
                         </TabButton>
                         <TabButton
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'eisbecher'}
                             $active={activeTab === 'eisbecher'}
                             onClick={() => setActiveTab('eisbecher')}
                         >
                             Eisbecher
                         </TabButton>
                     </TabContainer>
-                    {isCompactFilters && (
-                        <FiltersToggleBar>
-                            <FiltersToggleButton
-                                type="button"
-                                onClick={() => setAreFiltersExpanded((prev) => !prev)}
-                            >
-                                {areFiltersExpanded ? 'Filter verbergen' : 'Filter anzeigen'}
-                            </FiltersToggleButton>
-                        </FiltersToggleBar>
+                    <QuickFiltersBar>
+                        <FilterGroup>
+                            <FilterLabel htmlFor="ranking-search">Suche</FilterLabel>
+                            <FilterInput id="ranking-search" type="search" value={searchTerm} placeholder="Eisdiele suchen..." onChange={(event) => setSearchTerm(event.target.value)} />
+                        </FilterGroup>
+                        <FilterGroup>
+                            <FilterLabel htmlFor="ranking-distance">Entfernung</FilterLabel>
+                            <FilterSelect id="ranking-distance" value={distanceFilter} onChange={handleDistanceChange}>
+                                <option value="any">Alle Entfernungen</option>
+                                <option value="2">bis 2 km</option>
+                                <option value="5">bis 5 km</option>
+                                <option value="10">bis 10 km</option>
+                                <option value="25">bis 25 km</option>
+                                <option value="50">bis 50 km</option>
+                            </FilterSelect>
+                        </FilterGroup>
+                        <FiltersToggleButton type="button" onClick={() => setAreFiltersExpanded((prev) => !prev)} aria-expanded={areFiltersExpanded}>
+                            <SlidersHorizontal size={17} aria-hidden="true" />
+                            <span>{areFiltersExpanded ? 'Filter schließen' : 'Filter'}</span>
+                            {!areFiltersExpanded && <FilterButtonSummary>{filterSummary}</FilterButtonSummary>}
+                            <ChevronDown size={16} aria-hidden="true" />
+                        </FiltersToggleButton>
+                    </QuickFiltersBar>
+                    {!userPosition && locationStatus !== 'idle' && (
+                        <CompactLocationHint>
+                            <MapPin size={16} aria-hidden="true" />
+                            <span>{locationStatus === 'requesting' ? 'Standort wird ermittelt…' : locationError || 'Standort für Entfernungen freigeben.'}</span>
+                        </CompactLocationHint>
                     )}
-                    {(!isCompactFilters || areFiltersExpanded) && (
+                    {areFiltersExpanded && (
                         <FiltersPanel>
-                            {filtersContent}
+                            <FilterSummary>Aktiv: {filterSummary}</FilterSummary>
+                            {advancedFiltersContent}
                         </FiltersPanel>
                     )}
-                    {activeTab === 'kugel' && (
+                    {false && activeTab === 'kugel' && (
                         <>
                             <TableScrollArea>
                                 <Table>
@@ -833,7 +869,7 @@ const Ranking = () => {
                             <RankingScoreExplanation type="kugel" />
                         </>
                     )}
-                    {activeTab === 'softeis' && (
+                    {false && activeTab === 'softeis' && (
                         <>
                             <TableScrollArea>
                                 <Table>
@@ -915,7 +951,7 @@ const Ranking = () => {
                             <RankingScoreExplanation type="softeis" />
                         </>
                     )}
-                    {activeTab === 'eisbecher' && (
+                    {false && activeTab === 'eisbecher' && (
                         <>
                             <TableScrollArea>
                                 <Table>
@@ -986,6 +1022,76 @@ const Ranking = () => {
                         </>
                     )}
 
+                    <MobileResults aria-label="Ranking-Ergebnisse">
+                        {activeRows.map((shop, index) => {
+                            const detailKey = activeDetailKey(shop, index);
+                            const isExpanded = expandedRow === detailKey;
+                            return (
+                                <RankingCard key={detailKey}>
+                                    <RankingCardHeader>
+                                        <RankBadge>#{index + 1}</RankBadge>
+                                        <CardShopName>{shop.name}</CardShopName>
+                                        <ScoreBadge><strong>{formatRating(shop.ranking_score)}</strong><small>Ranking</small></ScoreBadge>
+                                    </RankingCardHeader>
+                                    <CardMetrics>
+                                        <Metric><span>Geschmacksfaktor</span><strong>{formatRating(getTasteFactor(shop))}</strong></Metric>
+                                        <Metric><span>Preis-Leistung</span><strong>{formatRating(shop.avg_preisleistung)}</strong></Metric>
+                                        <Metric><span>Preis</span><strong>{getPriceLabel(shop)}</strong></Metric>
+                                        <Metric><span>Datenbasis</span><strong>{getUniqueRaters(shop)} Nutzer</strong></Metric>
+                                    </CardMetrics>
+                                    <CardDetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>
+                                        Details anzeigen <ChevronDown size={17} aria-hidden="true" />
+                                    </CardDetailsButton>
+                                    {isExpanded && renderShopDetails(shop)}
+                                </RankingCard>
+                            );
+                        })}
+                    </MobileResults>
+
+                    <DesktopResults>
+                        <TableScrollArea>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <th>Eisdiele</th>
+                                        <th><SortButton type="button" $active={activeSortConfig.key === 'ranking_score'} onClick={() => sortActiveRows('ranking_score')}>Ranking {activeSortConfig.key === 'ranking_score' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        <th><SortButton type="button" $active={activeSortConfig.key === tasteFactorKey} onClick={() => sortActiveRows(tasteFactorKey)}>Geschmacksfaktor {activeSortConfig.key === tasteFactorKey && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        <th><SortButton type="button" $active={activeSortConfig.key === 'avg_preisleistung'} onClick={() => sortActiveRows('avg_preisleistung')}>Preis-Leistung {activeSortConfig.key === 'avg_preisleistung' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        <th><SortButton type="button" $active={activeSortConfig.key === 'kugel_preis_eur'} onClick={() => sortActiveRows('kugel_preis_eur')}>Preis {activeSortConfig.key === 'kugel_preis_eur' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        <th><SortButton type="button" $active={activeSortConfig.key === 'nutzeranzahl'} onClick={() => sortActiveRows('nutzeranzahl')}>Datenbasis {activeSortConfig.key === 'nutzeranzahl' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        <th aria-label="Details" />
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activeRows.map((shop, index) => {
+                                        const detailKey = activeDetailKey(shop, index);
+                                        const isExpanded = expandedRow === detailKey;
+                                        return (
+                                            <React.Fragment key={detailKey}>
+                                                <tr>
+                                                    <td><RankInline>#{index + 1}</RankInline>{shop.name}</td>
+                                                    <td><RankingValue title={`Rohwert: ${formatRating(shop.raw_score)}`}>{formatRating(shop.ranking_score)}</RankingValue></td>
+                                                    <td>{formatRating(getTasteFactor(shop))}</td>
+                                                    <td>{formatRating(shop.avg_preisleistung)}</td>
+                                                    <td>{getPriceLabel(shop)}</td>
+                                                    <td>{shop.checkin_anzahl || 0} Check-ins<SmallValue>{getUniqueRaters(shop)} Nutzer</SmallValue></td>
+                                                    <td><DetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>Details <ChevronDown size={16} aria-hidden="true" /></DetailsButton></td>
+                                                </tr>
+                                                {isExpanded && <DetailsRow visible className="details-row"><td colSpan="7">{renderShopDetails(shop)}</td></DetailsRow>}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </Table>
+                        </TableScrollArea>
+                    </DesktopResults>
+
+                    <ScoreExplanationToggle type="button" onClick={() => setShowScoreExplanation((current) => !current)} aria-expanded={showScoreExplanation}>
+                        <span><Calculator size={17} aria-hidden="true" /> So wird das Ranking berechnet</span>
+                        <ChevronDown size={18} aria-hidden="true" />
+                    </ScoreExplanationToggle>
+                    {showScoreExplanation && <RankingScoreExplanation type={activeTab} />}
+
                 </TableContainer>
             </Container>
         </>
@@ -1025,10 +1131,19 @@ const HeroCard = styled.div`
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   padding: 1rem 1rem 0.9rem;
   margin-bottom: 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0.8rem;
+    margin-bottom: 0.65rem;
+  }
 `;
 
 const PageTitle = styled.h2`
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   font-size: clamp(1.35rem, 2vw, 1.8rem);
   color: #2f2100;
   line-height: 1.2;
@@ -1038,6 +1153,32 @@ const PageSubtitle = styled.p`
   margin: 0.35rem 0 0;
   color: rgba(47, 33, 0, 0.7);
   font-size: 0.95rem;
+
+  @media (max-width: 768px) {
+    display: ${({ $expanded }) => ($expanded ? 'block' : 'none')};
+    margin-top: 0.5rem;
+    font-size: 0.86rem;
+  }
+`;
+
+const HeroInfoToggle = styled.button`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-height: 30px;
+    margin-top: 0.25rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #7b4a00;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
 `;
 
 const MetaChips = styled.div`
@@ -1064,7 +1205,7 @@ const Table = styled.table`
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 980px;
+  min-width: 760px;
 
   th, td {
     border-bottom: 1px solid rgba(47, 33, 0, 0.08);
@@ -1086,10 +1227,6 @@ const Table = styled.table`
     color: #2f2100;
     font-size: 0.92rem;
     background: rgba(255, 255, 255, 0.72);
-  }
-
-  tbody tr:not(.details-row) {
-    cursor: pointer;
   }
 
   tbody tr:not(.details-row):hover td {
@@ -1177,6 +1314,155 @@ const TableScrollArea = styled.div`
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
   background: rgba(255, 252, 243, 0.92);
 `;
+
+const MobileResults = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: grid;
+    gap: 0.6rem;
+  }
+`;
+
+const DesktopResults = styled.div`
+  display: block;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const RankingCard = styled.article`
+  overflow: hidden;
+  border: 1px solid rgba(47, 33, 0, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 252, 243, 0.94);
+  box-shadow: 0 6px 16px rgba(28, 20, 0, 0.05);
+`;
+
+const RankingCardHeader = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 0.75rem 0.55rem;
+`;
+
+const RankBadge = styled.strong`
+  min-width: 2.15rem;
+  color: #754500;
+  font-size: 1rem;
+`;
+
+const CardShopName = styled.strong`
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #2f2100;
+`;
+
+const ScoreBadge = styled.span`
+  display: grid;
+  justify-items: end;
+  color: #754500;
+
+  strong { font-size: 1.05rem; }
+  small { margin-top: 0.1rem; color: rgba(95, 63, 0, 0.68); font-size: 0.66rem; font-weight: 700; }
+`;
+
+const CardMetrics = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0 0.75rem 0.65rem;
+`;
+
+const Metric = styled.span`
+  display: grid;
+  gap: 0.08rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 9px;
+  background: rgba(255, 244, 217, 0.58);
+
+  span { color: rgba(95, 63, 0, 0.72); font-size: 0.68rem; font-weight: 700; }
+  strong { overflow: hidden; color: #493100; font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
+`;
+
+const CardDetailsButton = styled.button`
+  width: calc(100% - 1.5rem);
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0.75rem;
+  padding: 0.2rem 0;
+  border: 0;
+  border-top: 1px solid rgba(47, 33, 0, 0.08);
+  background: transparent;
+  color: #795817;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+`;
+
+const SortButton = styled.button`
+  border: 0;
+  background: transparent;
+  color: ${({ $active }) => ($active ? '#2f2100' : '#5f3f00')};
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+`;
+
+const RankInline = styled.span`
+  display: inline-flex;
+  min-width: 2.4rem;
+  color: #8a5a00;
+  font-weight: 800;
+`;
+
+const RankingValue = styled.strong`
+  color: #5b3700;
+  font-size: 1rem;
+`;
+
+const SmallValue = styled.small`
+  display: block;
+  margin-top: 0.12rem;
+  color: rgba(47, 33, 0, 0.64);
+`;
+
+const DetailsButton = styled.button`
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 181, 34, 0.13);
+  color: #754500;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+`;
+
+const DetailMetrics = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0 0 0.7rem;
+
+  span {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.4rem;
+    color: rgba(47, 33, 0, 0.72);
+    font-size: 0.8rem;
+  }
+`;
 const Explanation = styled.div`
   margin-top: 2rem;
   text-align: center;
@@ -1201,6 +1487,31 @@ const DetailsRow = styled.tr`
   display: ${(props) => (props.visible ? 'table-row' : 'none')};
 `;
 
+const ScoreExplanationToggle = styled.button`
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 244, 217, 0.68);
+  color: #754500;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+`;
+
 const DetailsContainer = styled.div`
   text-align: left;
   background: linear-gradient(180deg, rgba(255, 248, 225, 0.95), rgba(255, 253, 244, 0.95));
@@ -1222,12 +1533,8 @@ const DetailsContainer = styled.div`
 
   @media (max-width: 768px) {
     padding: 0.75rem;
-    position: -webkit-sticky;
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    width: calc(100vw - 34px);
-    max-width: calc(100vw - 34px);
+    width: 100%;
+    max-width: none;
   }
 `;
 
@@ -1242,6 +1549,14 @@ const TabContainer = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
+
+  @media (max-width: 768px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.2rem;
+    margin-bottom: 0.65rem;
+    padding: 0.25rem;
+  }
 `;
 
 const TabButton = styled.button`
@@ -1260,6 +1575,17 @@ const TabButton = styled.button`
     &:hover {
         background-color: ${(props) => (props.$active ? '#ffbf3f' : 'rgba(255,181,34,0.1)')};
     }
+
+    &:focus-visible {
+        outline: 3px solid rgba(255, 181, 34, 0.5);
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 768px) {
+        min-height: 44px;
+        padding: 0.45rem 0.2rem;
+        font-size: 0.88rem;
+    }
 `;
 
 const FiltersPanel = styled.div`
@@ -1267,8 +1593,44 @@ const FiltersPanel = styled.div`
   border: 1px solid rgba(47, 33, 0, 0.08);
   border-radius: 16px;
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
-  padding: 0.6rem 0.6rem 0.1rem;
+  padding: 0.75rem;
   margin-bottom: 1rem;
+`;
+
+const QuickFiltersBar = styled.div`
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.7fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.65rem;
+  border: 1px solid rgba(47, 33, 0, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.94);
+  box-shadow: 0 6px 18px rgba(28, 20, 0, 0.05);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+    padding: 0.65rem;
+  }
+`;
+
+const FilterSummary = styled.p`
+  margin: 0 0 0.6rem;
+  color: #765116;
+  font-size: 0.8rem;
+  font-weight: 700;
+`;
+
+const CompactLocationHint = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: -0.15rem 0 0.55rem;
+  color: #765116;
+  font-size: 0.78rem;
 `;
 
 const FiltersRow = styled.div`
@@ -1287,6 +1649,11 @@ const FiltersToggleBar = styled.div`
 
 const FiltersToggleButton = styled.button`
   padding: 0.4rem 1.2rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   border-radius: 999px;
   border: 1px solid #ffb522;
   background-color: rgba(255, 244, 217, 0.95);
@@ -1298,6 +1665,27 @@ const FiltersToggleButton = styled.button`
   &:hover {
     background-color: #ffe2a9;
   }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.45);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 768px) {
+    grid-column: 1 / -1;
+  }
+`;
+
+const FilterButtonSummary = styled.small`
+  color: rgba(95, 63, 0, 0.72);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const FilterGroup = styled.div`
@@ -1305,6 +1693,10 @@ const FilterGroup = styled.div`
   flex-direction: column;
   min-width: 180px;
   text-align: left;
+
+  @media (max-width: 768px) {
+    min-width: 0;
+  }
 `;
 
 const FilterLabel = styled.label`
@@ -1322,6 +1714,7 @@ const FilterInput = styled.input`
   font-size: 0.95rem;
   background: rgba(255, 255, 255, 0.95);
   color: #2f2100;
+  min-height: 44px;
 `;
 
 const FilterSelect = styled.select`
@@ -1331,6 +1724,7 @@ const FilterSelect = styled.select`
   font-size: 0.95rem;
   background: rgba(255, 255, 255, 0.95);
   color: #2f2100;
+  min-height: 44px;
 `;
 
 const AttributeFilterSection = styled.div`
