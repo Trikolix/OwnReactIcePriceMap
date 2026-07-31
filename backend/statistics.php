@@ -114,6 +114,7 @@ $mostActiveUsers = $stmtMostActiveUsers->fetchAll(PDO::FETCH_ASSOC);
 $stmtUsersByLevel = $pdo->prepare("SELECT 
     n.id AS nutzer_id,
     n.username,
+    n.current_level,
     up.avatar_path AS avatar_url,
     -- Anzahl Checkins
     COALESCE(ci_ohne_bild.count, 0) + COALESCE(ci_mit_bild.count, 0) AS anzahl_checkins,
@@ -236,7 +237,8 @@ LEFT JOIN (
         GROUP BY n.invited_by
     ) gw ON gw.nutzer_id = n.id
 
-ORDER BY `ep_gesamt`  DESC;");
+HAVING ep_gesamt > 0
+ORDER BY `ep_gesamt` DESC;");
 $stmtUsersByLevel->execute();
 $usersByLevel = $stmtUsersByLevel->fetchAll(PDO::FETCH_ASSOC);
 

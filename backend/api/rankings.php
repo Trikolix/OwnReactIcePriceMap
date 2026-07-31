@@ -7,6 +7,7 @@ if (!defined('RANKINGS_PDO_READY')) {
     require_once __DIR__ . '/../db_connect.php';
 }
 require_once __DIR__ . '/../lib/attribute.php';
+require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/opening_hours.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -25,11 +26,17 @@ function rankingOpenShopIds(PDO $pdo): ?array {
 try {
     $scope = $_GET['scope'] ?? 'global';
     $userId = filter_var($_GET['user_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
+    $favoritesOnly = isset($_GET['favorites_only']) && (int)$_GET['favorites_only'] === 1;
     if (!in_array($scope, ['global', 'personal', 'gourmetCyclist'], true)) {
         throw new InvalidArgumentException('Ungültiger Bewertungsbereich.');
     }
     if ($scope === 'gourmetCyclist') $userId = 1;
     if ($scope === 'personal' && !$userId) throw new InvalidArgumentException('Persönliches Ranking benötigt user_id.');
+    $viewerId = null;
+    if ($favoritesOnly) {
+        $authData = requireAuth($pdo);
+        $viewerId = (int)$authData['user_id'];
+    }
 
     $openShopIds = rankingOpenShopIds($pdo);
     if (is_array($openShopIds) && !$openShopIds) {
@@ -42,6 +49,11 @@ try {
     if ($userId) {
         $userCondition = ' AND c.nutzer_id = :user_id';
         $params[':user_id'] = $userId;
+    }
+    $favoriteCondition = '';
+    if ($viewerId) {
+        $favoriteCondition = ' AND EXISTS (SELECT 1 FROM favoriten favorite WHERE favorite.eisdiele_id = e.id AND favorite.nutzer_id = :favorite_user_id)';
+        $params[':favorite_user_id'] = $viewerId;
     }
     $openCondition = '';
     if (is_array($openShopIds)) {
@@ -139,7 +151,7 @@ LEFT JOIN latest_kugel_price price ON price.eisdiele_id = e.id
 LEFT JOIN waehrungen currency ON currency.id = price.waehrung_id
 LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = price.waehrung_id
   AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)
-WHERE COALESCE(e.status, 'open') <> 'permanent_closed' {$openCondition}
+WHERE COALESCE(e.status, 'open') <> 'permanent_closed' {$openCondition} {$favoriteCondition}
 ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.name ASC";
 
     $stmt = $pdo->prepare($sql);
@@ -171,7 +183,7 @@ ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.na
     }
 
     echo json_encode([
-        'meta' => ['scope' => $scope, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1],
+        'meta' => ['scope' => $scope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1],
         ...$result,
     ], JSON_UNESCAPED_UNICODE);
 } catch (InvalidArgumentException $exception) {

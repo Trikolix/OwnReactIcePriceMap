@@ -83,6 +83,8 @@ function DashBoard() {
       new_user: true,
     };
   });
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const hasHiddenActivityTypes = activeFilterCount < Object.keys(filters).length;
 
   const filterMenuRef = useRef(null);
   const focusedActivityRef = useRef(null);
@@ -279,10 +281,16 @@ function DashBoard() {
     <Page>
       <Header />
       <Container>
-        <HeroCard>
+        <PageHeader>
           <SettingsContainer ref={filterMenuRef}>
-            <SettingsButton onClick={() => setShowFilters(!showFilters)} aria-label="Aktivitätsfilter">
+            <SettingsButton
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              aria-label={hasHiddenActivityTypes ? `Aktivitätsfilter, ${activeFilterCount} von ${Object.keys(filters).length} Aktivitätstypen aktiv` : 'Aktivitätsfilter'}
+              aria-expanded={showFilters}
+            >
               <Settings size={20} color="rgba(47, 33, 0, 0.6)" />
+              {hasHiddenActivityTypes && <FilterStatusDot aria-hidden="true" />}
             </SettingsButton>
             {showFilters && (
               <FilterMenu>
@@ -334,7 +342,7 @@ function DashBoard() {
           <Subtitle>
             Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
           </Subtitle>
-        </HeroCard>
+        </PageHeader>
 
         {showActionNudge && (
           <ActionNudge>
@@ -466,9 +474,10 @@ const Container = styled.div`
   flex-direction: column;
   gap: 0.5rem;
   justify-content: center;
-  width: min(96%, 1040px);
+  width: min(96%, 1200px);
   box-sizing: border-box;
   margin: 0 auto;
+  padding-top: 0.5rem;
 `;
 
 const Title = styled.h2`
@@ -496,10 +505,10 @@ const Placeholder = styled.div`
   width: 100%;
   text-align: center;
   padding: 1.25rem 1rem;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(47, 33, 0, 0.08);
-  background: rgba(255, 252, 243, 0.94);
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.05);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
   color: #6b5327;
 `;
 
@@ -522,37 +531,52 @@ const LoadButton = styled.button`
   }
 `;
 
-const HeroCard = styled.div`
+const PageHeader = styled.header`
   position: relative;
-  background: rgba(255, 252, 243, 0.96);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem 1rem 0.9rem;
-  margin-top: 0.25rem;
+  padding: 0.7rem 2.8rem 0.5rem 0.25rem;
+  margin-bottom: 0.1rem;
+
+  @media (max-width: 700px) {
+    padding: 0.55rem 2.6rem 0.35rem 0.1rem;
+    margin-bottom: 0.2rem;
+  }
 `;
 
 const SettingsContainer = styled.div`
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.55rem;
+  right: 0.2rem;
   z-index: 10;
 `;
 
 const SettingsButton = styled.button`
-  background: none;
-  border: none;
+  position: relative;
+  min-width: 38px;
+  min-height: 38px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(47, 33, 0, 0.08);
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 10px;
   transition: background-color 0.2s;
 
   &:hover {
     background-color: rgba(47, 33, 0, 0.05);
   }
+`;
+
+const FilterStatusDot = styled.span`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #fffaf0;
+  border-radius: 50%;
+  background: #d97706;
 `;
 
 const FilterMenu = styled.div`
@@ -590,6 +614,10 @@ const Subtitle = styled.p`
   text-align: center;
   color: rgba(47, 33, 0, 0.68);
   font-size: 0.95rem;
+
+  @media (max-width: 700px) {
+    display: none;
+  }
 `;
 
 const ActionNudge = styled.div`
@@ -600,9 +628,9 @@ const ActionNudge = styled.div`
   align-items: center;
   border: 1px solid rgba(31, 111, 235, 0.18);
   border-left: 4px solid #1f6feb;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
   padding: 0.75rem 2.4rem 0.75rem 0.85rem;
   color: #2f2100;
 

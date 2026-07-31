@@ -120,7 +120,7 @@ const RankingScoreExplanation = ({ type }) => {
 };
 
 const Ranking = () => {
-    const { userId, userPosition, setUserPosition } = useUser();
+    const { userId, userPosition, setUserPosition, authToken } = useUser();
     const [eisdielenKugel, setEisdielenKugel] = useState([]);
     const [eisdielenSofteis, setEisdielenSofteis] = useState([]);
     const [eisdielenEisbecher, setEisdielenEisbecher] = useState([]);
@@ -133,6 +133,7 @@ const Ranking = () => {
     const [distanceFilter, setDistanceFilter] = useState('any');
     const [ratingScope, setRatingScope] = useState('global');
     const [reliabilityMode, setReliabilityMode] = useState('reliable');
+    const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [locationStatus, setLocationStatus] = useState(userPosition ? 'available' : 'idle');
     const [locationError, setLocationError] = useState(null);
     const [attributeOptions, setAttributeOptions] = useState([]);
@@ -148,7 +149,6 @@ const Ranking = () => {
     });
     const [areFiltersExpanded, setAreFiltersExpanded] = useState(false);
     const [showScoreExplanation, setShowScoreExplanation] = useState(false);
-    const [showHeroDescription, setShowHeroDescription] = useState(false);
     const [showExpandedNearbyResults, setShowExpandedNearbyResults] = useState(true);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const buildDefaultDateTimeValue = React.useCallback(() => {
@@ -237,6 +237,12 @@ const Ranking = () => {
         }
     }, [userPosition]);
 
+    useEffect(() => {
+        if (!userId) {
+            setFavoritesOnly(false);
+        }
+    }, [userId]);
+
     const requestUserLocation = () => {
         if (!navigator.geolocation) {
             setLocationStatus('unsupported');
@@ -288,11 +294,14 @@ const Ranking = () => {
 
                 const queryParts = [`scope=${encodeURIComponent(ratingScope)}`];
                 if (ratingUserId !== null) queryParts.push(`user_id=${ratingUserId}`);
+                if (favoritesOnly && userId) queryParts.push('favorites_only=1');
                 if (openFilterQueryString) {
                     queryParts.push(openFilterQueryString);
                 }
                 const query = queryParts.length ? `?${queryParts.join('&')}` : '';
-                const response = await fetch(`${apiUrl}/api/rankings.php${query}`);
+                const response = await fetch(`${apiUrl}/api/rankings.php${query}`, {
+                    headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+                });
                 if (!response.ok) throw new Error('Fehler beim Abrufen des Rankings');
                 const payload = await response.json();
                 const dataKugel = Array.isArray(payload.kugel) ? payload.kugel : [];
@@ -313,7 +322,7 @@ const Ranking = () => {
         };
 
         fetchData();
-    }, [apiUrl, ratingScope, userId, syncAttributeFilters, openFilterQueryString]);
+    }, [apiUrl, ratingScope, userId, authToken, favoritesOnly, syncAttributeFilters, openFilterQueryString]);
 
     const sortTableKugel = (key) => {
         let direction = 'descending';
@@ -595,8 +604,9 @@ const Ranking = () => {
     const filterSummary = [
         ratingScope === 'global' ? 'Global' : ratingScope === 'gourmetCyclist' ? 'TheGourmetCyclist' : 'Persönlich',
         reliabilityMode === 'reliable' ? 'verlässlich' : 'alle Daten',
+        favoritesOnly ? 'meine Favoriten' : null,
         openFilterMode === 'now' ? 'jetzt geöffnet' : openFilterMode === 'custom' ? 'zu Termin geöffnet' : 'alle Zeiten',
-    ].join(' · ');
+    ].filter(Boolean).join(' · ');
     const renderShopDetails = (shop) => (
         <DetailsContainer>
             <h3><CleanLink to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</CleanLink></h3>
@@ -655,6 +665,19 @@ const Ranking = () => {
                         />
                     )}
                 </FilterGroup>
+                {userId && (
+                    <FilterGroup>
+                        <FilterLabel>Favoriten</FilterLabel>
+                        <FavoriteFilterButton
+                            type="button"
+                            $active={favoritesOnly}
+                            onClick={() => setFavoritesOnly((previous) => !previous)}
+                            aria-pressed={favoritesOnly}
+                        >
+                            Nur meine Favoriten
+                        </FavoriteFilterButton>
+                    </FilterGroup>
+                )}
             </FiltersRow>
             {attributeOptions.length > 0 && (
                 <AttributeFilterSection>
@@ -729,12 +752,6 @@ const Ranking = () => {
                 <TableContainer className="container">
                     <HeroCard>
                         <PageTitle><Trophy size={31} aria-hidden="true" /> Eisdielen-Ranking</PageTitle>
-                        <PageSubtitle $expanded={showHeroDescription}>
-                          Vergleiche Eisdielen nach Geschmack, Preis-Leistung und Community-Rating.
-                        </PageSubtitle>
-                        <HeroInfoToggle type="button" onClick={() => setShowHeroDescription((current) => !current)} aria-expanded={showHeroDescription}>
-                            {showHeroDescription ? 'Info ausblenden' : 'Was wird verglichen?'} <ChevronDown size={15} aria-hidden="true" />
-                        </HeroInfoToggle>
                     </HeroCard>
                     <TabContainer role="tablist" aria-label="Art des Eises">
                         <TabButton
@@ -1168,38 +1185,6 @@ const PageTitle = styled.h2`
   font-size: clamp(1.35rem, 2vw, 1.8rem);
   color: #2f2100;
   line-height: 1.2;
-`;
-
-const PageSubtitle = styled.p`
-  margin: 0.35rem 0 0;
-  color: rgba(47, 33, 0, 0.7);
-  font-size: 0.95rem;
-
-  @media (max-width: 768px) {
-    display: ${({ $expanded }) => ($expanded ? 'block' : 'none')};
-    margin-top: 0.5rem;
-    font-size: 0.86rem;
-  }
-`;
-
-const HeroInfoToggle = styled.button`
-  display: none;
-
-  @media (max-width: 768px) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    min-height: 30px;
-    margin-top: 0.25rem;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #7b4a00;
-    font: inherit;
-    font-size: 0.76rem;
-    font-weight: 700;
-  }
 `;
 
 const MetaChips = styled.div`
@@ -1818,6 +1803,21 @@ const FilterSelect = styled.select`
   background: rgba(255, 255, 255, 0.95);
   color: #2f2100;
   min-height: 44px;
+`;
+
+const FavoriteFilterButton = styled.button`
+  min-height: 44px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid ${({ $active }) => $active ? 'rgba(255, 181, 34, 0.9)' : 'rgba(47, 33, 0, 0.14)'};
+  border-radius: 10px;
+  background: ${({ $active }) => $active ? 'rgba(255, 181, 34, 0.2)' : 'rgba(255, 255, 255, 0.95)'};
+  color: #4b3100;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.7); outline-offset: 2px; }
 `;
 
 const AttributeFilterSection = styled.div`

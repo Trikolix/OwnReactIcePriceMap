@@ -1,20 +1,24 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/team_challenges.php';
 
 ensureTeamChallengeSchema($pdo);
 
-$nutzerId = $_GET['nutzer_id'] ?? null;
-
-if (!$nutzerId) {
-    echo json_encode(["error" => "nutzer_id fehlt"]);
-    exit;
-}
+$authData = requireAuth($pdo);
+$nutzerId = (int)$authData['user_id'];
 
 $stmt = $pdo->prepare("
     SELECT 
-        e.*,
+        e.id,
+        e.name,
+        e.adresse,
+        e.latitude,
+        e.longitude,
+        e.status,
+        e.openingHours,
+        e.opening_hours_note,
         f.hinzugefuegt_am AS favorit_seit,
 
         -- Letzter Kugelpreis

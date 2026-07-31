@@ -428,16 +428,12 @@ const PageWrapper = styled.div`
 const Content = styled.main`
   width: min(96%, 1200px);
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0.5rem;
 `;
 
-const TitleSection = styled.section`
-  margin-bottom: 1rem;
-  background: ${CARD_BG};
-  border: 1px solid ${BORDER};
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem 1rem 0.9rem;
+const TitleSection = styled.header`
+  margin-bottom: 0.4rem;
+  padding: 0.7rem 0.25rem 0.5rem;
 
   h1 {
     margin: 0 0 0.35rem;
@@ -453,6 +449,16 @@ const TitleSection = styled.section`
     text-align: center;
     font-size: 0.95rem;
   }
+
+  @media (max-width: 700px) {
+    h1 {
+      margin-bottom: 0;
+    }
+
+    p {
+      display: none;
+    }
+  }
 `;
 
 const FiltersToggleBar = styled.div`
@@ -460,12 +466,9 @@ const FiltersToggleBar = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 0.75rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 14px;
-  border: 1px solid ${BORDER};
-  background: rgba(255, 252, 243, 0.9);
-  box-shadow: 0 6px 16px rgba(28, 20, 0, 0.04);
+  margin-bottom: 0.45rem;
+  padding: 0.55rem 0.1rem;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.1);
 `;
 
 const ToggleFiltersButton = styled.button`
@@ -538,10 +541,10 @@ const CollapsedResetButton = styled.button`
 
 const FiltersPanel = styled.section`
   background: ${PANEL_BG};
-  border-radius: 18px;
-  padding: 24px;
-  margin-bottom: 1rem;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 0.65rem;
+  box-shadow: none;
   border: 1px solid ${BORDER};
   display: grid;
   gap: 16px;
@@ -641,12 +644,9 @@ const ResultsBar = styled.div`
   justify-content: space-between;
   gap: 12px;
   align-items: flex-end;
-  margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 16px;
-  border: 1px solid ${BORDER};
-  background: rgba(255, 252, 243, 0.92);
-  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.05);
+  margin-bottom: 0.55rem;
+  padding: 0.25rem 0.1rem 0.55rem;
+  border-bottom: 1px solid rgba(47, 33, 0, 0.1);
 `;
 
 const ResultsInfo = styled.div`
@@ -686,7 +686,7 @@ const SortSelect = styled.select`
 const RoutesGrid = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   padding: 0.25rem 0 2rem;
 `;
 

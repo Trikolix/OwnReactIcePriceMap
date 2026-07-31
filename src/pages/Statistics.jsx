@@ -1,5 +1,5 @@
 import Header from '../Header';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styled from 'styled-components';
 import { Link, useSearchParams } from 'react-router-dom';
 import UserAvatar from '../components/UserAvatar';
@@ -109,6 +109,8 @@ function Statistics() {
   const [rankingsData, setRankingsData] = useState(null);
   const [rankingsLoading, setRankingsLoading] = useState(false);
   const [expandedRankingEntry, setExpandedRankingEntry] = useState(null);
+  const lastWrittenStatisticsQuery = useRef(null);
+  const isApplyingExternalStatisticsQuery = useRef(false);
 
   // Tab wechseln und URL aktualisieren
   const changeTab = (tab) => {
@@ -116,11 +118,24 @@ function Statistics() {
   };
 
   useEffect(() => {
+    const queryString = searchParams.toString();
+    if (lastWrittenStatisticsQuery.current === queryString) {
+      lastWrittenStatisticsQuery.current = null;
+      return;
+    }
+
     const nextTabParam = searchParams.get('tab');
     const nextTab = nextTabParam === 'rankings' ? 'activeUsers' : (nextTabParam || 'activeUsers');
     const nextPeriodParam = searchParams.get('period');
     const nextPeriod = ['overall', 'week', 'month'].includes(nextPeriodParam) ? nextPeriodParam : 'overall';
     const nextArchiveKey = nextPeriod === 'overall' ? '' : (searchParams.get('period_key') || '');
+
+    const needsStateUpdate = nextTab !== activeTab
+      || nextPeriod !== rankingPeriod
+      || nextArchiveKey !== rankingArchiveKey;
+    // Browser navigation (or a manually edited URL) wins over the current UI state.
+    // The write effect below skips once, so it cannot write stale state back into the URL.
+    isApplyingExternalStatisticsQuery.current = needsStateUpdate;
 
     if (nextTab !== activeTab) {
       setActiveTab(nextTab);
@@ -134,6 +149,11 @@ function Statistics() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (isApplyingExternalStatisticsQuery.current) {
+      isApplyingExternalStatisticsQuery.current = false;
+      return;
+    }
+
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('tab', activeTab);
 
@@ -150,6 +170,7 @@ function Statistics() {
     }
 
     if (nextParams.toString() !== searchParams.toString()) {
+      lastWrittenStatisticsQuery.current = nextParams.toString();
       setSearchParams(nextParams, { replace: true });
     }
   }, [activeTab, rankingArchiveKey, rankingPeriod, searchParams, setSearchParams]);
@@ -452,13 +473,25 @@ function Statistics() {
     }));
   };
 
-  const formatCountdown = (countdown) => {
-    const seconds = Number(countdown?.seconds_until_end || 0);
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    return `${days} Tage ${hours} Std.`;
+  const overallLeaderboard = useMemo(
+    () => (data.usersByLevel || []).filter((entry) => Number(entry.ep_gesamt) > 0),
+    [data.usersByLevel]
+  );
+  const ownOverallPosition = userId
+    ? overallLeaderboard.findIndex((entry) => Number(entry.nutzer_id) === Number(userId))
+    : -1;
+  const ownPeriodEntry = userId
+    ? (rankingsData?.leaderboard || []).find((entry) => Number(entry.user_id) === Number(userId))
+    : null;
+  const ownRankingRank = rankingPeriod === 'overall'
+    ? (ownOverallPosition >= 0 ? ownOverallPosition + 1 : null)
+    : (ownPeriodEntry?.rank ?? null);
+  const jumpToOwnRank = () => {
+    const isMobile = window.matchMedia('(max-width: 700px)').matches;
+    const target = document.getElementById(isMobile ? 'statistics-current-user-mobile' : 'statistics-current-user-desktop');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target?.focus({ preventScroll: true });
   };
-
   const hasRankingEntries = (rankingsData?.leaderboard || []).length > 0;
   let emptyRankingMessage = 'Noch keine Einträge im Gesamtranking.';
   if (rankingPeriod === 'month') {
@@ -470,22 +503,27 @@ function Statistics() {
 
 
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+    <StatisticsPage>
       <Header />
-      <Title>Aktivitäten</Title>
-      <Container>Lade Dashboard Daten...</Container>
-    </div >
+      <StatisticsState aria-live="polite">
+        <LoadingSpinner aria-hidden="true" />
+        <Title>Statistiken</Title>
+        <span>Statistiken werden geladen …</span>
+      </StatisticsState>
+    </StatisticsPage>
   );
   if (error !== null) return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#ffb522' }}>
+    <StatisticsPage>
       <Header />
-      <Title>Aktivitäten</Title>
-      <Container>Fehler beim Abruf der Daten</Container>
-    </div >
+      <StatisticsState $error role="alert">
+        <Title>Statistiken</Title>
+        <span>Die Statistiken konnten nicht geladen werden.</span>
+      </StatisticsState>
+    </StatisticsPage>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#fff7e8' }}>
+    <StatisticsPage>
       <Seo
         title="Eispreis-Statistiken Deutschland | Ice-App"
         description="Statistiken der Ice-App: regionale Eispreise, beliebte Sorten, Community-Aktivität und Preisübersichten für Eisdielen in Deutschland."
@@ -499,9 +537,8 @@ function Statistics() {
         canonical="/statistics"
       />
       <Header />
-      <div style={{ width: '100%', minHeight: '100%', backgroundColor: 'transparent' }}>
         <Container>
-          <HeroCard>
+          <PageHeader>
             <Title>Statistiken</Title>
             <HeroSubtitle $expanded={showPageIntro}>
               Community-Aktivität, beliebte Sorten und regionale Preisübersichten auf einen Blick.
@@ -515,7 +552,7 @@ function Statistics() {
               {showPageIntro ? 'Info ausblenden' : 'Worum geht’s?'}
               <ChevronDown size={15} aria-hidden="true" />
             </PageInfoToggle>
-          </HeroCard>
+          </PageHeader>
           <TabContainer role="tablist" aria-label="Statistikbereiche">
             <TabButton
               type="button"
@@ -1043,6 +1080,11 @@ function Statistics() {
                       ))}
                     </ArchiveSelect>
                   )}
+                  {ownRankingRank !== null && (
+                    <JumpToOwnRank type="button" onClick={jumpToOwnRank}>
+                      Zu deinem Rang #{ownRankingRank} <ChevronDown size={15} aria-hidden="true" />
+                    </JumpToOwnRank>
+                  )}
                   </HeaderControls>
                 </SectionHeaderRow>
 
@@ -1058,16 +1100,23 @@ function Statistics() {
                   <>
                     <MobileContent>
                       <MobileCardList>
-                        {data.usersByLevel.map((entry, index) => {
+                        {overallLeaderboard.map((entry, index) => {
                           const key = `overall-${entry.nutzer_id}`;
                           const isExpanded = expandedRankingEntry === key;
                           return (
-                            <MobileRankingCard key={key} $highlighted={Number(userId) === Number(entry.nutzer_id)}>
+                            <MobileRankingCard
+                              key={key}
+                              id={Number(userId) === Number(entry.nutzer_id) ? 'statistics-current-user-mobile' : undefined}
+                              tabIndex={Number(userId) === Number(entry.nutzer_id) ? -1 : undefined}
+                              $highlighted={Number(userId) === Number(entry.nutzer_id)}
+                            >
                               <RankingCardTop>
                                 <RankingPosition>#{index + 1}</RankingPosition>
                                 <UserInfo>
                                   <UserAvatar size={38} userId={entry.nutzer_id} name={entry.username} avatarUrl={entry.avatar_url} />
                                   <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
+                                  <LevelTag>Level {entry.current_level || 1}</LevelTag>
+                                  {Number(userId) === Number(entry.nutzer_id) && <CurrentUserTag>Du</CurrentUserTag>}
                                 </UserInfo>
                                 <RankingPoints><strong>{entry.ep_gesamt}</strong><small>EP</small></RankingPoints>
                               </RankingCardTop>
@@ -1094,7 +1143,9 @@ function Statistics() {
                         <Table $stickyFirstColumn>
                           <thead>
                             <tr>
+                              <Th>Rang</Th>
                               <Th>Nutzer</Th>
+                              <Th>Level</Th>
                               <Th>EP Gesamt</Th>
                               <Th>Checkins</Th>
                               <Th>Bewertungen</Th>
@@ -1106,14 +1157,22 @@ function Statistics() {
                             </tr>
                           </thead>
                           <tbody>
-                            {data.usersByLevel.map((entry) => (
-                              <tr key={entry.nutzer_id}>
+                            {overallLeaderboard.map((entry, index) => (
+                              <RankingTableRow
+                                key={entry.nutzer_id}
+                                id={Number(userId) === Number(entry.nutzer_id) ? 'statistics-current-user-desktop' : undefined}
+                                tabIndex={Number(userId) === Number(entry.nutzer_id) ? -1 : undefined}
+                                $highlighted={Number(userId) === Number(entry.nutzer_id)}
+                              >
+                                <Td><strong>#{index + 1}</strong></Td>
                                 <Td>
                                   <UserInfo>
                                     <UserAvatar size={34} userId={entry.nutzer_id} name={entry.username} avatarUrl={entry.avatar_url} />
                                     <UserLink to={`/user/${entry.nutzer_id}`}>{entry.username}</UserLink>
+                                    {Number(userId) === Number(entry.nutzer_id) && <CurrentUserTag>Du</CurrentUserTag>}
                                   </UserInfo>
                                 </Td>
+                                <Td>Level {entry.current_level || 1}</Td>
                                 <Td><strong>{entry.ep_gesamt}</strong></Td>
                                 <Td>{entry.anzahl_checkins} ({(entry.ep_checkins_ohne_bild + entry.ep_checkins_mit_bild)}EP)</Td>
                                 <Td>{entry.anzahl_bewertungen} ({entry.ep_bewertungen}EP)</Td>
@@ -1122,7 +1181,7 @@ function Statistics() {
                                 <Td>{entry.ep_eisdielen} EP</Td>
                                 <Td>{entry.ep_geworbene_nutzer} EP</Td>
                                 <Td>{entry.ep_awards} EP</Td>
-                              </tr>
+                              </RankingTableRow>
                             ))}
                           </tbody>
                         </Table>
@@ -1131,26 +1190,6 @@ function Statistics() {
                   </>
                 ) : (
                   <>
-                    {rankingsData?.current_user && (
-                      <RankingHeroCard>
-                        <RankingHeroMain>
-                          <span>Dein aktueller Rang</span>
-                          <strong>#{rankingsData.current_user.rank}</strong>
-                          <small>{rankingsData.current_user.total_ep} EP im Zeitraum</small>
-                        </RankingHeroMain>
-                        <RankingHeroMeta>
-                          {rankingPeriod !== 'overall' && rankingsData.countdown && (
-                            <MetaPill>Restzeit: {formatCountdown(rankingsData.countdown)}</MetaPill>
-                          )}
-                          {rankingsData.progress_to_next_rank && (
-                            <MetaPill $accent>
-                              Noch {rankingsData.progress_to_next_rank.missing_ep} EP bis Rang #{rankingsData.progress_to_next_rank.target_rank}
-                            </MetaPill>
-                          )}
-                        </RankingHeroMeta>
-                      </RankingHeroCard>
-                    )}
-
                     {hasRankingEntries ? (
                       <>
                         <MobileContent>
@@ -1160,12 +1199,18 @@ function Statistics() {
                               const isExpanded = expandedRankingEntry === key;
                               const checkins = (entry.counts.checkins_with_photo || 0) + (entry.counts.checkins_without_photo || 0);
                               return (
-                                <MobileRankingCard key={key} $highlighted={Number(userId) === Number(entry.user_id)}>
+                                <MobileRankingCard
+                                  key={key}
+                                  id={Number(userId) === Number(entry.user_id) ? 'statistics-current-user-mobile' : undefined}
+                                  tabIndex={Number(userId) === Number(entry.user_id) ? -1 : undefined}
+                                  $highlighted={Number(userId) === Number(entry.user_id)}
+                                >
                                   <RankingCardTop>
                                     <RankingPosition>#{entry.rank}</RankingPosition>
                                     <UserInfo>
                                       <UserAvatar size={38} userId={entry.user_id} name={entry.username} avatarUrl={entry.avatar_url} />
                                       <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
+                                      {Number(userId) === Number(entry.user_id) && <CurrentUserTag>Du</CurrentUserTag>}
                                     </UserInfo>
                                     <RankingPoints><strong>{entry.total_ep}</strong><small>EP</small></RankingPoints>
                                   </RankingCardTop>
@@ -1206,12 +1251,18 @@ function Statistics() {
                               </thead>
                               <tbody>
                                 {(rankingsData?.leaderboard || []).map((entry) => (
-                                  <RankingTableRow key={`period-${entry.user_id}`} $highlighted={Number(userId) === Number(entry.user_id)}>
+                                  <RankingTableRow
+                                    key={`period-${entry.user_id}`}
+                                    id={Number(userId) === Number(entry.user_id) ? 'statistics-current-user-desktop' : undefined}
+                                    tabIndex={Number(userId) === Number(entry.user_id) ? -1 : undefined}
+                                    $highlighted={Number(userId) === Number(entry.user_id)}
+                                  >
                                     <Td><strong>#{entry.rank}</strong></Td>
                                     <Td>
                                       <UserInfo>
                                         <UserAvatar size={34} userId={entry.user_id} name={entry.username} avatarUrl={entry.avatar_url} />
                                         <UserLink to={`/user/${entry.user_id}`}>{entry.username}</UserLink>
+                                        {Number(userId) === Number(entry.user_id) && <CurrentUserTag>Du</CurrentUserTag>}
                                       </UserInfo>
                                     </Td>
                                     <Td><strong>{entry.total_ep}</strong></Td>
@@ -1238,18 +1289,21 @@ function Statistics() {
             )}
           </TabContent>
         </Container>
-      </div>
-    </div>
+    </StatisticsPage>
   )
 }
 
 export default Statistics;
 
-const Container = styled.div`
+const StatisticsPage = styled.div`
+  min-height: 100vh;
   background:
-    radial-gradient(circle at top right, rgba(255, 218, 140, 0.28), transparent 45%),
+    radial-gradient(circle at top right, rgba(255, 218, 140, 0.32), transparent 45%),
     linear-gradient(180deg, #fffaf0 0%, #fff7e7 100%);
-  min-height: 100%;
+`;
+
+const Container = styled.div`
+  min-height: calc(100vh - 72px);
   gap: 1rem;
   width: min(96%, 1480px);
   box-sizing: border-box;
@@ -1265,17 +1319,42 @@ const Title = styled.h2`
   color: #2f2100;
 `;
 
-const HeroCard = styled.div`
-  background: rgba(255, 252, 243, 0.96);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem 1rem 0.9rem;
-  margin-bottom: 1rem;
+const PageHeader = styled.header`
+  padding: 0.7rem 0.25rem 0.5rem;
+  margin-bottom: 0.25rem;
 
   @media (max-width: 700px) {
-    padding: 0.75rem 0.9rem;
-    margin-bottom: 0.65rem;
+    padding: 0.55rem 0.1rem 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+`;
+
+const StatisticsState = styled.main`
+  min-height: calc(100vh - 72px);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1.5rem;
+  color: ${({ $error }) => ($error ? '#a63d2a' : '#6c4c13')};
+  text-align: center;
+
+  span {
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+`;
+
+const LoadingSpinner = styled.span`
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 181, 34, 0.28);
+  border-top-color: #c47700;
+  border-radius: 50%;
+  animation: statistics-loading-spin 0.8s linear infinite;
+
+  @keyframes statistics-loading-spin {
+    to { transform: rotate(360deg); }
   }
 `;
 
@@ -1371,6 +1450,37 @@ const ArchiveSelect = styled.select`
   }
 `;
 
+const JumpToOwnRank = styled.button`
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(255, 181, 34, 0.42);
+  border-radius: 10px;
+  background: rgba(255, 244, 217, 0.68);
+  color: #754500;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 232, 178, 0.8);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.44);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 700px) {
+    width: 100%;
+    min-height: 44px;
+  }
+`;
+
 const ToggleButton = styled.button`
   border: none;
   border-radius: 999px;
@@ -1383,38 +1493,6 @@ const ToggleButton = styled.button`
   @media (max-width: 700px) {
     min-height: 36px;
     padding: 0.45rem 0.4rem;
-  }
-`;
-
-const RankingHeroCard = styled.div`
-  margin: 0 1rem 1rem;
-  padding: 1rem;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255,181,34,0.16), rgba(255,122,24,0.10));
-  border: 1px solid rgba(255, 181, 34, 0.25);
-
-  @media (max-width: 700px) {
-    margin: 0 0.75rem 0.75rem;
-    padding: 0.8rem;
-  }
-`;
-
-const RankingHeroMain = styled.div`
-  display: grid;
-  gap: 0.2rem;
-
-  span {
-    color: #6b5327;
-    font-weight: 700;
-  }
-
-  strong {
-    font-size: 1.8rem;
-    color: #2f2100;
-  }
-
-  small {
-    color: #6b5327;
   }
 `;
 
@@ -1444,13 +1522,6 @@ const RankingDisclaimer = styled.div`
     padding: 0.75rem 0.8rem;
     font-size: 0.82rem;
   }
-`;
-
-const RankingHeroMeta = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.8rem;
 `;
 
 const CellSubline = styled.div`
@@ -1954,12 +2025,12 @@ const TabContainer = styled.div`
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.4rem;
   padding: 0.35rem;
-  background: rgba(255, 252, 243, 0.88);
-  border: 1px solid rgba(47, 33, 0, 0.08);
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(47, 33, 0, 0.06);
   border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(28, 20, 0, 0.05);
+  box-shadow: none;
 
   @media (max-width: 700px) {
     display: grid;
@@ -2011,7 +2082,7 @@ const TabLabel = styled.span`
 
 
 const TabContent = styled.div`
-  margin-top: 1rem;
+  margin-top: 0.45rem;
   display: grid;
   gap: 1rem;
   min-width: 0;
@@ -2107,6 +2178,30 @@ const UserInfo = styled.div`
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+`;
+
+const CurrentUserTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  background: rgba(255, 181, 34, 0.3);
+  color: #6f3c00;
+  font-size: 0.68rem;
+  font-weight: 800;
+`;
+
+const LevelTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  background: rgba(47, 33, 0, 0.06);
+  color: #6b5327;
+  font-size: 0.68rem;
+  font-weight: 800;
 `;
 
 const MobileRankingCard = styled.article`

@@ -749,7 +749,6 @@ const Header = ({ refreshShops }) => {
                 <MenuSection>
                   <MenuSectionTitle>Mein Konto</MenuSectionTitle>
                   <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
-                  <MenuItemLink to="/favoriten" onClick={closeMenu}>Favoriten</MenuItemLink>
                   <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
                   {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
                   {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
