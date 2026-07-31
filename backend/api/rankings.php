@@ -59,6 +59,8 @@ WITH eligible AS (
     SELECT c.eisdiele_id, c.nutzer_id, c.typ,
       c.geschmackbewertung AS taste,
       CASE WHEN c.waffelbewertung IS NULL THEN NULL ELSE c.waffelbewertung END AS waffle,
+      CASE WHEN c.waffelbewertung IS NULL THEN c.geschmackbewertung
+           ELSE ((4 * c.geschmackbewertung + c.waffelbewertung) / 5.0) END AS taste_factor,
       CASE
         WHEN c.typ = 'Kugel' THEN COALESCE(c.preisleistungsbewertung, c.größenbewertung)
         ELSE c.preisleistungsbewertung
@@ -82,7 +84,7 @@ WITH eligible AS (
       {$userCondition}
 ), user_scores AS (
     SELECT eisdiele_id, nutzer_id, typ, COUNT(*) AS rating_count,
-      AVG(score) AS user_score, AVG(taste) AS user_taste,
+      AVG(score) AS user_score, AVG(taste) AS user_taste, AVG(taste_factor) AS user_taste_factor,
       AVG(waffle) AS user_waffle, AVG(value_rating) AS user_value
     FROM eligible
     GROUP BY eisdiele_id, nutzer_id, typ
@@ -92,6 +94,7 @@ WITH eligible AS (
       COUNT(*) AS user_count,
       SUM(user_score * SQRT(rating_count)) / NULLIF(SUM(SQRT(rating_count)), 0) AS raw_score,
       SUM(user_taste * SQRT(rating_count)) / NULLIF(SUM(SQRT(rating_count)), 0) AS taste_score,
+      SUM(user_taste_factor * SQRT(rating_count)) / NULLIF(SUM(SQRT(rating_count)), 0) AS taste_factor_score,
       SUM(user_waffle * SQRT(rating_count)) / NULLIF(SUM(CASE WHEN user_waffle IS NOT NULL THEN SQRT(rating_count) ELSE 0 END), 0) AS waffle_score,
       SUM(user_value * SQRT(rating_count)) / NULLIF(SUM(SQRT(rating_count)), 0) AS value_score
     FROM user_scores
@@ -121,6 +124,8 @@ SELECT s.eisdiele_id, s.typ, e.name, e.adresse, e.openingHours, e.opening_hours_
        ROUND((s.user_count / (s.user_count + CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END)) * s.raw_score
           + ((CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END) / (s.user_count + CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END)) * m.global_mean, 2) AS ranking_score,
        ROUND(s.taste_score, 2) AS avg_geschmack,
+       ROUND(s.taste_factor_score, 2) AS avg_geschmacksfaktor,
+       ROUND(s.taste_factor_score, 2) AS finaler_geschmacksfaktor,
        ROUND(s.waffle_score, 2) AS avg_waffel,
        ROUND(s.value_score, 2) AS avg_preisleistung,
        s.rating_count AS checkin_anzahl, s.user_count AS nutzeranzahl,
