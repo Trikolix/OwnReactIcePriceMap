@@ -49,14 +49,14 @@ $sql = "SELECT
     (SELECT p1.preis 
      FROM preise p1 
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
-     ORDER BY p1.gemeldet_am DESC 
+     ORDER BY p1.gemeldet_am DESC, p1.id DESC 
      LIMIT 1) AS kugel_preis,
      
     (SELECT w1.symbol 
      FROM preise p1 
      LEFT JOIN waehrungen w1 ON p1.waehrung_id = w1.id
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
-     ORDER BY p1.gemeldet_am DESC 
+     ORDER BY p1.gemeldet_am DESC, p1.id DESC 
      LIMIT 1) AS kugel_waehrung,
 
     -- Kugel-Preis in Euro umgerechnet
@@ -70,21 +70,21 @@ $sql = "SELECT
      LEFT JOIN wechselkurse wk1 ON p1.waehrung_id = wk1.von_waehrung_id 
          AND wk1.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel' 
-     ORDER BY p1.gemeldet_am DESC 
+     ORDER BY p1.gemeldet_am DESC, p1.id DESC 
      LIMIT 1) AS kugel_preis_eur,
 
     -- Letzter gemeldeter Preis für Softeis mit Währung
     (SELECT p2.preis 
      FROM preise p2 
      WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
-     ORDER BY p2.gemeldet_am DESC 
+     ORDER BY p2.gemeldet_am DESC, p2.id DESC 
      LIMIT 1) AS softeis_preis,
      
     (SELECT w2.symbol 
      FROM preise p2 
      LEFT JOIN waehrungen w2 ON p2.waehrung_id = w2.id
      WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
-     ORDER BY p2.gemeldet_am DESC 
+     ORDER BY p2.gemeldet_am DESC, p2.id DESC 
      LIMIT 1) AS softeis_waehrung,
 
     -- Softeis-Preis in Euro umgerechnet
@@ -98,7 +98,7 @@ $sql = "SELECT
      LEFT JOIN wechselkurse wk2 ON p2.waehrung_id = wk2.von_waehrung_id 
          AND wk2.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
      WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis' 
-     ORDER BY p2.gemeldet_am DESC 
+     ORDER BY p2.gemeldet_am DESC, p2.id DESC 
      LIMIT 1) AS softeis_preis_eur,
 
     -- Favoritenstatus des Nutzers
@@ -191,11 +191,13 @@ FROM eisdielen e
 -- Letzter Kugelpreis pro Eisdiele
 LEFT JOIN preise p ON e.id = p.eisdiele_id 
 AND p.typ = 'kugel'
-AND p.gemeldet_am = (
-    SELECT MAX(p2.gemeldet_am) 
-    FROM preise p2 
-    WHERE p2.eisdiele_id = p.eisdiele_id 
-    AND p2.typ = 'kugel'
+AND p.id = (
+    SELECT p2.id
+    FROM preise p2
+    WHERE p2.eisdiele_id = p.eisdiele_id
+      AND p2.typ = 'kugel'
+    ORDER BY p2.gemeldet_am DESC, p2.id DESC
+    LIMIT 1
 )
 
 -- Favoriten des Nutzers

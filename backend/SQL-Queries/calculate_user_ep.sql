@@ -68,6 +68,7 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT gemeldet_von, COUNT(*) AS count
     FROM preise
+    WHERE is_reward_eligible = 1
     GROUP BY gemeldet_von
 ) pm ON pm.gemeldet_von = n.id
 

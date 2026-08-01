@@ -381,13 +381,13 @@ function buildNotificationDeeplink(array $notification): ?string
             $targetUserId = (int)($data['user_registration_id'] ?? $notification['referenz_id']);
             $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
             return $targetUserId > 0
-                ? '/dashboard?focusNewUser=' . $targetUserId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
+                ? '/dashboard/target?type=new_user&id=' . $targetUserId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
                 : '/dashboard';
         case 'kommentar_award':
             $awardId = (int)($data['user_award_id'] ?? 0);
             $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
             return $awardId > 0
-                ? '/dashboard?focusAward=' . $awardId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
+                ? '/dashboard/target?type=award&id=' . $awardId . ($commentId > 0 ? '&focusComment=' . $commentId : '')
                 : '/dashboard';
         case 'like':
             $entityType = $data['entity_type'] ?? '';
@@ -422,18 +422,18 @@ function buildNotificationDeeplink(array $notification): ?string
                     return '/user/' . (int)$data['route_autor_id'] . '?tab=routes&focusRoute=' . (int)$data['route_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
                 }
                 if (!empty($data['user_registration_id'])) {
-                    return '/dashboard?focusNewUser=' . (int)$data['user_registration_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                    return '/dashboard/target?type=new_user&id=' . (int)$data['user_registration_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
                 }
                 if (!empty($data['user_award_id'])) {
-                    return '/dashboard?focusAward=' . (int)$data['user_award_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                    return '/dashboard/target?type=award&id=' . (int)$data['user_award_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
                 }
                 return null;
             } elseif ($entityType === 'user_registration') {
                 $targetUserId = (int)($data['user_registration_id'] ?? $entityId);
-                return $targetUserId > 0 ? '/dashboard?focusNewUser=' . $targetUserId : null;
+                return $targetUserId > 0 ? '/dashboard/target?type=new_user&id=' . $targetUserId : null;
             } elseif ($entityType === 'user_award') {
                 $awardId = (int)($data['user_award_id'] ?? $entityId);
-                return $awardId > 0 ? '/dashboard?focusAward=' . $awardId : null;
+                return $awardId > 0 ? '/dashboard/target?type=award&id=' . $awardId : null;
             }
             return null;
         case 'new_user':
@@ -458,9 +458,9 @@ function buildNotificationDeeplink(array $notification): ?string
                 } elseif ($data['reference_type'] === 'route_kommentar') {
                     return '/user/' . (int)$data['route_autor_id'] . '?tab=routes&focusRoute=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
                 } elseif ($data['reference_type'] === 'user_registration_kommentar') {
-                    return '/dashboard?focusNewUser=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                    return '/dashboard/target?type=new_user&id=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
                 } elseif ($data['reference_type'] === 'user_award_kommentar') {
-                    return '/dashboard?focusAward=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                    return '/dashboard/target?type=award&id=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
                 } elseif ($data['reference_type'] === 'checkin') {
                     return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id'];
                 } elseif ($data['reference_type'] === 'route') {

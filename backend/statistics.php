@@ -46,7 +46,7 @@ FROM (
       SELECT p1.preis
       FROM preise p1
       WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-      ORDER BY p1.gemeldet_am DESC
+      ORDER BY p1.gemeldet_am DESC, p1.id DESC
       LIMIT 1
     ) AS kugel_preis
   FROM eisdielen e
@@ -92,6 +92,7 @@ LEFT JOIN (
 LEFT JOIN (
   SELECT gemeldet_von, COUNT(*) AS price_reports
   FROM preise
+  WHERE is_reward_eligible = 1
   GROUP BY gemeldet_von
 ) p ON u.id = p.gemeldet_von
 LEFT JOIN (
@@ -113,6 +114,7 @@ $mostActiveUsers = $stmtMostActiveUsers->fetchAll(PDO::FETCH_ASSOC);
 $stmtUsersByLevel = $pdo->prepare("SELECT 
     n.id AS nutzer_id,
     n.username,
+    n.current_level,
     up.avatar_path AS avatar_url,
     -- Anzahl Checkins
     COALESCE(ci_ohne_bild.count, 0) + COALESCE(ci_mit_bild.count, 0) AS anzahl_checkins,
@@ -183,6 +185,7 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT gemeldet_von, COUNT(*) AS count
     FROM preise
+    WHERE is_reward_eligible = 1
     GROUP BY gemeldet_von
 ) pm ON pm.gemeldet_von = n.id
 
@@ -234,7 +237,8 @@ LEFT JOIN (
         GROUP BY n.invited_by
     ) gw ON gw.nutzer_id = n.id
 
-ORDER BY `ep_gesamt`  DESC;");
+HAVING ep_gesamt > 0
+ORDER BY `ep_gesamt` DESC;");
 $stmtUsersByLevel->execute();
 $usersByLevel = $stmtUsersByLevel->fetchAll(PDO::FETCH_ASSOC);
 

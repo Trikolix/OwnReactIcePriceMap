@@ -12,10 +12,12 @@ import AwardBundleCard from '../components/AwardBundleCard';
 import AwardWaveCard from '../components/AwardWaveCard';
 import NewUserCard from '../components/NewUserCard';
 import { useUser } from '../context/UserContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   getLatestActivityTimestamp,
   groupActivities,
+  getActivityKey,
+  mergeActivities,
   readActivityFeedCache,
   writeActivityFeedCache,
   writeActivityFeedSeenAt,
@@ -51,15 +53,30 @@ const activityContainsAward = (activity, awardId) => {
   return false;
 };
 
+const activityContainsNewUser = (activity, userId) => (
+  Boolean(userId)
+  && activity?.typ === 'new_user'
+  && String(activity.data?.id) === String(userId)
+);
+
+const buildDashboardTargetUrl = (type, id, focusCommentId = null) => {
+  const params = new URLSearchParams({ type, id: String(id) });
+  if (focusCommentId) params.set('focusComment', String(focusCommentId));
+  return `/dashboard/target?${params.toString()}`;
+};
+
 function DashBoard() {
   const { userId } = useUser();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activities, setActivities] = useState([]);
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [focusTarget, setFocusTarget] = useState(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [showActionNudge, setShowActionNudge] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(getFeedActionDismissKey()) !== '1';
@@ -83,11 +100,14 @@ function DashBoard() {
       new_user: true,
     };
   });
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const hasHiddenActivityTypes = activeFilterCount < Object.keys(filters).length;
 
   const filterMenuRef = useRef(null);
   const focusedActivityRef = useRef(null);
-  const hasScrolledToFocusRef = useRef(false);
-  const focusLoadAttemptsRef = useRef(0);
+  const feedAbortRef = useRef(null);
+  const feedRequestIdRef = useRef(0);
+  const feedTopRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('dashboardFilters', JSON.stringify(filters));
@@ -117,11 +137,23 @@ function DashBoard() {
   const focusAwardId = queryParams.get('focusAward');
   const focusNewUserId = queryParams.get('focusNewUser');
   const focusCommentId = queryParams.get('focusComment');
-  const groupedActivities = useMemo(() => groupActivities(activities), [activities]);
+  const focusType = focusAwardId ? 'award' : focusNewUserId ? 'new_user' : null;
+  const focusId = focusAwardId || focusNewUserId;
+  const displayActivities = useMemo(() => {
+    if (!focusTarget) return activities;
+    const targetKey = getActivityKey(focusTarget);
+    return activities.some((activity) => getActivityKey(activity) === targetKey)
+      ? activities
+      : mergeActivities(activities, [focusTarget]);
+  }, [activities, focusTarget]);
+  const groupedActivities = useMemo(() => groupActivities(displayActivities), [displayActivities]);
   const visibleActivities = useMemo(() => (
     groupedActivities.filter(activity => {
       const { typ } = activity;
       if (focusAwardId && ['award', 'award_bundle', 'award_wave'].includes(typ) && activityContainsAward(activity, focusAwardId)) {
+        return true;
+      }
+      if (focusNewUserId && activityContainsNewUser(activity, focusNewUserId)) {
         return true;
       }
       if (['checkin', 'group_checkin'].includes(typ)) return filters.checkin;
@@ -131,9 +163,7 @@ function DashBoard() {
       if (typ === 'new_user') return filters.new_user;
       return true;
     })
-  ), [filters, focusAwardId, groupedActivities]);
-  const hasFocusedAward = Boolean(focusAwardId)
-    && groupedActivities.some((activity) => activityContainsAward(activity, focusAwardId));
+  ), [filters, focusAwardId, focusNewUserId, groupedActivities]);
 
   const markDashboardSeen = (activitiesToMark = []) => {
     const latestTimestamp = getLatestActivityTimestamp(activitiesToMark) || new Date().toISOString();
@@ -142,8 +172,16 @@ function DashBoard() {
   };
 
   const fetchActivities = async (append = false, customOffset = null) => {
+    if (!append) {
+      feedAbortRef.current?.abort();
+    }
+
+    const requestId = feedRequestIdRef.current + 1;
+    feedRequestIdRef.current = requestId;
+    const controller = new AbortController();
+    feedAbortRef.current = controller;
     const hasCachedActivities = Boolean(readActivityFeedCache(userId)?.activities?.length);
-    append ? setLoadingMore(true) : setLoadingInitial(Boolean(focusAwardId) || (!hasCachedActivities && activities.length === 0));
+    append ? setLoadingMore(true) : setLoadingInitial(Boolean(focusId) || (!hasCachedActivities && activities.length === 0));
     setError(null);
     try {
       const usedOffset = customOffset !== null ? customOffset : offset;
@@ -153,13 +191,11 @@ function DashBoard() {
         minimum: String(minimum),
         offset: String(usedOffset),
       });
-      if (!append && focusAwardId) {
-        params.set('focusAward', focusAwardId);
-      }
-
-      const res = await fetch(`${apiUrl}/activity_feed.php?${params.toString()}`);
+      const res = await fetch(`${apiUrl}/activity_feed.php?${params.toString()}`, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
+
+      if (requestId !== feedRequestIdRef.current) return;
 
       const newActivities = json.activities || [];
       const meta = json.meta || {};
@@ -175,21 +211,23 @@ function DashBoard() {
           markDashboardSeen([]);
         }
         setActivities((prev) => (append ? prev : []));
-        setOffset(0);
+        if (!append) setOffset(0);
         setHasMore(false);
       } else {
-        const nextOffset = meta.nextOffset ?? (usedOffset + newActivities.length);
-        const nextHasMore = meta.hasMore ?? false;
+        const nextOffset = meta.nextOffset ?? meta.next_offset ?? (usedOffset + newActivities.length);
+        const nextHasMore = meta.hasMore ?? meta.has_more ?? false;
         setActivities((prev) => {
-          const nextActivities = append ? [...prev, ...newActivities] : newActivities;
+          const nextActivities = append
+            ? mergeActivities(prev, newActivities)
+            : mergeActivities([], newActivities);
 
+          writeActivityFeedCache(userId, {
+            activities: nextActivities,
+            nextOffset,
+            hasMore: nextHasMore,
+            cachedAt: new Date().toISOString(),
+          });
           if (!append) {
-            writeActivityFeedCache(userId, {
-              activities: nextActivities,
-              nextOffset,
-              hasMore: nextHasMore,
-              cachedAt: new Date().toISOString(),
-            });
             markDashboardSeen(nextActivities);
           }
 
@@ -199,68 +237,106 @@ function DashBoard() {
         setHasMore(nextHasMore);
       }
     } catch (err) {
+      if (err.name === 'AbortError' || requestId !== feedRequestIdRef.current) return;
       console.error("Fehler beim Laden der Dashboard-Daten:", err);
       setError(err);
     } finally {
-      append ? setLoadingMore(false) : setLoadingInitial(false);
+      if (requestId === feedRequestIdRef.current) {
+        append ? setLoadingMore(false) : setLoadingInitial(false);
+      }
     }
   };
 
-  // Initial laden
   useEffect(() => {
-    hasScrolledToFocusRef.current = false;
-    focusLoadAttemptsRef.current = 0;
-  }, [focusAwardId, focusNewUserId, focusCommentId]);
+    if (focusAwardId && !filters.award) {
+      setFilters((prev) => ({ ...prev, award: true }));
+    }
+    if (focusNewUserId && !filters.new_user) {
+      setFilters((prev) => ({ ...prev, new_user: true }));
+    }
+  }, [filters.award, filters.new_user, focusAwardId, focusNewUserId]);
 
   useEffect(() => {
-    if (!focusAwardId || filters.award) return;
-    setFilters((prev) => ({ ...prev, award: true }));
-  }, [filters.award, focusAwardId]);
-
-  useEffect(() => {
+    let targetController = null;
+    let disposed = false;
     const cachedFeed = readActivityFeedCache(userId);
+    setFocusTarget(null);
     if (cachedFeed?.activities?.length && cachedActivitiesHaveLikeState(cachedFeed.activities)) {
       setActivities(cachedFeed.activities);
       setOffset(Number.isFinite(cachedFeed.nextOffset) ? cachedFeed.nextOffset : 0);
       setHasMore(Boolean(cachedFeed.hasMore));
-      markDashboardSeen(cachedFeed.activities);
     }
 
-    fetchActivities(false, 0);
-  }, [userId, focusAwardId]);
+    const initialise = async () => {
+      if (focusType && focusId) {
+        targetController = new AbortController();
+        try {
+          const response = await fetch(
+            `${apiUrl}/activity_feed.php?mode=target&type=${encodeURIComponent(focusType)}&id=${encodeURIComponent(focusId)}`,
+            { signal: targetController.signal },
+          );
+          const json = await response.json().catch(() => ({}));
+          if (!response.ok || !json.target) throw new Error('Das Dashboard-Item konnte nicht geladen werden.');
+          if (json.meta?.historical) {
+            navigate(buildDashboardTargetUrl(focusType, focusId, focusCommentId), { replace: true });
+            return;
+          }
+          if (!disposed) setFocusTarget(json.target);
+        } catch (targetError) {
+          if (targetError.name !== 'AbortError' && !disposed) setError(targetError);
+        }
+      }
+
+      if (!disposed) fetchActivities(false, 0);
+    };
+
+    initialise();
+
+    return () => {
+      disposed = true;
+      targetController?.abort();
+      feedRequestIdRef.current += 1;
+      feedAbortRef.current?.abort();
+    };
+  }, [apiUrl, userId, focusType, focusId, focusCommentId, navigate]);
 
   useEffect(() => {
-    if (!focusAwardId || hasFocusedAward || loadingInitial || loadingMore || !hasMore) return;
-    if (focusLoadAttemptsRef.current >= 8) return;
-
-    focusLoadAttemptsRef.current += 1;
-    fetchActivities(true, offset);
-  }, [focusAwardId, hasFocusedAward, hasMore, loadingInitial, loadingMore, offset]);
+    if (!focusId || !focusedActivityRef.current) return undefined;
+    const animationFrame = window.requestAnimationFrame(() => {
+      focusedActivityRef.current?.scrollIntoView({ behavior: 'auto', block: 'center' });
+    });
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [focusId, visibleActivities]);
 
   useEffect(() => {
-    if (!focusAwardId || hasScrolledToFocusRef.current || !focusedActivityRef.current) return;
-
-    hasScrolledToFocusRef.current = true;
-    const scrollToFocusedActivity = () => {
-      focusedActivityRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
+    let animationFrame = null;
+    const updateVisibility = () => {
+      if (animationFrame !== null) return;
+      animationFrame = window.requestAnimationFrame(() => {
+        setShowBackToTop(window.scrollY > window.innerHeight * 1.5);
+        animationFrame = null;
       });
     };
 
-    const animationFrame = window.requestAnimationFrame(scrollToFocusedActivity);
-    const timeout = window.setTimeout(scrollToFocusedActivity, 350);
+    updateVisibility();
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    window.addEventListener('resize', updateVisibility, { passive: true });
     return () => {
-      window.cancelAnimationFrame(animationFrame);
-      window.clearTimeout(timeout);
+      window.removeEventListener('scroll', updateVisibility);
+      window.removeEventListener('resize', updateVisibility);
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
     };
-  }, [focusAwardId, visibleActivities]);
+  }, []);
 
 
   const reload = () => {
     setOffset(0);
     setHasMore(true);
     fetchActivities(false, 0);
+  };
+
+  const scrollToTop = () => {
+    feedTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const dismissActionNudge = () => {
@@ -276,13 +352,19 @@ function DashBoard() {
   };
 
   return (
-    <Page>
+    <Page ref={feedTopRef}>
       <Header />
       <Container>
-        <HeroCard>
+        <PageHeader>
           <SettingsContainer ref={filterMenuRef}>
-            <SettingsButton onClick={() => setShowFilters(!showFilters)} aria-label="Aktivitätsfilter">
+            <SettingsButton
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              aria-label={hasHiddenActivityTypes ? `Aktivitätsfilter, ${activeFilterCount} von ${Object.keys(filters).length} Aktivitätstypen aktiv` : 'Aktivitätsfilter'}
+              aria-expanded={showFilters}
+            >
               <Settings size={20} color="rgba(47, 33, 0, 0.6)" />
+              {hasHiddenActivityTypes && <FilterStatusDot aria-hidden="true" />}
             </SettingsButton>
             {showFilters && (
               <FilterMenu>
@@ -334,7 +416,7 @@ function DashBoard() {
           <Subtitle>
             Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
           </Subtitle>
-        </HeroCard>
+        </PageHeader>
 
         {showActionNudge && (
           <ActionNudge>
@@ -360,8 +442,9 @@ function DashBoard() {
         <Section>
           {visibleActivities.map((activity) => {
             const { typ, id, data } = activity;
-            const isFocusedAwardActivity = activityContainsAward(activity, focusAwardId);
-            const wrapActivity = (node) => isFocusedAwardActivity ? (
+            const isFocusedActivity = activityContainsAward(activity, focusAwardId)
+              || activityContainsNewUser(activity, focusNewUserId);
+            const wrapActivity = (node) => isFocusedActivity ? (
               <FocusedActivityAnchor ref={focusedActivityRef} key={`focus-${id}`}>
                 {node}
               </FocusedActivityAnchor>
@@ -397,7 +480,7 @@ function DashBoard() {
                   />
                 );
               case 'new_user':
-                return (
+                return wrapActivity(
                   <NewUserCard
                     key={`new-user-${id}`}
                     user={data}
@@ -445,6 +528,11 @@ function DashBoard() {
           </Controls>
         </Section>
       </Container>
+      {showBackToTop && (
+        <BackToTopButton type="button" onClick={scrollToTop} aria-label="Nach oben">
+          ↑ <span>Nach oben</span>
+        </BackToTopButton>
+      )}
     </Page>
   );
 }
@@ -466,9 +554,10 @@ const Container = styled.div`
   flex-direction: column;
   gap: 0.5rem;
   justify-content: center;
-  width: min(96%, 1040px);
+  width: min(96%, 1200px);
   box-sizing: border-box;
   margin: 0 auto;
+  padding-top: 0.5rem;
 `;
 
 const Title = styled.h2`
@@ -487,6 +576,38 @@ const FocusedActivityAnchor = styled.div`
   scroll-margin-top: 96px;
 `;
 
+const BackToTopButton = styled.button`
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 42px;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(108, 67, 0, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 181, 34, 0.96);
+  color: #2f2100;
+  box-shadow: 0 8px 22px rgba(47, 33, 0, 0.2);
+  cursor: pointer;
+  font-weight: 800;
+
+  &:hover {
+    background: #ffc34a;
+  }
+
+  @media (max-width: 520px) {
+    right: 0.75rem;
+    padding: 0.7rem;
+
+    span {
+      display: none;
+    }
+  }
+`;
+
 const Controls = styled.div`
   margin: 1rem 0 3rem;
   text-align: center;
@@ -496,10 +617,10 @@ const Placeholder = styled.div`
   width: 100%;
   text-align: center;
   padding: 1.25rem 1rem;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(47, 33, 0, 0.08);
-  background: rgba(255, 252, 243, 0.94);
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.05);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
   color: #6b5327;
 `;
 
@@ -522,37 +643,52 @@ const LoadButton = styled.button`
   }
 `;
 
-const HeroCard = styled.div`
+const PageHeader = styled.header`
   position: relative;
-  background: rgba(255, 252, 243, 0.96);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem 1rem 0.9rem;
-  margin-top: 0.25rem;
+  padding: 0.7rem 2.8rem 0.5rem 0.25rem;
+  margin-bottom: 0.1rem;
+
+  @media (max-width: 700px) {
+    padding: 0.55rem 2.6rem 0.35rem 0.1rem;
+    margin-bottom: 0.2rem;
+  }
 `;
 
 const SettingsContainer = styled.div`
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.55rem;
+  right: 0.2rem;
   z-index: 10;
 `;
 
 const SettingsButton = styled.button`
-  background: none;
-  border: none;
+  position: relative;
+  min-width: 38px;
+  min-height: 38px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(47, 33, 0, 0.08);
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 10px;
   transition: background-color 0.2s;
 
   &:hover {
     background-color: rgba(47, 33, 0, 0.05);
   }
+`;
+
+const FilterStatusDot = styled.span`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #fffaf0;
+  border-radius: 50%;
+  background: #d97706;
 `;
 
 const FilterMenu = styled.div`
@@ -590,6 +726,10 @@ const Subtitle = styled.p`
   text-align: center;
   color: rgba(47, 33, 0, 0.68);
   font-size: 0.95rem;
+
+  @media (max-width: 700px) {
+    display: none;
+  }
 `;
 
 const ActionNudge = styled.div`
@@ -600,9 +740,9 @@ const ActionNudge = styled.div`
   align-items: center;
   border: 1px solid rgba(31, 111, 235, 0.18);
   border-left: 4px solid #1f6feb;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
   padding: 0.75rem 2.4rem 0.75rem 0.85rem;
   color: #2f2100;
 

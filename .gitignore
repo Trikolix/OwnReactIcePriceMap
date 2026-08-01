@@ -11,6 +11,8 @@
 # production
 /build
 build.zip
+src/generated/buildInfo.js
+public/version.json
 
 # misc
 .DS_Store

@@ -132,14 +132,14 @@ SELECT
     (SELECT p1.preis
      FROM preise p1
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-     ORDER BY p1.gemeldet_am DESC
+     ORDER BY p1.gemeldet_am DESC, p1.id DESC
      LIMIT 1) AS kugel_preis,
 
     (SELECT w1.symbol
      FROM preise p1
      LEFT JOIN waehrungen w1 ON p1.waehrung_id = w1.id
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-     ORDER BY p1.gemeldet_am DESC
+     ORDER BY p1.gemeldet_am DESC, p1.id DESC
      LIMIT 1) AS kugel_waehrung,
 
     (SELECT 
@@ -152,7 +152,7 @@ SELECT
      LEFT JOIN wechselkurse wk1 ON p1.waehrung_id = wk1.von_waehrung_id 
          AND wk1.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
      WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-     ORDER BY p1.gemeldet_am DESC
+     ORDER BY p1.gemeldet_am DESC, p1.id DESC
      LIMIT 1) AS kugel_preis_eur
 
 FROM final_scores f

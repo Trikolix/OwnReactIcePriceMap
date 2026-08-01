@@ -1,20 +1,23 @@
 import Header from './../Header';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import CheckinCard from "../components/CheckinCard";
 import ReviewCard from "../components/ReviewCard";
+import GroupCheckinCard from '../components/GroupCheckinCard';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import RouteCard from '../components/RouteCard';
+import ShopCard from '../components/ShopCard';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import SystemModal from '../components/SystemModal';
 import MentionInviteModal from '../components/MentionInviteModal';
-import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff, Heart, SlidersHorizontal } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
+import { groupActivities } from '../utils/activityFeed';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
@@ -36,7 +39,7 @@ function UserSite() {
   const { userId: userIdFromUrl } = useParams();
   const { userId: userIdFromContext } = useUser();
   const viewerUserId = userIdFromContext || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
-  const [activeTab, setActiveTab] = useState('checkins');
+  const [activeTab, setActiveTab] = useState('feed');
   const finalUserId = userIdFromUrl || userIdFromContext;
   const isOwnProfile = Boolean(finalUserId && viewerUserId && String(finalUserId) === String(viewerUserId));
   const [showToast, setShowToast] = useState(false);
@@ -44,11 +47,21 @@ function UserSite() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
-  const [checkinPage, setCheckinPage] = useState(1);
-  const [reviewPage, setReviewPage] = useState(1);
   const [awardPage, setAwardPage] = useState(1);
   const [awardColumns, setAwardColumns] = useState(1);
-  const [routePage, setRoutePage] = useState(1);
+  const [profileActivities, setProfileActivities] = useState([]);
+  const [profileFeedLoading, setProfileFeedLoading] = useState(false);
+  const [profileFeedLoadingMore, setProfileFeedLoadingMore] = useState(false);
+  const [profileFeedError, setProfileFeedError] = useState(null);
+  const [profileFeedNextOffset, setProfileFeedNextOffset] = useState(0);
+  const [profileFeedHasMore, setProfileFeedHasMore] = useState(false);
+  const [showFeedFilters, setShowFeedFilters] = useState(false);
+  const [profileFeedFilters, setProfileFeedFilters] = useState({
+    checkin: true,
+    bewertung: true,
+    route: true,
+    eisdiele: true,
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
   const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
@@ -85,11 +98,12 @@ function UserSite() {
         );
       }
     }
-    if (params.get('tab') === 'routes') {
-      setActiveTab('routen');
-    }
-    if (params.get('tab') === 'stats') {
+    if (params.get('tab') === 'stats' && isOwnProfile) {
       setActiveTab('stats');
+    } else if (params.get('tab') === 'routes' || params.get('tab') === 'checkins' || params.get('tab') === 'reviews') {
+      setActiveTab('feed');
+    } else if (!isOwnProfile) {
+      setActiveTab('feed');
     }
   }, [isOwnProfile, location.pathname, location.search, navigate]);
 
@@ -170,10 +184,7 @@ function UserSite() {
     );
   }, [finalUserId, location.pathname, location.search, navigate]);
 
-  const loadMoreCheckins = () => setCheckinPage((prev) => prev + 1);
-  const loadMoreReviews = () => setReviewPage((prev) => prev + 1);
   const loadMoreAwards = () => setAwardPage((prev) => prev + 1);
-  const loadMoreRoutes = () => setRoutePage((prev) => prev + 1);
 
   const fetchUserData = async (userIdToLoad, viewerId = viewerUserId, signal) => {
     const requestId = userDataRequestRef.current + 1;
@@ -203,6 +214,45 @@ function UserSite() {
     if (!finalUserId) return;
     const controller = new AbortController();
     fetchUserData(finalUserId, viewerUserId, controller.signal);
+    return () => controller.abort();
+  }, [finalUserId, viewerUserId]);
+
+  const fetchProfileActivities = async (append = false, signal) => {
+    if (!finalUserId) return;
+    const currentOffset = append ? profileFeedNextOffset : 0;
+    append ? setProfileFeedLoadingMore(true) : setProfileFeedLoading(true);
+    if (!append) setProfileFeedError(null);
+
+    try {
+      const params = new URLSearchParams({
+        profile_user_id: String(finalUserId),
+        limit: '20',
+        offset: String(currentOffset),
+      });
+      const response = await fetch(`${apiUrl}/user_activity_feed.php?${params.toString()}`, { signal });
+      if (!response.ok) throw new Error('Aktivitäten konnten nicht geladen werden.');
+      const json = await response.json();
+      const incoming = Array.isArray(json.activities) ? json.activities : [];
+      setProfileActivities((previous) => append ? [...previous, ...incoming] : incoming);
+      setProfileFeedNextOffset(Number(json.meta?.next_offset || currentOffset + incoming.length));
+      setProfileFeedHasMore(Boolean(json.meta?.has_more));
+      setProfileFeedError(null);
+    } catch (err) {
+      if (err.name !== 'AbortError') setProfileFeedError(err);
+    } finally {
+      if (!signal?.aborted) {
+        append ? setProfileFeedLoadingMore(false) : setProfileFeedLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!finalUserId) return undefined;
+    const controller = new AbortController();
+    setProfileActivities([]);
+    setProfileFeedNextOffset(0);
+    setProfileFeedHasMore(false);
+    fetchProfileActivities(false, controller.signal);
     return () => controller.abort();
   }, [finalUserId, viewerUserId]);
 
@@ -247,7 +297,10 @@ function UserSite() {
     };
   }, [data?.user_awards?.length]);
 
-  const refreshUser = () => fetchUserData(finalUserId, viewerUserId);
+  const refreshUser = () => {
+    fetchUserData(finalUserId, viewerUserId);
+    fetchProfileActivities();
+  };
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -258,18 +311,21 @@ function UserSite() {
     }
   };
 
-  const checkins = data?.checkins || [];
-  const reviews = data?.reviews || [];
   const awards = data?.user_awards || [];
   const awardsBatchSize = Math.max(awardColumns * 2, 1);
-  const routes = data?.routen || [];
   const routeFocusParams = new URLSearchParams(location.search);
   const focusRouteId = routeFocusParams.get('focusRoute');
   const focusCommentId = routeFocusParams.get('focusComment');
-  const displayedCheckins = checkins.slice(0, checkinPage * 5);
-  const displayedReviews = reviews.slice(0, reviewPage * 5);
   const displayedAwards = awards.slice(0, awardPage * awardsBatchSize);
-  const displayedRoutes = routes.slice(0, routePage * 5);
+  const groupedProfileActivities = useMemo(() => groupActivities(profileActivities), [profileActivities]);
+  const visibleProfileActivities = useMemo(() => groupedProfileActivities.filter((activity) => {
+    if (activity.typ === 'group_checkin') return profileFeedFilters.checkin;
+    return profileFeedFilters[activity.typ] !== false;
+  }), [groupedProfileActivities, profileFeedFilters]);
+  const activeProfileFeedFilterCount = Object.values(profileFeedFilters).filter(Boolean).length;
+  const toggleProfileFeedFilter = (type) => {
+    setProfileFeedFilters((previous) => ({ ...previous, [type]: !previous[type] }));
+  };
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
   const dayStreak = data?.streaks?.day || {};
   const weekStreak = data?.streaks?.week || {};
@@ -627,12 +683,12 @@ function UserSite() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (activeTab === 'routen' && params.get('focusRoute')) {
-      const routeId = params.get('focusRoute');
-      const focusedIndex = routes.findIndex((route) => String(route.id) === String(routeId));
-      if (focusedIndex >= 0) {
-        const neededPage = Math.floor(focusedIndex / 5) + 1;
-        setRoutePage((prev) => Math.max(prev, neededPage));
+    const routeId = params.get('focusRoute');
+    if (activeTab === 'feed' && routeId) {
+      const isLoaded = profileActivities.some((activity) => activity.typ === 'route' && String(activity.id) === String(routeId));
+      if (!isLoaded && profileFeedHasMore && !profileFeedLoadingMore) {
+        fetchProfileActivities(true);
+        return;
       }
       setTimeout(() => {
         if (routeRefs.current[routeId]) {
@@ -646,7 +702,7 @@ function UserSite() {
         }
       }, 300);
     }
-  }, [activeTab, displayedRoutes, location.pathname, location.search, routes]);
+  }, [activeTab, location.pathname, location.search, profileActivities, profileFeedHasMore, profileFeedLoadingMore]);
 
   const handleAvatarUpdated = (newPath) => {
     setData((prev) => (prev ? { ...prev, avatar_url: newPath } : prev));
@@ -696,7 +752,7 @@ function UserSite() {
                   </AvatarCircle>
                   <ProfileInfo>
                     <h1>{data.nutzername}</h1>
-                    {(data.instagram_account || data.strava_account) && (
+                    {(data.instagram_account || data.strava_account || isOwnProfile) && (
                       <SocialLinksRow>
                         {data.instagram_account && (
                           <SocialLink 
@@ -717,6 +773,15 @@ function UserSite() {
                           >
                             <img src="/icons/strava.svg" alt="Strava" width="20" height="20" onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn.simpleicons.org/strava/fc4c02'; }} />
                           </SocialLink>
+                        )}
+                        {isOwnProfile && (
+                          <FavoriteSocialLink
+                            to="/favoriten"
+                            aria-label="Favoriten verwalten"
+                            title="Favoriten verwalten"
+                          >
+                            <Heart size={18} aria-hidden="true" />
+                          </FavoriteSocialLink>
                         )}
                       </SocialLinksRow>
                     )}
@@ -866,32 +931,16 @@ function UserSite() {
                 </AwardsFooterActions>
               )}
             </AwardsCard>
-            <UnifiedTabBar>
-              <UnifiedTabButton
-                active={activeTab === 'checkins'}
-                onClick={() => setActiveTab('checkins')}
-              >
-                Check-ins
-              </UnifiedTabButton>
-              <UnifiedTabButton
-                active={activeTab === 'reviews'}
-                onClick={() => setActiveTab('reviews')}
-              >
-                Reviews
-              </UnifiedTabButton>
-              <UnifiedTabButton
-                active={activeTab === 'routen'}
-                onClick={() => setActiveTab('routen')}
-              >
-                Routen
-              </UnifiedTabButton>
-              <UnifiedTabButton
-                active={activeTab === 'stats'}
-                onClick={() => setActiveTab('stats')}
-              >
-                Statistiken
-              </UnifiedTabButton>
-            </UnifiedTabBar>
+            {isOwnProfile && (
+              <UnifiedTabBar>
+                <UnifiedTabButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>
+                  Aktivitäten
+                </UnifiedTabButton>
+                <UnifiedTabButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')}>
+                  Statistiken
+                </UnifiedTabButton>
+              </UnifiedTabBar>
+            )}
             {selectedAward && typeof document !== 'undefined' && createPortal(
               <AwardLightboxOverlay onClick={() => setSelectedAward(null)}>
                 <AwardLightboxCard onClick={(event) => event.stopPropagation()}>
@@ -1068,70 +1117,82 @@ function UserSite() {
           )}
 
             {activeTab !== 'stats' && (
-            <>
-            <SectionHeader>
-              <h2>Aktivitätsfeed</h2>
-              <span>Check-ins, Reviews & Routen</span>
-            </SectionHeader>
-            <TabContent>
-              {activeTab === 'checkins' && (
-                <div>
-                  {checkins.length === 0 && (
-                    <EmptyState>Noch keine Check-ins vorhanden.</EmptyState>
-                  )}
-                  {displayedCheckins.map((checkin, index) => (
-                    <CheckinCard key={index} checkin={checkin} onSuccess={refreshUser} />
-                  ))}
-                  {displayedCheckins.length < checkins.length && (
-                    <LoadMoreButton onClick={loadMoreCheckins}>Mehr Checkins laden</LoadMoreButton>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'reviews' && (
-                <div>
-                  {reviews.length === 0 && (
-                    <EmptyState>Noch keine Reviews vorhanden.</EmptyState>
-                  )}
-                  {displayedReviews.map((review, index) => (
-                    <ReviewCard key={index} review={review} onSuccess={refreshUser} />
-                  ))}
-                  {displayedReviews.length < reviews.length && (
-                    <LoadMoreButton onClick={loadMoreReviews}>Mehr Reviews laden</LoadMoreButton>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'routen' && (
-                <div>
-                  {routes.length === 0 && (
-                    <EmptyState>Noch keine Routen vorhanden.</EmptyState>
-                  )}
-                  {displayedRoutes.map((route, index) => (
-                    <FocusedFeedItem
-                      key={route.id || index}
-                      ref={el => {
-                        if (route.id) routeRefs.current[route.id] = el;
-                      }}
-                      data-focused={String(route.id) === String(focusRouteId)}
+              <FeedArea>
+                <SectionHeader>
+                  <h2>Aktivitätsfeed</h2>
+                  <FeedHeaderTools>
+                    <span>Check-ins, Reviews, Routen & Eisdielen</span>
+                    <FeedFilterToggle
+                      type="button"
+                      onClick={() => setShowFeedFilters((current) => !current)}
+                      aria-expanded={showFeedFilters}
                     >
-                    <RouteCard
-                      route={route}
-                      shopId={route.eisdielen?.[0]?.id || route.eisdiele_id}
-                      shopName={route.eisdielen?.[0]?.name || route.eisdiele_name}
-                      onSuccess={refreshUser}
-                      showComments={String(route.id) === String(focusRouteId)}
-                      focusCommentId={String(route.id) === String(focusRouteId) ? focusCommentId : null}
-                    />
-                    </FocusedFeedItem>
-                  ))}
-                  {displayedRoutes.length < routes.length && (
-                    <LoadMoreButton onClick={loadMoreRoutes}>Mehr Routen laden</LoadMoreButton>
-                  )}
-                </div>
-              )}
-            </TabContent>
-            </>
+                      <SlidersHorizontal size={16} aria-hidden="true" />
+                      Filter{activeProfileFeedFilterCount < 4 ? ` · ${activeProfileFeedFilterCount}/4` : ''}
+                    </FeedFilterToggle>
+                  </FeedHeaderTools>
+                </SectionHeader>
+                {showFeedFilters && (
+                  <FeedFilterPanel aria-label="Aktivitätstypen filtern">
+                    <FeedFilterChip type="button" $active={profileFeedFilters.checkin} onClick={() => toggleProfileFeedFilter('checkin')}>Check-ins</FeedFilterChip>
+                    <FeedFilterChip type="button" $active={profileFeedFilters.bewertung} onClick={() => toggleProfileFeedFilter('bewertung')}>Reviews</FeedFilterChip>
+                    <FeedFilterChip type="button" $active={profileFeedFilters.route} onClick={() => toggleProfileFeedFilter('route')}>Routen</FeedFilterChip>
+                    <FeedFilterChip type="button" $active={profileFeedFilters.eisdiele} onClick={() => toggleProfileFeedFilter('eisdiele')}>Eisdielen</FeedFilterChip>
+                  </FeedFilterPanel>
+                )}
+                {profileFeedLoading && visibleProfileActivities.length === 0 && (
+                  <EmptyState>Aktivitäten werden geladen…</EmptyState>
+                )}
+                {profileFeedError && visibleProfileActivities.length === 0 && (
+                  <EmptyState>Der Aktivitätsfeed konnte nicht geladen werden.</EmptyState>
+                )}
+                {!profileFeedLoading && !profileFeedError && visibleProfileActivities.length === 0 && (
+                  <EmptyState>{groupedProfileActivities.length ? 'Keine Aktivitäten für diese Filterauswahl.' : 'Noch keine Aktivitäten vorhanden.'}</EmptyState>
+                )}
+                <FeedList>
+                  {visibleProfileActivities.map((activity) => {
+                    const { typ, id, data: activityData } = activity;
+                    switch (typ) {
+                      case 'checkin':
+                        return <CheckinCard key={`checkin-${id}`} checkin={activityData} onSuccess={refreshUser} />;
+                      case 'group_checkin':
+                        return <GroupCheckinCard key={id} checkins={activityData} onSuccess={refreshUser} />;
+                      case 'bewertung':
+                        return <ReviewCard key={`bewertung-${id}`} review={activityData} onSuccess={refreshUser} />;
+                      case 'eisdiele':
+                        return <ShopCard key={`eisdiele-${id}`} iceShop={activityData} onSuccess={refreshUser} />;
+                      case 'route':
+                        return (
+                          <FocusedFeedItem
+                            key={`route-${id}`}
+                            ref={(element) => { routeRefs.current[id] = element; }}
+                            data-focused={String(id) === String(focusRouteId)}
+                          >
+                            <RouteCard
+                              route={activityData}
+                              shopId={activityData.eisdielen?.[0]?.id || activityData.eisdiele_id}
+                              shopName={activityData.eisdielen?.[0]?.name || activityData.eisdiele_name}
+                              onSuccess={refreshUser}
+                              showComments={String(id) === String(focusRouteId)}
+                              focusCommentId={String(id) === String(focusRouteId) ? focusCommentId : null}
+                            />
+                          </FocusedFeedItem>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </FeedList>
+                {profileFeedHasMore && !profileFeedLoadingMore && (
+                  <LoadMoreButton type="button" onClick={() => fetchProfileActivities(true)}>
+                    Mehr laden
+                  </LoadMoreButton>
+                )}
+                {profileFeedLoadingMore && <FeedLoadingMore>Weitere Aktivitäten werden geladen…</FeedLoadingMore>}
+                {profileFeedError && visibleProfileActivities.length > 0 && (
+                  <FeedLoadingMore $error>Weitere Aktivitäten konnten nicht geladen werden.</FeedLoadingMore>
+                )}
+              </FeedArea>
             )}
         </DashboardWrapper>
       </WhiteBackground>
@@ -1395,10 +1456,34 @@ const ProfileActions = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 0.55rem;
 
   @media (max-width: 980px) {
     justify-content: stretch;
+    flex-direction: column;
+    align-items: stretch;
   }
+`;
+
+const FavoriteSocialLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: #725000;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #fff0c7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+
+  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.7); outline-offset: 2px; }
 `;
 
 const MetaRow = styled.div`
@@ -1455,24 +1540,48 @@ const InviteCard = styled.div`
 
 const UnifiedTabBar = styled.div`
   display: flex;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+  gap: 0.2rem;
   justify-content: center;
-  margin-top: 1.6rem;
-  margin-bottom: 0.3rem;
+  width: fit-content;
+  margin: 1.25rem auto 0.5rem;
+  padding: 0.3rem;
+  border: 1px solid rgba(47, 33, 0, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.46);
+
+  @media (max-width: 520px) {
+    width: min(100%, 360px);
+  }
 `;
 
 const UnifiedTabButton = styled.button`
-  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.65)' : 'rgba(47, 33, 0, 0.12)')};
-  background: ${({ active }) => (active ? 'rgba(255, 181, 34, 0.2)' : 'rgba(255,255,255,0.92)')};
-  color: #2f2100;
-  border-radius: 999px;
+  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
+  background: ${({ active }) => (active ? '#ffb522' : 'transparent')};
+  color: ${({ active }) => (active ? '#2f2100' : '#5c4a25')};
+  border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 700;
   padding: 0.45rem 0.95rem;
   min-width: 120px;
+  min-height: 42px;
   cursor: pointer;
   text-align: center;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: ${({ active }) => (active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.48);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 520px) {
+    min-width: 0;
+    flex: 1;
+    padding: 0.45rem 0.4rem;
+  }
 `;
 
 const AwardsCard = styled.div`
@@ -1507,6 +1616,79 @@ const SectionHeader = styled.div`
   span {
     color: rgba(47, 33, 0, 0.62);
     font-size: 0.9rem;
+  }
+
+  @media (max-width: 620px) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+`;
+
+const FeedHeaderTools = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 620px) {
+    width: 100%;
+    justify-content: space-between;
+  }
+`;
+
+const FeedFilterToggle = styled.button`
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgba(255, 181, 34, 0.4);
+  border-radius: 10px;
+  background: rgba(255, 244, 217, 0.66);
+  color: #754500;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 232, 178, 0.8);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.44);
+    outline-offset: 2px;
+  }
+`;
+
+const FeedFilterPanel = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: -0.35rem 0 0.8rem;
+  padding: 0.65rem;
+  border: 1px solid rgba(47, 33, 0, 0.07);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.42);
+`;
+
+const FeedFilterChip = styled.button`
+  min-height: 36px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.55)' : 'rgba(47, 33, 0, 0.1)')};
+  border-radius: 999px;
+  background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.18)' : 'rgba(255, 255, 255, 0.58)')};
+  color: ${({ $active }) => ($active ? '#754500' : '#68572f')};
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.44);
+    outline-offset: 2px;
   }
 `;
 
@@ -1886,13 +2068,22 @@ const ActivityRegionLink = styled(Link)`
   }
 `;
 
-const TabContent = styled.div`
-  margin-top: 1rem;
-  background: rgba(255, 252, 243, 0.94);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem;
+const FeedArea = styled.section`
+  margin-top: 1.1rem;
+`;
+
+const FeedList = styled.div`
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+`;
+
+const FeedLoadingMore = styled.p`
+  margin: 1rem 0;
+  color: ${({ $error }) => ($error ? '#b23a2d' : '#6b5327')};
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
 `;
 
 const FocusedFeedItem = styled.div`

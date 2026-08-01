@@ -743,7 +743,10 @@ const IceCreamRadar = () => {
   const [activeShop, setActiveShop] = useState(null);
   const [clustering, setClustering] = useState(true);
   const [displayMode, setDisplayMode] = useState('price');
-  const [filters, setFilters] = useState(() => createDefaultFilters());
+  const [filters, setFilters] = useState(() => ({
+    ...createDefaultFilters(),
+    favorites: new URLSearchParams(location.search).get('favorites') === '1',
+  }));
   const mapRef = useRef(null);
   const shopListRequestRef = useRef(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -773,6 +776,11 @@ const IceCreamRadar = () => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(getMapActionDismissKey()) !== '1';
   });
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('favorites') !== '1' || !userId) return;
+    setFilters((previous) => previous.favorites ? previous : { ...previous, favorites: true });
+  }, [location.search, userId]);
 
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
@@ -2506,6 +2514,17 @@ const IceCreamRadar = () => {
                 />
                 <span>Favoriten</span>
               </FilterToggle>
+              {favoritesFilterActive && (
+                <FavoriteManageButton
+                  type="button"
+                  onClick={() => {
+                    setIsFilterModalOpen(false);
+                    navigate('/favoriten');
+                  }}
+                >
+                  Favoriten verwalten
+                </FavoriteManageButton>
+              )}
               <FilterToggle disabled={!userId}>
                 <input
                   type="checkbox"
@@ -3330,6 +3349,20 @@ const FilterToggle = styled.label`
   input {
     transform: scale(1.2);
   }
+`;
+
+const FavoriteManageButton = styled.button`
+  margin: -0.2rem 0 0.25rem 1.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #825000;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
 `;
 
 const AdvancedFilterToggle = styled.button`

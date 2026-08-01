@@ -1,20 +1,24 @@
 <?php
 require_once  __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/team_challenges.php';
 
 ensureTeamChallengeSchema($pdo);
 
-$nutzerId = $_GET['nutzer_id'] ?? null;
-
-if (!$nutzerId) {
-    echo json_encode(["error" => "nutzer_id fehlt"]);
-    exit;
-}
+$authData = requireAuth($pdo);
+$nutzerId = (int)$authData['user_id'];
 
 $stmt = $pdo->prepare("
     SELECT 
-        e.*,
+        e.id,
+        e.name,
+        e.adresse,
+        e.latitude,
+        e.longitude,
+        e.status,
+        e.openingHours,
+        e.opening_hours_note,
         f.hinzugefuegt_am AS favorit_seit,
 
         -- Letzter Kugelpreis
@@ -22,7 +26,7 @@ $stmt = $pdo->prepare("
             SELECT p1.preis
             FROM preise p1
             WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-            ORDER BY p1.gemeldet_am DESC
+            ORDER BY p1.gemeldet_am DESC, p1.id DESC
             LIMIT 1
         ) AS kugel_preis,
         (
@@ -30,14 +34,14 @@ $stmt = $pdo->prepare("
             FROM preise p1
             LEFT JOIN waehrungen w1 ON p1.waehrung_id = w1.id
             WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-            ORDER BY p1.gemeldet_am DESC
+            ORDER BY p1.gemeldet_am DESC, p1.id DESC
             LIMIT 1
         ) AS kugel_waehrung,
         (
             SELECT p1.gemeldet_am
             FROM preise p1
             WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-            ORDER BY p1.gemeldet_am DESC
+            ORDER BY p1.gemeldet_am DESC, p1.id DESC
             LIMIT 1
         ) AS kugel_preis_update,
         (
@@ -56,7 +60,7 @@ $stmt = $pdo->prepare("
                 ON p1.waehrung_id = wk1.von_waehrung_id
                 AND wk1.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
             WHERE p1.eisdiele_id = e.id AND p1.typ = 'kugel'
-            ORDER BY p1.gemeldet_am DESC
+            ORDER BY p1.gemeldet_am DESC, p1.id DESC
             LIMIT 1
         ) AS kugel_preis_eur,
 
@@ -65,7 +69,7 @@ $stmt = $pdo->prepare("
             SELECT p2.preis
             FROM preise p2
             WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis'
-            ORDER BY p2.gemeldet_am DESC
+            ORDER BY p2.gemeldet_am DESC, p2.id DESC
             LIMIT 1
         ) AS softeis_preis,
         (
@@ -73,14 +77,14 @@ $stmt = $pdo->prepare("
             FROM preise p2
             LEFT JOIN waehrungen w2 ON p2.waehrung_id = w2.id
             WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis'
-            ORDER BY p2.gemeldet_am DESC
+            ORDER BY p2.gemeldet_am DESC, p2.id DESC
             LIMIT 1
         ) AS softeis_waehrung,
         (
             SELECT p2.gemeldet_am
             FROM preise p2
             WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis'
-            ORDER BY p2.gemeldet_am DESC
+            ORDER BY p2.gemeldet_am DESC, p2.id DESC
             LIMIT 1
         ) AS softeis_preis_update,
         (
@@ -99,7 +103,7 @@ $stmt = $pdo->prepare("
                 ON p2.waehrung_id = wk2.von_waehrung_id
                 AND wk2.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR')
             WHERE p2.eisdiele_id = e.id AND p2.typ = 'softeis'
-            ORDER BY p2.gemeldet_am DESC
+            ORDER BY p2.gemeldet_am DESC, p2.id DESC
             LIMIT 1
         ) AS softeis_preis_eur,
 

@@ -84,7 +84,7 @@ function computeBirthdayArchivePayload(PDO $pdo, int $userId): array
     $counts['group_checkins_count'] = (int)$stmt->fetchColumn();
     $status['group_checkin_with_other'] = $counts['group_checkins_count'] > 0;
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM preise WHERE gemeldet_von = :user_id AND gemeldet_am BETWEEN :start AND :end");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM preise WHERE gemeldet_von = :user_id AND is_reward_eligible = 1 AND gemeldet_am BETWEEN :start AND :end");
     $stmt->execute(['user_id' => $userId, 'start' => $periodStart, 'end' => $periodEnd]);
     $priceReports = (int)$stmt->fetchColumn();
     $status['price_reported'] = $priceReports > 0;
@@ -341,7 +341,7 @@ function computeOlympicsArchivePayload(PDO $pdo, int $userId): array
 
     foreach ([
         ['checkins', "SELECT COUNT(*) FROM checkins WHERE nutzer_id = :user_id AND datum BETWEEN :start AND :end", 10],
-        ['prices', "SELECT COUNT(*) FROM preise WHERE gemeldet_von = :user_id AND gemeldet_am BETWEEN :start AND :end", 5],
+        ['prices', "SELECT COUNT(*) FROM preise WHERE gemeldet_von = :user_id AND is_reward_eligible = 1 AND gemeldet_am BETWEEN :start AND :end", 5],
         ['reviews', "SELECT COUNT(*) FROM bewertungen WHERE nutzer_id = :user_id AND erstellt_am BETWEEN :start AND :end", 10],
         ['new_shops', "SELECT COUNT(*) FROM eisdielen WHERE user_id = :user_id AND erstellt_am BETWEEN :start AND :end", 15],
         ['routes', "SELECT COUNT(*) FROM routen WHERE nutzer_id = :user_id AND erstellt_am BETWEEN :start AND :end", 20],

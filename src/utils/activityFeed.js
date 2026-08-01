@@ -1,4 +1,4 @@
-const ACTIVITY_FEED_CACHE_VERSION = 'v1';
+const ACTIVITY_FEED_CACHE_VERSION = 'v2';
 
 const getStorage = () => {
   if (typeof window === 'undefined') {
@@ -35,6 +35,33 @@ export const extractActivityDate = (data) => {
   return parseActivityDate(data.aktivitaet_am || data.datum || data.erstellt_am || data.created_at || null);
 };
 
+export const getActivityKey = (activity) => {
+  if (!activity) return null;
+  const type = activity.typ || activity.type || '';
+  const id = activity.id ?? activity.data?.id ?? '';
+  return type && id !== '' ? `${type}:${id}` : null;
+};
+
+export const dedupeActivities = (activities = []) => {
+  const byKey = new Map();
+  const withoutKey = [];
+
+  activities.forEach((activity) => {
+    const key = getActivityKey(activity);
+    if (!key) {
+      withoutKey.push(activity);
+      return;
+    }
+    byKey.set(key, activity);
+  });
+
+  return [...byKey.values(), ...withoutKey];
+};
+
+export const mergeActivities = (existing = [], incoming = []) => (
+  dedupeActivities([...existing, ...incoming])
+);
+
 const getGroupedItemDate = (item) => {
   if (!item) return null;
 
@@ -63,7 +90,8 @@ const getGroupedItemDate = (item) => {
   return extractActivityDate(item.data);
 };
 
-export const groupActivities = (activities) => {
+export const groupActivities = (activities = []) => {
+  activities = dedupeActivities(activities);
   const grouped = {};
   const singles = [];
   let pendingAwards = [];

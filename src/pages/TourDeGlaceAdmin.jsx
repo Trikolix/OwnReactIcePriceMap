@@ -710,6 +710,7 @@ const JerseyCard = styled.div`
   }
 `;
 
+
 const TableWrap = styled.div`
   overflow-x: auto;
 `;

@@ -15,65 +15,102 @@ require_once __DIR__ . '/evaluators/AwardCollectorEvaluator.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/shop_maintenance.php';
 
+function hasRewardEligiblePriceReport($pdo, $shopId, $userId, $type, $price): bool {
+    $stmt = $pdo->prepare(
+        "SELECT 1
+         FROM preise
+         WHERE eisdiele_id = :shop_id
+           AND gemeldet_von = :user_id
+           AND typ = :type
+           AND preis = :price
+         LIMIT 1
+         FOR UPDATE"
+    );
+    $stmt->execute([
+        ':shop_id' => $shopId,
+        ':user_id' => $userId,
+        ':type' => $type,
+        ':price' => $price,
+    ]);
+
+    return (bool)$stmt->fetchColumn();
+}
+
+function insertPriceReport($pdo, $shopId, $userId, $type, $price, $description, $waehrung): array {
+    $isRewardEligible = hasRewardEligiblePriceReport($pdo, $shopId, $userId, $type, $price) ? 0 : 1;
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO preise (
+            gemeldet_von,
+            eisdiele_id,
+            typ,
+            preis,
+            beschreibung,
+            gemeldet_am,
+            first_time_reported,
+            waehrung_id,
+            is_reward_eligible
+        ) VALUES (
+            :user_id,
+            :shop_id,
+            :type,
+            :price,
+            :description,
+            NOW(),
+            NOW(),
+            :waehrung,
+            :is_reward_eligible
+        )"
+    );
+    $stmt->execute([
+        ':user_id' => $userId,
+        ':shop_id' => $shopId,
+        ':type' => $type,
+        ':price' => $price,
+        ':description' => $description,
+        ':waehrung' => $waehrung,
+        ':is_reward_eligible' => $isRewardEligible,
+    ]);
+
+    return [
+        'typ' => $type,
+        'status' => 'success',
+        'action' => 'created',
+        'is_reward_eligible' => (bool)$isRewardEligible,
+    ];
+}
+
 function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPreis, $softeisPreis, $additionalInfoSofteisPreis, $waehrung) {
     $response = [];
 
     try {
         shopMaintenanceSyncTaskForShop($pdo, (int)$shopId);
 
+        $pdo->beginTransaction();
         if ($kugelPreis !== null) {
-            $sql = $additionalInfoKugelPreis != null ?
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'kugel', :kugelPreis, :beschreibung, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE
-                beschreibung = VALUES(beschreibung),
-                preis = VALUES(preis),
-                gemeldet_am = NOW();"
-                :
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'kugel', :kugelPreis, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE
-                preis = VALUES(preis),
-                gemeldet_am = NOW();";
-
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            $stmt->bindParam(':shopId', $shopId, PDO::PARAM_INT);
-            $stmt->bindParam(':kugelPreis', $kugelPreis, PDO::PARAM_STR);
-            if ($additionalInfoKugelPreis) {
-                $stmt->bindParam(':beschreibung', $additionalInfoKugelPreis, PDO::PARAM_STR);
-            }
-            $stmt->bindParam(':waehrung', $waehrung, PDO::PARAM_INT);
-            $stmt->execute();
-            $response[] = ['typ' => 'kugel', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
+            $response[] = insertPriceReport(
+                $pdo,
+                $shopId,
+                $userId,
+                'kugel',
+                $kugelPreis,
+                $additionalInfoKugelPreis,
+                $waehrung
+            );
         }
 
         if ($softeisPreis !== null && $softeisPreis !== '') {
-            $sql = $additionalInfoSofteisPreis != null ?
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `beschreibung`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'softeis', :softeisPreis, :beschreibung, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE
-                beschreibung = VALUES(beschreibung),
-                preis = VALUES(preis),
-                gemeldet_am = NOW();"
-                :
-                "INSERT INTO preise (`gemeldet_von`, `eisdiele_id`, `typ`, `preis`, `gemeldet_am`, `first_time_reported`, `waehrung_id`)
-                VALUES (:userId, :shopId, 'softeis', :softeisPreis, NOW(), NOW(), :waehrung)
-                ON DUPLICATE KEY UPDATE
-                preis = VALUES(preis),
-                gemeldet_am = NOW();";
-
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            $stmt->bindParam(':shopId', $shopId, PDO::PARAM_INT);
-            $stmt->bindParam(':softeisPreis', $softeisPreis, PDO::PARAM_STR);
-            if ($additionalInfoSofteisPreis) {
-                $stmt->bindParam(':beschreibung', $additionalInfoSofteisPreis, PDO::PARAM_STR);
-            }
-            $stmt->bindParam(':waehrung', $waehrung, PDO::PARAM_INT);
-            $stmt->execute();
-            $response[] = ['typ' => 'softeis', 'status' => 'success', 'action' => ($stmt->rowCount() > 0 ? 'insert/update' : 'no_change')];
+            $response[] = insertPriceReport(
+                $pdo,
+                $shopId,
+                $userId,
+                'softeis',
+                $softeisPreis,
+                $additionalInfoSofteisPreis,
+                $waehrung
+            );
         }
+        $pdo->commit();
 
         // Evaluatoren
     $resolvedMaintenanceTask = shopMaintenanceResolveActiveTask($pdo, (int)$shopId, 'price_stale', (int)$userId);
@@ -114,6 +151,9 @@ function submitPrice($pdo, $shopId, $userId, $kugelPreis, $additionalInfoKugelPr
 
 
     } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         $response[] = ['status' => 'error', 'message' => $e->getMessage()];
     }
 

@@ -1,5 +1,14 @@
 <?php
-// DEPRECATED (cleanup 2026-03): kept for external compatibility checks.
+// DEPRECATED (cleanup 2026-03): this endpoint must not write prices because
+// it predates the append-only price history. Use /submitPrice.php instead.
+http_response_code(410);
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode([
+    'error' => 'Dieser Legacy-Endpunkt wird nicht mehr unterstützt.',
+    'replacement' => '/submitPrice.php',
+]);
+exit;
+
 // Planned replacement path: /api/v2/reviews + /api/v2/prices
 
 require 'db_connect.php'; // Stellt die PDO-Verbindung her

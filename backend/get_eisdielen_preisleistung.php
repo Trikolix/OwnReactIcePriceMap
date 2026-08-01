@@ -65,11 +65,13 @@ JOIN (
 JOIN preise p ON e.id = p.eisdiele_id 
 WHERE p.typ = 'kugel'
 {$openClause}
-AND p.gemeldet_am = (
-    SELECT MAX(p2.gemeldet_am) 
-    FROM preise p2 
-    WHERE p2.eisdiele_id = p.eisdiele_id 
-    AND p2.typ = 'kugel'
+AND p.id = (
+    SELECT p2.id
+    FROM preise p2
+    WHERE p2.eisdiele_id = p.eisdiele_id
+      AND p2.typ = 'kugel'
+    ORDER BY p2.gemeldet_am DESC, p2.id DESC
+    LIMIT 1
 )
 HAVING PLV IS NOT NULL
 ORDER BY PLV DESC;";

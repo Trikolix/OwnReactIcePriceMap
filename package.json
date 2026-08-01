@@ -1,6 +1,6 @@
 {
   "name": "ice-app",
-  "version": "2.12.1",
+  "version": "2.14.1",
   "private": true,
   "homepage": "https://ice-app.de/",
   "dependencies": {
@@ -38,6 +38,7 @@
   },
   "scripts": {
     "version:generate": "node scripts/generate-build-info.mjs",
+    "prestart": "npm run version:generate",
     "prebuild": "npm run version:generate",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",

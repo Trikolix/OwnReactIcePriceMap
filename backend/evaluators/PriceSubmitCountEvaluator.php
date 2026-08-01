@@ -25,6 +25,7 @@ class PriceSubmitCountEvaluator extends BaseAwardEvaluator {
             SELECT gemeldet_am
             FROM preise
             WHERE gemeldet_von = ?
+              AND is_reward_eligible = 1
             ORDER BY gemeldet_am ASC
         ");
         $preiseStmt->execute([$userId]);
