@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import Header from "../Header";
 import { Link } from "react-router-dom";
@@ -50,17 +50,18 @@ const rankingStepIconStyles = {
     green: { color: '#176844', background: 'rgba(71, 177, 117, 0.17)' },
 };
 
-const RankingScoreExplanation = ({ type }) => {
+const RankingScoreExplanation = ({ type, isSingleRaterScope }) => {
     const copy = rankingExplanationCopy[type];
 
     return (
         <Explanation>
             <ScoreExplanation>
-                <ExplanationKicker>Transparentes Community-Ranking</ExplanationKicker>
+                <ExplanationKicker>{isSingleRaterScope ? 'Transparentes Einzelrating' : 'Transparentes Community-Ranking'}</ExplanationKicker>
                 <ExplanationTitle>So entsteht das {copy.label}-Ranking</ExplanationTitle>
                 <ExplanationLead>
-                    Die Spalte „Ranking“ zeigt einen stabilisierten Score. Er belohnt gute Bewertungen,
-                    ohne einzelne oder wenige Bewertungen zu stark zu überbewerten.
+                    {isSingleRaterScope
+                        ? 'Die Spalte „Ranking“ entspricht dem Durchschnitt deiner Check-ins für diese Eisdiele.'
+                        : 'Die Spalte „Ranking“ zeigt einen stabilisierten Score. Er belohnt gute Bewertungen, ohne einzelne oder wenige Bewertungen zu stark zu überbewerten.'}
                 </ExplanationLead>
 
                 <ExplanationSteps>
@@ -73,46 +74,48 @@ const RankingScoreExplanation = ({ type }) => {
                         </StepContent>
                     </ExplanationStep>
 
-                    <ExplanationStep>
-                        <StepIcon style={rankingStepIconStyles.blue}><UsersRound size={20} aria-hidden="true" /></StepIcon>
-                        <StepContent>
-                            <h3>2. Fairer Nutzer-Durchschnitt</h3>
-                            <p>
-                                Pro Nutzer und Eisdiele werden die Check-ins zunächst gemittelt. Dieses
-                                Nutzer-Ergebnis erhält das Gewicht <FormulaInline>√(Anzahl Check-ins)</FormulaInline> –
-                                mehr Erfahrung zählt also, aber mit abnehmendem Einfluss.
-                            </p>
-                        </StepContent>
-                    </ExplanationStep>
-
-                    <ExplanationStep>
-                        <StepIcon style={rankingStepIconStyles.violet}><ChartNoAxesCombined size={20} aria-hidden="true" /></StepIcon>
-                        <StepContent>
-                            <h3>3. Rohwert der Eisdiele</h3>
-                            <p>
-                                Die gewichteten Nutzer-Durchschnitte werden zum Rohwert zusammengeführt:
-                            </p>
-                            <Formula>Σ(Nutzer-Score × Nutzer-Gewicht) / Σ(Nutzer-Gewichte)</Formula>
-                        </StepContent>
-                    </ExplanationStep>
-
-                    <ExplanationStep>
-                        <StepIcon style={rankingStepIconStyles.green}><ShieldCheck size={20} aria-hidden="true" /></StepIcon>
-                        <StepContent>
-                            <h3>4. Stabilisierung nach Nutzerzahl</h3>
-                            <p>
-                                Der finale Ranking-Score wird bei wenigen unterschiedlichen Nutzern zum
-                                Durchschnitt aller {copy.label}-Eisdielen hingezogen. Mit wachsender
-                                Nutzerzahl nähert er sich dem Rohwert an.
-                            </p>
-                            <Formula>n/(n + {copy.stabilizer}) × Rohwert + {copy.stabilizer}/(n + {copy.stabilizer}) × Kategorien-Durchschnitt</Formula>
-                        </StepContent>
-                    </ExplanationStep>
+                    {isSingleRaterScope ? (
+                        <ExplanationStep>
+                            <StepIcon style={rankingStepIconStyles.blue}><UsersRound size={20} aria-hidden="true" /></StepIcon>
+                            <StepContent>
+                                <h3>2. Durchschnitt deiner Check-ins</h3>
+                                <p>Deine Check-ins pro Eisdiele werden gemittelt. Die Anzahl bleibt als Datenbasis sichtbar, verändert den Score aber nicht zusätzlich.</p>
+                            </StepContent>
+                        </ExplanationStep>
+                    ) : (
+                        <>
+                            <ExplanationStep>
+                                <StepIcon style={rankingStepIconStyles.blue}><UsersRound size={20} aria-hidden="true" /></StepIcon>
+                                <StepContent>
+                                    <h3>2. Fairer Nutzer-Durchschnitt</h3>
+                                    <p>Pro Nutzer und Eisdiele werden die Check-ins zunächst gemittelt. Dieses Nutzer-Ergebnis erhält das Gewicht <FormulaInline>√(Anzahl Check-ins)</FormulaInline> – mehr Erfahrung zählt also, aber mit abnehmendem Einfluss.</p>
+                                </StepContent>
+                            </ExplanationStep>
+                            <ExplanationStep>
+                                <StepIcon style={rankingStepIconStyles.violet}><ChartNoAxesCombined size={20} aria-hidden="true" /></StepIcon>
+                                <StepContent>
+                                    <h3>3. Rohwert der Eisdiele</h3>
+                                    <p>Die gewichteten Nutzer-Durchschnitte werden zum Rohwert zusammengeführt:</p>
+                                    <Formula>Σ(Nutzer-Score × Nutzer-Gewicht) / Σ(Nutzer-Gewichte)</Formula>
+                                </StepContent>
+                            </ExplanationStep>
+                            <ExplanationStep>
+                                <StepIcon style={rankingStepIconStyles.green}><ShieldCheck size={20} aria-hidden="true" /></StepIcon>
+                                <StepContent>
+                                    <h3>4. Stabilisierung nach Nutzerzahl</h3>
+                                    <p>Der finale Ranking-Score wird bei wenigen unterschiedlichen Nutzern zum Durchschnitt aller {copy.label}-Eisdielen hingezogen. Mit wachsender Nutzerzahl nähert er sich dem Rohwert an.</p>
+                                    <Formula>n/(n + {copy.stabilizer}) × Rohwert + {copy.stabilizer}/(n + {copy.stabilizer}) × Kategorien-Durchschnitt</Formula>
+                                </StepContent>
+                            </ExplanationStep>
+                        </>
+                    )}
                 </ExplanationSteps>
 
                 <ExplanationNote>
                     <ShieldCheck size={18} aria-hidden="true" />
-                    <span><strong>Verlässliche Datenbasis:</strong> Der Standardfilter zeigt nur Eisdielen mit {copy.reliability}. Die Stabilisierung bleibt auch bei „Alle inklusive weniger Daten“ aktiv.</span>
+                    <span>{isSingleRaterScope
+                        ? <><strong>Datenbasis:</strong> Die Anzahl deiner Check-ins zeigt, wie oft du die Eisdiele bewertet hast.</>
+                        : <><strong>Verlässliche Datenbasis:</strong> Der Standardfilter zeigt nur Eisdielen mit {copy.reliability}. Die Stabilisierung bleibt auch bei „Alle inklusive weniger Daten“ aktiv.</>}</span>
                 </ExplanationNote>
             </ScoreExplanation>
         </Explanation>
@@ -150,7 +153,13 @@ const Ranking = () => {
     const [areFiltersExpanded, setAreFiltersExpanded] = useState(false);
     const [showScoreExplanation, setShowScoreExplanation] = useState(false);
     const [showExpandedNearbyResults, setShowExpandedNearbyResults] = useState(true);
+    const [rankingLoading, setRankingLoading] = useState(false);
+    const [rankingError, setRankingError] = useState(null);
+    const [rankingRetryToken, setRankingRetryToken] = useState(0);
+    const rankingCacheRef = useRef(new Map());
+    const rankingRequestIdRef = useRef(0);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const isSingleRaterScope = ratingScope === 'personal' || ratingScope === 'gourmetCyclist';
     const buildDefaultDateTimeValue = React.useCallback(() => {
         return formatDateTimeLocalInputValue();
     }, []);
@@ -272,57 +281,93 @@ const Ranking = () => {
 
     useEffect(() => {
         if (!apiUrl) {
-            return;
+            return undefined;
         }
 
         if (ratingScope === 'personal' && !userId) {
             setRatingScope('global');
-            return;
+            return undefined;
         }
 
-        const fetchData = async () => {
-            try {
-                const ratingUserId = ratingScope === 'gourmetCyclist'
-                    ? 1
-                    : ratingScope === 'personal'
-                        ? (userId ? Number(userId) : null)
-                        : null;
+        const controller = new AbortController();
+        const requestId = ++rankingRequestIdRef.current;
+        const loadRanking = async () => {
+            const ratingUserId = ratingScope === 'gourmetCyclist'
+                ? 1
+                : ratingScope === 'personal'
+                    ? (userId ? Number(userId) : null)
+                    : null;
 
-                if (ratingScope === 'personal' && !ratingUserId) {
-                    return;
-                }
+            if (ratingScope === 'personal' && !ratingUserId) {
+                return;
+            }
 
-                const queryParts = [`scope=${encodeURIComponent(ratingScope)}`];
-                if (ratingUserId !== null) queryParts.push(`user_id=${ratingUserId}`);
-                if (favoritesOnly && userId) queryParts.push('favorites_only=1');
-                if (openFilterQueryString) {
-                    queryParts.push(openFilterQueryString);
-                }
-                const query = queryParts.length ? `?${queryParts.join('&')}` : '';
-                const response = await fetch(`${apiUrl}/api/rankings.php${query}`, {
-                    headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-                });
-                if (!response.ok) throw new Error('Fehler beim Abrufen des Rankings');
-                const payload = await response.json();
+            const queryParts = [`scope=${encodeURIComponent(ratingScope)}`];
+            if (ratingUserId !== null) queryParts.push(`user_id=${ratingUserId}`);
+            if (favoritesOnly && userId) queryParts.push('favorites_only=1');
+            if (openFilterQueryString) queryParts.push(openFilterQueryString);
+            const query = `?${queryParts.join('&')}`;
+            const cacheKey = `${query}|viewer:${favoritesOnly && userId ? userId : 'public'}`;
+            const applyPayload = (payload) => {
                 const dataKugel = Array.isArray(payload.kugel) ? payload.kugel : [];
                 const dataSofteis = Array.isArray(payload.softeis) ? payload.softeis : [];
                 const dataEisbecher = Array.isArray(payload.eisbecher) ? payload.eisbecher : [];
-
                 setEisdielenKugel(dataKugel);
                 setEisdielenSofteis(dataSofteis);
                 setEisdielenEisbecher(dataEisbecher);
-                syncAttributeFilters({
-                    kugel: dataKugel,
-                    softeis: dataSofteis,
-                    eisbecher: dataEisbecher
+                syncAttributeFilters({ kugel: dataKugel, softeis: dataSofteis, eisbecher: dataEisbecher });
+            };
+
+            const cachedEntry = rankingCacheRef.current.get(cacheKey);
+            const cachedPayload = cachedEntry && (Date.now() - cachedEntry.cachedAt < 45000)
+                ? cachedEntry.payload
+                : null;
+            if (!cachedPayload && cachedEntry) rankingCacheRef.current.delete(cacheKey);
+            if (cachedPayload) {
+                applyPayload(cachedPayload);
+                if (requestId === rankingRequestIdRef.current) {
+                    setRankingError(null);
+                    setRankingLoading(false);
+                }
+                return;
+            }
+
+            // Do not leave the previous scope visible while a new scope is
+            // pending; otherwise it looks like the new filter had no effect.
+            setRankingLoading(true);
+            setRankingError(null);
+            setEisdielenKugel([]);
+            setEisdielenSofteis([]);
+            setEisdielenEisbecher([]);
+
+            try {
+                const response = await fetch(`${apiUrl}/api/rankings.php${query}`, {
+                    headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+                    signal: controller.signal,
                 });
+                if (!response.ok) throw new Error('Fehler beim Abrufen des Rankings');
+                const payload = await response.json();
+                if (controller.signal.aborted || requestId !== rankingRequestIdRef.current) return;
+                rankingCacheRef.current.set(cacheKey, { payload, cachedAt: Date.now() });
+                // Keep memory bounded while retaining the most recently used
+                // combinations for instant back-and-forth switching.
+                while (rankingCacheRef.current.size > 8) {
+                    rankingCacheRef.current.delete(rankingCacheRef.current.keys().next().value);
+                }
+                applyPayload(payload);
+                setRankingError(null);
             } catch (error) {
+                if (error?.name === 'AbortError' || controller.signal.aborted || requestId !== rankingRequestIdRef.current) return;
                 console.error('Error fetching data:', error);
+                setRankingError('Ranking konnte nicht geladen werden. Bitte erneut versuchen.');
+            } finally {
+                if (requestId === rankingRequestIdRef.current) setRankingLoading(false);
             }
         };
 
-        fetchData();
-    }, [apiUrl, ratingScope, userId, authToken, favoritesOnly, syncAttributeFilters, openFilterQueryString]);
+        loadRanking();
+        return () => controller.abort();
+    }, [apiUrl, ratingScope, userId, authToken, favoritesOnly, syncAttributeFilters, openFilterQueryString, rankingRetryToken]);
 
     const sortTableKugel = (key) => {
         let direction = 'descending';
@@ -363,8 +408,13 @@ const Ranking = () => {
         if (value === 'personal' && !userId) {
             return;
         }
+        setRankingError(null);
+        setRankingLoading(true);
+        setEisdielenKugel([]);
+        setEisdielenSofteis([]);
+        setEisdielenEisbecher([]);
         setRatingScope(value);
-        if (value === 'personal') {
+        if (value === 'personal' || value === 'gourmetCyclist') {
             setReliabilityMode('all');
         }
     };
@@ -505,22 +555,29 @@ const Ranking = () => {
             return filteredItems;
         }
 
+        const getSortValue = (item) => {
+            if (sortConfig.key === 'taste_factor') {
+                const tasteFactor = tab === 'softeis'
+                    ? item.finaler_geschmacksfaktor
+                    : (item.avg_geschmacksfaktor ?? item.finaler_geschmacksfaktor ?? item.avg_geschmack);
+                const numericTasteFactor = Number(tasteFactor);
+                return Number.isFinite(numericTasteFactor) ? numericTasteFactor : null;
+            }
+
+            const value = item[sortConfig.key];
+            const numericValue = Number(value);
+            return value !== '' && value !== null && value !== undefined && Number.isFinite(numericValue)
+                ? numericValue
+                : value;
+        };
+
         const sortableItems = [...filteredItems];
         sortableItems.sort((a, b) => {
-            let aValue = a[sortConfig.key];
-            let bValue = b[sortConfig.key];
+            const aValue = getSortValue(a);
+            const bValue = getSortValue(b);
 
-            if (!isNaN(aValue) && !isNaN(bValue)) {
-                aValue = parseFloat(aValue);
-                bValue = parseFloat(bValue);
-            }
-
-            if (aValue === null || aValue === undefined) {
-                return sortConfig.direction === 'ascending' ? 1 : -1;
-            }
-            if (bValue === null || bValue === undefined) {
-                return sortConfig.direction === 'ascending' ? -1 : 1;
-            }
+            if (aValue === null || aValue === undefined) return 1;
+            if (bValue === null || bValue === undefined) return -1;
 
             if (aValue < bValue) {
                 return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -575,38 +632,56 @@ const Ranking = () => {
         && showExpandedNearbyResults;
     const activeRows = shouldExpandNearbyResults ? relaxedActiveRows : strictActiveRows;
     const activeResultCount = activeRows.length;
+    const showRankingResults = !rankingLoading && !rankingError;
     const activeSortConfig = activeTab === 'kugel'
         ? sortConfigKugel
         : activeTab === 'softeis'
             ? sortConfigSofteis
             : sortConfigEisbecher;
+    const activePriceKey = activeTab === 'softeis' ? 'softeis_preis_eur' : 'kugel_preis_eur';
     const sortActiveRows = activeTab === 'kugel'
         ? sortTableKugel
         : activeTab === 'softeis'
             ? sortTableSofteis
             : sortTableEisbecher;
-    const tasteFactorKey = activeTab === 'softeis' ? 'finaler_geschmacksfaktor' : 'avg_geschmacksfaktor';
+    const tasteFactorKey = 'taste_factor';
     const activeDetailKey = (shop, index) => `${activeTab}-${shop.eisdiele_id || index}`;
     const formatRating = (value, digits = 2) => value === null || value === undefined || value === ''
         ? '–'
         : Number(value).toFixed(digits);
-    const getTasteFactor = (shop) => shop[tasteFactorKey] ?? shop.avg_geschmacksfaktor ?? shop.finaler_geschmacksfaktor ?? shop.avg_geschmack;
+    const getTasteFactor = (shop) => activeTab === 'softeis'
+        ? (shop.finaler_geschmacksfaktor ?? shop.avg_geschmacksfaktor ?? shop.avg_geschmack)
+        : (shop.avg_geschmacksfaktor ?? shop.finaler_geschmacksfaktor ?? shop.avg_geschmack);
     const getUniqueRaters = (shop) => Number(shop.nutzeranzahl ?? shop.anzahl_nutzer ?? 0);
     const isLowConfidence = (shop) => reliabilityMode === 'reliable' && getUniqueRaters(shop) < minimumUsersForTab(activeTab);
     const getPriceLabel = (shop) => {
-        if (shop.kugel_preis_eur === null || shop.kugel_preis_eur === undefined) return '–';
-        const euro = `${Number(shop.kugel_preis_eur).toFixed(2)} €`;
-        if (shop.kugel_waehrung && shop.kugel_waehrung !== '€' && shop.kugel_preis !== null && shop.kugel_preis !== undefined) {
-            return `${euro} (${Number(shop.kugel_preis).toFixed(2)} ${shop.kugel_waehrung})`;
+        if (activeTab === 'eisbecher') return null;
+        const priceKey = activeTab === 'softeis' ? 'softeis' : 'kugel';
+        const priceEur = shop[`${priceKey}_preis_eur`];
+        const price = shop[`${priceKey}_preis`];
+        const currency = shop[`${priceKey}_waehrung`];
+        if (priceEur === null || priceEur === undefined) return '–';
+        const euro = `${Number(priceEur).toFixed(2)} €`;
+        const isEuro = ['€', 'EUR', 'EURO'].includes(String(currency || '').trim().toUpperCase());
+        if (currency && !isEuro && price !== null && price !== undefined) {
+            return `${euro} (${Number(price).toFixed(2)} ${currency})`;
         }
         return euro;
     };
     const filterSummary = [
-        ratingScope === 'global' ? 'Global' : ratingScope === 'gourmetCyclist' ? 'TheGourmetCyclist' : 'Persönlich',
-        reliabilityMode === 'reliable' ? 'verlässlich' : 'alle Daten',
+        ratingScope !== 'global' ? (ratingScope === 'gourmetCyclist' ? 'TheGourmetCyclist' : 'Persönlich') : null,
+        !isSingleRaterScope && reliabilityMode !== 'reliable' ? 'alle Daten' : null,
         favoritesOnly ? 'meine Favoriten' : null,
-        openFilterMode === 'now' ? 'jetzt geöffnet' : openFilterMode === 'custom' ? 'zu Termin geöffnet' : 'alle Zeiten',
-    ].filter(Boolean).join(' · ');
+        openFilterMode === 'now' ? 'jetzt geöffnet' : openFilterMode === 'custom' ? 'zu Termin geöffnet' : null,
+        selectedAttributes.length > 0 ? `${selectedAttributes.length} Attribute` : null,
+    ].filter(Boolean).join(' · ') || 'Standardfilter';
+    const activeAdvancedFilterCount = [
+        ratingScope !== 'global',
+        !isSingleRaterScope && reliabilityMode !== 'reliable',
+        favoritesOnly,
+        openFilterMode !== 'all',
+        selectedAttributes.length > 0,
+    ].filter(Boolean).length;
     const renderShopDetails = (shop) => (
         <DetailsContainer>
             <h3><CleanLink to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</CleanLink></h3>
@@ -639,12 +714,19 @@ const Ranking = () => {
                 </FilterGroup>
                 <FilterGroup>
                     <FilterLabel htmlFor="ranking-reliability">Datenbasis</FilterLabel>
-                    <FilterSelect id="ranking-reliability" value={reliabilityMode} onChange={(event) => setReliabilityMode(event.target.value)}>
+                    <FilterSelect
+                        id="ranking-reliability"
+                        value={reliabilityMode}
+                        onChange={(event) => setReliabilityMode(event.target.value)}
+                        disabled={isSingleRaterScope}
+                    >
                         <option value="reliable">Verlässlich (empfohlen)</option>
                         <option value="all">Alle inklusive weniger Daten</option>
                     </FilterSelect>
                     <FilterHint>
-                        {activeTab === 'kugel' ? 'mindestens 3 unterschiedliche Nutzer' : 'mindestens 2 unterschiedliche Nutzer'}
+                        {isSingleRaterScope
+                            ? 'Einzelrating – Datenbasis ist automatisch „Alle“.'
+                            : activeTab === 'kugel' ? 'mindestens 3 unterschiedliche Nutzer' : 'mindestens 2 unterschiedliche Nutzer'}
                     </FilterHint>
                 </FilterGroup>
                 <FilterGroup>
@@ -685,7 +767,7 @@ const Ranking = () => {
                         type="button"
                         onClick={() => setShowAttributeFilters((prev) => !prev)}
                     >
-                        {showAttributeFilters ? 'Attribute-Filter verbergen' : 'Attribute-Filter anzeigen'}
+                        {showAttributeFilters ? 'Attribute ausblenden' : 'Attribute anzeigen'}
                     </AttributeToggleButton>
                     {showAttributeFilters && (
                         <AttributeFilterWrapper>
@@ -749,7 +831,7 @@ const Ranking = () => {
             />
             <Header />
             <Container>
-                <TableContainer className="container">
+                <TableContainer className="container" aria-busy={rankingLoading}>
                     <HeroCard>
                         <PageTitle><Trophy size={31} aria-hidden="true" /> Eisdielen-Ranking</PageTitle>
                     </HeroCard>
@@ -782,7 +864,8 @@ const Ranking = () => {
                             Eisbecher
                         </TabButton>
                     </TabContainer>
-                    <QuickFiltersBar>
+                    <FilterCard>
+                      <QuickFiltersBar>
                         <FilterGroup>
                             <FilterLabel htmlFor="ranking-search">Suche</FilterLabel>
                             <FilterInput id="ranking-search" type="search" value={searchTerm} placeholder="Eisdiele suchen..." onChange={(event) => setSearchTerm(event.target.value)} />
@@ -798,25 +881,37 @@ const Ranking = () => {
                                 <option value="50">bis 50 km</option>
                             </FilterSelect>
                         </FilterGroup>
-                        <FiltersToggleButton type="button" onClick={() => setAreFiltersExpanded((prev) => !prev)} aria-expanded={areFiltersExpanded}>
+                        <FiltersToggleButton
+                            type="button"
+                            onClick={() => setAreFiltersExpanded((prev) => !prev)}
+                            aria-expanded={areFiltersExpanded}
+                            aria-controls="ranking-advanced-filters"
+                        >
                             <SlidersHorizontal size={17} aria-hidden="true" />
-                            <span>{areFiltersExpanded ? 'Filter schließen' : 'Filter'}</span>
-                            {!areFiltersExpanded && <FilterButtonSummary>{filterSummary}</FilterButtonSummary>}
-                            <ChevronDown size={16} aria-hidden="true" />
+                            <span>{areFiltersExpanded ? 'Weniger Filter' : 'Mehr Filter'}</span>
+                            {!areFiltersExpanded && activeAdvancedFilterCount > 0 && <FilterButtonSummary>· {activeAdvancedFilterCount} aktiv</FilterButtonSummary>}
+                            <ChevronDown size={16} aria-hidden="true" $expanded={areFiltersExpanded} />
                         </FiltersToggleButton>
-                    </QuickFiltersBar>
-                    {!userPosition && locationStatus !== 'idle' && (
-                        <CompactLocationHint>
-                            <MapPin size={16} aria-hidden="true" />
-                            <span>{locationStatus === 'requesting' ? 'Standort wird ermittelt…' : locationError || 'Standort für Entfernungen freigeben.'}</span>
-                        </CompactLocationHint>
-                    )}
-                    {areFiltersExpanded && (
-                        <FiltersPanel>
-                            <FilterSummary>Aktiv: {filterSummary}</FilterSummary>
-                            {advancedFiltersContent}
-                        </FiltersPanel>
-                    )}
+                      </QuickFiltersBar>
+                      {!areFiltersExpanded && activeAdvancedFilterCount > 0 && (
+                        <ClosedFilterSummary aria-live="polite">{filterSummary}</ClosedFilterSummary>
+                      )}
+                      {!userPosition && locationStatus !== 'idle' && (
+                          <CompactLocationHint>
+                              <MapPin size={16} aria-hidden="true" />
+                              <span>{locationStatus === 'requesting' ? 'Standort wird ermittelt…' : locationError || 'Standort für Entfernungen freigeben.'}</span>
+                          </CompactLocationHint>
+                      )}
+                      {areFiltersExpanded && (
+                          <FiltersPanel id="ranking-advanced-filters" role="region" aria-label="Weitere Ranking-Filter">
+                              <FilterPanelHeader>
+                                <strong>Weitere Filter</strong>
+                                {activeAdvancedFilterCount > 0 && <span>{activeAdvancedFilterCount} aktiv</span>}
+                              </FilterPanelHeader>
+                              {advancedFiltersContent}
+                          </FiltersPanel>
+                      )}
+                    </FilterCard>
                     {false && activeTab === 'kugel' && (
                         <>
                             <TableScrollArea>
@@ -1048,18 +1143,30 @@ const Ranking = () => {
                         </>
                     )}
 
-                    <ResultsContext>
+                    {rankingLoading && <RankingLoadingState role="status" aria-live="polite" aria-label="Ranking wird geladen">
+                        <LoadingTitle>{ratingScope === 'gourmetCyclist' ? 'TheGourmetCyclist-Rating' : ratingScope === 'personal' ? 'Personal-Rating' : 'Globales Rating'} wird geladen …</LoadingTitle>
+                        <LoadingRows aria-hidden="true"><LoadingRow /><LoadingRow /><LoadingRow /></LoadingRows>
+                    </RankingLoadingState>}
+                    {rankingError && <RankingError role="alert">
+                        <span>{rankingError}</span>
+                        <RetryButton type="button" onClick={() => {
+                            rankingCacheRef.current.clear();
+                            setRankingError(null);
+                            setRankingRetryToken((value) => value + 1);
+                        }}>Erneut versuchen</RetryButton>
+                    </RankingError>}
+                    {showRankingResults && <ResultsContext>
                         <strong>{activeResultCount} passende Eisdielen</strong>
                         <span>{distanceFilter !== 'any' ? `im Umkreis von ${distanceFilter} km` : 'ohne Entfernungsfilter'}</span>
                         {searchTerm.trim() && <span>· Suche: „{searchTerm.trim()}“</span>}
-                    </ResultsContext>
-                    {shouldExpandNearbyResults && (
+                    </ResultsContext>}
+                    {showRankingResults && shouldExpandNearbyResults && (
                         <NearbyFallbackNotice>
                             <span>Nur {strictActiveRows.length} verlässliche Treffer im Umkreis. Weitere nahe Eisdielen mit kleiner Datenbasis werden angezeigt.</span>
                             <button type="button" onClick={() => setShowExpandedNearbyResults(false)}>Nur verlässliche anzeigen</button>
                         </NearbyFallbackNotice>
                     )}
-                    <MobileResults aria-label="Ranking-Ergebnisse">
+                    {showRankingResults && <MobileResults aria-label="Ranking-Ergebnisse">
                         {activeRows.map((shop, index) => {
                             const detailKey = activeDetailKey(shop, index);
                             const isExpanded = expandedRow === detailKey;
@@ -1073,7 +1180,7 @@ const Ranking = () => {
                                     <CardMetrics>
                                         <Metric><span>Geschmacksfaktor</span><strong>{formatRating(getTasteFactor(shop))}</strong></Metric>
                                         <Metric><span>Preis-Leistung</span><strong>{formatRating(shop.avg_preisleistung)}</strong></Metric>
-                                        <Metric><span>Preis</span><strong>{getPriceLabel(shop)}</strong></Metric>
+                                        {activeTab !== 'eisbecher' && <Metric><span>Preis</span><strong>{getPriceLabel(shop)}</strong></Metric>}
                                         <Metric><span>Datenbasis</span><strong>{getUniqueRaters(shop)} Nutzer{isLowConfidence(shop) ? ' · niedrig' : ''}</strong></Metric>
                                     </CardMetrics>
                                     <CardDetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>
@@ -1083,9 +1190,9 @@ const Ranking = () => {
                                 </RankingCard>
                             );
                         })}
-                    </MobileResults>
+                    </MobileResults>}
 
-                    <DesktopResults>
+                    {showRankingResults && <DesktopResults>
                         <TableScrollArea>
                             <Table>
                                 <thead>
@@ -1094,7 +1201,7 @@ const Ranking = () => {
                                         <th><SortButton type="button" $active={activeSortConfig.key === 'ranking_score'} onClick={() => sortActiveRows('ranking_score')}>Ranking {activeSortConfig.key === 'ranking_score' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
                                         <th><SortButton type="button" $active={activeSortConfig.key === tasteFactorKey} onClick={() => sortActiveRows(tasteFactorKey)}>Geschmacksfaktor {activeSortConfig.key === tasteFactorKey && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
                                         <th><SortButton type="button" $active={activeSortConfig.key === 'avg_preisleistung'} onClick={() => sortActiveRows('avg_preisleistung')}>Preis-Leistung {activeSortConfig.key === 'avg_preisleistung' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
-                                        <th><SortButton type="button" $active={activeSortConfig.key === 'kugel_preis_eur'} onClick={() => sortActiveRows('kugel_preis_eur')}>Preis {activeSortConfig.key === 'kugel_preis_eur' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        {activeTab !== 'eisbecher' && <th><SortButton type="button" $active={activeSortConfig.key === activePriceKey} onClick={() => sortActiveRows(activePriceKey)}>Preis {activeSortConfig.key === activePriceKey && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>}
                                         <th><SortButton type="button" $active={activeSortConfig.key === 'nutzeranzahl'} onClick={() => sortActiveRows('nutzeranzahl')}>Datenbasis {activeSortConfig.key === 'nutzeranzahl' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
                                         <th aria-label="Details" />
                                     </tr>
@@ -1110,24 +1217,24 @@ const Ranking = () => {
                                                     <td><RankingValue title={`Rohwert: ${formatRating(shop.raw_score)}`}>{formatRating(shop.ranking_score)}</RankingValue></td>
                                                     <td>{formatRating(getTasteFactor(shop))}</td>
                                                     <td>{formatRating(shop.avg_preisleistung)}</td>
-                                                    <td>{getPriceLabel(shop)}</td>
+                                                    {activeTab !== 'eisbecher' && <td>{getPriceLabel(shop)}</td>}
                                                     <td>{shop.checkin_anzahl || 0} Check-ins<SmallValue>{getUniqueRaters(shop)} Nutzer{isLowConfidence(shop) && ' · niedrig'}</SmallValue></td>
                                                     <td><DetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>Details <ChevronDown size={16} aria-hidden="true" /></DetailsButton></td>
                                                 </tr>
-                                                {isExpanded && <DetailsRow visible className="details-row"><td colSpan="7">{renderShopDetails(shop)}</td></DetailsRow>}
+                                                {isExpanded && <DetailsRow visible className="details-row"><td colSpan={activeTab === 'eisbecher' ? 6 : 7}>{renderShopDetails(shop)}</td></DetailsRow>}
                                             </React.Fragment>
                                         );
                                     })}
                                 </tbody>
                             </Table>
                         </TableScrollArea>
-                    </DesktopResults>
+                    </DesktopResults>}
 
-                    <ScoreExplanationToggle type="button" onClick={() => setShowScoreExplanation((current) => !current)} aria-expanded={showScoreExplanation}>
+                    {showRankingResults && <ScoreExplanationToggle type="button" onClick={() => setShowScoreExplanation((current) => !current)} aria-expanded={showScoreExplanation}>
                         <span><Calculator size={17} aria-hidden="true" /> So wird das Ranking berechnet</span>
                         <ChevronDown size={18} aria-hidden="true" />
-                    </ScoreExplanationToggle>
-                    {showScoreExplanation && <RankingScoreExplanation type={activeTab} />}
+                    </ScoreExplanationToggle>}
+                    {showRankingResults && showScoreExplanation && <RankingScoreExplanation type={activeTab} isSingleRaterScope={isSingleRaterScope} />}
 
                 </TableContainer>
             </Container>
@@ -1357,6 +1464,69 @@ const ResultsContext = styled.div`
     color: #2f2100;
     font-size: 0.95rem;
   }
+`;
+
+const RankingLoadingState = styled.div`
+  margin: 0.7rem 0 0.8rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(255, 181, 34, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 252, 243, 0.82);
+  color: #754500;
+`;
+
+const LoadingTitle = styled.strong`
+  display: block;
+  font-size: 0.9rem;
+`;
+
+const LoadingRows = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+`;
+
+const LoadingRow = styled.div`
+  height: 1.7rem;
+  border-radius: 7px;
+  background: linear-gradient(90deg, rgba(255, 226, 169, 0.42), rgba(255, 247, 226, 0.9), rgba(255, 226, 169, 0.42));
+  background-size: 200% 100%;
+  animation: ranking-shimmer 1.4s ease-in-out infinite;
+
+  @keyframes ranking-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -100% 0; }
+  }
+`;
+
+const RankingError = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.7rem 0 0.8rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(176, 0, 32, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 235, 238, 0.86);
+  color: #8a1c2b;
+
+  @media (max-width: 520px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+`;
+
+const RetryButton = styled.button`
+  min-height: 36px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(138, 28, 43, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #8a1c2b;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
 `;
 
 const NearbyFallbackNotice = styled.div`
@@ -1666,12 +1836,17 @@ const TabButton = styled.button`
 `;
 
 const FiltersPanel = styled.div`
-  background: rgba(255, 252, 243, 0.94);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
-  padding: 0.75rem;
+  border-top: 1px solid rgba(47, 33, 0, 0.1);
+  padding: 0.85rem 0.1rem 0.2rem;
+`;
+
+const FilterCard = styled.section`
   margin-bottom: 1rem;
+  padding: 0.25rem 0.75rem 0.65rem;
+  border: 1px solid rgba(47, 33, 0, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 252, 243, 0.94);
+  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
 `;
 
 const QuickFiltersBar = styled.div`
@@ -1691,14 +1866,35 @@ const QuickFiltersBar = styled.div`
     grid-template-columns: 1fr 1fr;
     gap: 0.55rem;
     padding: 0.55rem 0.1rem;
+
+    & > div:first-child {
+      grid-column: 1 / -1;
+    }
   }
 `;
 
-const FilterSummary = styled.p`
-  margin: 0 0 0.6rem;
+const ClosedFilterSummary = styled.div`
+  margin: 0.2rem 0 0.25rem;
+  padding: 0 0.1rem;
   color: #765116;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
+`;
+
+const FilterPanelHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+  color: #4b3511;
+  font-size: 0.9rem;
+
+  span {
+    color: #8a631e;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
 `;
 
 const CompactLocationHint = styled.div`
@@ -1715,7 +1911,7 @@ const FiltersRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  justify-content: center;
+  justify-content: flex-start;
   margin: 0.4rem 0 0.8rem;
 `;
 
@@ -1749,8 +1945,17 @@ const FiltersToggleButton = styled.button`
     outline-offset: 2px;
   }
 
+  white-space: nowrap;
+
+  svg:last-child {
+    transition: transform 0.18s ease;
+    transform: rotate(${({ $expanded }) => ($expanded ? '180deg' : '0deg')});
+  }
+
   @media (max-width: 768px) {
-    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+    padding-inline: 0.7rem;
   }
 `;
 
@@ -1823,12 +2028,13 @@ const FavoriteFilterButton = styled.button`
 const AttributeFilterSection = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 0.6rem;
   margin-bottom: 1rem;
 `;
 
 const AttributeToggleButton = styled.button`
+  align-self: flex-start;
   padding: 0.4rem 1.2rem;
   border: 1px solid rgba(255, 181, 34, 0.45);
   border-radius: 999px;

@@ -9,6 +9,13 @@ export const parseNotificationExtra = (value) => {
   }
 };
 
+const buildDashboardTargetUrl = (type, id, commentId = null) => {
+  if (!type || !id) return null;
+  const params = new URLSearchParams({ type, id: String(id) });
+  if (commentId) params.set('focusComment', String(commentId));
+  return `/dashboard/target?${params.toString()}`;
+};
+
 export const buildNotificationDeeplink = (notification, userId) => {
   const data = parseNotificationExtra(notification?.zusatzdaten);
 
@@ -31,12 +38,12 @@ export const buildNotificationDeeplink = (notification, userId) => {
     case "kommentar_new_user": {
       const targetUserId = data.user_registration_id || notification?.referenz_id;
       const commentId = data.kommentar_id || notification?.referenz_id;
-      return targetUserId ? `/dashboard?focusNewUser=${targetUserId}${commentId ? `&focusComment=${commentId}` : ""}` : "/dashboard";
+      return buildDashboardTargetUrl('new_user', targetUserId, commentId) || "/dashboard";
     }
     case "kommentar_award": {
       const awardId = data.user_award_id;
       const commentId = data.kommentar_id || notification?.referenz_id;
-      return awardId ? `/dashboard?focusAward=${awardId}${commentId ? `&focusComment=${commentId}` : ""}` : "/dashboard";
+      return buildDashboardTargetUrl('award', awardId, commentId) || "/dashboard";
     }
     case "new_user":
       return notification?.referenz_id ? `/user/${notification.referenz_id}` : null;
@@ -85,18 +92,18 @@ export const buildNotificationDeeplink = (notification, userId) => {
           return `/user/${data.route_autor_id}?tab=routes&focusRoute=${data.route_id}${commentQuery}`;
         }
         if (data.user_registration_id) {
-          return `/dashboard?focusNewUser=${data.user_registration_id}${commentQuery}`;
+          return buildDashboardTargetUrl('new_user', data.user_registration_id, data.kommentar_id);
         }
         if (data.user_award_id) {
-          return `/dashboard?focusAward=${data.user_award_id}${commentQuery}`;
+          return buildDashboardTargetUrl('award', data.user_award_id, data.kommentar_id);
         }
         return null;
       } else if (entityType === "user_registration") {
         const targetUserId = data.user_registration_id || entityId;
-        return targetUserId ? `/dashboard?focusNewUser=${targetUserId}` : null;
+        return buildDashboardTargetUrl('new_user', targetUserId);
       } else if (entityType === "user_award") {
         const awardId = data.user_award_id || entityId;
-        return awardId ? `/dashboard?focusAward=${awardId}` : null;
+        return buildDashboardTargetUrl('award', awardId);
       }
       return null;
     }
@@ -118,9 +125,9 @@ export const buildNotificationDeeplink = (notification, userId) => {
             ? `/user/${data.route_autor_id}?tab=routes&focusRoute=${referenceId}${commentQuery}`
             : null;
         case "user_registration_kommentar":
-          return referenceId ? `/dashboard?focusNewUser=${referenceId}${commentQuery}` : "/dashboard";
+          return buildDashboardTargetUrl('new_user', referenceId, data.kommentar_id) || "/dashboard";
         case "user_award_kommentar":
-          return referenceId ? `/dashboard?focusAward=${referenceId}${commentQuery}` : "/dashboard";
+          return buildDashboardTargetUrl('award', referenceId, data.kommentar_id) || "/dashboard";
         case "checkin":
           return data.eisdiele_id && referenceId
             ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${referenceId}`

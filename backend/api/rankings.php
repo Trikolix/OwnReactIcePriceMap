@@ -9,8 +9,10 @@ if (!defined('RANKINGS_PDO_READY')) {
 require_once __DIR__ . '/../lib/attribute.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/opening_hours.php';
+require_once __DIR__ . '/../lib/ranking_cache.php';
 
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: private, no-store');
 
 function rankingOpenShopIds(PDO $pdo): ?array {
     $moment = parse_opening_hours_reference($_GET['open_at'] ?? null);
@@ -24,6 +26,23 @@ function rankingOpenShopIds(PDO $pdo): ?array {
 }
 
 try {
+    $requestStartedAt = microtime(true);
+    $timings = [];
+    $stageStartedAt = $requestStartedAt;
+    $markStage = static function (string $name) use (&$timings, &$stageStartedAt): void {
+        $now = microtime(true);
+        $timings[$name] = round(($now - $stageStartedAt) * 1000, 1);
+        $stageStartedAt = $now;
+    };
+    $sendTimingHeaders = static function (string $cacheState, array $timings) use ($requestStartedAt): void {
+        $parts = [];
+        foreach ($timings as $name => $duration) {
+            $parts[] = $name . ';dur=' . number_format((float)$duration, 1, '.', '');
+        }
+        $parts[] = 'total;dur=' . number_format((microtime(true) - $requestStartedAt) * 1000, 1, '.', '');
+        header('X-Ranking-Cache: ' . $cacheState);
+        header('Server-Timing: ' . implode(', ', $parts));
+    };
     $scope = $_GET['scope'] ?? 'global';
     $userId = filter_var($_GET['user_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
     $favoritesOnly = isset($_GET['favorites_only']) && (int)$_GET['favorites_only'] === 1;
@@ -32,15 +51,40 @@ try {
     }
     if ($scope === 'gourmetCyclist') $userId = 1;
     if ($scope === 'personal' && !$userId) throw new InvalidArgumentException('Persönliches Ranking benötigt user_id.');
+    $isSingleRaterScope = $scope === 'personal' || $scope === 'gourmetCyclist';
     $viewerId = null;
     if ($favoritesOnly) {
         $authData = requireAuth($pdo);
         $viewerId = (int)$authData['user_id'];
     }
 
+    // Include all user- and filter-dependent values to prevent personalised
+    // responses from ever being reused by another viewer.
+    $cacheKey = ranking_cache_key([
+        'scope' => $scope,
+        'rated_user_id' => $userId,
+        'viewer_id' => $viewerId,
+        'favorites_only' => $favoritesOnly,
+        'open_now' => (int)($_GET['open_now'] ?? 0),
+        'open_at' => (string)($_GET['open_at'] ?? ''),
+    ]);
+    $cachedResponse = ranking_cache_read($cacheKey);
+    if ($cachedResponse !== null) {
+        $sendTimingHeaders('HIT', ['cache' => round((microtime(true) - $requestStartedAt) * 1000, 1)]);
+        echo $cachedResponse;
+        exit;
+    }
+
     $openShopIds = rankingOpenShopIds($pdo);
+    $markStage('open_filter');
     if (is_array($openShopIds) && !$openShopIds) {
-        echo json_encode(['meta' => ['scope' => $scope], 'kugel' => [], 'softeis' => [], 'eisbecher' => []]);
+        $emptyResponse = json_encode(['meta' => ['scope' => $scope, 'single_rater_scope' => $isSingleRaterScope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1], 'kugel' => [], 'softeis' => [], 'eisbecher' => []], JSON_UNESCAPED_UNICODE);
+        if ($emptyResponse !== false) {
+            ranking_cache_write($cacheKey, $emptyResponse);
+            $markStage('json');
+            $sendTimingHeaders('MISS', $timings);
+            echo $emptyResponse;
+        }
         exit;
     }
 
@@ -65,6 +109,15 @@ try {
         }
         $openCondition = ' AND e.id IN (' . implode(',', $placeholders) . ')';
     }
+    $rankingScoreExpression = $isSingleRaterScope
+        ? 'ROUND(s.raw_score, 2)'
+        : "ROUND((s.user_count / (s.user_count + CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END)) * s.raw_score
+          + ((CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END) / (s.user_count + CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END)) * m.global_mean, 2)";
+
+    $typeMeansCte = $isSingleRaterScope ? '' : ", type_means AS (
+    SELECT typ, AVG(raw_score) AS global_mean FROM shop_scores GROUP BY typ
+)";
+    $typeMeansJoin = $isSingleRaterScope ? '' : 'JOIN type_means m ON m.typ = s.typ';
 
     $sql = "
 WITH eligible AS (
@@ -111,46 +164,20 @@ WITH eligible AS (
       SUM(user_value * SQRT(rating_count)) / NULLIF(SUM(SQRT(rating_count)), 0) AS value_score
     FROM user_scores
     GROUP BY eisdiele_id, typ
-), type_means AS (
-    SELECT typ, AVG(raw_score) AS global_mean FROM shop_scores GROUP BY typ
-), latest_kugel_price AS (
-    -- The append-only price history is ordered by report time and then id.
-    -- NOT EXISTS avoids requiring window functions on older MySQL/MariaDB.
-    SELECT p.eisdiele_id, p.preis, p.waehrung_id
-    FROM preise p
-    WHERE p.typ = 'kugel'
-      AND NOT EXISTS (
-          SELECT 1
-          FROM preise newer
-          WHERE newer.eisdiele_id = p.eisdiele_id
-            AND newer.typ = 'kugel'
-            AND (
-                newer.gemeldet_am > p.gemeldet_am
-                OR (newer.gemeldet_am = p.gemeldet_am AND newer.id > p.id)
-            )
-      )
-)
+){$typeMeansCte}
 SELECT s.eisdiele_id, s.typ, e.name, e.adresse, e.openingHours, e.opening_hours_note,
        e.status, e.latitude, e.longitude,
        ROUND(s.raw_score, 2) AS raw_score,
-       ROUND((s.user_count / (s.user_count + CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END)) * s.raw_score
-          + ((CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END) / (s.user_count + CASE WHEN s.typ = 'Kugel' THEN 3 ELSE 2 END)) * m.global_mean, 2) AS ranking_score,
+       {$rankingScoreExpression} AS ranking_score,
        ROUND(s.taste_score, 2) AS avg_geschmack,
        ROUND(s.taste_factor_score, 2) AS avg_geschmacksfaktor,
        ROUND(s.taste_factor_score, 2) AS finaler_geschmacksfaktor,
        ROUND(s.waffle_score, 2) AS avg_waffel,
        ROUND(s.value_score, 2) AS avg_preisleistung,
-       s.rating_count AS checkin_anzahl, s.user_count AS nutzeranzahl,
-       price.preis AS kugel_preis, currency.symbol AS kugel_waehrung,
-       CASE WHEN currency.code = 'EUR' THEN price.preis
-            ELSE ROUND(price.preis * COALESCE(rate.kurs, 1), 2) END AS kugel_preis_eur
+       s.rating_count AS checkin_anzahl, s.user_count AS nutzeranzahl
 FROM shop_scores s
-JOIN type_means m ON m.typ = s.typ
+{$typeMeansJoin}
 JOIN eisdielen e ON e.id = s.eisdiele_id
-LEFT JOIN latest_kugel_price price ON price.eisdiele_id = e.id
-LEFT JOIN waehrungen currency ON currency.id = price.waehrung_id
-LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = price.waehrung_id
-  AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)
 WHERE COALESCE(e.status, 'open') <> 'permanent_closed' {$openCondition} {$favoriteCondition}
 ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.name ASC";
 
@@ -158,14 +185,59 @@ ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.na
     foreach ($params as $placeholder => $value) $stmt->bindValue($placeholder, $value, PDO::PARAM_INT);
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $markStage('score_sql');
 
     $shopIds = array_values(array_unique(array_map(static fn(array $row): int => (int)$row['eisdiele_id'], $rows)));
+    $priceMap = [];
+    if ($shopIds) {
+        $pricePlaceholders = [];
+        $priceParams = [];
+        foreach ($shopIds as $index => $shopId) {
+            $placeholder = ':price_shop_' . $index;
+            $pricePlaceholders[] = $placeholder;
+            $priceParams[$placeholder] = $shopId;
+        }
+        $priceSql = "
+            SELECT p.eisdiele_id, p.typ, p.preis, p.waehrung_id, currency.symbol AS waehrung,
+                   CASE WHEN currency.code = 'EUR' THEN p.preis
+                        ELSE ROUND(p.preis * COALESCE(rate.kurs, 1), 2) END AS preis_eur
+            FROM preise p
+            LEFT JOIN waehrungen currency ON currency.id = p.waehrung_id
+            LEFT JOIN wechselkurse rate ON rate.von_waehrung_id = p.waehrung_id
+              AND rate.zu_waehrung_id = (SELECT id FROM waehrungen WHERE code = 'EUR' LIMIT 1)
+            WHERE p.typ IN ('kugel', 'softeis')
+              AND p.eisdiele_id IN (" . implode(',', $pricePlaceholders) . ")
+              AND NOT EXISTS (
+                  SELECT 1 FROM preise newer
+                  WHERE newer.eisdiele_id = p.eisdiele_id
+                    AND newer.typ = p.typ
+                    AND (newer.gemeldet_am > p.gemeldet_am
+                      OR (newer.gemeldet_am = p.gemeldet_am AND newer.id > p.id))
+              )";
+        $priceStmt = $pdo->prepare($priceSql);
+        foreach ($priceParams as $placeholder => $value) $priceStmt->bindValue($placeholder, $value, PDO::PARAM_INT);
+        $priceStmt->execute();
+        foreach ($priceStmt->fetchAll(PDO::FETCH_ASSOC) as $priceRow) {
+            $priceMap[(int)$priceRow['eisdiele_id']][(string)$priceRow['typ']] = $priceRow;
+        }
+    }
+    $markStage('price_lookup');
     $attributeMap = getReviewAttributesForEisdielen($pdo, $shopIds);
+    $markStage('attributes');
     $hoursMap = fetch_opening_hours_map($pdo, $shopIds);
+    $markStage('opening_hours');
     $result = ['kugel' => [], 'softeis' => [], 'eisbecher' => []];
     foreach ($rows as $row) {
         $shopId = (int)$row['eisdiele_id'];
         $hours = $hoursMap[$shopId] ?? [];
+        $kugelPrice = $priceMap[$shopId]['kugel'] ?? [];
+        $softeisPrice = $priceMap[$shopId]['softeis'] ?? [];
+        $row['kugel_preis'] = $kugelPrice['preis'] ?? null;
+        $row['kugel_waehrung'] = $kugelPrice['waehrung'] ?? null;
+        $row['kugel_preis_eur'] = $kugelPrice['preis_eur'] ?? null;
+        $row['softeis_preis'] = $softeisPrice['preis'] ?? null;
+        $row['softeis_waehrung'] = $softeisPrice['waehrung'] ?? null;
+        $row['softeis_preis_eur'] = $softeisPrice['preis_eur'] ?? null;
         $row['attributes'] = $attributeMap[$shopId] ?? [];
         $row['openingHoursStructured'] = build_structured_opening_hours($hours, $row['opening_hours_note'] ?? null);
         $row['is_open_now'] = is_shop_open($hours, null, $row['status'] ?? null);
@@ -182,10 +254,17 @@ ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.na
         }
     }
 
-    echo json_encode([
-        'meta' => ['scope' => $scope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1],
+    $responseJson = json_encode([
+        'meta' => ['scope' => $scope, 'single_rater_scope' => $isSingleRaterScope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1],
         ...$result,
     ], JSON_UNESCAPED_UNICODE);
+    if ($responseJson === false) {
+        throw new RuntimeException('Ranking konnte nicht serialisiert werden.');
+    }
+    $markStage('json');
+    ranking_cache_write($cacheKey, $responseJson);
+    $sendTimingHeaders('MISS', $timings);
+    echo $responseJson;
 } catch (InvalidArgumentException $exception) {
     http_response_code(400);
     echo json_encode(['error' => $exception->getMessage()]);

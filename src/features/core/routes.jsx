@@ -1,5 +1,6 @@
 import React from "react";
 import DashBoard from "../../pages/DashBoard";
+import DashboardTarget from "../../pages/DashboardTarget";
 import ShopChangeRequestsAdmin from "../../pages/ShopChangeRequestsAdmin";
 import Impressum from "../../pages/Impressum";
 import AGB from "../../pages/AGB";
@@ -15,6 +16,7 @@ import TourDeGlaceFemmeAdmin from "../../pages/TourDeGlaceFemmeAdmin";
 
 export const coreRoutes = [
   { path: "/dashboard", element: <DashBoard /> },
+  { path: "/dashboard/target", element: <DashboardTarget /> },
   { path: "/impressum", element: <Impressum /> },
   { path: "/agb", element: <AGB /> },
   { path: "/datenschutz", element: <Datenschutz /> },

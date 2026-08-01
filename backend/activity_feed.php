@@ -1,5 +1,7 @@
 <?php
-require_once  __DIR__ . '/db_connect.php';
+if (!defined('ACTIVITY_FEED_PDO_READY')) {
+    require_once __DIR__ . '/db_connect.php';
+}
 require_once  __DIR__ . '/lib/checkin.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
@@ -57,23 +59,78 @@ function enrichActivityFeedLikeState(PDO $pdo, array $activities, ?int $userId =
     return $activities;
 }
 
-function getFocusedAwardOffsetDays(PDO $pdo, ?int $focusAwardId): ?int {
-    if (!$focusAwardId || $focusAwardId <= 0) {
+function getActivityTarget(PDO $pdo, string $type, int $id, ?int $userId = null): ?array {
+    if ($id <= 0 || !in_array($type, ['award', 'new_user'], true)) {
         return null;
     }
 
-    $stmt = $pdo->prepare("SELECT TIMESTAMPDIFF(DAY, awarded_at, CURRENT_TIMESTAMP) FROM user_awards WHERE id = :id");
-    $stmt->execute(['id' => $focusAwardId]);
-    $offsetDays = $stmt->fetchColumn();
+    if ($type === 'award') {
+        $hasUserAwardCommentSupport = ensureKommentarUserAwardSupport($pdo);
+        $commentCountSql = $hasUserAwardCommentSupport
+            ? "(SELECT COUNT(*) FROM kommentare k WHERE k.user_award_id = ua.id) AS commentCount"
+            : "0 AS commentCount";
+        $stmt = $pdo->prepare(""
+            . "SELECT ua.id, ua.user_id, n.username AS user_name, ua.award_id, ua.level,"
+            . " ua.awarded_at AS datum, al.ep, al.title_de, al.description_de, al.icon_path,"
+            . " up.avatar_path AS avatar_url, {$commentCountSql}"
+            . " FROM user_awards ua"
+            . " JOIN award_levels al ON ua.award_id = al.award_id AND ua.level = al.level"
+            . " JOIN nutzer n ON ua.user_id = n.id"
+            . " LEFT JOIN user_profile_images up ON up.user_id = n.id"
+            . " WHERE ua.id = :id LIMIT 1");
+        $stmt->execute(['id' => $id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $hasUserRegistrationCommentSupport = ensureKommentarUserRegistrationSupport($pdo);
+        $commentCountSql = $hasUserRegistrationCommentSupport
+            ? "(SELECT COUNT(*) FROM kommentare k WHERE k.user_registration_id = n.id) AS commentCount"
+            : "0 AS commentCount";
+        $stmt = $pdo->prepare(""
+            . "SELECT n.id, n.username, n.erstellt_am, n.current_level,"
+            . " up.avatar_path AS avatar_url, {$commentCountSql}"
+            . " FROM nutzer n"
+            . " LEFT JOIN user_profile_images up ON up.user_id = n.id"
+            . " WHERE n.id = :id AND n.is_verified = 1 LIMIT 1");
+        $stmt->execute(['id' => $id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
-    if ($offsetDays === false || $offsetDays === null) {
+    if (!$data) {
         return null;
     }
 
-    return max(0, (int)$offsetDays);
+    $data['id'] = (int)$data['id'];
+    $data['aktivitaet_am'] = $type === 'award' ? $data['datum'] : $data['erstellt_am'];
+    $activity = [[
+        'typ' => $type,
+        'id' => $data['id'],
+        'data' => $data,
+    ]];
+    $enriched = enrichActivityFeedLikeState($pdo, $activity, $userId)[0];
+
+    return [
+        'typ' => $enriched['typ'],
+        'id' => (int)$enriched['id'],
+        'data' => $enriched['data'],
+        'activityAt' => $enriched['data']['aktivitaet_am'] ?? null,
+    ];
 }
 
-function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7, ?int $userId = null, ?int $focusAwardId = null): array {
+function isHistoricalActivityTarget(?string $activityAt, int $thresholdDays = 30): bool {
+    if (!$activityAt) {
+        return true;
+    }
+
+    try {
+        $activityDate = new DateTimeImmutable($activityAt);
+        $thresholdDate = new DateTimeImmutable('now');
+        return $activityDate < $thresholdDate->modify('-' . $thresholdDays . ' days');
+    } catch (Throwable $e) {
+        return true;
+    }
+}
+
+function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7, ?int $userId = null): array {
     $activities = [];
     $hasUserRegistrationCommentSupport = ensureKommentarUserRegistrationSupport($pdo);
     $hasUserAwardCommentSupport = ensureKommentarUserAwardSupport($pdo);
@@ -236,10 +293,6 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7, ?int $use
         ? "(SELECT COUNT(*) FROM kommentare k WHERE k.user_award_id = ua.id) AS commentCount"
         : "0 AS commentCount";
 
-    $focusedAwardCondition = ($focusAwardId !== null && $focusAwardId > 0)
-        ? " OR ua.id = :focusAwardId"
-        : "";
-
     $stmtAwards = $pdo->prepare("
         SELECT ua.id,
                ua.user_id,
@@ -261,8 +314,7 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7, ?int $use
           ON ua.user_id = n.id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE (al.ep >= 50
-          OR al.award_id = 19
-          {$focusedAwardCondition})
+          OR al.award_id = 19)
           AND ua.awarded_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offsetPlusDays DAY)
           AND ua.awarded_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL :offset DAY)
         ORDER BY ua.awarded_at DESC;");
@@ -270,9 +322,6 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7, ?int $use
         'offsetPlusDays' => $offsetDays + $days,
         'offset'         => $offsetDays
     ];
-    if ($focusAwardId !== null && $focusAwardId > 0) {
-        $awardParams['focusAwardId'] = $focusAwardId;
-    }
     $stmtAwards->execute($awardParams);
     $awards = $stmtAwards->fetchAll(PDO::FETCH_ASSOC);
     foreach ($awards as $award) {
@@ -297,14 +346,13 @@ function getActivityFeed(PDO $pdo, int $offsetDays = 0, int $days = 7, ?int $use
 /**
  * Flexible Wrapper
  */
-function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 7, int $minCount = 20, ?int $userId = null, ?int $focusAwardId = null): array {
+function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 7, int $minCount = 20, ?int $userId = null): array {
     $activities = [];
-    $focusedOffsetDays = getFocusedAwardOffsetDays($pdo, $focusAwardId);
-    $offset = $focusedOffsetDays ?? $offsetDays ?? 0; // Tage zurück vom heutigen Tag
+    $offset = $offsetDays ?? 0; // Tage zurück vom heutigen Tag
     $earliestDate = '2025-04-01'; // manuell gesetzt, Datum der allerersten Aktivität
 
     while (count($activities) < $minCount) {
-        $batch = getActivityFeed($pdo, $offset, $days, $userId, $focusAwardId);
+        $batch = getActivityFeed($pdo, $offset, $days, $userId);
 
         if (!empty($batch)) {
             $activities = array_merge($activities, $batch);
@@ -324,8 +372,13 @@ function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 
 
     // Meta-Daten vorbereiten
     $meta['count']      = count($activities);
-    $meta['hasMore']    = (end($activities)['data']['aktivitaet_am'] ?? end($activities)['data']['erstellt_am'] ?? end($activities)['data']['datum'] ??  null) > $earliestDate;
+    $lastActivity = !empty($activities) ? end($activities) : null;
+    $oldestActivityAt = $lastActivity
+        ? ($lastActivity['data']['aktivitaet_am'] ?? $lastActivity['data']['erstellt_am'] ?? $lastActivity['data']['datum'] ?? null)
+        : null;
+    $meta['hasMore'] = $oldestActivityAt ? $oldestActivityAt > $earliestDate : false;
     $meta['nextOffset'] = $offset;
+    $meta['oldestAt'] = $oldestActivityAt;
 
     return [
         'meta'       => $meta,
@@ -334,11 +387,38 @@ function getActivityFeedFlexible(PDO $pdo, ?int $offsetDays = null, int $days = 
 }
 
 // Parameter aus Request
+$mode = $_GET['mode'] ?? 'feed';
 $offsetParam = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
-$focusAwardParam = isset($_GET['focusAward']) ? max(0, (int)$_GET['focusAward']) : null;
 $authUser = authenticateRequest($pdo);
 $userId = $authUser ? (int)$authUser['user_id'] : null;
-$result = getActivityFeedFlexible($pdo, $offsetParam, 7, 20, $userId, $focusAwardParam);
+
+if ($mode === 'target') {
+    $targetType = (string)($_GET['type'] ?? '');
+    $targetId = max(0, (int)($_GET['id'] ?? 0));
+    $target = getActivityTarget($pdo, $targetType, $targetId, $userId);
+
+    if (!$target) {
+        http_response_code(404);
+        echo json_encode([
+            'target' => null,
+            'meta' => ['found' => false],
+        ]);
+        exit;
+    }
+
+    $thresholdDays = 30;
+    echo json_encode([
+        'target' => $target,
+        'meta' => [
+            'found' => true,
+            'historical' => isHistoricalActivityTarget($target['activityAt'] ?? null, $thresholdDays),
+            'thresholdDays' => $thresholdDays,
+        ],
+    ]);
+    exit;
+}
+
+$result = getActivityFeedFlexible($pdo, $offsetParam, 7, 20, $userId);
 
 echo json_encode($result);
 ?>

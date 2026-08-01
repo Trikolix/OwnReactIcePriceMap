@@ -29,6 +29,14 @@ const ScrollToTopOnRouteChange = () => {
   const location = useLocation();
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const isDashboardFocusNavigation = location.pathname === '/dashboard'
+      && (params.has('focusAward') || params.has('focusNewUser'));
+
+    if (isDashboardFocusNavigation) {
+      return;
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, location.search]);
 
