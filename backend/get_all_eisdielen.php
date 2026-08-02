@@ -6,11 +6,17 @@ require_once  __DIR__ . '/lib/team_challenges.php';
 ensureTeamChallengeSchema($pdo);
 
 $userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
+$attributeIds = array_values(array_unique(array_filter(
+    array_map('intval', explode(',', (string)($_GET['attributes'] ?? ''))),
+    static fn($id) => $id > 0
+)));
 $openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
 $filterOpenNow = !$openMoment && isset($_GET['open_now']) && intval($_GET['open_now']) === 1;
 $openClause = '';
 $openParams = [];
 $openReferenceIso = null;
+$attributeClause = '';
+$attributeParams = [];
 
 if ($openMoment instanceof \DateTimeImmutable) {
     $openReferenceIso = $openMoment->format(\DateTimeInterface::ATOM);
@@ -33,6 +39,25 @@ if (is_array($openIds)) {
         $openParams[$placeholder] = $shopId;
     }
     $openClause = ' AND e.id IN (' . implode(',', $placeholders) . ')';
+}
+
+if (!empty($attributeIds)) {
+    $attributePlaceholders = [];
+    foreach ($attributeIds as $idx => $attributeId) {
+        $placeholder = ':attribute' . $idx;
+        $attributePlaceholders[] = $placeholder;
+        $attributeParams[$placeholder] = $attributeId;
+    }
+    $attributeClause = '
+        AND e.id IN (
+            SELECT b.eisdiele_id
+            FROM bewertung_attribute ba
+            INNER JOIN bewertungen b ON b.id = ba.bewertung_id
+            WHERE ba.attribut_id IN (' . implode(',', $attributePlaceholders) . ')
+            GROUP BY b.eisdiele_id
+            HAVING COUNT(DISTINCT ba.attribut_id) = :attributeCount
+        )';
+    $attributeParams[':attributeCount'] = count($attributeIds);
 }
 
 $sql = "SELECT  
@@ -208,7 +233,7 @@ LEFT JOIN kugel_scores ks ON ks.eisdiele_id = e.id
 LEFT JOIN softeis_scores ss ON ss.eisdiele_id = e.id
 LEFT JOIN eisbecher_scores es ON es.eisdiele_id = e.id
 
-WHERE 1=1{$openClause}
+WHERE 1=1{$openClause}{$attributeClause}
 ORDER BY finaler_kugel_score DESC, 
          finaler_softeis_score DESC, 
          finaler_eisbecher_score DESC;";
@@ -217,6 +242,9 @@ $stmt = $pdo->prepare($sql);
 $stmt->bindParam(':userId', $userId);
 foreach ($openParams as $placeholder => $shopId) {
     $stmt->bindValue($placeholder, $shopId, PDO::PARAM_INT);
+}
+foreach ($attributeParams as $placeholder => $attributeId) {
+    $stmt->bindValue($placeholder, $attributeId, PDO::PARAM_INT);
 }
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);

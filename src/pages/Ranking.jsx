@@ -1,15 +1,67 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import Header from "../Header";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
 import { formatDateTimeLocalInputValue } from "../utils/dateTimeLocal";
 import Seo from "../components/Seo";
-import { Calculator, ChartNoAxesCombined, ChevronDown, MapPin, ShieldCheck, SlidersHorizontal, Trophy, UsersRound } from "lucide-react";
+import { Calculator, ChartNoAxesCombined, ChevronDown, ChevronUp, MapPin, ShieldCheck, SlidersHorizontal, Trophy, UsersRound } from "lucide-react";
 
 const EARTH_RADIUS_KM = 6371;
 const toRadians = (value) => (value * Math.PI) / 180;
+const RANKING_TYPES = new Set(['kugel', 'softeis', 'eisbecher']);
+const RANKING_SCOPES = new Set(['global', 'gourmetCyclist', 'personal']);
+const RANKING_DISTANCES = new Set(['2', '5', '10', '25', '50']);
+const RANKING_SORT_KEYS = new Set(['ranking_score', 'taste_factor', 'avg_preisleistung', 'nutzeranzahl', 'kugel_preis_eur', 'softeis_preis_eur']);
+
+const parseAttributeIds = (value) => Array.from(new Set(
+    String(value || '')
+        .split(',')
+        .map((id) => Number.parseInt(id, 10))
+        .filter((id) => Number.isInteger(id) && id > 0)
+)).sort((a, b) => a - b);
+
+const getDefaultSortDirection = (key) => (
+    key === 'kugel_preis_eur' || key === 'softeis_preis_eur' ? 'ascending' : 'descending'
+);
+
+const readRankingUrlState = (search, { hasUser, hasLocation }) => {
+    const params = new URLSearchParams(search);
+    const type = RANKING_TYPES.has(params.get('type')) ? params.get('type') : 'kugel';
+    const requestedScope = params.get('scope');
+    const scope = RANKING_SCOPES.has(requestedScope) && (requestedScope !== 'personal' || hasUser)
+        ? requestedScope
+        : 'global';
+    const isSingleRaterScope = scope === 'personal' || scope === 'gourmetCyclist';
+    const requestedSort = params.get('sort');
+    const priceSortForType = type === 'softeis' ? 'softeis_preis_eur' : 'kugel_preis_eur';
+    const sortIsValid = RANKING_SORT_KEYS.has(requestedSort)
+        && !(type === 'eisbecher' && ['kugel_preis_eur', 'softeis_preis_eur'].includes(requestedSort))
+        && !(['kugel_preis_eur', 'softeis_preis_eur'].includes(requestedSort) && requestedSort !== priceSortForType);
+    const sort = sortIsValid ? requestedSort : 'ranking_score';
+    const requestedDirection = params.get('dir');
+    const direction = requestedDirection === 'ascending' || requestedDirection === 'descending'
+        ? requestedDirection
+        : getDefaultSortDirection(sort);
+    const requestedDistance = params.get('distance');
+    const openMode = params.get('open');
+    const openAt = params.get('open_at') || '';
+
+    return {
+        type,
+        q: params.get('q') || '',
+        distance: hasLocation && RANKING_DISTANCES.has(requestedDistance) ? requestedDistance : 'any',
+        scope,
+        reliability: isSingleRaterScope ? 'all' : (params.get('reliability') === 'all' ? 'all' : 'reliable'),
+        favorites: hasUser && params.get('favorites') === '1',
+        openMode: openMode === 'now' ? 'now' : (openMode === 'at' && openAt ? 'custom' : 'all'),
+        openAt,
+        attributes: parseAttributeIds(params.get('attributes')),
+        sort,
+        direction,
+    };
+};
 
 const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
     const latDiff = toRadians(lat2 - lat1);
@@ -124,27 +176,44 @@ const RankingScoreExplanation = ({ type, isSingleRaterScope }) => {
 
 const Ranking = () => {
     const { userId, userPosition, setUserPosition, authToken } = useUser();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const initialUrlStateRef = useRef(null);
+    if (!initialUrlStateRef.current) {
+        initialUrlStateRef.current = readRankingUrlState(location.search, {
+            hasUser: Boolean(userId),
+            hasLocation: Boolean(userPosition),
+        });
+    }
+    const initialUrlState = initialUrlStateRef.current;
     const [eisdielenKugel, setEisdielenKugel] = useState([]);
     const [eisdielenSofteis, setEisdielenSofteis] = useState([]);
     const [eisdielenEisbecher, setEisdielenEisbecher] = useState([]);
-    const [sortConfigKugel, setSortConfigKugel] = useState({ key: 'ranking_score', direction: 'descending' });
-    const [sortConfigSofteis, setSortConfigSofteis] = useState({ key: 'ranking_score', direction: 'descending' });
-    const [sortConfigEisbecher, setSortConfigEisbehcer] = useState({ key: 'ranking_score', direction: 'descending' });
+    const [sortConfigKugel, setSortConfigKugel] = useState(() => initialUrlState.type === 'kugel'
+        ? { key: initialUrlState.sort, direction: initialUrlState.direction }
+        : { key: 'ranking_score', direction: 'descending' });
+    const [sortConfigSofteis, setSortConfigSofteis] = useState(() => initialUrlState.type === 'softeis'
+        ? { key: initialUrlState.sort, direction: initialUrlState.direction }
+        : { key: 'ranking_score', direction: 'descending' });
+    const [sortConfigEisbecher, setSortConfigEisbehcer] = useState(() => initialUrlState.type === 'eisbecher'
+        ? { key: initialUrlState.sort, direction: initialUrlState.direction }
+        : { key: 'ranking_score', direction: 'descending' });
     const [expandedRow, setExpandedRow] = useState(null);
-    const [activeTab, setActiveTab] = useState('kugel');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [distanceFilter, setDistanceFilter] = useState('any');
-    const [ratingScope, setRatingScope] = useState('global');
-    const [reliabilityMode, setReliabilityMode] = useState('reliable');
-    const [favoritesOnly, setFavoritesOnly] = useState(false);
+    const [activeTab, setActiveTab] = useState(initialUrlState.type);
+    const [searchTerm, setSearchTerm] = useState(initialUrlState.q);
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(initialUrlState.q);
+    const [distanceFilter, setDistanceFilter] = useState(initialUrlState.distance);
+    const [ratingScope, setRatingScope] = useState(initialUrlState.scope);
+    const [reliabilityMode, setReliabilityMode] = useState(initialUrlState.reliability);
+    const [favoritesOnly, setFavoritesOnly] = useState(initialUrlState.favorites);
     const [locationStatus, setLocationStatus] = useState(userPosition ? 'available' : 'idle');
     const [locationError, setLocationError] = useState(null);
     const [attributeOptions, setAttributeOptions] = useState([]);
-    const [selectedAttributes, setSelectedAttributes] = useState([]);
+    const [selectedAttributes, setSelectedAttributes] = useState(initialUrlState.attributes);
     const [eisdieleAttributes, setEisdieleAttributes] = useState({});
     const [showAttributeFilters, setShowAttributeFilters] = useState(false);
-    const [openFilterMode, setOpenFilterMode] = useState('all');
-    const [openFilterDateTime, setOpenFilterDateTime] = useState('');
+    const [openFilterMode, setOpenFilterMode] = useState(initialUrlState.openMode);
+    const [openFilterDateTime, setOpenFilterDateTime] = useState(initialUrlState.openAt);
     const [attributeCountsByTab, setAttributeCountsByTab] = useState({
         kugel: {},
         softeis: {},
@@ -158,6 +227,9 @@ const Ranking = () => {
     const [rankingRetryToken, setRankingRetryToken] = useState(0);
     const rankingCacheRef = useRef(new Map());
     const rankingRequestIdRef = useRef(0);
+    const rankingUrlWriteRef = useRef(null);
+    const rankingUrlHydrationRef = useRef(false);
+    const rankingLocationSearchRef = useRef(location.search);
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const isSingleRaterScope = ratingScope === 'personal' || ratingScope === 'gourmetCyclist';
     const buildDefaultDateTimeValue = React.useCallback(() => {
@@ -251,6 +323,44 @@ const Ranking = () => {
             setFavoritesOnly(false);
         }
     }, [userId]);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 250);
+        return () => window.clearTimeout(timeoutId);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        if (location.search === rankingLocationSearchRef.current) {
+            return;
+        }
+        rankingLocationSearchRef.current = location.search;
+        if (rankingUrlWriteRef.current === location.search) {
+            rankingUrlWriteRef.current = null;
+            return;
+        }
+
+        rankingUrlHydrationRef.current = true;
+        const nextState = readRankingUrlState(location.search, {
+            hasUser: Boolean(userId),
+            hasLocation: Boolean(userPosition),
+        });
+        setActiveTab(nextState.type);
+        setSearchTerm(nextState.q);
+        setDebouncedSearchTerm(nextState.q);
+        setDistanceFilter(nextState.distance);
+        setRatingScope(nextState.scope);
+        setReliabilityMode(nextState.reliability);
+        setFavoritesOnly(nextState.favorites);
+        setOpenFilterMode(nextState.openMode);
+        setOpenFilterDateTime(nextState.openAt);
+        setSelectedAttributes(nextState.attributes);
+        const nextSortConfig = { key: nextState.sort, direction: nextState.direction };
+        if (nextState.type === 'kugel') setSortConfigKugel(nextSortConfig);
+        if (nextState.type === 'softeis') setSortConfigSofteis(nextSortConfig);
+        if (nextState.type === 'eisbecher') setSortConfigEisbehcer(nextSortConfig);
+    }, [location.search, userId, userPosition]);
 
     const requestUserLocation = () => {
         if (!navigator.geolocation) {
@@ -461,7 +571,12 @@ const Ranking = () => {
                 <strong>Beliebte Attribute aus Reviews:</strong>
                 <AttributeBadges>
                     {attributes.map((attribute) => (
-                        <AttributeBadge key={`${attribute.id}-${attribute.name}`}>
+                        <AttributeBadge
+                            as={Link}
+                            key={`${attribute.id}-${attribute.name}`}
+                            to={`/map?attributes=${attribute.id}`}
+                            aria-label={`Eisdielen mit dem Attribut ${attribute.name} auf der Karte ansehen`}
+                        >
                             <span>{attribute.name}</span>
                             <em>{attribute.anzahl || 0}×</em>
                         </AttributeBadge>
@@ -639,12 +754,87 @@ const Ranking = () => {
             ? sortConfigSofteis
             : sortConfigEisbecher;
     const activePriceKey = activeTab === 'softeis' ? 'softeis_preis_eur' : 'kugel_preis_eur';
+
+    useEffect(() => {
+        if (rankingUrlHydrationRef.current) {
+            rankingUrlHydrationRef.current = false;
+            return;
+        }
+        const params = new URLSearchParams();
+        const isSingleScope = ratingScope === 'personal' || ratingScope === 'gourmetCyclist';
+        const normalizedAttributes = [...selectedAttributes]
+            .filter((id) => Number.isInteger(Number(id)) && Number(id) > 0)
+            .map(Number)
+            .sort((a, b) => a - b);
+
+        if (activeTab !== 'kugel') params.set('type', activeTab);
+        if (debouncedSearchTerm.trim()) params.set('q', debouncedSearchTerm.trim());
+        if (distanceFilter !== 'any' && userPosition) params.set('distance', distanceFilter);
+        if (ratingScope !== 'global') params.set('scope', ratingScope);
+        if (!isSingleScope && reliabilityMode === 'all') params.set('reliability', 'all');
+        if (favoritesOnly && userId) params.set('favorites', '1');
+        if (openFilterMode === 'now') params.set('open', 'now');
+        if (openFilterMode === 'custom' && openFilterDateTime) {
+            params.set('open', 'at');
+            params.set('open_at', openFilterDateTime);
+        }
+        if (normalizedAttributes.length) params.set('attributes', normalizedAttributes.join(','));
+        if (activeSortConfig.key !== 'ranking_score' || activeSortConfig.direction !== 'descending') {
+            params.set('sort', activeSortConfig.key);
+            if (activeSortConfig.direction !== getDefaultSortDirection(activeSortConfig.key)) {
+                params.set('dir', activeSortConfig.direction);
+            }
+        }
+
+        const nextSearch = params.toString() ? `?${params.toString()}` : '';
+        if (nextSearch === location.search) return;
+        rankingUrlWriteRef.current = nextSearch;
+        navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+    }, [
+        activeTab,
+        activeSortConfig,
+        debouncedSearchTerm,
+        distanceFilter,
+        favoritesOnly,
+        location.pathname,
+        location.search,
+        navigate,
+        openFilterDateTime,
+        openFilterMode,
+        ratingScope,
+        reliabilityMode,
+        selectedAttributes,
+        userId,
+        userPosition,
+    ]);
+
     const sortActiveRows = activeTab === 'kugel'
         ? sortTableKugel
         : activeTab === 'softeis'
             ? sortTableSofteis
             : sortTableEisbecher;
+    const setActiveSort = (key, direction) => {
+        const nextConfig = { key, direction };
+        if (activeTab === 'kugel') {
+            setSortConfigKugel(nextConfig);
+        } else if (activeTab === 'softeis') {
+            setSortConfigSofteis(nextConfig);
+        } else {
+            setSortConfigEisbehcer(nextConfig);
+        }
+    };
     const tasteFactorKey = 'taste_factor';
+    const mobileSortOptions = [
+        { key: 'ranking_score', label: 'Ranking', defaultDirection: 'descending' },
+        { key: tasteFactorKey, label: 'Geschmacksfaktor', mobileLabel: 'Geschmack', defaultDirection: 'descending' },
+        { key: 'avg_preisleistung', label: 'Preis-Leistung', mobileLabel: 'Preis-Leist.', defaultDirection: 'descending' },
+        ...(activeTab !== 'eisbecher' ? [{ key: activePriceKey, label: 'Preis', defaultDirection: 'ascending' }] : []),
+        { key: 'nutzeranzahl', label: 'Unterschiedliche Nutzer', mobileLabel: 'Nutzer', defaultDirection: 'descending' },
+    ];
+    const handleMobileSortChange = (event) => {
+        const option = mobileSortOptions.find(({ key }) => key === event.target.value);
+        if (option) setActiveSort(option.key, option.defaultDirection);
+    };
     const activeDetailKey = (shop, index) => `${activeTab}-${shop.eisdiele_id || index}`;
     const formatRating = (value, digits = 2) => value === null || value === undefined || value === ''
         ? '–'
@@ -684,16 +874,33 @@ const Ranking = () => {
     ].filter(Boolean).length;
     const renderShopDetails = (shop) => (
         <DetailsContainer>
-            <h3><CleanLink to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</CleanLink></h3>
             <DetailMetrics>
-                <span>Geschmack <strong>{formatRating(shop.avg_geschmack, 1)}</strong></span>
-                {activeTab !== 'eisbecher' && <span>Waffel <strong>{formatRating(shop.avg_waffel, 1)}</strong></span>}
-                <span>Entfernung <strong>{shop.distanceKm !== null && shop.distanceKm !== undefined ? `${Number(shop.distanceKm).toFixed(1)} km` : '–'}</strong></span>
-                <span>Check-ins <strong>{shop.checkin_anzahl || 0}</strong></span>
+                <DetailMetric $wide={activeTab === 'eisbecher'}>
+                    <span>Geschmack</span><strong>{formatRating(shop.avg_geschmack, 1)}</strong>
+                </DetailMetric>
+                {activeTab !== 'eisbecher' && (
+                    <DetailMetric><span>Waffel</span><strong>{formatRating(shop.avg_waffel, 1)}</strong></DetailMetric>
+                )}
+                <DetailMetric $wide={isSingleRaterScope}>
+                    <span>Entfernung</span><strong>{shop.distanceKm !== null && shop.distanceKm !== undefined ? `${Number(shop.distanceKm).toFixed(1)} km` : '–'}</strong>
+                </DetailMetric>
+                {!isSingleRaterScope && (
+                    <DetailMetric><span>Nutzer</span><strong>{getUniqueRaters(shop)}</strong></DetailMetric>
+                )}
             </DetailMetrics>
-            <strong>Adresse: </strong>{shop.adresse || '–'}<br />
-            <strong>Öffnungszeiten: </strong>{renderOpenStateBadge(shop)}<br />
-            {getOpeningHoursLines(shop).map((time, i) => <React.Fragment key={i}>{time}<br /></React.Fragment>)}
+            <DetailInformation>
+                <DetailInformationRow>
+                    <strong>Adresse</strong>
+                    <span>{shop.adresse || '–'}</span>
+                </DetailInformationRow>
+                <DetailInformationRow>
+                    <strong>Öffnungszeiten</strong>
+                    <span>{renderOpenStateBadge(shop) || 'Keine Angabe'}</span>
+                </DetailInformationRow>
+                {getOpeningHoursLines(shop).length > 0 && (
+                    <OpeningHoursPreview>{getOpeningHoursLines(shop).join(' · ')}</OpeningHoursPreview>
+                )}
+            </DetailInformation>
             {renderAttributeSummary(shop.attributes)}
         </DetailsContainer>
     );
@@ -713,7 +920,7 @@ const Ranking = () => {
                     </FilterSelect>
                 </FilterGroup>
                 <FilterGroup>
-                    <FilterLabel htmlFor="ranking-reliability">Datenbasis</FilterLabel>
+                    <FilterLabel htmlFor="ranking-reliability">Verlässlichkeit</FilterLabel>
                     <FilterSelect
                         id="ranking-reliability"
                         value={reliabilityMode}
@@ -725,7 +932,7 @@ const Ranking = () => {
                     </FilterSelect>
                     <FilterHint>
                         {isSingleRaterScope
-                            ? 'Einzelrating – Datenbasis ist automatisch „Alle“.'
+                            ? 'Einzelrating – alle eigenen Bewertungen werden berücksichtigt.'
                             : activeTab === 'kugel' ? 'mindestens 3 unterschiedliche Nutzer' : 'mindestens 2 unterschiedliche Nutzer'}
                     </FilterHint>
                 </FilterGroup>
@@ -1160,6 +1367,26 @@ const Ranking = () => {
                         <span>{distanceFilter !== 'any' ? `im Umkreis von ${distanceFilter} km` : 'ohne Entfernungsfilter'}</span>
                         {searchTerm.trim() && <span>· Suche: „{searchTerm.trim()}“</span>}
                     </ResultsContext>}
+                    {showRankingResults && <MobileResultsToolbar aria-label="Ergebnisübersicht und Sortierung">
+                        <MobileResultCount>
+                            <strong>{activeResultCount} Treffer</strong>
+                            {distanceFilter !== 'any' && <span>· bis {distanceFilter} km</span>}
+                        </MobileResultCount>
+                        <MobileSortControls>
+                            <VisuallyHidden as="label" htmlFor="ranking-mobile-sort">Sortieren nach</VisuallyHidden>
+                            <FilterSelect id="ranking-mobile-sort" value={activeSortConfig.key} onChange={handleMobileSortChange}>
+                                {mobileSortOptions.map((option) => <option key={option.key} value={option.key}>{option.mobileLabel || option.label}</option>)}
+                            </FilterSelect>
+                            <MobileSortDirectionButton
+                                type="button"
+                                onClick={() => setActiveSort(activeSortConfig.key, activeSortConfig.direction === 'ascending' ? 'descending' : 'ascending')}
+                                aria-label={`Sortierung: ${activeSortConfig.direction === 'ascending' ? 'aufsteigend' : 'absteigend'}. Reihenfolge umkehren`}
+                                title={activeSortConfig.direction === 'ascending' ? 'Aufsteigend – Reihenfolge umkehren' : 'Absteigend – Reihenfolge umkehren'}
+                            >
+                                <span aria-hidden="true">{activeSortConfig.direction === 'ascending' ? '↑' : '↓'}</span>
+                            </MobileSortDirectionButton>
+                        </MobileSortControls>
+                    </MobileResultsToolbar>}
                     {showRankingResults && shouldExpandNearbyResults && (
                         <NearbyFallbackNotice>
                             <span>Nur {strictActiveRows.length} verlässliche Treffer im Umkreis. Weitere nahe Eisdielen mit kleiner Datenbasis werden angezeigt.</span>
@@ -1177,14 +1404,21 @@ const Ranking = () => {
                                         <CardShopName as={Link} to={`/map/activeShop/${shop.eisdiele_id}`}>{shop.name}</CardShopName>
                                         <ScoreBadge><strong>{formatRating(shop.ranking_score)}</strong><small>Ranking</small></ScoreBadge>
                                     </RankingCardHeader>
-                                    <CardMetrics>
-                                        <Metric><span>Geschmacksfaktor</span><strong>{formatRating(getTasteFactor(shop))}</strong></Metric>
-                                        <Metric><span>Preis-Leistung</span><strong>{formatRating(shop.avg_preisleistung)}</strong></Metric>
-                                        {activeTab !== 'eisbecher' && <Metric><span>Preis</span><strong>{getPriceLabel(shop)}</strong></Metric>}
-                                        <Metric><span>Datenbasis</span><strong>{getUniqueRaters(shop)} Nutzer{isLowConfidence(shop) ? ' · niedrig' : ''}</strong></Metric>
-                                    </CardMetrics>
+                                    <PrimaryMetrics>
+                                        <PrimaryMetric><span>Geschmacksfaktor</span><strong>{formatRating(getTasteFactor(shop))}</strong></PrimaryMetric>
+                                        <PrimaryMetric><span>Preis-Leistung</span><strong>{formatRating(shop.avg_preisleistung)}</strong></PrimaryMetric>
+                                        {!isSingleRaterScope && activeTab !== 'eisbecher' && (
+                                            <PrimaryMetric><span>Preis</span><strong>{getPriceLabel(shop)}</strong></PrimaryMetric>
+                                        )}
+                                        <PrimaryMetric $wide={isSingleRaterScope || activeTab === 'eisbecher'}>
+                                            <span>{isSingleRaterScope ? 'Eigene Check-ins' : 'Check-ins'}</span>
+                                            <strong>{shop.checkin_anzahl || 0}</strong>
+                                        </PrimaryMetric>
+                                        {isLowConfidence(shop) && <LowConfidence>geringe Verlässlichkeit</LowConfidence>}
+                                    </PrimaryMetrics>
                                     <CardDetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>
-                                        Details anzeigen <ChevronDown size={17} aria-hidden="true" />
+                                        {isExpanded ? 'Details ausblenden' : 'Details anzeigen'}
+                                        {isExpanded ? <ChevronUp size={17} aria-hidden="true" /> : <ChevronDown size={17} aria-hidden="true" />}
                                     </CardDetailsButton>
                                     {isExpanded && renderShopDetails(shop)}
                                 </RankingCard>
@@ -1202,7 +1436,7 @@ const Ranking = () => {
                                         <th><SortButton type="button" $active={activeSortConfig.key === tasteFactorKey} onClick={() => sortActiveRows(tasteFactorKey)}>Geschmacksfaktor {activeSortConfig.key === tasteFactorKey && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
                                         <th><SortButton type="button" $active={activeSortConfig.key === 'avg_preisleistung'} onClick={() => sortActiveRows('avg_preisleistung')}>Preis-Leistung {activeSortConfig.key === 'avg_preisleistung' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
                                         {activeTab !== 'eisbecher' && <th><SortButton type="button" $active={activeSortConfig.key === activePriceKey} onClick={() => sortActiveRows(activePriceKey)}>Preis {activeSortConfig.key === activePriceKey && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>}
-                                        <th><SortButton type="button" $active={activeSortConfig.key === 'nutzeranzahl'} onClick={() => sortActiveRows('nutzeranzahl')}>Datenbasis {activeSortConfig.key === 'nutzeranzahl' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
+                                        <th><SortButton type="button" title="Sortiert nach unterschiedlichen Nutzern" $active={activeSortConfig.key === 'nutzeranzahl'} onClick={() => sortActiveRows('nutzeranzahl')}>Bewertungen &amp; Nutzer {activeSortConfig.key === 'nutzeranzahl' && (activeSortConfig.direction === 'ascending' ? '▲' : '▼')}</SortButton></th>
                                         <th aria-label="Details" />
                                     </tr>
                                 </thead>
@@ -1218,7 +1452,7 @@ const Ranking = () => {
                                                     <td>{formatRating(getTasteFactor(shop))}</td>
                                                     <td>{formatRating(shop.avg_preisleistung)}</td>
                                                     {activeTab !== 'eisbecher' && <td>{getPriceLabel(shop)}</td>}
-                                                    <td>{shop.checkin_anzahl || 0} Check-ins<SmallValue>{getUniqueRaters(shop)} Nutzer{isLowConfidence(shop) && ' · niedrig'}</SmallValue></td>
+                                                    <td>{shop.checkin_anzahl || 0} Check-ins{!isSingleRaterScope && <SmallValue>von {getUniqueRaters(shop)} Nutzern{isLowConfidence(shop) && ' · niedrig'}</SmallValue>}</td>
                                                     <td><DetailsButton type="button" onClick={() => toggleDetails(detailKey)} aria-expanded={isExpanded}>Details <ChevronDown size={16} aria-hidden="true" /></DetailsButton></td>
                                                 </tr>
                                                 {isExpanded && <DetailsRow visible className="details-row"><td colSpan={activeTab === 'eisbecher' ? 6 : 7}>{renderShopDetails(shop)}</td></DetailsRow>}
@@ -1264,6 +1498,11 @@ const Container = styled.div`
   flex-wrap: wrap;
   gap: 2rem;
   justify-content: center;
+
+  @media (max-width: 768px) {
+    padding: 0.35rem;
+    gap: 1rem;
+  }
 `;
 
 const TableContainer = styled.div`
@@ -1278,8 +1517,8 @@ const HeroCard = styled.div`
   margin-bottom: 0.25rem;
 
   @media (max-width: 768px) {
-    padding: 0.55rem 0.1rem 0.35rem;
-    margin-bottom: 0.35rem;
+    padding: 0.4rem 0.1rem 0.2rem;
+    margin-bottom: 0.2rem;
   }
 `;
 
@@ -1443,6 +1682,72 @@ const MobileResults = styled.div`
   }
 `;
 
+const MobileResultsToolbar = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(108px, 0.9fr) 44px;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.6rem;
+  }
+`;
+
+const MobileResultCount = styled.div`
+  min-width: 0;
+  overflow: hidden;
+  color: #6c4500;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  strong {
+    color: #2f2100;
+    font-size: 0.88rem;
+  }
+`;
+
+const MobileSortControls = styled.div`
+  display: contents;
+
+  select {
+    min-width: 0;
+  }
+`;
+
+const MobileSortDirectionButton = styled.button`
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(47, 33, 0, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #5f3f00;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.45);
+    outline-offset: 2px;
+  }
+`;
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
 const DesktopResults = styled.div`
   display: block;
 
@@ -1463,6 +1768,10 @@ const ResultsContext = styled.div`
   strong {
     color: #2f2100;
     font-size: 0.95rem;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
@@ -1576,7 +1885,7 @@ const RankingCardHeader = styled.div`
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 0.75rem 0.55rem;
+  padding: 0.65rem 0.75rem 0.45rem;
 `;
 
 const RankBadge = styled.strong`
@@ -1604,31 +1913,37 @@ const ScoreBadge = styled.span`
   justify-items: end;
   color: #754500;
 
-  strong { font-size: 1.05rem; }
+  strong { font-size: 1.15rem; }
   small { margin-top: 0.1rem; color: rgba(95, 63, 0, 0.68); font-size: 0.66rem; font-weight: 700; }
 `;
 
-const CardMetrics = styled.div`
+const PrimaryMetrics = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem;
-  padding: 0 0.75rem 0.65rem;
+  gap: 0.5rem 0.9rem;
+  padding: 0 0.75rem 0.5rem;
 `;
 
-const Metric = styled.span`
+const PrimaryMetric = styled.span`
   display: grid;
-  gap: 0.08rem;
-  padding: 0.45rem 0.5rem;
-  border-radius: 9px;
-  background: rgba(255, 244, 217, 0.58);
+  gap: 0.12rem;
+  min-width: 0;
+  grid-column: ${({ $wide }) => $wide ? '1 / -1' : 'auto'};
 
-  span { color: rgba(95, 63, 0, 0.72); font-size: 0.68rem; font-weight: 700; }
-  strong { overflow: hidden; color: #493100; font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
+  span { color: rgba(95, 63, 0, 0.72); font-size: 0.7rem; font-weight: 700; }
+  strong { color: #493100; font-size: 0.92rem; }
+`;
+
+const LowConfidence = styled.span`
+  grid-column: 1 / -1;
+  color: #936000;
+  font-size: 0.72rem;
+  font-weight: 700;
 `;
 
 const CardDetailsButton = styled.button`
   width: calc(100% - 1.5rem);
-  min-height: 38px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1639,7 +1954,7 @@ const CardDetailsButton = styled.button`
   background: transparent;
   color: #795817;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
   cursor: pointer;
 `;
@@ -1699,16 +2014,18 @@ const DetailsButton = styled.button`
 const DetailMetrics = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.45rem 0.8rem;
   margin: 0 0 0.7rem;
+`;
 
-  span {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.4rem;
-    color: rgba(47, 33, 0, 0.72);
-    font-size: 0.8rem;
-  }
+const DetailMetric = styled.span`
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  grid-column: ${({ $wide }) => $wide ? '1 / -1' : 'auto'};
+
+  span { color: rgba(47, 33, 0, 0.68); font-size: 0.75rem; font-weight: 700; }
+  strong { color: #5f3f00; font-size: 0.88rem; }
 `;
 const Explanation = styled.div`
   margin-top: 2rem;
@@ -1761,28 +2078,46 @@ const ScoreExplanationToggle = styled.button`
 
 const DetailsContainer = styled.div`
   text-align: left;
-  background: linear-gradient(180deg, rgba(255, 248, 225, 0.95), rgba(255, 253, 244, 0.95));
-  border: 1px solid rgba(255, 181, 34, 0.25);
-  border-radius: 12px;
-  padding: 1rem;
+  background: rgba(255, 252, 243, 0.72);
+  border-top: 1px solid rgba(255, 181, 34, 0.25);
+  border-radius: 0;
+  padding: 0.8rem 0.75rem 0.75rem;
   width: 100%;
   box-sizing: border-box;
   overflow-wrap: anywhere;
-  h3 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: #2f2100;
-  }
   strong {
     font-weight: bold;
     color: #5f3f00;
   }
 
   @media (max-width: 768px) {
-    padding: 0.75rem;
+    padding: 0.7rem 0.75rem 0.75rem;
     width: 100%;
     max-width: none;
   }
+`;
+
+const DetailInformation = styled.div`
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+  color: rgba(47, 33, 0, 0.82);
+  font-size: 0.82rem;
+`;
+
+const DetailInformationRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(6.6rem, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.5rem;
+
+  strong { color: #6b4a08; }
+`;
+
+const OpeningHoursPreview = styled.p`
+  margin: 0.1rem 0 0;
+  color: rgba(47, 33, 0, 0.72);
+  line-height: 1.45;
 `;
 
 const TabContainer = styled.div`
@@ -1801,7 +2136,7 @@ const TabContainer = styled.div`
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.2rem;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.45rem;
     padding: 0.25rem;
   }
 `;
@@ -1847,6 +2182,11 @@ const FilterCard = styled.section`
   border-radius: 16px;
   background: rgba(255, 252, 243, 0.94);
   box-shadow: 0 10px 28px rgba(28, 20, 0, 0.07);
+
+  @media (max-width: 768px) {
+    margin-bottom: 0.65rem;
+    padding: 0.2rem 0.6rem 0.45rem;
+  }
 `;
 
 const QuickFiltersBar = styled.div`
@@ -1864,8 +2204,8 @@ const QuickFiltersBar = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr 1fr;
-    gap: 0.55rem;
-    padding: 0.55rem 0.1rem;
+    gap: 0.45rem;
+    padding: 0.45rem 0.1rem;
 
     & > div:first-child {
       grid-column: 1 / -1;
@@ -2113,13 +2453,25 @@ const AttributeBadges = styled.div`
 const AttributeBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
+  min-height: 32px;
+  box-sizing: border-box;
+  gap: 0.25rem;
+  padding: 0.18rem 0.5rem;
   border-radius: 999px;
   background-color: #ffd480;
   border: 1px solid #ffb522;
-  font-size: 0.85rem;
-  color: #7a0900;;
+  font-size: 0.76rem;
+  color: #7a0900;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #ffe2a9;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(31, 104, 220, 0.65);
+    outline-offset: 2px;
+  }
 
   em {
     font-style: normal;

@@ -142,7 +142,9 @@ export const seasonalCampaignDefinitions = [
       preStart: new Date('2026-06-28T00:00:00+02:00'),
       start: new Date('2026-07-04T00:00:00+02:00'),
       endExclusive: new Date('2026-07-27T00:00:00+02:00'),
-      resultsHighlightEnd: new Date('2026-08-03T00:00:00+02:00'),
+      // The live results teaser ended with the tour. Keep the field so the
+      // reusable campaign lifecycle can still support a short highlight next year.
+      resultsHighlightEnd: new Date('2026-07-27T00:00:00+02:00'),
     },
     api: {
       progress: '/api/tour_de_glace_progress.php',

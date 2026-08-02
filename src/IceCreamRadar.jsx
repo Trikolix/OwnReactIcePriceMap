@@ -41,6 +41,12 @@ const getMapActionDismissKey = () => `action-map-nudge-dismissed:${getTodayKey()
 const DISCOVERY_SLOT_LIMIT = 5;
 const SEARCH_PLACE_MIN_QUERY_LENGTH = 3;
 const SEARCH_PLACE_DEBOUNCE_MS = 450;
+const parseMapAttributeIds = (value) => Array.from(new Set(
+  String(value || '')
+    .split(',')
+    .map((id) => Number.parseInt(id, 10))
+    .filter((id) => Number.isInteger(id) && id > 0)
+)).sort((a, b) => a - b);
 const DEFAULT_DISCOVERY_META = {
   hiddenExisting: 0,
   hiddenDuplicate: 0,
@@ -756,6 +762,11 @@ const IceCreamRadar = () => {
   const latestUserPositionRef = useRef(userPosition);
   const latestLocationAccuracyRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const mapAttributeIds = useMemo(
+    () => parseMapAttributeIds(new URLSearchParams(location.search).get('attributes')),
+    [location.search]
+  );
+  const [attributeOptions, setAttributeOptions] = useState([]);
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
   const [openFilterMode, setOpenFilterMode] = useState('all');
   const [openFilterDateTime, setOpenFilterDateTime] = useState('');
@@ -954,6 +965,24 @@ const IceCreamRadar = () => {
   }, [openFilterMode, openFilterDateTime]);
   const { shopId, token } = useParams();
   const navigate = useNavigate();
+  const mapAttributeQueryString = useMemo(
+    () => mapAttributeIds.length ? `attributes=${encodeURIComponent(mapAttributeIds.join(','))}` : '',
+    [mapAttributeIds]
+  );
+  const mapDataQueryString = useMemo(
+    () => [openFilterQueryString, mapAttributeQueryString].filter(Boolean).join('&'),
+    [openFilterQueryString, mapAttributeQueryString]
+  );
+  const updateMapAttributeIds = useCallback((ids) => {
+    const params = new URLSearchParams(location.search);
+    const normalizedIds = parseMapAttributeIds(ids.join(','));
+    if (normalizedIds.length) {
+      params.set('attributes', normalizedIds.join(','));
+    } else {
+      params.delete('attributes');
+    }
+    navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+  }, [location.pathname, location.search, navigate]);
   const getShopCacheKey = useCallback(
     (queryString) => `iceCreamShopsCache::user:${userId ?? 'guest'}::filter:${queryString || 'all'}`,
     [userId]
@@ -964,6 +993,24 @@ const IceCreamRadar = () => {
       setShowLoginModal(true);
     }
   }, [location]);
+
+  useEffect(() => {
+    if (!apiUrl) return undefined;
+    const controller = new AbortController();
+    fetch(`${apiUrl}/get_attribute.php`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : [])
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        setAttributeOptions(data
+          .map((attribute) => ({ id: Number(attribute.id), name: attribute.name }))
+          .filter((attribute) => Number.isInteger(attribute.id) && attribute.id > 0 && attribute.name)
+        );
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') console.warn('Attribute konnten nicht geladen werden:', error);
+      });
+    return () => controller.abort();
+  }, [apiUrl]);
 
   const buildActiveShopPreview = useCallback((shopLike) => {
     if (!shopLike) return null;
@@ -1172,7 +1219,7 @@ const IceCreamRadar = () => {
 
   const loadIceCreamShops = useCallback(async () => {
     const requestId = ++shopListRequestRef.current;
-    const cacheKey = getShopCacheKey(openFilterQueryString);
+    const cacheKey = getShopCacheKey(mapDataQueryString);
     const fallbackCacheKey = getShopCacheKey('');
     const parseCachedShops = (key) => {
       const cachedValue = localStorage.getItem(key);
@@ -1212,7 +1259,8 @@ const IceCreamRadar = () => {
       }
     };
 
-    const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
+    const cachedShops = parseCachedShops(cacheKey)
+      ?? (mapAttributeIds.length === 0 ? parseCachedShops(fallbackCacheKey) : null);
     if (cachedShops) {
       setIceCreamShops(cachedShops);
     }
@@ -1222,7 +1270,7 @@ const IceCreamRadar = () => {
     }
 
     try {
-      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : '';
+      const querySuffix = mapDataQueryString ? `&${mapDataQueryString}` : '';
       const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
       const response = await fetch(query);
       if (!response.ok) {
@@ -1245,7 +1293,7 @@ const IceCreamRadar = () => {
       }
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
-  }, [apiUrl, userId, openFilterQueryString, getShopCacheKey]);
+  }, [apiUrl, userId, mapDataQueryString, mapAttributeIds.length, getShopCacheKey]);
 
   const fetchIceCreamShops = loadIceCreamShops;
   const refreshShops = loadIceCreamShops;
@@ -1926,6 +1974,7 @@ const IceCreamRadar = () => {
     if (hasAdvancedFilter) count += 1;
     if (openFilterMode === 'now') count += 1;
     if (openFilterMode === 'custom' && openFilterDateTime) count += 1;
+    if (mapAttributeIds.length > 0) count += 1;
     return count;
   }, [
     favoritesFilterActive,
@@ -1934,6 +1983,7 @@ const IceCreamRadar = () => {
     showPermanentClosedFilterActive,
     typeFilters,
     hasAdvancedFilter,
+    mapAttributeIds.length,
     openFilterMode,
     openFilterDateTime,
   ]);
@@ -2503,6 +2553,31 @@ const IceCreamRadar = () => {
                 ×
               </CloseModalButton>
             </FilterModalHeader>
+            {mapAttributeIds.length > 0 && (
+              <FilterSection>
+                <FilterSectionTitle>Review-Attribute</FilterSectionTitle>
+                <MapAttributePills>
+                  {mapAttributeIds.map((attributeId) => {
+                    const attribute = attributeOptions.find((option) => option.id === attributeId);
+                    const attributeName = attribute?.name || `Attribut ${attributeId}`;
+                    return (
+                      <MapAttributePill
+                        type="button"
+                        key={attributeId}
+                        onClick={() => updateMapAttributeIds(mapAttributeIds.filter((id) => id !== attributeId))}
+                        aria-label={`Attribut ${attributeName} entfernen`}
+                        title="Attribut entfernen"
+                      >
+                        {attributeName} <span aria-hidden="true">×</span>
+                      </MapAttributePill>
+                    );
+                  })}
+                </MapAttributePills>
+                <ClearMapAttributesButton type="button" onClick={() => updateMapAttributeIds([])}>
+                  Attributfilter zurücksetzen
+                </ClearMapAttributesButton>
+              </FilterSection>
+            )}
             <FilterSection>
               <FilterSectionTitle>Favoriten & Besuche</FilterSectionTitle>
               <FilterToggle disabled={!userId}>
@@ -3330,6 +3405,45 @@ const CloseModalButton = styled.button`
 
 const FilterSection = styled.div`
   margin-bottom: 1.5rem;
+`;
+
+const MapAttributePills = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`;
+
+const MapAttributePill = styled.button`
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(255, 181, 34, 0.7);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(255, 244, 217, 0.92);
+  color: #754500;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover { background: #ffe2a9; }
+  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.65); outline-offset: 2px; }
+`;
+
+const ClearMapAttributesButton = styled.button`
+  margin-top: 0.65rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #825000;
+  font: inherit;
+  font-size: 0.86rem;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.65); outline-offset: 2px; }
 `;
 
 const FilterSectionTitle = styled.h4`

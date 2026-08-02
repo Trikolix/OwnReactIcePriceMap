@@ -640,7 +640,12 @@ const ShopDetailsContent = ({
                       <td>
                         <AttributeSection>
                           {shopData.attribute.map((attribute) => (
-                            <AttributeBadge key={`${attribute.name}-${attribute.anzahl}`}>
+                            <AttributeBadge
+                              as={Link}
+                              key={`${attribute.id}-${attribute.name}`}
+                              to={`/map?attributes=${attribute.id}`}
+                              aria-label={`Eisdielen mit dem Attribut ${attribute.name} auf der Karte ansehen`}
+                            >
                               {attribute.anzahl} x {attribute.name}
                             </AttributeBadge>
                           ))}
@@ -1313,6 +1318,10 @@ const AttributeSection = styled.div`
 `;
 
 const AttributeBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
   background: rgba(255, 181, 34, 0.12);
   color: #7a4a00;
   border: 1px solid rgba(255, 181, 34, 0.25);
@@ -1320,6 +1329,16 @@ const AttributeBadge = styled.span`
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.22);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(31, 104, 220, 0.65);
+    outline-offset: 2px;
+  }
 `;
 
 const ValuePill = styled.span`

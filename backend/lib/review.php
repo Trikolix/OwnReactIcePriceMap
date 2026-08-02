@@ -33,7 +33,8 @@ function getReviewById(PDO $pdo, int $reviewId): ?array {
 
     if (!$review) return null;
 
-    $review['attribute'] = getAttributesForReview($pdo, $reviewId);
+    $review['attribute_details'] = getAttributeDetailsForReview($pdo, $reviewId);
+    $review['attribute'] = array_column($review['attribute_details'], 'name');
     $review['bilder'] = getBilderForReview($pdo, $reviewId);
     $review['commentCount'] = getCommentCountForReview($pdo, $reviewId);
     
@@ -57,7 +58,8 @@ function getReviewByUserAndShop(PDO $pdo, int $userId, int $shopId): ?array {
 
     if (!$review) return null;
 
-    $review['attribute'] = getAttributesForReview($pdo, $review['id']);
+    $review['attribute_details'] = getAttributeDetailsForReview($pdo, $review['id']);
+    $review['attribute'] = array_column($review['attribute_details'], 'name');
     $review['bilder'] = getBilderForReview($pdo, $review['id']);
     $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
 
@@ -83,7 +85,8 @@ function getReviewsByEisdieleId(PDO $pdo, int $shopId): array {
     $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($reviews as &$review) {
-        $review['attributes'] = getAttributesForReview($pdo, $review['id']);
+        $review['attribute_details'] = getAttributeDetailsForReview($pdo, $review['id']);
+        $review['attributes'] = array_column($review['attribute_details'], 'name');
         $review['bilder'] = getBilderForReview($pdo, $review['id']);
         $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
     }
@@ -110,7 +113,8 @@ function getReviewsByNutzerId(PDO $pdo, int $userId): array {
     $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($reviews as &$review) {
-        $review['attributes'] = getAttributesForReview($pdo, $review['id']);
+        $review['attribute_details'] = getAttributeDetailsForReview($pdo, $review['id']);
+        $review['attributes'] = array_column($review['attribute_details'], 'name');
         $review['bilder'] = getBilderForReview($pdo, $review['id']);
         $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
     }
@@ -187,7 +191,8 @@ function getLatestReviews(PDO $pdo, int $offsetDays = 0, int $days = 7): array {
     $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($reviews as &$review) {
-        $review['attributes'] = getAttributesForReview($pdo, $review['id']);
+        $review['attribute_details'] = getAttributeDetailsForReview($pdo, $review['id']);
+        $review['attributes'] = array_column($review['attribute_details'], 'name');
         $review['bilder']     = getBilderForReview($pdo, $review['id']);
         $review['commentCount'] = getCommentCountForReview($pdo, $review['id']);
     }
@@ -204,6 +209,21 @@ function getAttributesForReview(PDO $pdo, int $reviewId): array {
     ");
     $stmt->execute(['id' => $reviewId]);
     return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
+function getAttributeDetailsForReview(PDO $pdo, int $reviewId): array {
+    $stmt = $pdo->prepare("
+        SELECT a.id, a.name
+        FROM bewertung_attribute ba
+        JOIN attribute a ON ba.attribut_id = a.id
+        WHERE ba.bewertung_id = :id
+        ORDER BY a.name ASC
+    ");
+    $stmt->execute(['id' => $reviewId]);
+    return array_map(static fn(array $attribute) => [
+        'id' => (int)$attribute['id'],
+        'name' => $attribute['name'],
+    ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function getAllAttributes(PDO $pdo): array {

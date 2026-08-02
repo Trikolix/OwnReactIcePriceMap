@@ -62,7 +62,6 @@ const Header = ({ refreshShops }) => {
     ? `Aktions-Hub öffnen: ${featuredCampaign.title}`
     : 'Aktions-Hub öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
-  const showIceTourNewBadge = now <= new Date(2026, 4, 16, 23, 59, 59);
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
   const toggleMenu = () => {
@@ -144,6 +143,12 @@ const Header = ({ refreshShops }) => {
     };
     window.addEventListener('actions-hub:open', handleOpenActionsHub);
     return () => window.removeEventListener('actions-hub:open', handleOpenActionsHub);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenLogin = () => setShowLoginModal(true);
+    window.addEventListener('auth:open-login', handleOpenLogin);
+    return () => window.removeEventListener('auth:open-login', handleOpenLogin);
   }, []);
 
   useEffect(() => {
@@ -647,10 +652,6 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
-          <DesktopNavLink to="/ice-tour" $compact={showIceTourNewBadge}>
-            Ice-Tour
-            {showIceTourNewBadge && (<DesktopNavBadge>NEU</DesktopNavBadge>)}
-          </DesktopNavLink>
           <DesktopNavLink to="/photo-challenge" $compact={hasActivePhotoChallenge}>
             Foto-Challenges
             {hasActivePhotoChallenge && (<DesktopNavBadge>AKTIV</DesktopNavBadge>)}
@@ -725,11 +726,8 @@ const Header = ({ refreshShops }) => {
 
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
+              <MenuItemLink to="/aktionen" onClick={closeMenu}>Aktionen &amp; Rückblicke</MenuItemLink>
               <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
-              <MenuItemLink to="/ice-tour" onClick={closeMenu}>
-                Zur Ice-Tour
-                {showIceTourNewBadge && <MenuItemBadge>NEU</MenuItemBadge>}
-              </MenuItemLink>
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
                 Foto-Challenges
                 {hasActivePhotoChallenge && <MenuItemBadge>AKTIV</MenuItemBadge>}
@@ -743,6 +741,11 @@ const Header = ({ refreshShops }) => {
               <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
             </MenuSection>
 
+            <MenuDivider />
+            <MenuSection>
+              <MenuSectionTitle>Erlebnisse &amp; Rückblicke</MenuSectionTitle>
+              <MenuItemLink to="/ice-tour" onClick={closeMenu}>Ice-Tour 2026 Rückblick</MenuItemLink>
+            </MenuSection>
             <MenuDivider />
             {isLoggedIn ? (
               <>

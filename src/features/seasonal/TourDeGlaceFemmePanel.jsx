@@ -64,7 +64,7 @@ const TeamInput = ({ id, label, value, onChange, disabled }) => {
   </Field>;
 };
 
-export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin }) {
+export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin, archived = false }) {
   const { authToken } = useUser();
   const [activeTab, setActiveTab] = useState('tips');
   const [data, setData] = useState(null);
@@ -160,7 +160,8 @@ export default function TourDeGlaceFemmePanel({ campaign, isLoggedIn, onLogin })
       <Brand><img src={TOUR_DE_GLACE_FEMME_LOGO} alt="Tour de Glace Femmes" /><div><h2>Tour de Glace Femmes 2026</h2><p>Ein Tippspiel zur Tour de France Femmes. Tippe bis zum Start der Tour de France Femmes die ersten drei Plätze der Gesamtwertung und vor jeder Etappe deine Favoritin für den Tagessieg. Finde die Easter-Eggs auf der Karte, für kleine Boni.</p></div></Brand>
       <Status>{final ? 'Nachlese' : data?.campaign?.phase === 'pre' ? 'Tipps offen' : 'Läuft'}</Status>
     </Header>
-    {!isLoggedIn && <LoginHint><strong>Login erforderlich für die Teilnahme.</strong><button type="button" onClick={onLogin}>Login / Registrieren</button></LoginHint>}
+    {!isLoggedIn && !archived && <LoginHint><strong>Login erforderlich für die Teilnahme.</strong><button type="button" onClick={onLogin}>Login / Registrieren</button></LoginHint>}
+    {archived && <ArchiveHint><strong>Tour beendet · Ergebnisarchiv</strong><span>Die abgegebenen Tipps, Etappenergebnisse und die kombinierte Rangliste bleiben als Nachlese sichtbar.</span></ArchiveHint>}
     {message && <Notice>{message}</Notice>}
     {loading && <Muted>Lade Tour de Glace Femmes...</Muted>}
     <Tabs>
@@ -293,6 +294,7 @@ const Avatar = styled.span`display:grid;place-items:center;width:28px;height:28p
 const OwnLabel = styled.em`margin-left:.35rem;border-radius:999px;background:#f7c6d6;color:#8f1749;padding:.1rem .32rem;font-size:.68rem;font-style:normal;font-weight:800;vertical-align:middle;`;
 const OwnPosition = styled.h4`margin:.45rem 0 0;padding-top:.7rem;border-top:1px solid #e1e5eb;`;
 const LoginHint = styled.div`display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.8rem;border:1px solid #cfe0ff;border-radius:8px;background:#f5f9ff;padding:.7rem;button{border:0;border-radius:6px;background:#1f6feb;color:#fff;padding:.45rem .6rem;font:inherit;font-weight:800;cursor:pointer}`;
+const ArchiveHint = styled.div`display:grid;gap:.2rem;margin-top:.8rem;border:1px solid #cbdcf3;border-radius:8px;background:#f3f8ff;color:#17436f;padding:.7rem;span{line-height:1.4}`;
 const Notice = styled.div`border-radius:7px;background:#fff3cd;color:#6f4b00;padding:.55rem .65rem;font-weight:700;`;
 const Muted = styled.p`margin:0;color:#5b6270;font-weight:600;line-height:1.4;`;
 const EggHint = styled.div`display:flex;gap:.65rem;align-items:flex-start;border:1px solid #d8c8f0;border-radius:8px;background:#fbf8ff;padding:.7rem;color:#43226b;div{display:grid;gap:.16rem}span{color:#5b6270;font-weight:600}`;

@@ -33,6 +33,9 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
     },
     preise: review.preise ?? {},
   }), [review.eisdiele_id, review.eisdiele_name, review.preise]);
+  const reviewAttributes = Array.isArray(review.attribute_details) && review.attribute_details.length > 0
+    ? review.attribute_details
+    : (Array.isArray(review.attributes) ? review.attributes : []);
 
   useEffect(() => {
     if (showComments) {
@@ -90,11 +93,24 @@ const ReviewCard = ({ review, setShowReviewForm, onSuccess, showComments = false
 
             {review.beschreibung && <p style={{ whiteSpace: 'pre-wrap' }}><MentionFormatter text={review.beschreibung} /></p>}
 
-            {review.attributes?.length > 0 && (
+            {reviewAttributes.length > 0 && (
               <AttributeSection>
-                {review.attributes.map((attr, i) => (
-                  <AttributeBadge key={i}>{attr}</AttributeBadge>
-                ))}
+                {reviewAttributes.map((attribute, i) => {
+                  const attributeId = Number(typeof attribute === 'object' ? attribute.id : null);
+                  const attributeName = typeof attribute === 'object' ? attribute.name : attribute;
+                  return Number.isInteger(attributeId) && attributeId > 0 ? (
+                    <AttributeBadge
+                      as={Link}
+                      key={attributeId}
+                      to={`/map?attributes=${attributeId}`}
+                      aria-label={`Eisdielen mit dem Attribut ${attributeName} auf der Karte ansehen`}
+                    >
+                      {attributeName}
+                    </AttributeBadge>
+                  ) : (
+                    <AttributeBadge key={`${attributeName}-${i}`}>{attributeName}</AttributeBadge>
+                  );
+                })}
               </AttributeSection>
             )}
             {isOwner && (
@@ -194,6 +210,10 @@ const AttributeSection = styled.div`
 `;
 
 const AttributeBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
   background: rgba(255, 181, 34, 0.12);
   color: #7a4a00;
   border: 1px solid rgba(255, 181, 34, 0.24);
@@ -201,6 +221,16 @@ const AttributeBadge = styled.span`
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.22);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(31, 104, 220, 0.65);
+    outline-offset: 2px;
+  }
 `;
 
 const CardMetaRow = styled.div`
