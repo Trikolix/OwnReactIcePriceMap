@@ -464,7 +464,7 @@ try {
         new AllIceTypesEvaluator(),
         new DistanceIceTravelerEvaluator(),
         new StammkundeEvaluator(),
-        new CountryVisitEvaluator(),
+        new CountryVisitEvaluator(isset($meta['land']) ? (int)$meta['land'] : null),
         new CountryCountEvaluator(),
         new Chemnitz2025Evaluator(),
         new TheTasteOfChemnitzEvaluator(),

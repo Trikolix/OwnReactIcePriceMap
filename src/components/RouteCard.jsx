@@ -1,79 +1,53 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styled, { css } from "styled-components";
+import { Link } from "react-router-dom";
+import {
+  Bike, BookLock, ExternalLink, Footprints, HelpCircle, Map, MessageCircle,
+  MountainSnow, SignalHigh, SignalLow, SignalMedium
+} from "lucide-react";
 import { useUser } from "../context/UserContext";
 import MentionFormatter from "./MentionFormatter";
-import { Link } from "react-router-dom";
 import SubmitRouteForm from "../SubmitRouteModal";
 import { Card } from "../styles/SharedStyles";
 import CommentSection from "./CommentSection";
 import UserAvatar from "./UserAvatar";
 import LikeButton from "./LikeButton";
 
-const ActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-import {
-  Bike, MountainSnow, Footprints, SignalHigh, SignalMedium, SignalLow, BookLock, HelpCircle,
-  ExternalLink, MessageCircle
-} from "lucide-react";
-
-const BORDER = "rgba(47, 33, 0, 0.08)";
+const BORDER = "rgba(47, 33, 0, 0.09)";
 const ACCENT = "#ffb522";
-const ACCENT_DARK = "#d99100";
+const ACCENT_DARK = "#8a5700";
 const ACCENT_SOFT = "#fff3da";
 const TEXT_MUTED = "#5f4a25";
 
 const toNumberOrNull = (value) => {
-  const num = Number(value);
-  return Number.isNaN(num) ? null : num;
+  const number = Number(value);
+  return Number.isNaN(number) ? null : number;
 };
 
 const formatDistance = (value) => {
-  const num = toNumberOrNull(value);
-  return num === null ? "—" : `${num.toFixed(1)} km`;
+  const number = toNumberOrNull(value);
+  return number === null ? "—" : `${number.toFixed(1)} km`;
 };
 
 const formatElevation = (value) => {
-  const num = toNumberOrNull(value);
-  return num === null ? "—" : `${num.toLocaleString("de-DE")} hm`;
+  const number = toNumberOrNull(value);
+  return number === null ? "—" : `${number.toLocaleString("de-DE")} hm`;
 };
 
 const formatCreatedAt = (value) => {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Unbekannt";
-  }
-  const datePart = date.toLocaleDateString("de-DE", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  const timePart = date.toLocaleTimeString("de-DE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${datePart} • ${timePart}`;
+  if (Number.isNaN(date.getTime())) return "Unbekannt";
+  return `${date.toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })} · ${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 };
 
-const extractIframeSrc = (embedCode = "") => {
-  const match = String(embedCode).match(/<iframe[^>]+src=["']([^"']+)["']/i);
-  return match?.[1] || "";
-};
-
-const getKomootTourId = (value = "") => {
-  const match = String(value).match(/komoot\.(?:com|de)\/(?:[a-z-]+\/)?tour\/(\d+)/i);
-  return match?.[1] || "";
-};
+const extractIframeSrc = (embedCode = "") => String(embedCode).match(/<iframe[^>]+src=["']([^"']+)["']/i)?.[1] || "";
+const getKomootTourId = (value = "") => String(value).match(/komoot\.(?:com|de)\/(?:[a-z-]+\/)?tour\/(\d+)/i)?.[1] || "";
 
 const getShareToken = (value = "") => {
   const decoded = String(value || "").replace(/&amp;/g, "&");
   try {
-    const parsed = new URL(decoded);
-    return parsed.searchParams.get("share_token") || "";
-  } catch (error) {
+    return new URL(decoded).searchParams.get("share_token") || "";
+  } catch {
     const match = decoded.match(/[?&]share_token=([^&#"']+)/i);
     return match?.[1] ? decodeURIComponent(match[1]) : "";
   }
@@ -86,494 +60,163 @@ const buildRouteEmbedMarkup = (route) => {
   if (!embedCode && !isKomootEmbed) return "";
   if (!isKomootEmbed) return embedCode;
 
-  const iframeSrc = extractIframeSrc(embedCode);
-  const tourId = getKomootTourId(routeUrl) || getKomootTourId(iframeSrc);
-  const shareToken = route.komoot_share_token || getShareToken(routeUrl) || getShareToken(iframeSrc) || getShareToken(embedCode);
+  const tourId = getKomootTourId(routeUrl) || getKomootTourId(extractIframeSrc(embedCode));
+  const shareToken = route.komoot_share_token || getShareToken(routeUrl) || getShareToken(extractIframeSrc(embedCode)) || getShareToken(embedCode);
+  if (!tourId || !shareToken) return "";
 
-  if (!tourId || !shareToken) {
-    return "";
+  return `<iframe src="https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}&layout=map" width="100%" height="440" frameborder="0" scrolling="no" title="Route auf Komoot"></iframe>`;
+};
+
+const getTypeIcon = (type = "") => {
+  switch (type.toLowerCase()) {
+    case "rennrad":
+    case "gravel": return Bike;
+    case "mtb": return MountainSnow;
+    case "wanderung": return Footprints;
+    default: return HelpCircle;
   }
+};
 
-  const src = `https://www.komoot.com/de-de/tour/${tourId}/embed?share_token=${encodeURIComponent(shareToken)}&layout=map`;
-  return `<iframe src="${src}" width="100%" height="440" frameborder="0" scrolling="no"></iframe>`;
+const getDifficulty = (difficulty = "") => {
+  switch (difficulty.toLowerCase()) {
+    case "leicht": return { Icon: SignalLow, color: "#217a42", background: "#eafbe9" };
+    case "mittel": return { Icon: SignalMedium, color: "#8d6900", background: "#fff8dd" };
+    case "schwer": return { Icon: SignalHigh, color: "#b91c1c", background: "#fff0f0" };
+    default: return null;
+  }
 };
 
 const RouteCard = ({ route, shopId, shopName, onSuccess, showComments = false, focusCommentId = null }) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
   const { userId } = useUser();
 
   const routeShops = useMemo(() => {
-    if (route.eisdielen && route.eisdielen.length) {
-      return route.eisdielen;
-    }
-    if (route.eisdiele_name) {
-      return [{ id: route.eisdiele_id, name: route.eisdiele_name }];
-    }
-    return [];
+    if (route.eisdielen?.length) return route.eisdielen;
+    return route.eisdiele_name ? [{ id: route.eisdiele_id, name: route.eisdiele_name }] : [];
   }, [route.eisdielen, route.eisdiele_id, route.eisdiele_name]);
 
+  const embedMarkup = useMemo(() => buildRouteEmbedMarkup(route), [route]);
+  const hasEmbed = Boolean(embedMarkup);
+  const isOwner = Number(route.nutzer_id) === Number(userId);
+  const isPrivate = String(route.ist_oeffentlich) !== "1";
+  const TypeIcon = getTypeIcon(route.typ);
+  const difficulty = getDifficulty(route.schwierigkeit);
   const contextShopId = shopId || routeShops[0]?.id || null;
   const contextShopName = shopName || routeShops[0]?.name || null;
 
-  const isOwner = Number(route.nutzer_id) === Number(userId);
-  const isPrivate = String(route.ist_oeffentlich) !== "1";
-  const embedMarkup = useMemo(() => buildRouteEmbedMarkup(route), [route]);
-  const hasStoredEmbed = Boolean(route.embed_code && route.embed_code.trim() !== "");
-  const hasEmbed = Boolean(embedMarkup);
-  const komootEmbedSuppressed = !hasEmbed && (route.embed_code?.includes("komoot.") || String(route.url || "").includes("komoot."));
-  const [showEmbed, setShowEmbed] = useState(hasEmbed);
-  const eisdielenCount = routeShops.length;
-  const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
-
-  const toggleEmbed = () => setShowEmbed((prev) => !prev);
-
   useEffect(() => {
-    if (showComments) {
-      setAreCommentsVisible(true);
-    }
+    if (showComments) setAreCommentsVisible(true);
   }, [showComments]);
 
   useEffect(() => {
-    if (showEmbed && embedMarkup.includes('strava-embed-placeholder')) {
-      const existingScript = document.getElementById('strava-embed-script');
-      if (existingScript) {
-        existingScript.remove();
-      }
-
-      const script = document.createElement('script');
-      script.id = 'strava-embed-script';
-      script.src = 'https://strava-embeds.com/embed.js';
-      script.async = true;
-      document.body.appendChild(script);
-    }
+    if (!showEmbed || !embedMarkup.includes("strava-embed-placeholder")) return;
+    document.getElementById("strava-embed-script")?.remove();
+    const script = document.createElement("script");
+    script.id = "strava-embed-script";
+    script.src = "https://strava-embeds.com/embed.js";
+    script.async = true;
+    document.body.appendChild(script);
   }, [showEmbed, embedMarkup]);
-return (
+
+  return (
     <>
       <StyledCard>
-        <CardMetaRow>
-          <DateText dateTime={route.erstellt_am}>{formatCreatedAt(route.erstellt_am)}</DateText>
-        </CardMetaRow>
-
-        <HeaderRow>
-          <div>
+        <CardHeader>
+          <TitleArea>
             <RouteName>{route.name || "Unbenannte Route"}</RouteName>
-            <MetaRow>
-              {route.typ && (() => {
-                let Icon = null;
-                switch ((route.typ || '').toLowerCase()) {
-                  case 'rennrad':
-                    Icon = Bike;
-                    break;
-                  case 'mtb':
-                    Icon = MountainSnow;
-                    break;
-                  case 'gravel':
-                    Icon = Bike;
-                    break;
-                  case 'wanderung':
-                    Icon = Footprints;
-                    break;
-                  default:
-                    Icon = HelpCircle;
-                }
-                return (
-                  <MetaBadge style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    {Icon && <Icon size={16} style={{ marginRight: 6 }} />}
-                    {route.typ}
-                  </MetaBadge>
-                );
-              })()}
-              {route.schwierigkeit && (() => {
-                let Icon = null, color = ACCENT_DARK, bg = ACCENT_SOFT, border = ACCENT_DARK;
-                switch ((route.schwierigkeit || '').toLowerCase()) {
-                  case 'leicht':
-                    Icon = SignalLow;
-                    color = '#219150';
-                    bg = '#eafbe9';
-                    border = '#219150';
-                    break;
-                  case 'mittel':
-                    Icon = SignalMedium;
-                    color = '#cfa600ff'; // dark yellow for contrast
-                    bg = '#fffbe6';
-                    border = '#cfa600ff';
-                    break;
-                  case 'schwer':
-                    Icon = SignalHigh;
-                    color = '#b91c1c';
-                    bg = '#fff0f0';
-                    border = '#b91c1c';
-                    break;
-                  default:
-                    Icon = null;
-                }
-                return (
-                  <MetaBadge style={{ color, background: bg, border: `1.5px solid ${border}`, display: 'inline-flex', alignItems: 'center' }}>
-                    {Icon && <Icon size={16} style={{ marginRight: 6, color: border }} />}
-                    {route.schwierigkeit}
-                  </MetaBadge>
-                );
-              })()}
-              {isPrivate && (
-                <MetaBadge $variant="outline">
-                  <BookLock size={16} style={{ marginRight: 5, verticalAlign: 'text-bottom' }} />
-                  Privat
-                </MetaBadge>
-              )}
-            </MetaRow>
-          </div>
-          <AuthorInfo>
-            <UserAvatar
-              userId={route.nutzer_id}
-              name={route.username || route.nutzer_name}
-              avatarUrl={route.avatar_url}
-              size={48}
-            />
-            <AuthorText>
-              von{" "}
-              <UserLink to={`/user/${route.nutzer_id}`}>
-                {route.username || route.nutzer_name || "Unbekannt"}
-              </UserLink>
-            </AuthorText>
-          </AuthorInfo>
-        </HeaderRow>
+            <BadgeRow>
+              {route.typ && <Badge><TypeIcon size={15} />{route.typ}</Badge>}
+              {difficulty && <Badge $color={difficulty.color} $background={difficulty.background}><difficulty.Icon size={15} />{route.schwierigkeit}</Badge>}
+              {isPrivate && <Badge $variant="private"><BookLock size={15} />Privat</Badge>}
+            </BadgeRow>
+          </TitleArea>
+          <AuthorMeta>
+            <UserAvatar userId={route.nutzer_id} name={route.username || route.nutzer_name} avatarUrl={route.avatar_url} size={40} />
+            <div>
+              <AuthorLine>von <UserLink to={`/user/${route.nutzer_id}`}>{route.username || route.nutzer_name || "Unbekannt"}</UserLink></AuthorLine>
+              <DateText dateTime={route.erstellt_am}>{formatCreatedAt(route.erstellt_am)}</DateText>
+            </div>
+          </AuthorMeta>
+        </CardHeader>
 
         {route.beschreibung && <Description><MentionFormatter text={route.beschreibung} /></Description>}
 
-        <StatsRow>
-          <Stat>
-            <StatLabel>Länge</StatLabel>
-            <StatValue>{formatDistance(route.laenge_km)}</StatValue>
-          </Stat>
-          <Stat>
-            <StatLabel>Höhenmeter</StatLabel>
-            <StatValue>{formatElevation(route.hoehenmeter)}</StatValue>
-          </Stat>
-          <Stat>
-            <StatLabel>Eisdielen</StatLabel>
-            <StatValue>{eisdielenCount}</StatValue>
-          </Stat>
+        <StatsRow aria-label="Tourdaten">
+          <Stat><StatLabel>Länge</StatLabel><StatValue>{formatDistance(route.laenge_km)}</StatValue></Stat>
+          <Stat><StatLabel>Höhenmeter</StatLabel><StatValue>{formatElevation(route.hoehenmeter)}</StatValue></Stat>
+          <Stat><StatLabel>Eis-Stopps</StatLabel><StatValue>{routeShops.length}</StatValue></Stat>
         </StatsRow>
 
         {routeShops.length > 0 && (
-          <ShopList>
-            Eisdielen: {routeShops.map((shop) => (
-              <ShopPill key={`${route.id}-${shop.id}`} to={`/map/activeShop/${shop.id}`}>
-                {shop.name}
-              </ShopPill>
-            ))}
-          </ShopList>
+          <StopsSection>
+            <StopsHeading>Eis-Stopps <span>({routeShops.length})</span></StopsHeading>
+            <StopsList>{routeShops.map((shop) => <ShopPill key={`${route.id}-${shop.id}`} to={`/map/activeShop/${shop.id}`}>{shop.name}</ShopPill>)}</StopsList>
+          </StopsSection>
         )}
 
-        <ActionsRow>
-          {hasEmbed && (
-            <ActionButton type="button" onClick={toggleEmbed} aria-pressed={showEmbed}>
-              {showEmbed ? "Route ausblenden" : "Route anzeigen"}
-            </ActionButton>
-          )}
+        <PrimaryActions>
+          {route.url && <PrimaryLink href={route.url} target="_blank" rel="noopener noreferrer">Externe Route öffnen <ExternalLink size={17} /></PrimaryLink>}
+          {hasEmbed && <SecondaryButton type="button" onClick={() => setShowEmbed((visible) => !visible)} aria-expanded={showEmbed}><Map size={18} />{showEmbed ? "Karte ausblenden" : "Karte anzeigen"}</SecondaryButton>}
+          {isOwner && <EditButton type="button" onClick={() => setShowEditModal(true)}>Bearbeiten</EditButton>}
+        </PrimaryActions>
 
-          {route.url && (
-            <ActionLink href={route.url} target="_blank" rel="noopener noreferrer">
-              Externe Route öffnen
-              <ExternalLink size={20} style={{ marginLeft: 5, verticalAlign: 'text-bottom' }} />
-            </ActionLink>
-          )}
+        {showEmbed && hasEmbed && <EmbedWrapper dangerouslySetInnerHTML={{ __html: embedMarkup }} />}
 
-          {isOwner && (
-            <ActionButton type="button" $variant="subtle" onClick={() => setShowEditModal(true)}>
-              Bearbeiten
-            </ActionButton>
-          )}
-        </ActionsRow>
-
-        {komootEmbedSuppressed && (
-          <EmbedNotice>
-            Diese Komoot-Route wird nicht eingebettet, weil kein gültiger Freigabe-Token vorhanden ist. Öffne sie direkt bei Komoot.
-          </EmbedNotice>
-        )}
-
-        {showEmbed && hasEmbed && (
-          <EmbedWrapper
-            dangerouslySetInnerHTML={{ __html: embedMarkup }}
-          />
-        )}
-        <ActionRow>
-          <LikeButton
-            entityType="route"
-            entityId={route.id}
-            initialLikesCount={route.likes_count}
-            initialHasLiked={route.has_liked}
-          />
-          <CommentToggle
-            title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
-            onClick={() => setAreCommentsVisible(!areCommentsVisible)}
-          >
-            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {route.commentCount || 0} Kommentar(e)
+        <SocialActions>
+          <LikeButton entityType="route" entityId={route.id} initialLikesCount={route.likes_count} initialHasLiked={route.has_liked} compact />
+          <CommentToggle type="button" aria-expanded={areCommentsVisible} onClick={() => setAreCommentsVisible((visible) => !visible)}>
+            <MessageCircle size={18} />{route.commentCount || 0} Kommentar{Number(route.commentCount) === 1 ? "" : "e"}
           </CommentToggle>
-        </ActionRow>
-        {areCommentsVisible && (
-          <CommentSection
-            routeId={route.id}
-            type="route"
-            focusCommentId={focusCommentId}
-            focusLatestComment={Boolean(showComments)}
-          />
-        )}
+        </SocialActions>
+        {areCommentsVisible && <CommentSection routeId={route.id} type="route" focusCommentId={focusCommentId} focusLatestComment={Boolean(showComments)} />}
       </StyledCard>
 
-      {showEditModal && (
-        <SubmitRouteForm
-          shopId={contextShopId}
-          shopName={contextShopName}
-          showForm={showEditModal}
-          setShowForm={setShowEditModal}
-          existingRoute={route}
-          onSuccess={onSuccess}
-        />
-      )}
+      {showEditModal && <SubmitRouteForm shopId={contextShopId} shopName={contextShopName} showForm={showEditModal} setShowForm={setShowEditModal} existingRoute={route} onSuccess={onSuccess} />}
     </>
   );
 };
 
 export default RouteCard;
 
-// ---------- Styled Components ----------
-
 const StyledCard = styled(Card)`
-  border: 1px solid ${BORDER};
-  border-radius: 20px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  background:
-    radial-gradient(circle at top right, rgba(255, 181, 34, 0.10), transparent 42%),
-    rgba(255, 255, 255, 0.96);
-  padding: 1.5rem 1.5rem 1.25rem;
-`;
-
-const CardMetaRow = styled.div`
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-  z-index: 1;
-  pointer-events: none;
-
-  @media (max-width: 640px) {
-    position: static;
-    justify-content: flex-end;
-    margin-bottom: 0.6rem;
-    pointer-events: auto;
-  }
-`;
-
-const HeaderRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-`;
-
-const RouteName = styled.h3`
   margin: 0;
-  font-size: 1.4rem;
-  color: #2f2100;
-`;
-
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-`;
-
-const MetaBadge = styled.span`
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: ${({ $variant }) => ($variant === "outline" ? "transparent" : ACCENT_SOFT)};
-  color: ${({ $variant }) => ($variant === "outline" ? ACCENT_DARK : ACCENT_DARK)};
-  border: 1px solid  ${ACCENT_DARK};
-`;
-
-const AuthorInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: ${TEXT_MUTED};
-  font-weight: 600;
-`;
-
-const AuthorText = styled.span`
-  font-size: 0.95rem;
-  color: ${TEXT_MUTED};
-`;
-
-const UserLink = styled(Link)`
-  color: ${ACCENT_DARK};
-  text-decoration: none;
-  font-weight: 600;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const Description = styled.p`
-  margin-bottom: 1rem 0;
-  color: ${TEXT_MUTED};
-  white-space: pre-wrap;
-`;
-
-const StatsRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-`;
-
-const Stat = styled.div`
-  background: ${ACCENT_SOFT};
-  border-radius: 14px;
-  padding: 12px;
-`;
-
-const StatLabel = styled.div`
-  font-size: 0.8rem;
-  color: #6f6f8d;
-`;
-
-const StatValue = styled.div`
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #2a2a3f;
-`;
-
-const ShopList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0;
-  align-items: baseline;
-  font-weight: 600;
-`;
-
-const ShopPill = styled(Link)`
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 181, 34, 0.5);
-  color: ${ACCENT_DARK};
-  background: rgba(255, 181, 34, 0.15);
-  font-size: 0.85rem;
-
-  &:hover {
-    background: rgba(255, 181, 34, 0.25);
-  }
-`;
-
-const ActionsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 1rem;
-
-  > * {
-    flex-shrink: 0;
-  }
-`;
-
-const actionButtonStyles = css`
-  border-radius: 12px;
-  padding: 10px 16px;
-  font-weight: 600;
-  background: ${({ $variant }) => ($variant === "subtle" ? "rgba(255, 255, 255, 0.86)" : ACCENT)};
-  color: ${({ $variant }) => ($variant === "subtle" ? "#6b4a00" : "#2f2100")};
-  border: 1px solid ${({ $variant }) => ($variant === "subtle" ? "rgba(47, 33, 0, 0.22)" : "rgba(255, 181, 34, 0.5)")};
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 150px;
-  text-align: center;
-  line-height: 1;
-
-  &:hover {
-    background: ${({ $variant }) => ($variant === "subtle" ? "rgba(255, 255, 255, 0.96)" : "#ffc34a")};
-    transform: translateY(-1px);
-  }
-`;
-
-const ActionButton = styled.button`
-  ${actionButtonStyles};
-`;
-
-const ActionLink = styled.a`
-  ${actionButtonStyles};
-  min-width: auto;
-`;
-
-const EmbedNotice = styled.div`
-  margin-bottom: 1rem;
-  border: 1px solid #ffe08a;
-  border-radius: 14px;
-  background: #fff8db;
-  color: #6b4a00;
-  padding: 0.85rem 1rem;
-  line-height: 1.45;
-`;
-
-const EmbedWrapper = styled.div`
-  margin-bottom: 1rem;
-  border-radius: 14px;
-  overflow: hidden;
+  padding: clamp(1rem, 2.4vw, 1.5rem);
   border: 1px solid ${BORDER};
-
-  iframe, .strava-embed-placeholder {
-    width: 100%;
-    min-height: 320px;
-    border: none;
-  }
+  background: radial-gradient(circle at top right, rgba(255, 181, 34, 0.1), transparent 38%), rgba(255, 255, 255, 0.97);
 `;
-
-const DateText = styled.time`
-  position: static;
-  font-size: 0.85rem;
-  color: rgba(47, 33, 0, 0.56);
-  font-style: italic;
-  user-select: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-
-  @media (max-width: 640px) {
-    margin-bottom: 0;
-    justify-content: flex-end;
-    font-size: 0.78rem;
-    line-height: 1.2;
-    flex-wrap: wrap;
-  }
+const CardHeader = styled.header`
+  display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start;
+  @media (max-width: 600px) { flex-direction: column; }
 `;
-
-export const CommentToggle = styled.button.attrs({ type: "button" })`
-  margin-top: 0.5rem;
-  background: transparent;
-  border: none;
-  color: #ffb522;
-  cursor: pointer;
-  font-weight: bold;
-  padding: 0.25rem 0;
-  text-align: left;
-
-  &:hover {
-    text-decoration: underline;
-  }
+const TitleArea = styled.div`min-width: 0;`;
+const RouteName = styled.h3`margin: 0; color: #2f2100; font-size: clamp(1.2rem, 2vw, 1.45rem); line-height: 1.2;`;
+const BadgeRow = styled.div`display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.65rem;`;
+const Badge = styled.span`
+  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.28rem 0.6rem; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 700; color: ${({ $color }) => $color || ACCENT_DARK}; background: ${({ $background }) => $background || ACCENT_SOFT};
+  border: 1px solid ${({ $color }) => $color || "rgba(217, 145, 0, 0.7)"};
+  ${({ $variant }) => $variant === "private" && css`color: #5f4a25; background: #fff; border-color: rgba(47, 33, 0, 0.2);`}
 `;
+const AuthorMeta = styled.div`display: flex; align-items: center; gap: 0.55rem; flex: 0 0 auto; color: ${TEXT_MUTED}; @media (max-width: 600px) { order: -1; }`;
+const AuthorLine = styled.div`font-size: 0.88rem; font-weight: 600; white-space: nowrap;`;
+const UserLink = styled(Link)`color: ${ACCENT_DARK}; text-decoration: none; &:hover { text-decoration: underline; } &:focus-visible { outline: 3px solid rgba(255, 181, 34, 0.35); border-radius: 3px; }`;
+const DateText = styled.time`display: block; margin-top: 0.1rem; color: rgba(47, 33, 0, 0.58); font-size: 0.75rem; white-space: nowrap;`;
+const Description = styled.p`margin: 1rem 0; color: ${TEXT_MUTED}; white-space: pre-wrap; line-height: 1.45;`;
+const StatsRow = styled.div`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; @media (max-width: 480px) { gap: 0.45rem; }`;
+const Stat = styled.div`padding: 0.72rem; min-width: 0; border-radius: 12px; background: ${ACCENT_SOFT};`;
+const StatLabel = styled.div`font-size: 0.76rem; color: #6f6f8d;`;
+const StatValue = styled.div`margin-top: 0.12rem; color: #2f2100; font-size: clamp(0.92rem, 3vw, 1.08rem); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
+const StopsSection = styled.section`margin-top: 1rem;`;
+const StopsHeading = styled.h4`margin: 0 0 0.5rem; color: #2f2100; font-size: 0.9rem; span { color: ${TEXT_MUTED}; font-weight: 600; }`;
+const StopsList = styled.div`display: flex; flex-wrap: wrap; gap: 0.45rem;`;
+const ShopPill = styled(Link)`padding: 0.35rem 0.65rem; border-radius: 999px; border: 1px solid rgba(255, 181, 34, 0.6); background: rgba(255, 181, 34, 0.1); color: ${ACCENT_DARK}; font-size: 0.82rem; text-decoration: none; &:hover { background: rgba(255, 181, 34, 0.2); } &:focus-visible { outline: 3px solid rgba(255, 181, 34, 0.35); }`;
+const PrimaryActions = styled.div`display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 1.15rem;`;
+const baseAction = css`display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: 38px; padding: 0.5rem 0.7rem; border-radius: 9px; font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: transform .15s ease, background .15s ease; &:hover { transform: translateY(-1px); } &:focus-visible { outline: 3px solid rgba(255, 181, 34, 0.4); outline-offset: 2px; }`;
+const PrimaryLink = styled.a`${baseAction}; background: ${ACCENT}; color: #2f2100; text-decoration: none; border: 1px solid rgba(255, 181, 34, .75); &:hover { background: #ffc34a; }`;
+const SecondaryButton = styled.button`${baseAction}; background: #fff; color: ${ACCENT_DARK}; border: 1px solid rgba(47, 33, 0, .16); &:hover { background: #fff8e8; }`;
+const EditButton = styled.button`${baseAction}; background: transparent; color: #6b4a00; border: 1px solid transparent; &:hover { background: rgba(255, 181, 34, .12); }`;
+const EmbedWrapper = styled.div`margin-top: 1rem; overflow: hidden; border-radius: 14px; border: 1px solid ${BORDER}; iframe, .strava-embed-placeholder { display: block; width: 100%; min-height: 320px; border: 0; }`;
+const SocialActions = styled.div`display: flex; align-items: center; flex-wrap: wrap; gap: 0.9rem; min-height: 28px; margin-top: 0.85rem; padding-top: 0.65rem; border-top: 1px solid ${BORDER};`;
+const CommentToggle = styled.button`display: inline-flex; align-items: center; gap: 0.3rem; min-height: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: ${ACCENT_DARK}; font: inherit; font-size: .85rem; font-weight: 700; line-height: 1; cursor: pointer; &:hover { text-decoration: underline; } &:focus-visible { outline: 3px solid rgba(255, 181, 34, .35); }`;

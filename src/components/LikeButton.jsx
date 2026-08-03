@@ -8,7 +8,8 @@ const LikeActions = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
-  margin-top: 0.65rem;
+  margin-top: ${({ $compact }) => ($compact ? "0" : "0.65rem")};
+  min-height: 28px;
 `;
 
 const HeartButton = styled.button.attrs({ type: "button" })`
@@ -50,7 +51,7 @@ const CountButton = styled.button.attrs({ type: "button" })`
   }
 `;
 
-const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHasLiked = null }) => {
+const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHasLiked = null, compact = false }) => {
   const { isLoggedIn } = useUser();
   const hasInitialLikeState = initialLikesCount !== null && initialHasLiked !== null;
   const [likesCount, setLikesCount] = useState(() => Number(initialLikesCount ?? 0));
@@ -143,7 +144,7 @@ const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHas
 
   return (
     <>
-      <LikeActions>
+      <LikeActions $compact={compact}>
         <HeartButton
           onClick={handleLike}
           $hasLiked={hasLiked}
