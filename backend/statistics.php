@@ -244,13 +244,15 @@ $usersByLevel = $stmtUsersByLevel->fetchAll(PDO::FETCH_ASSOC);
 
 $stmtMostEatenFlavours = $pdo->prepare("
 SELECT 
-checkin_sorten.`sortenname`,
+TRIM(checkin_sorten.`sortenname`) AS sortenname,
 checkins.typ,
 AVG(checkin_sorten.bewertung) AS bewertung,
-COUNT(checkin_sorten.id) as anzahl
+COUNT(DISTINCT checkin_sorten.checkin_id) as anzahl,
+COUNT(DISTINCT checkins.nutzer_id) as verschiedene_nutzer
 FROM checkin_sorten
 JOIN checkins ON checkins.id = checkin_sorten.checkin_id
-GROUP BY checkin_sorten.`sortenname`, checkins.typ
+WHERE TRIM(checkin_sorten.`sortenname`) <> ''
+GROUP BY TRIM(checkin_sorten.`sortenname`), checkins.typ
 ORDER BY anzahl DESC, bewertung DESC;
 ");
 $stmtMostEatenFlavours->execute();

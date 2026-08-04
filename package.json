@@ -1,6 +1,6 @@
 {
   "name": "ice-app",
-  "version": "2.14.1",
+  "version": "2.15.0",
   "private": true,
   "homepage": "https://ice-app.de/",
   "dependencies": {

@@ -31,6 +31,10 @@ Build:
 npm run build
 ```
 
+### Frontend-Cache beim Deployment
+
+`index.html` und `version.json` müssen bei Apache mit `Cache-Control: no-cache` ausgeliefert werden. Die Datei `public/.htaccess` enthält dafür die nötigen Header. Die von Vite erzeugten, gehashten JavaScript- und CSS-Dateien dürfen dagegen langfristig gecacht werden.
+
 ## Event-Simulator
 Es gibt ein lokales CLI-Skript, um Event-Aktivität für Test-Live-Map und Dashboard zu simulieren:
 

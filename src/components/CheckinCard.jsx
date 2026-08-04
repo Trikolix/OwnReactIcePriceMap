@@ -82,7 +82,11 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
               <AttributeSection>
                 <strong>Sorten:</strong>
                 {checkin.eissorten.map((sorte, index) => (
-                  <AttributeBadge key={index}>
+                  <AttributeBadge
+                    key={index}
+                    to={`/statistics/flavours/${encodeURIComponent(String(sorte.sortenname || '').trim())}?type=${encodeURIComponent(checkin.typ || 'all')}`}
+                    aria-label={`Sorten-Details für ${String(sorte.sortenname || '').trim()}`}
+                  >
                     {sorte.sortenname} ({sorte.bewertung}&#9733;)
                   </AttributeBadge>
                 ))}
@@ -281,7 +285,7 @@ const AttributeSection = styled.div`
   gap: 0.5rem;
 `;
 
-const AttributeBadge = styled.span`
+const AttributeBadge = styled(Link)`
   background: rgba(255, 181, 34, 0.12);
   color: #7a4a00;
   border: 1px solid rgba(255, 181, 34, 0.24);
@@ -289,6 +293,16 @@ const AttributeBadge = styled.span`
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 500;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.24);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 181, 34, 0.52);
+    outline-offset: 2px;
+  }
 `;
 
 const TypText = styled.em`

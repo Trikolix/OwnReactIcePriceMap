@@ -102,8 +102,6 @@ function Statistics() {
   const initialRankingArchiveKey = initialRankingPeriod === 'overall' ? '' : (searchParams.get('period_key') || '');
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const [expandedFlavour, setExpandedFlavour] = useState(null);
-  const [flavourDetails, setFlavourDetails] = useState({});
   const [rankingPeriod, setRankingPeriod] = useState(initialRankingPeriod);
   const [rankingArchiveKey, setRankingArchiveKey] = useState(initialRankingArchiveKey);
   const [rankingsData, setRankingsData] = useState(null);
@@ -255,24 +253,6 @@ function Statistics() {
       setRankingArchiveKey('');
     }
   }, [rankingArchiveKey, rankingPeriod]);
-
-  const loadFlavourDetails = async (sortenname, iceType) => {
-    const key = `${sortenname}__${iceType}`;
-
-    if (flavourDetails[key]) {
-      setExpandedFlavour(expandedFlavour === key ? null : key);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${apiUrl}/getBestShopsByFlavour.php?sortenname=${encodeURIComponent(sortenname)}&iceType=${encodeURIComponent(iceType)}`);
-      const json = await res.json();
-      setFlavourDetails(prev => ({ ...prev, [key]: json }));
-      setExpandedFlavour(key);
-    } catch (err) {
-      console.error("Fehler beim Laden der Details:", err);
-    }
-  };
 
   const normalizedSearch = priceSearch.trim().toLowerCase();
   const searchActive = normalizedSearch.length > 0;
@@ -573,12 +553,12 @@ function Statistics() {
               id="statistics-tab-popular-flavours"
               aria-controls="statistics-tabpanel"
               aria-selected={activeTab === 'mostPopularFlavours'}
-              aria-label="Beliebteste Eissorten"
+              aria-label="Am häufigsten eingetragene Sorten"
               $active={activeTab === 'mostPopularFlavours'}
               onClick={() => changeTab('mostPopularFlavours')}
             >
               <TabLabel $mobile>Sorten</TabLabel>
-              <TabLabel $desktop>beliebteste Eissorten</TabLabel>
+              <TabLabel $desktop>häufigste Sorten</TabLabel>
             </TabButton>
             <TabButton
               type="button"
@@ -937,46 +917,28 @@ function Statistics() {
             )}
 
             {activeTab === 'mostPopularFlavours' && (<SectionCard>
-              <SectionTitle>Beliebteste Sorten</SectionTitle>
+              <SectionTitle>Am häufigsten eingetragene Sorten</SectionTitle>
+              <FlavourIntro>
+                Entdecke, welche Sorten die Community am häufigsten in Check-ins eingetragen hat – und wo sie besonders überzeugend bewertet wurden.
+              </FlavourIntro>
               <MobileContent>
                 <MobileCardList>
-                  {data.mostEatenFlavours.map((entry) => {
-                    const key = `${entry.sortenname}__${entry.typ}`;
-                    const isExpanded = expandedFlavour === key;
-                    const details = flavourDetails[key] || [];
-                    return (
-                      <MobileFlavourCard key={key}>
-                        <FlavourCardToggle
-                          type="button"
-                          onClick={() => loadFlavourDetails(entry.sortenname, entry.typ)}
-                          aria-expanded={isExpanded}
-                        >
-                          <span>
-                            <strong>{entry.sortenname}</strong>
-                            <small>{entry.typ}</small>
-                          </span>
-                          <FlavourCardValues>
-                            <span>{entry.anzahl}×</span>
-                            <strong>Ø {parseFloat(entry.bewertung).toFixed(2)}</strong>
-                            <ChevronDown size={17} aria-hidden="true" />
-                          </FlavourCardValues>
-                        </FlavourCardToggle>
-                        <ExpandContainer expanded={isExpanded}>
-                          {details.length > 0 ? (
-                            <DetailList>
-                              {details.map((eisdiele) => (
-                                <li key={eisdiele.eisdiele_id}>
-                                  <strong><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.eisdiele_name}</CleanLink></strong>: Ø {parseFloat(eisdiele.durchschnittsbewertung).toFixed(2)}
-                                </li>
-                              ))}
-                            </DetailList>
-                          ) : (
-                            <EmptyText>Keine Daten verfügbar</EmptyText>
-                          )}
-                        </ExpandContainer>
-                      </MobileFlavourCard>
-                    );
-                  })}
+                  {data.mostEatenFlavours.map((entry) => (
+                    <MobileFlavourCard key={`${entry.sortenname}__${entry.typ}`}>
+                      <FlavourSummaryLink
+                        to={`/statistics/flavours/${encodeURIComponent(entry.sortenname)}?type=${encodeURIComponent(entry.typ)}`}
+                      >
+                        <span>
+                          <strong>{entry.sortenname}</strong>
+                          <small>{entry.typ}</small>
+                        </span>
+                        <FlavourCardValues>
+                          <span>{entry.anzahl}×</span>
+                          <strong>Ø {entry.bewertung !== null ? parseFloat(entry.bewertung).toFixed(2) : '–'}</strong>
+                        </FlavourCardValues>
+                      </FlavourSummaryLink>
+                    </MobileFlavourCard>
+                  ))}
                 </MobileCardList>
               </MobileContent>
               <DesktopContent>
@@ -986,43 +948,27 @@ function Statistics() {
                       <tr>
                         <Th>Geschmacksrichtung</Th>
                         <Th>Typ</Th>
-                        <Th>Anzahl</Th>
+                        <Th>Check-ins</Th>
+                        <Th>Verschiedene Nutzer</Th>
                         <Th>Ø Bewertung</Th>
+                        <Th>Details</Th>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.mostEatenFlavours.map((entry) => {
-                        const key = `${entry.sortenname}__${entry.typ}`;
-                        const isExpanded = expandedFlavour === key;
-                        const details = flavourDetails[key] || [];
-                        return (
-                          <React.Fragment key={key}>
-                            <tr onClick={() => loadFlavourDetails(entry.sortenname, entry.typ)} style={{ cursor: 'pointer' }}>
-                              <Td>{entry.sortenname}</Td>
-                              <Td>{entry.typ}</Td>
-                              <Td>{entry.anzahl}</Td>
-                              <Td>{parseFloat(entry.bewertung).toFixed(2)}</Td>
-                            </tr>
-                            <tr>
-                              <Td colSpan="4" style={{ padding: 0, border: 'none' }}>
-                                <ExpandContainer expanded={isExpanded}>
-                                  {details.length > 0 ? (
-                                    <DetailList>
-                                      {details.map((eisdiele) => (
-                                        <li key={eisdiele.eisdiele_id}>
-                                          <strong><CleanLink to={`/map/activeShop/${eisdiele.eisdiele_id}`}>{eisdiele.eisdiele_name}</CleanLink></strong>: Ø {parseFloat(eisdiele.durchschnittsbewertung).toFixed(2)}
-                                        </li>
-                                      ))}
-                                    </DetailList>
-                                  ) : (
-                                    <EmptyText>Keine Daten verfügbar</EmptyText>
-                                  )}
-                                </ExpandContainer>
-                              </Td>
-                            </tr>
-                          </React.Fragment>
-                        );
-                      })}
+                      {data.mostEatenFlavours.map((entry) => (
+                        <tr key={`${entry.sortenname}__${entry.typ}`}>
+                          <Td>{entry.sortenname}</Td>
+                          <Td>{entry.typ}</Td>
+                          <Td>{entry.anzahl}</Td>
+                          <Td>{entry.verschiedene_nutzer}</Td>
+                          <Td>{entry.bewertung !== null ? parseFloat(entry.bewertung).toFixed(2) : '–'}</Td>
+                          <Td>
+                            <CleanLink to={`/statistics/flavours/${encodeURIComponent(entry.sortenname)}?type=${encodeURIComponent(entry.typ)}`}>
+                              Sorten-Details
+                            </CleanLink>
+                          </Td>
+                        </tr>
+                      ))}
                     </tbody>
                   </Table>
                 </TableScrollArea>
@@ -2117,20 +2063,25 @@ const MobileFlavourCard = styled.article`
   background: rgba(255, 255, 255, 0.76);
 `;
 
-const FlavourCardToggle = styled.button`
-  width: 100%;
+const FlavourIntro = styled.p`
+  max-width: 720px;
+  margin: -0.35rem auto 1rem;
+  padding: 0 1rem;
+  color: rgba(47, 33, 0, 0.72);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  text-align: center;
+`;
+
+const FlavourSummaryLink = styled(Link)`
   min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
   padding: 0.65rem 0.7rem;
-  border: 0;
-  background: transparent;
   color: #2f2100;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  text-decoration: none;
 
   > span:first-child {
     display: grid;
@@ -2147,6 +2098,10 @@ const FlavourCardToggle = styled.button`
   small {
     color: rgba(95, 63, 0, 0.68);
     font-size: 0.75rem;
+  }
+
+  &:hover {
+    background: rgba(255, 181, 34, 0.12);
   }
 
   &:focus-visible {
@@ -2305,21 +2260,6 @@ const UserLink = styled(Link)`
   &:hover {
     color: #8a5600;
   }
-`;
-
-const ExpandContainer = styled.div`
-  max-height: ${(props) => (props.expanded ? '500px' : '0')};
-  overflow: hidden;
-  transition: max-height 0.4s ease;
-  background: linear-gradient(180deg, rgba(255,248,225,0.7), rgba(255,255,255,0.9));
-  padding: ${(props) => (props.expanded ? '0.5rem 1rem' : '0 1rem')};
-`;
-
-const DetailList = styled.ul`
-  margin: 0.5rem 0;
-  padding-left: 1rem;
-  list-style-type: disc;
-  font-size: 0.95rem;
 `;
 
 const EmptyText = styled.div`

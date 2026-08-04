@@ -3,6 +3,7 @@ import IceCreamRadar from "../../IceCreamRadar";
 import RoutesPage from "../../pages/Routes";
 import Ranking from "../../pages/Ranking";
 import Statistics from "../../pages/Statistics";
+import FlavourStatistics from "../../pages/FlavourStatistics";
 import RegionOverview from "../../pages/RegionOverview";
 import IceShopDetailPage from "../../pages/IceShopDetailPage";
 
@@ -15,6 +16,7 @@ export const mapRoutes = [
   { path: "/routes", element: <RoutesPage /> },
   { path: "/ranking", element: <Ranking /> },
   { path: "/statistics", element: <Statistics /> },
+  { path: "/statistics/flavours/:flavourName", element: <FlavourStatistics /> },
   { path: "/region/:level/:regionId", element: <RegionOverview /> },
   { path: "/shop/:shopId", element: <IceShopDetailPage /> },
 ];
