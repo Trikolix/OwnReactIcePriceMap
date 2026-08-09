@@ -14,6 +14,29 @@ function iceSocialReportFont(string $weight = 'regular'): string
         return '';
     }
 
+    if ($weight === 'italic') {
+        $candidates = [
+            __DIR__ . '/../assets/fonts/Nunito-Italic.ttf',
+            __DIR__ . '/../assets/fonts/Inter-Italic.ttf',
+            __DIR__ . '/../assets/fonts/DejaVuSans-Oblique.ttf',
+            'C:/Windows/Fonts/ariali.ttf',
+            'C:/Windows/Fonts/segoeuii.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf',
+            '/usr/share/fonts/dejavu/DejaVuSans-Oblique.ttf',
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf',
+            '/usr/share/fonts/truetype/liberation2/LiberationSans-Italic.ttf',
+            '/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf',
+        ];
+
+        foreach ($candidates as $font) {
+            if (is_file($font)) {
+                return $font;
+            }
+        }
+
+        return iceSocialReportFont('regular');
+    }
+
     $candidates = $weight === 'bold'
         ? [
             __DIR__ . '/../assets/fonts/Nunito.ttf',

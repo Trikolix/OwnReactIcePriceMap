@@ -39,7 +39,8 @@ export default function AGB() {
       </ul>
 
       <SubHeading>4. Nutzung von hochgeladenen Bildern</SubHeading>
-      <p>Mit dem Hochladen von Bildern räumst du uns das Recht ein, diese Bilder für den Social Media Auftritt der Ice-App (z.B. Instagram, Facebook, Website) zu verwenden und zu veröffentlichen. Die Nutzung erfolgt ausschließlich im Zusammenhang mit der Ice-App und unter Berücksichtigung deiner Urheberrechte. Solltest du mit einer Veröffentlichung nicht einverstanden sein, kannst du uns jederzeit kontaktieren.</p>
+      <p>Mit dem Hochladen von Bildern räumst du uns ein einfaches, nicht-exklusives und unentgeltliches Nutzungsrecht ein, diese Bilder im Zusammenhang mit der Ice-App zu speichern, öffentlich darzustellen und für den Social-Media-Auftritt der Ice-App (insbesondere Instagram, Facebook und die Ice-App-Website) zu verwenden. Das umfasst auch das Zuschneiden, Skalieren sowie das Einfügen von Ice-App-Branding und sachlichen Angaben zum zugehörigen Check-in, etwa Nutzername, Eisdiele, Check-in-Typ, Datum und Bewertungen.</p>
+      <p>Die Veröffentlichung erfolgt ausschließlich im Zusammenhang mit der Ice-App. Du bleibst Urheberin oder Urheber des Bildes und darfst es weiterhin selbst verwenden. Wir veröffentlichen keine E-Mail-Adresse, Nutzer-ID oder ausführlichen privaten Check-in-Kommentare. Wenn du eine künftige Nutzung nicht möchtest, kannst du uns jederzeit unter <a href="mailto:admin@ice-app.de">admin@ice-app.de</a> kontaktieren. Bereits veröffentlichte Beiträge können bei einem berechtigten Widerruf nicht in jedem Fall aus bereits geteilten oder archivierten Inhalten Dritter entfernt werden; wir entfernen die Inhalte aus unseren eigenen Veröffentlichungs- und Exportprozessen so schnell wie möglich.</p>
 
       <SubHeading>5. Haftung</SubHeading>
       <p>Wir übernehmen keine Haftung für die Inhalte der Nutzer oder die Verfügbarkeit und Funktion der App.</p>

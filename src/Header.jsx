@@ -791,6 +791,7 @@ const Header = ({ refreshShops }) => {
                           <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}>Tour de Glace Femmes verwalten</MenuSubItemLink>
                         </MenuSubmenu>
                       )}
+                      <MenuItemLink to="/admin/instagram" onClick={closeMenu}>Instagram-Fotoexport</MenuItemLink>
                       <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
                       <MenuItemLink to="/shop-change-requests" onClick={closeMenu}>Änderungsvorschläge</MenuItemLink>
                     </MenuSection>

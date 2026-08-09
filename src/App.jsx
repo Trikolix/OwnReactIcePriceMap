@@ -3,6 +3,7 @@ import { UserProvider } from './context/UserContext';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { coreRoutes } from './features/core/routes';
 import { eventRoutes } from './features/event/routes';
+import { socialMediaRoutes } from './features/socialMedia/routes';
 import { mapRoutes } from './features/map/routes';
 import { challengeRoutes } from './features/challenges/routes';
 import { photoChallengeRoutes } from './features/photoChallenge/routes';
@@ -23,6 +24,7 @@ const allRoutes = [
   ...photoChallengeRoutes,
   ...userRoutes,
   ...eventRoutes,
+  ...socialMediaRoutes,
 ];
 
 const ScrollToTopOnRouteChange = () => {
