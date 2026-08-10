@@ -114,7 +114,7 @@ function ensureNotificationTypeSchema(PDO $pdo): void
         $stmt = $pdo->query("SHOW COLUMNS FROM benachrichtigungen LIKE 'typ'");
         $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
         $type = (string)($column['Type'] ?? '');
-        if ($type && strpos($type, "'like'") === false) {
+        if ($type && strpos($type, "'ice_date'") === false) {
             $pdo->exec("
                 ALTER TABLE benachrichtigungen
                 MODIFY COLUMN typ ENUM(
@@ -126,6 +126,7 @@ function ensureNotificationTypeSchema(PDO $pdo): void
                     'kommentar_route',
                     'kommentar_new_user',
                     'team_challenge',
+                    'ice_date',
                     'engagement',
                     'photo_challenge',
                     'kommentar_award',
@@ -219,6 +220,8 @@ function notificationTypeToSettingField(string $type): string
             return 'notify_checkin_mention';
         case 'team_challenge':
             return 'notify_team_challenge';
+        case 'ice_date':
+            return 'notify_ice_date';
         case 'systemmeldung':
         case 'engagement':
             return 'notify_news';
@@ -250,11 +253,13 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
             notify_comment_participated,
             notify_news,
             notify_team_challenge,
+            notify_ice_date,
             notify_checkin_mention_push,
             notify_comment_push,
             notify_comment_participated_push,
             notify_news_push,
             notify_team_challenge_push,
+            notify_ice_date_push,
             notify_photo_challenge,
             notify_photo_challenge_push,
             notify_mention,
@@ -280,11 +285,13 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
         'notify_comment_participated' => 1,
         'notify_news' => 0,
         'notify_team_challenge' => 1,
+        'notify_ice_date' => 1,
         'notify_checkin_mention_push' => 1,
         'notify_comment_push' => 1,
         'notify_comment_participated_push' => 1,
         'notify_news_push' => 0,
         'notify_team_challenge_push' => 1,
+        'notify_ice_date_push' => 1,
         'notify_photo_challenge' => 1,
         'notify_photo_challenge_push' => 1,
         'notify_mention' => 1,
@@ -441,6 +448,9 @@ function buildNotificationDeeplink(array $notification): ?string
         case 'team_challenge':
             $challengeId = (int)($data['team_challenge_id'] ?? $notification['referenz_id']);
             return $challengeId > 0 ? '/challenge?tab=team&teamChallengeId=' . $challengeId : '/challenge?tab=team';
+        case 'ice_date':
+            $dateId = (int)($data['ice_date_id'] ?? $notification['referenz_id']);
+            return $dateId > 0 ? '/ice-date?id=' . $dateId : '/ice-date';
         case 'systemmeldung':
             return $recipientId > 0
                 ? '/user/' . $recipientId . '?systemmeldungId=' . (int)$notification['referenz_id'] . '&notificationId=' . (int)$notification['id']

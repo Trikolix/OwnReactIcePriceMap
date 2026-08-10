@@ -40,6 +40,8 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_news_push: 1,
     notify_team_challenge: 1,
     notify_team_challenge_push: 1,
+    notify_ice_date: 1,
+    notify_ice_date_push: 1,
     notify_photo_challenge: 1,
     notify_photo_challenge_push: 1,
     notify_like: 0,
@@ -736,6 +738,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <td>Likes auf Beiträge</td>
               <td><input type="checkbox" name="notify_like" checked={!!settings.notify_like} onChange={handleChange} /></td>
               <td><input type="checkbox" name="notify_like_push" checked={!!settings.notify_like_push} onChange={handleChange} /></td>
+            </tr>
+            <tr>
+              <td>Eis-Dates</td>
+              <td><input type="checkbox" name="notify_ice_date" checked={!!settings.notify_ice_date} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_ice_date_push" checked={!!settings.notify_ice_date_push} onChange={handleChange} /></td>
             </tr>
           </tbody>
         </SettingsTable>

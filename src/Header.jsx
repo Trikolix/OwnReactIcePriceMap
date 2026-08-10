@@ -9,7 +9,29 @@ import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import {
+  Activity,
+  Award,
+  BarChart3,
+  Bell,
+  Bike,
+  CalendarDays,
+  Camera,
+  ClipboardList,
+  Info,
+  Instagram,
+  LogIn,
+  LogOut,
+  Map,
+  Megaphone,
+  Route,
+  Store,
+  Sun,
+  Target,
+  Trophy,
+  UserRound,
+  Wrench,
+} from 'lucide-react';
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
@@ -652,6 +674,7 @@ const Header = ({ refreshShops }) => {
         </LogoContainer>
         <DesktopNav aria-label="Hauptnavigation">
           <DesktopNavLink to="/" end>Karte</DesktopNavLink>
+          <DesktopNavLink to="/challenge">Challenges</DesktopNavLink>
           <DesktopNavLink to="/photo-challenge" $compact={hasActivePhotoChallenge}>
             Foto-Challenges
             {hasActivePhotoChallenge && (<DesktopNavBadge>AKTIV</DesktopNavBadge>)}
@@ -726,36 +749,37 @@ const Header = ({ refreshShops }) => {
 
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
-              <MenuItemLink to="/aktionen" onClick={closeMenu}>Aktionen &amp; Rückblicke</MenuItemLink>
-              <MenuItemLink to="/" end onClick={closeMenu}>Karte</MenuItemLink>
+              <MenuItemLink to="/aktionen" onClick={closeMenu}><MenuLabel icon={CalendarDays}>Aktionen &amp; Rückblicke</MenuLabel></MenuItemLink>
+              <MenuItemLink to="/" end onClick={closeMenu}><MenuLabel icon={Map}>Karte</MenuLabel></MenuItemLink>
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
-                Foto-Challenges
+                <MenuLabel icon={Camera}>Foto-Challenges</MenuLabel>
                 {hasActivePhotoChallenge && <MenuItemBadge>AKTIV</MenuItemBadge>}
               </MenuItemLink>
               <MenuItemLink to="/dashboard" onClick={closeMenu}>
-                Aktivitäten
+                <MenuLabel icon={Activity}>Aktivitäten</MenuLabel>
                 {dashboardNewCount > 0 && <MenuItemBadge>{dashboardNewCount} neu</MenuItemBadge>}
               </MenuItemLink>
-              <MenuItemLink to="/ranking" onClick={closeMenu}>Top Eisdielen</MenuItemLink>
-              <MenuItemLink to="/statistics" onClick={closeMenu}>Statistiken</MenuItemLink>
-              <MenuItemLink to="/routes" onClick={closeMenu}>Routen</MenuItemLink>
+              <MenuItemLink to="/ranking" onClick={closeMenu}><MenuLabel icon={Trophy}>Top Eisdielen</MenuLabel></MenuItemLink>
+              <MenuItemLink to="/statistics" onClick={closeMenu}><MenuLabel icon={BarChart3}>Statistiken</MenuLabel></MenuItemLink>
+              <MenuItemLink to="/routes" onClick={closeMenu}><MenuLabel icon={Route}>Routen</MenuLabel></MenuItemLink>
             </MenuSection>
 
             <MenuDivider />
             <MenuSection>
               <MenuSectionTitle>Erlebnisse &amp; Rückblicke</MenuSectionTitle>
-              <MenuItemLink to="/ice-tour" onClick={closeMenu}>Ice-Tour 2026 Rückblick</MenuItemLink>
+              <MenuItemLink to="/ice-tour" onClick={closeMenu}><MenuLabel icon={Bike}>Ice-Tour 2026 Rückblick</MenuLabel></MenuItemLink>
             </MenuSection>
             <MenuDivider />
             {isLoggedIn ? (
               <>
                 <MenuSection>
                   <MenuSectionTitle>Mein Konto</MenuSectionTitle>
-                  <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}>Profil</MenuItemLink>
-                  <MenuItemLink to="/challenge" onClick={closeMenu}>Challenges</MenuItemLink>
-                  {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}>Pflegeboard</MenuItemLink>}
-                  {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>)}
-                  {userId == 2 && (<MenuItemLink to="/admin/push-stats" onClick={closeMenu}>Push-Statistik</MenuItemLink>)}
+                  <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}><MenuLabel icon={UserRound}>Profil</MenuLabel></MenuItemLink>
+                  <MenuItemLink to="/challenge" onClick={closeMenu}><MenuLabel icon={Target}>Challenges</MenuLabel></MenuItemLink>
+                  <MenuItemLink to="/ice-date" onClick={closeMenu}><MenuLabel icon={CalendarDays}>Eis-Dates</MenuLabel></MenuItemLink>
+                  {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}><MenuLabel icon={Wrench}>Pflegeboard</MenuLabel></MenuItemLink>}
+                  {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}><MenuLabel icon={BarChart3}>Wochenstatistik</MenuLabel></MenuItemLink>)}
+                  {userId == 2 && (<MenuItemLink to="/admin/push-stats" onClick={closeMenu}><MenuLabel icon={Bell}>Push-Statistik</MenuLabel></MenuItemLink>)}
                   <MenuActionButton
                     type="button"
                     onClick={() => {
@@ -763,7 +787,7 @@ const Header = ({ refreshShops }) => {
                       closeMenu();
                     }}
                   >
-                    Eisdiele hinzufügen
+                    <MenuLabel icon={Store}>Eisdiele hinzufügen</MenuLabel>
                   </MenuActionButton>
                 </MenuSection>
                 {isAdmin && (
@@ -771,36 +795,36 @@ const Header = ({ refreshShops }) => {
                     <MenuDivider />
                     <MenuSection>
                       <MenuSectionTitle>Admin</MenuSectionTitle>
-                      <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}>Wochenstatistik</MenuItemLink>
-                      <MenuItemLink to="/admin/push-stats" onClick={closeMenu}>Push-Statistik</MenuItemLink>
-                      <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}>Systemmeldung erstellen</MenuItemLink>
+                      <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}><MenuLabel icon={BarChart3}>Wochenstatistik</MenuLabel></MenuItemLink>
+                      <MenuItemLink to="/admin/push-stats" onClick={closeMenu}><MenuLabel icon={Bell}>Push-Statistik</MenuLabel></MenuItemLink>
+                      <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}><MenuLabel icon={Megaphone}>Systemmeldung erstellen</MenuLabel></MenuItemLink>
                       <MenuSubmenuButton
                         type="button"
                         onClick={() => setAwardsActionsOpen((isOpen) => !isOpen)}
                         aria-expanded={awardsActionsOpen}
                         $active={isAwardsActionsActive}
                       >
-                        <span>Awards / Aktionen</span>
+                        <MenuLabel icon={Award}>Awards / Aktionen</MenuLabel>
                         <MenuSubmenuIndicator>{awardsActionsOpen ? '-' : '+'}</MenuSubmenuIndicator>
                       </MenuSubmenuButton>
                       {awardsActionsOpen && (
                         <MenuSubmenu>
-                          <MenuSubItemLink to="/awards-admin" onClick={closeMenu}>Awards verwalten</MenuSubItemLink>
-                          <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}>Sommer-QR-Aktion verwalten</MenuSubItemLink>
-                          <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}>Tour de Glace verwalten</MenuSubItemLink>
-                          <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}>Tour de Glace Femmes verwalten</MenuSubItemLink>
+                          <MenuSubItemLink to="/awards-admin" onClick={closeMenu}><MenuLabel icon={Award}>Awards verwalten</MenuLabel></MenuSubItemLink>
+                          <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}><MenuLabel icon={Sun}>Sommer-QR-Aktion verwalten</MenuLabel></MenuSubItemLink>
+                          <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}><MenuLabel icon={Bike}>Tour de Glace verwalten</MenuLabel></MenuSubItemLink>
+                          <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}><MenuLabel icon={Bike}>Tour de Glace Femmes verwalten</MenuLabel></MenuSubItemLink>
                         </MenuSubmenu>
                       )}
-                      <MenuItemLink to="/admin/instagram" onClick={closeMenu}>Instagram-Fotoexport</MenuItemLink>
-                      <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}>Fotochallenges verwalten</MenuItemLink>
-                      <MenuItemLink to="/shop-change-requests" onClick={closeMenu}>Änderungsvorschläge</MenuItemLink>
+                      <MenuItemLink to="/admin/instagram" onClick={closeMenu}><MenuLabel icon={Instagram}>Instagram-Fotoexport</MenuLabel></MenuItemLink>
+                      <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}><MenuLabel icon={Camera}>Fotochallenges verwalten</MenuLabel></MenuItemLink>
+                      <MenuItemLink to="/shop-change-requests" onClick={closeMenu}><MenuLabel icon={ClipboardList}>Änderungsvorschläge</MenuLabel></MenuItemLink>
                     </MenuSection>
                   </>
                 )}
                 <MenuDivider />
                 <MenuSection>
                   <MenuActionButton onClick={() => { logout(); closeMenu(); }} type="button" $danger>
-                    Ausloggen
+                    <MenuLabel icon={LogOut}>Ausloggen</MenuLabel>
                   </MenuActionButton>
                 </MenuSection>
               </>
@@ -808,7 +832,7 @@ const Header = ({ refreshShops }) => {
               <MenuSection>
                 <MenuSectionTitle>Konto</MenuSectionTitle>
                 <MenuActionButton onClick={() => { setShowLoginModal(true); closeMenu(); }} type="button">
-                  Einloggen
+                  <MenuLabel icon={LogIn}>Einloggen</MenuLabel>
                 </MenuActionButton>
               </MenuSection>
             )}
@@ -816,14 +840,14 @@ const Header = ({ refreshShops }) => {
             <MenuDivider />
             <MenuSection>
               <MenuSectionTitle>Info</MenuSectionTitle>
-              <MenuItemLink to="/impressum" onClick={closeMenu}>Über diese Website</MenuItemLink>
+              <MenuItemLink to="/impressum" onClick={closeMenu}><MenuLabel icon={Info}>Über diese Website</MenuLabel></MenuItemLink>
               <MenuItemAnchor
                 href="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                 target="_blank"
                 rel="noreferrer"
                 onClick={closeMenu}
               >
-                Instagram
+                <MenuLabel icon={Instagram}>Instagram</MenuLabel>
               </MenuItemAnchor>
             </MenuSection>
           </Menu>
@@ -890,6 +914,30 @@ const Header = ({ refreshShops }) => {
 };
 
 export default Header;
+
+const MenuLabel = ({ icon: Icon, children }) => (
+  <MenuLabelRoot>
+    <MenuItemIcon as={Icon} size={18} strokeWidth={2} aria-hidden="true" />
+    <span>{children}</span>
+  </MenuLabelRoot>
+);
+
+const MenuLabelRoot = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.2;
+`;
+
+const MenuItemIcon = styled.span`
+  display: block;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+`;
 
 const HeaderContainer = styled.header`
   display: flex;
@@ -1326,6 +1374,7 @@ const MenuDivider = styled.hr`
 const menuItemBase = `
   display: flex;
   align-items: center;
+  gap: 10px;
   width: 95%;
   min-height: 25px;
   padding: 9px 10px;
@@ -1416,7 +1465,7 @@ const MenuSubItemLink = styled(MenuItemLink)`
 `;
 
 const MenuItemBadge = styled.span`
-  margin-left: 8px;
+  margin-left: auto;
   padding: 2px 7px;
   border-radius: 999px;
   background: #ef4444;

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useMediaQuery } from 'react-responsive';
 import styled from 'styled-components';
-import { Map, Navigation, X } from 'lucide-react';
+import { CalendarDays, Map, Navigation, X } from 'lucide-react';
 import { SubmitButton as SharedSubmitButton } from './styles/SharedStyles';
 import { Link, useSearchParams } from 'react-router-dom';
 import Rating from './components/Rating';
@@ -335,12 +335,17 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
             </HeaderUtilityRow>
           </HeaderActions>
         </Header>
-        {isLoggedIn && (
-          <HeaderCtaBar>
+        <HeaderCtaBar>
+          {isLoggedIn && (
+            <>
             <PrimaryButton type="button" onClick={() => setShowCheckinForm(true)}>Einchecken</PrimaryButton>
             <PrimaryButton type="button" onClick={() => setShowReviewForm(true)}>Bewerten</PrimaryButton>
-          </HeaderCtaBar>
-        )}
+            </>
+          )}
+          <PrimaryButton as={Link} to={`/ice-date/new?shopId=${shopData.eisdiele.id}`}>
+            <CalendarDays size={15} /> Eis-Date planen
+          </PrimaryButton>
+        </HeaderCtaBar>
         <Tabs>
           <Tab type="button" onClick={() => setActiveTab('info')} $active={activeTab === 'info'}>Allgemein</Tab>
           <Tab type="button" onClick={() => setActiveTab('checkins')} $active={activeTab === 'checkins'}>Check-ins</Tab>
@@ -989,9 +994,10 @@ const HeaderMeta = styled.div`
 
 const HeaderCtaBar = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 0.4rem;
   margin: 0.55rem;
+  min-width: 0;
 `;
 
 const IceShopHeader = styled.h2`
@@ -1234,7 +1240,9 @@ const SecondaryActionRow = styled.div`
 `;
 
 const Button = styled(SharedSubmitButton)`
+  box-sizing: border-box;
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -1261,14 +1269,22 @@ const Button = styled(SharedSubmitButton)`
 const PrimaryButton = styled(Button)`
   width: 100%;
   max-width: none;
+  gap: 0.35rem;
   border-color: rgba(255, 181, 34, 0.6);
   background: linear-gradient(180deg, #ffcf63 0%, #ffb522 100%);
   color: #2f2100;
+  font-family: inherit;
   font-size: 0.9rem;
   padding: 0.48rem 0.82rem;
   border-radius: 10px;
   min-height: 0;
+  text-decoration: none;
+  white-space: nowrap;
   box-shadow: 0 4px 12px rgba(255, 181, 34, 0.2);
+
+  &:visited {
+    color: #2f2100;
+  }
 
   &:hover {
     background: linear-gradient(180deg, #ffd879 0%, #ffbf3f 100%);

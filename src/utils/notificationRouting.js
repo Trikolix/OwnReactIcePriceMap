@@ -51,6 +51,10 @@ export const buildNotificationDeeplink = (notification, userId) => {
       const challengeId = data.team_challenge_id || notification?.referenz_id;
       return challengeId ? `/challenge?tab=team&teamChallengeId=${challengeId}` : "/challenge?tab=team";
     }
+    case "ice_date": {
+      const dateId = data.ice_date_id || notification?.referenz_id;
+      return dateId ? `/ice-date?id=${dateId}` : "/ice-date";
+    }
     case "systemmeldung": {
       const targetUserId = userId || notification?.empfaenger_id;
       return targetUserId

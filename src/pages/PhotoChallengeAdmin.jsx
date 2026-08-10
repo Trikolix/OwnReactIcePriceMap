@@ -289,7 +289,7 @@ function PhotoChallengeAdmin() {
     const firstOpenRound = Math.min(...openMatches.map((match) => Number(match.round) || 1));
     return openMatches.filter((match) => (Number(match.round) || 1) === firstOpenRound);
   }, [overview?.ko_matches]);
-  const isFinalKoRound = challengeStatus === 'ko_running' && activeKoMatches.length === 1;
+  const isFinalKoRound = challengeStatus === 'ko_running' && activeKoMatches.filter((match) => (match.bracket_type || 'main') === 'main').length === 1;
   const hasStoryGroups = Boolean(overview?.groups?.length);
   const hasStoryKoMatches = activeKoMatches.length > 0;
   const hasStoryResults = Boolean(
@@ -1162,7 +1162,9 @@ function PhotoChallengeAdmin() {
                         {koAdvanceLoading
                           ? 'Schließe…'
                           : isFinalKoRound
-                            ? 'Finale abschließen und Challenge beenden'
+                            ? activeKoMatches.some((match) => match.bracket_type === 'third_place')
+                              ? 'Finale + Platz 3 abschließen'
+                              : 'Finale abschließen und Challenge beenden'
                             : 'Aktuelle KO-Runde abschließen'}
                       </SecondaryButton>
                     </ActionButtonRow>
@@ -1954,24 +1956,40 @@ function PhotoChallengeAdmin() {
                     2: 'Halbfinale',
                     1: 'Finale',
                   };
-                  return sortedRounds.map((round) => {
-                    const matches = groupedByRound[round];
-                    const phaseLabel = roundPhaseMap[matches.length] || `Runde ${round}`;
-                    return (
-                      <div key={round} style={{ marginBottom: '1.5rem' }}>
-                        <SectionTitle>{phaseLabel}</SectionTitle>
-                        <MatchesList>
-                          {matches.map((match) =>
-                            renderCompactMatch(
-                              match,
-                              getMatchStatusMeta({ matchStatus: match.status, round: match.round }),
-                              openImageLightbox
-                            )
-                          )}
-                        </MatchesList>
-                      </div>
-                    );
-                  });
+                  return (
+                    <AdminKoBoard>
+                      {sortedRounds.map((round) => {
+                        const matches = groupedByRound[round];
+                        const mainMatches = matches.filter((match) => (match.bracket_type || 'main') === 'main');
+                        const thirdPlaceMatches = matches.filter((match) => match.bracket_type === 'third_place');
+                        const phaseLabel = roundPhaseMap[mainMatches.length] || `Runde ${round}`;
+                        return (
+                          <AdminKoRound key={round}>
+                            <SectionTitle>{phaseLabel}</SectionTitle>
+                            <MatchesList>
+                              {mainMatches.map((match) =>
+                                renderCompactMatch(
+                                  match,
+                                  getMatchStatusMeta({ matchStatus: match.status, round: match.round }),
+                                  openImageLightbox
+                                )
+                              )}
+                              {thirdPlaceMatches.length > 0 && (
+                                <SectionTitle>Duell um Platz 3</SectionTitle>
+                              )}
+                              {thirdPlaceMatches.map((match) =>
+                                renderCompactMatch(
+                                  match,
+                                  getMatchStatusMeta({ matchStatus: match.status, round: match.round }),
+                                  openImageLightbox
+                                )
+                              )}
+                            </MatchesList>
+                          </AdminKoRound>
+                        );
+                      })}
+                    </AdminKoBoard>
+                  );
                 })()}
               </PanelCard>
             ) : null}
@@ -1979,9 +1997,14 @@ function PhotoChallengeAdmin() {
         )}
       </Content>
       {lightboxImage && (
-        <LightboxOverlay onClick={() => setLightboxImage(null)}>
-          <LightboxCard onClick={(event) => event.stopPropagation()}>
-            <LightboxClose type="button" onClick={() => setLightboxImage(null)}>
+        <LightboxOverlay onClick={() => setLightboxImage(null)} role="presentation">
+          <LightboxCard
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={lightboxImage.title || 'Challenge-Bild'}
+          >
+            <LightboxClose type="button" onClick={() => setLightboxImage(null)} aria-label="Bildansicht schließen">
               Schließen
             </LightboxClose>
             <LightboxImage src={lightboxImage.src} alt={lightboxImage.alt} />
@@ -2012,7 +2035,7 @@ const ToggleImagesButton = styled.button`
 
 const PageWrapper = styled.div`
   min-height: 100vh;
-  background: #fef7ef;
+  background: #f7f4ec;
 `;
 
 const Content = styled.main`
@@ -2022,7 +2045,14 @@ const Content = styled.main`
 `;
 
 const HeroSection = styled.section`
+  display: grid;
+  gap: 0.45rem;
   margin-bottom: 1.5rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid #eee2c8;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fffdf8, #fff4d8);
+  box-shadow: 0 16px 34px rgba(48, 39, 13, 0.06);
 
   h1 {
     margin: 0 0 0.5rem;
@@ -2065,7 +2095,8 @@ const PanelCard = styled.div`
   border-radius: 20px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eee8da;
+  box-shadow: 0 18px 42px rgba(48, 39, 13, 0.08);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -2151,6 +2182,17 @@ const SecondaryButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   align-self: flex-start;
+
+  &:hover:not(:disabled) {
+    border-color: #e5b53d;
+    background: #fff8e4;
+    color: #8a5d00;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(229, 181, 61, 0.28);
+    outline-offset: 2px;
+  }
 `;
 
 const ChallengeList = styled.div`
@@ -2166,6 +2208,18 @@ const ChallengeCard = styled.button`
   background: ${({ $active }) => ($active ? '#fff8ea' : '#fff')};
   text-align: left;
   cursor: pointer;
+  transition: box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+
+  &:hover {
+    border-color: #e5b53d;
+    background: #fffdf8;
+    box-shadow: 0 10px 24px rgba(48, 39, 13, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(229, 181, 61, 0.28);
+    outline-offset: 2px;
+  }
 
   h4 {
     margin: 0 0 0.2rem;
@@ -2732,7 +2786,7 @@ const VoteStatRow = styled.div`
 const LightboxOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(18, 18, 24, 0.78);
+  background: rgba(8, 10, 19, 0.88);
   z-index: 1100;
   display: flex;
   align-items: center;
@@ -2741,34 +2795,79 @@ const LightboxOverlay = styled.div`
 `;
 
 const LightboxCard = styled.div`
+  position: relative;
   width: min(960px, 100%);
-  max-height: 90vh;
-  background: #fff;
+  max-height: calc(100dvh - 2rem);
+  background: transparent;
   border-radius: 18px;
-  padding: 1rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 `;
 
 const LightboxClose = styled.button`
-  align-self: flex-end;
-  border: 1px solid #ddd;
-  background: #fff;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(8, 10, 19, 0.62);
+  color: #fff;
   border-radius: 999px;
-  padding: 0.45rem 0.9rem;
+  padding: 0;
   cursor: pointer;
 `;
 
+const AdminKoBoard = styled.div`
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem 0.75rem;
+  scrollbar-color: #d7b75f transparent;
+
+  @media (max-width: 720px) {
+    grid-auto-columns: minmax(78vw, 1fr);
+    scroll-snap-type: x mandatory;
+  }
+`;
+
+const AdminKoRound = styled.div`
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid #eee8da;
+  border-radius: 16px;
+  background: #fffdf8;
+  scroll-snap-align: start;
+
+  h4 {
+    margin-top: 0;
+  }
+`;
+
 const LightboxImage = styled.img`
+  display: block;
   width: 100%;
-  max-height: calc(90vh - 6rem);
+  max-height: calc(100dvh - 2rem);
   object-fit: contain;
   border-radius: 12px;
-  background: #f5f5f7;
+  background: #121625;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.45);
 `;
 
 const LightboxCaption = styled.div`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 3rem 1rem 1rem;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(transparent, rgba(8, 10, 19, 0.86));
+  color: #fff;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;

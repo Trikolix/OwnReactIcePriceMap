@@ -6,6 +6,7 @@ require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
 require_once __DIR__ . '/../lib/mention_utils.php';
 require_once __DIR__ . '/../lib/team_challenges.php';
+require_once __DIR__ . '/../lib/ice_dates.php';
 require_once __DIR__ . '/../lib/external_shop_discovery.php';
 require_once __DIR__ . '/../lib/user_notification_settings.php';
 require_once __DIR__ . '/../lib/tour_de_glace.php';
@@ -265,6 +266,7 @@ try {
     // Schema-Checks koennen implizite Commits ausloesen (z. B. ALTER TABLE).
     // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
     ensureTeamChallengeSchema($pdo);
+    ensureIceDateSchema($pdo);
     ensureUserNotificationSettingsSchema($pdo);
     ensurePushInfrastructureSchema($pdo);
     ensureExternalShopDiscoverySchema($pdo);
@@ -649,6 +651,15 @@ try {
         }
     }
 
+    $completedIceDate = null;
+    if ($isOnSite) {
+        try {
+            $completedIceDate = iceDateRecordCheckin($pdo, (int)$userId, (int)$shopId, (int)$checkinId);
+        } catch (Throwable $e) {
+            error_log('Ice-Date Check-in konnte nicht verknüpft werden: ' . $e->getMessage());
+        }
+    }
+
     try {
         $evaluated = (new TourDeGlaceAwardEvaluator())->evaluate((int)$userId);
         $newAwards = array_merge($newAwards, $evaluated);
@@ -700,6 +711,7 @@ try {
         'level_name' => $levelChange['level_up'] ? $levelChange['level_name'] : null,
         'completed_challenge' => $completedChallenge ?? null,
         'completed_team_challenge' => $completedTeamChallenge,
+        'completed_ice_date' => $completedIceDate,
         'tour_de_glace_points' => $tourDeGlacePoints
     ]);
 

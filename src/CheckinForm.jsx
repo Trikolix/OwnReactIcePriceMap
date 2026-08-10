@@ -70,6 +70,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [levelUpInfo, setLevelUpInfo] = useState(null);
     const [challenges, setChallenges] = useState([]);
     const [teamChallengeCompletion, setTeamChallengeCompletion] = useState(null);
+    const [iceDateCompletion, setIceDateCompletion] = useState(null);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -297,7 +298,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 if (!checkinId && !referencedCheckinId && data.checkin_id) {
                     suggestionsFound = await loadGroupSuggestions(data.checkin_id);
                 }
-                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null)) {
+                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null) || (data.completed_ice_date !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
                             level: data.new_level,
@@ -312,6 +313,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     }
                     if (data.completed_team_challenge !== null) {
                         setTeamChallengeCompletion(data.completed_team_challenge);
+                    }
+                    if (data.completed_ice_date !== null) {
+                        setIceDateCompletion(data.completed_ice_date);
                     }
 
                     if (!checkinId && shouldAskForPriceUpdate(shop)) {
@@ -869,6 +873,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             <p>
                                 Dein Check-in bei <strong>{teamChallengeCompletion.shop_name}</strong> wurde für die Team-Challenge gespeichert.
                             </p>
+                        )}
+                    </TeamChallengeSuccessBox>
+                )}
+                {iceDateCompletion && (
+                    <TeamChallengeSuccessBox>
+                        <h3>Gemeinsames Eis-Date</h3>
+                        {iceDateCompletion.status === 'completed' ? (
+                            <p>Ihr habt euer Eis-Date bei <strong>{iceDateCompletion.shop_name}</strong> gemeinsam festgehalten.</p>
+                        ) : (
+                            <p>Dein Check-in wurde für das Eis-Date bei <strong>{iceDateCompletion.shop_name}</strong> gespeichert.</p>
                         )}
                     </TeamChallengeSuccessBox>
                 )}

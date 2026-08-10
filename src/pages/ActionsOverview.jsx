@@ -13,6 +13,7 @@ import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
 import TourDeGlacePanel from '../features/seasonal/TourDeGlacePanel';
 import TourDeGlaceFemmePanel from '../features/seasonal/TourDeGlaceFemmePanel';
+import { trackEvent } from '../utils/analytics';
 
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
@@ -127,6 +128,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
   const [activeBreakdownUserId, setActiveBreakdownUserId] = useState(null);
   const [photoChallenges, setPhotoChallenges] = useState([]);
   const [isPhotoChallengesLoading, setIsPhotoChallengesLoading] = useState(false);
+  const [challengeSummary, setChallengeSummary] = useState({ personal: 0, team: 0, invitations: 0 });
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [activeArchiveId, setActiveArchiveId] = useState(null);
@@ -202,6 +204,24 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
         setBreakdownByUser({});
       })
       .finally(() => setIsOlympicsLoading(false));
+  }, [apiUrl, open, userId]);
+
+  useEffect(() => {
+    if (!open || !apiUrl || !userId) {
+      setChallengeSummary({ personal: 0, team: 0, invitations: 0 });
+      return;
+    }
+
+    Promise.all([
+      fetch(`${apiUrl}/api/challenge_list.php?nutzer_id=${encodeURIComponent(userId)}`).then((res) => res.json()),
+      fetch(`${apiUrl}/api/team_challenge_list.php?user_id=${encodeURIComponent(userId)}`).then((res) => res.json()),
+    ]).then(([personal, team]) => {
+      setChallengeSummary({
+        personal: Array.isArray(personal) ? personal.filter((challenge) => !Number(challenge.completed)).length : 0,
+        team: Array.isArray(team?.active_challenges) ? team.active_challenges.length : 0,
+        invitations: Array.isArray(team?.received_invitations) ? team.received_invitations.length : 0,
+      });
+    }).catch(() => setChallengeSummary({ personal: 0, team: 0, invitations: 0 }));
   }, [apiUrl, open, userId]);
 
   useEffect(() => {
@@ -293,6 +313,25 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
     && now < femmeCampaign.schedule.resultsHighlightEnd;
   const femmeResultsArchived = femmeCampaign?.status === CAMPAIGN_STATUS.RESULTS && !femmeResultsHighlighted;
   const taskItems = [
+    isLoggedIn && {
+      id: 'ice-app-challenges',
+      type: 'challenge',
+      title: challengeSummary.invitations > 0
+        ? `${challengeSummary.invitations} Team-Einladung${challengeSummary.invitations === 1 ? '' : 'en'}`
+        : challengeSummary.team > 0
+          ? 'Deine Team-Challenge wartet'
+          : 'Zufallsziel für heute',
+      description: challengeSummary.invitations > 0
+        ? 'Nimm eine Einladung an und plant euren gemeinsamen Eis-Stopp.'
+        : challengeSummary.personal > 0
+          ? `${challengeSummary.personal} persönliche Challenge${challengeSummary.personal === 1 ? '' : 's'} sind aktiv.`
+          : 'Entdecke eine neue Eisdiele in deiner Nähe und sammle nebenbei Extra-EP.',
+      statusLabel: challengeSummary.invitations > 0 ? 'Antworten' : challengeSummary.personal > 0 || challengeSummary.team > 0 ? 'Aktiv' : 'Bereit',
+      statusTone: challengeSummary.invitations > 0 ? 'available' : challengeSummary.personal > 0 || challengeSummary.team > 0 ? 'active' : 'available',
+      priority: 1,
+      ctaLabel: challengeSummary.invitations > 0 ? 'Einladung öffnen' : 'Challenges öffnen',
+      ctaTarget: challengeSummary.invitations > 0 ? '/challenge?tab=team' : '/challenge',
+    },
     activePhotoChallenges.length > 0 && {
       id: 'photo-challenges',
       type: 'photo_challenge',
@@ -384,7 +423,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
       onClick: () => openDetailPanel('summer_2026', { toggle: true }),
     },
   ].filter(Boolean).sort((left, right) => left.priority - right.priority);
-  const pageTaskItems = fullPage ? taskItems.filter((task) => task.type === 'photo_challenge') : taskItems;
+  const pageTaskItems = fullPage ? taskItems.filter((task) => ['photo_challenge', 'challenge'].includes(task.type)) : taskItems;
   const visibleTasks = fullPage || showAllTasks ? pageTaskItems : pageTaskItems.slice(0, 3);
   const actionCampaignCards = displayCampaigns.filter((campaign) => (
     ['summer_2026', 'tour_de_glace_2026', 'tour_de_glace_femme_2026'].includes(campaign.id)
@@ -623,7 +662,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
                     <p>{task.description}</p>
                   </TaskContent>
                   {task.ctaTarget ? (
-                    <TaskLink to={task.ctaTarget} onClick={onClose}>{task.ctaLabel}</TaskLink>
+                  <TaskLink to={task.ctaTarget} onClick={() => { trackEvent('action_hub', 'task_click', task.id); onClose(); }}>{task.ctaLabel}</TaskLink>
                   ) : (
                     <TaskButton type="button" onClick={task.onClick}>{task.ctaLabel}</TaskButton>
                   )}

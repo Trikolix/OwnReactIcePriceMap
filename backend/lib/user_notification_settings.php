@@ -50,6 +50,8 @@ function ensureUserNotificationSettingsSchema(PDO $pdo): void
         'notify_mention_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_mention',
         'notify_like' => 'TINYINT(1) DEFAULT 0 AFTER notify_mention_push',
         'notify_like_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_like',
+        'notify_ice_date' => 'TINYINT(1) DEFAULT 1 AFTER notify_team_challenge',
+        'notify_ice_date_push' => 'TINYINT(1) DEFAULT 1 AFTER notify_ice_date',
     ];
 
     foreach ($columns as $column_name => $column_def) {

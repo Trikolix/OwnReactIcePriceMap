@@ -94,6 +94,8 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         $settingField = 'notify_news';
     } elseif ($notificationType === 'team_challenge') {
         $settingField = 'notify_team_challenge';
+    } elseif ($notificationType === 'ice_date') {
+        $settingField = 'notify_ice_date';
     } elseif ($notificationType === 'photo_challenge') {
         $settingField = 'notify_photo_challenge';
     } else {
@@ -210,6 +212,16 @@ function sendNotificationEmailIfAllowed($pdo, $userId, $notificationType, $sende
         }
 
         $mailParagraphs[] = 'Details findest du direkt im Bereich Challenges der Ice-App.';
+
+    } elseif ($notificationType === 'ice_date') {
+        $mailSubject = 'Ice-App: Einladung zu einem Eis-Date';
+        $mailHeading = 'Eis-Date';
+        $mailParagraphs[] = $senderName !== ''
+            ? "{$senderName} hat dich zu einem gemeinsamen Eis-Date eingeladen oder den Termin aktualisiert."
+            : 'Es gibt ein Update zu einem gemeinsamen Eis-Date.';
+        $buttonUrl = 'https://ice-app.de/ice-date?id=' . (int)($extra['iceDateId'] ?? 0);
+        $buttonLabel = 'Eis-Date ansehen';
+        $mailParagraphs[] = 'Details und deine Zusage findest du direkt in der Ice-App.';
 
     } elseif ($notificationType === 'photo_challenge') {
         $mailSubject = "Ice-App: Neue Foto-Challenge!";

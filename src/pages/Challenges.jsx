@@ -10,6 +10,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import TeamChallengesPanel from "../components/TeamChallengesPanel";
 import { formatOpeningHoursLines, hydrateOpeningHours } from "../utils/openingHours";
+import { trackEvent } from "../utils/analytics";
 
 const greenIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
@@ -476,6 +477,7 @@ function Challenges() {
       setShowNewChallengeModal(true);
       setMapFocusToChallenge(challenge);
       setActionMessage("success", "Challenge erfolgreich erstellt.");
+      trackEvent("challenge", "generated", `${challengeType}-${difficulty}`);
     } catch (error) {
       setActionMessage("error", error.message || "Challenge konnte nicht erstellt werden.");
     } finally {
@@ -773,6 +775,7 @@ function Challenges() {
                   )}
                   {newChallenge.shop_lat != null && newChallenge.shop_lon != null && <InlineHint>Marker wurde auf der Karte fokussiert.</InlineHint>}
                 </ChallengeBottomRow>
+                <DateLink to={`/ice-date/new?shopId=${newChallenge.shop_id}`}>Gemeinsam als Eis-Date planen</DateLink>
               </ChallengeCard>
               <ModalButton ref={newChallengeModalButtonRef} onClick={() => setShowNewChallengeModal(false)}>
                 Schließen
@@ -917,12 +920,35 @@ function Challenges() {
                               <MutedBadge>{ch.recreated ? "Bereits neu generiert" : "Nicht mehr verfügbar"}</MutedBadge>
                             )}
                           </ChallengeBottomRow>
+                          <DateLink to={`/ice-date/new?shopId=${ch.shop_id}&challengeId=${ch.id}`}>Gemeinsam als Eis-Date planen</DateLink>
                         </ChallengeCard>
                       );
                     })}
                   </ChallengeList>
                 )}
               </SectionCard>
+
+              <QuickStartCard>
+                <div>
+                  <QuickStartKicker>Ohne langes Einstellen</QuickStartKicker>
+                  <QuickStartTitle>Zufallsziel für heute</QuickStartTitle>
+                  <QuickStartText>Eine leichte Challenge in deiner Nähe – ideal für den nächsten Eis-Stopp.</QuickStartText>
+                </div>
+                <GenerateButton
+                  type="button"
+                  onClick={() => {
+                    trackEvent("challenge", "quickstart_click");
+                    if (selectedCombination) {
+                      setMapFocusToChallenge(selectedCombination);
+                      return;
+                    }
+                    handleGenerateChallenge();
+                  }}
+                  disabled={generating || bulkGenerating || !location}
+                >
+                  {selectedCombination ? "Ziel anzeigen" : generating ? "Erstelle …" : "Zufallsziel ziehen"}
+                </GenerateButton>
+              </QuickStartCard>
 
               <SectionCard>
                 <SectionHead>
@@ -1379,6 +1405,41 @@ const SectionCard = styled.section`
   padding: 1rem;
 `;
 
+const QuickStartCard = styled.section`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff1c9 0%, #fffaf0 100%);
+  border: 1px solid rgba(255, 181, 34, 0.34);
+  box-shadow: 0 8px 22px rgba(28, 20, 0, 0.06);
+
+  @media (max-width: 640px) { flex-direction: column; align-items: stretch; }
+`;
+
+const QuickStartKicker = styled.div`
+  color: #97630b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+`;
+
+const QuickStartTitle = styled.h2`
+  margin: 0.18rem 0 0;
+  color: #2f2100;
+  font-size: 1.12rem;
+`;
+
+const QuickStartText = styled.p`
+  margin: 0.25rem 0 0;
+  color: rgba(47, 33, 0, 0.68);
+  line-height: 1.4;
+`;
+
 const SectionHead = styled.div`
   display: flex;
   justify-content: space-between;
@@ -1614,6 +1675,17 @@ const Countdown = styled.div`
 const InlineHint = styled.span`
   color: rgba(47, 33, 0, 0.62);
   font-size: 0.82rem;
+`;
+
+const DateLink = styled(Link)`
+  display: inline-flex;
+  margin-top: 0.65rem;
+  color: #1652b8;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
 `;
 
 const RecreateButton = styled.button`

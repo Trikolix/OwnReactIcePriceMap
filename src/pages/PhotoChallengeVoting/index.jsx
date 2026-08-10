@@ -17,6 +17,14 @@ import GroupModal from './GroupModal';
 import KoModal from './KoModal';
 import ImageLightbox from './ImageLightbox';
 
+const DETAIL_STATUS_LABELS = {
+  submission_open: 'Einreichphase',
+  submission_closed: 'Auswertung',
+  group_running: 'Gruppenphase',
+  ko_running: 'KO-Phase',
+  finished: 'Abgeschlossen',
+};
+
 function PhotoChallengeVoting() {
   const { challengeId } = useParams();
   const { userId, isLoggedIn } = useUser();
@@ -555,6 +563,14 @@ function PhotoChallengeVoting() {
     return orientation ? [baseSides[1], baseSides[0]] : baseSides;
   }, [activeKoModalMatch, koModal]);
 
+  const detailStatus = overview?.challenge?.status || '';
+  const detailStatusLabel = DETAIL_STATUS_LABELS[detailStatus] || 'Foto-Challenge';
+  const detailStatusHint = detailStatus === 'finished'
+    ? 'Die Ergebnisse stehen fest.'
+    : isSubmissionStage
+    ? 'Mach mit und bring dein Bild ins Turnier.'
+    : 'Deine Stimme entscheidet, wer weiterkommt.';
+
   if (!challengeId) {
     return (
       <S.FullPage>
@@ -571,12 +587,17 @@ function PhotoChallengeVoting() {
       <Header />
       <S.Content>
         <S.HeroSection>
-          <div>
+          <S.HeroCopy>
+            <S.HeroEyebrow>Foto-Challenge</S.HeroEyebrow>
             <h1>{overview?.challenge ? (overview.challenge.title) : "Foto-Challenge"}</h1>
             <S.HeroDescription>
               {overview?.challenge?.description || 'Stimme für deine Lieblingsbilder und hilf mit zu entscheiden, wer weiterkommt.'}
             </S.HeroDescription>
-          </div>
+          </S.HeroCopy>
+          <S.HeroStatusPanel>
+            <S.HeroStatusChip $status={detailStatus}>{detailStatusLabel}</S.HeroStatusChip>
+            <span>{detailStatusHint}</span>
+          </S.HeroStatusPanel>
         </S.HeroSection>
 
         {!isLoggedIn && (
@@ -641,7 +662,7 @@ function PhotoChallengeVoting() {
         {loading && <S.PlaceholderText>Lade Challenge …</S.PlaceholderText>}
 
         {!loading && activePhase === 'winner' && overview?.winner && (
-          <Winner winner={overview.winner} />
+          <Winner winner={overview.winner} thirdPlace={overview.third_place} />
         )}
 
         {!loading && !isSubmissionStage && activePhase === 'group' && (

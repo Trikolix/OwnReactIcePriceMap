@@ -38,22 +38,48 @@ export const Content = styled.main`
 `;
 
 export const HeroSection = styled.header`
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
-  flex-direction: column;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid #eee7d9;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fffdf8 0%, #fff5dc 100%);
+  box-shadow: 0 16px 34px rgba(48, 39, 13, 0.06);
 
   h1 {
     margin: 0;
-    font-size: 2rem;
+    color: #2f2c25;
+    font-size: clamp(1.65rem, 4vw, 2.4rem);
+    line-height: 1.08;
   }
 
   p {
     margin: 0.2rem 0 0;
     color: #6a6381;
   }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    align-items: start;
+    margin-bottom: 1rem;
+  }
+`;
+
+export const HeroCopy = styled.div`
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+`;
+
+export const HeroEyebrow = styled.span`
+  color: #a66b00;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 `;
 
 export const HeroDescription = styled.p`
@@ -93,10 +119,13 @@ export const ActionMessage = styled.div`
 
 export const PhaseSlider = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+  overflow-x: auto;
   margin-bottom: 1.5rem;
-  justify-content: center;
+  padding: 0.2rem 0.15rem 0.55rem;
+  scrollbar-width: thin;
+  scrollbar-color: #d7b75f transparent;
 `;
 
 export const PhasePill = styled.button`
@@ -107,11 +136,12 @@ export const PhasePill = styled.button`
   color: ${({ $active }) => ($active ? '#a55a00' : '#5b5f75')};
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
-  font-weight: 600;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+  flex: 0 0 auto;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
     box-shadow: 0 10px 24px rgba(255, 181, 34, 0.18);
     border-color: #ffb522;
   }
@@ -195,12 +225,12 @@ export const GroupCard = styled.button`
   width: 100%;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 
   &:hover {
-    transform: translateY(-3px);
     box-shadow: 0 22px 48px rgba(20, 21, 56, 0.12);
     border-color: #ffd58a;
+    background: #fffdf8;
   }
 
   &:focus-visible {
@@ -290,7 +320,7 @@ export const VoteOption = styled.button`
   display: flex;
   gap: 0.75rem;
   align-items: center;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   &.advancer {
     border: 2px solid #2ecc40;
     border-radius: 8px;
@@ -305,8 +335,8 @@ export const VoteOption = styled.button`
   opacity: ${({ disabled }) => (disabled ? 0.75 : 1)};
 
   &:hover:not(:disabled) {
-    transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+    border-color: #ffd58a;
   }
 `;
 
@@ -314,6 +344,40 @@ export const GroupPreviewStrip = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
+`;
+
+export const HeroStatusPanel = styled.div`
+  display: grid;
+  justify-items: end;
+  gap: 0.4rem;
+  min-width: 150px;
+
+  span:last-child {
+    color: #756f64;
+    font-size: 0.82rem;
+    text-align: right;
+  }
+
+  @media (max-width: 640px) {
+    justify-items: start;
+
+    span:last-child {
+      text-align: left;
+    }
+  }
+`;
+
+export const HeroStatusChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid ${({ $status }) => ($status === 'finished' ? '#b8dec0' : '#f0ce7c')};
+  border-radius: 999px;
+  background: ${({ $status }) => ($status === 'finished' ? '#eaf8ed' : '#fff8e4')};
+  color: ${({ $status }) => ($status === 'finished' ? '#2b7140' : '#8a5d00')};
+  font-size: 0.78rem;
+  font-weight: 800;
 `;
 
 export const CountryImageFrame = styled.span`
@@ -393,6 +457,17 @@ export const KoGrid = styled.div`
   gap: 1rem;
 `;
 
+export const KoRoundSections = styled.div`
+  display: grid;
+  gap: 1.5rem;
+`;
+
+export const KoSectionTitle = styled.h2`
+  margin: 0 0 0.75rem;
+  color: #343248;
+  font-size: 1.15rem;
+`;
+
 export const KoCardButton = styled.button`
   background: #fff;
   border-radius: 16px;
@@ -404,14 +479,13 @@ export const KoCardButton = styled.button`
   border: 1px solid #ececf3;
   cursor: pointer;
   text-align: left;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
 
   small {
     color: #7a7a90;
   }
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: 0 18px 42px rgba(15, 18, 63, 0.12);
     border-color: #ffd58a;
   }
@@ -429,6 +503,212 @@ export const KoThumb = styled.div`
   align-items: center;
 `;
 
+export const KoBracketShell = styled.section`
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid #efe8d9;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fffdf8 0%, #fff 100%);
+  box-shadow: 0 18px 42px rgba(48, 39, 13, 0.08);
+`;
+
+export const KoBracketIntro = styled.div`
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    margin: 0.1rem 0 0;
+    color: #2f2c25;
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+  }
+
+  > span {
+    max-width: 32rem;
+    color: #776e5f;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    text-align: right;
+  }
+
+  @media (max-width: 640px) {
+    align-items: start;
+    flex-direction: column;
+
+    > span {
+      text-align: left;
+    }
+  }
+`;
+
+export const KoBracketEyebrow = styled.span`
+  color: #a66b00;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`;
+
+export const KoBracketScroller = styled.div`
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0.25rem 0.75rem;
+  scroll-behavior: smooth;
+  scrollbar-color: #d7b75f transparent;
+
+  @media (max-width: 720px) {
+    scroll-snap-type: x mandatory;
+    padding-inline: 0;
+  }
+`;
+
+export const KoBracket = styled.div`
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(250px, 285px);
+  align-items: stretch;
+  gap: 2rem;
+  min-width: max-content;
+
+  @media (max-width: 720px) {
+    /* One complete round fits inside the page and bracket padding; later rounds remain swipeable. */
+    grid-auto-columns: minmax(0, calc(100vw - 4rem));
+    gap: 1rem;
+  }
+`;
+
+export const KoBracketColumn = styled.div`
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid ${({ $active }) => ($active ? '#e5b53d' : '#eee8da')};
+  border-radius: 18px;
+  background: ${({ $active }) => ($active ? '#fff8e4' : 'rgba(255, 255, 255, 0.78)')};
+  scroll-snap-align: start;
+
+  &:not(:first-child)::before {
+    position: absolute;
+    top: 50%;
+    left: -2rem;
+    width: 2rem;
+    border-top: 1px solid #dfc981;
+    content: '';
+  }
+`;
+
+export const KoBracketColumnHeader = styled.header`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.1rem 0.15rem;
+
+  strong {
+    color: #403a2f;
+    font-size: 0.96rem;
+  }
+
+  small {
+    color: #8b806d;
+    font-size: 0.72rem;
+  }
+`;
+
+export const KoBracketStack = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.25rem;
+`;
+
+export const KoBracketLane = styled.div`
+  display: grid;
+  gap: 0.65rem;
+`;
+
+export const KoBracketLaneLabel = styled.span`
+  color: #b05c00;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+export const KoBracketMatch = styled.button`
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid ${({ $thirdPlace }) => ($thirdPlace ? '#f0c983' : '#e7e7ed')};
+  border-radius: 14px;
+  background: ${({ $thirdPlace }) => ($thirdPlace ? '#fffaf0' : '#fff')};
+  color: #343248;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+
+  &:hover {
+    border-color: #e5b53d;
+    background: #fffdf7;
+    box-shadow: 0 10px 22px rgba(48, 39, 13, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(229, 181, 61, 0.3);
+    outline-offset: 2px;
+  }
+`;
+
+export const KoBracketMatchLabel = styled.span`
+  color: #8e816d;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+export const KoBracketParticipant = styled.span`
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.28rem;
+  border-radius: 9px;
+  background: ${({ $winner }) => ($winner ? '#eaf8ed' : '#f7f7fa')};
+  color: #403b4c;
+
+  > span {
+    overflow: hidden;
+    font-size: 0.78rem;
+    font-weight: ${({ $winner }) => ($winner ? 800 : 600)};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  b {
+    color: #b85b00;
+    font-size: 0.75rem;
+  }
+`;
+
+export const KoBracketThumb = styled.img`
+  width: 2rem;
+  height: 2rem;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #e9e9ef;
+`;
+
 export const WinnerSection = styled.section`
   margin-bottom: 2rem;
 `;
@@ -436,7 +716,7 @@ export const WinnerSection = styled.section`
 export const WinnerCard = styled.div`
   background: linear-gradient(135deg, #ffc757, #ff5ca4);
   border-radius: 32px;
-  padding: 2rem;
+  padding: clamp(1rem, 4vw, 2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -455,10 +735,41 @@ export const WinnerBadge = styled.span`
 `;
 
 export const WinnerImageWrapper = styled.div`
-  width: min(90vw, 520px);
+  width: 100%;
+  max-width: 520px;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+`;
+
+export const ThirdPlaceCard = styled.div`
+  margin: 1.5rem auto 0;
+  width: min(100%, 760px);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid #f0d8a1;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fff8e8, #fff);
+  box-shadow: 0 18px 42px rgba(20, 21, 56, 0.08);
+`;
+
+export const ThirdPlaceContent = styled.div`
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1rem;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ThirdPlaceImage = styled.img`
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
 `;
 
 export const WinnerImage = styled.img`
@@ -537,10 +848,9 @@ export const SubmissionImageCard = styled.div`
   flex-direction: column;
   gap: 0.5rem;
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: 0 16px 34px rgba(15, 18, 63, 0.08);
     border-color: #ffd58a;
   }
@@ -569,10 +879,9 @@ export const SubmissionCard = styled.div`
   gap: 0.75rem;
   align-items: center;
   background: #fff;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
 
   &:hover {
-    transform: translateY(-1px);
     box-shadow: 0 12px 28px rgba(15, 18, 63, 0.08);
     border-color: #ffd58a;
   }
@@ -636,10 +945,9 @@ export const SubmitButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   text-align: center;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
     box-shadow: 0 10px 22px rgba(15, 18, 63, 0.08);
     border-color: #ffb522;
     background: #fff9ed;
@@ -685,10 +993,9 @@ export const NavButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
 
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
     border-color: #ffb522;
     color: #a85b00;
     background: #fff9ed;
@@ -726,8 +1033,8 @@ export const ModalCard = styled.div`
 
   @media (max-width: 720px) {
     width: min(100vw - 1rem, 100vw);
-    height: calc(100vh - 1rem);
-    height: calc(100dvh - 1rem);
+    height: ${({ $compact }) => ($compact ? 'auto' : 'calc(100vh - 1rem)')};
+    height: ${({ $compact }) => ($compact ? 'auto' : 'calc(100dvh - 1rem)')};
     max-height: calc(100vh - 1rem);
     max-height: calc(100dvh - 1rem);
     border-radius: 20px;
@@ -735,7 +1042,8 @@ export const ModalCard = styled.div`
 `;
 
 export const LightboxOverlay = styled(ModalOverlay)`
-  padding: 2rem;
+  padding: 1rem;
+  background: rgba(8, 10, 19, 0.88);
 
   @media (max-width: 720px) {
     padding: 0.5rem;
@@ -744,33 +1052,32 @@ export const LightboxOverlay = styled(ModalOverlay)`
 
 export const LightboxCard = styled.div`
   position: relative;
-  background: #fff;
-  border-radius: 20px;
-  padding: 1rem 1rem 1.5rem;
+  background: transparent;
+  border-radius: 18px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  width: min(96vw, 1200px);
-  max-width: min(96vw, 1200px);
-  max-height: calc(100vh - 3rem);
-  max-height: calc(100dvh - 3rem);
+  width: min(94vw, 1180px);
+  max-width: min(94vw, 1180px);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
 
   @media (max-width: 720px) {
     width: calc(100vw - 1rem);
     max-width: calc(100vw - 1rem);
-    height: calc(100vh - 1rem);
     height: calc(100dvh - 1rem);
-    max-height: calc(100vh - 1rem);
     max-height: calc(100dvh - 1rem);
-    border-radius: 20px;
-    padding: 0.75rem 0.75rem 1rem;
-    background: #0f1220;
   }
 `;
 
 export const LightboxCloseRow = styled.div`
-  width: 100%;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  width: auto;
   display: flex;
   justify-content: flex-end;
 
@@ -782,30 +1089,38 @@ export const LightboxCloseRow = styled.div`
 `;
 
 export const LightboxImage = styled.img`
+  display: block;
   max-width: 100%;
-  max-height: calc(100vh - 220px);
-  max-height: calc(100dvh - 220px);
+  max-height: calc(100vh - 4rem);
+  max-height: calc(100dvh - 4rem);
   border-radius: 16px;
   object-fit: contain;
-  background: #f8f8fb;
+  background: #121625;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
 
   @media (max-width: 720px) {
     width: 100%;
     flex: 1;
     min-height: 0;
-    max-height: calc(100vh - 112px);
-    max-height: calc(100dvh - 112px);
-    background: #0f1220;
+    max-height: calc(100dvh - 1rem);
   }
 `;
 
 export const LightboxCaption = styled.span`
-  font-weight: 600;
-  color: #5a5673;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  padding: 3rem 1.25rem 1rem;
+  border-radius: 0 0 16px 16px;
+  background: linear-gradient(transparent, rgba(8, 10, 19, 0.86));
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
 
   @media (max-width: 720px) {
-    color: #f3f4fb;
-    text-align: center;
+    padding: 3rem 1rem 0.9rem;
   }
 `;
 
@@ -894,7 +1209,7 @@ export const ModalVoteCard = styled.div`
       ? 'linear-gradient(180deg, rgba(46, 204, 64, 0.14) 0%, rgba(255,255,255,0.98) 100%)'
       : '#fff'};
   overflow: hidden;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   ${({ $disabled }) =>
     $disabled
       ? `
@@ -907,7 +1222,8 @@ export const ModalVoteCard = styled.div`
   }
 
   &:hover {
-    transform: translateY(-2px);
+    border-color: ${({ $selected }) => ($selected ? '#2ecc40' : '#ffd58a')};
+    box-shadow: ${({ $selected }) => ($selected ? '0 16px 34px rgba(46, 204, 64, 0.18)' : '0 12px 28px rgba(15, 18, 63, 0.1)')};
   }
 `;
 
@@ -1040,10 +1356,9 @@ export const PreviewCard = styled.button`
   width: 100%;
   text-align: left;
   cursor: zoom-in;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: 0 16px 34px rgba(15, 18, 63, 0.08);
     border-color: #ffd58a;
   }
@@ -1097,7 +1412,6 @@ export const ResultItem = styled.button`
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: 0 16px 34px rgba(15, 18, 63, 0.08);
     border-color: #ffd58a;
   }
@@ -1121,6 +1435,7 @@ export const ResultInfo = styled.div`
 `;
 
 export const ResultImageButton = styled.div`
+  position: relative;
   display: flex;
 `;
 

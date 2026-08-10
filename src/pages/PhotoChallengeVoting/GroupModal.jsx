@@ -64,7 +64,12 @@ const GroupModal = ({
 
   return (
     <S.ModalOverlay>
-      <S.ModalCard>
+      <S.ModalCard
+        $compact={groupModal.mode !== 'active'}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${activeModalGroup.name} Foto-Challenge`}
+      >
         <S.ModalHeader>
           <S.ModalHeaderMain>
             <h3>{activeModalGroup.name}</h3>

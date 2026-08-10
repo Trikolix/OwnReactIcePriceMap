@@ -14,11 +14,13 @@ export const describeRoundByParticipants = (count) => {
 export const useKoRoundLabel = (overview) => {
   const participantsByRound = useMemo(() => {
     const map = new Map();
-    (overview?.ko_matches || []).forEach((match) => {
-      const round = Number(match.round) || 0;
-      if (round <= 0) return;
-      map.set(round, (map.get(round) || 0) + 2);
-    });
+    (overview?.ko_matches || [])
+      .filter((match) => (match.bracket_type || 'main') === 'main')
+      .forEach((match) => {
+        const round = Number(match.round) || 0;
+        if (round <= 0) return;
+        map.set(round, (map.get(round) || 0) + 2);
+      });
     return map;
   }, [overview?.ko_matches]);
 

@@ -554,6 +554,9 @@ const IceShopDetailPage = () => {
             <HeroActions>
               {isLoggedIn && <PrimaryAction type="button" onClick={() => setShowCheckinForm(true)}>Einchecken</PrimaryAction>}
               {isLoggedIn && <SecondaryAction type="button" onClick={() => setShowReviewForm(true)}>Bewerten</SecondaryAction>}
+              <PrimaryAction as={Link} to={`/ice-date/new?shopId=${eisdiele.id}`}>
+                <CalendarDays size={16} /> Eis-Date planen
+              </PrimaryAction>
               <ActionAnchor
                 href={
                   eisdiele.latitude && eisdiele.longitude
@@ -1088,8 +1091,10 @@ const actionStyles = `
   min-height: 2.9rem;
   padding: 0.75rem 1rem;
   border-radius: 14px;
+  font-family: inherit;
   font-weight: 800;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 

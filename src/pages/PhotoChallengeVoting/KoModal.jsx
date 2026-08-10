@@ -62,12 +62,21 @@ const KoModal = ({
     setImagePreview({ url, label });
   };
 
+  const matchLabel = activeKoModalMatch.bracket_type === 'third_place'
+    ? 'Duell um Platz 3'
+    : getKoRoundLabel(activeKoModalMatch.round);
+
   return (
     <S.ModalOverlay>
-      <S.ModalCard>
+      <S.ModalCard
+        $compact={activeKoModalMatch.status !== 'open'}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${matchLabel} Foto-Challenge`}
+      >
         <S.ModalHeader>
           <S.ModalHeaderMain>
-            <h3>{getKoRoundLabel(activeKoModalMatch.round)}</h3>
+            <h3>{matchLabel}</h3>
             <small>
               Duell {koModal.matchIndex + 1} / {koModal.matchIds.length}
             </small>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { CalendarDays, ChevronRight, Clock, Image as ImageIcon, Trophy, Upload, Vote } from 'lucide-react';
+import { CalendarDays, Camera, ChevronRight, Clock, Image as ImageIcon, Trophy, Upload, Vote } from 'lucide-react';
 import Header from '../Header';
 import { buildAssetUrl } from '../utils/assets.jsx';
 
@@ -173,8 +173,22 @@ function PhotoChallengeList() {
       <Content>
         <PageTitleBlock>
           <PageKicker>Fotochallenges</PageKicker>
-          <h1>Aktuelle Fotochallenges</h1>
-          <p>Alles, wo du gerade einreichen, abstimmen oder Ergebnisse ansehen kannst.</p>
+          <h1>Foto-Challenges</h1>
+          <p>Reiche dein Foto ein, stimme ab und entdecke die Gewinner.</p>
+          <HeroActionRail aria-label="Möglichkeiten bei Foto-Challenges">
+            <HeroAction>
+              <Camera size={18} aria-hidden="true" />
+              <span><strong>Einreichen</strong><small>Dein Eis-Moment zählt.</small></span>
+            </HeroAction>
+            <HeroAction>
+              <Vote size={18} aria-hidden="true" />
+              <span><strong>Abstimmen</strong><small>Entscheide die Duelle mit.</small></span>
+            </HeroAction>
+            <HeroAction>
+              <Trophy size={18} aria-hidden="true" />
+              <span><strong>Gewinner entdecken</strong><small>Ergebnisse vergangener Challenges.</small></span>
+            </HeroAction>
+          </HeroActionRail>
         </PageTitleBlock>
 
         {error && <WarningBox>{error}</WarningBox>}
@@ -198,7 +212,7 @@ function PhotoChallengeList() {
             <Section>
               <SectionHeader>
                 <div>
-                  <h2>Aktive Challenges</h2>
+                  <h2>Jetzt mitmachen</h2>
                   <span>{sections.active.length} laufend oder geplant</span>
                 </div>
               </SectionHeader>
@@ -208,8 +222,8 @@ function PhotoChallengeList() {
                 <EmptyState>
                   <Clock size={22} />
                   <div>
-                    <strong>Gerade ist keine Challenge aktiv.</strong>
-                    <span>Abgeschlossene Challenges findest du direkt darunter.</span>
+                    <strong>Aktuell ist keine Challenge aktiv.</strong>
+                    <span>Schau später wieder vorbei oder entdecke die Ergebnisse darunter.</span>
                   </div>
                 </EmptyState>
               )}
@@ -218,7 +232,7 @@ function PhotoChallengeList() {
             <Section>
               <SectionHeader>
                 <div>
-                  <h2>Abgeschlossene Challenges</h2>
+                  <h2>Ergebnisse &amp; Gewinner</h2>
                   <span>{sections.finished.length} Ergebnis{sections.finished.length === 1 ? '' : 'se'}</span>
                 </div>
               </SectionHeader>
@@ -228,7 +242,7 @@ function PhotoChallengeList() {
                 <EmptyState>
                   <Trophy size={22} />
                   <div>
-                    <strong>Noch keine abgeschlossene Challenge.</strong>
+                    <strong>Noch keine Ergebnisse verfügbar.</strong>
                     <span>Sobald Ergebnisse verfuegbar sind, erscheinen sie hier.</span>
                   </div>
                 </EmptyState>
@@ -256,18 +270,24 @@ function ChallengeCard({ challenge, variant }) {
         {previewImages.length ? (
           <Slideshow $slideCount={previewImages.length}>
             {previewImages.map((image, index) => (
-              <img
+              <PreviewSlide
                 key={`${challenge.id}-${image.image_id || index}`}
-                src={buildAssetUrl(image.url)}
-                alt={image.title || image.beschreibung || challenge.title}
-                loading="lazy"
+                $slideCount={previewImages.length}
                 style={{
                   '--slide-index': index,
                   '--slide-duration': `${Math.max(previewImages.length, 1) * 3.5}s`,
                 }}
-              />
+              >
+                <img
+                  src={buildAssetUrl(image.url)}
+                  alt={image.title || image.beschreibung || challenge.title}
+                  loading="lazy"
+                />
+                {isFinished && Number(image.image_id) === Number(challenge.winner_image?.image_id) && (
+                  <WinnerPill>Gewinnerbild</WinnerPill>
+                )}
+              </PreviewSlide>
             ))}
-            {isFinished && challenge.winner_image?.url && <WinnerPill>Gewinnerbild</WinnerPill>}
             {previewImages.length > 1 && (
               <SlideDots aria-hidden="true">
                 {previewImages.map((image, index) => (
@@ -343,7 +363,7 @@ const Content = styled.main`
 const PageTitleBlock = styled.header`
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.55rem;
 
   h1 {
     margin: 0;
@@ -358,6 +378,55 @@ const PageTitleBlock = styled.header`
     color: #666a73;
     max-width: 62ch;
     line-height: 1.5;
+  }
+`;
+
+const HeroActionRail = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.45rem;
+  max-width: 860px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+`;
+
+const HeroAction = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e8dfc9;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fffdf8, #fff8e8);
+  color: #805b00;
+
+  svg {
+    flex: 0 0 auto;
+  }
+
+  span {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.12rem;
+  }
+
+  strong {
+    color: #2d2b27;
+    font-size: 0.88rem;
+  }
+
+  small {
+    overflow: hidden;
+    color: #756f64;
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
@@ -392,7 +461,7 @@ const SectionHeader = styled.div`
   h2 {
     margin: 0;
     color: #24242a;
-    font-size: 1.2rem;
+    font-size: clamp(1.15rem, 2vw, 1.35rem);
     line-height: 1.2;
     letter-spacing: 0;
   }
@@ -420,18 +489,18 @@ const Card = styled(Link)`
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
-  border-radius: 8px;
+  border-radius: 16px;
   background: #ffffff;
   border: 1px solid ${({ $tone }) => ($tone === 'live' ? '#a7f3d0' : $tone === 'submit' ? '#fde68a' : '#e5e7eb')};
   color: inherit;
   text-decoration: none;
   box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  transition: box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 28px rgba(31, 41, 55, 0.12);
+    box-shadow: 0 18px 34px rgba(31, 41, 55, 0.14);
     border-color: ${({ $tone }) => ($tone === 'live' ? '#10b981' : $tone === 'submit' ? '#d97706' : '#b8bdc7')};
+    background: #fffefa;
   }
 
   &:focus-visible {
@@ -442,11 +511,11 @@ const Card = styled(Link)`
 
 const Preview = styled.div`
   position: relative;
-  height: 250px;
+  height: 270px;
   background: #e5e7eb;
 
   @media (max-width: 640px) {
-    height: 180px;
+    height: 205px;
   }
 `;
 
@@ -456,45 +525,47 @@ const Slideshow = styled.div`
   height: 100%;
   overflow: hidden;
 
-  img {
+`;
+
+const PreviewSlide = styled.div`
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
     opacity: ${({ $slideCount }) => ($slideCount > 1 ? 0 : 1)};
     animation: ${({ $slideCount }) => ($slideCount > 1 ? 'photoChallengeSlide var(--slide-duration) ease-in-out infinite' : 'none')};
     animation-delay: calc(var(--slide-index) * 3.5s);
     animation-fill-mode: both;
-  }
 
-  @keyframes photoChallengeSlide {
-    0%,
-    24% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    30%,
-    100% {
-      opacity: 0;
-      transform: scale(1.025);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
     img {
-      animation: none;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    @keyframes photoChallengeSlide {
+      0%,
+      24% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      30%,
+      100% {
+        opacity: 0;
+        transform: scale(1.025);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
       opacity: 0;
+      animation: none;
       transform: none;
     }
 
-    img:first-child {
+    &:first-child {
       opacity: 1;
     }
-  }
-`;
+  `;
 
 const PreviewFallback = styled.div`
   height: 100%;
