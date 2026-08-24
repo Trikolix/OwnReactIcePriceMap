@@ -98,11 +98,9 @@ function UserSite() {
         );
       }
     }
-    if (params.get('tab') === 'stats' && isOwnProfile) {
+    if (params.get('tab') === 'stats') {
       setActiveTab('stats');
     } else if (params.get('tab') === 'routes' || params.get('tab') === 'checkins' || params.get('tab') === 'reviews') {
-      setActiveTab('feed');
-    } else if (!isOwnProfile) {
       setActiveTab('feed');
     }
   }, [isOwnProfile, location.pathname, location.search, navigate]);
@@ -186,15 +184,14 @@ function UserSite() {
 
   const loadMoreAwards = () => setAwardPage((prev) => prev + 1);
 
-  const fetchUserData = async (userIdToLoad, viewerId = viewerUserId, signal) => {
+  const fetchUserData = async (userIdToLoad, signal) => {
     const requestId = userDataRequestRef.current + 1;
     userDataRequestRef.current = requestId;
-    const currentViewerId = viewerId || 0;
 
     try {
       setLoading(true);
       const response = await fetch(
-        `${apiUrl}/get_user_stats.php?nutzer_id=${userIdToLoad}&cur_user_id=${currentViewerId}`,
+        `${apiUrl}/get_user_stats.php?nutzer_id=${userIdToLoad}`,
         { signal }
       );
       if (!response.ok) throw new Error("Fehler beim Abruf der Daten");
@@ -213,7 +210,7 @@ function UserSite() {
   useEffect(() => {
     if (!finalUserId) return;
     const controller = new AbortController();
-    fetchUserData(finalUserId, viewerUserId, controller.signal);
+    fetchUserData(finalUserId, controller.signal);
     return () => controller.abort();
   }, [finalUserId, viewerUserId]);
 
@@ -298,7 +295,7 @@ function UserSite() {
   }, [data?.user_awards?.length]);
 
   const refreshUser = () => {
-    fetchUserData(finalUserId, viewerUserId);
+    fetchUserData(finalUserId);
     fetchProfileActivities();
   };
   const copyToClipboard = async (text) => {
@@ -931,16 +928,14 @@ function UserSite() {
                 </AwardsFooterActions>
               )}
             </AwardsCard>
-            {isOwnProfile && (
-              <UnifiedTabBar>
-                <UnifiedTabButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>
-                  Aktivitäten
-                </UnifiedTabButton>
-                <UnifiedTabButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')}>
-                  Statistiken
-                </UnifiedTabButton>
-              </UnifiedTabBar>
-            )}
+            <UnifiedTabBar>
+              <UnifiedTabButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>
+                Aktivitäten
+              </UnifiedTabButton>
+              <UnifiedTabButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')}>
+                Statistiken
+              </UnifiedTabButton>
+            </UnifiedTabBar>
             {selectedAward && typeof document !== 'undefined' && createPortal(
               <AwardLightboxOverlay onClick={() => setSelectedAward(null)}>
                 <AwardLightboxCard onClick={(event) => event.stopPropagation()}>
@@ -974,8 +969,8 @@ function UserSite() {
           {activeTab === 'stats' && (
           <StatsArea>
             <SectionHeader>
-              <h2>Deine Statistiken</h2>
-              <span>Ein Überblick über deine Eis-Abenteuer</span>
+              <h2>Statistiken von {data.nutzername}</h2>
+              <span>Ein Überblick über die Eis-Abenteuer</span>
             </SectionHeader>
             {Number(viewerUserId) === 1 && epBreakdown && (
               <ContentGrid>

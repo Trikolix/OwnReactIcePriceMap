@@ -5,6 +5,7 @@ require_once  __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/user_profile.php';
+require_once  __DIR__ . '/lib/auth.php';
 
 function consecutiveLengthBackward(array $set, DateTimeImmutable $start, string $stepSpec): int
 {
@@ -140,7 +141,8 @@ if (strpos($nutzerParam, '@') === 0) {
     $nutzerId = (int)$nutzerParam;
 }
 
-$curUserId = intval($_GET['cur_user_id']);
+$authenticatedUser = authenticateRequest($pdo);
+$curUserId = (int)($authenticatedUser['user_id'] ?? 0);
 
 // Nutzername ermitteln
 $sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code, instagram_account, strava_account
