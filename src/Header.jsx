@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Info,
   Instagram,
+  IceCreamCone,
   LogIn,
   LogOut,
   Map,
@@ -44,6 +45,7 @@ import {
   writeActivityFeedCache,
 } from './utils/activityFeed';
 import ActionsOverviewModal from './pages/ActionsOverview';
+import GlobalCheckinModal from './components/GlobalCheckinModal';
 
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
@@ -65,6 +67,8 @@ const Header = ({ refreshShops }) => {
   const [modalData, setModalData] = useState(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showActionsOverview, setShowActionsOverview] = useState(false);
+  const [showGlobalCheckin, setShowGlobalCheckin] = useState(false);
+  const [openCheckinAfterLogin, setOpenCheckinAfterLogin] = useState(false);
   const [dashboardNewCount, setDashboardNewCount] = useState(0);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState(null);
   const [hasActivePhotoChallenge, setHasActivePhotoChallenge] = useState(false);
@@ -90,12 +94,29 @@ const Header = ({ refreshShops }) => {
     setMenuOpen((isOpen) => !isOpen);
   };
   const closeMenu = () => setMenuOpen(false);
+  const openGlobalCheckin = () => {
+    closeMenu();
+    if (!isLoggedIn) {
+      setOpenCheckinAfterLogin(true);
+      setShowLoginModal(true);
+      return;
+    }
+    setShowGlobalCheckin(true);
+  };
   const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
   const isAwardsActionsActive = location.pathname === '/awards-admin'
     || location.pathname === '/summer-campaign-admin'
     || location.pathname === '/admin/summer-campaign'
     || location.pathname === '/admin/tour-de-glace'
     || location.pathname === '/admin/tour-de-glace-femme';
+
+  useEffect(() => {
+    if (isLoggedIn && openCheckinAfterLogin) {
+      setShowLoginModal(false);
+      setOpenCheckinAfterLogin(false);
+      setShowGlobalCheckin(true);
+    }
+  }, [isLoggedIn, openCheckinAfterLogin]);
 
   useEffect(() => {
     if (!apiUrl) {
@@ -685,6 +706,16 @@ const Header = ({ refreshShops }) => {
           </DesktopNavLink>
         </DesktopNav>
         <HeaderRight>
+          <GlobalCheckinButton
+            type="button"
+            onClick={openGlobalCheckin}
+            title="Eis einchecken"
+            aria-haspopup="dialog"
+            aria-expanded={showGlobalCheckin}
+          >
+            <IceCreamCone size={19} aria-hidden="true" />
+            <span>Eis einchecken</span>
+          </GlobalCheckinButton>
           {isLoggedIn ? (
             <AccountCluster>
               <NotificationBellWrap aria-label="Benachrichtigungen">
@@ -749,6 +780,7 @@ const Header = ({ refreshShops }) => {
 
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
+              <MenuActionButton type="button" onClick={openGlobalCheckin}><MenuLabel icon={IceCreamCone}>Eis einchecken</MenuLabel></MenuActionButton>
               <MenuItemLink to="/aktionen" onClick={closeMenu}><MenuLabel icon={CalendarDays}>Aktionen &amp; Rückblicke</MenuLabel></MenuItemLink>
               <MenuItemLink to="/" end onClick={closeMenu}><MenuLabel icon={Map}>Karte</MenuLabel></MenuItemLink>
               <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
@@ -871,6 +903,13 @@ const Header = ({ refreshShops }) => {
           userLongitude={userPosition ? userPosition[1] : 12.92}
         />
       )}
+      <GlobalCheckinModal
+        open={showGlobalCheckin}
+        onClose={() => setShowGlobalCheckin(false)}
+        userId={userId}
+        userPosition={userPosition}
+        refreshShops={refreshShops}
+      />
       {showOverlay && (
         <OverlayBackground>
           <SharedModal>
@@ -940,6 +979,13 @@ const MenuItemIcon = styled.span`
 `;
 
 const HeaderContainer = styled.header`
+  --header-control-height: 44px;
+  --header-control-radius: 12px;
+  --header-control-color: #2f2100;
+  --header-control-border: rgba(255, 255, 255, 0.62);
+  --header-control-background: rgba(255, 255, 255, 0.38);
+  --header-control-hover: rgba(255, 255, 255, 0.68);
+  --header-control-active: rgba(255, 255, 255, 0.92);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -957,8 +1003,13 @@ const HeaderContainer = styled.header`
   }
 
   @media (max-width: 420px) {
+    --header-control-height: 40px;
     gap: 8px;
     padding: 8px;
+  }
+
+  @media (min-width: 421px) and (max-width: 768px) {
+    --header-control-height: 42px;
   }
 `;
 
@@ -1028,37 +1079,50 @@ const DesktopNav = styled.nav`
 `;
 
 const DesktopNavLink = styled(NavLink)`
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  color: #3d2c00;
+  height: var(--header-control-height);
+  box-sizing: border-box;
+  color: var(--header-control-color);
   text-decoration: none;
-  font-weight: 700;
-  padding: 8px ${({ $compact }) => ($compact ? '0px' : '10px')} 8px 10px;
-  margin-right: ${({ $compact }) => ($compact ? '-4px' : '0')};
-  border-radius: 10px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  font-weight: 800;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--header-control-radius);
+  background: rgba(255, 255, 255, 0.14);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.4);
-    color: #251900;
+    background: var(--header-control-hover);
+    border-color: var(--header-control-border);
   }
 
   &.active {
-    background: rgba(255, 255, 255, 0.9);
-    color: #2b1d00;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background: var(--header-control-active);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 7px rgba(71, 46, 0, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(47, 33, 0, 0.28);
+    outline-offset: 2px;
   }
 
   @media (min-width: 1100px) and (max-width: 1625px) {
     gap: 5px;
     font-size: 0.92rem;
-    padding: 7px ${({ $compact }) => ($compact ? '0px' : '7px')} 7px 7px;
-    margin-right: ${({ $compact }) => ($compact ? '-2px' : '0')};
+    padding: 0 8px;
   }
 `;
 
 const DesktopNavBadge = styled.span`
+  position: absolute;
+  top: -8px;
+  right: -8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1070,12 +1134,13 @@ const DesktopNavBadge = styled.span`
   font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 1.1;
-  transform: translate(-10px, -12px) rotate(12deg);
+  transform: rotate(10deg);
   transform-origin: center;
   box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
 
   @media (min-width: 1100px) and (max-width: 1625px) {
-    transform: translate(-8px, -10px) rotate(12deg);
+    top: -7px;
+    right: -6px;
   }
 `;
 
@@ -1098,7 +1163,7 @@ const ActivityBadge = styled.span`
 const HeaderRight = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-left: auto;
 
   @media (max-width: 768px) {
@@ -1118,15 +1183,15 @@ const HeaderRight = styled.div`
 const AccountCluster = styled.div`
   display: flex;
   align-items: center;
-  min-height: 48px;
-  background: rgba(255, 255, 255, 0.65);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  min-height: var(--header-control-height);
+  height: var(--header-control-height);
+  box-sizing: border-box;
+  background: var(--header-control-background);
+  border-radius: var(--header-control-radius);
+  border: 1px solid var(--header-control-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   @media (max-width: 768px) {
-    min-height: 42px;
-    height: 42px;
     min-width: 0;
     max-width: none;
     flex: 0 1 auto;
@@ -1143,15 +1208,67 @@ const NotificationBellWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  min-height: 48px;
+  min-width: var(--header-control-height);
+  min-height: var(--header-control-height);
+  height: var(--header-control-height);
   color: #2f2100;
   padding: 0 2px 0 4px;
 
   @media (max-width: 768px) {
-    min-width: 42px;
-    min-height: 42px;
-    height: 42px;
+    min-width: var(--header-control-height);
+  }
+`;
+
+const GlobalCheckinButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  height: var(--header-control-height);
+  min-height: var(--header-control-height);
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid rgba(47, 33, 0, 0.18);
+  border-radius: var(--header-control-radius);
+  background: var(--header-control-active);
+  color: var(--header-control-color);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 7px rgba(71, 46, 0, 0.12);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    background: #fff;
+    border-color: rgba(47, 33, 0, 0.28);
+  }
+
+  &[aria-expanded='true'] {
+    background: #fff;
+    border-color: rgba(47, 33, 0, 0.28);
+    box-shadow: 0 2px 8px rgba(71, 46, 0, 0.18);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(47, 33, 0, 0.28);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 920px) {
+    width: var(--header-control-height);
+    padding: 0;
+
+    span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+  }
+
+  @media (max-width: 420px) {
+    width: var(--header-control-height);
   }
 `;
 
@@ -1162,18 +1279,18 @@ const UserStatusLink = styled(Link)`
   text-decoration: none;
   color: #2f2100;
   background: transparent;
-  border-radius: 14px;
+  border-radius: var(--header-control-radius);
   padding: 5px 10px 5px 6px;
   border: 1px solid transparent;
-  min-height: 48px;
+  min-height: var(--header-control-height);
+  height: var(--header-control-height);
+  box-sizing: border-box;
 
   &:hover {
     background: rgba(255, 255, 255, 0.35);
   }
 
   @media (max-width: 768px) {
-    min-height: 42px;
-    height: 42px;
     padding: 0 8px 0 6px;
   }
 `;
@@ -1232,16 +1349,19 @@ const LoginHeaderButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  background: rgba(255, 255, 255, 0.52);
-  color: #2f2100;
-  border-radius: 12px;
-  padding: 0 12px;
-  min-height: 48px;
-  height: 48px;
+  box-sizing: border-box;
+  border: 1px solid var(--header-control-border);
+  background: var(--header-control-background);
+  color: var(--header-control-color);
+  border-radius: var(--header-control-radius);
+  padding: 0 14px;
+  min-height: var(--header-control-height);
+  height: var(--header-control-height);
+  font: inherit;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
   .login-icon {
     display: none;
@@ -1249,14 +1369,17 @@ const LoginHeaderButton = styled.button`
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.78);
+    background: var(--header-control-hover);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(47, 33, 0, 0.28);
+    outline-offset: 2px;
   }
 
   @media (max-width: 520px) {
-    width: 42px;
-    min-width: 42px;
-    min-height: 42px;
-    height: 42px;
+    width: var(--header-control-height);
+    min-width: var(--header-control-height);
     padding: 0;
 
     .login-icon {
@@ -1276,14 +1399,16 @@ const BurgerMenu = styled.button`
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  color: #2f2100;
-  background: rgba(255, 255, 255, 0.52);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 12px;
-  width: 48px;
-  height: 48px;
+  box-sizing: border-box;
+  color: var(--header-control-color);
+  background: var(--header-control-background);
+  border: 1px solid var(--header-control-border);
+  border-radius: var(--header-control-radius);
+  width: var(--header-control-height);
+  height: var(--header-control-height);
   padding: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
   span {
     height: 3px;
@@ -1293,12 +1418,18 @@ const BurgerMenu = styled.button`
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.78);
+    background: var(--header-control-hover);
   }
 
-  @media (max-width: 768px) {
-    width: 42px;
-    height: 42px;
+  &[aria-expanded='true'] {
+    background: var(--header-control-active);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 7px rgba(71, 46, 0, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(47, 33, 0, 0.28);
+    outline-offset: 2px;
   }
 `;
 

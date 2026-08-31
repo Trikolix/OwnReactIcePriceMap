@@ -69,6 +69,9 @@ $sql = "SELECT
     e.status,
     e.reopening_date,
     e.opening_hours_note,
+    e.place_type,
+    e.active_until,
+    e.closed_early_at,
 
     -- Letzter gemeldeter Preis für Kugel-Eis mit Währung
     (SELECT p1.preis 
@@ -233,7 +236,14 @@ LEFT JOIN kugel_scores ks ON ks.eisdiele_id = e.id
 LEFT JOIN softeis_scores ss ON ss.eisdiele_id = e.id
 LEFT JOIN eisbecher_scores es ON es.eisdiele_id = e.id
 
-WHERE 1=1{$openClause}{$attributeClause}
+WHERE (
+    e.place_type <> 'temporary_stand'
+    OR (
+        e.active_until IS NOT NULL
+        AND e.active_until >= CURRENT_TIMESTAMP
+        AND e.closed_early_at IS NULL
+    )
+){$openClause}{$attributeClause}
 ORDER BY finaler_kugel_score DESC, 
          finaler_softeis_score DESC, 
          finaler_eisbecher_score DESC;";

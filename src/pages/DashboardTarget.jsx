@@ -4,8 +4,9 @@ import styled from 'styled-components';
 import Header from '../Header';
 import AwardCard from '../components/AwardCard';
 import NewUserCard from '../components/NewUserCard';
+import CheckinCard from '../components/CheckinCard';
 
-const TARGET_TYPES = new Set(['award', 'new_user']);
+const TARGET_TYPES = new Set(['award', 'new_user', 'checkin']);
 
 const buildDashboardFocusUrl = (type, id, focusCommentId) => {
   const params = new URLSearchParams();
@@ -52,7 +53,7 @@ function DashboardTarget() {
         return json;
       })
       .then((json) => {
-        if (json.meta?.historical === false) {
+        if (type !== 'checkin' && json.meta?.historical === false) {
           navigate(buildDashboardFocusUrl(type, id, focusCommentId), { replace: true });
           return;
         }
@@ -94,6 +95,13 @@ function DashboardTarget() {
         {!loading && !error && target?.typ === 'new_user' && (
           <NewUserCard
             user={target.data}
+            showComments={Boolean(focusCommentId)}
+            focusCommentId={focusCommentId}
+          />
+        )}
+        {!loading && !error && target?.typ === 'checkin' && (
+          <CheckinCard
+            checkin={target.data}
             showComments={Boolean(focusCommentId)}
             focusCommentId={focusCommentId}
           />

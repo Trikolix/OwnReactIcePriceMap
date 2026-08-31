@@ -10,6 +10,7 @@ import { Card as SharedCard } from "../styles/SharedStyles";
 
 const GroupCheckinCard = ({ checkins, onSuccess }) => {
     const first = checkins[0];
+    const hasPublicPlace = Boolean(first?.eisdiele_id) && first?.context_type !== 'no_public_place';
     const allNames = formatNames(checkins);
     function formatNames(checkins) {
         if (checkins.length === 1) {
@@ -86,12 +87,9 @@ const GroupCheckinCard = ({ checkins, onSuccess }) => {
             </CardMetaRow>
             <ContentWrapper>
                 <LeftContent>
-                    {allNames} waren gemeinsam bei{" "}
-                    <strong>
-                        <CleanLink to={`/map/activeShop/${first.eisdiele_id}`}>
-                            {first.eisdiele_name}
-                        </CleanLink>
-                    </strong>{" "}
+                    {allNames} waren gemeinsam {hasPublicPlace ? (<>
+                      bei <strong><CleanLink to={`/map/activeShop/${first.eisdiele_id}`}>{first.eisdiele_name}</CleanLink></strong>
+                    </>) : "Eis essen"}
                 </LeftContent>
             </ContentWrapper>
             <Swiper

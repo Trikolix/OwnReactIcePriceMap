@@ -64,6 +64,7 @@ JOIN (
 -- Aktuellsten Preis für Kugel pro Eisdiele finden
 JOIN preise p ON e.id = p.eisdiele_id 
 WHERE p.typ = 'kugel'
+AND e.place_type = 'ice_shop'
 {$openClause}
 AND p.id = (
     SELECT p2.id

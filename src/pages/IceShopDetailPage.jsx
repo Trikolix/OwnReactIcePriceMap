@@ -16,6 +16,7 @@ import SubmitPriceModal from '../SubmitPriceModal';
 import SubmitReviewModal from '../SubmitReviewModal';
 import CheckinForm from '../CheckinForm';
 import SubmitRouteModal from '../SubmitRouteModal';
+import SecondaryPlaceActions from '../components/SecondaryPlaceActions';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -415,6 +416,8 @@ const IceShopDetailPage = () => {
     );
   }
 
+  const isCoreIceShop = (eisdiele.place_type || 'ice_shop') === 'ice_shop';
+
   const priceCards = [
     { title: 'Kugelpreis', entry: preise.kugel, icon: <IceCream size={18} /> },
     { title: 'Softeispreis', entry: preise.softeis, icon: <Sparkles size={18} /> },
@@ -553,10 +556,12 @@ const IceShopDetailPage = () => {
             </HeroSummaryRow>
             <HeroActions>
               {isLoggedIn && <PrimaryAction type="button" onClick={() => setShowCheckinForm(true)}>Einchecken</PrimaryAction>}
-              {isLoggedIn && <SecondaryAction type="button" onClick={() => setShowReviewForm(true)}>Bewerten</SecondaryAction>}
+              {isLoggedIn && isCoreIceShop && <SecondaryAction type="button" onClick={() => setShowReviewForm(true)}>Bewerten</SecondaryAction>}
+              {isCoreIceShop && (
               <PrimaryAction as={Link} to={`/ice-date/new?shopId=${eisdiele.id}`}>
                 <CalendarDays size={16} /> Eis-Date planen
               </PrimaryAction>
+              )}
               <ActionAnchor
                 href={
                   eisdiele.latitude && eisdiele.longitude
@@ -605,9 +610,10 @@ const IceShopDetailPage = () => {
                   </InfoBlock>
                 )}
               </InfoStack>
+              <SecondaryPlaceActions place={eisdiele} onChanged={refreshShop} />
             </SectionCard>
 
-            <SectionCard>
+            {isCoreIceShop && <SectionCard>
               <SectionHeader>
                 <div>
                   <SectionTitle>Preise und Bewertungen</SectionTitle>
@@ -662,7 +668,7 @@ const IceShopDetailPage = () => {
                   <SecondaryAction type="button" onClick={() => setShowReviewForm(true)}>Bewertung abgeben</SecondaryAction>
                 </InlineActions>
               )}
-            </SectionCard>
+            </SectionCard>}
 
             <SectionCard>
               <SectionHeader>
@@ -851,15 +857,15 @@ const IceShopDetailPage = () => {
             <FeedTab type="button" $active={activeFeed === 'checkins'} onClick={() => setActiveFeed('checkins')}>
               <Store size={16} /> Check-ins ({checkins.length})
             </FeedTab>
-            <FeedTab type="button" $active={activeFeed === 'reviews'} onClick={() => setActiveFeed('reviews')}>
+            {isCoreIceShop && <FeedTab type="button" $active={activeFeed === 'reviews'} onClick={() => setActiveFeed('reviews')}>
               <MessageSquare size={16} /> Reviews ({reviews.length})
-            </FeedTab>
+            </FeedTab>}
             <FeedTab type="button" $active={activeFeed === 'photos'} onClick={() => setActiveFeed('photos')}>
               <Images size={16} /> Fotos ({photoGallery.length})
             </FeedTab>
-            <FeedTab type="button" $active={activeFeed === 'routes'} onClick={() => setActiveFeed('routes')}>
+            {isCoreIceShop && <FeedTab type="button" $active={activeFeed === 'routes'} onClick={() => setActiveFeed('routes')}>
               <Route size={16} /> Routen ({routes.length})
-            </FeedTab>
+            </FeedTab>}
           </FeedTabs>
 
           {activeFeed === 'checkins' && (
@@ -888,7 +894,7 @@ const IceShopDetailPage = () => {
             </>
           )}
 
-          {activeFeed === 'reviews' && (
+          {isCoreIceShop && activeFeed === 'reviews' && (
             <>
               {isLoggedIn && (
                 <InlineActions>
@@ -934,7 +940,7 @@ const IceShopDetailPage = () => {
             </>
           )}
 
-          {activeFeed === 'routes' && (
+          {isCoreIceShop && activeFeed === 'routes' && (
             <>
               {isLoggedIn && (
                 <InlineActions>
@@ -964,7 +970,7 @@ const IceShopDetailPage = () => {
         </SectionCard>
       </PageBody>
 
-      {showPriceForm && (
+      {isCoreIceShop && showPriceForm && (
         <SubmitPriceModal
           shop={shopData}
           userId={userId}
@@ -974,7 +980,7 @@ const IceShopDetailPage = () => {
         />
       )}
 
-      {showReviewForm && (
+      {isCoreIceShop && showReviewForm && (
         <SubmitReviewModal
           shop={shopData}
           userId={userId}
@@ -994,11 +1000,12 @@ const IceShopDetailPage = () => {
           setShowCheckinForm={setShowCheckinForm}
           onSuccess={refreshShop}
           shop={shopData}
+          contextType={eisdiele.place_type || 'ice_shop'}
           setShowPriceForm={setShowPriceForm}
         />
       )}
 
-      {showRouteForm && (
+      {isCoreIceShop && showRouteForm && (
         <SubmitRouteModal
           showForm={showRouteForm}
           setShowForm={setShowRouteForm}

@@ -53,7 +53,7 @@ class IceShopOneByOneEvaluator extends BaseAwardEvaluator {
         global $pdo;
         $sql = "SELECT eisdiele_id, COUNT(*) AS visits
                 FROM checkins
-                WHERE nutzer_id = ?
+                WHERE nutzer_id = ? AND context_type = 'ice_shop' AND eisdiele_id IS NOT NULL
                 GROUP BY eisdiele_id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$userId]);

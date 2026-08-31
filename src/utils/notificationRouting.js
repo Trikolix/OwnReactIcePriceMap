@@ -24,7 +24,7 @@ export const buildNotificationDeeplink = (notification, userId) => {
       if (data.checkin_id && data.eisdiele_id) {
         return `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${data.checkin_id}${data.kommentar_id ? `&focusComment=${data.kommentar_id}` : ""}`;
       }
-      return null;
+      return buildDashboardTargetUrl('checkin', data.checkin_id, data.kommentar_id);
     case "kommentar_bewertung":
       if (data.bewertung_id && data.eisdiele_id) {
         return `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${data.bewertung_id}${data.kommentar_id ? `&focusComment=${data.kommentar_id}` : ""}`;
@@ -62,6 +62,10 @@ export const buildNotificationDeeplink = (notification, userId) => {
         : null;
     }
     case "checkin_mention": {
+      const checkinId = data.checkin_id || notification?.referenz_id;
+      if (!data.shop_id && !data.eisdiele_id) {
+        return buildDashboardTargetUrl('checkin', checkinId);
+      }
       const targetUserId = userId || notification?.empfaenger_id;
       return targetUserId ? `/user/${targetUserId}?mentionNotificationId=${notification?.id}` : null;
     }
@@ -72,7 +76,7 @@ export const buildNotificationDeeplink = (notification, userId) => {
         const checkinId = data.checkin_id || entityId;
         return data.eisdiele_id && checkinId
           ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${checkinId}`
-          : null;
+          : buildDashboardTargetUrl('checkin', checkinId);
       } else if (entityType === "bewertung") {
         const reviewId = data.bewertung_id || entityId;
         return data.eisdiele_id && reviewId
@@ -98,6 +102,9 @@ export const buildNotificationDeeplink = (notification, userId) => {
         if (data.user_registration_id) {
           return buildDashboardTargetUrl('new_user', data.user_registration_id, data.kommentar_id);
         }
+        if (data.checkin_id) {
+          return buildDashboardTargetUrl('checkin', data.checkin_id, data.kommentar_id);
+        }
         if (data.user_award_id) {
           return buildDashboardTargetUrl('award', data.user_award_id, data.kommentar_id);
         }
@@ -119,7 +126,7 @@ export const buildNotificationDeeplink = (notification, userId) => {
         case "checkin_kommentar":
           return data.eisdiele_id && referenceId
             ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${referenceId}${commentQuery}`
-            : null;
+            : buildDashboardTargetUrl('checkin', referenceId, data.kommentar_id);
         case "bewertung_kommentar":
           return data.eisdiele_id && referenceId
             ? `/map/activeShop/${data.eisdiele_id}?tab=reviews&focusReview=${referenceId}${commentQuery}`
@@ -135,7 +142,7 @@ export const buildNotificationDeeplink = (notification, userId) => {
         case "checkin":
           return data.eisdiele_id && referenceId
             ? `/map/activeShop/${data.eisdiele_id}?tab=checkins&focusCheckin=${referenceId}`
-            : null;
+            : buildDashboardTargetUrl('checkin', referenceId);
         case "route": {
           const routeOwnerId = data.route_autor_id || data.source_user_id;
           return routeOwnerId && referenceId

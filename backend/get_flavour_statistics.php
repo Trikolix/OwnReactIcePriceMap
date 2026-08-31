@@ -43,6 +43,8 @@ function flavourWhere(string $sortenname, string $iceType, string $regionLevel, 
 {
     $where = [
         "TRIM({$sortAlias}.sortenname) = :{$prefix}sortenname",
+        "{$checkinAlias}.context_type = 'ice_shop'",
+        "{$shopAlias}.place_type = 'ice_shop'",
     ];
     $params = [":{$prefix}sortenname" => $sortenname];
 

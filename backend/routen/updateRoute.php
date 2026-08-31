@@ -117,6 +117,14 @@ try {
             echo json_encode(['status' => 'error', 'message' => 'Bitte mindestens eine Eisdiele auswählen.']);
             die();
         }
+        $placeholders = implode(',', array_fill(0, count($newEisdieleIds), '?'));
+        $shopValidation = $pdo->prepare("SELECT COUNT(*) FROM eisdielen WHERE place_type = 'ice_shop' AND id IN ({$placeholders})");
+        $shopValidation->execute($newEisdieleIds);
+        if ((int)$shopValidation->fetchColumn() !== count($newEisdieleIds)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Routen können nur mit Eisdielen verknüpft werden.']);
+            die();
+        }
         $fields[] = "eisdiele_id = :primary_eisdiele";
         $params['primary_eisdiele'] = $newEisdieleIds[0];
     }

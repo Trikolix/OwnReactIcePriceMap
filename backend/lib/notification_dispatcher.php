@@ -367,11 +367,13 @@ function buildNotificationDeeplink(array $notification): ?string
 
     switch ($notification['typ']) {
         case 'kommentar':
-            if (!empty($data['checkin_id']) && !empty($data['eisdiele_id'])) {
                 $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+            if (!empty($data['checkin_id']) && !empty($data['eisdiele_id'])) {
                 return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
             }
-            return null;
+            return !empty($data['checkin_id'])
+                ? '/dashboard/target?type=checkin&id=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '')
+                : null;
         case 'kommentar_bewertung':
             if (!empty($data['bewertung_id']) && !empty($data['eisdiele_id'])) {
                 $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
@@ -404,7 +406,7 @@ function buildNotificationDeeplink(array $notification): ?string
                 $shopId = (int)($data['eisdiele_id'] ?? 0);
                 return $shopId > 0 && $checkinId > 0
                     ? '/map/activeShop/' . $shopId . '?tab=checkins&focusCheckin=' . $checkinId
-                    : null;
+                    : ($checkinId > 0 ? '/dashboard/target?type=checkin&id=' . $checkinId : null);
             } elseif ($entityType === 'bewertung') {
                 $reviewId = (int)($data['bewertung_id'] ?? $entityId);
                 $shopId = (int)($data['eisdiele_id'] ?? 0);
@@ -421,6 +423,9 @@ function buildNotificationDeeplink(array $notification): ?string
                 $commentId = (int)($data['kommentar_id'] ?? $entityId);
                 if (!empty($data['checkin_id']) && !empty($data['eisdiele_id'])) {
                     return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
+                }
+                if (!empty($data['checkin_id'])) {
+                    return '/dashboard/target?type=checkin&id=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
                 }
                 if (!empty($data['bewertung_id']) && !empty($data['eisdiele_id'])) {
                     return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=reviews&focusReview=' . (int)$data['bewertung_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
@@ -462,7 +467,9 @@ function buildNotificationDeeplink(array $notification): ?string
         case 'mention':
             if (isset($data['reference_type'])) {
                 if ($data['reference_type'] === 'checkin_kommentar') {
-                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
+                    return !empty($data['eisdiele_id'])
+                        ? '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id']
+                        : '/dashboard/target?type=checkin&id=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
                 } elseif ($data['reference_type'] === 'bewertung_kommentar') {
                     return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=reviews&focusReview=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
                 } elseif ($data['reference_type'] === 'route_kommentar') {
@@ -472,7 +479,9 @@ function buildNotificationDeeplink(array $notification): ?string
                 } elseif ($data['reference_type'] === 'user_award_kommentar') {
                     return '/dashboard/target?type=award&id=' . (int)$notification['referenz_id'] . '&focusComment=' . (int)$data['kommentar_id'];
                 } elseif ($data['reference_type'] === 'checkin') {
-                    return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id'];
+                    return !empty($data['eisdiele_id'])
+                        ? '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$notification['referenz_id']
+                        : '/dashboard/target?type=checkin&id=' . (int)$notification['referenz_id'];
                 } elseif ($data['reference_type'] === 'route') {
                     return '/user/' . (int)$data['source_user_id'] . '?tab=routes&focusRoute=' . (int)$notification['referenz_id'];
                 }
@@ -481,6 +490,10 @@ function buildNotificationDeeplink(array $notification): ?string
                 ? '/user/' . $recipientId . '?mentionNotificationId=' . (int)$notification['id']
                 : null;
         case 'checkin_mention':
+            $checkinId = (int)($data['checkin_id'] ?? $notification['referenz_id']);
+            if (empty($data['shop_id']) && empty($data['eisdiele_id'])) {
+                return $checkinId > 0 ? '/dashboard/target?type=checkin&id=' . $checkinId : null;
+            }
             return $recipientId > 0
                 ? '/user/' . $recipientId . '?mentionNotificationId=' . (int)$notification['id']
                 : null;

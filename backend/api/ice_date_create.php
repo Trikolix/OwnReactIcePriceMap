@@ -39,7 +39,7 @@ if (count($participantIds) > 7) {
     exit;
 }
 
-$shopStmt = $pdo->prepare('SELECT id FROM eisdielen WHERE id = :shop_id LIMIT 1');
+$shopStmt = $pdo->prepare("SELECT id FROM eisdielen WHERE id = :shop_id AND place_type = 'ice_shop' LIMIT 1");
 $shopStmt->execute(['shop_id' => $shopId]);
 if (!$shopStmt->fetchColumn()) {
     http_response_code(404);
