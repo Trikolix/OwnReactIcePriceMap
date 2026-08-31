@@ -220,6 +220,11 @@ const NotificationBell = () => {
         } else if (notification.typ === 'checkin_mention') {
             // Modal öffnen mit Infos und Optionen
             const data = parseNotificationExtra(notification.zusatzdaten);
+            if (!data.shop_id && !data.eisdiele_id) {
+                const target = buildNotificationDeeplink(notification, userId);
+                if (target) window.location.href = target;
+                return;
+            }
             setMentionModal({
                 isOpen: true,
                 data: {

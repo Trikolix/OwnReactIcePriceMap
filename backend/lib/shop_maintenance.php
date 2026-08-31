@@ -107,7 +107,8 @@ function shopMaintenanceBuildOpeningHoursReason(): string
 function shopMaintenanceShouldTrackShop(array $shopRow): bool
 {
     $status = (string)($shopRow['status'] ?? 'open');
-    return $status !== 'permanent_closed';
+    $placeType = (string)($shopRow['place_type'] ?? 'ice_shop');
+    return $placeType === 'ice_shop' && $status !== 'permanent_closed';
 }
 
 function shopMaintenanceGetShopStates(PDO $pdo, array $shopIds): array
@@ -125,6 +126,7 @@ function shopMaintenanceGetShopStates(PDO $pdo, array $shopIds): array
             e.id,
             e.name,
             e.status,
+            e.place_type,
             e.openingHours,
             e.opening_hours_note,
             latest_price.latest_price_update

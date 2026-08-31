@@ -59,6 +59,7 @@ $sql = "WITH bewertete_checkins AS (
     FROM checkins
     WHERE
         typ = 'Softeis'
+        AND context_type = 'ice_shop'
         AND geschmackbewertung IS NOT NULL
         AND preisleistungsbewertung IS NOT NULL" .
         ($nutzerId !== null ? " AND nutzer_id = :nutzerId" : "") . "

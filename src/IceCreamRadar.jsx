@@ -25,6 +25,10 @@ import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 import { canUseExternalDiscovery } from './utils/featureAccess';
 import { formatDateTimeLocalInputValue } from './utils/dateTimeLocal';
+import {
+  PLACE_VISIBILITY_REQUEST_EVENT,
+  RESTAURANT_FILTER_REQUEST_KEY,
+} from './utils/placeVisibility';
 const MIN_CONTEXT_MENU_ZOOM = 7;
 const EXTERNAL_DISCOVERY_MIN_ZOOM_FALLBACK = 9;
 const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
@@ -389,6 +393,11 @@ const createDefaultFilters = () => ({
   visited: false,
   notVisited: false,
   showPermanentClosed: false,
+  placeTypes: {
+    ice_shop: true,
+    temporary_stand: true,
+    restaurant: false,
+  },
   types: {
     kugel: false,
     softeis: false,
@@ -792,6 +801,42 @@ const IceCreamRadar = () => {
     if (new URLSearchParams(location.search).get('favorites') !== '1' || !userId) return;
     setFilters((previous) => previous.favorites ? previous : { ...previous, favorites: true });
   }, [location.search, userId]);
+
+  useEffect(() => {
+    const enableRestaurantFilter = (event) => {
+      if (event?.detail?.placeType && event.detail.placeType !== 'restaurant') {
+        return;
+      }
+
+      setFilters((previous) => ({
+        ...previous,
+        placeTypes: {
+          ...(previous.placeTypes ?? createDefaultFilters().placeTypes),
+          restaurant: true,
+        },
+      }));
+
+      try {
+        window.sessionStorage.removeItem(RESTAURANT_FILTER_REQUEST_KEY);
+      } catch {
+        // Der Filter ist bereits aktiv; Session Storage ist dafür nicht zwingend nötig.
+      }
+    };
+
+    window.addEventListener(PLACE_VISIBILITY_REQUEST_EVENT, enableRestaurantFilter);
+
+    try {
+      if (window.sessionStorage.getItem(RESTAURANT_FILTER_REQUEST_KEY) === '1') {
+        enableRestaurantFilter();
+      }
+    } catch {
+      // Kein gespeicherter Wunsch vorhanden oder Session Storage ist nicht verfügbar.
+    }
+
+    return () => {
+      window.removeEventListener(PLACE_VISIBILITY_REQUEST_EVENT, enableRestaurantFilter);
+    };
+  }, []);
 
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
@@ -1744,6 +1789,16 @@ const IceCreamRadar = () => {
     }));
   };
 
+  const handlePlaceTypeToggle = (placeType) => {
+    setFilters((prev) => ({
+      ...prev,
+      placeTypes: {
+        ...(prev.placeTypes ?? createDefaultFilters().placeTypes),
+        [placeType]: !(prev.placeTypes ?? createDefaultFilters().placeTypes)[placeType],
+      },
+    }));
+  };
+
   const handleAdvancedTypeChange = (value) => {
     setFilters((prev) => ({
       ...prev,
@@ -1814,6 +1869,7 @@ const IceCreamRadar = () => {
   const notVisitedFilterActive = filters.notVisited && !!userId;
   const showPermanentClosedFilterActive = !!filters.showPermanentClosed;
   const typeFilters = filters.types ?? { kugel: false, softeis: false, eisbecher: false };
+  const placeTypeFilters = filters.placeTypes ?? createDefaultFilters().placeTypes;
   const hasTypeFilter = Object.values(typeFilters).some(Boolean);
   const advancedFilters = filters.advanced ?? createDefaultFilters().advanced;
   const activeAdvancedType = ADVANCED_FILTER_TYPES.find((type) => type.key === advancedFilters.type) ?? ADVANCED_FILTER_TYPES[0];
@@ -1863,6 +1919,10 @@ const IceCreamRadar = () => {
       return [];
     }
     const filteredShops = iceCreamShops.reduce((acc, shop) => {
+      const placeType = shop.place_type || 'ice_shop';
+      if (!placeTypeFilters[placeType]) {
+        return acc;
+      }
       if (favoritesFilterActive && shop.is_favorit !== 1) {
         return acc;
       }
@@ -1940,6 +2000,7 @@ const IceCreamRadar = () => {
     showPermanentClosedFilterActive,
     hasTypeFilter,
     typeFilters,
+    placeTypeFilters,
     hasAdvancedFilter,
     isAdvancedRatingActive,
     isAdvancedPriceActive,
@@ -1969,6 +2030,9 @@ const IceCreamRadar = () => {
     if (visitedFilterActive) count += 1;
     if (notVisitedFilterActive) count += 1;
     if (showPermanentClosedFilterActive) count += 1;
+    if (!placeTypeFilters.ice_shop) count += 1;
+    if (!placeTypeFilters.temporary_stand) count += 1;
+    if (placeTypeFilters.restaurant) count += 1;
     const typeCount = Object.values(typeFilters).filter(Boolean).length;
     count += typeCount;
     if (hasAdvancedFilter) count += 1;
@@ -1981,6 +2045,7 @@ const IceCreamRadar = () => {
     visitedFilterActive,
     notVisitedFilterActive,
     showPermanentClosedFilterActive,
+    placeTypeFilters,
     typeFilters,
     hasAdvancedFilter,
     mapAttributeIds.length,
@@ -2578,6 +2643,34 @@ const IceCreamRadar = () => {
                 </ClearMapAttributesButton>
               </FilterSection>
             )}
+            <FilterSection>
+              <FilterSectionTitle>Ortstypen</FilterSectionTitle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!placeTypeFilters.ice_shop}
+                  onChange={() => handlePlaceTypeToggle('ice_shop')}
+                />
+                <span>Eisdielen</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!placeTypeFilters.temporary_stand}
+                  onChange={() => handlePlaceTypeToggle('temporary_stand')}
+                />
+                <span>Aktive temporäre Stände</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!placeTypeFilters.restaurant}
+                  onChange={() => handlePlaceTypeToggle('restaurant')}
+                />
+                <span>Restaurants/Cafés mit Eisangebot</span>
+              </FilterToggle>
+              <FilterHint>Temporäre Stände sind nur bis zu ihrem angegebenen Enddatum sichtbar.</FilterHint>
+            </FilterSection>
             <FilterSection>
               <FilterSectionTitle>Favoriten & Besuche</FilterSectionTitle>
               <FilterToggle disabled={!userId}>

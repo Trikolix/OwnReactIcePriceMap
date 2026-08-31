@@ -23,6 +23,7 @@ FROM checkin_sorten
 JOIN checkins ON checkin_sorten.checkin_id = checkins.id
 JOIN eisdielen ON checkins.eisdiele_id = eisdielen.id
 WHERE checkin_sorten.sortenname = :sortenname AND checkins.typ = :typ
+  AND checkins.context_type = 'ice_shop' AND eisdielen.place_type = 'ice_shop'
 GROUP BY eisdielen.id, checkin_sorten.sortenname
 ORDER BY durchschnittsbewertung DESC
 LIMIT 10

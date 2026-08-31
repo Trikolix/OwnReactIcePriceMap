@@ -135,6 +135,11 @@ try {
     $userId = $_POST['userId'] ?? null;
     $shopId = $_POST['shopId'] ?? null;
     $type = $_POST['type'] ?? null;
+    $requestedContextType = (string)($_POST['contextType'] ?? 'ice_shop');
+    $allowedContextTypes = ['ice_shop', 'restaurant', 'temporary_stand', 'no_public_place'];
+    if (!in_array($requestedContextType, $allowedContextTypes, true)) {
+        respondWithError('Ungültiger Check-in-Kontext.');
+    }
     $latUser = $_POST['lat'] ?? null;
     $lonUser = $_POST['lon'] ?? null;
 
@@ -162,9 +167,39 @@ try {
     $sorten = json_decode($_POST['sorten'] ?? '[]', true);
     if (!is_array($sorten)) $sorten = [];
 
-    if (!$userId || !$shopId || !$type) {
+    if (!$userId || !$type) {
         respondWithError('Fehlende oder ungültige Pflichtdaten.');
     }
+
+    $shop = null;
+    $contextType = 'no_public_place';
+    if ($requestedContextType === 'no_public_place') {
+        $shopId = null;
+        $latUser = null;
+        $lonUser = null;
+        $anreise = null;
+        $groupId = null;
+        $referencedCheckinId = null;
+    } else {
+        if (!$shopId || !is_numeric($shopId)) {
+            respondWithError('Für diesen Check-in muss ein öffentlicher Eis-Ort gewählt werden.');
+        }
+        $shopStmt = $pdo->prepare('SELECT id, name, latitude, longitude, place_type, active_until, closed_early_at FROM eisdielen WHERE id = ?');
+        $shopStmt->execute([(int)$shopId]);
+        $shop = $shopStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$shop) {
+            respondWithError('Der gewählte Eis-Ort wurde nicht gefunden.', 404);
+        }
+        $contextType = (string)($shop['place_type'] ?? 'ice_shop');
+        if ($contextType === 'temporary_stand') {
+            $activeUntil = !empty($shop['active_until']) ? strtotime($shop['active_until']) : false;
+            if (!empty($shop['closed_early_at']) || !$activeUntil || $activeUntil < time()) {
+                respondWithError('Dieser temporäre Stand ist nicht mehr aktiv.');
+            }
+        }
+        $shopId = (int)$shop['id'];
+    }
+    $isCoreIceShop = $contextType === 'ice_shop';
 
     // Wenn keine Gesamt-Geschmacksbewertung übergeben wurde, versuche
     // einen Durchschnitt aus den einzelnen Sorten-Bewertungen zu berechnen.
@@ -218,11 +253,7 @@ try {
     // Dies wird verwendet, um z.B. On-Site Challenges zu erkennen.
     // Berechnung erfolgt mit Haversine-Formel.
     $isOnSite = 0;
-    if ($latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
-        // Hole Shop-Koordinaten
-        $stmt = $pdo->prepare("SELECT latitude, longitude FROM eisdielen WHERE id = ?");
-        $stmt->execute([$shopId]);
-        $shop = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($shopId !== null && $latUser !== null && $lonUser !== null && is_numeric($latUser) && is_numeric($lonUser)) {
         if (!empty($shop)) {
             $latShop = $shop['latitude'];
             $lonShop = $shop['longitude'];
@@ -291,18 +322,18 @@ try {
     // validiert. Wir unterstützen optional ein übergebenes `datum`.
     $sql = "
         INSERT INTO checkins (
-            nutzer_id, eisdiele_id, typ, geschmackbewertung,
+            nutzer_id, eisdiele_id, context_type, typ, geschmackbewertung,
             waffelbewertung, größenbewertung, preisleistungsbewertung,
             kommentar, anreise, is_on_site, group_id
             " . ($datum ? ", datum" : "") . "
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             " . ($datum ? ", ?" : "") . "
         )
     ";
 
     $params = [
-        $userId, $shopId, $type, $geschmack,
+        $userId, $shopId, $contextType, $type, $geschmack,
         $waffel, $größe, $preisleistung,
         $kommentar, $anreise, $isOnSite, $groupId
     ];
@@ -319,7 +350,9 @@ try {
     if (!$checkinId) {
         throw new Exception("Checkin konnte nicht gespeichert werden.");
     }
+    if ($shopId !== null) {
     externalShopReleaseDiscoverySlotForShop($pdo, (int)$shopId);
+    }
 
     // Bilder-Tabelle füllen (falls Bilder hochgeladen wurden)
     if (!empty($bildUrls)) {
@@ -336,7 +369,7 @@ try {
     $checkinMeta = $pdo->prepare("
         SELECT c.id, c.anreise, c.datum, e.bundesland_id AS bundesland, e.landkreis_id AS landkreis, e.land_id AS land, e.name AS shop_name
         FROM checkins c
-        JOIN eisdielen e ON c.eisdiele_id = e.id
+        LEFT JOIN eisdielen e ON c.eisdiele_id = e.id
         WHERE c.id = ?
     ");
     $checkinMeta->execute([$checkinId]);
@@ -349,8 +382,11 @@ try {
     // fügen Einträge in `checkin_mentions` und `benachrichtigungen` hinzu.
     // Vor dem Insert prüfen wir, ob die erwähnten Nutzer tatsächlich existieren.
     if (count($mentionedUsers) > 0) {
-        // Für Mention-Checkins immer eine Gruppe bereitstellen (wird bei Bedarf gemerged)
+        // Ortslose Check-ins bleiben bewusst ungegruppiert. Bei öffentlichen
+        // Orten bleibt das bisherige Mention-/Gruppen-Verhalten erhalten.
+        if ($shopId !== null) {
         $groupId = resolveOrMergeCheckinGroup($pdo, [$checkinId]);
+        }
 
         // Einladenden Nutzer holen
         $stmtUser = $pdo->prepare("SELECT username FROM nutzer WHERE id = ?");
@@ -379,14 +415,16 @@ try {
                     'by_user' => $userId,
                     'shop_id' => $shopId,
                     'username' => $inviterName,
-                    'shop_name' => $meta['shop_name'] ?? 'einer Eisdiele',
+                    'shop_name' => $meta['shop_name'] ?? 'Eis ohne öffentlichen Ort',
+                    'eisdiele_id' => $shopId,
+                    'user_id' => (int)$userId,
                 ],
                 [
                     'email' => [
                         'type' => 'checkin_mention',
                         'senderName' => $inviterName,
                         'extra' => [
-                            'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
+                            'shopName' => $meta['shop_name'] ?? 'Eis ohne öffentlichen Ort',
                             'shopId' => $shopId,
                             'checkinId' => $checkinId,
                             'mentionId' => $mentionId,
@@ -400,7 +438,7 @@ try {
         // Gegenseitige Pending-Mentions automatisch akzeptieren und Gruppen mergen.
         // Fenster bewusst großzügig für Gruppen-/Tour-Kontext.
         $autoLinkMinutes = 180;
-        foreach ($mentionedUsers as $mentionedUserId) {
+        foreach ($shopId !== null ? $mentionedUsers : [] as $mentionedUserId) {
             $reciprocalStmt = $pdo->prepare("
                 SELECT cm.id AS mention_id, cm.checkin_id AS inviter_checkin_id
                 FROM checkin_mentions cm
@@ -417,7 +455,7 @@ try {
             $reciprocalStmt->execute([
                 (int)$userId,
                 (int)$mentionedUserId,
-                (int)$shopId,
+                $shopId,
                 (int)$checkinId,
                 $meta['datum'],
                 $autoLinkMinutes,
@@ -458,12 +496,22 @@ try {
     // einzelner Evaluatoren, damit ein fehlerhafter Evaluator den kompletten
     // Checkin-Prozess nicht zerstört.
     $evaluators = [
-        new CountyCountEvaluator(),
         new CheckinCountEvaluator(),
-        new BundeslandCountEvaluator(),
         new PerfectWeekEvaluator(),
         new DayStreakEvaluator(),
         new AllIceTypesEvaluator(),
+        new IceSeasonEvaluator(),
+        new EarlyStarterEvaluator(),
+        new AwardCollectorEvaluator(),
+        new WeekStreakEvaluator(),
+        new DetailedCheckinEvaluator(),
+        new DetailedCheckinCountEvaluator(),
+    ];
+
+    if ($isCoreIceShop) {
+        $evaluators = array_merge($evaluators, [
+            new CountyCountEvaluator(),
+            new BundeslandCountEvaluator(),
         new DistanceIceTravelerEvaluator(),
         new StammkundeEvaluator(),
         new CountryVisitEvaluator(isset($meta['land']) ? (int)$meta['land'] : null),
@@ -471,45 +519,43 @@ try {
         new Chemnitz2025Evaluator(),
         new TheTasteOfChemnitzEvaluator(),
         new BundeslandExperteEvaluator(),
-        new IceSeasonEvaluator(),
         new DifferentIceShopCountEvaluator(),
-        new EarlyStarterEvaluator(),
-        new AwardCollectorEvaluator(),
-        new WeekStreakEvaluator(),
-        new DetailedCheckinEvaluator(),
-        new DetailedCheckinCountEvaluator(),
         new IceShopOneByOneEvaluator(),
         new ChallengeCountEvaluator(),
         new TeamChallengeCountEvaluator(),
         new MultipleVehicleEvaluator(),
         new SeasonalPresentEvaluator(),
-    ];
+        ]);
+    }
 
     if (!empty($bildUrls)) $evaluators[] = new PhotosCountEvaluator();
 
     if ($type === "Softeis") $evaluators[] = new SofticeCountEvaluator();
     elseif ($type === "Eisbecher") $evaluators[] = new SundaeCountEvaluator();
 
-    if ($anreise === 'Fahrrad') {
+    if ($isCoreIceShop && $anreise === 'Fahrrad') {
         $evaluators[] = new CyclingCountEvaluator();
         $evaluators[] = new EPR2025Evaluator();
     }
-    elseif ($anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
-    elseif ($anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
-    elseif ($anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
+    elseif ($isCoreIceShop && $anreise === 'Zu Fuß') $evaluators[] = new WalkCountEvaluator();
+    elseif ($isCoreIceShop && $anreise === 'Motorrad') $evaluators[] = new BikeCountEvaluator();
+    elseif ($isCoreIceShop && $anreise === 'Bus / Bahn') $evaluators[] = new OeffisCountEvaluator();
 
     $postSortenEvaluators = [
         new GeschmackstreueEvaluator(),
         new GeschmacksvielfaltEvaluator(),
         new IcePortionsPerWeekEvaluator(),
-        new Event2026CompletionEvaluator('live'),
-        new Event2026CompletionEvaluator('self_ride'),
     ];
+    if ($isCoreIceShop) {
+        $postSortenEvaluators[] = new Event2026CompletionEvaluator('live');
+        $postSortenEvaluators[] = new Event2026CompletionEvaluator('self_ride');
+    }
     if (!empty($sorten)) $postSortenEvaluators[] = new FuerstPuecklerEvaluator();
     if ($type === "Kugel") $postSortenEvaluators[] = new KugeleisCountEvaluator();
 
     $completedTeamChallenge = null;
-    if ($isOnSite) {
+    $completedChallenge = null;
+    if ($isCoreIceShop && $isOnSite) {
         // Aktive Challenge suchen
         $stmt = $pdo->prepare("
             SELECT c.id, c.nutzer_id, c.eisdiele_id, c.type, c.difficulty, c.created_at, c.valid_until, c.completed, e.name AS shop_name, e.adresse AS shop_address
@@ -528,7 +574,6 @@ try {
         ]);
         $challenge = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $completedChallenge = null;
         if ($challenge) {
             // Challenge auf completed setzen
             $update = $pdo->prepare("UPDATE challenges SET completed = 1, completed_at = NOW() WHERE id = :id");
@@ -635,6 +680,8 @@ try {
         $evaluatorTimings[get_class($evaluator)] = round(($t1 - $t0) * 1000, 2);
     }
 
+    $tourDeGlacePoints = [];
+    if ($isCoreIceShop) {
     $shopCheckinCountStmt = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE nutzer_id = ? AND eisdiele_id = ?");
     $shopCheckinCountStmt->execute([(int)$userId, (int)$shopId]);
     $tourDeGlacePoints = recordTourDeGlaceCheckin($pdo, (int)$userId, (int)$checkinId, [
@@ -650,9 +697,10 @@ try {
             $tourDeGlacePoints[] = $challengeTourPoints;
         }
     }
+    }
 
     $completedIceDate = null;
-    if ($isOnSite) {
+    if ($isCoreIceShop && $isOnSite) {
         try {
             $completedIceDate = iceDateRecordCheckin($pdo, (int)$userId, (int)$shopId, (int)$checkinId);
         } catch (Throwable $e) {
@@ -660,11 +708,13 @@ try {
         }
     }
 
+    if ($isCoreIceShop) {
     try {
         $evaluated = (new TourDeGlaceAwardEvaluator())->evaluate((int)$userId);
         $newAwards = array_merge($newAwards, $evaluated);
     } catch (Exception $e) {
         error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+    }
     }
 
     // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.
@@ -705,6 +755,7 @@ try {
     echo json_encode([
         'status' => 'success',
         'checkin_id' => $checkinId,
+        'context_type' => $contextType,
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,

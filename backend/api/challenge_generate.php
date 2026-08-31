@@ -100,6 +100,7 @@ try {
         WHERE e.latitude BETWEEN :minLat AND :maxLat
           AND e.longitude BETWEEN :minLon AND :maxLon
           AND e.status = 'open'
+          AND e.place_type = 'ice_shop'
         HAVING distance BETWEEN :minRadius AND :maxRadius
     ");
     $stmt->execute([

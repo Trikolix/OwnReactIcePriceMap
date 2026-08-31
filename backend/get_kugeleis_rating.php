@@ -69,6 +69,7 @@ $sql = "WITH bewertete_checkins AS (
     FROM checkins c
     WHERE
         c.typ = 'Kugel'
+        AND c.context_type = 'ice_shop'
         AND c.geschmackbewertung IS NOT NULL
         AND (c.größenbewertung IS NOT NULL OR c.preisleistungsbewertung IS NOT NULL)" .
         ($nutzerId !== null ? " AND nutzer_id = :nutzerId" : "") . "
@@ -157,8 +158,8 @@ SELECT
 
 FROM final_scores f
 JOIN eisdielen e ON e.id = f.eisdiele_id
-LEFT JOIN checkins c ON c.eisdiele_id = f.eisdiele_id AND c.typ = 'Kugel'
-WHERE 1=1{$openFilterClause}
+LEFT JOIN checkins c ON c.eisdiele_id = f.eisdiele_id AND c.typ = 'Kugel' AND c.context_type = 'ice_shop'
+WHERE e.place_type = 'ice_shop'{$openFilterClause}
 GROUP BY f.eisdiele_id, e.name, e.adresse, e.openingHours, e.latitude, e.longitude, f.finaler_score,
          f.avg_geschmack, f.avg_waffel, f.avg_preisleistung, f.nutzeranzahl, e.opening_hours_note, e.status
 ORDER BY finaler_score DESC, kugel_preis_eur ASC, checkin_anzahl DESC;";

@@ -54,6 +54,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        $contextStmt = $pdo->prepare('SELECT id, nutzer_id, eisdiele_id, context_type FROM checkins WHERE id IN (?, ?)');
+        $contextStmt->execute([$checkin_id, $responded_checkin_id]);
+        $checkinsById = [];
+        foreach ($contextStmt->fetchAll(PDO::FETCH_ASSOC) as $checkinRow) {
+            $checkinsById[(int)$checkinRow['id']] = $checkinRow;
+        }
+        $sourceCheckin = $checkinsById[$checkin_id] ?? null;
+        $responseCheckin = $checkinsById[$responded_checkin_id] ?? null;
+        $samePublicPlace = $sourceCheckin && $responseCheckin
+            && $sourceCheckin['context_type'] !== 'no_public_place'
+            && $responseCheckin['context_type'] !== 'no_public_place'
+            && $sourceCheckin['eisdiele_id'] !== null
+            && (int)$sourceCheckin['eisdiele_id'] === (int)$responseCheckin['eisdiele_id'];
+        if (!$samePublicPlace || (int)$responseCheckin['nutzer_id'] !== $mentioned_user_id) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Nur Check-ins am selben öffentlichen Eis-Ort können verknüpft werden.']);
+            exit;
+        }
+
         try {
             $pdo->beginTransaction();
 

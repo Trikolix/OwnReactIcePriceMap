@@ -19,6 +19,7 @@ import CheckinFrom from './CheckinForm';
 import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
+import SecondaryPlaceActions from './components/SecondaryPlaceActions';
 
 const hasValue = (value) => value !== null && value !== undefined;
 const hasPriceEntry = (entry) => hasValue(entry?.preis);
@@ -291,6 +292,8 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
     );
   }
 
+  const isCoreIceShop = (shopData.eisdiele.place_type || 'ice_shop') === 'ice_shop';
+
   return (
     <>
       <ShellComponent {...shellProps}>
@@ -339,17 +342,19 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           {isLoggedIn && (
             <>
             <PrimaryButton type="button" onClick={() => setShowCheckinForm(true)}>Einchecken</PrimaryButton>
-            <PrimaryButton type="button" onClick={() => setShowReviewForm(true)}>Bewerten</PrimaryButton>
+            {isCoreIceShop && <PrimaryButton type="button" onClick={() => setShowReviewForm(true)}>Bewerten</PrimaryButton>}
             </>
           )}
+          {isCoreIceShop && (
           <PrimaryButton as={Link} to={`/ice-date/new?shopId=${shopData.eisdiele.id}`}>
             <CalendarDays size={15} /> Eis-Date planen
           </PrimaryButton>
+          )}
         </HeaderCtaBar>
         <Tabs>
           <Tab type="button" onClick={() => setActiveTab('info')} $active={activeTab === 'info'}>Allgemein</Tab>
           <Tab type="button" onClick={() => setActiveTab('checkins')} $active={activeTab === 'checkins'}>Check-ins</Tab>
-          <Tab type="button" onClick={() => setActiveTab('reviews')} $active={activeTab === 'reviews'}>Bewertungen</Tab>
+          {isCoreIceShop && <Tab type="button" onClick={() => setActiveTab('reviews')} $active={activeTab === 'reviews'}>Bewertungen</Tab>}
         </Tabs>
 
         <Content>
@@ -371,7 +376,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         </Content>
       </ShellComponent>
 
-      {showRouteForm && (
+      {isCoreIceShop && showRouteForm && (
         <SubmitRouteForm
           showForm={showRouteForm}
           setShowForm={setShowRouteForm}
@@ -381,7 +386,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         />
       )}
 
-      {showPriceForm && (
+      {isCoreIceShop && showPriceForm && (
         <SubmitPriceModal
           shop={shopData}
           userId={userId}
@@ -394,7 +399,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
         />
       )}
 
-      {showReviewForm && (
+      {isCoreIceShop && showReviewForm && (
         <SubmitReviewModal
           shop={shopData}
           userId={userId}
@@ -417,6 +422,7 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           setShowCheckinForm={setShowCheckinForm}
           onSuccess={refreshShop}
           shop={shopData}
+          contextType={shopData.eisdiele.place_type || 'ice_shop'}
           setShowPriceForm={setShowPriceForm}
           referencedCheckinId={createReferencedCheckin}
         />
@@ -427,7 +433,10 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
           showForm={showEditModal}
           setShowForm={setShowEditModal}
           userId={userId}
-          refreshShops={refreshShop}
+          refreshShops={() => {
+            refreshShop();
+            refreshMapShops?.();
+          }}
           existingIceShop={shopData.eisdiele}
         />
       )}
@@ -501,6 +510,7 @@ const ShopDetailsContent = ({
   );
   const mapsUrl = buildMapsUrl(shopData.eisdiele);
   const komootUrl = buildKomootUrl(shopData.eisdiele);
+  const isCoreIceShop = (shopData.eisdiele.place_type || 'ice_shop') === 'ice_shop';
 
   if (activeTab === 'info') {
     return (
@@ -536,6 +546,13 @@ const ShopDetailsContent = ({
             <OpeningHours eisdiele={shopData.eisdiele} />
             <ShopWebsite eisdiele={shopData.eisdiele} onSuccess={refreshShop} />
           </InlineContent>
+          <SecondaryPlaceActions
+            place={shopData.eisdiele}
+            onChanged={() => {
+              refreshShop();
+              refreshMapShops?.();
+            }}
+          />
           {isLoggedIn && (
             <SecondaryActionRow>
               <SuggestionButton type="button" onClick={handleEditClick}>
@@ -550,7 +567,7 @@ const ShopDetailsContent = ({
           </SecondaryActionRow>
         </SectionCard>
 
-        <SectionCard>
+        {isCoreIceShop && <SectionCard>
           <SectionHead>
             <div>
               <SectionTitle>Preise</SectionTitle>
@@ -599,9 +616,9 @@ const ShopDetailsContent = ({
               <Button type="button" onClick={() => setShowPriceForm(true)}>Preis melden / bestätigen</Button>
             </ActionBar>
           )}
-        </SectionCard>
+        </SectionCard>}
 
-        <SectionCard>
+        {isCoreIceShop && <SectionCard>
           <SectionHead>
             <div>
               <SectionTitle>Durchschnittliche Bewertung</SectionTitle>
@@ -662,9 +679,9 @@ const ShopDetailsContent = ({
               </Table>
             </TableScroll>
           )}
-        </SectionCard>
+        </SectionCard>}
 
-        <SectionCard>
+        {isCoreIceShop && <SectionCard>
           <SectionHead>
             <div>
               <SectionTitle>Routen</SectionTitle>
@@ -689,7 +706,7 @@ const ShopDetailsContent = ({
               />
             ))}
           </FeedStack>
-        </SectionCard>
+        </SectionCard>}
       </TabStack>
     );
   }

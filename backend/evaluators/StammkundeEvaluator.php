@@ -40,7 +40,7 @@ class StammkundeEvaluator extends BaseAwardEvaluator {
         global $pdo;
         $sql = "SELECT COUNT(id) AS checkin_count
                 FROM checkins
-                WHERE nutzer_id = ?
+                WHERE nutzer_id = ? AND context_type = 'ice_shop' AND eisdiele_id IS NOT NULL
                 GROUP BY eisdiele_id
                 ORDER BY checkin_count DESC
                 LIMIT 1;";

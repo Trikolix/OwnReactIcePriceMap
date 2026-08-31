@@ -17,6 +17,8 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
   const [showEditModal, setShowEditModal] = useState(false);
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
+  const contextType = checkin.context_type || (checkin.eisdiele_id ? "ice_shop" : "no_public_place");
+  const hasPublicPlace = contextType !== "no_public_place" && Boolean(checkin.eisdiele_id);
 
   useEffect(() => {
     if (showComments) {
@@ -73,8 +75,12 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
                 size={48}
               />
               <HeaderText>
-                <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong> hat
-                bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt. <TypText>(Typ: {checkin.typ})</TypText>
+                <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong>{" "}
+                {hasPublicPlace ? (
+                  <>hat bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt.</>
+                ) : (
+                  <>hat Eis ohne öffentlichen Ort eingecheckt.</>
+                )}{" "}<TypText>(Typ: {checkin.typ})</TypText>
               </HeaderText>
             </UserHeader>
 
@@ -140,11 +146,11 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
           </LeftContent>
           <MediaColumn>
             <ImageGalleryWithLightbox
-              images={checkin.bilder.map(b => ({
+              images={(checkin.bilder || []).map(b => ({
                 url: `https://ice-app.de/${b.url}`,
                 beschreibung: b.beschreibung
               }))}
-              fallbackTitle={`${checkin.eissorten.map(s => s.sortenname).join(', ')} Eis bei ${checkin.eisdiele_name}`}
+              fallbackTitle={`${(checkin.eissorten || []).map(s => s.sortenname).join(', ')} Eis${hasPublicPlace ? ` bei ${checkin.eisdiele_name}` : ''}`}
             />
           </MediaColumn>
         </StyledContentWrapper>
@@ -179,6 +185,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
             checkinId={checkin.id}
             shopId={checkin.eisdiele_id}
             shopName={checkin.eisdiele_name}
+            contextType={contextType}
             userId={userId}
             showCheckinForm={showEditModal}
             setShowCheckinForm={setShowEditModal}

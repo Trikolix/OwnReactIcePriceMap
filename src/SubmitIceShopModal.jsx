@@ -5,6 +5,22 @@ import LocationPicker from "./components/LocationPicker";
 import NewAwards from "./components/NewAwards";
 import OpeningHoursEditor from "./components/OpeningHoursEditor";
 import { createEmptyOpeningHours, hydrateOpeningHours } from "./utils/openingHours";
+import { requestRestaurantVisibility } from "./utils/placeVisibility";
+
+const PLACE_TYPE_GUIDANCE = {
+  ice_shop: {
+    title: 'Eisdiele',
+    description: 'Wähle diesen Typ für jeden dauerhaften Ort, an dem man Kugel- oder Softeis direkt kaufen kann.',
+  },
+  restaurant: {
+    title: 'Restaurant/Café mit Eisangebot',
+    description: 'Wähle diesen Typ, wenn kein Eis direkt verkauft wird, aber Eis als Dessert oder Eisspeise auf der Karte steht.',
+  },
+  temporary_stand: {
+    title: 'Temporärer Eisstand',
+    description: 'Wähle diesen Typ für mobile Verkaufsstände, die nur zeitweise vor Ort sind, zum Beispiel während eines Festes.',
+  },
+};
 
 const SubmitIceShopModal = ({
   showForm,
@@ -22,7 +38,9 @@ const SubmitIceShopModal = ({
   initialExternalSource = null,
   initialOpeningHoursStructured = null,
   initialOpeningHoursNote = "",
-  onSubmitSuccess = null
+  initialPlaceType = "ice_shop",
+  onSubmitSuccess = null,
+  autoCloseAfterSuccess = true
 }) => {
   const [name, setName] = useState(existingIceShop?.name || "");
   const [adresse, setAdresse] = useState(existingIceShop?.adresse || "");
@@ -41,6 +59,9 @@ const SubmitIceShopModal = ({
   const [closingDate, setClosingDate] = useState(existingIceShop?.closing_date || "");
   const [selectedExternalSource, setSelectedExternalSource] = useState(initialExternalSource || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [placeType, setPlaceType] = useState(existingIceShop?.place_type || initialPlaceType || 'ice_shop');
+  const [temporaryDuration, setTemporaryDuration] = useState(existingIceShop?.place_type === 'temporary_stand' ? 'date' : 'today');
+  const [temporaryEndDate, setTemporaryEndDate] = useState(existingIceShop?.active_until ? String(existingIceShop.active_until).slice(0, 10) : '');
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const isEditMode = Boolean(existingIceShop);
   const isAdmin = Number(userId) === 1;
@@ -55,9 +76,10 @@ const SubmitIceShopModal = ({
   );
   const autoApproveChanges = isEditMode ? (isAdmin || isRecentOwner) : true;
   const coordinatesLocked = isEditMode && !isAdmin;
+  const placeTypeLabel = placeType === 'restaurant' ? 'Restaurant/Café' : placeType === 'temporary_stand' ? 'Temporärer Stand' : 'Eisdiele';
   const modalTitle = isEditMode
-    ? (autoApproveChanges ? "Eisdiele bearbeiten" : "Änderung vorschlagen")
-    : "Neue Eisdiele eintragen";
+    ? (autoApproveChanges ? `${placeTypeLabel} bearbeiten` : "Änderung vorschlagen")
+    : placeType === 'ice_shop' ? 'Neue Eisdiele eintragen' : `${placeTypeLabel} eintragen`;
   const submitLabel = isEditMode
     ? (autoApproveChanges ? "Aktualisieren" : "Vorschlag senden")
     : "Einreichen";
@@ -83,6 +105,9 @@ const SubmitIceShopModal = ({
     setReopeningDate(existingIceShop.reopening_date || '');
     setClosingDate(existingIceShop.closing_date || '');
     setSelectedExternalSource(null);
+    setPlaceType(existingIceShop.place_type || 'ice_shop');
+    setTemporaryDuration(existingIceShop.place_type === 'temporary_stand' ? 'date' : 'today');
+    setTemporaryEndDate(existingIceShop.active_until ? String(existingIceShop.active_until).slice(0, 10) : '');
     setOpeningHoursData(
       hydrateOpeningHours(
         existingIceShop?.openingHoursStructured,
@@ -107,6 +132,9 @@ const SubmitIceShopModal = ({
     setReopeningDate('');
     setClosingDate('');
     setSelectedExternalSource(initialExternalSource || null);
+    setPlaceType(initialPlaceType || 'ice_shop');
+    setTemporaryDuration('today');
+    setTemporaryEndDate('');
   }, [
     showForm,
     existingIceShop,
@@ -118,7 +146,22 @@ const SubmitIceShopModal = ({
     initialExternalSource,
     initialOpeningHoursStructured,
     initialOpeningHoursNote,
+    initialPlaceType,
   ]);
+
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const resolveTemporaryEnd = () => {
+    const date = new Date();
+    if (temporaryDuration === 'tomorrow') date.setDate(date.getDate() + 1);
+    const datePart = temporaryDuration === 'date' ? temporaryEndDate : formatLocalDate(date);
+    return datePart ? `${datePart} 23:59:59` : null;
+  };
 
   const submit = async () => {
     if (isSubmitting) return;
@@ -138,8 +181,18 @@ const SubmitIceShopModal = ({
         longitude: parseFloat(longitude),
         openingHoursStructured: openingHoursData,
         userId,
-        closing_date: closingDate || null
+        closing_date: closingDate || null,
+        place_type: placeType,
       };
+      if (placeType === 'temporary_stand') {
+        body.active_until = resolveTemporaryEnd();
+        if (!body.active_until) {
+          setMessage('Bitte wähle aus, wie lange der Stand sichtbar sein soll.');
+          return;
+        }
+      } else if (existingIceShop) {
+        body.active_until = null;
+      }
 
       if (!existingIceShop && selectedExternalSource) {
         body.external_source = selectedExternalSource;
@@ -168,9 +221,14 @@ const SubmitIceShopModal = ({
           : "";
         const fallbackMessage = existingIceShop
           ? (isPending ? "Änderungsvorschlag gespeichert – wir prüfen ihn zeitnah." : "Eisdiele erfolgreich aktualisiert!")
-          : "Eisdiele erfolgreich hinzugefügt!";
+          : `${placeTypeLabel} erfolgreich hinzugefügt!`;
         setMessage((data.message || fallbackMessage) + maintenanceHint);
         setSubmitted(true);
+        const becameRestaurant = placeType === 'restaurant'
+          && (!existingIceShop || existingIceShop.place_type !== 'restaurant');
+        if (!isPending && becameRestaurant) {
+          requestRestaurantVisibility();
+        }
         if (!isPending && refreshShops) {
           refreshShops();
         }
@@ -197,7 +255,7 @@ const SubmitIceShopModal = ({
             if (data.new_awards?.length > 0) {
               setAwards(data.new_awards);
             }
-          } else {
+          } else if (autoCloseAfterSuccess) {
             setTimeout(() => {
               setMessage("");
               setShowForm(false);
@@ -280,11 +338,11 @@ const SubmitIceShopModal = ({
       <StyledModal>
         <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
         <Heading>{modalTitle}</Heading>
-        <IntroText>Trage die wichtigsten Infos zur Eisdiele ein. Position und Öffnungszeiten helfen anderen Nutzerinnen und Nutzern besonders.</IntroText>
+        <IntroText>Trage die wichtigsten Infos zu diesem öffentlichen Eis-Ort ein. Position und Öffnungszeiten helfen anderen Nutzerinnen und Nutzern besonders.</IntroText>
         {existingIceShop && (
           <InfoBanner $needsReview={!autoApproveChanges}>
             {autoApproveChanges
-              ? "Du kannst diese Eisdiele direkt bearbeiten."
+              ? "Du kannst diesen Eis-Ort direkt bearbeiten."
               : "Dein Vorschlag wird erst nach Freigabe übernommen."}
           </InfoBanner>
         )}
@@ -292,6 +350,41 @@ const SubmitIceShopModal = ({
           e.preventDefault();
           submit();
         }}>
+          {(!existingIceShop || autoApproveChanges) && (
+            <SectionCard>
+              <Group>
+                <label>Welche Art von Eis-Ort ist das?</label>
+                <Select value={placeType} onChange={(event) => setPlaceType(event.target.value)}>
+                  <option value="ice_shop">Eisdiele – Kugel- oder Softeis direkt kaufen</option>
+                  <option value="restaurant">Restaurant/Café – Eis nur als Dessert</option>
+                  <option value="temporary_stand">Temporärer Eisstand – nur zeitweise vor Ort</option>
+                </Select>
+                <PlaceTypeGuidance $type={placeType} role="note">
+                  <strong>{PLACE_TYPE_GUIDANCE[placeType].title}</strong>
+                  <span>{PLACE_TYPE_GUIDANCE[placeType].description}</span>
+                </PlaceTypeGuidance>
+              </Group>
+              {placeType === 'temporary_stand' && (
+                <Group>
+                  <label>Auf der Karte sichtbar:</label>
+                  <Select value={temporaryDuration} onChange={(event) => setTemporaryDuration(event.target.value)}>
+                    <option value="today">Nur heute</option>
+                    <option value="tomorrow">Bis morgen</option>
+                    <option value="date">Bis zu einem Datum</option>
+                  </Select>
+                  {temporaryDuration === 'date' && (
+                    <Input
+                      type="date"
+                      min={formatLocalDate(new Date())}
+                      value={temporaryEndDate}
+                      onChange={(event) => setTemporaryEndDate(event.target.value)}
+                      required
+                    />
+                  )}
+                </Group>
+              )}
+            </SectionCard>
+          )}
           {!existingIceShop && selectedExternalSource && (
             <SectionCard>
               <SearchHeading>Discovery-Import</SearchHeading>
@@ -564,6 +657,35 @@ const SectionCard = styled.div`
   border-radius: 14px;
   padding: 0.75rem;
   margin-bottom: 0.75rem;
+`;
+
+const PlaceTypeGuidance = styled.div`
+  display: grid;
+  gap: 0.18rem;
+  margin-top: 0.55rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid ${({ $type }) => $type === 'restaurant'
+    ? 'rgba(79, 70, 165, 0.18)'
+    : $type === 'temporary_stand'
+      ? 'rgba(36, 112, 58, 0.18)'
+      : 'rgba(176, 116, 0, 0.2)'};
+  border-radius: 10px;
+  background: ${({ $type }) => $type === 'restaurant'
+    ? 'rgba(238, 240, 255, 0.72)'
+    : $type === 'temporary_stand'
+      ? 'rgba(232, 248, 236, 0.72)'
+      : 'rgba(255, 239, 199, 0.72)'};
+  color: #3f3218;
+  line-height: 1.4;
+
+  strong {
+    font-size: 0.88rem;
+  }
+
+  span {
+    font-size: 0.82rem;
+    color: rgba(47, 33, 0, 0.72);
+  }
 `;
 
 const UtilityButton = styled(Button)`

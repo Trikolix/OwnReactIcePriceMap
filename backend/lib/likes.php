@@ -204,7 +204,7 @@ function getLikeNotificationExtraData(PDO $pdo, string $entityType, int $entityI
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row) {
                 $extraData['checkin_id'] = (int)$row['checkin_id'];
-                $extraData['eisdiele_id'] = (int)$row['eisdiele_id'];
+                $extraData['eisdiele_id'] = $row['eisdiele_id'] !== null ? (int)$row['eisdiele_id'] : null;
             }
             break;
         case 'bewertung':
@@ -248,7 +248,7 @@ function getLikeNotificationExtraData(PDO $pdo, string $entityType, int $entityI
                 $extraData['kommentar_id'] = (int)$row['kommentar_id'];
                 if (!empty($row['checkin_id'])) {
                     $extraData['checkin_id'] = (int)$row['checkin_id'];
-                    $extraData['eisdiele_id'] = (int)$row['checkin_eisdiele_id'];
+                    $extraData['eisdiele_id'] = $row['checkin_eisdiele_id'] !== null ? (int)$row['checkin_eisdiele_id'] : null;
                 } elseif (!empty($row['bewertung_id'])) {
                     $extraData['bewertung_id'] = (int)$row['bewertung_id'];
                     $extraData['eisdiele_id'] = (int)$row['bewertung_eisdiele_id'];

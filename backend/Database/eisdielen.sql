@@ -43,7 +43,10 @@ CREATE TABLE `eisdielen` (
   `land_id` int DEFAULT NULL,
   `status` enum('open','seasonal_closed','permanent_closed') COLLATE utf8mb4_unicode_ci DEFAULT 'open',
   `reopening_date` date DEFAULT NULL,
-  `closing_date` date DEFAULT NULL
+  `closing_date` date DEFAULT NULL,
+  `place_type` enum('ice_shop','restaurant','temporary_stand') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ice_shop',
+  `active_until` datetime DEFAULT NULL,
+  `closed_early_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Öffnungszeiten pro Tag / Zeitfenster
@@ -593,7 +596,8 @@ ALTER TABLE `eisdielen`
   ADD KEY `fk_user` (`user_id`),
   ADD KEY `fk_eisdielen_landkreis` (`landkreis_id`),
   ADD KEY `fk_eisdielen_bundesland` (`bundesland_id`),
-  ADD KEY `fk_land_id` (`land_id`);
+  ADD KEY `fk_land_id` (`land_id`),
+  ADD KEY `idx_eisdielen_place_visibility` (`place_type`, `active_until`, `closed_early_at`);
 
 --
 -- AUTO_INCREMENT für exportierte Tabellen

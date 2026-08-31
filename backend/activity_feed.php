@@ -60,11 +60,13 @@ function enrichActivityFeedLikeState(PDO $pdo, array $activities, ?int $userId =
 }
 
 function getActivityTarget(PDO $pdo, string $type, int $id, ?int $userId = null): ?array {
-    if ($id <= 0 || !in_array($type, ['award', 'new_user'], true)) {
+    if ($id <= 0 || !in_array($type, ['award', 'new_user', 'checkin'], true)) {
         return null;
     }
 
-    if ($type === 'award') {
+    if ($type === 'checkin') {
+        $data = getCheckinById($pdo, $id);
+    } elseif ($type === 'award') {
         $hasUserAwardCommentSupport = ensureKommentarUserAwardSupport($pdo);
         $commentCountSql = $hasUserAwardCommentSupport
             ? "(SELECT COUNT(*) FROM kommentare k WHERE k.user_award_id = ua.id) AS commentCount"
@@ -100,7 +102,7 @@ function getActivityTarget(PDO $pdo, string $type, int $id, ?int $userId = null)
     }
 
     $data['id'] = (int)$data['id'];
-    $data['aktivitaet_am'] = $type === 'award' ? $data['datum'] : $data['erstellt_am'];
+    $data['aktivitaet_am'] = $type === 'award' || $type === 'checkin' ? $data['datum'] : $data['erstellt_am'];
     $activity = [[
         'typ' => $type,
         'id' => $data['id'],

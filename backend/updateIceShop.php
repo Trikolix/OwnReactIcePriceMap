@@ -23,7 +23,7 @@ if (!isset($data['shopId']) || !isset($data['name']) || !isset($data['adresse'])
 $eisdieleId = intval($data['shopId']);
 
 // Hole ursprünglichen Eintrag
-$stmt = $pdo->prepare("SELECT user_id, erstellt_am, latitude, longitude FROM eisdielen WHERE id = ?");
+$stmt = $pdo->prepare("SELECT user_id, erstellt_am, latitude, longitude, place_type, active_until, closed_early_at FROM eisdielen WHERE id = ?");
 $stmt->execute([$eisdieleId]);
 $eisdiele = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -76,6 +76,35 @@ if (!$autoApprove) {
         echo json_encode(["status" => "error", "message" => "Änderungsvorschlag konnte nicht gespeichert werden."]);
     }
     exit;
+}
+
+$validPlaceTypes = ['ice_shop', 'restaurant', 'temporary_stand'];
+$placeType = (string)($data['place_type'] ?? $eisdiele['place_type'] ?? 'ice_shop');
+if (!in_array($placeType, $validPlaceTypes, true)) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Ungültiger Ortstyp."]);
+    exit;
+}
+
+$activeUntil = null;
+$closedEarlyAt = null;
+if ($placeType === 'temporary_stand') {
+    $rawActiveUntil = trim((string)($data['active_until'] ?? ''));
+    $activeUntilTimestamp = $rawActiveUntil !== '' ? strtotime($rawActiveUntil) : false;
+    if ($activeUntilTimestamp === false || $activeUntilTimestamp <= time()) {
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "Für einen temporären Stand ist ein zukünftiges Enddatum erforderlich."]);
+        exit;
+    }
+    $activeUntil = date('Y-m-d H:i:s', $activeUntilTimestamp);
+    $originalActiveUntil = !empty($eisdiele['active_until'])
+        ? date('Y-m-d H:i:s', strtotime((string)$eisdiele['active_until']))
+        : null;
+    $placeTypeChanged = $placeType !== (string)($eisdiele['place_type'] ?? 'ice_shop');
+    $activeUntilChanged = $activeUntil !== $originalActiveUntil;
+    $closedEarlyAt = ($placeTypeChanged || $activeUntilChanged)
+        ? null
+        : ($eisdiele['closed_early_at'] ?? null);
 }
 
 $latitude = $canEditCoordinates ? floatval($data['latitude']) : floatval($eisdiele['latitude']);
@@ -302,6 +331,9 @@ if ($location) {
         ':landkreisId' => $landkreisId,
         ':bundeslandId' => $bundeslandId,
         ':landId' => $landId,
+        ':placeType' => $placeType,
+        ':activeUntil' => $activeUntil,
+        ':closedEarlyAt' => $closedEarlyAt,
     ];
 
     // Wenn status, reopening_date oder closing_date übergeben wurden, erweitere Query und Params
@@ -309,7 +341,9 @@ if ($location) {
         $sql = "UPDATE eisdielen 
             SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
                 opening_hours_note = :openingHoursNote,
-                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId, status = :status, reopening_date = :reopening_date, closing_date = :closing_date
+                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId,
+                place_type = :placeType, active_until = :activeUntil, closed_early_at = :closedEarlyAt,
+                status = :status, reopening_date = :reopening_date, closing_date = :closing_date
             WHERE id = :id";
         $params[':status'] = $status;
         $params[':reopening_date'] = $reopening_date;
@@ -318,7 +352,8 @@ if ($location) {
         $sql = "UPDATE eisdielen 
             SET name = :name, adresse = :adresse, latitude = :latitude, longitude = :longitude, website = :website, openingHours = :openingHours,
                 opening_hours_note = :openingHoursNote,
-                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId
+                landkreis_id = :landkreisId, bundesland_id = :bundeslandId, land_id = :landId,
+                place_type = :placeType, active_until = :activeUntil, closed_early_at = :closedEarlyAt
             WHERE id = :id";
     }
 
@@ -326,19 +361,21 @@ if ($location) {
     $params[':id'] = intval($data['shopId']);
 
     try {
-        shopMaintenanceSyncTaskForShop($pdo, $eisdieleId);
         $pdo->beginTransaction();
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         replace_opening_hours($pdo, $eisdieleId, $normalizedHours['rows']);
         $pdo->commit();
         $resolvedMaintenanceTask = null;
-        if (shopMaintenanceHasMeaningfulOpeningHours(['openingHours' => $openingHoursText], $normalizedHours['rows'])) {
+        if ($placeType === 'ice_shop' && shopMaintenanceHasMeaningfulOpeningHours(['openingHours' => $openingHoursText], $normalizedHours['rows'])) {
             $resolvedMaintenanceTask = shopMaintenanceResolveActiveTask($pdo, $eisdieleId, 'opening_hours_missing', $currentUserId);
         }
+        shopMaintenanceSyncTaskForShop($pdo, $eisdieleId);
         $levelChange = updateUserLevelIfChanged($pdo, $currentUserId);
         echo json_encode([
             "status" => "success",
+            'place_type' => $placeType,
+            'active_until' => $activeUntil,
             'maintenance_task_resolved' => $resolvedMaintenanceTask ? [
                 'id' => (int)$resolvedMaintenanceTask['id'],
                 'task_type' => 'opening_hours_missing',

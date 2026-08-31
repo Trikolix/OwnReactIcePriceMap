@@ -149,9 +149,10 @@ $sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code, instagra
          FROM nutzer WHERE id = ?";
 
 // Anzahl unterschiedlicher besuchter Eisdielen
-$sql2 = "SELECT COUNT(DISTINCT eisdiele_id) AS eisdielen_besucht
-         FROM checkins
-         WHERE nutzer_id = ?";
+$sql2 = "SELECT COUNT(DISTINCT c.eisdiele_id) AS eisdielen_besucht
+         FROM checkins c
+         JOIN eisdielen e ON e.id = c.eisdiele_id AND e.place_type = 'ice_shop'
+         WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop'";
 
 // Anzahl an Checkins
 $sql3 = "SELECT COUNT(DISTINCT id) AS anzahl_checkins
@@ -173,7 +174,7 @@ $sql5 = "SELECT e.landkreis_id AS landkreis_id,
          FROM checkins c
          JOIN eisdielen e ON c.eisdiele_id = e.id
          LEFT JOIN landkreise l ON e.landkreis_id = l.id
-         WHERE c.nutzer_id = ?
+         WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
          GROUP BY e.landkreis_id, l.name
          ORDER BY checkins DESC";
 
@@ -204,7 +205,7 @@ $sql7 = "SELECT
 $sql8 = "SELECT e.id AS eisdiele_id, e.name, COUNT(*) AS besuche
          FROM checkins c
          JOIN eisdielen e ON e.id = c.eisdiele_id
-         WHERE c.nutzer_id = ?
+         WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
          GROUP BY e.id, e.name
          ORDER BY besuche DESC";
 
@@ -231,7 +232,7 @@ $sql11 = "SELECT e.land_id AS land_id,
           FROM checkins c
           JOIN eisdielen e ON c.eisdiele_id = e.id
           LEFT JOIN laender la ON e.land_id = la.id
-          WHERE c.nutzer_id = ?
+          WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
           GROUP BY e.land_id, la.name
           ORDER BY checkins DESC";
 
@@ -243,7 +244,7 @@ $sql12 = "SELECT e.bundesland_id AS bundesland_id,
           FROM checkins c
           JOIN eisdielen e ON c.eisdiele_id = e.id
           LEFT JOIN bundeslaender bl ON e.bundesland_id = bl.id
-          WHERE c.nutzer_id = ?
+          WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
           GROUP BY e.bundesland_id, bl.name
           ORDER BY checkins DESC";
 
