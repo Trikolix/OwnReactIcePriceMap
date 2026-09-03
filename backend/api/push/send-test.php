@@ -20,23 +20,33 @@ if ($method !== 'POST') {
 try {
     // Authentifizierung sicherstellen
     $auth = requireAuth($pdo);
-    $userId = (int)$auth['user_id'];
-
-    // Sicherstellen, dass nur der Admin (user_id = 1) dies tun kann
-    if ($userId !== 1) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Nur Admins duerfen diese Funktion nutzen.']);
+    $currentUserId = (int)$auth['user_id'];
+    if ($currentUserId <= 0) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Nicht angemeldet.']);
         exit;
+    }
+
+    $body = json_decode(file_get_contents('php://input'), true) ?: [];
+    $targetUserId = $currentUserId;
+    // Nur Admin darf Test-Pushes an fremde Nutzer-IDs senden
+    if (isset($body['user_id']) && (int)$body['user_id'] > 0 && (int)$body['user_id'] !== $currentUserId) {
+        if ($currentUserId !== 1) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Nur Admins dürfen Tests an andere Nutzer senden.']);
+            exit;
+        }
+        $targetUserId = (int)$body['user_id'];
     }
     
     // Eine Test-Benachrichtigung erstellen und versenden
     createNotification(
         $pdo,
-        1, // Empfaenger ist immer der Admin mit ID 1
-        'systemmeldung', // Wir koennen den vorhandenen Typ "systemmeldung" nutzen
-        time(), // Eindeutige Referenz-ID
+        $targetUserId,
+        'systemmeldung',
+        time(),
         'Dies ist eine Test-Benachrichtigung von deiner Ice App!',
-        ['is_test' => true]
+        ['is_test' => true, 'sent_at' => date('Y-m-d H:i:s')]
     );
 
     echo json_encode(['success' => true, 'message' => 'Test-Benachrichtigung wurde versendet.']);
@@ -44,5 +54,5 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     error_log("Error in send-test.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Ein interner Fehler ist aufgetreten.']);
+    echo json_encode(['success' => false, 'message' => 'Ein interner Fehler ist aufgetreten: ' . $e->getMessage()]);
 }

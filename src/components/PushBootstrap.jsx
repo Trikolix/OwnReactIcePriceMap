@@ -8,6 +8,7 @@ import {
   reportNativePushClick,
   registerPushServiceWorker,
   syncPushConfigToServiceWorker,
+  ensurePushSubscriptionSynced,
 } from "../services/pushNotifications";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -45,36 +46,46 @@ const PushBootstrap = () => {
   }, []);
 
   useEffect(() => {
-    syncPushConfigToServiceWorker().catch((error) => {
+    syncPushConfigToServiceWorker(userId).catch((error) => {
       console.error("Push config sync failed", error);
     });
   }, [userId, isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") return;
-    if (nativeInitializedForUserRef.current === userId) return;
-    if (!API_BASE) return;
 
-    let cancelled = false;
+    if (Capacitor.isNativePlatform()) {
+      if (Capacitor.getPlatform() !== "android") return;
+      if (nativeInitializedForUserRef.current === userId) return;
+      if (!API_BASE) return;
 
-    const initializeIfEnabled = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
-        const json = await response.json();
-        if (cancelled || Number(json?.push_enabled_android || 0) !== 1) return;
+      let cancelled = false;
 
-        nativeInitializedForUserRef.current = userId;
-        await initializeNativePush(userId);
-      } catch (error) {
-        console.error("Native push initialization failed", error);
-      }
-    };
+      const initializeIfEnabled = async () => {
+        try {
+          const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
+          const json = await response.json();
+          if (cancelled || Number(json?.push_enabled_android || 0) !== 1) return;
 
-    initializeIfEnabled();
-    return () => {
-      cancelled = true;
-    };
+          nativeInitializedForUserRef.current = userId;
+          await initializeNativePush(userId);
+        } catch (error) {
+          console.error("Native push initialization failed", error);
+        }
+      };
+
+      initializeIfEnabled();
+      return () => {
+        cancelled = true;
+      };
+    } else {
+      // Web-Push Self-Healing:
+      // Wenn der Nutzer angemeldet ist und Browser-Berechtigung erteilt wurde,
+      // die Subscription beim App-Start im Hintergrund verifizieren und bei Bedarf reaktivieren/erneuern.
+      ensurePushSubscriptionSynced(userId).catch((error) => {
+        console.warn("[PushBootstrap] Web push self-heal sync failed:", error);
+      });
+    }
   }, [isLoggedIn, userId]);
 
   return null;

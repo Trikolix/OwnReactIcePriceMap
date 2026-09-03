@@ -11,8 +11,10 @@ import {
   disableBrowserPush,
   disableNativePush,
   enableBrowserPush,
+  ensurePushSubscriptionSynced,
   getBrowserPushStatus,
   initializeNativePush,
+  sendPushTest,
 } from "../services/pushNotifications";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -68,6 +70,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
   const [pendingPresetId, setPendingPresetId] = useState(null);
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [browserPushStatus, setBrowserPushStatus] = useState({ supported: false, permission: "default", subscribed: false });
+  const [testSending, setTestSending] = useState(false);
   const selectedPreset = selectedPresetId
     ? presetAvatars.find((preset) => preset.id === selectedPresetId) || null
     : null;
@@ -420,7 +423,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
 
       const updatedSettings = {
         ...settings,
-        push_enabled_web: (!isNative && hasAnyPushEnabled) ? 1 : (isNative ? settings.push_enabled_web : 0),
+        push_enabled_web: (!isNative && hasAnyPushEnabled) ? 1 : (isNative ? settings.push_enabled_web : (hasAnyPushEnabled ? 1 : 0)),
         push_enabled_android: (isNative && hasAnyPushEnabled) ? 1 : (!isNative ? settings.push_enabled_android : 0),
       };
 
@@ -436,9 +439,17 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       } else {
         // Web Plattform
         if (hasAnyPushEnabled) {
-          await enableBrowserPush(userId);
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            await ensurePushSubscriptionSynced(userId);
+          } else if (typeof Notification !== "undefined" && Notification.permission === "default") {
+            try {
+              await enableBrowserPush(userId);
+            } catch (err) {
+              console.warn("Push permission prompt dismissed or rejected:", err);
+            }
+          }
         } else {
-          await disableBrowserPush(userId);
+          await disableBrowserPush(userId, false);
         }
       }
 
@@ -478,24 +489,18 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     const isNative = Capacitor.isNativePlatform();
     
     if (!isNative && browserPushStatus.permission !== 'granted') {
-      alert("Push-Berechtigung ist nicht erteilt. Bitte aktiviere Push zuerst in den Browsereinstellungen oder speichere die Einstellungen.");
+      alert("Push-Berechtigung ist für diesen Browser nicht erteilt. Bitte erlaube Benachrichtigungen zuerst und klicke auf 'Benachrichtigungen speichern'.");
       return;
     }
     
+    setTestSending(true);
     try {
-      const res = await fetch(`${API_BASE}/api/push/send-test.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        alert(`Senden fehlgeschlagen: ${json.message}`);
-      } else {
-        alert("Test-Benachrichtigung wurde versendet. Schau mal auf dein Handy!");
-      }
+      await sendPushTest(userId);
+      alert("Test-Benachrichtigung wurde versendet! Prüfe, ob die Nachricht auf deinem Gerät ankommt.");
     } catch (e) {
-      alert(`Fehler: ${e.message}`);
+      alert("Fehler beim Senden: " + e.message);
+    } finally {
+      setTestSending(false);
     }
   };
 
@@ -695,11 +700,15 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <th>E-Mail</th>
               <th>
                 Push
-                {Number(userId) === 1 && (
-                  <MiniButton type="button" onClick={handleSendTest} style={{ color: '#0277bd', fontSize: '0.7rem', marginLeft: '0.5rem' }}>
-                    (Test)
-                  </MiniButton>
-                )}
+                <MiniButton
+                  type="button"
+                  onClick={handleSendTest}
+                  disabled={testSending}
+                  style={{ color: '#0277bd', fontSize: '0.72rem', marginLeft: '0.5rem', cursor: 'pointer' }}
+                  title="Test-Benachrichtigung an deine Geräte senden"
+                >
+                  {testSending ? "(Sendet...)" : "(Test-Push)"}
+                </MiniButton>
               </th>
             </tr>
           </thead>
@@ -747,10 +756,17 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           </tbody>
         </SettingsTable>
 
-        {browserPushStatus.supported && browserPushStatus.permission === 'denied' && (
-          <SmallNote style={{ color: '#c62828', marginTop: '0.5rem' }}>
-            Hinweis: Push-Benachrichtigungen sind im Browser blockiert. Bitte in den Browsereinstellungen freigeben.
-          </SmallNote>
+        {browserPushStatus.supported && (
+          <div style={{ marginTop: '0.65rem', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span>Status auf diesem Gerät:</span>
+            {browserPushStatus.permission === 'granted' ? (
+              <span style={{ color: '#2e7d32', fontWeight: 600 }}>● Empfangsbereit</span>
+            ) : browserPushStatus.permission === 'denied' ? (
+              <span style={{ color: '#c62828', fontWeight: 600 }}>● Im Browser blockiert (in Website-Einstellungen freigeben)</span>
+            ) : (
+              <span style={{ color: '#e65100', fontWeight: 600 }}>● Nicht aktiviert (Klicke auf "Benachrichtigungen speichern")</span>
+            )}
+          </div>
         )}
 
         <SectionActions>

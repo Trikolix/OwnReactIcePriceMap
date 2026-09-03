@@ -38,6 +38,34 @@ export const isWebPushSupported = () => (
   && "Notification" in window
 );
 
+const savePushConfigToIndexedDb = (config) => new Promise((resolve) => {
+  if (typeof window === "undefined" || !("indexedDB" in window)) return resolve();
+  try {
+    const request = indexedDB.open("iceapp-push-db", 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("config")) {
+        db.createObjectStore("config");
+      }
+    };
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      try {
+        const tx = db.transaction("config", "readwrite");
+        const store = tx.objectStore("config");
+        store.put(config, "pushConfig");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    };
+    request.onerror = () => resolve();
+  } catch {
+    resolve();
+  }
+});
+
 export const registerPushServiceWorker = async () => {
   if (!isWebPushSupported()) return null;
   const registration = await navigator.serviceWorker.register(PUSH_SW_PATH, { scope: "/" });
@@ -45,21 +73,30 @@ export const registerPushServiceWorker = async () => {
   return registration;
 };
 
-const persistServiceWorkerToken = async (subscriptionToken) => {
-  if (!("caches" in window)) return;
-  const cache = await caches.open("iceapp-push-config");
-  const body = JSON.stringify({ subscriptionToken, apiBase: API_BASE });
-  await cache.put(PUSH_CONFIG_CACHE_URL, new Response(body, {
-    headers: { "Content-Type": "application/json" },
-  }));
+const persistServiceWorkerToken = async (subscriptionToken, userId = null) => {
+  const config = { subscriptionToken, apiBase: API_BASE, userId };
+
+  if ("caches" in window) {
+    try {
+      const cache = await caches.open("iceapp-push-config");
+      const body = JSON.stringify(config);
+      await cache.put(PUSH_CONFIG_CACHE_URL, new Response(body, {
+        headers: { "Content-Type": "application/json" },
+      }));
+    } catch (cacheErr) {
+      console.warn("Could not cache push config in CacheStorage", cacheErr);
+    }
+  }
+
+  await savePushConfigToIndexedDb(config);
 };
 
-const persistBrowserSubscriptionToken = async (subscriptionToken) => {
+const persistBrowserSubscriptionToken = async (subscriptionToken, userId = null) => {
   if (!SUBSCRIPTION_TOKEN_PATTERN.test(String(subscriptionToken || ""))) {
     throw new Error("Ungültiger Web-Push-Subscription-Token vom Server.");
   }
 
-  await persistServiceWorkerToken(subscriptionToken);
+  await persistServiceWorkerToken(subscriptionToken, userId);
 
   try {
     localStorage.setItem(WEB_SUBSCRIPTION_TOKEN_KEY, subscriptionToken);
@@ -68,10 +105,10 @@ const persistBrowserSubscriptionToken = async (subscriptionToken) => {
   }
 };
 
-export const syncPushConfigToServiceWorker = async () => {
+export const syncPushConfigToServiceWorker = async (userId = null) => {
   const token = localStorage.getItem(WEB_SUBSCRIPTION_TOKEN_KEY);
   if (token) {
-    await persistServiceWorkerToken(token);
+    await persistServiceWorkerToken(token, userId);
   }
 };
 
@@ -136,11 +173,11 @@ export const enableBrowserPush = async (userId) => {
     throw new Error(json.message || "Web-Push-Subscription konnte nicht gespeichert werden.");
   }
 
-  await persistBrowserSubscriptionToken(json.subscription_token);
+  await persistBrowserSubscriptionToken(json.subscription_token, userId);
   return { permission };
 };
 
-export const disableBrowserPush = async (userId) => {
+export const disableBrowserPush = async (userId, allDevices = false) => {
   ensureApiBase();
   if (!isWebPushSupported()) return;
 
@@ -149,22 +186,106 @@ export const disableBrowserPush = async (userId) => {
   const endpoint = subscription?.endpoint || null;
 
   if (userId) {
-    await fetch(`${API_BASE}/api/push/web-subscriptions/index.php`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: Number(userId),
-        endpoint,
-      }),
-    });
+    try {
+      await fetch(`${API_BASE}/api/push/web-subscriptions/index.php`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: Number(userId),
+          endpoint,
+          all_devices: Boolean(allDevices),
+        }),
+      });
+    } catch (err) {
+      console.warn("Could not inform server of push unsubscription", err);
+    }
   }
 
   if (subscription) {
-    await subscription.unsubscribe();
+    try {
+      await subscription.unsubscribe();
+    } catch (err) {
+      console.warn("PushManager unsubscribe error", err);
+    }
   }
 
   localStorage.removeItem(WEB_SUBSCRIPTION_TOKEN_KEY);
-  await persistServiceWorkerToken("");
+  await persistServiceWorkerToken("", null);
+};
+
+export const ensurePushSubscriptionSynced = async (userId) => {
+  ensureApiBase();
+  if (!userId || !isWebPushSupported()) {
+    return { synced: false, reason: "unsupported" };
+  }
+
+  if (Notification.permission !== "granted") {
+    return { synced: false, reason: "permission_not_granted", permission: Notification.permission };
+  }
+
+  try {
+    const registration = await registerPushServiceWorker();
+    if (!registration) {
+      return { synced: false, reason: "registration_failed" };
+    }
+
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      const publicKey = await fetchWebPushPublicKey();
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+    }
+
+    const response = await fetch(`${API_BASE}/api/push/web-subscriptions/index.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: Number(userId),
+        subscription: subscription.toJSON(),
+      }),
+    });
+
+    const json = await response.json();
+    if (response.ok && json.success && json.subscription_token) {
+      await persistBrowserSubscriptionToken(json.subscription_token, userId);
+      return { synced: true, subscribed: true, subscriptionToken: json.subscription_token };
+    }
+
+    return { synced: false, reason: json.message || "sync_error" };
+  } catch (error) {
+    console.warn("[Push] ensurePushSubscriptionSynced failed:", error);
+    return { synced: false, error: error.message };
+  }
+};
+
+export const fetchUserWebPushDevices = async () => {
+  ensureApiBase();
+  try {
+    const res = await fetch(`${API_BASE}/api/push/web-subscriptions/index.php?devices=1`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return Array.isArray(json.devices) ? json.devices : [];
+  } catch (err) {
+    console.warn("Could not fetch user push devices", err);
+    return [];
+  }
+};
+
+export const sendPushTest = async (userId) => {
+  ensureApiBase();
+  const res = await fetch(`${API_BASE}/api/push/send-test.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId ? Number(userId) : undefined }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Test-Benachrichtigung konnte nicht versendet werden.");
+  }
+  return json;
 };
 
 const installNativeListeners = () => {
@@ -281,14 +402,20 @@ export const getBrowserPushStatus = async () => {
     return {
       supported: false,
       permission: "unsupported",
+      subscribed: false,
+      hasToken: false,
+      endpoint: null,
     };
   }
 
   const registration = await navigator.serviceWorker.getRegistration("/");
   const subscription = await registration?.pushManager?.getSubscription?.();
+  const hasToken = Boolean(localStorage.getItem(WEB_SUBSCRIPTION_TOKEN_KEY));
   return {
     supported: true,
     permission: Notification.permission,
     subscribed: Boolean(subscription),
+    hasToken,
+    endpoint: subscription?.endpoint || null,
   };
 };

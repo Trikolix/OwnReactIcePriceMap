@@ -648,18 +648,21 @@ function updatePushDeliveryPayload(PDO $pdo, int $deliveryId, array $payload, st
     return $payload;
 }
 
-function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $limit = 5): array
+function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $limit = 20): array
 {
     ensurePushInfrastructureSchema($pdo);
 
+    $effectiveLimit = max(1, min(50, (int)$limit));
     $stmt = $pdo->prepare("
-        SELECT id, payload_json
+        SELECT id, payload_json, attempt_count
         FROM push_notification_deliveries
         WHERE channel = 'web'
           AND subscription_token = :subscription_token
-          AND status = 'pending'
+          AND status IN ('pending', 'pulled')
+          AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+          AND (status = 'pending' OR (status = 'pulled' AND attempt_count < 2 AND pulled_at < DATE_SUB(NOW(), INTERVAL 2 MINUTE)))
         ORDER BY created_at ASC
-        LIMIT " . max(1, (int)$limit)
+        LIMIT " . $effectiveLimit
     );
     $stmt->execute(['subscription_token' => $subscriptionToken]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -669,10 +672,13 @@ function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $l
     }
 
     $ids = array_map(static fn(array $row): int => (int)$row['id'], $rows);
+    $inClause = implode(',', array_map('intval', $ids));
     $pdo->prepare("
         UPDATE push_notification_deliveries
-        SET pulled_at = NOW()
-        WHERE id IN (" . implode(',', $ids) . ")
+        SET pulled_at = NOW(),
+            attempt_count = attempt_count + 1,
+            status = CASE WHEN attempt_count >= 2 THEN 'delivered' ELSE 'pulled' END
+        WHERE id IN ($inClause)
     ")->execute();
 
     $payloads = [];
@@ -773,11 +779,12 @@ function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?
     ];
 }
 
-function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint = null): void
+function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint = null, bool $allDevices = false): void
 {
     ensurePushInfrastructureSchema($pdo);
 
-    if ($endpoint) {
+    $endpoint = trim((string)$endpoint);
+    if ($endpoint !== '') {
         $stmt = $pdo->prepare("
             UPDATE web_push_subscriptions
             SET invalidated_at = NOW(), updated_at = NOW()
@@ -792,13 +799,30 @@ function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint 
         return;
     }
 
+    // Nur alle Geräte invalidieren, wenn dies explizit gewünscht ist
+    if ($allDevices) {
+        $stmt = $pdo->prepare("
+            UPDATE web_push_subscriptions
+            SET invalidated_at = NOW(), updated_at = NOW()
+            WHERE user_id = :user_id
+              AND invalidated_at IS NULL
+        ");
+        $stmt->execute(['user_id' => $userId]);
+    }
+}
+
+function fetchUserWebPushDevices(PDO $pdo, int $userId): array
+{
+    ensurePushInfrastructureSchema($pdo);
     $stmt = $pdo->prepare("
-        UPDATE web_push_subscriptions
-        SET invalidated_at = NOW(), updated_at = NOW()
+        SELECT id, subscription_token, user_agent, created_at, updated_at, last_success_at, last_failure_at
+        FROM web_push_subscriptions
         WHERE user_id = :user_id
           AND invalidated_at IS NULL
+        ORDER BY updated_at DESC
     ");
     $stmt->execute(['user_id' => $userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
 
 function upsertMobilePushDevice(PDO $pdo, int $userId, string $platform, string $provider, string $deviceToken, ?string $appVersion = null): void
@@ -921,12 +945,13 @@ function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): void
         return;
     }
 
+    $ttl = pushEnv('ICEAPP_WEB_PUSH_TTL', '86400');
     $response = pushHttpRequest(
         (string)$subscription['endpoint'],
         'POST',
         [
             'Authorization' => 'vapid t=' . $jwt . ', k=' . $publicKey,
-            'TTL' => '60',
+            'TTL' => (string)$ttl,
             'Urgency' => 'high',
             'Content-Length' => '0',
         ],
