@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   downloadSocialMediaPack,
   fetchSocialMediaCandidates,
@@ -6,16 +7,17 @@ import {
 
 describe('social media admin API', () => {
   beforeEach(() => {
-    global.fetch = jest.fn();
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('loads candidates with filters and bearer authentication', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
+      text: async () => JSON.stringify({ status: 'success', data: [], pagination: { total: 0 } }),
       json: async () => ({ status: 'success', data: [], pagination: { total: 0 } }),
     });
 
@@ -39,6 +41,7 @@ describe('social media admin API', () => {
     global.fetch.mockResolvedValue({
       ok: false,
       status: 422,
+      text: async () => JSON.stringify({ message: 'Bitte mindestens ein Bild auswählen.' }),
       json: async () => ({ message: 'Bitte mindestens ein Bild auswählen.' }),
     });
 
@@ -47,7 +50,7 @@ describe('social media admin API', () => {
   });
 
   it('requests a generated single-slide preview', async () => {
-    global.URL.createObjectURL = jest.fn(() => 'blob:preview');
+    global.URL.createObjectURL = vi.fn(() => 'blob:preview');
     global.fetch.mockResolvedValue({
       ok: true,
       blob: async () => new Blob(['png']),

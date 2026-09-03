@@ -11,7 +11,7 @@ import { userRoutes } from './features/user/routes';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import PushBootstrap from './components/PushBootstrap';
 import PushOptInOverlay from './components/PushOptInOverlay';
-import CookieBanner from './components/CookieBanner';
+// import CookieBanner from './components/CookieBanner';
 import GuestMotivation from './components/GuestMotivation';
 import MatomoTracker from './components/MatomoTracker';
 import ActiveSelfRideCta from './pages/Event/ActiveSelfRideCta';
@@ -54,9 +54,8 @@ const App = () => {
         <PushBootstrap />
         <PushOptInOverlay />
         <AppUpdateBanner />
-        <CookieBanner />
+        {/* <CookieBanner /> */}
         <GuestMotivation />
-        <ActiveSelfRideCta />
         <Routes>
           {allRoutes.map((routeDef) => (
             <Route key={routeDef.path} path={routeDef.path} element={routeDef.element} />

@@ -29,7 +29,8 @@ import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES, MAX_UPLOAD_BYTES } from "./utils/imageUtils";
 import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
-import { Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin } from "lucide-react";
+import { Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin, Share2 } from "lucide-react";
+import CheckinShareComposer from "./components/CheckinShareComposer";
 
 const TYPE_OPTIONS = [
     { value: "Kugel", label: "Kugeleis", description: "Einzelne Kugeln, auch im Becher", tone: "kugel", icon: IceCreamCone },
@@ -88,6 +89,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [groupSuggestions, setGroupSuggestions] = useState([]);
     const [groupSuggestionCheckinId, setGroupSuggestionCheckinId] = useState(null);
     const [groupLinkLoading, setGroupLinkLoading] = useState(false);
+    const [submittedCheckinId, setSubmittedCheckinId] = useState(null);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [hasImagesInCheckin, setHasImagesInCheckin] = useState(false);
 
     // Läuft beim Laden der Seite automatisch
     useEffect(() => {
@@ -287,6 +291,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 throw new Error(data?.message || data?.error || `Upload fehlgeschlagen (${response.status})`);
             }
             if (data.status === "success") {
+                const savedCheckinId = data.checkin_id || checkinId;
+                setSubmittedCheckinId(savedCheckinId);
+                const hasPics = bilder.length > 0;
+                setHasImagesInCheckin(hasPics);
+
                 if (checkinId) {
                     setMessage("Checkin erfolgreich aktualisiert!");
                 } else {
@@ -326,7 +335,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     if (!checkinId && shouldAskForPriceUpdate(shop)) {
                         setPreisfrage(true);
                     } else {
-                        if (!suggestionsFound) {
+                        if (!suggestionsFound && !hasPics) {
                             setTimeout(() => {
                                 setShowCheckinForm(false);
                             }, 2000);
@@ -886,6 +895,45 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         )}
                     </TeamChallengeSuccessBox>
                 )}
+                {submitted && hasImagesInCheckin && submittedCheckinId && (
+                    <ShareCheckinPromoBox>
+                        <ShareCheckinPromoText>
+                            <strong>📸 Teile deinen Eis-Moment!</strong>
+                            <span>Erstelle ein schickes Story-Bild für Instagram, WhatsApp & Co. mit deinem Foto und Eisdielen-Details.</span>
+                        </ShareCheckinPromoText>
+                        <ShareCheckinPromoActions>
+                            <SubmitButton
+                                type="button"
+                                style={{
+                                    background: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: '0 4px 12px rgba(253, 29, 29, 0.25)',
+                                    cursor: 'pointer',
+                                }}
+                                onClick={() => setShowShareModal(true)}
+                            >
+                                <Share2 size={16} /> Story teilen
+                            </SubmitButton>
+                            <Button type="button" onClick={() => setShowCheckinForm(false)}>
+                                Schließen
+                            </Button>
+                        </ShareCheckinPromoActions>
+                    </ShareCheckinPromoBox>
+                )}
+                {showShareModal && submittedCheckinId && (
+                    <CheckinShareComposer
+                        checkinId={submittedCheckinId}
+                        onClose={() => {
+                            setShowShareModal(false);
+                            setShowCheckinForm(false);
+                        }}
+                    />
+                )}
             </Modal>
         </Overlay>) : null
     );
@@ -1410,4 +1458,39 @@ const TeamChallengeSuccessBox = styled.div`
         margin: 0;
         line-height: 1.45;
     }
+`;
+
+
+const ShareCheckinPromoBox = styled.div`
+    background: linear-gradient(135deg, #fff7ea 0%, #fff1d6 100%);
+    border: 1px solid rgba(255, 181, 34, 0.35);
+    border-radius: 14px;
+    padding: 16px;
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+`;
+
+const ShareCheckinPromoText = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    strong {
+        font-size: 1.05rem;
+        color: #231900;
+    }
+
+    span {
+        font-size: 0.85rem;
+        color: #6b4d1b;
+    }
+`;
+
+const ShareCheckinPromoActions = styled.div`
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
 `;

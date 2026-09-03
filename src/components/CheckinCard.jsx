@@ -1,5 +1,5 @@
 import React, { useState, forwardRef, useEffect } from "react";
-import { Bike, Car, Footprints, HelpCircle, MapPin, MessageCircle } from "lucide-react";
+import { Bike, Car, Footprints, HelpCircle, MapPin, MessageCircle, Share2 } from "lucide-react";
 import styled from "styled-components";
 import Rating from "./Rating";
 import { Link } from "react-router-dom";
@@ -7,7 +7,7 @@ import { useUser } from "../context/UserContext";
 import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
-import { Modal } from "./Modal";
+import CheckinShareComposer from "./CheckinShareComposer";
 import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
 import UserAvatar from "./UserAvatar";
 import MentionFormatter from "./MentionFormatter";
@@ -15,6 +15,7 @@ import LikeButton from "./LikeButton";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focusCommentId = null }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const { userId } = useUser();
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
 
@@ -161,6 +162,15 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
           >
             <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
           </CommentToggle>
+          {Number(checkin.nutzer_id) === Number(userId) && (
+            <CommentToggle
+              title="Story teilen"
+              aria-label="Story teilen"
+              onClick={() => setShowShareModal(true)}
+            >
+              <Share2 size={18} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} /> Story teilen
+            </CommentToggle>
+          )}
         </ActionRow>
         {areCommentsVisible && (
           <CommentSection
@@ -171,7 +181,12 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
         )}
       </Card>
 
-
+      {showShareModal && (
+        <CheckinShareComposer
+          checkinId={checkin.id}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
 
       {showEditModal && (
         <Modal onClose={() => setShowEditModal(false)}>

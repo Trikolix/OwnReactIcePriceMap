@@ -1,4 +1,4 @@
-﻿import userOfTheMonthImg from './user_of_the_month.png';
+import userOfTheMonthImg from './user_of_the_month.png';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -18,6 +18,7 @@ import {
   CalendarDays,
   Camera,
   ClipboardList,
+  Download,
   Info,
   Instagram,
   LogIn,
@@ -35,6 +36,8 @@ import {
 import NotificationBell from './components/NotificationBell';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
+import PwaInstallModal from './components/PwaInstallModal';
+import { usePwaInstall } from './hooks/usePwaInstall';
 import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
 import { buildAssetUrl, buildPublicAssetUrl } from './utils/assets.jsx';
 import {
@@ -85,6 +88,12 @@ const Header = ({ refreshShops }) => {
     : 'Aktions-Hub öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
+  const { canInstall, installApp, showIosModal, setShowIosModal } = usePwaInstall();
+
+  const handleInstallApp = async () => {
+    setMenuOpen(false);
+    await installApp();
+  };
 
   const toggleMenu = () => {
     setMenuOpen((isOpen) => !isOpen);
@@ -747,6 +756,24 @@ const Header = ({ refreshShops }) => {
               )}
             </MenuHeader>
 
+            {canInstall && (
+              <>
+                <MenuInstallSection>
+                  <MenuInstallButton type="button" onClick={handleInstallApp}>
+                    <MenuInstallIcon>
+                      <Download size={18} />
+                    </MenuInstallIcon>
+                    <MenuInstallContent>
+                      <MenuInstallTitle>Ice App installieren</MenuInstallTitle>
+                      <MenuInstallSubtitle>Direkt auf den Startbildschirm</MenuInstallSubtitle>
+                    </MenuInstallContent>
+                    <MenuInstallBadge>App</MenuInstallBadge>
+                  </MenuInstallButton>
+                </MenuInstallSection>
+                <MenuDivider />
+              </>
+            )}
+
             <MenuSection>
               <MenuSectionTitle>Entdecken</MenuSectionTitle>
               <MenuItemLink to="/aktionen" onClick={closeMenu}><MenuLabel icon={CalendarDays}>Aktionen &amp; Rückblicke</MenuLabel></MenuItemLink>
@@ -908,6 +935,11 @@ const Header = ({ refreshShops }) => {
         onPrimaryAction={handleQrPrimaryAction}
         data={modalData}
         needsLogin={modalData?.needsLogin}
+      />
+
+      <PwaInstallModal
+        isOpen={showIosModal}
+        onClose={() => setShowIosModal(false)}
       />
     </>
   );
@@ -1349,6 +1381,82 @@ const MenuHeaderSubtitle = styled.div`
   font-size: 0.78rem;
   color: rgba(47, 33, 0, 0.7);
   line-height: 1.25;
+`;
+
+const MenuInstallSection = styled.div`
+  padding: 2px 4px 6px;
+`;
+
+const MenuInstallButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 181, 34, 0.22) 0%, rgba(255, 152, 0, 0.12) 100%);
+  border: 1px solid rgba(255, 181, 34, 0.45);
+  color: #2f2100;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 5px rgba(255, 181, 34, 0.1);
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(255, 181, 34, 0.35) 0%, rgba(255, 152, 0, 0.22) 100%);
+    border-color: rgba(255, 181, 34, 0.7);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(255, 181, 34, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const MenuInstallIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #ffb522;
+  color: #231900;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+`;
+
+const MenuInstallContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const MenuInstallTitle = styled.div`
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #231900;
+  line-height: 1.2;
+`;
+
+const MenuInstallSubtitle = styled.div`
+  font-size: 0.72rem;
+  color: rgba(47, 33, 0, 0.72);
+  margin-top: 2px;
+  line-height: 1.2;
+`;
+
+const MenuInstallBadge = styled.span`
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #ffb522;
+  color: #231900;
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
 `;
 
 const MenuSection = styled.div`

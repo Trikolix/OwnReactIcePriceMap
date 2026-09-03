@@ -28,9 +28,45 @@ function iceSocialMediaSlug(string $value): string
     return trim((string)$value, '-') ?: 'eisfoto';
 }
 
+function iceSocialMediaFixMojibake(string $text): string
+{
+    if (strpos($text, 'ð') === false && strpos($text, "\xc3\xb0") === false) {
+        return $text;
+    }
+
+    $map = [
+        "\u{00F0}" => 0xF0, // ð
+        "\u{0178}" => 0x9F, // Ÿ
+        "\u{00A5}" => 0xA5, // ¥
+        "\u{00B0}" => 0xB0, // °
+        "\u{00A4}" => 0xA4, // ¤
+        "\u{2122}" => 0x99, // ™
+        "\u{0152}" => 0x8C, // Œ
+    ];
+
+    $fixed = preg_replace_callback('/ð[\s\S]{3}/u', static function ($m) use ($map) {
+        $bytes = [];
+        $len = mb_strlen($m[0], 'UTF-8');
+        for ($i = 0; $i < $len; $i++) {
+            $char = mb_substr($m[0], $i, 1, 'UTF-8');
+            if (isset($map[$char])) {
+                $bytes[] = $map[$char];
+            } else {
+                $code = mb_ord($char, 'UTF-8');
+                $bytes[] = $code <= 0xFF ? $code : 0x20;
+            }
+        }
+        $str = pack('C*', ...$bytes);
+        return mb_check_encoding($str, 'UTF-8') ? $str : $m[0];
+    }, $text);
+
+    return $fixed !== null ? $fixed : $text;
+}
+
 function iceSocialMediaCleanText($value, int $maxLength = 180): string
 {
-    $value = trim(preg_replace('/\s+/', ' ', strip_tags((string)$value)));
+    $value = iceSocialMediaFixMojibake((string)$value);
+    $value = trim(preg_replace('/\s+/', ' ', strip_tags($value)));
     return function_exists('mb_substr') ? mb_substr($value, 0, $maxLength) : substr($value, 0, $maxLength);
 }
 
@@ -162,42 +198,233 @@ function iceSocialMediaFormatDate(?string $value): string
     return $timestamp === false ? '' : date('d.m.Y', $timestamp);
 }
 
+function iceSocialMediaDrawShadowedText($image, string $text, int $x, int $y, int $size, string $colorHex, string $weight = 'bold'): void
+{
+    $font = iceSocialReportFont($weight);
+    if ($font !== '') {
+        $shadowColor = iceSocialReportColor($image, '#000000', 25); // Kräftiges, tiefes Schwarz (~80% Deckkraft)
+        $textColor = iceSocialReportColor($image, $colorHex);
+
+        // 360-Grad Schatten-Halo für makellose Lesbarkeit auf beliebig hellem Untergrund (Asphalt, Sonne)
+        imagettftext($image, $size, 0, $x - 2, $y, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x + 2, $y, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x, $y - 2, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x, $y + 3, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x + 2, $y + 3, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x - 2, $y + 3, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x + 1, $y + 2, $shadowColor, $font, $text);
+
+        // Satte Bold-Striche (Multi-Pass Offset)
+        if ($weight === 'bold') {
+            imagettftext($image, $size, 0, $x + 1, $y, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x - 1, $y, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x, $y + 1, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x, $y - 1, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x + 1, $y + 1, $textColor, $font, $text);
+        }
+        imagettftext($image, $size, 0, $x, $y, $textColor, $font, $text);
+    } else {
+        iceSocialReportText($image, $text, $x, $y, $size, $colorHex, $weight);
+    }
+}
+
 function iceSocialMediaDrawOverlayShade($image, int $width, int $height): void
 {
-    // Nur der untere Textbereich bekommt einen weichen Verlauf. Der Rest des
-    // Fotos bleibt vollständig unverändert und hell.
-    $startY = (int)round($height * 0.68);
+    // Kräftiger filmischer Verlauf ab 48% Bildhöhe.
+    // Das Foto/Eis im oberen Bildbereich bleibt komplett unverändert.
+    // Ab ca. 68% Höhe (wo Titel und Text stehen) verdichtet sich der Schatten
+    // auf 70-85% Deckkraft, sodass weiße Schrift immer maximal kontrastiert.
+    $startY = (int)round($height * 0.48);
     $range = max(1, $height - $startY);
     for ($y = $startY; $y < $height; $y++) {
         $progress = ($y - $startY) / $range;
-        $alpha = (int)round(127 - ($progress * 72));
-        imagefilledrectangle($image, 0, $y, $width, $y, iceSocialReportColor($image, '#000000', $alpha));
+        $eased = pow($progress, 1.25);
+        $alpha = (int)round(127 - ($eased * 115)); // Geht bis alpha 12 (~91% Deckkraft)
+        imagefilledrectangle($image, 0, $y, $width, $y, iceSocialReportColor($image, '#060301', $alpha));
     }
 }
 
 function iceSocialMediaDrawInstagramOverlay($image, array $candidate, int $width, int $height): void
 {
-    $accent = '#ffb522';
-    $cream = '#fffaf0';
-    $left = 94;
-    $titleY = $height - 176;
-    $flavourY = $height - 112;
-    $userY = $height - 48;
+    $isStory = $height > ICE_SOCIAL_MEDIA_FEED_HEIGHT;
+    $left = $isStory ? 64 : 52;
+    $contentWidth = $width - ($left * 2);
 
-    $lineX = 56;
-    imagefilledrectangle($image, $lineX, $titleY - 58, $lineX + 8, $userY + 10, iceSocialReportColor($image, $accent));
-
-    $shopName = iceSocialMediaCleanText($candidate['shop_name'] ?? 'Unbekannte Eisdiele', 42);
-    $flavours = array_slice(array_map('iceSocialMediaCleanText', $candidate['flavours'] ?? []), 0, 2);
-    $flavourText = !empty($flavours) ? implode(' · ', $flavours) : 'Eis genießen';
+    // 1. Daten aufbereiten
+    $shopName = iceSocialMediaCleanText($candidate['shop_name'] ?? 'Eisdiele', 48);
     $username = iceSocialMediaCleanText(ltrim((string)($candidate['username'] ?? 'Ice-App-Nutzer'), '@'), 34);
+    $date = iceSocialMediaFormatDate($candidate['checkin_date'] ?? null);
+    $flavours = array_slice(array_map('iceSocialMediaCleanText', $candidate['flavours'] ?? []), 0, 3);
+    $type = iceSocialMediaCleanText($candidate['checkin_type'] ?? '', 24);
+    $avatarUrl = (string)($candidate['avatar_url'] ?? '');
 
-    iceSocialReportText($image, $shopName, $left, $titleY, 52, $cream, 'regular');
-    iceSocialReportText($image, $flavourText, $left, $flavourY, 30, $cream, 'regular');
-    iceSocialReportText($image, 'von', $left, $userY, 27, $cream, 'regular');
-    iceSocialReportText($image, $username, $left + 70, $userY, 31, $accent, 'bold');
-    iceSocialMediaDrawGourmetCyclistLogo($image, $width - 300, $height - 180, 260);
-    iceSocialReportText($image, 'ice-app.de', $width - 190, $height - 48, 24, $accent, 'bold');
+    // Ort / Stadt ermitteln
+    $city = '';
+    $rawAddress = (string)($candidate['shop_address'] ?? '');
+    if ($rawAddress !== '') {
+        if (preg_match('/\b\d{5}\s+([A-Za-zÄÖÜäöüß\s\-]+)/u', $rawAddress, $m)) {
+            $city = trim($m[1]);
+        } else {
+            $parts = explode(',', $rawAddress);
+            $city = trim(end($parts));
+        }
+    }
+
+    $subMetaParts = [];
+    if ($city !== '') {
+        $subMetaParts[] = $city;
+    }
+    if ($type !== '') {
+        $subMetaParts[] = 'Typ: ' . $type;
+    }
+    if (!empty($candidate['arrival'])) {
+        $subMetaParts[] = (string)$candidate['arrival'];
+    }
+    $subMetaText = implode(' · ', $subMetaParts);
+
+    // Geschmack-Bewertung ermitteln
+    $tasteRating = null;
+    if (!empty($candidate['ratings']) && is_array($candidate['ratings'])) {
+        foreach ($candidate['ratings'] as $r) {
+            if (($r['key'] ?? '') === 'geschmackbewertung' && isset($r['value']) && $r['value'] !== null && (float)$r['value'] > 0) {
+                $tasteRating = (float)$r['value'];
+                break;
+            }
+        }
+    }
+    if ($tasteRating === null && !empty($candidate['geschmackbewertung']) && (float)$candidate['geschmackbewertung'] > 0) {
+        $tasteRating = (float)$candidate['geschmackbewertung'];
+    }
+
+    // 2. Elementhöhen & vertikale Position berechnen
+    $titleSize = $isStory ? 50 : 38;
+    $titleLines = iceSocialMediaWrapLines($shopName, $contentWidth, $titleSize, 'bold', 2);
+    $titleLineCount = max(1, count($titleLines));
+
+    $badgeHeight = $isStory ? 40 : 34;
+    $titleBlockHeight = ($titleLineCount * (int)round($titleSize * 1.16));
+    $metaHeight = $subMetaText !== '' ? ($isStory ? 30 : 24) : 0;
+    $hasFoodieTags = !empty($flavours) || ($tasteRating !== null && $tasteRating > 0);
+    $chipHeight = $isStory ? 42 : 36;
+    $avatarDiameter = $isStory ? 54 : 44;
+
+    // Gesamthöhe des Textblocks
+    $totalBlockHeight = $badgeHeight
+        + ($isStory ? 26 : 20) // Gap nach Badge
+        + $titleBlockHeight
+        + ($subMetaText !== '' ? ($isStory ? 20 : 16) + $metaHeight : 0) // Gap & Subtitle
+        + ($hasFoodieTags ? ($isStory ? 26 : 20) + $chipHeight : 0) // Gap & Chips
+        + ($isStory ? 30 : 22) // Gap vor Footer
+        + $avatarDiameter;
+
+    // Unten ca. 90px Abstand (Instagram Safe Area)
+    $bottomSafeMargin = $isStory ? 90 : 50;
+    $currentY = $height - $bottomSafeMargin - $totalBlockHeight;
+
+    // -------------------------------------------------------------
+    // Block 1: Badge Row (EIS-CHECK-IN & @ice_app.de)
+    // -------------------------------------------------------------
+    $badgeFontSize = $isStory ? 18 : 15;
+    $badgeText = 'EIS-CHECK-IN';
+    $badgeTextWidth = iceSocialMediaTextWidth($badgeText, $badgeFontSize, 'bold');
+    $badgeWidth = $badgeTextWidth + 48; // Großzügig, damit das 'E' garantiert nie abgeschnitten wird
+
+    // EIS-CHECK-IN Pill
+    iceSocialReportRoundedRect($image, $left, $currentY, $badgeWidth, $badgeHeight, (int)round($badgeHeight / 2), '#ff9f1c');
+    iceSocialReportText($image, $badgeText, $left + 24, $currentY + (int)round(($badgeHeight + $badgeFontSize) / 2) - 2, $badgeFontSize, '#ffffff', 'bold');
+
+    // Instagram Tag Pill "@ice_app.de" (Creme-Glas Pill mit dunkler Schrift für 100% Kontrast)
+    $tagFontSize = $isStory ? 18 : 15;
+    $tagText = '@ice_app.de';
+    $tagTextWidth = iceSocialMediaTextWidth($tagText, $tagFontSize, 'bold');
+    $tagPillWidth = $tagTextWidth + 44;
+    $tagPillX = $width - $left - $tagPillWidth;
+
+    iceSocialReportRoundedRect($image, $tagPillX, $currentY, $tagPillWidth, $badgeHeight, (int)round($badgeHeight / 2), '#ffe9b8');
+    iceSocialReportText($image, $tagText, $tagPillX + 22, $currentY + (int)round(($badgeHeight + $tagFontSize) / 2) - 2, $tagFontSize, '#542f00', 'bold');
+
+    $currentY += $badgeHeight + ($isStory ? 26 : 20);
+
+    // -------------------------------------------------------------
+    // Block 2: Eisdielenname (Headline)
+    // -------------------------------------------------------------
+    foreach ($titleLines as $line) {
+        $baseline = $currentY + $titleSize - 4;
+        iceSocialMediaDrawShadowedText($image, $line, $left, $baseline, $titleSize, '#ffffff', 'bold');
+        $currentY += (int)round($titleSize * 1.16);
+    }
+
+    // -------------------------------------------------------------
+    // Block 3: Subtitle (Ort · Typ · Anreise)
+    // -------------------------------------------------------------
+    if ($subMetaText !== '') {
+        $currentY += ($isStory ? 16 : 12);
+        $metaSize = $isStory ? 23 : 19;
+        $baseline = $currentY + $metaSize - 2;
+        iceSocialMediaDrawShadowedText($image, $subMetaText, $left, $baseline, $metaSize, '#fff0d4', 'bold');
+        $currentY += $metaSize + ($isStory ? 8 : 6);
+    }
+
+    // -------------------------------------------------------------
+    // Block 4: Foodie Tags (Sorten & Sterne-Score)
+    // -------------------------------------------------------------
+    if ($hasFoodieTags) {
+        $currentY += ($isStory ? 22 : 16);
+        $chipX = $left;
+        $chipFontSize = $isStory ? 18 : 15;
+
+        foreach ($flavours as $flavour) {
+            $flavourText = iceSocialMediaCleanText($flavour, 26);
+            if ($flavourText === '') continue;
+            $chipTextWidth = iceSocialMediaTextWidth($flavourText, $chipFontSize, 'bold');
+            $chipWidth = $chipTextWidth + 34;
+            if ($chipX + $chipWidth > $width - $left - 130) {
+                break;
+            }
+            // Weicher warmer Creme-Chip
+            iceSocialReportRoundedRect($image, $chipX, $currentY, $chipWidth, $chipHeight, (int)round($chipHeight / 2), '#fff6de');
+            iceSocialReportText($image, $flavourText, $chipX + 17, $currentY + (int)round(($chipHeight + $chipFontSize) / 2) - 2, $chipFontSize, '#3d2002', 'bold');
+            $chipX += $chipWidth + 12;
+        }
+
+        if ($tasteRating !== null && $tasteRating > 0) {
+            $ratingText = number_format($tasteRating, 1, ',', '') . ' Geschmack';
+            $ratingTextWidth = iceSocialMediaTextWidth($ratingText, $chipFontSize, 'bold');
+            $starRadius = (int)round($chipFontSize * 0.48);
+            $starDiameter = $starRadius * 2;
+            $ratingChipWidth = 16 + $starDiameter + 8 + $ratingTextWidth + 18;
+            if ($chipX + $ratingChipWidth <= $width - $left) {
+                // Goldener Stern-Chip
+                iceSocialReportRoundedRect($image, $chipX, $currentY, $ratingChipWidth, $chipHeight, (int)round($chipHeight / 2), '#ffca36');
+                iceSocialMediaDrawStar($image, $chipX + 16 + $starRadius, $currentY + (int)round($chipHeight / 2), $starRadius, 1.0, '#ffca36');
+                iceSocialReportText($image, $ratingText, $chipX + 16 + $starDiameter + 8, $currentY + (int)round(($chipHeight + $chipFontSize) / 2) - 2, $chipFontSize, '#542f00', 'bold');
+            }
+        }
+
+        $currentY += $chipHeight;
+    }
+
+    // -------------------------------------------------------------
+    // Block 5: Footer (Avatar + Username + Datum + Logo)
+    // -------------------------------------------------------------
+    $currentY += ($isStory ? 28 : 20);
+    $avatarX = $left;
+    $avatarY = $currentY;
+
+    $hasAvatar = iceSocialMediaDrawAvatar($image, $avatarUrl, $avatarX, $avatarY, $avatarDiameter);
+    $userTextX = $hasAvatar ? $avatarX + $avatarDiameter + 16 : $left;
+    $userTextY = $currentY + (int)round($avatarDiameter / 2) + ($isStory ? 8 : 6);
+
+    iceSocialMediaDrawShadowedText($image, '@' . $username, $userTextX, $userTextY, $isStory ? 23 : 19, '#ffffff', 'bold');
+    if ($date !== '') {
+        $nameWidth = iceSocialMediaTextWidth('@' . $username, $isStory ? 23 : 19, 'bold');
+        iceSocialMediaDrawShadowedText($image, ' · ' . $date, $userTextX + $nameWidth + 2, $userTextY, $isStory ? 20 : 16, '#faebd7', 'regular');
+    }
+
+    // Rechts: GourmetCyclist / Ice-App Logo sauber platziert ohne Textüberlagerung!
+    $logoWidth = $isStory ? 180 : 140;
+    $logoX = $width - $left - $logoWidth;
+    iceSocialMediaDrawGourmetCyclistLogo($image, $logoX, $logoY, $logoWidth);
 }
 
 function iceSocialMediaDrawBrand($image, int $width, int $height): void
@@ -421,13 +648,94 @@ function iceSocialMediaDrawMap($image, array $candidate, int $x, int $y, int $wi
 
 function iceSocialMediaTextWidth(string $text, int $size, string $weight = 'regular'): int
 {
+    $emojiPattern = '/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B50}]/u';
+    $textOnly = preg_replace($emojiPattern, '', $text);
+    $emojiCount = (int)preg_match_all($emojiPattern, $text);
+
     $font = iceSocialReportFont($weight);
+    $width = 0;
     if ($font !== '') {
-        $box = imagettfbbox($size, 0, $font, $text);
-        return max(0, $box[2] - $box[0]);
+        if ($textOnly !== '') {
+            $box = imagettfbbox($size, 0, $font, $textOnly);
+            $width = max(0, $box[2] - $box[0]);
+        }
+    } else {
+        if ($textOnly !== '') {
+            $width = iceSocialReportBuiltinTextWidth($textOnly, $size);
+        }
     }
 
-    return iceSocialReportBuiltinTextWidth($text, $size);
+    $emojiWidth = $emojiCount * (int)round($size * 1.05 + 4);
+    return $width + $emojiWidth;
+}
+
+function iceSocialMediaEmojiHex(string $char): string
+{
+    $code = function_exists('mb_ord') ? mb_ord($char, 'UTF-8') : false;
+    return $code !== false ? dechex($code) : '';
+}
+
+function iceSocialMediaDrawEmoji($image, string $hex, int $x, int $y, int $size): bool
+{
+    if ($hex === '') {
+        return false;
+    }
+
+    $dir = __DIR__ . '/../assets/emojis/';
+    $file = $dir . strtolower($hex) . '.png';
+
+    if (!is_file($file)) {
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+        $cdnUrl = 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/' . strtolower($hex) . '.png';
+        $ctx = stream_context_create(['http' => ['timeout' => 1.0]]);
+        $content = @file_get_contents($cdnUrl, false, $ctx);
+        if ($content !== false && strlen($content) > 100) {
+            @file_put_contents($file, $content);
+        }
+    }
+
+    if (!is_file($file)) {
+        return false;
+    }
+
+    $source = @imagecreatefrompng($file);
+    if (!$source) {
+        return false;
+    }
+
+    imagealphablending($image, true);
+    imagecopyresampled($image, $source, $x, $y, 0, 0, $size, $size, imagesx($source), imagesy($source));
+    imagedestroy($source);
+    return true;
+}
+
+function iceSocialMediaDrawTextWithEmojis($image, string $line, int $x, int $baselineY, int $size, string $hex, string $weight = 'regular'): void
+{
+    $emojiPattern = '/([\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B50}])/u';
+    $parts = preg_split($emojiPattern, $line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+    if ($parts === false || empty($parts)) {
+        iceSocialReportText($image, $line, $x, $baselineY, $size, $hex, $weight);
+        return;
+    }
+
+    $curX = $x;
+    $emojiSize = (int)round($size * 1.05);
+    $emojiTopY = $baselineY - $size + (int)round($size * 0.08);
+
+    foreach ($parts as $part) {
+        if (preg_match($emojiPattern, $part)) {
+            $emojiHex = iceSocialMediaEmojiHex($part);
+            $drawn = iceSocialMediaDrawEmoji($image, $emojiHex, $curX, $emojiTopY, $emojiSize);
+            if ($drawn) {
+                $curX += $emojiSize + 4;
+            }
+        } else {
+            iceSocialReportText($image, $part, $curX, $baselineY, $size, $hex, $weight);
+            $curX += iceSocialMediaTextWidth($part, $size, $weight);
+        }
+    }
 }
 
 function iceSocialMediaWrapLines(string $text, int $maxWidth, int $size, string $weight = 'regular', int $maxLines = 2): array
@@ -482,7 +790,7 @@ function iceSocialMediaWrapLines(string $text, int $maxWidth, int $size, string 
 function iceSocialMediaDrawTextLines($image, array $lines, int $x, int $baselineY, int $size, string $hex, string $weight = 'regular', float $lineHeight = 1.15): void
 {
     foreach ($lines as $index => $line) {
-        iceSocialReportText($image, (string)$line, $x, $baselineY + (int)round($index * $size * $lineHeight), $size, $hex, $weight);
+        iceSocialMediaDrawTextWithEmojis($image, (string)$line, $x, $baselineY + (int)round($index * $size * $lineHeight), $size, $hex, $weight);
     }
 }
 

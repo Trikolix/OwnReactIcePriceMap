@@ -489,16 +489,111 @@ function buildNotificationDeeplink(array $notification): ?string
     }
 }
 
-function buildPushPayload(array $notification): array
+function resolveNotificationIconUrl(?PDO $pdo, array $notification): string
+{
+    $defaultIcon = 'https://ice-app.de/favicon.ico';
+
+    if (!$pdo) {
+        return $defaultIcon;
+    }
+
+    $actorUserId = null;
+    $data = pushNormalizeJsonData($notification['zusatzdaten'] ?? null);
+
+    // 1. Direkte User-ID aus Zusatzdaten
+    if (!empty($data['actor_user_id'])) {
+        $actorUserId = (int)$data['actor_user_id'];
+    } elseif (!empty($data['by_user'])) {
+        $actorUserId = (int)$data['by_user'];
+    } elseif (!empty($data['source_user_id'])) {
+        $actorUserId = (int)$data['source_user_id'];
+    } elseif (!empty($data['liker_id'])) {
+        $actorUserId = (int)$data['liker_id'];
+    } elseif (!empty($data['byUserId'])) {
+        $actorUserId = (int)$data['byUserId'];
+    } elseif (!empty($data['sender_user_id'])) {
+        $actorUserId = (int)$data['sender_user_id'];
+    }
+
+    // 2. Ableiten anhand von Notification-Typ und Referenz-ID
+    if (!$actorUserId) {
+        $type = (string)($notification['typ'] ?? '');
+        $refId = (int)($notification['referenz_id'] ?? 0);
+
+        if ($type === 'like') {
+            $entityType = (string)($data['entity_type'] ?? '');
+            if ($entityType !== '' && $refId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT user_id FROM likes WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC LIMIT 1");
+                    $stmt->execute([$entityType, $refId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        } elseif (strpos($type, 'kommentar') === 0) {
+            $kommentarId = (int)($data['kommentar_id'] ?? $refId);
+            if ($kommentarId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT nutzer_id FROM kommentare WHERE id = ?");
+                    $stmt->execute([$kommentarId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        } elseif ($type === 'checkin_mention') {
+            $checkinId = (int)($data['checkin_id'] ?? $refId);
+            if ($checkinId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT nutzer_id FROM checkins WHERE id = ?");
+                    $stmt->execute([$checkinId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        } elseif ($type === 'mention') {
+            if (!empty($data['source_user_id'])) {
+                $actorUserId = (int)$data['source_user_id'];
+            }
+        } elseif ($type === 'ice_date') {
+            $dateId = (int)($data['ice_date_id'] ?? $refId);
+            if ($dateId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT creator_user_id FROM ice_dates WHERE id = ?");
+                    $stmt->execute([$dateId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        }
+    }
+
+    // 3. Wenn User-ID ermittelt wurde, Profilbild aus user_profile_images laden
+    if ($actorUserId && $actorUserId > 0) {
+        try {
+            require_once __DIR__ . '/user_profile.php';
+            $avatarPath = getUserAvatarPath($pdo, $actorUserId);
+            if ($avatarPath && trim($avatarPath) !== '') {
+                $cleanPath = ltrim(trim($avatarPath), '/');
+                if (preg_match('/^https?:\/\//i', $cleanPath)) {
+                    return $cleanPath;
+                }
+                return 'https://ice-app.de/' . $cleanPath;
+            }
+        } catch (Exception $e) {}
+    }
+
+    return $defaultIcon;
+}
+
+function buildPushPayload(array $notification, ?PDO $pdo = null): array
 {
     $data = pushNormalizeJsonData($notification['zusatzdaten'] ?? null);
     $deeplink = buildNotificationDeeplink($notification);
+    $iconUrl = resolveNotificationIconUrl($pdo, $notification);
 
     return [
         'notification_id' => (int)$notification['id'],
         'type' => (string)$notification['typ'],
         'title' => 'Ice App',
         'body' => (string)$notification['text'],
+        'icon' => $iconUrl,
+        'badge' => 'https://ice-app.de/favicon.ico',
         'deeplink' => $deeplink,
         'reference_id' => (int)$notification['referenz_id'],
         'tag' => 'notification-' . (int)$notification['id'],
@@ -531,7 +626,7 @@ function dispatchNotification(PDO $pdo, array $notificationRecord, array $contex
     }
 
     $settings = fetchUserNotificationSettings($pdo, $recipientId);
-    $payload = buildPushPayload($notificationRecord);
+    $payload = buildPushPayload($notificationRecord, $pdo);
 
     if ((int)$settings['push_enabled_web'] === 1) {
         queueAndSendWebPush($pdo, $recipientId, $notificationRecord, $payload);
@@ -1202,13 +1297,18 @@ function sendAndroidPush(PDO $pdo, int $userId, array $notificationRecord, array
         $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
         $deliveryPayload = updatePushDeliveryPayload($pdo, $deliveryId, $payload, 'android');
 
+        $fcmNotification = [
+            'title' => (string)($deliveryPayload['title'] ?? 'Ice App'),
+            'body' => (string)($deliveryPayload['body'] ?? ''),
+        ];
+        if (!empty($deliveryPayload['icon'])) {
+            $fcmNotification['image'] = (string)$deliveryPayload['icon'];
+        }
+
         $body = [
             'message' => [
                 'token' => (string)$device['device_token'],
-                'notification' => [
-                    'title' => (string)($deliveryPayload['title'] ?? 'Ice App'),
-                    'body' => (string)($deliveryPayload['body'] ?? ''),
-                ],
+                'notification' => $fcmNotification,
                 'data' => flattenPushPayloadForFcm($deliveryPayload),
                 'android' => [
                     'priority' => 'HIGH',

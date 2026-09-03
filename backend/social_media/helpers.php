@@ -55,9 +55,9 @@ function socialMediaNormalizeCandidate(array $row): array
         : null;
 
     return [
-        'image_id' => (int)$row['image_id'],
+        'image_id' => (int)($row['image_id'] ?? 0),
         'image_url' => (string)($row['image_url'] ?? ''),
-        'checkin_id' => (int)$row['checkin_id'],
+        'checkin_id' => (int)($row['checkin_id'] ?? 0),
         'image_created_at' => $row['image_created_at'] ?? null,
         'username' => (string)($row['username'] ?? 'Ice-App-Nutzer'),
         'checkin_date' => $row['checkin_date'] ?? null,
@@ -177,4 +177,87 @@ function socialMediaFetchCandidates(PDO $pdo, array $filters = []): array
         'limit' => $limit,
         'pages' => $limit > 0 ? (int)ceil($total / $limit) : 0,
     ];
+}
+
+function socialMediaFetchCheckinCandidate(PDO $pdo, int $checkinId): ?array
+{
+    $stmt = $pdo->prepare("
+        SELECT
+            c.id AS checkin_id,
+            c.nutzer_id AS user_id,
+            c.datum AS checkin_date,
+            c.typ AS checkin_type,
+            c.kommentar AS checkin_comment,
+            c.anreise AS arrival_type,
+            c.geschmackbewertung,
+            c.waffelbewertung,
+            c.größenbewertung,
+            c.preisleistungsbewertung,
+            n.username,
+            up.avatar_path AS avatar_url,
+            e.name AS shop_name,
+            e.adresse AS shop_address,
+            e.latitude AS shop_latitude,
+            e.longitude AS shop_longitude,
+            flavours.flavours
+        FROM checkins c
+        JOIN nutzer n ON n.id = c.nutzer_id
+        JOIN eisdielen e ON e.id = c.eisdiele_id
+        LEFT JOIN user_profile_images up ON up.user_id = n.id
+        LEFT JOIN (
+            SELECT checkin_id, GROUP_CONCAT(TRIM(sortenname) ORDER BY id SEPARATOR '||') AS flavours
+            FROM checkin_sorten
+            WHERE checkin_id = :cid
+            GROUP BY checkin_id
+        ) flavours ON flavours.checkin_id = c.id
+        WHERE c.id = :checkin_id
+        LIMIT 1
+    ");
+    $stmt->execute(['cid' => $checkinId, 'checkin_id' => $checkinId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+
+    $candidate = socialMediaNormalizeCandidate($row);
+    $candidate['user_id'] = (int)$row['user_id'];
+
+    // Bilder des Checkins laden
+    $imgStmt = $pdo->prepare("
+        SELECT id AS image_id, url AS image_url
+        FROM bilder
+        WHERE checkin_id = :checkin_id AND url IS NOT NULL AND url <> ''
+        ORDER BY id ASC
+    ");
+    $imgStmt->execute(['checkin_id' => $checkinId]);
+    $candidate['images'] = array_map(function($img) {
+        return [
+            'image_id' => (int)$img['image_id'],
+            'image_url' => (string)$img['image_url'],
+        ];
+    }, $imgStmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // Falls Bilder existieren, erstes Bild als Standard setzen
+    if (!empty($candidate['images'])) {
+        $candidate['image_id'] = $candidate['images'][0]['image_id'];
+        $candidate['image_url'] = $candidate['images'][0]['image_url'];
+    }
+
+    // Awards des Checkins ermitteln
+    $candidate['awards'] = [];
+    try {
+        $awardStmt = $pdo->prepare("
+            SELECT al.title_de AS title, al.description_de AS description, al.icon_path AS icon, ua.level
+            FROM award_checkins ac
+            JOIN user_awards ua ON ua.id = ac.user_award_id
+            JOIN award_levels al ON al.award_id = ua.award_id AND al.level = ua.level
+            WHERE ac.checkin_id = :checkin_id
+        ");
+        $awardStmt->execute(['checkin_id' => $checkinId]);
+        $candidate['awards'] = $awardStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        // Fallback: Tabelle award_checkins evtl. noch nicht vorhanden
+    }
+
+    return $candidate;
 }

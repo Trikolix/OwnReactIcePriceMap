@@ -6,6 +6,7 @@ require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/user_profile.php';
 require_once  __DIR__ . '/lib/auth.php';
+require_once  __DIR__ . '/lib/likes.php';
 
 function consecutiveLengthBackward(array $set, DateTimeImmutable $start, string $stepSpec): int
 {
@@ -341,6 +342,51 @@ try {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM kommentare WHERE nutzer_id = ?");
     $stmt->execute([$nutzerId]);
     $stats["comment_count"] = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM nutzer WHERE invited_by = ? AND is_verified = 1 AND deletion_requested_at IS NULL");
+    $stmt->execute([$nutzerId]);
+    $stats["invited_count"] = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM nutzer WHERE invited_by = ? AND is_verified = 0 AND deletion_requested_at IS NULL");
+    $stmt->execute([$nutzerId]);
+    $stats["invited_pending_count"] = (int)$stmt->fetchColumn();
+
+    // Kriterien für Ice-App Experte (Stufe 2):
+    // 1. Neue Eisdiele eingetragen mit mind. 1 Check-in (von beliebigem Nutzer)
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM eisdielen e
+        WHERE e.user_id = ?
+          AND EXISTS (SELECT 1 FROM checkins c WHERE c.eisdiele_id = e.id)
+    ");
+    $stmt->execute([$nutzerId]);
+    $stats["expert_created_shops_with_checkin"] = (int)$stmt->fetchColumn();
+
+    // 4. Mindestens eine Challenge abgeschlossen
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM challenges WHERE nutzer_id = ? AND completed = 1");
+    $stmt->execute([$nutzerId]);
+    $stats["completed_challenges_count"] = (int)$stmt->fetchColumn();
+
+    // 5. Eine Route eingereicht
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM routen WHERE nutzer_id = ?");
+    $stmt->execute([$nutzerId]);
+    $stats["submitted_routes_count"] = (int)$stmt->fetchColumn();
+
+    // 6. Mindestens 10 Likes auf fremde Beiträge vergeben
+    ensureLikesSchema($pdo);
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM likes l
+        WHERE l.user_id = :userId
+          AND (
+            (l.entity_type = 'checkin' AND EXISTS (SELECT 1 FROM checkins c WHERE c.id = l.entity_id AND c.nutzer_id != :userId))
+            OR (l.entity_type = 'bewertung' AND EXISTS (SELECT 1 FROM bewertungen b WHERE b.id = l.entity_id AND b.nutzer_id != :userId))
+            OR (l.entity_type = 'route' AND EXISTS (SELECT 1 FROM routen r WHERE r.id = l.entity_id AND r.nutzer_id != :userId))
+            OR (l.entity_type = 'kommentar' AND EXISTS (SELECT 1 FROM kommentare k WHERE k.id = l.entity_id AND k.nutzer_id != :userId))
+            OR (l.entity_type = 'user_registration' AND l.entity_id != :userId)
+            OR (l.entity_type = 'user_award' AND EXISTS (SELECT 1 FROM user_awards a WHERE a.id = l.entity_id AND a.user_id != :userId))
+          )
+    ");
+    $stmt->execute(['userId' => $nutzerId]);
+    $stats["foreign_likes_given_count"] = (int)$stmt->fetchColumn();
 
     $stmt = $pdo->prepare("SELECT DATE(datum) AS d FROM checkins WHERE nutzer_id = ? GROUP BY DATE(datum) ORDER BY d ASC");
     $stmt->execute([$nutzerId]);

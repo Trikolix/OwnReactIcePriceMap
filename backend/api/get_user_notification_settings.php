@@ -23,12 +23,15 @@ if ($user_id <= 0) {
 }
 
 
-$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, notify_ice_date, notify_checkin_mention_push, notify_comment_push, notify_comment_participated_push, notify_news_push, notify_team_challenge_push, notify_ice_date_push, notify_photo_challenge, notify_photo_challenge_push, notify_like, notify_like_push, push_enabled_web, push_enabled_android FROM user_notification_settings WHERE user_id = :user_id";
+$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, notify_ice_date, notify_checkin_mention_push, notify_comment_push, notify_comment_participated_push, notify_news_push, notify_team_challenge_push, notify_ice_date_push, notify_photo_challenge, notify_photo_challenge_push, notify_like, notify_like_push, push_enabled_web, push_enabled_android, show_onboarding_checklist FROM user_notification_settings WHERE user_id = :user_id";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['user_id' => $user_id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($row) {
+    if (!isset($row['show_onboarding_checklist'])) {
+        $row['show_onboarding_checklist'] = 1;
+    }
     echo json_encode($row);
 } else {
     // Default-Werte, falls keine Settings existieren
@@ -51,6 +54,7 @@ if ($row) {
         'notify_like_push' => 1,
         'push_enabled_web' => 0,
         'push_enabled_android' => 0,
+        'show_onboarding_checklist' => 1,
     ]);
 }
 ?>

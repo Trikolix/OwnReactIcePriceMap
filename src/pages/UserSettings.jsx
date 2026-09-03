@@ -50,6 +50,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_like_push: 1,
     push_enabled_web: 1,
     push_enabled_android: 1,
+    show_onboarding_checklist: 1,
   });
   const [loading, setLoading] = useState(true);
   const [savingSection, setSavingSection] = useState(null);
@@ -803,6 +804,51 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           </SubmitButton>
           {successSection === "social" && <SuccessMsg>Social Media gespeichert.</SuccessMsg>}
         </SectionActions>
+
+        <Divider />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '0.4rem' }}>
+          <h3 style={{ margin: 0 }}>Startklar-Checkliste (Onboarding)</h3>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', color: settings.show_onboarding_checklist !== 0 ? '#15803d' : '#6b7280' }}>
+            <input
+              type="checkbox"
+              name="show_onboarding_checklist"
+              checked={settings.show_onboarding_checklist !== 0}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                const nextVal = isChecked ? 1 : 0;
+                setSettings(prev => ({ ...prev, show_onboarding_checklist: nextVal }));
+                const uid = userId || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
+                if (uid && typeof window !== 'undefined') {
+                  if (isChecked) {
+                    localStorage.removeItem(`iceapp_onboarding_dismissed:${uid}`);
+                    window.dispatchEvent(new CustomEvent('onboarding:show'));
+                  } else {
+                    localStorage.setItem(`iceapp_onboarding_dismissed:${uid}`, 'true');
+                    window.dispatchEvent(new CustomEvent('onboarding:hide'));
+                  }
+                }
+                if (API_BASE && uid) {
+                  const token = localStorage.getItem('authToken');
+                  fetch(`${API_BASE}/api/update_user_notification_settings.php`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                    body: JSON.stringify({
+                      user_id: Number(uid),
+                      show_onboarding_checklist: nextVal,
+                    }),
+                  }).catch(() => {});
+                }
+              }}
+            />
+            {settings.show_onboarding_checklist !== 0 ? '✓ Eingeblendet' : '✗ Ausgeblendet'}
+          </label>
+        </div>
+        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>
+          Hier kannst du festlegen, ob die 6 Einführungsschritte (Profilbild, App, Push, Check-in, Freunde, Social Media) auf dem Dashboard und in deinem Profil angezeigt werden.
+        </p>
 
         {error && <ErrorMsg>{error}</ErrorMsg>}
         <ButtonRow>

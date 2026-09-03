@@ -14,6 +14,7 @@ import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import SystemModal from '../components/SystemModal';
 import MentionInviteModal from '../components/MentionInviteModal';
+import OnboardingChecklist from '../components/OnboardingChecklist';
 import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff, Heart, SlidersHorizontal } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
@@ -800,6 +801,12 @@ function UserSite() {
                 )}
               </ProfileActions>
             </ProfileHeader>
+            {isOwnProfile && (
+              <OnboardingChecklist
+                initialStats={data}
+                onOpenAvatarSettings={() => setShowSettings(true)}
+              />
+            )}
             {isOwnProfile && (
               <InviteCard>
                 <h3>Lade neue Nutzer ein und verdiene extra EP <Sparkles size={21} style={{ verticalAlign: 'sub' }} /></h3>

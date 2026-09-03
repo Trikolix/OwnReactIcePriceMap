@@ -330,6 +330,7 @@ function dispatchLikeNotification(PDO $pdo, int $likerId, string $entityType, in
     $existingId = $stmt->fetchColumn();
 
     $extraData = getLikeNotificationExtraData($pdo, $entityType, $entityId, $likerId);
+    $extraData['actor_user_id'] = (int)$likerId;
 
     if ($existingId) {
         $stmt = $pdo->prepare("

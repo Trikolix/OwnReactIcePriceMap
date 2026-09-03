@@ -164,11 +164,19 @@ self.addEventListener("push", (event) => {
     // MUSS der Service Worker zwingend eine Benachrichtigung anzeigen,
     // da Chrome & Firefox sonst userVisibleOnly als verletzt einstufen
     // und stillschweigend die Benachrichtigungsberechtigung entziehen!
+    const resolveAssetUrl = (url, fallback = "/favicon.ico") => {
+      const target = url || fallback;
+      if (!target) return "/favicon.ico";
+      if (/^https?:\/\//i.test(target)) return target;
+      const origin = self.location ? self.location.origin : "";
+      return `${origin}${target.startsWith("/") ? "" : "/"}${target}`;
+    };
+
     if (!deliveries.length) {
       await self.registration.showNotification("Ice App", {
         body: "Du hast eine neue Benachrichtigung in der Ice App.",
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
+        icon: resolveAssetUrl("/favicon.ico"),
+        badge: resolveAssetUrl("/favicon.ico"),
         tag: "ice-app-notification",
         renotify: true,
         data: { deeplink: "/" },
@@ -177,10 +185,13 @@ self.addEventListener("push", (event) => {
     }
 
     for (const payload of deliveries) {
+      const iconUrl = resolveAssetUrl(payload.icon, "/favicon.ico");
+      const badgeUrl = resolveAssetUrl(payload.badge, "/favicon.ico");
+
       await self.registration.showNotification(payload.title || "Ice App", {
         body: payload.body || "Neue Benachrichtigung",
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
+        icon: iconUrl,
+        badge: badgeUrl,
         data: payload,
         tag: payload.tag || ("notification-" + (payload.delivery_id || Date.now())),
         renotify: true,
