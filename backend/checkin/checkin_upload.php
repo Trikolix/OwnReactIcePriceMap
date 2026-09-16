@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../lib/streaks.php';
+require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/notification_dispatcher.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
@@ -132,7 +134,8 @@ try {
     // -------------------------
     // Eingabedaten (aus POST)
     // -------------------------
-    $userId = $_POST['userId'] ?? null;
+    $authenticatedUser = requireAuth($pdo);
+    $userId = (int)$authenticatedUser['user_id'];
     $shopId = $_POST['shopId'] ?? null;
     $type = $_POST['type'] ?? null;
     $requestedContextType = (string)($_POST['contextType'] ?? 'ice_shop');
@@ -314,6 +317,9 @@ try {
     // sorten, evaluators -> award inserts) durch. Damit diese atomar sind
     // beginnen wir eine Transaktion. Bei Fehlern wird zurückgerollt.
     $pdo->beginTransaction();
+    $streakClock = streakNow();
+    $datum = $datum ?: $streakClock->format('Y-m-d H:i:s');
+    $streakEvents = streakReconcile($pdo, (int)$userId, $streakClock);
 
 
     // -------------------------
@@ -597,6 +603,8 @@ try {
         $evaluators[] = new OnSiteEvaluator();
     }
 
+    $streakEvents = array_merge($streakEvents, streakAfterCheckin($pdo, (int)$userId, (int)$checkinId, isset($completedChallenge['id']) ? (int)$completedChallenge['id'] : null, $streakClock));
+    $streakSnapshot = streakPayload(streakLoad($pdo, (int)$userId, $streakClock), $streakClock, true);
     $evaluatorTimings = [];
 
     $newAwards = [];
@@ -756,6 +764,8 @@ try {
         'status' => 'success',
         'checkin_id' => $checkinId,
         'context_type' => $contextType,
+        'streaks' => $streakSnapshot,
+        'streak_events' => $streakEvents,
         'new_awards' => $newAwards,
         'level_up' => $levelChange['level_up'] ?? false,
         'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,

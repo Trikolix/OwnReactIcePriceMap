@@ -20,6 +20,8 @@ import {
     Message as SharedMessage,
     LevelInfo as SharedLevelInfo,
 } from './styles/SharedStyles';
+import { publishStreakUpdate } from './hooks/useStreakStatus';
+import { StreakCelebration } from './components/ProfileProgress';
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
@@ -66,6 +68,7 @@ const CheckinForm = ({ shopId = null, shopName = "", contextType = "ice_shop", u
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [streakEvents, setStreakEvents] = useState([]);
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
     const [challenges, setChallenges] = useState([]);
@@ -305,12 +308,14 @@ const CheckinForm = ({ shopId = null, shopName = "", contextType = "ice_shop", u
                     setMessage("Checkin erfolgreich gespeichert!");
                 }
 
+                setStreakEvents(data.streak_events || []);
+                publishStreakUpdate(userId, data);
                 if (onSuccess) onSuccess();
                 let suggestionsFound = false;
                 if (!isNoPublicPlace && !checkinId && !referencedCheckinId && data.checkin_id) {
                     suggestionsFound = await loadGroupSuggestions(data.checkin_id);
                 }
-                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null) || (data.completed_ice_date !== null)) {
+                if (data.streak_events?.length || data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null) || (data.completed_ice_date !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
                             level: data.new_level,
@@ -433,6 +438,7 @@ const CheckinForm = ({ shopId = null, shopName = "", contextType = "ice_shop", u
                 if (onSuccess) onSuccess();
                 setSubmitted(true);
                 setMessage("Checkin erfolgreich gelöscht!");
+                publishStreakUpdate(userId);
                 setTimeout(() => {
                     setShowCheckinForm(false);
                 }, 2000);
@@ -881,6 +887,7 @@ const CheckinForm = ({ shopId = null, shopName = "", contextType = "ice_shop", u
                         </ButtonGroup>
                     </>
                 )}
+                <StreakCelebration events={streakEvents} />
                 {levelUpInfo && (
                     <LevelInfo>
                         <h2>🎉 Level-Up!</h2>

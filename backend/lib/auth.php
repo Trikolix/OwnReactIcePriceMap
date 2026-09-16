@@ -147,7 +147,7 @@ function unauthorizedResponse(string $message = 'Unauthorized'): void {
     exit;
 }
 
-function authenticateRequest(PDO $pdo): ?array {
+function authenticateRequest(PDO $pdo, bool $refreshUsage = true): ?array {
     $rawToken = getAuthTokenFromRequest();
     if (!$rawToken) {
         return null;
@@ -166,7 +166,9 @@ function authenticateRequest(PDO $pdo): ?array {
         return null;
     }
 
+    if ($refreshUsage) {
     $tokenRecord['expires_at'] = updateTokenUsage($pdo, (int)$tokenRecord['token_id']);
+    }
 
     return array_merge($tokenRecord, [
         'raw_token' => $rawToken,

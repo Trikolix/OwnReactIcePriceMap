@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../lib/streaks.php';
 require_once  __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../evaluators/ReferredUsersEvaluator.php';
@@ -42,6 +43,10 @@ try {
         exit;
     }
  
+    $pdo->beginTransaction();
+    streakReconcile($pdo, $currentUserId);
+    $pdo->commit();
+
     // Letzte Aktivität aktualisieren
     $stmt = $pdo->prepare("UPDATE nutzer SET last_active_at = NOW() WHERE id = ?");
     $stmt->execute([$currentUserId]);

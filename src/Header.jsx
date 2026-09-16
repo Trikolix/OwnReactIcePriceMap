@@ -47,6 +47,9 @@ import {
 import ActionsOverviewModal from './pages/ActionsOverview';
 import GlobalCheckinModal from './components/GlobalCheckinModal';
 
+import useStreakStatus from './hooks/useStreakStatus';
+import { AvatarBadgeFrame, LevelBadge, StreakFlames } from './components/ProfileProgress';
+
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
   'submission_open',
@@ -60,6 +63,7 @@ const Header = ({ refreshShops }) => {
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
   const { userId, username, currentLevel, isLoggedIn, userPosition, authToken, login, logout, setCurrentLevel } = useUser();
+  const progress = useStreakStatus(isLoggedIn ? userId : null, userId, true);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSubmitNewIceShop, setShowSubmitNewIceShop] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -723,18 +727,19 @@ const Header = ({ refreshShops }) => {
               </NotificationBellWrap>
               <AccountClusterDivider aria-hidden="true" />
               <UserStatusLink to={`/user/${userId}`} onClick={() => setMenuOpen(false)}>
-                <UserStatusAvatar aria-hidden="true">
+                <AvatarBadgeFrame><UserStatusAvatar aria-hidden="true">
                   {headerAvatarSrc ? (
                     <img src={headerAvatarSrc} alt="" />
                   ) : (
                     (username || '?').slice(0, 1).toUpperCase()
                   )}
-                </UserStatusAvatar>
+                </UserStatusAvatar><LevelBadge level={progress?.level_info?.level ?? currentLevel} /></AvatarBadgeFrame>
                 <UserStatusText>
                   <UserStatusLabel>Eingeloggt</UserStatusLabel>
                   <UserStatusName>{username || `Nutzer ${userId}`}</UserStatusName>
                 </UserStatusText>
               </UserStatusLink>
+              <StreakFlames compact streaks={progress?.streaks} events={progress?.events} />
             </AccountCluster>
           ) : (
             <LoginHeaderButton

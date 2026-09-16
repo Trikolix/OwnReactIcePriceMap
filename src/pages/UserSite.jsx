@@ -10,11 +10,13 @@ import GroupCheckinCard from '../components/GroupCheckinCard';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import RouteCard from '../components/RouteCard';
 import ShopCard from '../components/ShopCard';
+import useStreakStatus from '../hooks/useStreakStatus';
+import { AvatarBadgeFrame, LevelBadge, StreakFlames, FreezeInventory, streakHint } from '../components/ProfileProgress';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import SystemModal from '../components/SystemModal';
 import MentionInviteModal from '../components/MentionInviteModal';
-import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff, Heart, SlidersHorizontal } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Snowflake, Flame, CheckCircle2, CircleOff, Heart, SlidersHorizontal } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 import { groupActivities } from '../utils/activityFeed';
@@ -23,17 +25,6 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 const TRAVEL_COLORS = ["#ffb522", "#ff8a00", "#ff595e", "#8ac926", "#33658a", "#6a4c93", "#1982c4", "#6f2dbd"];
 const buildAssetUrl = (path) => (path ? `${ASSET_BASE}/${path.replace(/^\/+/, "")}` : null);
-const formatTimeLeft = (secondsInput) => {
-  const seconds = Math.max(0, Number(secondsInput) || 0);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (days > 0) return `${days}T ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}min`;
-  return `${minutes}min`;
-};
-
 function UserSite() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { userId: userIdFromUrl } = useParams();
@@ -41,7 +32,8 @@ function UserSite() {
   const viewerUserId = userIdFromContext || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
   const [activeTab, setActiveTab] = useState('feed');
   const finalUserId = userIdFromUrl || userIdFromContext;
-  const isOwnProfile = Boolean(finalUserId && viewerUserId && String(finalUserId) === String(viewerUserId));
+  const progress = useStreakStatus(finalUserId, viewerUserId);
+  const isOwnProfile = Boolean(finalUserId && viewerUserId && String(progress?.user_id ?? finalUserId) === String(viewerUserId));
   const [showToast, setShowToast] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -324,24 +316,18 @@ function UserSite() {
     setProfileFeedFilters((previous) => ({ ...previous, [type]: !previous[type] }));
   };
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
-  const dayStreak = data?.streaks?.day || {};
-  const weekStreak = data?.streaks?.week || {};
+  const visibleStreaks = progress?.streaks || data?.streaks;
+  const dayStreak = visibleStreaks?.day || {};
+  const weekStreak = visibleStreaks?.week || {};
   const dayStreakState = dayStreak.state || 'none';
   const weekStreakState = weekStreak.state || 'none';
   const dayStreakValue = Number(dayStreak.value || 0);
   const weekStreakValue = Number(weekStreak.value || 0);
-  const dayStreakHint = dayStreakState === 'at_risk'
-    ? `Heute noch kein Check-in. Noch ${formatTimeLeft(dayStreak.seconds_left)} bis der Streak verfällt.`
-    : dayStreakState === 'active'
-      ? 'Heute bereits eingecheckt. Streak gesichert.'
-      : 'Kein aktiver Tages-Streak. Check heute ein, um zu starten.';
-  const weekStreakHint = weekStreakState === 'at_risk'
-    ? `Diese Woche noch kein Check-in. Noch ${formatTimeLeft(weekStreak.seconds_left)} bis der Wochen-Streak verfällt.`
-    : weekStreakState === 'active'
-      ? 'Diese Woche bereits eingecheckt. Wochen-Streak gesichert.'
-      : 'Kein aktiver Wochen-Streak. Ein Check-in pro Woche startet die Serie.';
+  const dayStreakHint = streakHint(dayStreak, 'day');
+  const weekStreakHint = streakHint(weekStreak, 'week');
 
   const renderStreakIcon = (state) => {
+    if (state === 'frozen') return <Snowflake size={18} />;
     if (state === 'active') return <CheckCircle2 size={18} />;
     if (state === 'at_risk') return <Flame size={18} />;
     return <CircleOff size={18} />;
@@ -744,11 +730,12 @@ function UserSite() {
             <ProfileHeader>
               <ProfileMainColumn>
                 <ProfileIdentity>
-                  <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
+                  <AvatarBadgeFrame><AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
                     {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
-                  </AvatarCircle>
+                  </AvatarCircle><LevelBadge large level={progress?.level_info?.level ?? data.level_info?.level} /></AvatarBadgeFrame>
                   <ProfileInfo>
                     <h1>{data.nutzername}</h1>
+                    <StreakFlames streaks={visibleStreaks} events={progress?.events} />
                     {(data.instagram_account || data.strava_account || isOwnProfile) && (
                       <SocialLinksRow>
                         {data.instagram_account && (
@@ -789,8 +776,9 @@ function UserSite() {
                   </MetaRow>
                 </ProfileIdentity>
                 <LevelInlineCard>
-                  <LevelDisplay levelInfo={data.level_info} />
+                  <LevelDisplay levelInfo={progress?.level_info || data.level_info} />
                 </LevelInlineCard>
+                {isOwnProfile && <FreezeInventory streaks={visibleStreaks} />}
               </ProfileMainColumn>
               <ProfileActions>
                 {isOwnProfile && (
@@ -854,7 +842,7 @@ function UserSite() {
                 </StatIconWrap>
                 <h3>Tages-Streak</h3>
                 <strong>{dayStreakValue} Tage</strong>
-                <small>Rekord: {data?.streaks?.day_record ?? 0} Tage</small>
+                <small>Rekord: {visibleStreaks?.day_record ?? 0} Tage</small>
                 <small>{dayStreakHint}</small>
               </HighlightCard>
               <HighlightCard>
@@ -863,7 +851,7 @@ function UserSite() {
                 </StatIconWrap>
                 <h3>Wochen-Streak</h3>
                 <strong>{weekStreakValue} Wochen</strong>
-                <small>Rekord: {data?.streaks?.week_record ?? 0} Wochen</small>
+                <small>Rekord: {visibleStreaks?.week_record ?? 0} Wochen</small>
                 <small>{weekStreakHint}</small>
               </HighlightCard>
             </HighlightGrid>
@@ -1746,7 +1734,7 @@ const StatIconWrap = styled.div`
   align-items: center;
   justify-content: center;
   background: ${({ $tone }) =>
-    $tone === 'active'
+    $tone === 'frozen' ? '#dceeff' : $tone === 'active'
       ? 'rgba(34, 197, 94, 0.2)'
       : $tone === 'at_risk'
         ? 'rgba(248, 113, 113, 0.2)'
@@ -1754,7 +1742,7 @@ const StatIconWrap = styled.div`
           ? 'rgba(148, 163, 184, 0.25)'
           : 'rgba(255, 181, 34, 0.22)'};
   color: ${({ $tone }) =>
-    $tone === 'active'
+    $tone === 'frozen' ? '#176bba' : $tone === 'active'
       ? '#15803d'
       : $tone === 'at_risk'
         ? '#b91c1c'
