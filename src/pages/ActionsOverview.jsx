@@ -163,7 +163,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
   }, [activeDetailPanel]);
 
   useEffect(() => {
-    if (fullPage || !open || !apiUrl) {
+    if (!open || !apiUrl) {
       return;
     }
 
@@ -180,7 +180,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
         console.error('Failed to fetch user of the month:', error);
       })
       .finally(() => setIsUserOfMonthLoading(false));
-  }, [apiUrl, fullPage, open]);
+  }, [apiUrl, open]);
 
   useEffect(() => {
     if (!open || !apiUrl) {
@@ -628,18 +628,21 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
       <Overlay $fullPage={fullPage}>
         {!fullPage && <CloseButton onClick={onClose}>&times;</CloseButton>}
 
-        <MainHeading>{fullPage ? 'Aktionen & Rückblicke' : 'Heute in der Ice-App'}</MainHeading>
-        <IntroText>{fullPage
-          ? 'Aktive Aktionen, kommende Events und historische Ergebnisse an einem übersichtlichen Ort.'
-          : 'Alles Wichtige auf einen Blick. Karte, Check-ins und Feed bleiben im Fokus.'}</IntroText>
+        <PageIntro $fullPage={fullPage}>
+          <MainHeading $fullPage={fullPage}>{fullPage ? 'Aktionen & Rückblicke' : 'Heute in der Ice-App'}</MainHeading>
+          <IntroText>{fullPage
+            ? 'Aktive Aktionen, kommende Events und historische Ergebnisse an einem übersichtlichen Ort.'
+            : 'Alles Wichtige auf einen Blick. Karte, Check-ins und Feed bleiben im Fokus.'}</IntroText>
+        </PageIntro>
 
-        <HubSection>
+        {(!fullPage || pageTaskItems.length > 0) && (
+        <HubSection $fullPage={fullPage}>
           <HubSectionHeader>
             <div>
                 <HubKicker>Aktuell</HubKicker>
                 <HubTitle>{fullPage ? 'Jetzt aktiv' : 'Aktuell in der Ice-App'}</HubTitle>
             </div>
-            {taskItems.length > 0 && <TaskCount>{taskItems.length}</TaskCount>}
+            {pageTaskItems.length > 0 && <TaskCount>{pageTaskItems.length}</TaskCount>}
           </HubSectionHeader>
           {isPhotoChallengesLoading && taskItems.length === 0 ? (
             <EmptyHubState>Lade aktuelle Aufgaben...</EmptyHubState>
@@ -662,7 +665,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
                     <p>{task.description}</p>
                   </TaskContent>
                   {task.ctaTarget ? (
-                  <TaskLink to={task.ctaTarget} onClick={() => { trackEvent('action_hub', 'task_click', task.id); onClose(); }}>{task.ctaLabel}</TaskLink>
+                  <TaskLink to={task.ctaTarget} onClick={() => { trackEvent('action_hub', 'task_click', task.id); onClose?.(); }}>{task.ctaLabel}</TaskLink>
                   ) : (
                     <TaskButton type="button" onClick={task.onClick}>{task.ctaLabel}</TaskButton>
                   )}
@@ -678,9 +681,10 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
             </InlineToggle>
           )}
         </HubSection>
+        )}
 
         {actionCampaignCards.length > 0 && (
-          <HubSection>
+          <HubSection $fullPage={fullPage}>
             <HubSectionHeader>
               <div>
                 <HubKicker>{fullPage ? 'Aktuell' : 'Aktionsübersicht'}</HubKicker>
@@ -689,7 +693,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
             </HubSectionHeader>
             <CampaignSummaryGrid>
               {actionCampaignCards.map((campaign) => (
-                <CampaignSummaryCard key={campaign.id}>
+                <CampaignSummaryCard key={campaign.id} $fullPage={fullPage}>
                   <CampaignSummaryTop>
                     <CampaignSummaryImage
                       src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
@@ -737,7 +741,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
         )}
 
         {upcomingCampaigns.length > 0 && (
-          <HubSection>
+          <HubSection $fullPage={fullPage}>
             <HubSectionHeader>
               <div>
                 <HubKicker>Bald</HubKicker>
@@ -755,7 +759,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
           </HubSection>
         )}
 
-        {!fullPage && <HubSection>
+        <HubSection $fullPage={fullPage}>
           <HubSectionHeader>
             <div>
               <HubKicker>Community</HubKicker>
@@ -766,13 +770,13 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
             <EmptyHubState>Lade Community-Highlight...</EmptyHubState>
           ) : currentUser ? (
             <CommunityBlock>
-              <FeaturedCommunityCard to={`/user/${currentUser.id}`} onClick={onClose}>
-                <FeaturedBadge>
+              <FeaturedCommunityCard to={`/user/${currentUser.id}`} onClick={onClose} $fullPage={fullPage}>
+                <FeaturedBadge $fullPage={fullPage}>
                   <Trophy size={18} strokeWidth={2.3} />
                   <span>Aktuell</span>
                 </FeaturedBadge>
-                <FeaturedCommunityImage src={currentUser.image} alt={currentUser.name} />
-                <FeaturedCommunityText>
+                <FeaturedCommunityImage src={currentUser.image} alt={currentUser.name} $fullPage={fullPage} />
+                <FeaturedCommunityText $fullPage={fullPage}>
                   <strong>{currentUser.name}</strong>
                   <span>{currentUser.month}</span>
                 </FeaturedCommunityText>
@@ -809,7 +813,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
           ) : (
             <EmptyHubState>Aktuell kein Community-Highlight verfügbar.</EmptyHubState>
           )}
-        </HubSection>}
+        </HubSection>
 
         {hasPastEvents && !fullPage && (
           <ArchiveToggle type="button" onClick={() => setShowArchive((previous) => !previous)}>
@@ -818,7 +822,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
         )}
 
         {hasPastEvents && (fullPage || showArchive) && (
-          <>
+          <HubSection $fullPage={fullPage}>
             {fullPage && (
               <HubSectionHeader>
                 <div>
@@ -854,7 +858,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
               );
             })}
             </ArchiveResultsList>
-          </>
+          </HubSection>
         )}
       </Overlay>
     </OverlayBackground>
@@ -949,10 +953,22 @@ const SectionTitle = styled.h3`
   text-align: center;
 `;
 
+const PageIntro = styled.header`
+  ${({ $fullPage }) => $fullPage && `
+    padding: 0.4rem 0 0.65rem;
+  `}
+`;
+
 const MainHeading = styled.h2`
   margin: 0.4rem 2rem 0.2rem 0;
   text-align: left;
   color: #202124;
+
+  ${({ $fullPage }) => $fullPage && `
+    font-size: clamp(1.65rem, 3vw, 2.15rem);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  `}
 `;
 
 const IntroText = styled.p`
@@ -985,6 +1001,23 @@ const HubSection = styled.section`
   border-top: 1px solid #edf0f5;
   padding-top: 0.9rem;
   margin-top: 0.9rem;
+
+  ${({ $fullPage }) => $fullPage && `
+    margin-top: 1rem;
+    border: 1px solid #e4e8ef;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 8px 24px rgba(35, 45, 65, 0.055);
+    padding: 1.15rem;
+  `}
+
+  @media (max-width: 720px) {
+    ${({ $fullPage }) => $fullPage && `
+      margin-top: 0.75rem;
+      border-radius: 12px;
+      padding: 0.9rem;
+    `}
+  }
 `;
 
 const HubSectionHeader = styled.div`
@@ -1169,6 +1202,33 @@ const CampaignSummaryCard = styled.article`
     min-height: 2.4rem;
     white-space: normal;
   }
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 1rem;
+    border-radius: 10px;
+    padding: 0.85rem;
+
+    > button {
+      justify-self: end;
+      width: auto;
+      min-width: 10rem;
+    }
+  `}
+
+  @media (max-width: 620px) {
+    ${({ $fullPage }) => $fullPage && `
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+
+      > button {
+        justify-self: stretch;
+        width: 100%;
+      }
+    `}
+  }
 `;
 
 const CampaignSummaryTop = styled.div`
@@ -1243,6 +1303,7 @@ const CommunityBlock = styled.div`
 
 const FeaturedCommunityCard = styled(Link)`
   position: relative;
+  box-sizing: border-box;
   display: grid;
   justify-items: center;
   gap: 0.75rem;
@@ -1263,6 +1324,25 @@ const FeaturedCommunityCard = styled(Link)`
     box-shadow: 0 16px 34px rgba(24, 39, 75, 0.14);
     transform: translateY(-1px);
   }
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    gap: 0.45rem 1rem;
+    width: min(100%, 460px);
+    padding: 1rem 1.1rem;
+    text-align: left;
+  `}
+
+  @media (max-width: 520px) {
+    ${({ $fullPage }) => $fullPage && `
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 0.4rem 0.85rem;
+      padding: 0.85rem;
+    `}
+  }
 `;
 
 const FeaturedBadge = styled.div`
@@ -1275,6 +1355,10 @@ const FeaturedBadge = styled.div`
   padding: 0.28rem 0.6rem;
   font-size: 0.78rem;
   font-weight: 900;
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-column: 2;
+  `}
 `;
 
 const FeaturedCommunityImage = styled.img`
@@ -1284,6 +1368,20 @@ const FeaturedCommunityImage = styled.img`
   object-fit: cover;
   border: 4px solid #ffffff;
   box-shadow: 0 8px 22px rgba(24, 39, 75, 0.18);
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 96px;
+    height: 96px;
+  `}
+
+  @media (max-width: 520px) {
+    ${({ $fullPage }) => $fullPage && `
+      width: 82px;
+      height: 82px;
+    `}
+  }
 `;
 
 const FeaturedCommunityText = styled.div`
@@ -1302,6 +1400,11 @@ const FeaturedCommunityText = styled.div`
     font-size: 0.92rem;
     font-weight: 700;
   }
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-column: 2;
+    justify-items: start;
+  `}
 `;
 
 const CommunityHistoryToggle = styled.button`
@@ -1326,10 +1429,27 @@ const CommunityHistoryToggle = styled.button`
 `;
 
 const CommunityHistoryList = styled.div`
+  box-sizing: border-box;
   width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.5rem;
+
+  @media (max-width: 620px) {
+    width: calc(100% + 0.9rem);
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(190px, 72vw);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
+    padding: 0.1rem 0.9rem 0.45rem 0;
+
+    > a {
+      scroll-snap-align: start;
+    }
+  }
 `;
 
 const CommunityHistoryItem = styled(Link)`
@@ -1381,7 +1501,7 @@ const ArchiveToggle = styled.button`
 const ArchiveResultsList = styled.div`
   display: grid;
   gap: 0.65rem;
-  margin-top: 1rem;
+  margin-top: 0.35rem;
 `;
 
 const ArchiveIntroText = styled.p`
