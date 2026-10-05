@@ -16,6 +16,8 @@ import SubmitPriceModal from '../SubmitPriceModal';
 import SubmitReviewModal from '../SubmitReviewModal';
 import CheckinForm from '../CheckinForm';
 import SubmitRouteModal from '../SubmitRouteModal';
+import SubmitIceShopModal from '../SubmitIceShopModal';
+import { getShopEditAccess } from '../utils/shopEditing';
 import SecondaryPlaceActions from '../components/SecondaryPlaceActions';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
@@ -235,6 +237,7 @@ const IceShopDetailPage = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [showRouteForm, setShowRouteForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
   const checkinRefs = useRef({});
   const reviewRefs = useRef({});
@@ -558,9 +561,9 @@ const IceShopDetailPage = () => {
               {isLoggedIn && <PrimaryAction type="button" onClick={() => setShowCheckinForm(true)}>Einchecken</PrimaryAction>}
               {isLoggedIn && isCoreIceShop && <SecondaryAction type="button" onClick={() => setShowReviewForm(true)}>Bewerten</SecondaryAction>}
               {isCoreIceShop && (
-              <PrimaryAction as={Link} to={`/ice-date/new?shopId=${eisdiele.id}`}>
-                <CalendarDays size={16} /> Eis-Date planen
-              </PrimaryAction>
+                <PrimaryAction as={Link} to={`/ice-date/new?shopId=${eisdiele.id}`}>
+                  <CalendarDays size={16} /> Eis-Date planen
+                </PrimaryAction>
               )}
               <ActionAnchor
                 href={
@@ -611,6 +614,9 @@ const IceShopDetailPage = () => {
                 )}
               </InfoStack>
               <SecondaryPlaceActions place={eisdiele} onChanged={refreshShop} />
+              {isLoggedIn && <SecondaryAction type="button" onClick={() => setShowEditModal(true)}>
+                {getShopEditAccess(eisdiele, userId).canEditDirectly ? 'Eintrag bearbeiten' : 'Änderung vorschlagen'}
+              </SecondaryAction>}
             </SectionCard>
 
             {isCoreIceShop && <SectionCard>
@@ -969,6 +975,14 @@ const IceShopDetailPage = () => {
           )}
         </SectionCard>
       </PageBody>
+
+      {showEditModal && <SubmitIceShopModal
+        showForm={showEditModal}
+        setShowForm={setShowEditModal}
+        userId={userId}
+        existingIceShop={eisdiele}
+        refreshShops={refreshShop}
+      />}
 
       {isCoreIceShop && showPriceForm && (
         <SubmitPriceModal

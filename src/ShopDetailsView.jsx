@@ -20,6 +20,7 @@ import SubmitPriceModal from './SubmitPriceModal';
 import SubmitReviewModal from './SubmitReviewModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import SecondaryPlaceActions from './components/SecondaryPlaceActions';
+import { getShopEditAccess } from './utils/shopEditing';
 
 const hasValue = (value) => value !== null && value !== undefined;
 const hasPriceEntry = (entry) => hasValue(entry?.preis);
@@ -346,9 +347,9 @@ const ShopDetailsView = ({ shopId, onClose, setIceCreamShops, refreshMapShops })
             </>
           )}
           {isCoreIceShop && (
-          <PrimaryButton as={Link} to={`/ice-date/new?shopId=${shopData.eisdiele.id}`}>
-            <CalendarDays size={15} /> Eis-Date planen
-          </PrimaryButton>
+            <PrimaryButton as={Link} to={`/ice-date/new?shopId=${shopData.eisdiele.id}`}>
+              <CalendarDays size={15} /> Eis-Date planen
+            </PrimaryButton>
           )}
         </HeaderCtaBar>
         <Tabs>
@@ -461,6 +462,7 @@ const ShopDetailsContent = ({
 }) => {
   const checkinRefs = useRef({});
   const reviewRefs = useRef({});
+  const { userId } = useUser();
 
   useEffect(() => {
     if (
@@ -556,7 +558,7 @@ const ShopDetailsContent = ({
           {isLoggedIn && (
             <SecondaryActionRow>
               <SuggestionButton type="button" onClick={handleEditClick}>
-                Änderung vorschlagen
+                {getShopEditAccess(shopData.eisdiele, userId).canEditDirectly ? 'Eintrag bearbeiten' : 'Änderung vorschlagen'}
               </SuggestionButton>
             </SecondaryActionRow>
           )}

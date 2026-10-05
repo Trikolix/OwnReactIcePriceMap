@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/mail.php';
 require_once __DIR__ . '/../lib/opening_hours.php';
+require_once __DIR__ . '/../lib/shop_place_type.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -28,10 +29,13 @@ if ($adminId !== 1) {
 }
 
 $stmt = $pdo->prepare("
-    SELECT 
+    SELECT
         ecr.*,
         e.name AS shop_name,
         e.id AS shop_id,
+        e.place_type AS shop_place_type,
+        e.active_until AS shop_active_until,
+        e.closed_early_at AS shop_closed_early_at,
         n.username AS requester_name,
         n.email AS requester_email
     FROM eisdiele_change_requests ecr
@@ -64,12 +68,23 @@ try {
     $pdo->beginTransaction();
 
     if ($action === 'approve' && !empty($changes)) {
+        if (array_key_exists('place_type', $changes) || array_key_exists('active_until', $changes)) {
+            $changes = array_merge($changes, normalizeShopPlaceTypeUpdate($changes, [
+                'place_type' => $request['shop_place_type'],
+                'active_until' => $request['shop_active_until'],
+                'closed_early_at' => $request['shop_closed_early_at'],
+            ]));
+        }
         $allowedFields = [
             'name' => 'name',
             'adresse' => 'adresse',
             'website' => 'website',
             'status' => 'status',
-            'reopening_date' => 'reopening_date'
+            'reopening_date' => 'reopening_date',
+            'closing_date' => 'closing_date',
+            'place_type' => 'place_type',
+            'active_until' => 'active_until',
+            'closed_early_at' => 'closed_early_at',
         ];
 
         $setParts = [];
@@ -174,7 +189,10 @@ function sendChangeRequestStatusEmail($email, $username, $shopName, $shopId, $st
         'openingHoursStructured' => 'Öffnungszeiten (Strukturiert)',
         'openingHoursNote' => 'Öffnungszeiten-Hinweis',
         'status' => 'Status',
-        'reopening_date' => 'Wiedereröffnungsdatum'
+        'reopening_date' => 'Wiedereröffnungsdatum',
+        'closing_date' => 'Saison-Ende',
+        'place_type' => 'Ortstyp',
+        'active_until' => 'Sichtbar bis',
     ];
 
     $paragraphs = [];

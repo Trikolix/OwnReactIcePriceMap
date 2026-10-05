@@ -8,6 +8,7 @@ require_once __DIR__ . '/lib/currency.php';
 require_once __DIR__ . '/lib/shop_maintenance.php';
 require_once __DIR__ . '/lib/external_shop_discovery.php';
 require_once __DIR__ . '/lib/feature_access.php';
+require_once __DIR__ . '/lib/shop_editing.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -42,6 +43,12 @@ if ($placeType === 'temporary_stand') {
 
 if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
+    exit;
+}
+
+if (!shopCoordinatesAreValid($data['latitude'], $data['longitude'])) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Bitte wähle eine gültige Position auf der Karte."]);
     exit;
 }
 
@@ -294,7 +301,7 @@ if ($location) {
         }
         $pdo->commit();
         if ($placeType === 'ice_shop') {
-        shopMaintenanceSyncTaskForShop($pdo, $newShopId);
+            shopMaintenanceSyncTaskForShop($pdo, $newShopId);
         }
         // Only actual ice shops contribute to ice-shop submission awards.
         $evaluators = $placeType === 'ice_shop'

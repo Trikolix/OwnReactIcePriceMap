@@ -357,7 +357,7 @@ try {
         throw new Exception("Checkin konnte nicht gespeichert werden.");
     }
     if ($shopId !== null) {
-    externalShopReleaseDiscoverySlotForShop($pdo, (int)$shopId);
+        externalShopReleaseDiscoverySlotForShop($pdo, (int)$shopId);
     }
 
     // Bilder-Tabelle füllen (falls Bilder hochgeladen wurden)
@@ -391,7 +391,7 @@ try {
         // Ortslose Check-ins bleiben bewusst ungegruppiert. Bei öffentlichen
         // Orten bleibt das bisherige Mention-/Gruppen-Verhalten erhalten.
         if ($shopId !== null) {
-        $groupId = resolveOrMergeCheckinGroup($pdo, [$checkinId]);
+            $groupId = resolveOrMergeCheckinGroup($pdo, [$checkinId]);
         }
 
         // Einladenden Nutzer holen
@@ -518,19 +518,19 @@ try {
         $evaluators = array_merge($evaluators, [
             new CountyCountEvaluator(),
             new BundeslandCountEvaluator(),
-        new DistanceIceTravelerEvaluator(),
-        new StammkundeEvaluator(),
-        new CountryVisitEvaluator(isset($meta['land']) ? (int)$meta['land'] : null),
-        new CountryCountEvaluator(),
-        new Chemnitz2025Evaluator(),
-        new TheTasteOfChemnitzEvaluator(),
-        new BundeslandExperteEvaluator(),
-        new DifferentIceShopCountEvaluator(),
-        new IceShopOneByOneEvaluator(),
-        new ChallengeCountEvaluator(),
-        new TeamChallengeCountEvaluator(),
-        new MultipleVehicleEvaluator(),
-        new SeasonalPresentEvaluator(),
+            new DistanceIceTravelerEvaluator(),
+            new StammkundeEvaluator(),
+            new CountryVisitEvaluator(isset($meta['land']) ? (int)$meta['land'] : null),
+            new CountryCountEvaluator(),
+            new Chemnitz2025Evaluator(),
+            new TheTasteOfChemnitzEvaluator(),
+            new BundeslandExperteEvaluator(),
+            new DifferentIceShopCountEvaluator(),
+            new IceShopOneByOneEvaluator(),
+            new ChallengeCountEvaluator(),
+            new TeamChallengeCountEvaluator(),
+            new MultipleVehicleEvaluator(),
+            new SeasonalPresentEvaluator(),
         ]);
     }
 
@@ -690,21 +690,21 @@ try {
 
     $tourDeGlacePoints = [];
     if ($isCoreIceShop) {
-    $shopCheckinCountStmt = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE nutzer_id = ? AND eisdiele_id = ?");
-    $shopCheckinCountStmt->execute([(int)$userId, (int)$shopId]);
-    $tourDeGlacePoints = recordTourDeGlaceCheckin($pdo, (int)$userId, (int)$checkinId, [
-        'type' => $type,
-        'anreise' => $anreise,
-        'has_photo' => !empty($bildUrls),
-        'group_id' => $groupId,
-        'is_new_shop' => ((int)$shopCheckinCountStmt->fetchColumn()) <= 1,
-        'is_on_site' => (int)$isOnSite,
-    ]);
-    if (!empty($completedChallenge['id'])) {
-        foreach (syncTourDeGlaceChallengePoints($pdo, (int)$userId) as $challengeTourPoints) {
-            $tourDeGlacePoints[] = $challengeTourPoints;
+        $shopCheckinCountStmt = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE nutzer_id = ? AND eisdiele_id = ?");
+        $shopCheckinCountStmt->execute([(int)$userId, (int)$shopId]);
+        $tourDeGlacePoints = recordTourDeGlaceCheckin($pdo, (int)$userId, (int)$checkinId, [
+            'type' => $type,
+            'anreise' => $anreise,
+            'has_photo' => !empty($bildUrls),
+            'group_id' => $groupId,
+            'is_new_shop' => ((int)$shopCheckinCountStmt->fetchColumn()) <= 1,
+            'is_on_site' => (int)$isOnSite,
+        ]);
+        if (!empty($completedChallenge['id'])) {
+            foreach (syncTourDeGlaceChallengePoints($pdo, (int)$userId) as $challengeTourPoints) {
+                $tourDeGlacePoints[] = $challengeTourPoints;
+            }
         }
-    }
     }
 
     $completedIceDate = null;
@@ -717,12 +717,12 @@ try {
     }
 
     if ($isCoreIceShop) {
-    try {
-        $evaluated = (new TourDeGlaceAwardEvaluator())->evaluate((int)$userId);
-        $newAwards = array_merge($newAwards, $evaluated);
-    } catch (Exception $e) {
-        error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
-    }
+        try {
+            $evaluated = (new TourDeGlaceAwardEvaluator())->evaluate((int)$userId);
+            $newAwards = array_merge($newAwards, $evaluated);
+        } catch (Exception $e) {
+            error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
+        }
     }
 
     // Referenz-Mention direkt in derselben Transaktion akzeptieren + Gruppe mergen.

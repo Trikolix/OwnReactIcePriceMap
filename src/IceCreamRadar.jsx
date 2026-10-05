@@ -25,10 +25,7 @@ import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 import { canUseExternalDiscovery } from './utils/featureAccess';
 import { formatDateTimeLocalInputValue } from './utils/dateTimeLocal';
-import {
-  PLACE_VISIBILITY_REQUEST_EVENT,
-  RESTAURANT_FILTER_REQUEST_KEY,
-} from './utils/placeVisibility';
+import { getPlaceTypeFilterQuery, matchesPlaceTypeFilters } from './utils/placeTypeFilters';
 const MIN_CONTEXT_MENU_ZOOM = 7;
 const EXTERNAL_DISCOVERY_MIN_ZOOM_FALLBACK = 9;
 const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
@@ -802,42 +799,6 @@ const IceCreamRadar = () => {
     setFilters((previous) => previous.favorites ? previous : { ...previous, favorites: true });
   }, [location.search, userId]);
 
-  useEffect(() => {
-    const enableRestaurantFilter = (event) => {
-      if (event?.detail?.placeType && event.detail.placeType !== 'restaurant') {
-        return;
-      }
-
-      setFilters((previous) => ({
-        ...previous,
-        placeTypes: {
-          ...(previous.placeTypes ?? createDefaultFilters().placeTypes),
-          restaurant: true,
-        },
-      }));
-
-      try {
-        window.sessionStorage.removeItem(RESTAURANT_FILTER_REQUEST_KEY);
-      } catch {
-        // Der Filter ist bereits aktiv; Session Storage ist dafür nicht zwingend nötig.
-      }
-    };
-
-    window.addEventListener(PLACE_VISIBILITY_REQUEST_EVENT, enableRestaurantFilter);
-
-    try {
-      if (window.sessionStorage.getItem(RESTAURANT_FILTER_REQUEST_KEY) === '1') {
-        enableRestaurantFilter();
-      }
-    } catch {
-      // Kein gespeicherter Wunsch vorhanden oder Session Storage ist nicht verfügbar.
-    }
-
-    return () => {
-      window.removeEventListener(PLACE_VISIBILITY_REQUEST_EVENT, enableRestaurantFilter);
-    };
-  }, []);
-
   const [contextMenuState, setContextMenuState] = useState(() => ({ ...DEFAULT_CONTEXT_MENU_STATE }));
   const [isSubmitIceShopModalOpen, setIsSubmitIceShopModalOpen] = useState(false);
   const [submitModalPrefill, setSubmitModalPrefill] = useState(null);
@@ -1014,9 +975,11 @@ const IceCreamRadar = () => {
     () => mapAttributeIds.length ? `attributes=${encodeURIComponent(mapAttributeIds.join(','))}` : '',
     [mapAttributeIds]
   );
+  const placeTypeFilters = filters.placeTypes ?? createDefaultFilters().placeTypes;
+  const placeTypeQueryString = getPlaceTypeFilterQuery(placeTypeFilters);
   const mapDataQueryString = useMemo(
-    () => [openFilterQueryString, mapAttributeQueryString].filter(Boolean).join('&'),
-    [openFilterQueryString, mapAttributeQueryString]
+    () => [openFilterQueryString, mapAttributeQueryString, placeTypeQueryString].filter(Boolean).join('&'),
+    [openFilterQueryString, mapAttributeQueryString, placeTypeQueryString]
   );
   const updateMapAttributeIds = useCallback((ids) => {
     const params = new URLSearchParams(location.search);
@@ -1029,7 +992,7 @@ const IceCreamRadar = () => {
     navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
   }, [location.pathname, location.search, navigate]);
   const getShopCacheKey = useCallback(
-    (queryString) => `iceCreamShopsCache::user:${userId ?? 'guest'}::filter:${queryString || 'all'}`,
+    (queryString) => `iceCreamShopsCache::v2::user:${userId ?? 'guest'}::filter:${queryString || 'all'}`,
     [userId]
   );
 
@@ -1317,7 +1280,7 @@ const IceCreamRadar = () => {
     try {
       const querySuffix = mapDataQueryString ? `&${mapDataQueryString}` : '';
       const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
-      const response = await fetch(query);
+      const response = await fetch(query, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`Eisdielen-Request fehlgeschlagen: ${response.status}`);
       }
@@ -1869,7 +1832,6 @@ const IceCreamRadar = () => {
   const notVisitedFilterActive = filters.notVisited && !!userId;
   const showPermanentClosedFilterActive = !!filters.showPermanentClosed;
   const typeFilters = filters.types ?? { kugel: false, softeis: false, eisbecher: false };
-  const placeTypeFilters = filters.placeTypes ?? createDefaultFilters().placeTypes;
   const hasTypeFilter = Object.values(typeFilters).some(Boolean);
   const advancedFilters = filters.advanced ?? createDefaultFilters().advanced;
   const activeAdvancedType = ADVANCED_FILTER_TYPES.find((type) => type.key === advancedFilters.type) ?? ADVANCED_FILTER_TYPES[0];
@@ -1919,8 +1881,7 @@ const IceCreamRadar = () => {
       return [];
     }
     const filteredShops = iceCreamShops.reduce((acc, shop) => {
-      const placeType = shop.place_type || 'ice_shop';
-      if (!placeTypeFilters[placeType]) {
+      if (!matchesPlaceTypeFilters(shop, placeTypeFilters)) {
         return acc;
       }
       if (favoritesFilterActive && shop.is_favorit !== 1) {
@@ -1982,7 +1943,7 @@ const IceCreamRadar = () => {
     const focusedShop = iceCreamShops.find(
       (shop) => String(shop.eisdielen_id) === String(activeShopId)
     );
-    if (!focusedShop || focusedShop.status !== 'permanent_closed') {
+    if (!focusedShop || focusedShop.status !== 'permanent_closed' || !matchesPlaceTypeFilters(focusedShop, placeTypeFilters)) {
       return filteredShops;
     }
 
@@ -2469,7 +2430,7 @@ const IceCreamRadar = () => {
           />
           {clustering ? ( // show the clustered
             <MarkerClusterGroup
-              key={`${easterMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
+              key={`${easterMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}-${placeTypeQueryString}`}
               maxClusterRadius={25}
               iconCreateFunction={clusterIconCreateFunction}
             >

@@ -37,7 +37,7 @@ class WeekStreakEvaluator extends BaseAwardEvaluator {
     }
 
     function getLongestWeekStreak($nutzerId) {
-      global $pdo;
+        global $pdo;
         require_once __DIR__ . '/../lib/streaks.php';
         $now = streakNow();
         return streakPayload(streakLoad($pdo, (int)$nutzerId, $now), $now, false)['week_record'];

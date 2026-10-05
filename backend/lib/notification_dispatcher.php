@@ -367,7 +367,7 @@ function buildNotificationDeeplink(array $notification): ?string
 
     switch ($notification['typ']) {
         case 'kommentar':
-                $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
+            $commentId = (int)($data['kommentar_id'] ?? $notification['referenz_id']);
             if (!empty($data['checkin_id']) && !empty($data['eisdiele_id'])) {
                 return '/map/activeShop/' . (int)$data['eisdiele_id'] . '?tab=checkins&focusCheckin=' . (int)$data['checkin_id'] . ($commentId > 0 ? '&focusComment=' . $commentId : '');
             }

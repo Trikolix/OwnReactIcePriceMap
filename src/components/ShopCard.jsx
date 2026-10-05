@@ -7,6 +7,7 @@ import ShopWebsite from "./ShopWebsite";
 import SubmitIceShopModal from "../SubmitIceShopModal";
 import { Card } from "../styles/SharedStyles";
 import UserAvatar from "./UserAvatar";
+import { getShopEditAccess } from "../utils/shopEditing";
 
 
 const ShopCard = ({ iceShop, onSuccess }) => {
@@ -68,7 +69,7 @@ const ShopCard = ({ iceShop, onSuccess }) => {
       <ShopWebsite eisdiele={iceShop} showSubmitAction={false} />
       {isLoggedIn && (
         <SuggestionLink type="button" onClick={handleEditClick} disabled={isLoadingEditShop}>
-          {isLoadingEditShop ? "Lade Details..." : "Änderung vorschlagen"}
+          {isLoadingEditShop ? "Lade Details..." : getShopEditAccess(iceShop, userId).canEditDirectly ? "Eintrag bearbeiten" : "Änderung vorschlagen"}
         </SuggestionLink>
       )}
     </Card>

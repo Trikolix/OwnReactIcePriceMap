@@ -19,6 +19,10 @@ $sql = "SELECT
             e.opening_hours_note AS shop_opening_hours_note,
             e.website AS shop_website,
             e.reopening_date AS shop_reopening_date,
+            e.closing_date AS shop_closing_date,
+            e.place_type AS shop_place_type,
+            e.active_until AS shop_active_until,
+            e.closed_early_at AS shop_closed_early_at,
             n.username AS requester_name,
             n.email AS requester_email
         FROM eisdiele_change_requests ecr
@@ -60,6 +64,10 @@ $response = array_map(function ($row) {
         'shop_opening_hours_structured' => $currentStructured,
         'shop_website' => $row['shop_website'],
         'shop_reopening_date' => $row['shop_reopening_date'],
+        'shop_closing_date' => $row['shop_closing_date'],
+        'shop_place_type' => $row['shop_place_type'],
+        'shop_active_until' => $row['shop_active_until'],
+        'shop_closed_early_at' => $row['shop_closed_early_at'],
         'requester_name' => $row['requester_name'],
         'requester_email' => $row['requester_email'],
         'status' => $row['status'],

@@ -2,10 +2,13 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/opening_hours.php';
 require_once  __DIR__ . '/lib/team_challenges.php';
+require_once __DIR__ . '/lib/shop_place_type.php';
 
 ensureTeamChallengeSchema($pdo);
 
 $userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
+$placeTypeFilter = buildShopPlaceTypeFilter(isset($_GET['place_types']) ? (string)$_GET['place_types'] : null);
+$placeTypeClause = $placeTypeFilter['sql'];
 $attributeIds = array_values(array_unique(array_filter(
     array_map('intval', explode(',', (string)($_GET['attributes'] ?? ''))),
     static fn($id) => $id > 0
@@ -243,13 +246,16 @@ WHERE (
         AND e.active_until >= CURRENT_TIMESTAMP
         AND e.closed_early_at IS NULL
     )
-){$openClause}{$attributeClause}
+){$placeTypeClause}{$openClause}{$attributeClause}
 ORDER BY finaler_kugel_score DESC, 
          finaler_softeis_score DESC, 
          finaler_eisbecher_score DESC;";
 $stmt = $pdo->prepare($sql);
 // Parameter binden
 $stmt->bindParam(':userId', $userId);
+foreach ($placeTypeFilter['params'] as $placeholder => $placeType) {
+    $stmt->bindValue($placeholder, $placeType, PDO::PARAM_STR);
+}
 foreach ($openParams as $placeholder => $shopId) {
     $stmt->bindValue($placeholder, $shopId, PDO::PARAM_INT);
 }

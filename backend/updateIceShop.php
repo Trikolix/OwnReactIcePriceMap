@@ -6,6 +6,8 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/currency.php';
 require_once __DIR__ . '/lib/levelsystem.php';
 require_once __DIR__ . '/lib/shop_maintenance.php';
+require_once __DIR__ . '/lib/shop_editing.php';
+require_once __DIR__ . '/lib/shop_change_requests.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
@@ -32,12 +34,36 @@ if (!$eisdiele) {
     exit;
 }
 
-$isAdmin = $currentUserId === 1;
-$isOwner = $currentUserId === intval($eisdiele['user_id']);
-$createdAt = strtotime($eisdiele['erstellt_am']);
-$isRecent = (time() - $createdAt) <= 6 * 3600; // 6 Stunden
-$autoApprove = $isAdmin || ($isOwner && $isRecent);
-$canEditCoordinates = $isAdmin;
+$autoApprove = shopCanEditDirectly($eisdiele, $currentUserId);
+$canEditCoordinates = $autoApprove;
+
+if (!shopCoordinatesAreValid($data['latitude'], $data['longitude'])) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Bitte wähle eine gültige Position auf der Karte."]);
+    exit;
+}
+
+$coordinatesChanged = round((float)$data['latitude'], 6) !== round((float)$eisdiele['latitude'], 6)
+    || round((float)$data['longitude'], 6) !== round((float)$eisdiele['longitude'], 6);
+if ($coordinatesChanged && !$canEditCoordinates) {
+    http_response_code(403);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Die Position kann nur vom Eintragenden innerhalb von 6 Stunden nach dem Eintragen oder vom Administrator geändert werden. Bitte lade den Eintrag erneut."
+    ]);
+    exit;
+}
+
+try {
+    $placeDetails = normalizeShopPlaceTypeUpdate($data, $eisdiele);
+} catch (InvalidArgumentException $e) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    exit;
+}
+$placeType = $placeDetails['place_type'];
+$activeUntil = $placeDetails['active_until'];
+$closedEarlyAt = $placeDetails['closed_early_at'];
 
 $structuredPayload = $data['openingHoursStructured'] ?? null;
 if (!is_array($structuredPayload) && array_key_exists('openingHours', $data)) {
@@ -52,7 +78,7 @@ $normalizedHours = normalize_structured_opening_hours($structuredPayload);
 $openingHoursText = build_opening_hours_display($normalizedHours['rows'], $normalizedHours['note']);
 
 if (!$autoApprove) {
-    $changeSet = buildChangeSet($data, $validStatuses, $normalizedHours, $openingHoursText);
+    $changeSet = buildShopChangeSet($data, $eisdiele, $normalizedHours, $openingHoursText, $placeDetails);
 
     if (empty($changeSet)) {
         echo json_encode(["status" => "error", "message" => "Keine Änderungen zum Vorschlagen gefunden."]);
@@ -76,35 +102,6 @@ if (!$autoApprove) {
         echo json_encode(["status" => "error", "message" => "Änderungsvorschlag konnte nicht gespeichert werden."]);
     }
     exit;
-}
-
-$validPlaceTypes = ['ice_shop', 'restaurant', 'temporary_stand'];
-$placeType = (string)($data['place_type'] ?? $eisdiele['place_type'] ?? 'ice_shop');
-if (!in_array($placeType, $validPlaceTypes, true)) {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Ungültiger Ortstyp."]);
-    exit;
-}
-
-$activeUntil = null;
-$closedEarlyAt = null;
-if ($placeType === 'temporary_stand') {
-    $rawActiveUntil = trim((string)($data['active_until'] ?? ''));
-    $activeUntilTimestamp = $rawActiveUntil !== '' ? strtotime($rawActiveUntil) : false;
-    if ($activeUntilTimestamp === false || $activeUntilTimestamp <= time()) {
-        http_response_code(400);
-        echo json_encode(["status" => "error", "message" => "Für einen temporären Stand ist ein zukünftiges Enddatum erforderlich."]);
-        exit;
-    }
-    $activeUntil = date('Y-m-d H:i:s', $activeUntilTimestamp);
-    $originalActiveUntil = !empty($eisdiele['active_until'])
-        ? date('Y-m-d H:i:s', strtotime((string)$eisdiele['active_until']))
-        : null;
-    $placeTypeChanged = $placeType !== (string)($eisdiele['place_type'] ?? 'ice_shop');
-    $activeUntilChanged = $activeUntil !== $originalActiveUntil;
-    $closedEarlyAt = ($placeTypeChanged || $activeUntilChanged)
-        ? null
-        : ($eisdiele['closed_early_at'] ?? null);
 }
 
 $latitude = $canEditCoordinates ? floatval($data['latitude']) : floatval($eisdiele['latitude']);
@@ -274,37 +271,6 @@ function sendChangeRequestNotificationMail(int $shopId, string $shopName, int $r
     $message .= "Direktlink: https://ice-app.de/shop-change-requests\n";
 
     iceapp_send_utf8_text_mail($to, $subject, $message);
-}
-
-function buildChangeSet(array $data, array $validStatuses, array $normalizedHours, string $openingHoursText): array {
-    $changeSet = [];
-    $simpleFields = ['name', 'adresse', 'website'];
-
-    foreach ($simpleFields as $field) {
-        if (array_key_exists($field, $data)) {
-            $changeSet[$field] = $data[$field];
-        }
-    }
-
-    if (array_key_exists('status', $data) && in_array($data['status'], $validStatuses, true)) {
-        $changeSet['status'] = $data['status'];
-    }
-
-    if (array_key_exists('reopening_date', $data)) {
-        $changeSet['reopening_date'] = $data['reopening_date'] !== '' ? $data['reopening_date'] : null;
-    }
-
-    if (!empty($normalizedHours['rows']) || array_key_exists('openingHoursStructured', $data)) {
-        $changeSet['openingHours'] = $openingHoursText;
-        $changeSet['openingHoursNote'] = $normalizedHours['note'] ?? null;
-        $changeSet['openingHoursStructured'] = build_structured_opening_hours(
-            $normalizedHours['rows'],
-            $normalizedHours['note'],
-            $normalizedHours['timezone'] ?? OPENING_HOURS_DEFAULT_TIMEZONE
-        );
-    }
-
-    return $changeSet;
 }
 
 $location = getLocationDetailsFromCoords($latitude, $longitude);

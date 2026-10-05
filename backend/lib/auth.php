@@ -167,7 +167,7 @@ function authenticateRequest(PDO $pdo, bool $refreshUsage = true): ?array {
     }
 
     if ($refreshUsage) {
-    $tokenRecord['expires_at'] = updateTokenUsage($pdo, (int)$tokenRecord['token_id']);
+        $tokenRecord['expires_at'] = updateTokenUsage($pdo, (int)$tokenRecord['token_id']);
     }
 
     return array_merge($tokenRecord, [

@@ -23,29 +23,29 @@ const RecenterMap = ({ lat, lng }) => {
   return null;
 };
 
-const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude, readOnly = false }) => {
-  const position = [latitude, longitude];
+const MapClickHandler = ({ readOnly, setLatitude, setLongitude }) => {
+  useMapEvents({
+    click(e) {
+      if (readOnly) return;
+      const { lat, lng } = e.latlng;
+      setLatitude(lat.toFixed(6));
+      setLongitude(lng.toFixed(6));
+    }
+  });
+  return null;
+};
 
-  const MapClickHandler = () => {
-    useMapEvents({
-      click(e) {
-        if (readOnly) return;
-        const { lat, lng } = e.latlng;
-        setLatitude(lat.toFixed(6));
-        setLongitude(lng.toFixed(6));
-      }
-    });
-    return null;
-  };
+const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude, readOnly = true, showMarker = true }) => {
+  const position = [Number(latitude), Number(longitude)];
 
   return (
-    <MapContainer center={[latitude, longitude]} zoom={15} style={{ height: '300px', width: '100%' }}>
+    <MapContainer center={position} zoom={15} scrollWheelZoom={false} style={{ height: '300px', width: '100%' }}>
       <TileLayer
         attribution='&copy; OpenStreetMap contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapClickHandler />
-      <Marker
+      <MapClickHandler readOnly={readOnly} setLatitude={setLatitude} setLongitude={setLongitude} />
+      {showMarker && <Marker
         position={position}
         draggable={!readOnly}
         eventHandlers={readOnly ? undefined : {
@@ -55,8 +55,8 @@ const LocationPicker = ({ latitude, longitude, setLatitude, setLongitude, readOn
             setLongitude(lng.toFixed(6));
           }
         }}
-      />
-      <RecenterMap lat={latitude} lng={longitude} />
+      />}
+      <RecenterMap lat={position[0]} lng={position[1]} />
     </MapContainer>
   );
 };
