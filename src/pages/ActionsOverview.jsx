@@ -11,6 +11,7 @@ import {
 } from '../features/seasonal/campaigns';
 import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
+import SummerCampaignResultsPanel from '../features/seasonal/SummerCampaignResultsPanel';
 import TourDeGlacePanel from '../features/seasonal/TourDeGlacePanel';
 import TourDeGlaceFemmePanel from '../features/seasonal/TourDeGlaceFemmePanel';
 import { trackEvent } from '../utils/analytics';
@@ -82,6 +83,7 @@ const formatCampaignDate = (date) => {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'Europe/Berlin',
   }).format(date);
 };
 
@@ -616,6 +618,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
   );
 
   const archiveEntries = [
+    { id: 'summer_2026', campaign: summerCampaign, title: 'Sommer-Sammelaktion 2026', summary: 'Abschlussrangliste, gesammelte Karten und Ergebnisse der Eisdielen', render: () => <SummerCampaignResultsPanel onClose={onClose} />, visible: summerCampaign?.status === CAMPAIGN_STATUS.RESULTS },
     { id: 'tour_de_glace_femme_2026', campaign: femmeCampaign, title: 'Tour de Glace Femmes 2026', summary: 'Gesamtwertung, Etappentipps und kombinierte Rangliste', render: renderFemmeArchive, visible: femmeResultsArchived },
     { id: 'tour_de_glace_2026', campaign: tourCampaign, title: 'Tour de Glace 2026', summary: 'Ranglisten, Trikots, Etappentipps und Awards', render: renderTourArchive, visible: tourResultsArchived },
     { id: 'birthday_2026', campaign: birthdayCampaign, title: 'Ice-App Geburtstagschallenge 2026', summary: 'Abschlussrangliste und Punkteaufschlüsselung', render: renderBirthdayArchive, visible: true },
@@ -841,7 +844,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = f
                     <div>
                       <strong>{entry.title}</strong>
                       <span>{entry.summary}</span>
-                      <small>Beendet: {formatCampaignDate(entry.campaign.schedule.endExclusive)}</small>
+                      <small>Beendet: {formatCampaignDate(new Date(entry.campaign.schedule.endExclusive.getTime() - 1))}</small>
                     </div>
                     <ArchiveResultToggle
                       type="button"
