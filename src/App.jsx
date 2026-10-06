@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { UserProvider } from './context/UserContext';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { coreRoutes } from './features/core/routes';
@@ -31,13 +31,17 @@ const allRoutes = [
 
 const ScrollToTopOnRouteChange = () => {
   const location = useLocation();
+  const previousPath = useRef(null);
 
   useEffect(() => {
+    const isShopTabNavigation = /^\/shop\/[^/]+\/?$/.test(location.pathname)
+      && previousPath.current === location.pathname;
+    previousPath.current = location.pathname;
     const params = new URLSearchParams(location.search);
     const isDashboardFocusNavigation = location.pathname === '/dashboard'
       && (params.has('focusAward') || params.has('focusNewUser'));
 
-    if (isDashboardFocusNavigation) {
+    if (isDashboardFocusNavigation || isShopTabNavigation) {
       return;
     }
 
