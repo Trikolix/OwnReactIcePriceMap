@@ -20,7 +20,7 @@ fs.writeFileSync(path.join(output, 'index.html'), `<!doctype html><html lang="de
 const server = http.createServer((request, response) => {
   const url = new URL(request.url, 'http://localhost');
   const name = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
-  const file = name === 'fixture-avatar.png' ? path.join(root, 'src/user_of_the_month.png')
+  const file = ['fixture-avatar.png','fixture-avatar__w512.webp'].includes(name) ? path.join(root, 'src/user_of_the_month.png')
     : name.startsWith('assets/') ? path.join(root, 'public', name) : path.join(output, name);
   if (!file.startsWith(root) || !fs.existsSync(file)) { response.writeHead(404); response.end(); return; }
   response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.png') ? 'image/png' : 'text/html');
@@ -85,7 +85,7 @@ const connect = async url => {
     const navigate = async (width, height, preview = null, extra = '') => {
       await cdp.call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 768 });
       await cdp.call('Emulation.setTouchEmulationEnabled', { enabled: width < 768 });
-      const query = '?run=' + Date.now() + (preview === null ? '' : '&preview=' + preview) + extra + (process.argv.includes('--series-only') ? '&seriesOnly=1' : '');
+      const query = '?run=' + Date.now() + (preview === null ? '' : '&preview=' + preview) + extra + (process.argv.includes('--series-only') ? '&seriesOnly=1' : '') + (process.argv.includes('--profile-only') ? '&profileOnly=1' : '');
       await cdp.call('Page.navigate', { url: serverUrl + query });
       const deadline = Date.now() + 30000;
       while (Date.now() < deadline) {
@@ -115,7 +115,7 @@ const connect = async url => {
     };
     const assert = async (expression,message) => { if (!await evaluate(expression)) throw new Error(message); };
     for (const [width,height] of [[390,844],[1280,900]]) {
-      await navigate(width,height,'series');
+      await navigate(width,height,process.argv.includes('--profile-only') ? 'profile' : 'series');
       await evaluate('document.querySelector("#serien button[aria-label*=Tages]").focus()');
       await keyPress('Enter','Enter',13);
       await assert('document.querySelector("[role=dialog]")?.textContent.includes("1 von 2 verfügbar")','Keyboard opens daily series details');
@@ -136,6 +136,24 @@ const connect = async url => {
         await keyPress('Escape','Escape',27);
       }
       console.log(JSON.stringify({passed:width<768?6:5,viewport:[width,height],checks:'Series flames, native keyboard and touch'}));
+      if (process.argv.includes('--profile-only')) {
+        await navigate(width,height,'profile');
+        await evaluate('document.querySelector("[role=tab]").focus()');
+        await keyPress('ArrowRight','ArrowRight',39);
+        await assert('document.activeElement.textContent.startsWith("Erfolge") && document.querySelector("[role=tab][aria-selected=true]").textContent === "Aktivitäten"','Arrow keys focus profile tabs without switching manually activated tab');
+        await keyPress('Enter','Enter',13);
+        await assert('document.querySelector("[role=tab][aria-selected=true]").textContent.startsWith("Erfolge") && window.testRoute.includes("tab=awards")','Enter activates profile tab and URL');
+        await evaluate('document.querySelector("[role=tabpanel] button[aria-label*=Auszeichnung]").focus()');
+        await keyPress('Enter','Enter',13);
+        await assert('Boolean(document.querySelector("[role=dialog]"))','Keyboard opens award details');
+        await keyPress('Escape','Escape',27);
+        await assert('!document.querySelector("[role=dialog]") && document.activeElement.getAttribute("aria-label")?.startsWith("Auszeichnung")','Award Escape restores trigger');
+        await evaluate('document.querySelector("main button[aria-label^=Profilbild]").focus()');
+        await keyPress('Enter','Enter',13); await keyPress('Escape','Escape',27);
+        await assert('!document.querySelector("[role=dialog]") && document.activeElement.getAttribute("aria-label")?.startsWith("Profilbild")','Avatar Escape restores trigger');
+        console.log(JSON.stringify({passed:5,viewport:[width,height],checks:'Native profile tabs, awards and avatar'}));
+        continue;
+      }
       if (process.argv.includes('--series-only')) continue;
       await navigate(width,height,'submit');
       await assert('document.activeElement.getAttribute("aria-label") === "Dialog schließen"','Submission focuses close button');
@@ -182,7 +200,7 @@ const connect = async url => {
     await navigate(390,440,'series');
     await assert('matchMedia("(prefers-reduced-motion: reduce)").matches','Reduced motion enabled');
     if (process.argv.includes('--screenshots')) {
-      for (const [width,height] of viewports) for (const preview of process.argv.includes('--series-only') ? ['series','series-details'] : ['list','submit','vote','series','series-details','admin','create','images']) {
+      for (const [width,height] of viewports) for (const preview of process.argv.includes('--profile-only') ? ['profile','profile-awards','profile-stats'] : process.argv.includes('--series-only') ? ['series','series-details'] : ['list','submit','vote','series','series-details','admin','create','images']) {
         await navigate(width,height,preview);
         const screenshot = await cdp.call('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync(path.join(output,preview+'-'+width+'x'+height+'.png'),Buffer.from(screenshot.data,'base64'));

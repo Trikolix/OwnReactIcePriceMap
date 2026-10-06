@@ -30,7 +30,13 @@ const challenges = () => ['submission_open','submission_closed','group_running',
 let user = { userId: 42, username: 'TheGourmetCyclist', currentLevel: 59 };
 let database; let calls = []; let fail = null; let failReviewId = null; let delayApi = false; let own = true;
 const baseStreaks = () => ({ day: { value: 12, record: 24, state: 'frozen', history: Array.from({ length: 7 }, (_, i) => ({ period: `2026-${i < 2 ? '09-' + (29 + i) : '10-0' + (i - 1)}`, state: i === 5 ? 'protected' : i === 6 ? 'open' : 'checked_in' })), reward_progress: { current: 3, target: 7, remaining: 4 } }, week: { value: 8, record: 14, state: 'active', history: ['2026-09-14','2026-09-21','2026-09-28','2026-10-05'].map(period => ({ period, state: 'checked_in' })), reward_progress: { current: 2, target: 4, remaining: 2 } }, freezes: { day: 1, week: 2 } });
-function resetDatabase() { database = { challenges: challenges(), images: Array.from({ length: 12 }, (_, i) => image(i + 1)), submissions: [], groups: [{ id: 10, name: 'Gruppe A', position: 1, status: 'running', status_label: 'Abstimmung läuft', start_at: '2026-10-01 12:00:00', end_at: '2026-10-20 12:00:00', entries: [image(2), image(3), image(4)], matches: [match(101), match(102)], results: [], user_votes: 0 }], ko: [match(201), match(202), { ...match(203, 2), status: 'closed', user_choice: 406 }], streaks: baseStreaks() }; calls = []; fail = null; failReviewId = null; delayApi = false; }
+const baseProfile = () => ({ nutzername: 'TheGourmetCyclist', avatar_url: 'fixture-avatar.png', erstellungsdatum: '2025-01-01', instagram_account: '@eisfan', strava_account: '12345', anzahl_checkins: 124, eisdielen_besucht: 38, invite_code: 'test', eisarten: { Kugel: 83, Softeis: 12, Eisbecher: 29 },
+  user_awards: Array.from({ length: 12 }, (_, i) => ({ id: i + 1, title_de: ['Eis-Entdecker','Kugel für Kugel','Schokoforscher','Eis auf Rädern','Genuss mit Freunden','Serien-Star','Sommererinnerung','Ein neuer Lieblingsort','Neuer Geschmack','Kleine Eisreise','Zwei Kugeln Glück','Durch die Nachbarschaft'][i], description_de: 'Eine Auszeichnung für deine Eis-Abenteuer und neue Entdeckungen.', ep: (i + 1) * 100, icon_path: 'fixture-avatar.png', awarded_at: '2026-10-01' })),
+  meistbesuchte_eisdielen: Array.from({ length: 6 }, (_, i) => ({ id: i + 1, name: ['Eiscafé am Park','Gelateria Sonnenschein','Die kleine Eispause','Eis-Manufaktur','Café am Fluss','Eis an der Ecke'][i], besuche: 14 - i })),
+  meistgegessene_eissorten: [{ sortenname: 'Stracciatella', anzahl: 13, bewertung: 4.7 }, { sortenname: 'Schokolade', anzahl: 8, bewertung: 4.5 }], best_bewertete_eissorten: [{ sortenname: 'Pistazie', anzahl: 6, durchschnitt: 4.9 }],
+  anreise_verteilung: [{ anreise: 'Fahrrad', anzahl: 60 }, { anreise: 'Zu Fuß', anzahl: 36 }, { anreise: 'Auto', anzahl: 28 }],
+  aktivitaet_land: [{ land: 'Deutschland', checkins: 124, eisdielen: 38 }], aktivitaet_bundesland: [{ bundesland: 'Sachsen', bundesland_id: 14, checkins: 124, eisdielen: 38 }], aktivitaet_landkreis: Array.from({ length: 6 }, (_, i) => ({ landkreis: ['Chemnitz','Erzgebirgskreis','Mittelsachsen','Dresden','Leipzig','Landkreis mit einem sehr langen Namen'][i], landkreis_id: i + 1, checkins: 20 - i, eisdielen: 6 })), ep_breakdown: { ep_gesamt: 800, ep_checkins_mit_bild: 400, ep_awards: 400 } });
+function resetDatabase() { database = { challenges: challenges(), images: Array.from({ length: 12 }, (_, i) => image(i + 1)), submissions: [], groups: [{ id: 10, name: 'Gruppe A', position: 1, status: 'running', status_label: 'Abstimmung läuft', start_at: '2026-10-01 12:00:00', end_at: '2026-10-20 12:00:00', entries: [image(2), image(3), image(4)], matches: [match(101), match(102)], results: [], user_votes: 0 }], ko: [match(201), match(202), { ...match(203, 2), status: 'closed', user_choice: 406 }], streaks: baseStreaks(), profile: baseProfile(), activities: [] }; calls = []; fail = null; failReviewId = null; delayApi = false; }
 window.fetch = async (input, init = {}) => {
   const url = String(input); if (!url.startsWith('https://test.invalid/')) throw new Error('External API request: ' + url);
   const parsed = new URL(url); const endpoint = parsed.pathname.split('/').at(-1); const form = init.body instanceof FormData ? Object.fromEntries(init.body.entries()) : {};
@@ -47,9 +53,10 @@ window.fetch = async (input, init = {}) => {
     const target = Number(parsed.searchParams.get('user_id')) || user.userId;
     const streaks = structuredClone(database.streaks);
     if (target !== user.userId) { delete streaks.freezes; ['day','week'].forEach(type => { delete streaks[type].history; delete streaks[type].reward_progress; }); }
-    data = { user_id: target, streaks, refresh_after_seconds: 3600, level_info: { level: 59, level_name: 'Eis-Profi', percent_to_next: 40, ep_current: 500, ep_to_next: 300 } };
-  } else if (endpoint === 'get_user_stats.php') data = { nutzername: user.username, avatar_url: 'fixture-avatar.png', erstellungsdatum: '2025-01-01', user_awards: [], anzahl_checkins: 24, eisdielen_besucht: 8, invite_code: 'test', streaks: database.streaks, level_info: { level: 59, level_name: 'Eis-Profi', percent_to_next: 40, ep_current: 500, ep_to_next: 300 } };
-  else if (endpoint === 'user_activity_feed.php' || endpoint === 'activity_feed.php') data = { activities: [], meta: { nextOffset: null, hasMore: false } };
+    data = { user_id: target, streaks, refresh_after_seconds: 3600, level_info: database.profile.level_info || { level: 59, level_name: 'Eis-Profi', percent_to_next: 40, ep_current: 500, ep_to_next: 300 } };
+  } else if (endpoint === 'get_user_stats.php') data = { ...database.profile, streaks: database.streaks, level_info: database.profile.level_info || { level: 59, level_name: 'Eis-Profi', percent_to_next: 40, ep_current: 500, ep_to_next: 300 } };
+  else if (endpoint === 'user_activity_feed.php' || endpoint === 'activity_feed.php') data = { activities: database.activities, meta: { next_offset: null, has_more: false } };
+  else if (endpoint === 'get_user_flavour_details.php') data = [{ eisdiele_id: 1, eisdiele_name: 'Eiscafé am Park', anzahl_checkins: 4, durchschnittsbewertung: 4.7, ice_type: 'Kugel', letzter_besuch: '2026-10-01' }];
   else if (endpoint === 'benachrichtigungen.php') data.notifications = [];
   else if (endpoint === 'get_challenge_overview.php') {
     if (!challenge) return { ok: false, status: 404, json: async () => ({ status: 'error', message: 'Nicht gefunden.' }) };
@@ -95,7 +102,7 @@ async function mount(route = '/photo-challenge', role = 'user', reset = true) {
 }
 function layout(scope = document.querySelector('main') || document.body) {
   check(document.documentElement.scrollWidth <= innerWidth + 1, 'No horizontal overflow at ' + innerWidth + ': ' + [...document.querySelectorAll('main *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1).map(el => el.tagName + '.' + el.className + ':' + el.textContent.slice(0,40)).slice(0,8).join(', '));
-  for (const element of scope.querySelectorAll('button, a, summary')) {
+  for (const element of scope.querySelectorAll('button, a, summary, [role=button]')) {
     const rect = element.getBoundingClientRect(); if (!rect.width || !rect.height) continue;
     check(rect.width >= 43.5 && rect.height >= 43.5, '44px target: ' + element.textContent.trim().slice(0,70));
     check(rect.left >= -1 && rect.right <= innerWidth + 1, 'Target stays inside viewport: ' + element.textContent.trim().slice(0,50));
@@ -103,6 +110,61 @@ function layout(scope = document.querySelector('main') || document.body) {
   scope.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select, textarea').forEach(element => { if (element.getBoundingClientRect().width) check(parseFloat(getComputedStyle(element).fontSize) >= 16, '16px input text'); });
 }
 async function adminView(view) { window.testNavigate(`/photo-challenge-admin?challengeId=2&view=${view}`); await tick(); await tick(); }
+const selectProfileTab = async name => { press(getByRole(document.body, 'tab', { name })); await tick(); await tick(); };
+async function runProfileTests() {
+  await mount('/user/42'); await waitFor(() => document.getElementById('serien'));
+  const overview = getByRole(document.body, 'region', { name: 'Profilübersicht' });
+  check(overview.contains(document.getElementById('serien')), 'Series flames belong to profile header');
+  check(document.querySelectorAll('#serien').length === 1, 'Profile has one consolidated series display');
+  check(getAllByRole(document.body, 'tab').length === 3, 'Profile has three accessible content tabs');
+  check(getByRole(document.body, 'tab', { name: 'Aktivitäten' }).getAttribute('aria-selected') === 'true', 'Activities are the default profile view');
+  check(!document.body.textContent.includes('Deine Auszeichnungen'), 'Awards do not push activities below the fold');
+  layout(document.querySelector('main'));
+  await click('Tages-Serie: 12 Tage. Details anzeigen'); check(dialog().textContent.includes('1 von 2 verfügbar'), 'Embedded flames retain protection details'); layout(dialog()); await click('Dialog schließen', dialog());
+  await click('Profilbild von TheGourmetCyclist vergrößern'); const avatar = dialog().querySelector('img'); check(avatar, 'Profile avatar opens accessible image dialog'); check(avatar.getBoundingClientRect().width <= avatar.parentElement.clientWidth, 'Avatar image fits narrow dialog content'); layout(dialog()); await click('Dialog schließen', dialog());
+  await click('Profil bearbeiten'); check(document.body.textContent.includes('Profil & Benachrichtigungen'), 'Profile editing uses existing settings workflow'); await click('Einstellungen schließen');
+  await click('Filter'); layout(document.querySelector('main')); await click('Bewertungen'); check(byButton('Bewertungen').getAttribute('aria-pressed') === 'false', 'Feed filters expose selected state');
+  await selectProfileTab(/^Erfolge/); const awardsPanel = getByRole(document.body, 'tabpanel'); layout(awardsPanel);
+  check(window.testRoute.includes('tab=awards'), 'Awards selection persists in URL');
+  const before = getAllByRole(awardsPanel, 'button', { name: /Auszeichnung .* groß anzeigen/ }).length;
+  const columns = getComputedStyle(getByRole(awardsPanel, 'list')).gridTemplateColumns.split(' ').length;
+  check(before === Math.min(database.profile.user_awards.length, columns * 2), 'Awards preview uses two rows for the actual visible grid');
+  await click('Weitere Auszeichnungen'); check(getAllByRole(awardsPanel, 'button', { name: /Auszeichnung .* groß anzeigen/ }).length > before, 'Awards can load more after mounting their tab');
+  await click('Weniger anzeigen');
+  press(getAllByRole(awardsPanel, 'button', { name: /Auszeichnung .* groß anzeigen/ })[0]); await tick(); check(dialog().textContent.includes('100 EP'), 'Awards retain details and EP'); layout(dialog()); await click('Dialog schließen', dialog());
+  await selectProfileTab('Statistiken'); const statsPanel = getByRole(document.body, 'tabpanel'); layout(statsPanel);
+  check(window.testRoute.includes('tab=stats'), 'Statistics selection persists in URL');
+  check(!statsPanel.textContent.includes('EP-Analyse (Admin)'), 'Private admin analysis stays hidden from regular users');
+  press(getAllByRole(statsPanel, 'button', { name: 'Alle anzeigen' })[0]); await tick(); check(dialog().textContent.includes('Eis an der Ecke'), 'All-places list retains items beyond preview'); layout(dialog()); await click('Dialog schließen', dialog());
+  press(getByRole(statsPanel, 'button', { name: /1\. Stracciatella/ })); await tick(); check(statsPanel.textContent.includes('Letzter Besuch'), 'Flavor details still load from existing endpoint');
+  await click('Landkreis'); layout(statsPanel); press(getAllByRole(statsPanel, 'button', { name: 'Alle anzeigen' }).at(-1)); await tick(); check(dialog().textContent.includes('sehr langen Namen'), 'Regional overview remains accessible'); layout(dialog()); await click('Dialog schließen', dialog());
+  window.testNavigate(-1); await tick(); await tick(); check(getByRole(document.body, 'tab', { name: /^Erfolge/ }).getAttribute('aria-selected') === 'true', 'Browser back restores previous profile tab');
+  await selectProfileTab('Aktivitäten'); check(byButton('Bewertungen').getAttribute('aria-pressed') === 'false', 'Switching profile tabs preserves feed filters');
+  const invitation = [...document.querySelectorAll('main details')].find(item => item.querySelector('summary')?.textContent.includes('Freunde einladen'));
+  check(invitation && !invitation.open, 'Invitation is initially compact'); press(invitation.querySelector('summary')); await tick(); layout(invitation);
+  const originalClipboard = navigator.clipboard;
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.testCopiedLink = text; } } });
+  await click('Link kopieren'); check(window.testCopiedLink === 'https://ice-app.de/register/test' && document.body.textContent.includes('Einladungslink kopiert.'), 'Invitation copy reports success');
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Clipboard denied'); } } });
+  await click('Link kopieren'); check(document.body.textContent.includes('im Feld auswählen'), 'Clipboard failure explains manual fallback');
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: originalClipboard });
+  for (const role of ['user','guest']) {
+    await mount('/user/99',role); await waitFor(() => document.getElementById('serien')); layout(document.querySelector('main'));
+    check(!document.body.textContent.includes('Profil bearbeiten') && !document.body.textContent.includes('Freunde einladen'), 'Foreign profile hides owner actions for ' + role);
+    await click('Tages-Serie: 12 Tage. Details anzeigen'); check(!dialog().querySelector('progress') && !dialog().textContent.includes('verfügbar'), 'Foreign profile keeps protection private for ' + role); await click('Dialog schließen', dialog());
+  }
+  await mount('/user/42?tab=stats','admin'); check(document.body.textContent.includes('EP-Analyse (Admin)'), 'Admin statistics remain available'); layout(getByRole(document.body,'tabpanel'));
+  await mount('/user/42?tab=awards'); check(getByRole(document.body,'tab',{name:/^Erfolge/}).getAttribute('aria-selected')==='true','Awards deep link opens correct tab');
+  await mount('/user/42?tab=routes'); check(getByRole(document.body,'tab',{name:'Aktivitäten'}).getAttribute('aria-selected')==='true','Legacy feed tab links still work');
+  await mount('/user/42'); await click('Jetzt einchecken', document.getElementById('serien')); check(document.body.textContent.includes('Wo hast du dein Eis gegessen?'), 'Embedded series keep existing global check-in workflow');
+  resetDatabase(); database.profile.level_info = { level: 1000, level_name: 'Eislegende', percent_to_next: null, ep_current: 100000, ep_to_next: null };
+  await mount('/user/42','user',false); check(document.body.textContent.includes('Höchstes Level erreicht') && getByRole(document.body, 'progressbar', { name: 'Höchstes Level erreicht' }).value === 100, 'Highest level has a full bar and no nonexistent next level');
+  resetDatabase(); database.profile.nutzername = 'EinSehrLangerNutzernameOhneLeerzeichen'; database.profile.anzahl_checkins = 123456; database.profile.eisdielen_besucht = 98765;
+  await mount('/user/42','user',false); layout(document.querySelector('main')); check(document.querySelector('h1').textContent.includes('OhneLeerzeichen'),'Long profile names remain visible');
+  fail = 'user_activity_feed.php'; await mount('/user/42','user',false); check(document.body.textContent.includes('konnten nicht geladen'), 'Feed failure is actionable'); fail = null; await click('Erneut versuchen'); check(document.body.textContent.includes('Dein nächster Eis-Moment wartet.'),'Feed retry recovers using existing endpoint');
+  fail = 'get_user_stats.php'; await mount('/user/42','user',false); check(document.body.textContent.includes('Das Profil konnte nicht geladen'),'Profile fetch error offers retry'); fail = null; await click('Erneut versuchen'); await tick(); check(document.getElementById('serien'),'Profile retry recovers');
+  return results;
+}
 async function runSeriesTests() {
   await mount('/user/42'); await waitFor(() => document.getElementById('serien'));
   const flames = getAllByRole(document.getElementById('serien'), 'button', { name: /Details anzeigen/ });
@@ -179,7 +241,12 @@ async function runTests() {
   return results;
 }
 window.prepare = async scenario => {
-  if (scenario === 'list') await mount('/photo-challenge');
+  if (scenario?.startsWith('profile')) {
+    await mount('/user/42' + (scenario === 'profile-awards' ? '?tab=awards' : scenario === 'profile-stats' ? '?tab=stats' : ''));
+    await waitFor(() => document.getElementById('serien'));
+    if (scenario !== 'profile') { document.querySelector('[role=tablist]').scrollIntoView({ block: 'start' }); await tick(); }
+  }
+  else if (scenario === 'list') await mount('/photo-challenge');
   else if (scenario === 'submit') { await mount('/photo-challenge/1'); await click('Foto einreichen'); }
   else if (scenario === 'vote') { await mount('/photo-challenge/3'); await click('Jetzt abstimmen'); }
   else if (scenario === 'series' || scenario === 'series-details') { await mount('/series'); if (scenario === 'series-details') await click('Tages-Serie: 12 Tage. Details anzeigen'); }
@@ -193,7 +260,7 @@ window.runTests = runTests;
   try {
     const preview = new URLSearchParams(location.search).get('preview');
     if (preview) { await window.prepare(preview); document.getElementById('results').dataset.status = 'preview'; }
-    else { await (new URLSearchParams(location.search).has('seriesOnly') ? runSeriesTests() : runTests()); document.getElementById('results').dataset.status = 'passed'; }
+    else { const params = new URLSearchParams(location.search); await (params.has('profileOnly') ? runProfileTests() : params.has('seriesOnly') ? runSeriesTests() : runTests()); document.getElementById('results').dataset.status = 'passed'; }
     document.getElementById('results').textContent = JSON.stringify(results);
   } catch (error) { document.getElementById('results').dataset.status = 'failed'; document.getElementById('results').textContent = error.stack; }
 })();

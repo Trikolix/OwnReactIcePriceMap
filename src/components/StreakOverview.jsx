@@ -2,38 +2,39 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { Check, Flame, Minus, Snowflake, IceCreamBowl, X } from 'lucide-react';
+import { Check, ChevronDown, Flame, Minus, Snowflake, IceCreamBowl, X } from 'lucide-react';
 import { streakStatus } from './ProfileProgress';
 import { Button, ChallengeDialog, Disclosure } from './ChallengeUI';
 
 const Overview = styled.section`
-  margin: 24px 0; color: #2f2100;
+  margin: ${p => p.$embedded ? '0' : '24px 0'}; color: #2f2100;
   *, *::before, *::after { box-sizing: border-box; }
-  h2 { text-align: left; text-shadow: none; margin: 0; font-size: 22px; }
+  h2 { text-align: ${p => p.$embedded ? 'center' : 'left'}; text-shadow: none; margin: 0; font-size: ${p => p.$embedded ? 16 : 22}px; }
+  ${p => p.$embedded && `h2 { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }`}
 `;
 const Grid = styled.div`
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
-  max-width: 440px; margin: 12px auto 0;
+  max-width: ${p => p.$embedded ? 320 : 440}px; margin: ${p => p.$embedded ? 0 : 12}px auto 0;
 `;
 const SeriesButton = styled.button`
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  min-width: 0; min-height: 44px; padding: 12px 8px;
+  min-width: 0; min-height: 44px; padding: ${p => p.$embedded ? '4px' : '12px 8px'};
   border: 1px solid transparent; border-radius: 20px; background: transparent;
   color: #2f2100; font: inherit; cursor: pointer;
   &:hover, &[aria-expanded=true] { background: #fff3d9; border-color: #f2d69d; }
   &:focus-visible { outline: 3px solid #835500; outline-offset: 3px; }
-  strong { font-size: 16px; }
+  strong { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: ${p => p.$embedded ? 14 : 16}px; }
   small { min-height: 20px; font-size: 13px; color: #756951; }
 `;
 const FlameFigure = styled.span`
   position: relative; display: flex; justify-content: center; align-items: center;
-  width: 120px; height: 120px; max-width: 100%;
+  width: ${p => p.$embedded ? 100 : 120}px; height: ${p => p.$embedded ? 102 : 120}px; max-width: 100%;
   color: ${p => p.$state === 'none' ? '#8c8170' : p.$state === 'frozen' ? '#4184bc' : '#df6a15'};
-  > svg { width: 112px; height: 112px; filter: drop-shadow(0 5px 6px #ad590018); }
+  > svg { width: ${p => p.$embedded ? 94 : 112}px; height: ${p => p.$embedded ? 94 : 112}px; filter: drop-shadow(0 5px 6px #ad590018); }
 `;
 const FlameCount = styled.span`
-  position: absolute; top: 62px; left: 0; right: 0; text-align: center;
-  color: #fff; font-weight: 850; line-height: 1; font-size: ${p => p.$digits > 4 ? 21 : p.$digits > 3 ? 26 : 34}px;
+  position: absolute; top: ${p => p.$embedded ? 53 : 62}px; left: 0; right: 0; text-align: center;
+  color: #fff; font-weight: 850; line-height: 1; font-size: ${p => p.$digits > 4 ? 21 : p.$digits > 3 ? 26 : p.$embedded ? 29 : 34}px;
   text-shadow: 0 1px 3px #68390050; font-variant-numeric: tabular-nums;
 `;
 const StateBadge = styled.span`
@@ -66,6 +67,7 @@ const Protection = styled.div`
 `;
 const Footer = styled.div`
   margin: 12px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  ${p => p.$embedded && 'justify-content: center; margin-bottom: 0; text-align: center;'}
   p { margin: 0; color: #526a36; font-weight: 650; line-height: 1.5; }
 `;
 const Legend = styled.p`font-size: 12px; color: #756951; margin: 8px 0 0; line-height: 1.5;`;
@@ -141,7 +143,7 @@ function SeriesDetails({ streaks, type, own }) {
   </Details>;
 }
 
-export default function StreakOverview({ streaks, own = false, onCheckin }) {
+export default function StreakOverview({ streaks, own = false, onCheckin, embedded = false }) {
   const id = useId();
   const [hover, setHover] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -203,11 +205,11 @@ export default function StreakOverview({ streaks, own = false, onCheckin }) {
   };
   const showDetails = type => { cancelClose(); setHover(null); setSelected(type); };
   const done = ['day', 'week'].every(type => streaks[type].state === 'active');
-  return <Overview id="serien" aria-labelledby={`${id}-title`}>
+  return <Overview id="serien" $embedded={embedded} aria-labelledby={`${id}-title`}>
     <h2 id={`${id}-title`}>{own ? 'Deine Serien' : 'Serien'}</h2>
-    <Grid ref={gridRef} aria-label="Serienübersicht">{['day', 'week'].map(type => {
+    <Grid ref={gridRef} $embedded={embedded} aria-label="Serienübersicht">{['day', 'week'].map(type => {
       const streak = streaks[type]; const daily = type === 'day'; const value = streak.value || 0;
-      return <SeriesButton key={type} type="button" ref={element => { triggers.current[type] = element; }}
+      return <SeriesButton key={type} $embedded={embedded} type="button" ref={element => { triggers.current[type] = element; }}
         aria-label={`${nameFor(type)}: ${value} ${daily ? (value === 1 ? 'Tag' : 'Tage') : (value === 1 ? 'Woche' : 'Wochen')}. Details anzeigen`}
         aria-describedby={`${id}-${type}-status`}
         aria-haspopup="dialog" aria-expanded={selected === type || hover?.type === type}
@@ -220,15 +222,15 @@ export default function StreakOverview({ streaks, own = false, onCheckin }) {
           }
         }}
         onClick={() => showDetails(type)}>
-        <FlameFigure $state={streak.state} aria-hidden="true"><Flame fill="currentColor" strokeWidth={1.3} />
-          <FlameCount $digits={String(value).length}>{value}</FlameCount>
+        <FlameFigure $embedded={embedded} $state={streak.state} aria-hidden="true"><Flame fill="currentColor" strokeWidth={1.3} />
+          <FlameCount $embedded={embedded} $digits={String(value).length}>{value}</FlameCount>
           {['active', 'frozen'].includes(streak.state) && <StateBadge $protected={streak.state === 'frozen'}>{streak.state === 'frozen' ? <Snowflake size={16} /> : <Check size={16} />}</StateBadge>}
         </FlameFigure>
-        <strong>{nameFor(type)}</strong><small id={`${id}-${type}-status`}>{shortStatus(streak, daily, own)}</small>
+        <strong>{nameFor(type)}{embedded && <ChevronDown size={14} aria-hidden="true" />}</strong><small id={`${id}-${type}-status`}>{embedded && streak.state === 'frozen' ? 'Schutz genutzt' : shortStatus(streak, daily, own)}</small>
       </SeriesButton>;
     })}</Grid>
-    <Hint>Tippen oder darüberfahren für Details.</Hint>
-    {own && <Footer>{done ? <p>✓ Heute und diese Woche gesichert. Gut gemacht!</p> : <Button onClick={onCheckin || (() => window.dispatchEvent(new CustomEvent('iceapp:open-checkin')))}><IceCreamBowl size={20} aria-hidden="true" />Jetzt einchecken</Button>}</Footer>}
+    {!embedded && <Hint>Tippen oder darüberfahren für Details.</Hint>}
+    {own && <Footer $embedded={embedded}>{done ? <p>✓ Heute und diese Woche gesichert. Gut gemacht!</p> : <Button onClick={onCheckin || (() => window.dispatchEvent(new CustomEvent('iceapp:open-checkin')))}><IceCreamBowl size={20} aria-hidden="true" />Jetzt einchecken</Button>}</Footer>}
     {hover && createPortal(<HoverPanel ref={panelRef} id={`${id}-hover`} role="region" aria-labelledby={`${id}-hover-title`}
       style={hover.style} onPointerEnter={cancelClose} onPointerLeave={scheduleClose} onFocusCapture={cancelClose}
       onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) scheduleClose(); }}>
