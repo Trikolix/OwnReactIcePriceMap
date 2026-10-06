@@ -93,6 +93,21 @@ const dialogFits=()=>{
 };
 async function fill(){field('Titel','Neu in der Ice-App');field('App-Nachricht','## Neue Funktionen\n\n**Entdecke** die Karte und unsere Challenges.');await click('2 · E-Mail');field('Mailtext','Hallo zusammen, unsere Karte hat neue Funktionen.');await click('1 · In-App');await new Promise(resolve=>setTimeout(resolve,450));}
 window.openTestConfirmation=async()=>{button('Veröffentlichen').focus();await click('Veröffentlichen');};
+window.showTestDeliveryHistory=async()=>{
+  const form={title:'Neu in der Ice-App',message:'Entdecke die neue Karte und lade deine Freunde ein.',link_url:'/map',link_label:'Zur Karte',email_subject:'Ice-App: Neuigkeiten',email_heading:'Neuigkeiten',email_body:'Entdecke die neuen Funktionen.',email_buttons:[],mail_send_mode:'subscribers',push_web:true,push_android:true};
+  rows=[
+    {id:101,titel:form.title,nachricht:form.message,state:'published',erstellt_am:'2026-10-06T12:00:00',form,
+      delivery_stats:{in_app:{total:1240,read:863},email:{accepted:1140,sent:20,pending:36,sending:5,retry:12,failed:4,uncertain:2,skipped:21},web:{accepted:82,pending:6,failed:2},android:{accepted:45,retry:3,uncertain:1}}},
+    {id:100,titel:'Sommeraktion beendet',nachricht:'Diese Meldung wurde zurückgezogen.',state:'withdrawn',erstellt_am:'2026-10-01T12:00:00',form,
+      delivery_stats:{in_app:{total:1200,read:1010},email:{sent:900,cancelled:80,skipped:20}}},
+    {id:99,titel:'Ältere Systemmeldung',nachricht:'Eine Meldung ohne Versandnachweise.',state:'published',erstellt_am:'2026-09-15T12:00:00',form,delivery_stats:{}},
+    {id:98,titel:'Noch keine Empfänger',nachricht:'Keine Nachrichten eingereiht.',state:'published',erstellt_am:'2026-09-14T12:00:00',form,delivery_stats:{in_app:{total:0,read:0},email:{pending:0}}},
+  ];
+  await click('Aktualisieren');
+  const history=getByRole(document.body,'heading',{name:'Bisherige Meldungen'}).closest('section');
+  history.querySelector('details').open=true;
+  history.scrollIntoView({block:'start'});
+};
 (async()=>{
   await waitFor(()=>button('Entwurf speichern'));
   const preview=new URLSearchParams(location.search).get('preview');

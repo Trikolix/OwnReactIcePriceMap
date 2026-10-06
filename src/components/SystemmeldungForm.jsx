@@ -5,13 +5,12 @@ import { Eye, Mail, Send, Save, Plus, X, ChevronRight } from 'lucide-react';
 import Header from '../Header';
 import { useUser } from '../context/UserContext';
 import { SystemMessagePreview } from './SystemModal';
+import SystemMessageDeliveryStats from './SystemMessageDeliveryStats';
 import { SYSTEM_MESSAGE_MAX, systemMessageRequest, validateSystemMessage, notifyNotificationsChanged } from '../utils/systemMessages';
 
 const emptyForm = () => ({ title: '', message: '', link_url: '', link_label: '', email_subject: '', email_heading: '', email_body: '',
   email_buttons: [], mail_send_mode: 'subscribers', push_web: false, push_android: false });
 const stateLabels = { draft: 'Entwurf', published: 'Veröffentlicht', withdrawn: 'Zurückgezogen' };
-const deliveryLabels = { pending: 'eingereiht', sending: 'in Bearbeitung', retry: 'erneuter Versuch geplant', sent: 'zum Versand angenommen', accepted: 'zum Versand angenommen',
-  failed: 'fehlgeschlagen', uncertain: 'unklar', cancelled: 'gestoppt', skipped: 'übersprungen' };
 
 function Modal({ title, open, onClose, children, actions, busy = false }) {
   return <Dialog open={open} onClose={() => !busy && onClose()} className="system-message-dialog">
@@ -209,8 +208,7 @@ export default function SystemmeldungForm() {
       {historyLoading && <Hint role="status">Historie wird geladen …</Hint>}{!historyLoading && !history.length && <Hint>Noch keine Meldungen.</Hint>}
       {history.map(row => <HistoryRow key={row.id}><details><summary><ChevronRight size={16} aria-hidden="true"/><strong>{row.titel || 'Unbenannter Entwurf'}</strong><Badge>{stateLabels[row.state] || row.state}</Badge>
         <time>{new Date(row.erstellt_am).toLocaleDateString('de-DE')}</time></summary><Detail><p>{row.nachricht}</p>
-          {Object.entries(row.delivery_stats).map(([channel,stats]) => <p key={channel}><strong>{channel === 'in_app' ? 'In-App' : channel === 'email' ? 'E-Mail' : channel === 'web' ? 'Browser' : 'Android'}: </strong>
-            {channel === 'in_app' ? `${stats.read} von ${stats.total} gelesen` : Object.entries(stats).map(([status,count]) => `${count} ${deliveryLabels[status] || status}`).join(' · ')}</p>)}
+          <SystemMessageDeliveryStats stats={row.delivery_stats} state={row.state} />
           {row.form.email_body && <details><summary>Ursprünglicher E-Mail-Inhalt</summary><pre>{row.form.email_body}</pre></details>}
           {row.state === 'published' && <Hint>Korrekturen betreffen ausschließlich die App-Anzeige.</Hint>}</Detail></details>
         {row.state !== 'withdrawn' && <RowActions><Button type="button" disabled={locked} onClick={() => edit(row)}>{row.state === 'draft' ? 'Entwurf bearbeiten' : 'App-Inhalt korrigieren'}</Button>

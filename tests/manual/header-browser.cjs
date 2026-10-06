@@ -134,6 +134,12 @@ const connect = async url => {
         await keyPress('Escape','Escape',27);
         await assert('!document.querySelector("[role=dialog]")','Escape closes confirmation');
         await assert('document.activeElement.textContent.includes("Veröffentlichen")','Focus returns to publish button');
+        if (process.argv.includes('--screenshots')) {
+          await evaluate('window.showTestDeliveryHistory()'); await delay(200);
+          await assert('document.documentElement.scrollWidth<=innerWidth','Delivery statistics fit viewport');
+          const screenshot = await cdp.call('Page.captureScreenshot',{format:'png'});
+          fs.writeFileSync(path.join(output,`history-${width}x${height}.png`),Buffer.from(screenshot.data,'base64'));
+        }
       }
       console.log(JSON.stringify({passed:64,checks:'Confirmation keyboard and focus at four widths'}));
       return;
