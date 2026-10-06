@@ -10,6 +10,7 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import LoginModal from './LoginModal';
 import Header from './Header';
 import MapToolbar from './components/MapToolbar';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
@@ -786,6 +787,7 @@ const IceCreamRadar = () => {
   const [activeSearchSuggestionIndex, setActiveSearchSuggestionIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const filterCloseButtonRef = useRef(null);
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(true);
@@ -2190,15 +2192,15 @@ const IceCreamRadar = () => {
       <Header
         refreshShops={refreshShops}
       />
-      <MapToolbar
-        options={displayDropdownOptions}
-        value={displayMode}
-        onChange={setDisplayMode}
-        activeFilterCount={activeFilterCount}
-        onOpenFilters={() => setIsFilterModalOpen(true)}
-      />
-
       <MapSection>
+        <MapToolbar
+          options={displayDropdownOptions}
+          value={displayMode}
+          onChange={setDisplayMode}
+          activeFilterCount={activeFilterCount}
+          onOpenFilters={() => setIsFilterModalOpen(true)}
+          filtersOpen={isFilterModalOpen}
+        />
         {isSearchVisible && (
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
@@ -2566,15 +2568,17 @@ const IceCreamRadar = () => {
           )}
         </MapContainer>
       </MapSection>
-      {isFilterModalOpen && (
-        <FilterModalOverlay onClick={() => setIsFilterModalOpen(false)}>
-          <FilterModalContent onClick={(event) => event.stopPropagation()}>
+      <FilterDialog open={isFilterModalOpen} onClose={() => setIsFilterModalOpen(false)} initialFocus={filterCloseButtonRef}>
+        <FilterModalOverlay />
+        <FilterModalLayout>
+          <FilterModalContent>
             <FilterModalHeader>
               <FilterModalTitle>Filter</FilterModalTitle>
-              <CloseModalButton type="button" onClick={() => setIsFilterModalOpen(false)}>
-                ×
+              <CloseModalButton ref={filterCloseButtonRef} type="button" aria-label="Filter schließen" onClick={() => setIsFilterModalOpen(false)}>
+                <span aria-hidden="true">×</span>
               </CloseModalButton>
             </FilterModalHeader>
+            <FilterModalBody>
             {mapAttributeIds.length > 0 && (
               <FilterSection>
                 <FilterSectionTitle>Review-Attribute</FilterSectionTitle>
@@ -2835,6 +2839,7 @@ const IceCreamRadar = () => {
                 />
               )}
             </FilterSection>
+            </FilterModalBody>
             <FilterActions>
               <SecondaryButton type="button" onClick={handleResetFilters}>
                 Zurücksetzen
@@ -2844,8 +2849,8 @@ const IceCreamRadar = () => {
               </YellowButton>
             </FilterActions>
           </FilterModalContent>
-        </FilterModalOverlay>
-      )}
+        </FilterModalLayout>
+      </FilterDialog>
       {token && (
         <ResetPasswordModal resetToken={token} isOpen={true} onClose={() => (window.location.href = "/login")} />
       )}
@@ -3041,7 +3046,7 @@ const MapContextMenuHint = styled.p`
 
 const SearchOverlay = styled.div`
   position: absolute;
-  top: 12px;
+  top: 76px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -3050,6 +3055,8 @@ const SearchOverlay = styled.div`
   flex-direction: column;
   gap: 0.35rem;
   pointer-events: none;
+
+  @media (min-width: 768px) { top: 80px; }
 
   @media (max-width: 520px) {
     left: 12px;
@@ -3189,11 +3196,12 @@ const SearchStatusText = styled.p`
 
 const DiscoveryOverlay = styled.div`
   position: absolute;
-  top: 12px;
+  top: 76px;
   left: 12px;
   z-index: 1000;
   width: min(90vw, 360px);
   pointer-events: none;
+  @media (min-width: 768px) { top: 80px; left: 16px; }
 `;
 
 const DiscoveryCard = styled.div`
@@ -3384,44 +3392,78 @@ const DiscoveryPopupLink = styled.a`
   text-decoration: none;
 `;
 
-const FilterModalOverlay = styled.div`
+const FilterDialog = styled(Dialog)`position: relative; z-index: 2200;`;
+const FilterModalOverlay = styled(DialogBackdrop)`
+  position: fixed;
+  inset: 0;
+  background: #2f210059;
+`;
+const FilterModalLayout = styled.div`
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 2200;
+  padding: 16px;
+  box-sizing: border-box;
+  pointer-events: none;
+  @media (max-width: 767px) { align-items: flex-end; padding: 0; }
 `;
 
-const FilterModalContent = styled.div`
-  background: #fffbe6;
+const FilterModalContent = styled(DialogPanel)`
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: min(520px, 100%);
+  max-height: min(86dvh, 760px);
+  background: #ffffff;
+  color: #2f2100;
   border-radius: 16px;
-  padding: 1.5rem;
-  width: min(480px, 90%);
-  max-height: min(86vh, 760px);
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  @media (max-width: 767px) {
+    width: 100%;
+    max-height: min(86dvh, calc(100dvh - max(12px, env(safe-area-inset-top))));
+    border-radius: 20px 20px 0 0;
+  }
 `;
 
 const FilterModalHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  flex-shrink: 0;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e6ddc9;
+  @media (max-width: 767px) { padding: 12px 16px; }
 `;
 
-const FilterModalTitle = styled.h3`
+const FilterModalTitle = styled(DialogTitle)`
   margin: 0;
   font-size: 1.4rem;
-  color: #503000;
+  color: inherit;
 `;
 
 const CloseModalButton = styled.button`
   border: none;
   background: transparent;
+  color: inherit;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 10px;
   font-size: 1.5rem;
   cursor: pointer;
+  &:hover { background: #fff0c6; }
+  &:focus-visible { outline: 2px solid #633e14; outline-offset: 2px; }
+`;
+const FilterModalBody = styled.div`
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 24px 0;
+  @media (max-width: 767px) { padding: 16px 16px 0; }
 `;
 
 const FilterSection = styled.div`
@@ -3477,6 +3519,7 @@ const FilterToggle = styled.label`
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  min-height: 44px;
   font-size: 0.95rem;
   margin-bottom: 0.4rem;
   opacity: ${(props) => (props.disabled ? 0.5 : 1)};
@@ -3648,6 +3691,15 @@ const FilterActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #e6ddc9;
+  & > button { min-height: 44px; }
+  & > button:focus-visible { outline: 2px solid #633e14; outline-offset: 2px; }
+  @media (max-width: 767px) {
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+    & > button { flex: 1; }
+  }
 `;
 
 const SecondaryButton = styled.button`

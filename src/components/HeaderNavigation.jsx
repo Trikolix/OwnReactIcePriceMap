@@ -191,13 +191,14 @@ const Header = styled.header`
 const HeaderInner = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   max-width: 1440px;
   height: 64px;
   margin: 0 auto;
   padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
   box-sizing: border-box;
-  @media (min-width: 768px) { height: 72px; padding: 0 max(24px, env(safe-area-inset-right)) 0 max(24px, env(safe-area-inset-left)); }
+  @media (max-width: 359px) { gap: 4px; padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); }
+  @media (min-width: 768px) { height: 72px; gap: 12px; padding: 0 max(24px, env(safe-area-inset-right)) 0 max(24px, env(safe-area-inset-left)); }
   @media (min-width: 1200px) { height: 80px; gap: 20px; }
 `;
 const LogoLink = styled(Link)`
@@ -243,7 +244,13 @@ const DesktopLink = styled(NavLink)`
   ${focusStyle}
 `;
 const NavDot = styled.span`width: 7px; height: 7px; background: #9d3300; border-radius: 50%;`;
-const HeaderActions = styled.div`display: flex; align-items: center; gap: 4px; flex-shrink: 0;`;
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  @media (max-width: 359px) { gap: 2px; }
+`;
 const IconButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -261,14 +268,24 @@ const IconButton = styled.button`
   ${focusStyle}
 `;
 const CheckinButton = styled(IconButton)`
-  background: #fffaf0;
-  box-shadow: 0 2px 5px #633e141a;
+  width: 84px;
+  padding: 0 6px;
+  border: 1px solid #633e1466;
+  box-sizing: border-box;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  span { display: none; }
-  &:hover { background: white; }
-  @media (min-width: 768px) { width: auto; gap: 7px; padding: 0 12px; span { display: inline; } }
+  line-height: 1.15;
+  svg { display: none; }
+  span { display: block; }
+  @media (min-width: 768px) {
+    width: auto;
+    gap: 7px;
+    padding: 0 12px;
+    font-size: 14px;
+    svg { display: block; }
+    span { white-space: nowrap; }
+  }
 `;
 const LoginButton = styled(IconButton)`
   font: inherit;
@@ -293,11 +310,15 @@ const Avatar = styled.span`
   img { width: 100%; height: 100%; object-fit: cover; }
 `;
 const ProfileLink = styled(Link)`
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   color: inherit;
   border-radius: 50%;
   ${focusStyle}
-  @media (min-width: 1200px) { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
 `;
 const MenuDialog = styled(Dialog)`position: relative; z-index: 3100;`;
 const Backdrop = styled(DialogBackdrop)`

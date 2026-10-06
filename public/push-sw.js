@@ -70,7 +70,7 @@ self.addEventListener("push", (event) => {
         body: payload.body || "",
         data: payload,
         tag: payload.tag || undefined,
-        renotify: true,
+        renotify: payload.type !== 'systemmeldung',
       });
       await reportPushEvent(payload, "shown");
     }

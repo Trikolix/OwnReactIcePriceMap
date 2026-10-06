@@ -2,41 +2,46 @@ import styled from 'styled-components';
 import { SlidersHorizontal } from 'lucide-react';
 import DropdownSelect from './DropdownSelect';
 
-export default function MapToolbar({ options, value, onChange, activeFilterCount, onOpenFilters }) {
+export default function MapToolbar({ options, value, onChange, activeFilterCount, onOpenFilters, filtersOpen = false }) {
   return (
     <Toolbar aria-label="Kartensteuerung">
-      <Content>
-        <DropdownSelect options={options} value={value} onChange={onChange} />
-        <FilterButton type="button" onClick={onOpenFilters}
-          aria-label={activeFilterCount > 0 ? `Filter, ${activeFilterCount} aktiv` : 'Filter'}>
-          <SlidersHorizontal size={18} aria-hidden="true" />
-          <span>Filter</span>
-          {activeFilterCount > 0 && <FilterBadge aria-hidden="true">{activeFilterCount}</FilterBadge>}
-        </FilterButton>
-      </Content>
+      <DropdownSelect options={options} value={value} onChange={onChange} embedded />
+      <Divider aria-hidden="true" />
+      <FilterButton type="button" onClick={onOpenFilters}
+        aria-haspopup="dialog" aria-expanded={filtersOpen}
+        aria-label={activeFilterCount > 0 ? `Filter, ${activeFilterCount} aktiv` : 'Filter'}>
+        <SlidersHorizontal size={18} aria-hidden="true" />
+        <span>Filter</span>
+        {activeFilterCount > 0 && <FilterBadge aria-hidden="true">{activeFilterCount}</FilterBadge>}
+      </FilterButton>
     </Toolbar>
   );
 }
 
 const Toolbar = styled.div`
-  flex: 0 0 auto;
-  background: #fff8ea;
-  border-bottom: 1px solid #e6ddc9;
-  color: #2f2100;
-  min-width: 0;
-`;
-const Content = styled.div`
+  position: absolute;
+  top: 12px;
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 1050;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 1440px;
+  width: max-content;
+  max-width: calc(100% - max(12px, env(safe-area-inset-left)) - max(56px, env(safe-area-inset-right)));
   min-width: 0;
-  min-height: 52px;
-  margin: 0 auto;
-  padding: 4px max(12px, env(safe-area-inset-right)) 4px max(12px, env(safe-area-inset-left));
+  padding: 3px;
+  border: 1px solid #e6ddc9;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #2f2100;
+  box-shadow: 0 4px 16px #2f21001f, 0 1px 3px #2f21000d;
   box-sizing: border-box;
-  @media (min-width: 768px) { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+  @media (min-width: 768px) {
+    top: 16px;
+    left: max(16px, env(safe-area-inset-left));
+    max-width: calc(100% - max(16px, env(safe-area-inset-left)) - max(56px, env(safe-area-inset-right)));
+  }
 `;
+const Divider = styled.span`width: 1px; height: 24px; margin: 0 3px; flex-shrink: 0; background: #e6ddc9;`;
 const FilterButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -46,12 +51,12 @@ const FilterButton = styled.button`
   min-width: 44px;
   height: 44px;
   padding: 0 12px;
-  border: 1px solid #e6ddc9;
+  border: none;
   border-radius: 10px;
-  background: #fffdf7;
+  background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   &:hover { background: #fff0c6; }

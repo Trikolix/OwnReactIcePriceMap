@@ -6,6 +6,7 @@ import styled from "styled-components";
 import { Overlay as SharedOverlay, Button as SharedButton } from '../styles/SharedStyles';
 
 import { Link } from "react-router-dom";
+import { safeSystemLink } from '../utils/systemMessages';
 
 function escapeHtml(value) {
   return String(value || "")
@@ -93,11 +94,29 @@ function renderMarkdownHtml(markdown) {
   }).join("");
 }
 
-function SystemModal({ isOpen, onClose, title, message, linkUrl, linkLabel }) {
-  if (!isOpen || typeof document === "undefined") return null;
+export function SystemMessageContent({ title, message, linkUrl, linkLabel, onClose = () => {}, preview = false }) {
+  const safeLink = safeSystemLink(linkUrl);
+  const isExternal = /^https?:/i.test(safeLink);
+  return <>
+    <Title as={preview ? 'h2' : Dialog.Title}>{title || 'Titel deiner Meldung'}</Title>
+    <Description as={preview ? 'div' : Dialog.Description} dangerouslySetInnerHTML={{ __html: renderMarkdownHtml(message) }} />
+    {safeLink && <ActionRow>
+      {preview ? <ActionButton type="button">{linkLabel || 'Ansehen'}</ActionButton> :
+        isExternal ? <ActionButton as="a" href={safeLink} target="_blank" rel="noopener noreferrer" onClick={onClose}>{linkLabel || 'Ansehen'}</ActionButton> :
+          <ActionButton as={Link} to={safeLink} onClick={onClose}>{linkLabel || 'Ansehen'}</ActionButton>}
+    </ActionRow>}
+    <CloseRow><SharedButton type="button" onClick={onClose}>{safeLink ? 'Schließen' : 'Verstanden'}</SharedButton></CloseRow>
+  </>;
+}
 
-  const isExternal = linkUrl?.startsWith("http");
-  const messageHtml = renderMarkdownHtml(message);
+export function SystemMessagePreview(props) {
+  return <Panel style={{ width: '100%', maxHeight: 'none', boxShadow: 'none' }} onClick={event => {
+    if (event.target.closest('a')) event.preventDefault();
+  }}><SystemMessageContent {...props} preview /></Panel>;
+}
+
+function SystemModal({ isOpen, onClose, title, message, linkUrl, linkLabel, statusMessage }) {
+  if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
     <Dialog open={isOpen} onClose={onClose}>
@@ -107,27 +126,8 @@ function SystemModal({ isOpen, onClose, title, message, linkUrl, linkLabel }) {
             <TopCloseButton type="button" onClick={onClose} aria-label="Systemmeldung schließen">
               x
             </TopCloseButton>
-            <Dialog.Title as={Title}>{title}</Dialog.Title>
-            <Dialog.Description as={Description} dangerouslySetInnerHTML={{ __html: messageHtml }} />
-
-            <ActionRow>
-              {linkUrl && linkUrl.trim() !== "" && (
-                isExternal ? (
-                  <ActionButton as="a" href={linkUrl} target="_blank" rel="noopener noreferrer" onClick={onClose}>
-                    {linkLabel || "Ansehen"}
-                  </ActionButton>
-                ) : (
-                  <ActionButton as={Link} to={linkUrl} onClick={onClose}>
-                    {linkLabel || "Ansehen"}
-                  </ActionButton>
-                )
-              )}
-            </ActionRow>
-            <CloseRow>
-              <SharedButton onClick={onClose}>
-                {linkUrl && linkUrl.trim() !== "" ? "Schließen" : "Verstanden"}
-              </SharedButton>
-            </CloseRow>
+            <SystemMessageContent title={title} message={message} linkUrl={linkUrl} linkLabel={linkLabel} onClose={onClose} />
+            {statusMessage && <p role="alert" style={{ color: '#a13628', fontSize: 13 }}>{statusMessage}</p>}
           </Dialog.Panel>
         </Wrapper>
       </Dialog>,
@@ -192,8 +192,8 @@ const TopCloseButton = styled.button`
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  width: 2rem;
-  height: 2rem;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 50%;
   background: rgba(47, 33, 0, 0.08);
@@ -219,6 +219,7 @@ const Title = styled.h2`
 `;
 
 const Description = styled.div`
+  overflow-wrap: anywhere;
   margin: 0.9rem 0 0;
   color: #5f4a1f;
   line-height: 1.55;

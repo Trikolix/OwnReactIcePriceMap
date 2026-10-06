@@ -1,14 +1,21 @@
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Bell, X, CheckCheck, Trash2 } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
 import SystemModal from "./SystemModal";
 import MentionInviteModal from "./MentionInviteModal";
 import { buildNotificationDeeplink, parseNotificationExtra } from "../utils/notificationRouting";
+import { notifyNotificationsChanged } from '../utils/systemMessages';
 
 const NotificationBell = ({ open, onOpenChange } = {}) => {
     const { userId } = useUser();
     const [notifications, setNotifications] = useState([]);
+    const [unreadTotal, setUnreadTotal] = useState(0);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState('');
+    const [actionError, setActionError] = useState('');
+    const requestSequence = useRef(0);
     const [internalOpen, setInternalOpen] = useState(false);
     const show = open ?? internalOpen;
     const setShow = next => {
@@ -27,8 +34,8 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
     const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "", linkUrl: "", linkLabel: "" });
     const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
 
-    const openSystemModal = ({ title, message, linkUrl = "", linkLabel = "" }) => {
-        setSystemModal({ isOpen: true, title, message, linkUrl, linkLabel });
+    const openSystemModal = ({ title, message, linkUrl = "", linkLabel = "", notificationId }) => {
+        setSystemModal({ isOpen: true, title, message, linkUrl, linkLabel, notificationId });
     };
 
     const resetDeleteState = () => {
@@ -37,15 +44,22 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
         setDeleteErrorId(null);
     };
 
-    const loadNotifications = async () => {
-        const res = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=list&nutzer_id=${userId}`
-        );
-        const data = await res.json();
-        if (data.status === "success") {
-            setNotifications(data.notifications);
-        }
-    };
+    const loadNotifications = useCallback(async (cursor = null) => {
+        if (!userId) return;
+        const sequence = ++requestSequence.current;
+        setLoading(true); setLoadError('');
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=list&nutzer_id=${userId}${cursor ? `&before_id=${cursor}` : ''}`);
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Benachrichtigungen konnten nicht geladen werden.');
+            if (sequence !== requestSequence.current) return;
+            const items = data.notifications.map(item => ({ ...item, ist_gelesen: item.ist_gelesen === true || Number(item.ist_gelesen) === 1 }));
+            setNotifications(previous => cursor ? [...previous, ...items.filter(item => !previous.some(old => old.id === item.id))] : items);
+            setUnreadTotal(data.unread_total ?? items.filter(item => !item.ist_gelesen).length);
+            setNextCursor(data.next_cursor ?? null);
+        } catch (err) { if (sequence === requestSequence.current) setLoadError(err.message); }
+        finally { if (sequence === requestSequence.current) setLoading(false); }
+    }, [userId]);
 
     useEffect(() => {
         if (!show) {
@@ -71,8 +85,23 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
     }, [show, open, onOpenChange]);
 
     useEffect(() => {
-        if (userId) loadNotifications();
-    }, [userId]);
+        setNotifications([]); setUnreadTotal(0); setNextCursor(null);
+        setSystemModal({ isOpen: false, title: '', message: '' });
+        setActionError('');
+        loadNotifications();
+        const refresh = () => loadNotifications();
+        const visible = () => { if (document.visibilityState === 'visible') refresh(); };
+        window.addEventListener('focus', refresh);
+        window.addEventListener('ice-notifications-changed', refresh);
+        document.addEventListener('visibilitychange', visible);
+        return () => {
+            ++requestSequence.current;
+            window.removeEventListener('focus', refresh);
+            window.removeEventListener('ice-notifications-changed', refresh);
+            document.removeEventListener('visibilitychange', visible);
+        };
+    }, [loadNotifications]);
+    useEffect(() => { if (show) loadNotifications(); }, [show, loadNotifications]);
 
     useEffect(() => {
         return () => {
@@ -84,30 +113,37 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
 
     const markAsRead = async (id) => {
         try {
-            await fetch(
+            const response = await fetch(
                 `${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=markAsRead`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, nutzer_id: userId }) }
             );
+            const data = await response.json();
+            if (!response.ok || data.status !== 'success') throw new Error('Lesestatus konnte nicht gespeichert werden.');
             setNotifications((prev) =>
                 prev.map((n) =>
                     n.id === id ? { ...n, ist_gelesen: true } : n
                 )
             );
+            notifyNotificationsChanged();
         } catch (err) {
-            console.error("Fehler beim Markieren als gelesen", err);
+            setActionError(err.message);
         }
     };
 
     const markAllAsRead = async () => {
         try {
-            await fetch(
+            const response = await fetch(
                 `${import.meta.env.VITE_API_BASE_URL}/benachrichtigungen.php?action=markAllAsRead`,
                 { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nutzer_id: userId }) }
             );
+            const data = await response.json();
+            if (!response.ok || data.status !== 'success') throw new Error('Lesestatus konnte nicht gespeichert werden.');
             setNotifications((prev) =>
                 prev.map((n) => ({ ...n, ist_gelesen: true }))
             );
+            setUnreadTotal(0);
+            notifyNotificationsChanged();
         } catch (err) {
-            console.error("Fehler beim Markieren aller als gelesen", err);
+            setActionError(err.message);
         }
     };
 
@@ -168,11 +204,12 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
                 }
             );
             const data = await res.json();
-            if (data.status !== "success") {
+            if (!res.ok || data.status !== "success") {
                 throw new Error(data.message || "Benachrichtigung konnte nicht gelöscht werden");
             }
             setConfirmingDeleteId(null);
             setPendingDeleteId(null);
+            notifyNotificationsChanged();
         } catch (err) {
             console.error("Fehler beim Löschen der Benachrichtigung", err);
             setNotifications(previousNotifications);
@@ -183,6 +220,7 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
     };
 
     const handleNotificationClick = async (notification) => {
+        setActionError('');
         if (suppressNextClickRef.current) {
             suppressNextClickRef.current = false;
             return;
@@ -194,7 +232,7 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
 
         setShow(false);
         resetDeleteState();
-        if (!notification.ist_gelesen) {
+        if (!notification.ist_gelesen && notification.typ !== 'systemmeldung') {
             markAsRead(notification.id);
         }
         if (notification.typ === 'systemmeldung') {
@@ -202,32 +240,21 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
                 const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/systemmeldung.php?action=get&id=${notification.referenz_id}`);
                 const data = await res.json();
 
-                if (data.status === 'success') {
+                if (res.ok && data.status === 'success') {
                     openSystemModal({
                         title: data.systemmeldung.titel,
                         message: data.systemmeldung.nachricht,
                         linkUrl: data.systemmeldung.link_url,
-                        linkLabel: data.systemmeldung.link_label
+                        linkLabel: data.systemmeldung.link_label,
+                        notificationId: notification.id
                     });
                 } else {
-                    // Fallback auf zusatzdaten
-                    const fallback = parseNotificationExtra(notification.zusatzdaten);
-                    openSystemModal({
-                        title: notification.text || "Systemmeldung",
-                        message: fallback.message || "Keine Nachricht verfügbar",
-                        linkUrl: fallback.link_url,
-                        linkLabel: fallback.link_label
-                    });
+                    setActionError(data.message || 'Systemmeldung nicht mehr verfügbar.');
+                    setShow(true);
                 }
                 } catch (err) {
-                // Fallback bei Netzwerkfehler
-                const fallback = parseNotificationExtra(notification.zusatzdaten);
-                openSystemModal({
-                    title: notification.text || "Systemmeldung",
-                    message: fallback.message || "Keine Nachricht verfügbar",
-                    linkUrl: fallback.link_url,
-                    linkLabel: fallback.link_label
-                });
+                setActionError('Systemmeldung konnte nicht geladen werden. Bitte erneut versuchen.');
+                setShow(true);
                 }
         } else if (notification.typ === 'checkin_mention') {
             // Modal öffnen mit Infos und Optionen
@@ -256,7 +283,10 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
         }
     };
 
-    const unreadCount = notifications.filter((n) => !n.ist_gelesen).length;
+    useEffect(() => {
+        if (systemModal.isOpen && systemModal.notificationId) markAsRead(systemModal.notificationId);
+    }, [systemModal.isOpen, systemModal.notificationId]);
+    const unreadCount = unreadTotal;
 
     return (<>
         <BellWrapper ref={wrapperRef}>
@@ -264,6 +294,7 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
                 aria-expanded={show} aria-controls={show ? panelId : undefined}
                 title={unreadCount > 0 ? `${unreadCount} ungelesene Benachrichtigungen` : 'Benachrichtigungen'}
                 onClick={() => {
+                setActionError('');
                 setShow(!show);
                 resetDeleteState();
             }}>
@@ -298,6 +329,9 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
                             </DropdownCloseButton>
                         </HeaderActions>
                     </DropdownHeader>
+                    {loadError && <EmptyMessage role="alert">{loadError} <button type="button" onClick={() => loadNotifications()}>Erneut laden</button></EmptyMessage>}
+                    {actionError && <EmptyMessage role="alert">{actionError}</EmptyMessage>}
+                    {loading && <EmptyMessage role="status">Wird geladen …</EmptyMessage>}
                     {notifications.length === 0 ? (
                         <EmptyMessage>Keine Benachrichtigungen</EmptyMessage>
                     ) : (
@@ -368,6 +402,7 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
                             ))}
                         </NotificationList>
                     )}
+                    {nextCursor && <EmptyMessage><button type="button" disabled={loading} onClick={() => loadNotifications(nextCursor)}>Weitere Benachrichtigungen laden</button></EmptyMessage>}
                 </Dropdown>
             )}
         </BellWrapper>
@@ -378,6 +413,7 @@ const NotificationBell = ({ open, onOpenChange } = {}) => {
             message={systemModal.message}
             linkUrl={systemModal.linkUrl}
             linkLabel={systemModal.linkLabel}
+            statusMessage={actionError}
         />
         <MentionInviteModal
             open={mentionModal.isOpen}

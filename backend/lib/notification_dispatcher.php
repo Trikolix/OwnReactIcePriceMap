@@ -505,6 +505,7 @@ function buildNotificationDeeplink(array $notification): ?string
 function buildPushPayload(array $notification): array
 {
     $data = pushNormalizeJsonData($notification['zusatzdaten'] ?? null);
+    if (($notification['typ'] ?? '') === 'systemmeldung') $data = [];
     $deeplink = buildNotificationDeeplink($notification);
 
     return [
@@ -666,12 +667,17 @@ function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $l
     ensurePushInfrastructureSchema($pdo);
 
     $stmt = $pdo->prepare("
-        SELECT id, payload_json
-        FROM push_notification_deliveries
-        WHERE channel = 'web'
-          AND subscription_token = :subscription_token
-          AND status = 'pending'
-        ORDER BY created_at ASC
+        SELECT d.id, d.payload_json
+        FROM push_notification_deliveries d
+        JOIN benachrichtigungen b ON b.id=d.notification_id
+        JOIN web_push_subscriptions ws ON ws.subscription_token=d.subscription_token AND ws.user_id=d.user_id AND ws.invalidated_at IS NULL
+        LEFT JOIN systemmeldungen m ON b.typ='systemmeldung' AND m.id=b.referenz_id
+        LEFT JOIN user_notification_settings s ON s.user_id=d.user_id
+        WHERE d.channel = 'web'
+          AND d.subscription_token = :subscription_token
+          AND d.status = 'pending'
+          AND (b.typ <> 'systemmeldung' OR (m.state='published' AND s.notify_news_push=1 AND s.push_enabled_web=1))
+        ORDER BY d.created_at ASC,d.id ASC
         LIMIT " . max(1, (int)$limit)
     );
     $stmt->execute(['subscription_token' => $subscriptionToken]);
@@ -911,7 +917,7 @@ function invalidateMobilePushDevice(PDO $pdo, int $userId, ?string $deviceToken 
     $stmt->execute(['user_id' => $userId]);
 }
 
-function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): void
+function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): array
 {
     $publicKey = pushEnv('ICEAPP_WEB_PUSH_VAPID_PUBLIC_KEY');
     $privateKeyPem = pushEnv('ICEAPP_WEB_PUSH_VAPID_PRIVATE_KEY_PEM');
@@ -919,19 +925,19 @@ function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): void
 
     if (!$publicKey || !$privateKeyPem) {
         markPushDeliveryFailed($pdo, $deliveryId, 'Web push skipped: missing VAPID public or private key.');
-        return;
+        return ['status' => -1, 'body' => 'Missing VAPID keys', 'headers' => []];
     }
 
     $audience = buildWebPushAudience((string)$subscription['endpoint']);
     if (!$audience) {
         markPushDeliveryFailed($pdo, $deliveryId, 'Web push skipped: invalid endpoint audience.');
-        return;
+        return ['status' => -1, 'body' => 'Invalid endpoint', 'headers' => []];
     }
 
     $jwt = buildVapidJwt($audience, $subject, $publicKey, $privateKeyPem);
     if (!$jwt) {
         markPushDeliveryFailed($pdo, $deliveryId, 'Web push skipped: VAPID JWT could not be built.');
-        return;
+        return ['status' => -1, 'body' => 'Invalid VAPID keys', 'headers' => []];
     }
 
     $response = pushHttpRequest(
@@ -951,7 +957,7 @@ function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): void
     if ($status >= 200 && $status < 300) {
         $stmt = $pdo->prepare("UPDATE web_push_subscriptions SET last_success_at = NOW() WHERE id = :id");
         $stmt->execute(['id' => (int)$subscription['id']]);
-        return;
+        return $response;
     }
 
     $invalidate = in_array($status, [404, 410], true);
@@ -967,6 +973,7 @@ function sendWebPushSignal(PDO $pdo, array $subscription, int $deliveryId): void
     ]);
 
     markPushDeliveryFailed($pdo, $deliveryId, 'Web push provider returned HTTP ' . $status . '.', $status, (string)$response['body']);
+    return $response;
 }
 
 function updatePushDeliveryProviderResult(PDO $pdo, int $deliveryId, int $statusCode, string $responseBody = ''): void
@@ -1150,106 +1157,58 @@ function ecdsaDerToJose(string $der, int $partLength): ?string
     return $r . $s;
 }
 
-function sendAndroidPush(PDO $pdo, int $userId, array $notificationRecord, array $payload): void
+function pushFcmInvalidatesToken(array $responseBody): bool
+{
+    foreach (($responseBody['error']['details'] ?? []) as $detail) {
+        if (($detail['@type'] ?? '') === 'type.googleapis.com/google.firebase.fcm.v1.FcmError'
+            && ($detail['errorCode'] ?? '') === 'UNREGISTERED') return true;
+    }
+    return ($responseBody['error']['status'] ?? '') === 'UNREGISTERED';
+}
+
+function sendAndroidPushDelivery(PDO $pdo, array $device, array $payload, int $deliveryId): array
 {
     $projectId = pushEnv('ICEAPP_FCM_PROJECT_ID');
-    $clientEmail = pushEnv('ICEAPP_FCM_SERVICE_ACCOUNT_EMAIL');
-    $privateKeyPem = pushEnv('ICEAPP_FCM_PRIVATE_KEY_PEM');
-
-    $stmt = $pdo->prepare("
-        SELECT id, device_token
-        FROM mobile_push_devices
-        WHERE user_id = :user_id
-          AND platform = 'android'
-          AND provider = 'fcm'
-          AND invalidated_at IS NULL
-    ");
-    $stmt->execute(['user_id' => $userId]);
-    $devices = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-    if (!$projectId || !$clientEmail || !$privateKeyPem) {
-        foreach ($devices as $device) {
-            $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
-            markPushDeliveryFailed($pdo, $deliveryId, 'Android push skipped: missing FCM project id, service account email, or private key.');
-        }
-        error_log('Android push skipped: missing FCM project id, service account email, or private key.');
-        return;
+    $email = pushEnv('ICEAPP_FCM_SERVICE_ACCOUNT_EMAIL');
+    $key = pushEnv('ICEAPP_FCM_PRIVATE_KEY_PEM');
+    $token = ($projectId && $email && $key) ? fetchGoogleAccessToken($email, $key) : null;
+    if (!$token) {
+        markPushDeliveryFailed($pdo, $deliveryId, 'FCM configuration or OAuth unavailable.');
+        return ['status' => ($projectId && $email && $key) ? 503 : -1, 'body' => 'FCM configuration or OAuth unavailable', 'headers' => []];
     }
-
-    $accessToken = fetchGoogleAccessToken($clientEmail, $privateKeyPem);
-    if (!$accessToken) {
-        foreach ($devices as $device) {
-            $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
-            markPushDeliveryFailed($pdo, $deliveryId, 'Android push skipped: could not fetch Google OAuth access token.');
-        }
-        error_log('Android push skipped: could not fetch Google OAuth access token.');
-        return;
+    $body = ['message' => ['token' => (string)$device['device_token'],
+        'notification' => ['title' => (string)($payload['title'] ?? 'Ice App'), 'body' => (string)($payload['body'] ?? '')],
+        'data' => flattenPushPayloadForFcm($payload),
+        'android' => ['priority' => 'HIGH', 'notification' => ['channel_id' => 'ice_app_notifications', 'click_action' => 'FCM_PLUGIN_ACTIVITY']]]];
+    $encoded = pushJsonEncode($body);
+    if (strlen($encoded) > 4096) {
+        markPushDeliveryFailed($pdo, $deliveryId, 'FCM payload exceeds 4096 bytes.');
+        return ['status' => -1, 'body' => 'FCM payload too large', 'headers' => []];
     }
+    $response = pushHttpRequest('https://fcm.googleapis.com/v1/projects/' . rawurlencode($projectId) . '/messages:send',
+        'POST', ['Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json; charset=utf-8'], $encoded);
+    $status = (int)$response['status'];
+    updatePushDeliveryProviderResult($pdo, $deliveryId, $status, (string)$response['body']);
+    if ($status >= 200 && $status < 300) {
+        $pdo->prepare('UPDATE mobile_push_devices SET last_success_at=NOW(),last_failure_at=NULL WHERE id=?')->execute([(int)$device['id']]);
+        $pdo->prepare("UPDATE push_notification_deliveries SET status='delivered',delivered_at=NOW() WHERE id=?")->execute([$deliveryId]);
+    } else {
+        $decoded = json_decode((string)$response['body'], true) ?: [];
+        $pdo->prepare('UPDATE mobile_push_devices SET last_failure_at=NOW(),invalidated_at=CASE WHEN ?=1 THEN NOW() ELSE invalidated_at END WHERE id=?')
+            ->execute([(int)pushFcmInvalidatesToken($decoded), (int)$device['id']]);
+        markPushDeliveryFailed($pdo, $deliveryId, (string)($decoded['error']['message'] ?? 'FCM transport failed'), $status, (string)$response['body']);
+    }
+    return $response;
+}
 
-    foreach ($devices as $device) {
+function sendAndroidPush(PDO $pdo, int $userId, array $notificationRecord, array $payload): void
+{
+    $stmt = $pdo->prepare("SELECT id,device_token FROM mobile_push_devices WHERE user_id=? AND platform='android' AND provider='fcm' AND invalidated_at IS NULL");
+    $stmt->execute([$userId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $device) {
         $deliveryId = queueAndroidPushDelivery($pdo, $notificationRecord, $device, $payload);
         $deliveryPayload = updatePushDeliveryPayload($pdo, $deliveryId, $payload, 'android');
-
-        $body = [
-            'message' => [
-                'token' => (string)$device['device_token'],
-                'notification' => [
-                    'title' => (string)($deliveryPayload['title'] ?? 'Ice App'),
-                    'body' => (string)($deliveryPayload['body'] ?? ''),
-                ],
-                'data' => flattenPushPayloadForFcm($deliveryPayload),
-                'android' => [
-                    'priority' => 'HIGH',
-                    'notification' => [
-                        'channel_id' => 'ice_app_notifications',
-                        'click_action' => 'FCM_PLUGIN_ACTIVITY',
-                    ],
-                ],
-            ],
-        ];
-
-        $response = pushHttpRequest(
-            'https://fcm.googleapis.com/v1/projects/' . rawurlencode($projectId) . '/messages:send',
-            'POST',
-            [
-                'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type' => 'application/json; charset=utf-8',
-            ],
-            pushJsonEncode($body)
-        );
-
-        $status = (int)$response['status'];
-        updatePushDeliveryProviderResult($pdo, $deliveryId, $status, (string)$response['body']);
-        if ($status >= 200 && $status < 300) {
-            $pdo->prepare("UPDATE mobile_push_devices SET last_success_at = NOW(), last_failure_at = NULL WHERE id = :id")
-                ->execute(['id' => (int)$device['id']]);
-            $pdo->prepare("
-                UPDATE push_notification_deliveries
-                SET status = 'delivered',
-                    delivered_at = NOW()
-                WHERE id = :id
-            ")->execute(['id' => $deliveryId]);
-            continue;
-        }
-
-        $responseBody = json_decode((string)$response['body'], true);
-        $errorCode = $responseBody['error']['status'] ?? 'UNKNOWN';
-        $errorMessage = $responseBody['error']['message'] ?? (string)$response['body'];
-        $invalidate = in_array($errorCode, ['UNREGISTERED', 'INVALID_ARGUMENT'], true);
-
-        $pdo->prepare("
-            UPDATE mobile_push_devices
-            SET last_failure_at = NOW(),
-                invalidated_at = CASE WHEN :invalidate = 1 THEN NOW() ELSE invalidated_at END
-            WHERE id = :id
-        ")->execute([
-            'invalidate' => $invalidate ? 1 : 0,
-            'id' => (int)$device['id'],
-        ]);
-
-        // Hier den Fehler für den Admin-Test protokollieren (optional in ein Log-File oder eine separate Spalte)
-        markPushDeliveryFailed($pdo, $deliveryId, $errorMessage, $status, (string)$response['body']);
-        error_log("FCM Error for User $userId: $status - $errorMessage");
+        sendAndroidPushDelivery($pdo, $device, $deliveryPayload, $deliveryId);
     }
 }
 

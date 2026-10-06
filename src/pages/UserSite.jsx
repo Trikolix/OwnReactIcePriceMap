@@ -16,8 +16,9 @@ import StreakOverview from '../components/StreakOverview';
 import { Button, ChallengeDialog } from '../components/ChallengeUI';
 import UserSettings from './UserSettings';
 import SystemModal from '../components/SystemModal';
+import { notifyNotificationsChanged } from '../utils/systemMessages';
 import MentionInviteModal from '../components/MentionInviteModal';
-import { Sparkles, Calendar, MapPin, IceCream, Heart, SlidersHorizontal, Settings, UserPlus, ChevronDown, Activity, Trophy, ChartNoAxesCombined, Instagram } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Heart, SlidersHorizontal, Settings, UserPlus, Activity, Trophy, ChartNoAxesCombined, Instagram } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 import { groupActivities } from '../utils/activityFeed';
@@ -38,6 +39,7 @@ function UserSite() {
   const isOwnProfile = Boolean(finalUserId && viewerUserId && String(progress?.user_id ?? finalUserId) === String(viewerUserId));
   const [showToast, setShowToast] = useState(false);
   const [copyError, setCopyError] = useState(null);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,6 +61,7 @@ function UserSite() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+  const [systemReadError, setSystemReadError] = useState('');
   const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
   const [activityLevel, setActivityLevel] = useState('land');
   const PREVIEW_COUNT = 5;
@@ -74,6 +77,12 @@ function UserSite() {
   const userDataRequestRef = useRef(0);
   const PROFILE_156_SCAN_CODE = '3cb55cb87747d1ed4069e612cef2e75d';
   const [selectedAward, setSelectedAward] = useState(null);
+
+  useEffect(() => {
+    setShowInviteDialog(false);
+    setShowToast(false);
+    setCopyError(null);
+  }, [finalUserId]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -111,22 +120,28 @@ function UserSite() {
     const mentionNotificationId = params.get('mentionNotificationId');
     const notificationId = params.get('notificationId');
 
-    if (systemmeldungId) {
+    let cancelled = false;
+    if (systemmeldungId && viewerUserId) {
       fetch(`${API_BASE}/systemmeldung.php?action=get&id=${systemmeldungId}`)
-        .then((res) => res.json())
+        .then(async res => {
+          const json = await res.json();
+          if (!res.ok || json.status !== 'success') throw new Error(json.message || 'Systemmeldung nicht verfügbar.');
+          return json;
+        })
         .then((json) => {
-          if (json.status === 'success') {
+          if (!cancelled && json.status === 'success') {
             setSystemModal({
               isOpen: true,
               title: json.systemmeldung.titel,
               message: json.systemmeldung.nachricht,
               linkUrl: json.systemmeldung.link_url,
               linkLabel: json.systemmeldung.link_label,
+              notificationId: Number(json.systemmeldung.notification_id),
             });
           }
         })
         .catch((error) => {
-          console.error('Systemmeldung konnte nicht geladen werden', error);
+          if (!cancelled) setSystemModal({ isOpen: true, title: 'Systemmeldung nicht verfügbar', message: error.message, notificationId: null });
         });
     }
 
@@ -159,7 +174,21 @@ function UserSite() {
           console.error('Mention-Benachrichtigung konnte nicht geladen werden', error);
         });
     }
+    return () => { cancelled = true; };
   }, [location.search, viewerUserId]);
+
+  useEffect(() => {
+    if (!systemModal.isOpen || !systemModal.notificationId || !viewerUserId) return;
+    setSystemReadError('');
+    fetch(`${API_BASE}/benachrichtigungen.php?action=markAsRead`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: systemModal.notificationId }),
+    }).then(async response => {
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success') throw new Error('Lesestatus konnte nicht gespeichert werden.');
+      notifyNotificationsChanged();
+    }).catch(error => setSystemReadError(error.message));
+  }, [systemModal.isOpen, systemModal.notificationId, viewerUserId]);
 
   useEffect(() => {
     if (Number(finalUserId) !== 156) return;
@@ -677,10 +706,18 @@ function UserSite() {
   const handleAvatarUpdated = (newPath) => {
     setData((prev) => (prev ? { ...prev, avatar_url: newPath } : prev));
   };
+  const systemMessageOverlay = <SystemModal
+    isOpen={systemModal.isOpen}
+    onClose={() => setSystemModal(prev => ({ ...prev, isOpen: false }))}
+    title={systemModal.title} message={systemModal.message}
+    linkUrl={systemModal.linkUrl} linkLabel={systemModal.linkLabel}
+    statusMessage={systemReadError}
+  />;
   if (loading) {
     return (
       <FullPage>
         <Header />
+        {systemMessageOverlay}
         <WhiteBackground>
           <DashboardWrapper>
             <LoadingCard>
@@ -697,6 +734,7 @@ function UserSite() {
     return (
       <FullPage>
         <Header />
+        {systemMessageOverlay}
         <WhiteBackground>
           <DashboardWrapper>
             <LoadingCard>
@@ -712,6 +750,7 @@ function UserSite() {
   return (
     <FullPage>
       <Header />
+      {systemMessageOverlay}
       <WhiteBackground>
         <DashboardWrapper>
             <ProfileHeader aria-label="Profilübersicht" $hasSeries={Boolean(visibleStreaks?.day && visibleStreaks?.week)}>
@@ -739,6 +778,10 @@ function UserSite() {
                   {isOwnProfile && <>
                     <SettingsButton type="button" aria-label="Profil bearbeiten" title="Profil bearbeiten" onClick={() => setShowSettings(true)}><Settings size={18} aria-hidden="true" /><span>Profil bearbeiten</span></SettingsButton>
                     <FavoriteSocialLink to="/favoriten" aria-label="Favoriten verwalten" title="Favoriten verwalten"><Heart size={18} aria-hidden="true" /><span>Favoriten</span></FavoriteSocialLink>
+                    {data.invite_code && <InviteButton type="button" data-invite-trigger aria-haspopup="dialog" aria-expanded={showInviteDialog}
+                      onClick={() => { setShowToast(false); setCopyError(null); setShowInviteDialog(true); }}>
+                      <UserPlus size={18} aria-hidden="true" /><span>Freunde einladen</span>
+                    </InviteButton>}
                   </>}
                     {(data.instagram_account || data.strava_account) && <React.Fragment>
                       {data.instagram_account && <SocialLink
@@ -768,14 +811,6 @@ function UserSite() {
                 onAvatarUpdated={handleAvatarUpdated}
               />
             )}
-            <SystemModal
-              isOpen={systemModal.isOpen}
-              onClose={() => setSystemModal((prev) => ({ ...prev, isOpen: false }))}
-              title={systemModal.title}
-              message={systemModal.message}
-              linkUrl={systemModal.linkUrl}
-              linkLabel={systemModal.linkLabel}
-            />
             <MentionInviteModal
               open={mentionModal.isOpen}
               onClose={() => setMentionModal({ isOpen: false, data: null })}
@@ -1073,21 +1108,20 @@ function UserSite() {
                 </ProfileTabPanel>
               </TabPanels>
             </TabGroup>
-            {isOwnProfile && data.invite_code && <InviteCard>
-              <summary><UserPlus size={20} aria-hidden="true" /><span>Freunde einladen</span><ChevronDown size={18} aria-hidden="true" /></summary>
-              <InviteContent>
-                <p>Teile deinen Einladungslink und sammle zusätzliche EP, wenn deine Freunde mitmachen.</p>
-                <label htmlFor="profile-invite-link">Dein Einladungslink</label>
-                <LinkContainer>
-                  <Input id="profile-invite-link" value={`https://ice-app.de/register/${data.invite_code}`} readOnly onFocus={event => event.target.select()} />
-                  <CopyButton type="button" onClick={() => copyToClipboard(`https://ice-app.de/register/${data.invite_code}`)}>Link kopieren</CopyButton>
-                </LinkContainer>
-                {showToast && <Toast role="status">Einladungslink kopiert.</Toast>}
-                {copyError && <CopyError role="alert">{copyError}</CopyError>}
-              </InviteContent>
-            </InviteCard>}
         </DashboardWrapper>
       </WhiteBackground>
+      <ChallengeDialog compact open={Boolean(showInviteDialog && isOwnProfile && data.invite_code)} onClose={() => setShowInviteDialog(false)} title="Freunde einladen">
+        <InviteContent>
+          <p>Teile deinen Einladungslink und sammle zusätzliche EP, wenn deine Freunde mitmachen.</p>
+          <label htmlFor="profile-invite-link">Dein Einladungslink</label>
+          <LinkContainer>
+            <Input id="profile-invite-link" value={`https://ice-app.de/register/${data.invite_code || ''}`} readOnly onFocus={event => event.target.select()} />
+            <CopyButton type="button" onClick={() => copyToClipboard(`https://ice-app.de/register/${data.invite_code}`)}>Link kopieren</CopyButton>
+          </LinkContainer>
+          {showToast && <Toast role="status">Einladungslink kopiert.</Toast>}
+          {copyError && <CopyError role="alert">{copyError}</CopyError>}
+        </InviteContent>
+      </ChallengeDialog>
       <ChallengeDialog open={Boolean(listModal)} onClose={closeModal} title={listModal?.title || 'Übersicht'}>
         {listModal && renderModalContent()}
       </ChallengeDialog>
@@ -1192,7 +1226,10 @@ const LevelInlineCard = styled.div`
 
 const ProfileActions = styled.div`
   display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
-  @media(max-width: 1023px) { > button, > a { width: 44px; padding: 0; } > button span, > a span { display: none; } }
+  @media(max-width: 1023px) {
+    > button:not([data-invite-trigger]), > a { width: 44px; padding: 0; }
+    > button:not([data-invite-trigger]) span, > a span { display: none; }
+  }
 `;
 
 const FavoriteSocialLink = styled(Link)`
@@ -1211,12 +1248,10 @@ const SettingsButton = styled.button`
   &:hover { background: #fff3d9; } svg { flex-shrink: 0; }
 `;
 
-const InviteCard = styled.details`
-  margin: 24px 0 0; border: 1px solid #eadfc9; border-radius: 16px; background: #fffdf8;
-  summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 12px 16px; cursor: pointer; font-weight: 650; list-style: none; }
-  summary::-webkit-details-marker { display: none; } summary span { flex: 1; }
-  summary > svg:first-child { color: #9e651a; } summary > svg:last-child { flex-shrink: 0; }
-  &[open] summary > svg:last-child { transform: rotate(180deg); }
+const InviteButton = styled(SettingsButton)`
+  background: #fff3d9; border-color: #e7c985; white-space: nowrap;
+  &:hover { background: #ffe9bb; }
+  @media(max-width: 359px) { padding: 10px 8px; font-size: 13px; }
 `;
 
 const UnifiedTabBar = styled(TabList)`
@@ -1865,8 +1900,10 @@ const ProfileSeries = styled.div`
 `;
 
 const InviteContent = styled.div`
-  padding: 0 16px 16px; p { color: #756951; margin: 0 0 12px; line-height: 1.5; }
+  p { color: #756951; margin: 0 0 16px; line-height: 1.5; }
   label { font-size: 14px; font-weight: 650; }
+  input:focus-visible { outline: 3px solid #835500; outline-offset: 2px; }
+  @media(max-width: 639px) { ${CopyButton} { width: 100%; } }
 `;
 
 const ProfileTabPanel = styled(TabPanel)`min-width: 0; &:focus-visible { outline: 3px solid #835500; outline-offset: 3px; border-radius: 14px; }`;

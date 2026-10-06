@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { Check, ChevronDown } from 'lucide-react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-export default function DropdownSelect({ options, onChange, value }) {
+export default function DropdownSelect({ options, onChange, value, embedded = false }) {
   const normalizedOptions = useMemo(
     () => options.map(option => typeof option === 'string' ? { value: option, label: option } : option),
     [options]
@@ -18,13 +18,13 @@ export default function DropdownSelect({ options, onChange, value }) {
   const selectedOption = normalizedOptions.find(option => option.value === selectedValue) ?? normalizedOptions[0];
 
   return (
-    <Wrapper>
+    <Wrapper $embedded={embedded}>
       <Listbox value={selectedOption?.value ?? ''} onChange={nextValue => {
         if (value === undefined) setInternalValue(nextValue);
         onChange?.(nextValue);
       }}>
-        <SelectButton aria-label={`Kartenanzeige: ${selectedOption?.label ?? ''}`}>
-          <Prefix>Anzeige:</Prefix>
+        <SelectButton $embedded={embedded} aria-label={`Kartenanzeige: ${selectedOption?.label ?? ''}`} title={selectedOption?.label}>
+          {!embedded && <Prefix>Anzeige:</Prefix>}
           <SelectedText>{selectedOption?.label ?? ''}</SelectedText>
           <ChevronDown size={18} aria-hidden="true" />
         </SelectButton>
@@ -44,6 +44,7 @@ const Wrapper = styled.div`
   min-width: 0;
   width: 300px;
   max-width: 100%;
+  ${props => props.$embedded && css`width: 180px; flex: 0 1 180px;`}
   @media (max-width: 767px) { flex: 1; width: auto; }
 `;
 const SelectButton = styled(ListboxButton)`
@@ -64,6 +65,11 @@ const SelectButton = styled(ListboxButton)`
   svg { flex-shrink: 0; }
   &:hover { background: #fff4d4; }
   &:focus-visible { outline: 2px solid #633e14; outline-offset: 2px; }
+  ${props => props.$embedded && css`
+    border: none;
+    background: transparent;
+    font-size: 14px;
+  `}
 `;
 const Prefix = styled.span`color: #77664a; flex-shrink: 0;`;
 const SelectedText = styled.span`

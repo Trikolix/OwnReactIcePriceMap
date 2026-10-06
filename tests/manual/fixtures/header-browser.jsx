@@ -67,8 +67,9 @@ function Demo({ integrated, standalone }) {
   window.testDisplay = mode;
   if (standalone) return <><NotificationBell /><DropdownSelect options={['Preis', 'Rating']} onChange={value => { window.testDisplay = value; }} /></>;
   if (integrated) return <IceCreamRadar />;
-  return <div className="demo-shell"><Header /><MapToolbar options={options} value={mode} onChange={setMode}
-    activeFilterCount={filters} onOpenFilters={() => setFilters(filters ? 0 : 3)} /><div className="demo-map" /></div>;
+  return <div className="demo-shell"><Header /><div className="demo-map" style={{ position: 'relative' }}>
+    <MapToolbar options={options} value={mode} onChange={setMode}
+      activeFilterCount={filters} onOpenFilters={() => setFilters(filters ? 0 : 3)} /></div></div>;
 }
 async function mount(role = 'user', { integrated = false, date = '2026-10-05T12:00:00+02:00', route = '/', standalone = false } = {}) {
   fixedDate = date;
@@ -139,9 +140,11 @@ async function run() {
   const params = new URL(location.href).searchParams;
   const preview = params.get('preview');
   if (preview !== null) {
-    await mount(params.get('role') || 'user', { date: params.get('date') || undefined, route: params.get('route') || '/' });
+    await mount(params.get('role') || 'user', { date: params.get('date') || undefined, route: params.get('route') || '/',
+      integrated: ['map', 'filters'].includes(preview) });
     if (preview === 'menu') await click('Menü öffnen');
     if (preview === 'notifications') await click('Benachrichtigungen');
+    if (preview === 'filters') await click('Filter');
     return 'preview';
   }
   for (const role of ['guest', 'user', 'admin', 'long', 'low', 'staff']) {

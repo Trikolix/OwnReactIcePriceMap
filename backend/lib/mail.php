@@ -437,7 +437,8 @@ function iceapp_build_branded_admin_markdown_mail_html(
     string $markdown,
     array $fallbackButtons = [],
     bool $includeNotificationSettingsHint = false,
-    string $settingsUrl = 'https://ice-app.de/account/settings'
+    string $settingsUrl = 'https://ice-app.de/account/settings',
+    string $brand = 'Ice-Tour'
 ): string {
     $safeHeading = iceapp_mail_escape($heading);
     $blocks = iceapp_parse_admin_mail_markdown_blocks($markdown);
@@ -446,7 +447,7 @@ function iceapp_build_branded_admin_markdown_mail_html(
     $body .= "<div style=\"max-width:680px;margin:0 auto;padding:28px 16px;\">";
     $body .= "<div style=\"background:#fffdfa;border:1px solid #f3dfad;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(124,79,0,0.10);\">";
     $body .= "<div style=\"background:#ffb522;color:#2d1d00;padding:24px 28px;\">";
-    $body .= "<div style=\"font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;\">Ice-Tour</div>";
+    $body .= "<div style=\"font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;\">" . iceapp_mail_escape($brand) . "</div>";
     $body .= "<h1 style=\"margin:8px 0 0;font-size:28px;line-height:1.18;\">{$safeHeading}</h1>";
     $body .= "</div>";
     $body .= "<div style=\"padding:28px;line-height:1.6;font-size:16px;\">";
@@ -540,11 +541,12 @@ function iceapp_send_branded_admin_markdown_mail(
     array $fallbackButtons = [],
     bool $includeNotificationSettingsHint = false,
     string $settingsUrl = 'https://ice-app.de/account/settings',
-    string $from = 'Ice-App <noreply@ice-app.de>'
+    string $from = 'Ice-App <noreply@ice-app.de>',
+    string $brand = 'Ice-Tour'
 ): bool {
     $boundary = '----=' . md5(uniqid((string) mt_rand(), true));
     $plainBody = iceapp_build_admin_markdown_mail_plain($heading, $markdown, $fallbackButtons, $includeNotificationSettingsHint, $settingsUrl);
-    $htmlBody = iceapp_build_branded_admin_markdown_mail_html($heading, $markdown, $fallbackButtons, $includeNotificationSettingsHint, $settingsUrl);
+    $htmlBody = iceapp_build_branded_admin_markdown_mail_html($heading, $markdown, $fallbackButtons, $includeNotificationSettingsHint, $settingsUrl, $brand);
 
     return mail(
         $to,

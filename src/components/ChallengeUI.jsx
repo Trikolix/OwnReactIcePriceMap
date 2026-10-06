@@ -58,16 +58,19 @@ const ModalRoot = styled(Dialog)`position: fixed; inset: 0; z-index: 1800;`;
 const Backdrop = styled.div`position: fixed; inset: 0; background: #2f210065;`;
 const ModalPosition = styled.div`
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
-  @media(max-width: 767px) { padding: 0; }
+  @media(max-width: 767px) { padding: ${p => p.$compact ? '12px' : '0'}; align-items: ${p => p.$compact ? 'flex-end' : 'center'}; }
 `;
 const Panel = styled(DialogPanel)`
-  width: 100%; max-width: ${p => p.$wide ? 1000 : 720}px; max-height: calc(100dvh - 48px);
+  width: 100%; max-width: ${p => p.$compact ? 560 : p.$wide ? 1000 : 720}px; max-height: calc(100dvh - 48px);
   display: flex; flex-direction: column; background: #fffaf0; color: #2f2100; border-radius: 20px; overflow: hidden;
   box-shadow: 0 20px 70px #241b0033; font-family: inherit;
   *, *::before, *::after { box-sizing: border-box; }
   h1, h2, h3, h4 { text-align: left; text-shadow: none; overflow-wrap: anywhere; }
   input, select, textarea { font-size: 16px; }
-  @media(max-width: 767px) { max-width: none; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  @media(max-width: 767px) {
+    max-width: none; height: ${p => p.$compact ? 'auto' : '100dvh'};
+    max-height: ${p => p.$compact ? 'calc(100dvh - 24px)' : '100dvh'}; border-radius: ${p => p.$compact ? '20px' : '0'};
+  }
 `;
 const ModalHead = styled.div`
   display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px;
@@ -79,7 +82,7 @@ const ModalFoot = styled.div`
   padding: 12px 20px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid #eadfc9; flex-shrink: 0;
   display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; background: #fffdf8;
 `;
-export function ChallengeDialog({ open, onClose, title, children, footer, busy = false, wide = false }) {
+export function ChallengeDialog({ open, onClose, title, children, footer, busy = false, wide = false, compact = false }) {
   const closeRef = useRef(null);
   useEffect(() => {
     if (!open) return undefined;
@@ -88,7 +91,7 @@ export function ChallengeDialog({ open, onClose, title, children, footer, busy =
   }, [open]);
   return <ModalRoot open={open} onClose={() => { if (!busy) onClose(); }} initialFocus={closeRef}>
     <Backdrop aria-hidden="true" />
-    <ModalPosition><Panel $wide={wide}>
+    <ModalPosition $compact={compact}><Panel $wide={wide} $compact={compact}>
       <ModalHead><DialogTitle as="h2">{title}</DialogTitle>
         <Button ref={closeRef} $secondary aria-label="Dialog schließen" disabled={busy} onClick={onClose}><X size={22} aria-hidden="true" /></Button>
       </ModalHead>

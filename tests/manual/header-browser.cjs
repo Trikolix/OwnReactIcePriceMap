@@ -7,10 +7,11 @@ const http = require('node:http');
 const { spawn } = require('node:child_process');
 const { buildSync } = require('esbuild');
 const root = path.resolve(__dirname, '../..');
-const output = path.join(root, 'build/header-browser');
+const systemSuite = process.argv.includes('--systemmeldungen');
+const output = path.join(root, systemSuite ? 'build/systemmeldungen-browser' : 'build/header-browser');
 fs.mkdirSync(output, { recursive: true });
 buildSync({
-  entryPoints: [path.join(__dirname, 'fixtures/header-browser.jsx')],
+  entryPoints: [path.join(__dirname, systemSuite ? 'fixtures/systemmeldungen-browser.jsx' : 'fixtures/header-browser.jsx')],
   bundle: true, outfile: path.join(output, 'test.js'), jsx: 'automatic',
   define: { 'import.meta.env': JSON.stringify({ VITE_API_BASE_URL: 'https://test.invalid', VITE_ASSET_BASE_URL: '/' }), 'process.env.NODE_ENV': '"production"' },
   loader: { '.png': 'dataurl', '.jpg': 'dataurl', '.webp': 'dataurl', '.svg': 'dataurl' },
@@ -39,6 +40,10 @@ const connect = async url => {
   const pending = new Map();
   socket.addEventListener('message', event => {
     const message = JSON.parse(event.data);
+    if (systemSuite && message.method === 'Page.javascriptDialogOpening') {
+      socket.send(JSON.stringify({id:++sequence,method:'Page.handleJavaScriptDialog',params:{accept:true}}));
+      return;
+    }
     const handler = pending.get(message.id);
     if (!handler) return;
     pending.delete(message.id);
@@ -98,7 +103,7 @@ const connect = async url => {
       }
       throw new Error('Browser test timed out at ' + width + 'x' + height);
     };
-    const viewports = process.argv.includes('--all')
+    const viewports = systemSuite ? [[320,740],[390,844],[768,900],[1280,900]] : process.argv.includes('--all')
       ? [[320, 740], [360, 780], [390, 844], [768, 900], [1024, 768], [1200, 900], [1280, 900], [2560, 1440], [844, 390], [390, 440]]
       : [[390, 844]];
     for (const [width, height] of viewports) {
@@ -114,6 +119,25 @@ const connect = async url => {
       await delay(100);
     };
     const assert = async (expression, message) => { if (!await evaluate(expression)) throw new Error(message); };
+    if (systemSuite) {
+      for (const [width,height] of viewports) {
+        await navigate(width,height,'editor');
+        if (process.argv.includes('--screenshots')) {
+          const screenshot = await cdp.call('Page.captureScreenshot',{format:'png'});
+          fs.writeFileSync(path.join(output,`editor-${width}x${height}.png`),Buffer.from(screenshot.data,'base64'));
+        }
+        await evaluate('window.openTestConfirmation()'); await delay(500);
+        await assert('Boolean(document.querySelector("[role=dialog]"))','Confirmation opens');
+        const focusInside = 'document.querySelector("[role=dialog]").contains(document.activeElement)';
+        await assert(focusInside,'Confirmation receives focus');
+        for(let i=0;i<12;i++) { await keyPress('Tab','Tab',9); await assert(focusInside,'Focus stays in confirmation'); }
+        await keyPress('Escape','Escape',27);
+        await assert('!document.querySelector("[role=dialog]")','Escape closes confirmation');
+        await assert('document.activeElement.textContent.includes("Veröffentlichen")','Focus returns to publish button');
+      }
+      console.log(JSON.stringify({passed:64,checks:'Confirmation keyboard and focus at four widths'}));
+      return;
+    }
     for (const [width, height] of [[390, 844], [1280, 900]]) {
       await navigate(width, height, 'header');
       await evaluate(`document.querySelector('button[aria-label="Menü öffnen"]').focus()`);
@@ -152,7 +176,7 @@ const connect = async url => {
     console.log(JSON.stringify({ passed: 1, checks: 'Active administration navigation' }));
     if (process.argv.includes('--screenshots')) {
       for (const [width, height] of [[320, 740], [390, 844], [768, 900], [1280, 900], [2560, 1440], [844, 390]]) {
-        for (const preview of ['header', 'menu', 'notifications']) {
+        for (const preview of ['header', 'menu', 'notifications', 'map', 'filters']) {
           await navigate(width, height, preview);
           const screenshot = await cdp.call('Page.captureScreenshot', { format: 'png' });
           fs.writeFileSync(path.join(output, preview + '-' + width + 'x' + height + '.png'), Buffer.from(screenshot.data, 'base64'));
