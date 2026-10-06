@@ -93,6 +93,27 @@ function streakBook(PDO $pdo, int $userId, string $type, string $kind, string $p
     $q->execute([$userId,$type,$kind,$period,$key,$amount,$now->format('Y-m-d H:i:s')]);
     return $q->rowCount() ? ['id'=>(string)$pdo->lastInsertId(), 'type'=>$type, 'kind'=>$kind, 'period'=>$period, 'amount'=>$amount] : null;
 }
+/** Presentation data only: protection and historic check-ins never mint reward progress. */
+function streakOwnerInsights(array $data, array $summary, array $protected, string $type, DateTimeImmutable $now): array {
+    $current = streakPeriod($now->format('Y-m-d'), $type);
+    $history = [];
+    for ($i = ($type === 'day' ? 6 : 3); $i >= 0; $i--) {
+        $period = streakNext($current, $type, -$i);
+        $history[] = ['period' => $period, 'state' => isset($data['real'][$type][$period]) ? 'checked_in' :
+            (isset($protected[$period]) ? 'protected' : ($period === $current ? 'open' : 'missed'))];
+    }
+    $qualified = [];
+    foreach ($data['ledger'] ?? [] as $entry) {
+        $period = $entry['period'];
+        if ($summary['start'] && $entry['type'] === $type && $entry['kind'] === 'qualify' &&
+            $period >= $summary['start'] && $period <= $current && isset($data['real'][$type][$period])) {
+            $qualified[$period] = true;
+        }
+    }
+    $target = $type === 'day' ? 7 : 4;
+    $progress = count($qualified) % $target;
+    return ['history' => $history, 'reward_progress' => ['current' => $progress, 'target' => $target, 'remaining' => $target - $progress]];
+}
 function streakPayload(array $data, DateTimeImmutable $now, bool $private): array {
     $out = []; $last = null;
     foreach (['day','week'] as $t) {
@@ -100,7 +121,10 @@ function streakPayload(array $data, DateTimeImmutable $now, bool $private): arra
         $out[$t] = streakSummary($data['real'][$t],$protected,$t,$now);
         $out[$t.'_current'] = $out[$t]['state'] === 'active' ? $out[$t]['value'] : 0;
         $out[$t.'_record'] = $out[$t]['record'];
-        if ($private) $out['freezes'][$t] = $state['balance'];
+        if ($private) {
+            $out['freezes'][$t] = $state['balance'];
+            $out[$t] += streakOwnerInsights($data, $out[$t], $protected, $t, $now);
+        }
         foreach (array_keys($protected) as $p) if (!$last || streakNext($p, $t) > streakNext($last['period'], $last['type'])) $last = ['type'=>$t,'period'=>$p];
     }
     if ($private) $out['last_freeze'] = $last;

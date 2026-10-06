@@ -9,7 +9,7 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import LoginModal from './LoginModal';
 import Header from './Header';
-import DropdownSelect from './components/DropdownSelect';
+import MapToolbar from './components/MapToolbar';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
@@ -2190,17 +2190,13 @@ const IceCreamRadar = () => {
       <Header
         refreshShops={refreshShops}
       />
-      <LogoContainer>
-        <DropdownSelect
-          options={displayDropdownOptions}
-          value={displayMode}
-          onChange={(value) => setDisplayMode(value)}
-        />
-        <FilterButton type="button" onClick={() => setIsFilterModalOpen(true)}>
-          Filter
-          {activeFilterCount > 0 && <FilterBadge>{activeFilterCount}</FilterBadge>}
-        </FilterButton>
-      </LogoContainer>
+      <MapToolbar
+        options={displayDropdownOptions}
+        value={displayMode}
+        onChange={setDisplayMode}
+        activeFilterCount={activeFilterCount}
+        onOpenFilters={() => setIsFilterModalOpen(true)}
+      />
 
       <MapSection>
         {isSearchVisible && (
@@ -2914,20 +2910,6 @@ const MapPageShell = styled.div`
   }
 `;
 
-const LogoContainer = styled.div`
-  display: ruby;
-  align-items: center;
-  margin: 5px auto;
-  color: black;
-  @media (max-width: 768px) {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    align-content: center;
-    justify-content: center;
-  }
-`;
-
 const YellowButton = styled.button`
   background-color: #ffb522;
   color: black;
@@ -2945,21 +2927,6 @@ const YellowButton = styled.button`
   @media (max-width: 768px) {
     font-size: 0.9rem;
   }
-`;
-
-const FilterButton = styled(YellowButton)`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-`;
-
-const FilterBadge = styled.span`
-  background: #fff;
-  color: #000;
-  border-radius: 999px;
-  padding: 0 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 700;
 `;
 
 const DateTimeInput = styled.input`

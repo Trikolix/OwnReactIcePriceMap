@@ -1,5 +1,5 @@
 ﻿import userOfTheMonthImg from './user_of_the_month.png';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import {
   SubmitButton as SharedSubmitButton,
@@ -8,32 +8,8 @@ import {
 import { useUser } from './context/UserContext';
 import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import {
-  Activity,
-  Award,
-  BarChart3,
-  Bell,
-  Bike,
-  CalendarDays,
-  Camera,
-  ClipboardList,
-  Info,
-  Instagram,
-  IceCreamCone,
-  LogIn,
-  LogOut,
-  Map,
-  Megaphone,
-  Route,
-  Store,
-  Sun,
-  Target,
-  Trophy,
-  UserRound,
-  Wrench,
-} from 'lucide-react';
-import NotificationBell from './components/NotificationBell';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import HeaderNavigation from './components/HeaderNavigation';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
@@ -48,7 +24,6 @@ import ActionsOverviewModal from './pages/ActionsOverview';
 import GlobalCheckinModal from './components/GlobalCheckinModal';
 
 import useStreakStatus from './hooks/useStreakStatus';
-import { AvatarBadgeFrame, LevelBadge, StreakFlames } from './components/ProfileProgress';
 
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
@@ -59,9 +34,7 @@ const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
 ]);
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [awardsActionsOpen, setAwardsActionsOpen] = useState(false);
-  const menuRef = useRef(null);
-  const menuTriggerRef = useRef(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { userId, username, currentLevel, isLoggedIn, userPosition, authToken, login, logout, setCurrentLevel } = useUser();
   const progress = useStreakStatus(isLoggedIn ? userId : null, userId, true);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -83,21 +56,21 @@ const Header = ({ refreshShops }) => {
   const isAdmin = Number(userId) === 1;
   const now = new Date();
   const seasonalState = getResolvedSeasonalCampaigns(now, { isAdmin });
-  const featuredCampaign = seasonalState.featuredCampaign;
   const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026', 'tour_de_glace_femme_2026'].includes(campaign.id)).length;
   const actionHubCount = (activePhotoChallengeCount > 0 ? 1 : 0)
     + seasonalActionCount;
   const promoIconSrc = buildPublicAssetUrl('/assets/action_icon.png');
-  const promoIconAlt = featuredCampaign
-    ? `Aktions-Hub öffnen: ${featuredCampaign.title}`
-    : 'Aktions-Hub öffnen';
   const EVENT_PENDING_SCAN_KEY = 'event2026_pending_qr_scan_v1';
   const getAvatarCacheKey = (id) => (id ? `avatarUrl:${id}` : null);
 
-  const toggleMenu = () => {
-    setMenuOpen((isOpen) => !isOpen);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setNotificationsOpen(false);
   };
-  const closeMenu = () => setMenuOpen(false);
+  const openLogin = () => {
+    closeMenu();
+    setShowLoginModal(true);
+  };
   const openGlobalCheckin = () => {
     closeMenu();
     if (!isLoggedIn) {
@@ -107,12 +80,23 @@ const Header = ({ refreshShops }) => {
     }
     setShowGlobalCheckin(true);
   };
-  const canAccessMaintenanceBoard = isAdmin || Number(currentLevel || 0) >= 15;
-  const isAwardsActionsActive = location.pathname === '/awards-admin'
-    || location.pathname === '/summer-campaign-admin'
-    || location.pathname === '/admin/summer-campaign'
-    || location.pathname === '/admin/tour-de-glace'
-    || location.pathname === '/admin/tour-de-glace-femme';
+  useEffect(() => {
+    const handle = () => openGlobalCheckin();
+    window.addEventListener('iceapp:open-checkin', handle);
+    return () => window.removeEventListener('iceapp:open-checkin', handle);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+    setNotificationsOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (showLoginModal || showSubmitNewIceShop || showGlobalCheckin || showOverlay || showActionsOverview || modalData) {
+      setMenuOpen(false);
+      setNotificationsOpen(false);
+    }
+  }, [showLoginModal, showSubmitNewIceShop, showGlobalCheckin, showOverlay, showActionsOverview, modalData]);
 
   useEffect(() => {
     if (isLoggedIn && openCheckinAfterLogin) {
@@ -165,26 +149,6 @@ const Header = ({ refreshShops }) => {
   }, [apiUrl]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      const clickedInsideMenu = menuRef.current?.contains(event.target);
-      const clickedMenuTrigger = menuTriggerRef.current?.contains(event.target);
-      if (!clickedInsideMenu && !clickedMenuTrigger) {
-        setMenuOpen(false);
-      }
-    };
-
-    if (menuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [menuOpen]);
-
-  useEffect(() => {
     const handleOpenActionsHub = () => {
       setShowActionsOverview(true);
     };
@@ -193,7 +157,11 @@ const Header = ({ refreshShops }) => {
   }, []);
 
   useEffect(() => {
-    const handleOpenLogin = () => setShowLoginModal(true);
+    const handleOpenLogin = () => {
+      setMenuOpen(false);
+      setNotificationsOpen(false);
+      setShowLoginModal(true);
+    };
     window.addEventListener('auth:open-login', handleOpenLogin);
     return () => window.removeEventListener('auth:open-login', handleOpenLogin);
   }, []);
@@ -686,216 +654,44 @@ const Header = ({ refreshShops }) => {
 
   return (
     <>
-      <HeaderContainer $menuOpen={menuOpen}>
-        <PromoIconsContainer>
-          <GewinnspielIcon onClick={() => setShowActionsOverview(true)}>
-            <img src={promoIconSrc} alt={promoIconAlt} />
-            {actionHubCount > 0 && <ActionHubBadge>{actionHubCount}</ActionHubBadge>}
-          </GewinnspielIcon>
-        </PromoIconsContainer>
-
-        <LogoContainer>
-          <a href="/"><Logo src={seasonalState.headerLogo} alt="Website Logo" /></a>
-        </LogoContainer>
-        <DesktopNav aria-label="Hauptnavigation">
-          <DesktopNavLink to="/" end>Karte</DesktopNavLink>
-          <DesktopNavLink to="/challenge">Challenges</DesktopNavLink>
-          <DesktopNavLink to="/photo-challenge" $compact={hasActivePhotoChallenge}>
-            Foto-Challenges
-            {hasActivePhotoChallenge && (<DesktopNavBadge>AKTIV</DesktopNavBadge>)}
-          </DesktopNavLink>
-          <DesktopNavLink to="/dashboard">
-            Aktivitäten
-            {dashboardNewCount > 0 && <ActivityBadge>{dashboardNewCount}</ActivityBadge>}
-          </DesktopNavLink>
-        </DesktopNav>
-        <HeaderRight>
-          <GlobalCheckinButton
-            type="button"
-            onClick={openGlobalCheckin}
-            title="Eis einchecken"
-            aria-haspopup="dialog"
-            aria-expanded={showGlobalCheckin}
-          >
-            <IceCreamCone size={19} aria-hidden="true" />
-            <span>Eis einchecken</span>
-          </GlobalCheckinButton>
-          {isLoggedIn ? (
-            <AccountCluster>
-              <NotificationBellWrap aria-label="Benachrichtigungen">
-                <NotificationBell />
-              </NotificationBellWrap>
-              <AccountClusterDivider aria-hidden="true" />
-              <UserStatusLink to={`/user/${userId}`} onClick={() => setMenuOpen(false)}>
-                <AvatarBadgeFrame><UserStatusAvatar aria-hidden="true">
-                  {headerAvatarSrc ? (
-                    <img src={headerAvatarSrc} alt="" />
-                  ) : (
-                    (username || '?').slice(0, 1).toUpperCase()
-                  )}
-                </UserStatusAvatar><LevelBadge level={progress?.level_info?.level ?? currentLevel} /></AvatarBadgeFrame>
-                <UserStatusText>
-                  <UserStatusLabel>Eingeloggt</UserStatusLabel>
-                  <UserStatusName>{username || `Nutzer ${userId}`}</UserStatusName>
-                </UserStatusText>
-              </UserStatusLink>
-              <StreakFlames compact streaks={progress?.streaks} events={progress?.events} />
-            </AccountCluster>
-          ) : (
-            <LoginHeaderButton
-              type="button"
-              aria-label="Einloggen"
-              onClick={() => {
-                setShowLoginModal(true);
-                setMenuOpen(false);
-              }}
-            >
-              <LogIn className="login-icon" size={20} aria-hidden="true" />
-              <span className="login-text">Einloggen</span>
-            </LoginHeaderButton>
-          )}
-          <MenuTriggerWrap ref={menuTriggerRef}>
-            <BurgerMenu
-              type="button"
-              aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
-              aria-expanded={menuOpen}
-              onClick={toggleMenu}
-            >
-              <span />
-              <span />
-              <span />
-            </BurgerMenu>
-          </MenuTriggerWrap>
-        </HeaderRight>
-        {menuOpen && (
-          <Menu ref={menuRef}>
-            <MenuHeader>
-              {isLoggedIn ? (
-                <>
-                  <MenuHeaderTitle>{username || `Nutzer ${userId}`}</MenuHeaderTitle>
-                  <MenuHeaderSubtitle>{isAdmin ? 'Eingeloggt · Admin' : 'Eingeloggt'}</MenuHeaderSubtitle>
-                </>
-              ) : (
-                <>
-                  <MenuHeaderTitle>Gastmodus</MenuHeaderTitle>
-                  <MenuHeaderSubtitle>Einloggen für Favoriten, Challenges und Profil</MenuHeaderSubtitle>
-                </>
-              )}
-            </MenuHeader>
-
-            <MenuSection>
-              <MenuSectionTitle>Entdecken</MenuSectionTitle>
-              <MenuActionButton type="button" onClick={openGlobalCheckin}><MenuLabel icon={IceCreamCone}>Eis einchecken</MenuLabel></MenuActionButton>
-              <MenuItemLink to="/aktionen" onClick={closeMenu}><MenuLabel icon={CalendarDays}>Aktionen &amp; Rückblicke</MenuLabel></MenuItemLink>
-              <MenuItemLink to="/" end onClick={closeMenu}><MenuLabel icon={Map}>Karte</MenuLabel></MenuItemLink>
-              <MenuItemLink to="/photo-challenge" onClick={closeMenu}>
-                <MenuLabel icon={Camera}>Foto-Challenges</MenuLabel>
-                {hasActivePhotoChallenge && <MenuItemBadge>AKTIV</MenuItemBadge>}
-              </MenuItemLink>
-              <MenuItemLink to="/dashboard" onClick={closeMenu}>
-                <MenuLabel icon={Activity}>Aktivitäten</MenuLabel>
-                {dashboardNewCount > 0 && <MenuItemBadge>{dashboardNewCount} neu</MenuItemBadge>}
-              </MenuItemLink>
-              <MenuItemLink to="/ranking" onClick={closeMenu}><MenuLabel icon={Trophy}>Top Eisdielen</MenuLabel></MenuItemLink>
-              <MenuItemLink to="/statistics" onClick={closeMenu}><MenuLabel icon={BarChart3}>Statistiken</MenuLabel></MenuItemLink>
-              <MenuItemLink to="/routes" onClick={closeMenu}><MenuLabel icon={Route}>Routen</MenuLabel></MenuItemLink>
-            </MenuSection>
-
-            <MenuDivider />
-            <MenuSection>
-              <MenuSectionTitle>Erlebnisse &amp; Rückblicke</MenuSectionTitle>
-              <MenuItemLink to="/ice-tour" onClick={closeMenu}><MenuLabel icon={Bike}>Ice-Tour 2026 Rückblick</MenuLabel></MenuItemLink>
-            </MenuSection>
-            <MenuDivider />
-            {isLoggedIn ? (
-              <>
-                <MenuSection>
-                  <MenuSectionTitle>Mein Konto</MenuSectionTitle>
-                  <MenuItemLink to={`/user/${userId}`} onClick={closeMenu}><MenuLabel icon={UserRound}>Profil</MenuLabel></MenuItemLink>
-                  <MenuItemLink to="/challenge" onClick={closeMenu}><MenuLabel icon={Target}>Challenges</MenuLabel></MenuItemLink>
-                  <MenuItemLink to="/ice-date" onClick={closeMenu}><MenuLabel icon={CalendarDays}>Eis-Dates</MenuLabel></MenuItemLink>
-                  {canAccessMaintenanceBoard && <MenuItemLink to="/pflege" onClick={closeMenu}><MenuLabel icon={Wrench}>Pflegeboard</MenuLabel></MenuItemLink>}
-                  {userId == 2 && (<MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}><MenuLabel icon={BarChart3}>Wochenstatistik</MenuLabel></MenuItemLink>)}
-                  {userId == 2 && (<MenuItemLink to="/admin/push-stats" onClick={closeMenu}><MenuLabel icon={Bell}>Push-Statistik</MenuLabel></MenuItemLink>)}
-                  <MenuActionButton
-                    type="button"
-                    onClick={() => {
-                      setShowSubmitNewIceShop(true);
-                      closeMenu();
-                    }}
-                  >
-                    <MenuLabel icon={Store}>Eisdiele hinzufügen</MenuLabel>
-                  </MenuActionButton>
-                </MenuSection>
-                {isAdmin && (
-                  <>
-                    <MenuDivider />
-                    <MenuSection>
-                      <MenuSectionTitle>Admin</MenuSectionTitle>
-                      <MenuItemLink to="/admin/weekly-stats" onClick={closeMenu}><MenuLabel icon={BarChart3}>Wochenstatistik</MenuLabel></MenuItemLink>
-                      <MenuItemLink to="/admin/push-stats" onClick={closeMenu}><MenuLabel icon={Bell}>Push-Statistik</MenuLabel></MenuItemLink>
-                      <MenuItemLink to="/systemmeldungenform" onClick={closeMenu}><MenuLabel icon={Megaphone}>Systemmeldung erstellen</MenuLabel></MenuItemLink>
-                      <MenuSubmenuButton
-                        type="button"
-                        onClick={() => setAwardsActionsOpen((isOpen) => !isOpen)}
-                        aria-expanded={awardsActionsOpen}
-                        $active={isAwardsActionsActive}
-                      >
-                        <MenuLabel icon={Award}>Awards / Aktionen</MenuLabel>
-                        <MenuSubmenuIndicator>{awardsActionsOpen ? '-' : '+'}</MenuSubmenuIndicator>
-                      </MenuSubmenuButton>
-                      {awardsActionsOpen && (
-                        <MenuSubmenu>
-                          <MenuSubItemLink to="/awards-admin" onClick={closeMenu}><MenuLabel icon={Award}>Awards verwalten</MenuLabel></MenuSubItemLink>
-                          <MenuSubItemLink to="/summer-campaign-admin" onClick={closeMenu}><MenuLabel icon={Sun}>Sommer-QR-Aktion verwalten</MenuLabel></MenuSubItemLink>
-                          <MenuSubItemLink to="/admin/tour-de-glace" onClick={closeMenu}><MenuLabel icon={Bike}>Tour de Glace verwalten</MenuLabel></MenuSubItemLink>
-                          <MenuSubItemLink to="/admin/tour-de-glace-femme" onClick={closeMenu}><MenuLabel icon={Bike}>Tour de Glace Femmes verwalten</MenuLabel></MenuSubItemLink>
-                        </MenuSubmenu>
-                      )}
-                      <MenuItemLink to="/admin/instagram" onClick={closeMenu}><MenuLabel icon={Instagram}>Instagram-Fotoexport</MenuLabel></MenuItemLink>
-                      <MenuItemLink to="/photo-challenge-admin" onClick={closeMenu}><MenuLabel icon={Camera}>Fotochallenges verwalten</MenuLabel></MenuItemLink>
-                      <MenuItemLink to="/shop-change-requests" onClick={closeMenu}><MenuLabel icon={ClipboardList}>Änderungsvorschläge</MenuLabel></MenuItemLink>
-                    </MenuSection>
-                  </>
-                )}
-                <MenuDivider />
-                <MenuSection>
-                  <MenuActionButton onClick={() => { logout(); closeMenu(); }} type="button" $danger>
-                    <MenuLabel icon={LogOut}>Ausloggen</MenuLabel>
-                  </MenuActionButton>
-                </MenuSection>
-              </>
-            ) : (
-              <MenuSection>
-                <MenuSectionTitle>Konto</MenuSectionTitle>
-                <MenuActionButton onClick={() => { setShowLoginModal(true); closeMenu(); }} type="button">
-                  <MenuLabel icon={LogIn}>Einloggen</MenuLabel>
-                </MenuActionButton>
-              </MenuSection>
-            )}
-
-            <MenuDivider />
-            <MenuSection>
-              <MenuSectionTitle>Info</MenuSectionTitle>
-              <MenuItemLink to="/impressum" onClick={closeMenu}><MenuLabel icon={Info}>Über diese Website</MenuLabel></MenuItemLink>
-              <MenuItemAnchor
-                href="https://www.instagram.com/ice_app.de?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
-                target="_blank"
-                rel="noreferrer"
-                onClick={closeMenu}
-              >
-                <MenuLabel icon={Instagram}>Instagram</MenuLabel>
-              </MenuItemAnchor>
-            </MenuSection>
-          </Menu>
-        )}
-      </HeaderContainer>
+      <HeaderNavigation
+        logo={seasonalState.headerLogo}
+        promoIcon={promoIconSrc}
+        userId={userId}
+        username={username}
+        currentLevel={currentLevel}
+        isLoggedIn={isLoggedIn}
+        avatarSrc={headerAvatarSrc}
+        progress={progress}
+        menuOpen={menuOpen}
+        onMenuChange={open => {
+          setNotificationsOpen(false);
+          setMenuOpen(open);
+        }}
+        notificationsOpen={notificationsOpen}
+        onNotificationsChange={open => {
+          setMenuOpen(false);
+          setNotificationsOpen(open);
+        }}
+        onCheckin={openGlobalCheckin}
+        checkinOpen={showGlobalCheckin}
+        onLogin={openLogin}
+        onAddShop={() => { closeMenu(); setShowSubmitNewIceShop(true); }}
+        onLogout={() => { closeMenu(); logout(); }}
+        actionCount={actionHubCount}
+        hasActivePhotoChallenge={hasActivePhotoChallenge}
+        dashboardNewCount={dashboardNewCount}
+      />
       {showLoginModal &&
         <LoginModal
           userId={userId}
           isLoggedIn={isLoggedIn}
           login={login}
-          setShowLoginModal={setShowLoginModal}
+          reloadAfterLogin={!openCheckinAfterLogin}
+          setShowLoginModal={open => {
+            setShowLoginModal(open);
+            if (!open) setOpenCheckinAfterLogin(false);
+          }}
         />
       }
       {showSubmitNewIceShop && (
@@ -959,659 +755,6 @@ const Header = ({ refreshShops }) => {
 
 export default Header;
 
-const MenuLabel = ({ icon: Icon, children }) => (
-  <MenuLabelRoot>
-    <MenuItemIcon as={Icon} size={18} strokeWidth={2} aria-hidden="true" />
-    <span>{children}</span>
-  </MenuLabelRoot>
-);
-
-const MenuLabelRoot = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  flex: 1 1 auto;
-  line-height: 1.2;
-`;
-
-const MenuItemIcon = styled.span`
-  display: block;
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  color: currentColor;
-`;
-
-const HeaderContainer = styled.header`
-  --header-control-height: 44px;
-  --header-control-radius: 12px;
-  --header-control-color: #2f2100;
-  --header-control-border: rgba(255, 255, 255, 0.62);
-  --header-control-background: rgba(255, 255, 255, 0.38);
-  --header-control-hover: rgba(255, 255, 255, 0.68);
-  --header-control-active: rgba(255, 255, 255, 0.92);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background-color: #ffb522;
-  position: relative;
-  z-index: ${({ $menuOpen }) => ($menuOpen ? 1600 : 1200)};
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-sizing: border-box;
-  width: 100%;
-
-  > * {
-    position: relative;
-  }
-
-  @media (max-width: 420px) {
-    --header-control-height: 40px;
-    gap: 8px;
-    padding: 8px;
-  }
-
-  @media (min-width: 421px) and (max-width: 768px) {
-    --header-control-height: 42px;
-  }
-`;
-
-const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 0 auto;
-  color: black;
-
-  @media (max-width: 768px) {
-    flex: 1 1 auto;
-    min-width: 0;
-    justify-content: center;
-  }
-
-  @media (min-width: 769px) {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    z-index: 0;
-  }
-
-  @media (min-width: 1450px) and (max-width: 1625px) {
-    left: calc(50% + 24px);
-  }
-
-  @media (min-width: 1300px) and (max-width: 1449px) {
-    left: calc(50% + 44px);
-  }
-
-  @media (min-width: 1200px) and (max-width: 1299px) {
-    left: calc(50% + 68px);
-  }
-
-  @media (min-width: 1100px) and (max-width: 1199px) {
-    left: calc(50% + 92px);
-  }
-`;
-
-const Logo = styled.img`
-  height: 100px;
-  @media (max-width: 768px) {
-    height: 60px;
-  }
-
-  @media (max-width: 420px) {
-    height: 48px;
-    max-width: 100%;
-  }
-`;
-
-const DesktopNav = styled.nav`
-  display: none;
-  align-items: center;
-  gap: 6px;
-  margin-left: 4px;
-
-  @media (min-width: 1100px) {
-    display: flex;
-  }
-
-  @media (min-width: 1100px) and (max-width: 1625px) {
-    gap: 2px;
-  }
-`;
-
-const DesktopNavLink = styled(NavLink)`
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  height: var(--header-control-height);
-  box-sizing: border-box;
-  color: var(--header-control-color);
-  text-decoration: none;
-  white-space: nowrap;
-  font-weight: 800;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--header-control-radius);
-  background: rgba(255, 255, 255, 0.14);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    background: var(--header-control-hover);
-    border-color: var(--header-control-border);
-  }
-
-  &.active {
-    background: var(--header-control-active);
-    border-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 7px rgba(71, 46, 0, 0.12);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(47, 33, 0, 0.28);
-    outline-offset: 2px;
-  }
-
-  @media (min-width: 1100px) and (max-width: 1625px) {
-    gap: 5px;
-    font-size: 0.92rem;
-    padding: 0 8px;
-  }
-`;
-
-const DesktopNavBadge = styled.span`
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
-  transform: rotate(10deg);
-  transform-origin: center;
-  box-shadow: 0 2px 6px rgba(120, 12, 12, 0.28);
-
-  @media (min-width: 1100px) and (max-width: 1625px) {
-    top: -7px;
-    right: -6px;
-  }
-`;
-
-const ActivityBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: #c2410c;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 2px 6px rgba(124, 45, 18, 0.22);
-`;
-
-const HeaderRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-
-  @media (max-width: 768px) {
-    flex: 0 1 auto;
-    min-width: 0;
-  }
-
-  @media (max-width: 420px) {
-    gap: 6px;
-  }
-
-  @media (min-width: 1100px) and (max-width: 1625px) {
-    gap: 6px;
-  }
-`;
-
-const AccountCluster = styled.div`
-  display: flex;
-  align-items: center;
-  min-height: var(--header-control-height);
-  height: var(--header-control-height);
-  box-sizing: border-box;
-  background: var(--header-control-background);
-  border-radius: var(--header-control-radius);
-  border: 1px solid var(--header-control-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-
-  @media (max-width: 768px) {
-    min-width: 0;
-    max-width: none;
-    flex: 0 1 auto;
-  }
-`;
-
-const AccountClusterDivider = styled.div`
-  width: 1px;
-  align-self: stretch;
-  background: rgba(47, 33, 0, 0.12);
-`;
-
-const NotificationBellWrap = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--header-control-height);
-  min-height: var(--header-control-height);
-  height: var(--header-control-height);
-  color: #2f2100;
-  padding: 0 2px 0 4px;
-
-  @media (max-width: 768px) {
-    min-width: var(--header-control-height);
-  }
-`;
-
-const GlobalCheckinButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.42rem;
-  height: var(--header-control-height);
-  min-height: var(--header-control-height);
-  box-sizing: border-box;
-  padding: 0 14px;
-  border: 1px solid rgba(47, 33, 0, 0.18);
-  border-radius: var(--header-control-radius);
-  background: var(--header-control-active);
-  color: var(--header-control-color);
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 2px 7px rgba(71, 46, 0, 0.12);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-
-  &:hover {
-    background: #fff;
-    border-color: rgba(47, 33, 0, 0.28);
-  }
-
-  &[aria-expanded='true'] {
-    background: #fff;
-    border-color: rgba(47, 33, 0, 0.28);
-    box-shadow: 0 2px 8px rgba(71, 46, 0, 0.18);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(47, 33, 0, 0.28);
-    outline-offset: 2px;
-  }
-
-  @media (max-width: 920px) {
-    width: var(--header-control-height);
-    padding: 0;
-
-    span {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-    }
-  }
-
-  @media (max-width: 420px) {
-    width: var(--header-control-height);
-  }
-`;
-
-const UserStatusLink = styled(Link)`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: #2f2100;
-  background: transparent;
-  border-radius: var(--header-control-radius);
-  padding: 5px 10px 5px 6px;
-  border: 1px solid transparent;
-  min-height: var(--header-control-height);
-  height: var(--header-control-height);
-  box-sizing: border-box;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.35);
-  }
-
-  @media (max-width: 768px) {
-    padding: 0 8px 0 6px;
-  }
-`;
-
-const UserStatusAvatar = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #2f2100;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  @media (max-width: 768px) {
-    width: 28px;
-    height: 28px;
-  }
-`;
-
-const UserStatusText = styled.div`
-  display: flex;
-  flex-direction: column;
-  line-height: 1.05;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
-const UserStatusLabel = styled.span`
-  font-size: 0.65rem;
-  opacity: 0.85;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-`;
-
-const UserStatusName = styled.span`
-  font-size: 0.82rem;
-  font-weight: 800;
-`;
-
-const LoginHeaderButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  box-sizing: border-box;
-  border: 1px solid var(--header-control-border);
-  background: var(--header-control-background);
-  color: var(--header-control-color);
-  border-radius: var(--header-control-radius);
-  padding: 0 14px;
-  min-height: var(--header-control-height);
-  height: var(--header-control-height);
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-
-  .login-icon {
-    display: none;
-    flex-shrink: 0;
-  }
-
-  &:hover {
-    background: var(--header-control-hover);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(47, 33, 0, 0.28);
-    outline-offset: 2px;
-  }
-
-  @media (max-width: 520px) {
-    width: var(--header-control-height);
-    min-width: var(--header-control-height);
-    padding: 0;
-
-    .login-icon {
-      display: block;
-    }
-
-    .login-text {
-      display: none;
-    }
-  }
-`;
-
-const BurgerMenu = styled.button`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  box-sizing: border-box;
-  color: var(--header-control-color);
-  background: var(--header-control-background);
-  border: 1px solid var(--header-control-border);
-  border-radius: var(--header-control-radius);
-  width: var(--header-control-height);
-  height: var(--header-control-height);
-  padding: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-
-  span {
-    height: 3px;
-    background: currentColor;
-    width: 20px;
-    border-radius: 999px;
-  }
-
-  &:hover {
-    background: var(--header-control-hover);
-  }
-
-  &[aria-expanded='true'] {
-    background: var(--header-control-active);
-    border-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 7px rgba(71, 46, 0, 0.12);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(47, 33, 0, 0.28);
-    outline-offset: 2px;
-  }
-`;
-
-const MenuTriggerWrap = styled.div`
-  position: relative;
-  z-index: 2;
-`;
-
-const Menu = styled.nav`
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 16px;
-  width: min(360px, calc(100vw - 24px));
-  max-height: min(78vh, calc(100dvh - 88px));
-  box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: rgba(255, 252, 243, 0.98);
-  padding: 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(47, 33, 0, 0.12);
-  box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
-  z-index: 3;
-  color: #2f2100;
-
-  @media (max-width: 480px) {
-    left: 0;
-    right: 0;
-    width: auto;
-    max-width: none;
-    border-radius: 0 0 16px 16px;
-  }
-`;
-
-const MenuHeader = styled.div`
-  padding: 8px 10px 10px;
-`;
-
-const MenuHeaderTitle = styled.div`
-  font-size: 0.98rem;
-  font-weight: 800;
-  color: #231900;
-`;
-
-const MenuHeaderSubtitle = styled.div`
-  margin-top: 2px;
-  font-size: 0.78rem;
-  color: rgba(47, 33, 0, 0.7);
-  line-height: 1.25;
-`;
-
-const MenuSection = styled.div`
-  display: grid;
-  gap: 2px;
-`;
-
-const MenuSectionTitle = styled.div`
-  padding: 6px 10px 4px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(47, 33, 0, 0.62);
-`;
-
-const MenuDivider = styled.hr`
-  margin: 8px 0;
-  border: none;
-  border-top: 1px solid rgba(47, 33, 0, 0.1);
-`;
-
-const menuItemBase = `
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 95%;
-  min-height: 25px;
-  padding: 9px 10px;
-  border-radius: 10px;
-  color: #2f2100;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.2;
-  text-decoration: none;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    background: rgba(255, 181, 34, 0.18);
-    color: #231900;
-  }
-`;
-
-const MenuItemLink = styled(NavLink)`
-  ${menuItemBase}
-
-  &.active {
-    background: rgba(255, 181, 34, 0.24);
-    box-shadow: inset 0 0 0 1px rgba(255, 181, 34, 0.35);
-  }
-`;
-
-const MenuItemAnchor = styled.a`
-  ${menuItemBase}
-`;
-
-const MenuActionButton = styled.button`
-  ${menuItemBase}
-  width: 100%;
-  min-height: 40px;
-  ${({ $danger }) =>
-    $danger
-      ? `
-    color: #9f1f1f;
-    &:hover {
-      background: rgba(220, 38, 38, 0.10);
-      color: #861313;
-    }
-  `
-      : ''}
-`;
-
-const MenuSubmenuButton = styled.button`
-  ${menuItemBase}
-  justify-content: space-between;
-  width: 100%;
-  min-height: 40px;
-  ${({ $active }) => ($active ? `
-    background: rgba(255, 181, 34, 0.24);
-    box-shadow: inset 0 0 0 1px rgba(255, 181, 34, 0.35);
-  ` : '')}
-`;
-
-const MenuSubmenuIndicator = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  background: rgba(47, 33, 0, 0.08);
-  font-size: 0.95rem;
-  font-weight: 900;
-`;
-
-const MenuSubmenu = styled.div`
-  display: grid;
-  gap: 2px;
-  margin: 0 0 2px 0.8rem;
-  padding-left: 0.55rem;
-  border-left: 2px solid rgba(255, 181, 34, 0.38);
-`;
-
-const MenuSubItemLink = styled(MenuItemLink)`
-  width: calc(95% - 0.8rem);
-  min-height: 22px;
-  padding: 8px 10px;
-  font-size: 0.88rem;
-`;
-
-const MenuItemBadge = styled.span`
-  margin-left: auto;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
-`;
-
 const OverlayBackground = styled.div`
   position: fixed;
   top: 0;
@@ -1661,83 +804,6 @@ const ButtonWrapper = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-`;
-
-const GewinnspielIcon = styled.div`
-  position: relative;
-  cursor: pointer;
-  margin-right: 8px;
-  width: 80px;
-  height: 80px;
-  display: grid;
-  place-items: center;
-
-  img {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    transition: transform 0.2s;
-  }
-
-  &:hover img {
-    transform: scale(1.1);
-  }
-
-  @media (max-width: 768px) {
-    width: 50px;
-    height: 50px;
-  }
-
-  @media (max-width: 420px) {
-    margin-right: 0;
-    width: 42px;
-    height: 42px;
-  }
-`;
-
-const ActionHubBadge = styled.span`
-  position: absolute;
-  top: 4px;
-  right: 2px;
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.45rem;
-  height: 1.45rem;
-  border-radius: 999px;
-  background: #d93025;
-  color: #ffffff;
-  border: 2px solid #ffffff;
-  font-size: 0.78rem;
-  font-weight: 900;
-  line-height: 1;
-
-  @media (max-width: 768px) {
-    top: -10px;
-    right: -11px;
-    min-width: 1.16rem;
-    height: 1.16rem;
-    border-width: 1.5px;
-    font-size: 0.64rem;
-  }
-
-  @media (max-width: 420px) {
-    top: -11px;
-    right: -12px;
-    min-width: 1.08rem;
-    height: 1.08rem;
-    font-size: 0.6rem;
-  }
-`;
-
-const PromoIconsContainer = styled.div`
-  display: flex;
-  align-items: center;
-
-  @media (max-width: 420px) {
-    flex: 0 0 auto;
-  }
 `;
 
 const UserLink = styled(Link)`

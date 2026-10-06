@@ -8,7 +8,7 @@ const KoMatches = ({ koMatches, openKoModal, getKoRoundLabel, activePhase, koMat
   }
 
   const activeRound = Number(activePhase.replace('ko_round_', ''));
-  const rounds = Array.from(koMatchesByRound.keys()).sort((a, b) => a - b);
+  const rounds = Array.from(koMatchesByRound.keys()).filter(round => round === activeRound).sort((a, b) => a - b);
 
   if (!rounds.length) {
     return <S.EmptyState>Für diese Phase liegen keine Duelle vor.</S.EmptyState>;

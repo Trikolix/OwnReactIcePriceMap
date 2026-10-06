@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import * as S from './PhotoChallengeVoting.styles';
-import { buildAssetUrl } from './utils';
+import { CountryBadge } from './PhotoVoteDialog';
+import { buildAssetUrl, getPhotoChallengeCountry } from './utils';
 
 const ResultMeta = ({ result }) => (
   <S.WinnerMeta>
+    <CountryBadge country={getPhotoChallengeCountry(result)} />
     <h2>{result.title || `Bild #${result.image_id}`}</h2>
     <p>
       von{' '}
@@ -17,7 +19,7 @@ const ResultMeta = ({ result }) => (
       )}
     </p>
     {result.beschreibung && <small>{result.beschreibung}</small>}
-    <S.WinnerSubline>Entschieden in Runde {result.round}</S.WinnerSubline>
+    {result.round && <S.WinnerSubline>Entschieden in Runde {result.round}</S.WinnerSubline>}
   </S.WinnerMeta>
 );
 

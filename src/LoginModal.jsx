@@ -8,7 +8,7 @@ import SocialAuthButtons from "./components/SocialAuthButtons";
 
 const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,19}$/;
 
-const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
+const LoginModal = ({ setShowLoginModal, initialMode = 'login', reloadAfterLogin = true }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(initialMode === 'register');
   const [isResetMode, setIsResetMode] = useState(false);
   const [message, setMessage] = useState('');
@@ -51,7 +51,7 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
 
       const data = await response.json();
       if (data.status === 'success') {
-        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
+        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel, reload: reloadAfterLogin });
         setMessage('Login erfolgreich!');
         setLoginSuccess(true);
         setTimeout(() => {
@@ -132,7 +132,7 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
       const data = await response.json();
       setMessage(data.message);
       if (data.status === 'success') {
-        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel });
+        login(data.userId, data.username, data.token, data.expires_at, { currentLevel: data.currentLevel, reload: reloadAfterLogin });
         resetForm();
         setLoginSuccess(true);
         setTimeout(() => {
@@ -298,6 +298,7 @@ const LoginModal = ({ setShowLoginModal, initialMode = 'login' }) => {
 
             {!isResetMode && !isSocialCompletion && (
               <SocialAuthButtons
+                reloadAfterLogin={reloadAfterLogin}
                 mode={isRegisterMode ? "register" : "login"}
                 desiredUsername={isRegisterMode ? username : ""}
                 acceptedTerms={acceptedTerms}

@@ -32,9 +32,15 @@ export const FullPage = styled.div`
 `;
 
 export const Content = styled.main`
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: clamp(16px, 3vw, 32px);
+  box-sizing: border-box;
+  h1, h2, h3, h4 { text-align: left; text-shadow: none; overflow-wrap: anywhere; }
+  button, a { min-height: 44px; }
+  input, textarea { font-size: 16px; }
+  button:focus-visible, a:focus-visible { outline: 3px solid #835500; outline-offset: 3px; }
+  * { box-sizing: border-box; }
 `;
 
 export const HeroSection = styled.header`
@@ -45,9 +51,9 @@ export const HeroSection = styled.header`
   margin-bottom: 1.5rem;
   padding: clamp(1rem, 2vw, 1.5rem);
   border: 1px solid #eee7d9;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #fffdf8 0%, #fff5dc 100%);
-  box-shadow: 0 16px 34px rgba(48, 39, 13, 0.06);
+  border-radius: 18px;
+  background: #fffdf8;
+  box-shadow: none;
 
   h1 {
     margin: 0;
@@ -119,9 +125,9 @@ export const ActionMessage = styled.div`
 
 export const PhaseSlider = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  overflow-x: auto;
   margin-bottom: 1.5rem;
   padding: 0.2rem 0.15rem 0.55rem;
   scrollbar-width: thin;
@@ -510,7 +516,7 @@ export const KoBracketShell = styled.section`
   border: 1px solid #efe8d9;
   border-radius: 24px;
   background: linear-gradient(135deg, #fffdf8 0%, #fff 100%);
-  box-shadow: 0 18px 42px rgba(48, 39, 13, 0.08);
+  box-shadow: none;
 `;
 
 export const KoBracketIntro = styled.div`
@@ -567,17 +573,9 @@ export const KoBracketScroller = styled.div`
 
 export const KoBracket = styled.div`
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(250px, 285px);
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  gap: 2rem;
-  min-width: max-content;
-
-  @media (max-width: 720px) {
-    /* One complete round fits inside the page and bracket padding; later rounds remain swipeable. */
-    grid-auto-columns: minmax(0, calc(100vw - 4rem));
-    gap: 1rem;
-  }
+  min-width: 0;
 `;
 
 export const KoBracketColumn = styled.div`
@@ -714,14 +712,15 @@ export const WinnerSection = styled.section`
 `;
 
 export const WinnerCard = styled.div`
-  background: linear-gradient(135deg, #ffc757, #ff5ca4);
-  border-radius: 32px;
+  background: #fff8e4;
+  border: 1px solid #e9ce8b;
+  border-radius: 18px;
   padding: clamp(1rem, 4vw, 2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 `;
 
 export const WinnerBadge = styled.span`
@@ -739,22 +738,23 @@ export const WinnerImageWrapper = styled.div`
   max-width: 520px;
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
 `;
 
 export const ThirdPlaceCard = styled.div`
   margin: 1.5rem auto 0;
   width: min(100%, 760px);
+  box-sizing: border-box;
   padding: clamp(1rem, 3vw, 1.5rem);
   border: 1px solid #f0d8a1;
   border-radius: 24px;
   background: linear-gradient(135deg, #fff8e8, #fff);
-  box-shadow: 0 18px 42px rgba(20, 21, 56, 0.08);
+  box-shadow: none;
 `;
 
 export const ThirdPlaceContent = styled.div`
   display: grid;
-  grid-template-columns: minmax(140px, 220px) 1fr;
+  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
   align-items: center;
   gap: 1.25rem;
   margin-top: 1rem;
@@ -779,6 +779,9 @@ export const WinnerImage = styled.img`
 `;
 
 export const WinnerMeta = styled.div`
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
   text-align: center;
   color: #4a3c2f;
 
@@ -806,6 +809,12 @@ export const WinnerSubline = styled.span`
 `;
 
 export const WinnerUserLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: inherit;
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -1450,4 +1459,10 @@ export const ResultImage = styled.img`
 export const ResultWins = styled.span`
   font-weight: 700;
   color: #c35b00;
+`;
+
+export const Journey = styled.ol`
+  display: flex; flex-wrap: wrap; list-style: none; padding: 0; gap: 12px; margin: 16px 0;
+  li { padding: 8px 12px; border-radius: 10px; background: #f2eadb; font-size: 14px; color: #756951; }
+  li[aria-current=step] { color: #2f2100; font-weight: 750; background: #fff0ce; }
 `;

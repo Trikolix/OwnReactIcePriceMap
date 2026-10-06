@@ -6,6 +6,7 @@ import NewAwards from "./components/NewAwards";
 import OpeningHoursEditor from "./components/OpeningHoursEditor";
 import { createEmptyOpeningHours, hydrateOpeningHours } from "./utils/openingHours";
 import { getShopEditAccess, isValidShopPosition } from "./utils/shopEditing";
+import CreateIceShopWizard from "./components/CreateIceShopWizard";
 
 const PLACE_TYPE_GUIDANCE = {
   ice_shop: {
@@ -53,6 +54,7 @@ const SubmitIceShopModal = ({
   const [isGeocoding, setIsGeocoding] = useState(null);
   const [now, setNow] = useState(Date.now);
   const geocodingRequest = useRef(null);
+  const closeTimer = useRef(null);
   const [openingHoursData, setOpeningHoursData] = useState(() =>
     hydrateOpeningHours(existingIceShop?.openingHoursStructured, existingIceShop?.opening_hours_note || "")
   );
@@ -93,6 +95,15 @@ const SubmitIceShopModal = ({
     }
     return number.toFixed(6);
   };
+
+  useEffect(() => {
+    if (!showForm) return;
+    setMessage('');
+    setSubmitted(false);
+    setAwards([]);
+    setLevelUpInfo(null);
+    return () => clearTimeout(closeTimer.current);
+  }, [showForm]);
 
   useEffect(() => {
     setNow(Date.now());
@@ -330,13 +341,13 @@ const SubmitIceShopModal = ({
               setAwards(data.new_awards);
             }
           } else if (autoCloseAfterSuccess) {
-            setTimeout(() => {
+            closeTimer.current = setTimeout(() => {
               setMessage("");
               setShowForm(false);
             }, 2000);
           }
         } else {
-          setTimeout(() => {
+          closeTimer.current = setTimeout(() => {
             setMessage("");
             setShowForm(false);
           }, 2500);
@@ -418,7 +429,31 @@ const SubmitIceShopModal = ({
     }
   };
 
-  return showForm && (
+  if (!showForm) return null;
+
+  if (!isEditMode) {
+    return <CreateIceShopWizard
+      values={{ name, adresse, website, placeType, temporaryDuration, temporaryEndDate, openingHoursData }}
+      changes={{ setName, setAdresse: (value) => { setAdresse(value); setPositionConfirmed(false); },
+        setWebsite, setPlaceType, setTemporaryDuration, setTemporaryEndDate, setOpeningHoursData }}
+      position={{ latitude, longitude, mapLatitude, mapLongitude, hasValidPosition, isPositionEditing,
+        isGeocoding, busy: positionBusy, changeLatitude, changeLongitude, startPositionEdit,
+        cancelPositionEdit, confirmPosition, handleGeocode, handleReverseGeocode }}
+      selectedExternalSource={selectedExternalSource}
+      temporaryEnd={resolveTemporaryEnd()}
+      formatLocalDate={formatLocalDate}
+      message={message}
+      clearMessage={() => setMessage('')}
+      isSubmitting={isSubmitting}
+      submitted={submitted}
+      awards={awards}
+      levelUpInfo={levelUpInfo}
+      onSubmit={submit}
+      onClose={() => setShowForm(false)}
+    />;
+  }
+
+  return (
     <Overlay>
       <StyledModal>
         <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>

@@ -41,4 +41,39 @@ same(streakSummary(dates('2026-09-07'), [], 'week', clockAt('2026-09-21'))['valu
 $payload=streakPayload(['states'=>['day'=>['balance'=>2,'cursor'=>'2026-09-18'],'week'=>['balance'=>1,'cursor'=>'2026-09-14']], 'real'=>['day'=>dates('2026-09-17'),'week'=>dates('2026-09-14')], 'protected'=>['day'=>[],'week'=>[]]],clockAt('2026-09-18'),false);
 same(isset($payload['freezes']),false,'Public payload has no wallet');
 same(isset($payload['last_freeze']),false,'Public payload has no private consumption metadata');
+same(isset($payload['day']['history']),false,'Public payload has no private history');
+same(isset($payload['week']['reward_progress']),false,'Public payload has no reward progress');
+$insightsData = ['real'=>['day'=>dates('2026-09-14','2026-09-15','2026-09-18'),'week'=>dates('2026-09-14')], 'ledger'=>[
+ ['type'=>'day','kind'=>'qualify','period'=>'2026-09-14'],
+ ['type'=>'day','kind'=>'qualify','period'=>'2026-09-18'],
+ ['type'=>'day','kind'=>'qualify','period'=>'2026-09-18'],
+ ['type'=>'day','kind'=>'qualify','period'=>'2026-09-19'],
+ ['type'=>'day','kind'=>'consume','period'=>'2026-09-16'],
+ ['type'=>'week','kind'=>'qualify','period'=>'2026-09-14'],
+]];
+$protected=dates('2026-09-16','2026-09-17');
+$summary=streakSummary($insightsData['real']['day'],$protected,'day',clockAt('2026-09-18 12:00'));
+$insights=streakOwnerInsights($insightsData,$summary,$protected,'day',clockAt('2026-09-18 12:00'));
+same($insights['reward_progress'],['current'=>2,'target'=>7,'remaining'=>5],'Progress counts unique qualified real days only');
+same(count($insights['history']),7,'Seven days of history');
+same($insights['history'][4]['state'],'protected','History marks protection');
+same($insights['history'][6]['state'],'checked_in','Today is checked in');
+$insightsData['real']['day']['2026-09-16']=true;
+$insights=streakOwnerInsights($insightsData,$summary,$protected,'day',clockAt('2026-09-18 12:00'));
+same($insights['history'][4]['state'],'checked_in','Backfill takes visual precedence over protection');
+same($insights['reward_progress']['current'],2,'Backfill does not invent a reward');
+$summary=streakSummary($insightsData['real']['week'],[],'week',clockAt('2026-09-18'));
+$insights=streakOwnerInsights($insightsData,$summary,[],'week',clockAt('2026-09-18'));
+same(count($insights['history']),4,'Four weeks of history');
+same($insights['reward_progress'],['current'=>1,'target'=>4,'remaining'=>3],'Weekly progress is independent');
+$summary=streakSummary($insightsData['real']['day'],[],'day',clockAt('2026-09-21'));
+same(streakOwnerInsights($insightsData,$summary,[],'day',clockAt('2026-09-21'))['reward_progress']['current'],0,'Broken series resets reward progress');
+foreach (['day'=>7,'week'=>4] as $type=>$threshold) {
+    $current='2026-10-05'; $periods=[]; $ledger=[];
+    for ($i=$threshold-1;$i>=0;$i--) { $period=streakNext($current,$type,-$i); $periods[$period]=true; $ledger[]=['type'=>$type,'kind'=>'qualify','period'=>$period]; }
+    $d=['real'=>[$type=>$periods],'ledger'=>$ledger]; $summary=streakSummary($periods,[],$type,clockAt($current));
+    same(streakOwnerInsights($d,$summary,[],$type,clockAt($current))['reward_progress'],['current'=>0,'target'=>$threshold,'remaining'=>$threshold],'Threshold begins next reward cycle '.$type);
+    array_pop($d['ledger']);
+    same(streakOwnerInsights($d,$summary,[],$type,clockAt($current))['reward_progress']['remaining'],1,'Just before reward threshold '.$type);
+}
 echo "Streak calendar tests passed\n";

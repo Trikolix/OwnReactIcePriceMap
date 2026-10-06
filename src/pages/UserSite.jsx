@@ -11,12 +11,13 @@ import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recha
 import RouteCard from '../components/RouteCard';
 import ShopCard from '../components/ShopCard';
 import useStreakStatus from '../hooks/useStreakStatus';
-import { AvatarBadgeFrame, LevelBadge, StreakFlames, FreezeInventory, streakHint } from '../components/ProfileProgress';
+import { AvatarBadgeFrame, LevelBadge } from '../components/ProfileProgress';
+import StreakOverview from '../components/StreakOverview';
 import LevelDisplay from '../components/LevelDisplay';
 import UserSettings from './UserSettings';
 import SystemModal from '../components/SystemModal';
 import MentionInviteModal from '../components/MentionInviteModal';
-import { Sparkles, Calendar, MapPin, IceCream, Snowflake, Flame, CheckCircle2, CircleOff, Heart, SlidersHorizontal } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Heart, SlidersHorizontal } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 import { groupActivities } from '../utils/activityFeed';
@@ -317,21 +318,6 @@ function UserSite() {
   };
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
   const visibleStreaks = progress?.streaks || data?.streaks;
-  const dayStreak = visibleStreaks?.day || {};
-  const weekStreak = visibleStreaks?.week || {};
-  const dayStreakState = dayStreak.state || 'none';
-  const weekStreakState = weekStreak.state || 'none';
-  const dayStreakValue = Number(dayStreak.value || 0);
-  const weekStreakValue = Number(weekStreak.value || 0);
-  const dayStreakHint = streakHint(dayStreak, 'day');
-  const weekStreakHint = streakHint(weekStreak, 'week');
-
-  const renderStreakIcon = (state) => {
-    if (state === 'frozen') return <Snowflake size={18} />;
-    if (state === 'active') return <CheckCircle2 size={18} />;
-    if (state === 'at_risk') return <Flame size={18} />;
-    return <CircleOff size={18} />;
-  };
   const portionBreakdown = [
     { key: 'Kugel', label: 'Kugeleis', value: Number(data?.eisarten?.Kugel || 0) },
     { key: 'Softeis', label: 'Softeis', value: Number(data?.eisarten?.Softeis || 0) },
@@ -735,13 +721,12 @@ function UserSite() {
                   </AvatarCircle><LevelBadge large level={progress?.level_info?.level ?? data.level_info?.level} /></AvatarBadgeFrame>
                   <ProfileInfo>
                     <h1>{data.nutzername}</h1>
-                    <StreakFlames streaks={visibleStreaks} events={progress?.events} />
                     {(data.instagram_account || data.strava_account || isOwnProfile) && (
                       <SocialLinksRow>
                         {data.instagram_account && (
-                          <SocialLink 
-                            href={(data.instagram_account.startsWith('http://') || data.instagram_account.startsWith('https://')) ? data.instagram_account : `https://instagram.com/${data.instagram_account.replace('@', '')}`} 
-                            target="_blank" 
+                          <SocialLink
+                            href={(data.instagram_account.startsWith('http://') || data.instagram_account.startsWith('https://')) ? data.instagram_account : `https://instagram.com/${data.instagram_account.replace('@', '')}`}
+                            target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Instagram Profil"
                           >
@@ -749,9 +734,9 @@ function UserSite() {
                           </SocialLink>
                         )}
                         {data.strava_account && (
-                          <SocialLink 
-                            href={(data.strava_account.startsWith('http://') || data.strava_account.startsWith('https://')) ? data.strava_account : `https://www.strava.com/athletes/${data.strava_account}`} 
-                            target="_blank" 
+                          <SocialLink
+                            href={(data.strava_account.startsWith('http://') || data.strava_account.startsWith('https://')) ? data.strava_account : `https://www.strava.com/athletes/${data.strava_account}`}
+                            target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Strava Profil"
                           >
@@ -778,7 +763,6 @@ function UserSite() {
                 <LevelInlineCard>
                   <LevelDisplay levelInfo={progress?.level_info || data.level_info} />
                 </LevelInlineCard>
-                {isOwnProfile && <FreezeInventory streaks={visibleStreaks} />}
               </ProfileMainColumn>
               <ProfileActions>
                 {isOwnProfile && (
@@ -836,25 +820,8 @@ function UserSite() {
                 <strong>{totalIcePortions}</strong>
                 <small>Kugel · Softeis · Becher</small>
               </HighlightCard>
-              <HighlightCard>
-                <StatIconWrap $tone={dayStreakState}>
-                  {renderStreakIcon(dayStreakState)}
-                </StatIconWrap>
-                <h3>Tages-Streak</h3>
-                <strong>{dayStreakValue} Tage</strong>
-                <small>Rekord: {visibleStreaks?.day_record ?? 0} Tage</small>
-                <small>{dayStreakHint}</small>
-              </HighlightCard>
-              <HighlightCard>
-                <StatIconWrap $tone={weekStreakState}>
-                  {renderStreakIcon(weekStreakState)}
-                </StatIconWrap>
-                <h3>Wochen-Streak</h3>
-                <strong>{weekStreakValue} Wochen</strong>
-                <small>Rekord: {visibleStreaks?.week_record ?? 0} Wochen</small>
-                <small>{weekStreakHint}</small>
-              </HighlightCard>
             </HighlightGrid>
+            <StreakOverview streaks={visibleStreaks} own={isOwnProfile} />
             <AwardsCard>
               <SectionHeader>
                 <h3>Awards</h3>
@@ -1316,7 +1283,7 @@ const SocialLinksRow = styled.div`
   gap: 0.75rem;
   margin-top: 0.5rem;
   justify-content: flex-start;
-  
+
   @media (max-width: 480px) {
     justify-content: center;
   }
@@ -1332,13 +1299,13 @@ const SocialLink = styled.a`
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.9);
     transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
   }
-  
+
   img {
     display: block;
   }

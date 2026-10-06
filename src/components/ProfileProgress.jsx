@@ -31,21 +31,27 @@ const Chip = styled.span`
   @media (prefers-reduced-motion: reduce) { animation: none; }
 `;
 export function streakHint(streak, type) {
-  const name = type === 'day' ? 'Tages-Streak' : 'Wochen-Streak';
-  if (!streak || streak.state === 'none') return `${name}: Noch keine aktive Serie. Ein Check-in startet sie.`;
-  if (streak.state === 'active') return `${name}: ${streak.value}. Für ${type === 'day' ? 'heute' : 'diese Woche'} gesichert.`;
-  const minutes = Math.max(0, Math.ceil(Number(streak.seconds_left || 0) / 60));
-  const remaining = minutes >= 60 ? `${Math.floor(minutes / 60)} Std. ${minutes % 60} Min.` : `${minutes} Min.`;
-  return `${name}: ${streak.value}. ${streak.state === 'frozen' ? 'Letzte Periode durch Freeze geschützt. ' : ''}Noch ${remaining} für einen Check-in; danach wird ein verfügbarer Freeze eingesetzt, sonst endet die Serie.`;
+  const name = type === 'day' ? 'Tages-Serie' : 'Wochen-Serie';
+  return `${name}: ${streak?.value || 0} ${type === 'day' ? 'Tage' : 'Wochen'}. ${streakStatus(streak, type)}`;
 }
-export function StreakFlames({ streaks, events = [], compact = false }) {
+export function streakStatus(streak, type) {
+  const daily = type === 'day';
+  if (!streak || streak.state === 'none') return 'Dein nächster Check-in startet eine neue Serie.';
+  if (streak.state === 'active') return daily ? 'Heute gesichert.' : 'Diese Woche gesichert.';
+  if (streak.state === 'frozen') return daily
+    ? 'Gestern hat dein Schutz die Serie gerettet. Heute ist noch offen.'
+    : 'Letzte Woche hat dein Schutz die Serie gerettet. Diese Woche ist noch offen.';
+  return daily ? 'Für heute fehlt noch ein Check-in.' : 'Für diese Woche fehlt noch ein Check-in.';
+}
+export function StreakFlames({ streaks, events = [], compact = false, showLabels = false }) {
   if (!streaks) return null;
   return <Row $compact={compact}>{['day', 'week'].map(type => {
     const streak = streaks[type];
     const event = events.find(e => e.type === type && ['continue', 'start'].includes(e.kind));
     return <Chip key={`${type}:${event?.id || ''}`} $state={streak?.state} $animate={Boolean(event)} title={streakHint(streak, type)} aria-label={streakHint(streak, type)}>
       <Flame size={16} aria-hidden="true" />{streak?.state === 'frozen' && <Snowflake size={12} aria-hidden="true" />}
-      {streak?.value || 0}<small>{type === 'day' ? 'T' : 'W'}</small>
+      {showLabels && <span>{type === 'day' ? 'Tages-Serie:' : 'Wochen-Serie:'}&nbsp;</span>}
+      {streak?.value || 0}{!showLabels && <small>{type === 'day' ? 'T' : 'W'}</small>}
     </Chip>;
   })}</Row>;
 }
@@ -56,18 +62,21 @@ const FreezeCard = styled.div`
 export function FreezeInventory({ streaks }) {
   if (!streaks?.freezes) return null;
   return <FreezeCard>
-    <strong>❄ Tages-Freezes: {streaks.freezes.day}/2 · Wochen-Freezes: {streaks.freezes.week}/2</strong>
-    <p>Eine persönliche Eisdielen-Challenge gibt je einen Freeze. Sieben echte Streak-Tage geben einen Tages-Freeze, vier echte Streak-Wochen einen Wochen-Freeze. Maximal zwei je Typ; zusätzliche Belohnungen verfallen.</p>
-    <p>Bei einer verpassten Periode wird automatisch ein Freeze eingesetzt. Er erhält deine Serie auch für Awards, zählt aber nicht als Check-in. Tages-Freezes ersetzen keinen Wochen-Check-in.</p>
-    {streaks.last_freeze && <p>Zuletzt eingesetzt: {streaks.last_freeze.type === 'day' ? 'Tages-Freeze am' : 'Wochen-Freeze für die Woche ab'} {new Date(`${streaks.last_freeze.period}T12:00:00`).toLocaleDateString('de-DE')}.</p>}
+    <strong>❄ Dein Serienschutz</strong>
+    <p>Für verpasste Tage: {streaks.freezes.day} von 2 verfügbar. Für verpasste Wochen: {streaks.freezes.week} von 2 verfügbar.</p>
+    <p>Wird automatisch eingesetzt, wenn du einen Tag oder eine Woche verpasst. Deine Serie bleibt erhalten.</p>
+    {streaks.last_freeze && <p>Zuletzt eingesetzt: {streaks.last_freeze.type === 'day' ? 'Schutz für den Tag am' : 'Schutz für die Woche ab'} {new Date(`${streaks.last_freeze.period}T12:00:00`).toLocaleDateString('de-DE')}.</p>}
   </FreezeCard>;
 }
 export function StreakCelebration({ events = [] }) {
   const visible = events.filter(e => ['start', 'continue', 'consume'].includes(e.kind) || (e.kind === 'grant' && e.amount > 0));
   if (!visible.length) return null;
-  return <FreezeCard role="status" aria-live="polite">{visible.map(event => <p key={event.id}>
-    {event.kind === 'grant' ? `❄ ${event.type === 'day' ? 'Tages' : 'Wochen'}-Freeze verdient!` :
-      event.kind === 'consume' ? `❄ ${event.type === 'day' ? 'Tages' : 'Wochen'}-Freeze eingesetzt – Serie geschützt.` :
-        `🔥 ${event.value} ${event.type === 'day' ? 'Tage' : 'Wochen'} – Streak ${event.kind === 'start' ? 'gestartet' : 'fortgesetzt'}!`}
-  </p>)}</FreezeCard>;
+  const collected = kind => [...new Set(visible.filter(e => e.kind === kind).map(e => e.type))];
+  const continued = [...new Set(visible.filter(e => ['start', 'continue'].includes(e.kind)).map(e => e.type))];
+  const scope = types => types.length === 2 ? 'Heute und diese Woche' : types[0] === 'day' ? 'Heute' : 'Diese Woche';
+  return <FreezeCard role="status" aria-live="polite">
+    {continued.length > 0 && <p>🔥 <strong>{scope(continued)} gesichert!</strong> {visible.filter(e => ['start', 'continue'].includes(e.kind)).map(e => `${e.value} ${e.type === 'day' ? 'Tage' : 'Wochen'}`).join(' · ')}</p>}
+    {collected('grant').length > 0 && <p>❄ Neuer Schutz verdient: {collected('grant').map(t => t === 'day' ? 'für einen verpassten Tag' : 'für eine verpasste Woche').join(' und ')}.</p>}
+    {collected('consume').length > 0 && <p>❄ Dein Schutz wurde automatisch eingesetzt. Deine {collected('consume').length === 2 ? 'Serien bleiben' : 'Serie bleibt'} erhalten.</p>}
+  </FreezeCard>;
 }

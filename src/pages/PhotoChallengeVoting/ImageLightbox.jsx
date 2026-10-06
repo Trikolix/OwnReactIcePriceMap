@@ -1,56 +1,16 @@
-import React, { useEffect } from 'react';
-import * as S from './PhotoChallengeVoting.styles';
+import React from 'react';
+import styled from 'styled-components';
+import { ChallengeDialog } from '../../components/ChallengeUI';
 import { buildAssetUrl } from './utils';
-
-const ImageLightbox = ({ imagePreview, setImagePreview }) => {
-  useEffect(() => {
-    if (!imagePreview) {
-      return undefined;
-    }
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, [imagePreview]);
-
-  useEffect(() => {
-    if (!imagePreview) return undefined;
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setImagePreview(null);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [imagePreview, setImagePreview]);
-
-  if (!imagePreview) {
-    return null;
-  }
-
-  return (
-    <S.LightboxOverlay onClick={() => setImagePreview(null)} role="presentation">
-      <S.LightboxCard
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={imagePreview.label || 'Bildansicht'}
-      >
-        <S.LightboxCloseRow>
-          <S.CloseModalButton type="button" onClick={() => setImagePreview(null)} aria-label="Bildansicht schließen">
-            ×
-          </S.CloseModalButton>
-        </S.LightboxCloseRow>
-        <S.LightboxImage src={buildAssetUrl(imagePreview.url)} alt={imagePreview.label || 'Bild in voller Größe'} />
-        {imagePreview.label && <S.LightboxCaption>{imagePreview.label}</S.LightboxCaption>}
-      </S.LightboxCard>
-    </S.LightboxOverlay>
-  )
-};
-
-export default ImageLightbox;
+const Image = styled.img`display: block; width: 100%; max-height: 75dvh; object-fit: contain;`;
+export default function ImageLightbox({ imagePreview, setImagePreview }) {
+  const close = () => {
+    const trigger = imagePreview?.returnFocusTo;
+    setImagePreview(null);
+    // Restore the originating image button after the parent dialog regains its focus trap.
+    if (trigger) requestAnimationFrame(() => requestAnimationFrame(() => { if (trigger.isConnected) trigger.focus({ preventScroll: true }); }));
+  };
+  return <ChallengeDialog open={Boolean(imagePreview)} title={imagePreview?.label || 'Foto ansehen'} onClose={close} wide>
+    {imagePreview && <Image src={buildAssetUrl(imagePreview.url)} alt={imagePreview.label || 'Foto in voller Größe'} />}
+  </ChallengeDialog>;
+}

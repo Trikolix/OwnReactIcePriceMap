@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { Bell, X, CheckCheck, Trash2 } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import styled from "styled-components";
@@ -6,10 +6,18 @@ import SystemModal from "./SystemModal";
 import MentionInviteModal from "./MentionInviteModal";
 import { buildNotificationDeeplink, parseNotificationExtra } from "../utils/notificationRouting";
 
-const NotificationBell = () => {
+const NotificationBell = ({ open, onOpenChange } = {}) => {
     const { userId } = useUser();
     const [notifications, setNotifications] = useState([]);
-    const [show, setShow] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const show = open ?? internalOpen;
+    const setShow = next => {
+        if (open === undefined) setInternalOpen(next);
+        onOpenChange?.(next);
+    };
+    const panelId = useId();
+    const wrapperRef = useRef(null);
+    const bellRef = useRef(null);
     const dropdownRef = useRef(null);
     const touchTimerRef = useRef(null);
     const suppressNextClickRef = useRef(false);
@@ -40,23 +48,27 @@ const NotificationBell = () => {
     };
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        if (!show) {
+            resetDeleteState();
+            return;
+        }
+        const handleClickOutside = event => {
+            if (!wrapperRef.current?.contains(event.target)) setShow(false);
+        };
+        const handleKeyDown = event => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
                 setShow(false);
-                resetDeleteState();
+                bellRef.current?.focus();
             }
         };
-
-        if (show) {
-            document.addEventListener("mousedown", handleClickOutside);
-        } else {
-            document.removeEventListener("mousedown", handleClickOutside);
-        }
-
+        document.addEventListener('pointerdown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener('pointerdown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [show]);
+    }, [show, open, onOpenChange]);
 
     useEffect(() => {
         if (userId) loadNotifications();
@@ -247,16 +259,19 @@ const NotificationBell = () => {
     const unreadCount = notifications.filter((n) => !n.ist_gelesen).length;
 
     return (<>
-        <BellWrapper>
-            <BellButton onClick={() => {
+        <BellWrapper ref={wrapperRef}>
+            <BellButton ref={bellRef} type="button" aria-label="Benachrichtigungen"
+                aria-expanded={show} aria-controls={show ? panelId : undefined}
+                title={unreadCount > 0 ? `${unreadCount} ungelesene Benachrichtigungen` : 'Benachrichtigungen'}
+                onClick={() => {
                 setShow(!show);
                 resetDeleteState();
             }}>
-                <Bell size={28} color="currentColor" style={{ verticalAlign: 'middle' }} />
-                {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
+                <Bell aria-hidden="true" size={24} color="currentColor" style={{ verticalAlign: 'middle' }} />
+                {unreadCount > 0 && <Badge aria-hidden="true">{unreadCount > 99 ? '99+' : unreadCount}</Badge>}
             </BellButton>
             {show && (
-                <Dropdown ref={dropdownRef}>
+                <Dropdown ref={dropdownRef} id={panelId} role="region" aria-label="Benachrichtigungen">
                     <DropdownHeader>
                         <DropdownTitle>Benachrichtigungen</DropdownTitle>
                         <HeaderActions>
@@ -274,6 +289,7 @@ const NotificationBell = () => {
                                 type="button"
                                 onClick={() => {
                                     setShow(false);
+                                    bellRef.current?.focus();
                                     resetDeleteState();
                                 }}
                                 aria-label="Benachrichtigungen schließen"
@@ -293,6 +309,13 @@ const NotificationBell = () => {
                                     $confirming={confirmingDeleteId === n.id}
                                     $pending={pendingDeleteId === n.id}
                                     $error={deleteErrorId === n.id}
+                                    tabIndex={0}
+                                    onKeyDown={event => {
+                                        if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {
+                                            event.preventDefault();
+                                            handleNotificationClick(n);
+                                        }
+                                    }}
                                     onClick={() => handleNotificationClick(n)}
                                     onTouchStart={() => handleTouchStart(n)}
                                     onTouchEnd={cancelLongPress}
@@ -377,6 +400,10 @@ const BellWrapper = styled.div`
 const BellButton = styled.button`
   background: none;
   border: none;
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  flex-shrink: 0;
   font-size: 24px;
   cursor: pointer;
   position: relative;
@@ -386,6 +413,7 @@ const BellButton = styled.button`
   padding: 0;
   border-radius: 10px;
 
+  &:focus-visible { outline: 2px solid #633e14; outline-offset: 2px; }
   &:hover {
     background: rgba(255, 255, 255, 0.2);
   }
@@ -393,15 +421,16 @@ const BellButton = styled.button`
 
 const Badge = styled.span`
   position: absolute;
-  top: -7px;
-  left: -7px;
+  top: 1px;
+  right: 0;
   min-width: 18px;
   height: 18px;
   background: #d92d20;
   color: white;
   font-size: 11px;
   font-weight: bold;
-  border-radius: 50%;
+  border-radius: 999px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -411,33 +440,21 @@ const Badge = styled.span`
 `;
 
 const Dropdown = styled.div`
-  position: absolute;
-  top: 38px;
-  right: 0;
-  width: min(340px, calc(100vw - 24px));
-  max-height: min(60vh, 420px);
-  background: rgba(255, 252, 243, 0.98);
+  position: fixed;
+  top: calc(var(--ice-header-bottom, 64px) + 8px);
+  right: var(--ice-header-end-gap, 12px);
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(420px, calc(100dvh - var(--ice-header-bottom, 64px) - 20px));
+  box-sizing: border-box;
+  background: #fffaf0;
   border-radius: 16px;
-  border: 1px solid rgba(47, 33, 0, 0.12);
-  box-shadow: 0 16px 36px rgba(28, 20, 0, 0.2);
+  border: 1px solid #e6ddc9;
+  box-shadow: 0 16px 36px #2f210033;
   overflow-y: auto;
-  z-index: 5000;
+  overscroll-behavior: contain;
+  z-index: 1500;
   color: #2f2100;
-
-  @media (max-width: 480px) {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 76px);
-    left: 0;
-    right: 0;
-    width: 100vw;
-    max-width: 100vw;
-    box-sizing: border-box;
-    max-height: min(
-      calc(100dvh - (env(safe-area-inset-top, 0px) + 84px)),
-      66dvh
-    );
-    border-radius: 0 0 16px 16px;
-  }
+  @media (max-width: 767px) { left: 12px; right: 12px; width: auto; }
 `;
 
 const NotificationList = styled.ul`
@@ -474,8 +491,9 @@ const DropdownActionButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -491,8 +509,9 @@ const DropdownCloseButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -520,6 +539,7 @@ const NotificationItem = styled.li`
   cursor: ${({ $confirming, $pending }) => ($confirming || $pending ? "default" : "pointer")};
   opacity: ${({ $pending }) => ($pending ? 0.62 : 1)};
   transition: background 0.2s, opacity 0.2s;
+  &:focus-visible { outline: 2px solid #633e14; outline-offset: -2px; }
   margin-bottom: 2px;
 
   &:hover {
@@ -573,8 +593,9 @@ const DeleteIconButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
   border: none;
   border-radius: 8px;
   background: rgba(47, 33, 0, 0.04);
@@ -609,6 +630,7 @@ const ConfirmationRow = styled.div`
 `;
 
 const ConfirmDeleteButton = styled.button`
+  min-height: 44px;
   border: none;
   border-radius: 8px;
   padding: 6px 10px;
@@ -625,6 +647,7 @@ const ConfirmDeleteButton = styled.button`
 `;
 
 const CancelDeleteButton = styled.button`
+  min-height: 44px;
   border: 1px solid rgba(47, 33, 0, 0.16);
   border-radius: 8px;
   padding: 6px 10px;
