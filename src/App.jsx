@@ -8,6 +8,7 @@ import { mapRoutes } from './features/map/routes';
 import { challengeRoutes } from './features/challenges/routes';
 import { photoChallengeRoutes } from './features/photoChallenge/routes';
 import { userRoutes } from './features/user/routes';
+import { loyaltyRoutes } from './features/loyalty/routes';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import PushBootstrap from './components/PushBootstrap';
 import PushOptInOverlay from './components/PushOptInOverlay';
@@ -23,6 +24,7 @@ const allRoutes = [
   ...challengeRoutes,
   ...photoChallengeRoutes,
   ...userRoutes,
+  ...loyaltyRoutes,
   ...eventRoutes,
   ...socialMediaRoutes,
 ];

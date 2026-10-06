@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from '../Header';
+import ShopLoyaltyActions from '../features/loyalty/ShopLoyaltyActions';
 import { useUser } from '../context/UserContext';
 import MetaPill from '../components/RegionMetaPill';
 import FavoritenButton from '../components/FavoritButton';
@@ -226,7 +227,7 @@ const scoreMeta = {
 
 const IceShopDetailPage = () => {
   const { shopId } = useParams();
-  const { isLoggedIn, userId } = useUser();
+  const { isLoggedIn, userId, authToken } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const [shopData, setShopData] = useState(null);
@@ -268,7 +269,7 @@ const IceShopDetailPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_BASE}/get_eisdiele_details.php?eisdiele_id=${shopId}&nutzer_id=${userId || ''}`);
+        const response = await fetch(`${API_BASE}/get_eisdiele_details.php?eisdiele_id=${shopId}&nutzer_id=${userId || ''}`, { credentials: 'include', headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} });
         if (!response.ok) {
           throw new Error('Fehler beim Abruf der Shop-Details');
         }
@@ -294,10 +295,10 @@ const IceShopDetailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [shopId, userId]);
+  }, [shopId, userId, authToken]);
 
   const refreshShop = async () => {
-    const response = await fetch(`${API_BASE}/get_eisdiele_details.php?eisdiele_id=${shopId}&nutzer_id=${userId || ''}`);
+    const response = await fetch(`${API_BASE}/get_eisdiele_details.php?eisdiele_id=${shopId}&nutzer_id=${userId || ''}`, { credentials: 'include', headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} });
     if (!response.ok) return;
     const data = await response.json();
     setShopData(data);
@@ -614,6 +615,7 @@ const IceShopDetailPage = () => {
                 )}
               </InfoStack>
               <SecondaryPlaceActions place={eisdiele} onChanged={refreshShop} />
+              <ShopLoyaltyActions shop={eisdiele} />
               {isLoggedIn && <SecondaryAction type="button" onClick={() => setShowEditModal(true)}>
                 {getShopEditAccess(eisdiele, userId).canEditDirectly ? 'Eintrag bearbeiten' : 'Änderung vorschlagen'}
               </SecondaryAction>}
