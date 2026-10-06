@@ -103,6 +103,44 @@ function layout(scope = document.querySelector('main') || document.body) {
   scope.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select, textarea').forEach(element => { if (element.getBoundingClientRect().width) check(parseFloat(getComputedStyle(element).fontSize) >= 16, '16px input text'); });
 }
 async function adminView(view) { window.testNavigate(`/photo-challenge-admin?challengeId=2&view=${view}`); await tick(); await tick(); }
+async function runSeriesTests() {
+  await mount('/user/42'); await waitFor(() => document.getElementById('serien'));
+  const flames = getAllByRole(document.getElementById('serien'), 'button', { name: /Details anzeigen/ });
+  check(flames.length === 2, 'Profile has two series flames');
+  check(!document.getElementById('serien').textContent.includes('verfügbar'), 'Series details stay collapsed initially');
+  check(Math.abs(flames[0].getBoundingClientRect().top - flames[1].getBoundingClientRect().top) < 1, 'Flames stay side by side on all devices');
+  layout(document.getElementById('serien')); await click('Jetzt einchecken', document.getElementById('serien')); check(document.body.textContent.includes('Wo hast du dein Eis gegessen?'), 'Profile starts existing global checkin flow');
+  await mount('/user/42'); await click('Tages-Serie: 12 Tage. Details anzeigen'); check(dialog().textContent.includes('1 von 2 verfügbar'), 'Touch opens personal series details'); layout(dialog());
+  check(dialog().querySelector('ol').children.length === 7, 'Daily details retain seven-day history');
+  check(dialog().querySelector('progress').value === 3, 'Details retain real reward progress');
+  window.testSwitchUser(99); await tick(); await tick(); check(!dialog() && !document.body.textContent.includes('verfügbar'), 'Account change closes previous owner details');
+  await mount('/user/99'); await waitFor(() => document.getElementById('serien')); await click('Tages-Serie: 12 Tage. Details anzeigen');
+  check(dialog().textContent.includes('Rekord'), 'Foreign profile retains public series information');
+  check(!dialog().textContent.includes('verfügbar'), 'Foreign profile hides wallet in details');
+  check(!dialog().querySelector('progress') && !dialog().querySelector('ol'), 'Foreign profile hides reward progress and private history');
+  await mount('/series'); layout(); await click('Wochen-Serie: 8 Wochen. Details anzeigen'); check(dialog().textContent.includes('Vorrat voll'), 'Full protection stock is clear');
+  check(dialog().querySelector('ol').children.length === 4, 'Weekly details retain four-week history'); await click('Dialog schließen', dialog());
+  if (matchMedia('(hover: hover)').matches) {
+    const flame = byButton('Tages-Serie: 12 Tage. Details anzeigen'); const focusBeforeHover = document.activeElement;
+    fireEvent.pointerOut(byButton('Wochen-Serie: 8 Wochen. Details anzeigen'), { pointerType: 'mouse', relatedTarget: flame });
+    fireEvent.pointerOver(flame, { pointerType: 'mouse' }); await tick();
+    const hoverDetails = getByRole(document.body, 'region', { name: 'Tages-Serie' });
+    check(hoverDetails.textContent.includes('1 von 2 verfügbar'), 'Mouse hover opens complete series details');
+    check(document.activeElement === focusBeforeHover, 'Mouse preview does not steal focus'); layout(hoverDetails);
+    fireEvent.pointerOut(flame, { pointerType: 'mouse', relatedTarget: hoverDetails }); fireEvent.pointerOver(hoverDetails, { pointerType: 'mouse' });
+    await new Promise(resolve => setTimeout(resolve, 300)); check(hoverDetails.isConnected, 'Hover details stay open while moving into them');
+    fireEvent.keyDown(document, { key: 'Escape' }); await tick(); check(!hoverDetails.isConnected, 'Escape dismisses hover details');
+  }
+  for (const state of ['none','at_risk','frozen','active']) for (const stock of [0,1,2]) {
+    resetDatabase(); database.streaks.freezes = { day: stock, week: stock }; ['day','week'].forEach(type => { database.streaks[type].state = state; database.streaks[type].value = state === 'none' ? 0 : 7; });
+    await mount('/series','user',false); layout();
+    check((state === 'active') === ![...document.querySelectorAll('button')].some(button => button.textContent.includes('Jetzt einchecken')), `Next action matches ${state}`);
+    await click(`Tages-Serie: ${state === 'none' ? 0 : 7} Tage. Details anzeigen`); layout(dialog());
+    check(dialog().textContent.includes(stock === 2 ? 'Vorrat voll' : stock === 0 ? 'Schutz verdienen' : '1 von 2 verfügbar'), `Series wallet ${stock} in state ${state}`);
+    await click('Dialog schließen', dialog());
+  }
+  return results;
+}
 async function runTests() {
   await mount(); check(document.querySelector('h1').textContent === 'Foto-Challenges', 'Public list title'); check(document.body.textContent.includes('Mitmachen'), 'Participation comes first'); layout();
   await mount('/photo-challenge/1'); await click('Foto einreichen'); check(dialog(), 'Submission dialog opens'); layout(dialog());
@@ -123,16 +161,7 @@ async function runTests() {
   await mount('/photo-challenge/4'); layout(); const phase = getAllByRole(document.body, 'button').find(item => item.textContent === 'Gruppenphase'); press(phase); await tick(); await click('Jetzt abstimmen'); const koVote = getAllByRole(dialog(), 'button', { name: /Für Foto/ })[0]; press(koVote); await tick(); await click('Dialog schließen', dialog()); check(phase.getAttribute('class') === getAllByRole(document.body, 'button').find(item => item.textContent === 'Gruppenphase').getAttribute('class'), 'Refresh retains selected phase');
   await mount('/photo-challenge/5'); check(document.body.textContent.includes('Champion'), 'Winner shown'); layout();
   await mount('/photo-challenge/1', 'guest'); await click('Foto einreichen'); check(document.body.textContent.includes('Login'), 'Guest can open login'); check(window.testRoute === '/photo-challenge/1', 'Login keeps challenge route');
-  await mount('/user/42'); await waitFor(() => document.getElementById('serien')); check(document.querySelectorAll('#serien h3').length === 2, 'Profile has two equal series cards'); layout(document.getElementById('serien')); await click('Jetzt einchecken', document.getElementById('serien')); check(document.body.textContent.includes('Wo hast du dein Eis gegessen?'), 'Profile starts existing global checkin flow');
-  await mount('/user/42'); window.testSwitchUser(99); await tick(); await tick(); check(!document.getElementById('serien').textContent.includes('verfügbar'), 'Account change immediately hides previous owner wallet');
-  await mount('/user/99'); await waitFor(() => document.getElementById('serien')); check(!document.getElementById('serien').textContent.includes('verfügbar'), 'Foreign profile hides wallet'); check(!document.getElementById('serien').querySelector('progress'), 'Foreign profile hides reward progress');
-  await mount('/series'); layout(); check(document.body.textContent.includes('Vorrat voll'), 'Full protection stock is clear');
-  for (const state of ['none','at_risk','frozen','active']) for (const stock of [0,1,2]) {
-    resetDatabase(); database.streaks.freezes = { day: stock, week: stock }; ['day','week'].forEach(type => { database.streaks[type].state = state; database.streaks[type].value = state === 'none' ? 0 : 7; });
-    await mount('/series','user',false); layout();
-    check(document.body.textContent.includes(stock === 2 ? 'Vorrat voll' : stock === 0 ? 'Schutz verdienen' : '1 von 2 verfügbar'), `Series wallet ${stock} in state ${state}`);
-    check((state === 'active') === ![...document.querySelectorAll('button')].some(button => button.textContent.includes('Jetzt einchecken')), `Next action matches ${state}`);
-  }
+  await runSeriesTests();
   await mount('/photo-challenge-admin', 'admin'); layout(); await click('Neue Foto-Challenge'); layout(dialog()); await click('Weiter', dialog()); check(dialog().textContent.includes('Bitte gib einen Titel'), 'Creation validates title'); fill('Titel', 'Neue Test-Challenge', dialog()); await click('Weiter', dialog()); await click('Zurück', dialog()); check(getByRole(dialog(), 'textbox', { name: 'Titel' }).value === 'Neue Test-Challenge', 'Wizard back keeps draft'); await click('Dialog schließen', dialog()); check(dialog().textContent.includes('Entwurf verwerfen'), 'Closing creation protects draft'); await click('Weiter ausfüllen', dialog()); await click('Weiter', dialog()); await click('Weiter', dialog()); await click('Als Entwurf anlegen', dialog()); check(!dialog(), 'Creation succeeds'); check(window.testRoute.includes('challengeId=100'), 'New challenge has persistent URL');
   await mount('/photo-challenge-admin?challengeId=2&view=planning', 'admin'); await waitFor(() => byButton('Vorschlag übernehmen')); check(window.testRoute.includes('view=planning'), 'Admin deep link persists'); layout(); await click('Vorschlag übernehmen'); check(byButton('Gruppenabstimmung starten').disabled, 'Unsaved plan cannot start');
   await click('Planung speichern'); await tick(); check(!byButton('Gruppenabstimmung starten').disabled, 'Saved valid plan can start'); await click('Gruppenabstimmung starten'); check(dialog().textContent.includes('gesperrt'), 'Phase start requires concrete confirmation'); await click('Abbrechen', dialog());
@@ -153,7 +182,7 @@ window.prepare = async scenario => {
   if (scenario === 'list') await mount('/photo-challenge');
   else if (scenario === 'submit') { await mount('/photo-challenge/1'); await click('Foto einreichen'); }
   else if (scenario === 'vote') { await mount('/photo-challenge/3'); await click('Jetzt abstimmen'); }
-  else if (scenario === 'series') await mount('/series');
+  else if (scenario === 'series' || scenario === 'series-details') { await mount('/series'); if (scenario === 'series-details') await click('Tages-Serie: 12 Tage. Details anzeigen'); }
   else if (scenario === 'admin') await mount('/photo-challenge-admin?challengeId=2&view=planning','admin');
   else if (scenario === 'create') { await mount('/photo-challenge-admin','admin'); await click('Neue Foto-Challenge'); }
   else if (scenario === 'images') await mount('/photo-challenge-admin?challengeId=2&view=images','admin');
@@ -164,7 +193,7 @@ window.runTests = runTests;
   try {
     const preview = new URLSearchParams(location.search).get('preview');
     if (preview) { await window.prepare(preview); document.getElementById('results').dataset.status = 'preview'; }
-    else { await runTests(); document.getElementById('results').dataset.status = 'passed'; }
+    else { await (new URLSearchParams(location.search).has('seriesOnly') ? runSeriesTests() : runTests()); document.getElementById('results').dataset.status = 'passed'; }
     document.getElementById('results').textContent = JSON.stringify(results);
   } catch (error) { document.getElementById('results').dataset.status = 'failed'; document.getElementById('results').textContent = error.stack; }
 })();

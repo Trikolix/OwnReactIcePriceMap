@@ -1,5 +1,6 @@
-// Real header, menu, notifications, map controls and login; every API call is mocked.
+// Actual profile, series and photo challenge pages; every API call is mocked.
 // Usage: node tests/manual/photo-challenge-browser.cjs --all --screenshots
+// Series only: add --series-only; keyboard only: add --keyboard-only.
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -84,7 +85,7 @@ const connect = async url => {
     const navigate = async (width, height, preview = null, extra = '') => {
       await cdp.call('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 768 });
       await cdp.call('Emulation.setTouchEmulationEnabled', { enabled: width < 768 });
-      const query = '?run=' + Date.now() + (preview === null ? '' : '&preview=' + preview) + extra;
+      const query = '?run=' + Date.now() + (preview === null ? '' : '&preview=' + preview) + extra + (process.argv.includes('--series-only') ? '&seriesOnly=1' : '');
       await cdp.call('Page.navigate', { url: serverUrl + query });
       const deadline = Date.now() + 30000;
       while (Date.now() < deadline) {
@@ -114,6 +115,28 @@ const connect = async url => {
     };
     const assert = async (expression,message) => { if (!await evaluate(expression)) throw new Error(message); };
     for (const [width,height] of [[390,844],[1280,900]]) {
+      await navigate(width,height,'series');
+      await evaluate('document.querySelector("#serien button[aria-label*=Tages]").focus()');
+      await keyPress('Enter','Enter',13);
+      await assert('document.querySelector("[role=dialog]")?.textContent.includes("1 von 2 verfügbar")','Keyboard opens daily series details');
+      await keyPress('Tab','Tab',9,8);
+      await assert('Boolean(document.activeElement.closest("[role=dialog]"))','Series dialog traps keyboard focus');
+      await keyPress('Escape','Escape',27);
+      await assert('!document.querySelector("[role=dialog]") && document.activeElement.getAttribute("aria-label")?.startsWith("Tages-Serie")','Series Escape restores flame focus');
+      await evaluate('document.querySelector("#serien button[aria-label*=Wochen]").focus()');
+      await keyPress(' ','Space',32);
+      await assert('document.querySelector("[role=dialog]")?.textContent.includes("Vorrat voll")','Space opens weekly series details');
+      await keyPress('Escape','Escape',27);
+      await assert('!document.querySelector("[role=dialog]") && document.activeElement.getAttribute("aria-label")?.startsWith("Wochen-Serie")','Weekly Escape restores flame focus');
+      if (width < 768) {
+        const point = JSON.parse(await evaluate('JSON.stringify((()=>{const r=document.querySelector("#serien button[aria-label*=Tages]").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})())'));
+        await cdp.call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+        await cdp.call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); await delay(150);
+        await assert('Boolean(document.querySelector("[role=dialog]")) && !document.querySelector("[role=region]")','Native touch opens details without hover preview');
+        await keyPress('Escape','Escape',27);
+      }
+      console.log(JSON.stringify({passed:width<768?6:5,viewport:[width,height],checks:'Series flames, native keyboard and touch'}));
+      if (process.argv.includes('--series-only')) continue;
       await navigate(width,height,'submit');
       await assert('document.activeElement.getAttribute("aria-label") === "Dialog schließen"','Submission focuses close button');
       await keyPress('Tab','Tab',9,8);
@@ -130,11 +153,36 @@ const connect = async url => {
       await assert('!document.querySelector("[role=dialog]") && document.activeElement.textContent === "Jetzt abstimmen"','Escape restores voting trigger');
       console.log(JSON.stringify({passed:7,viewport:[width,height],checks:'Native focus trap and Escape'}));
     }
+    await navigate(1280,900,'series');
+    await evaluate('window.focusBeforeSeriesHover=document.activeElement');
+    const flamePoint = JSON.parse(await evaluate('JSON.stringify((()=>{const r=document.querySelector("#serien button[aria-label*=Tages]").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})())'));
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseMoved',...flamePoint}); await delay(100);
+    await assert('Boolean(document.querySelector("[role=region]")) && !document.querySelector("[role=dialog]")','Native mouse hover opens details');
+    await assert('document.activeElement===window.focusBeforeSeriesHover','Native hover preserves keyboard focus');
+    const detailsPoint = JSON.parse(await evaluate('JSON.stringify((()=>{const r=document.querySelector("[role=region]").getBoundingClientRect();return{x:r.left+30,y:r.top+25}})())'));
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseMoved',...detailsPoint}); await delay(350);
+    await assert('Boolean(document.querySelector("[role=region]"))','Native pointer can move from flame into details');
+    if (process.argv.includes('--screenshots')) {
+      const shot = await cdp.call('Page.captureScreenshot',{format:'png'});
+      fs.writeFileSync(path.join(output,'series-hover-1280x900.png'),Buffer.from(shot.data,'base64'));
+    }
+    await keyPress('Escape','Escape',27);
+    await assert('!document.querySelector("[role=region]")','Escape dismisses native hover');
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseMoved',x:10,y:10});
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseMoved',...flamePoint}); await delay(100);
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseMoved',x:10,y:10}); await delay(350);
+    await assert('!document.querySelector("[role=region]")','Leaving flame and details closes mouse preview');
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseMoved',...flamePoint}); await delay(100);
+    await cdp.call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...flamePoint});
+    await cdp.call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...flamePoint}); await delay(150);
+    await assert('Boolean(document.querySelector("[role=dialog]")) && !document.querySelector("[role=region]")','Clicking hovered flame opens persistent details');
+    await keyPress('Escape','Escape',27);
+    console.log(JSON.stringify({passed:6,viewport:[1280,900],checks:'Native series hover and click'}));
     await cdp.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     await navigate(390,440,'series');
     await assert('matchMedia("(prefers-reduced-motion: reduce)").matches','Reduced motion enabled');
     if (process.argv.includes('--screenshots')) {
-      for (const [width,height] of viewports) for (const preview of ['list','submit','vote','series','admin','create','images']) {
+      for (const [width,height] of viewports) for (const preview of process.argv.includes('--series-only') ? ['series','series-details'] : ['list','submit','vote','series','series-details','admin','create','images']) {
         await navigate(width,height,preview);
         const screenshot = await cdp.call('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync(path.join(output,preview+'-'+width+'x'+height+'.png'),Buffer.from(screenshot.data,'base64'));
