@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { FlavorChip } from "./ShopChips";
 import {
   ResponsiveContainer,
   LineChart,
@@ -64,7 +65,7 @@ function Flavors({ title, entries }) {
         <ol className="shopdetail-ranking">
           {entries.slice(0, 5).map((entry, index) => (
             <li key={`${entry.sortenname}-${index}`}>
-              <span>{entry.sortenname}</span>
+              <FlavorChip name={entry.sortenname} />
               <span>
                 <strong>{shopNumber(entry.durchschnittsbewertung)} / 5</strong>
                 <small>

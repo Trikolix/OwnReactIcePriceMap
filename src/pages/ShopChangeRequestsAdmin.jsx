@@ -1,4 +1,5 @@
 import Header from '../Header';
+import ShopOfferingModeration from '../components/shopDetail/ShopOfferingModeration';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -86,6 +87,7 @@ const ShopChangeRequestsAdmin = () => {
       );
       const data = await response.json();
       if (data.status === "success") {
+        window.dispatchEvent(new Event("shop-change-requests-updated"));
         setMessageMap((prev) => {
           const clone = { ...prev };
           delete clone[requestId];
@@ -181,6 +183,7 @@ const ShopChangeRequestsAdmin = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
     <PageWrapper>
+      <ShopOfferingModeration />
       <HeaderRow>
         <h1>Eisdielen-Änderungsvorschläge</h1>
         <StatusSelect

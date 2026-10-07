@@ -506,12 +506,15 @@ window.loyaltyPreview = async (kind) => {
   await click("Verwaltung & Statistik");
   overflow("Management including hours no overflow");
   check(document.body.textContent.includes("1.234"), "Readable statistics");
+  field("Kugeleis", "not_offered");
+  field("Softeis", "offered");
   await click("Eisdielendaten speichern");
   check(
     calls.findLast((call) => call.action === "update_business").data
       .opening_hours.days.length === 7,
     "Complete structured hours sent",
   );
+  check(calls.findLast(call => call.action === "update_business").data.ice_offerings.softeis === "offered" && calls.findLast(call => call.action === "update_business").data.ice_offerings.kugel === "not_offered", "Operator saves the selected ice offering declarations");
   await click("Veröffentlichung prüfen");
   check(
     button("Verbindlich veröffentlichen"),

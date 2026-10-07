@@ -14,13 +14,11 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import {
   ArrowLeft,
   CalendarDays,
-  IceCreamCone,
   Images,
   MapPin,
   Navigation,
   RefreshCw,
   Share2,
-  Star,
   Users,
 } from "lucide-react";
 import Header from "../Header";
@@ -39,16 +37,18 @@ import SecondaryPlaceActions from "../components/SecondaryPlaceActions";
 import ShopLoyaltyActions from "../features/loyalty/ShopLoyaltyActions";
 import ShopOpeningHours from "../components/shopDetail/ShopOpeningHours";
 import ShopStatistics from "../components/shopDetail/ShopStatistics";
+import ShopGlance from "../components/shopDetail/ShopGlance";
+import ShopIdentity from "../components/shopDetail/ShopIdentity";
+import ShopPricesAndRatings from "../components/shopDetail/ShopPricesAndRatings";
+import ShopOfferingDialog from "../components/shopDetail/ShopOfferingDialog";
+import { FlavorChip, AttributeChip } from "../components/shopDetail/ShopChips";
+import { ShopButton, ShopMainActions, ShopTertiaryAction } from "../styles/ShopUi";
 import ShopDetailPhotoDialog from "../components/shopDetail/ShopDetailPhotoDialog";
 import { getShopEditAccess, isValidShopPosition } from "../utils/shopEditing";
 import {
-  hasShopNumber,
   shopAssetUrl,
   shopDate,
   shopDetailTab,
-  shopNumber,
-  shopPrice,
-  shopStatus,
 } from "../utils/shopDetail";
 import "leaflet/dist/leaflet.css";
 import "../components/shopDetail/shopDetail.css";
@@ -64,11 +64,6 @@ const defaultIcon = L.icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
-const RATING_LABELS = {
-  kugel: "Kugeleis",
-  softeis: "Softeis",
-  eisbecher: "Eisbecher",
-};
 const PLACE_LABELS = {
   ice_shop: "Eisdiele",
   restaurant: "Restaurant / Café",
@@ -129,6 +124,7 @@ export default function IceShopDetailPage() {
     [showCheckinForm, setShowCheckinForm] = useState(false),
     [showRouteForm, setShowRouteForm] = useState(false),
     [showEditModal, setShowEditModal] = useState(false);
+  const [showOfferingDialog, setShowOfferingDialog] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(null),
     [limits, setLimits] = useState({
       checkins: BATCH_SIZE,
@@ -224,6 +220,7 @@ export default function IceShopDetailPage() {
   useEffect(() => {
     if (previousShop.current !== shopId) {
       setShowPriceForm(false);
+      setShowOfferingDialog(false);
       setShowReviewForm(false);
       setShowCheckinForm(false);
       setShowRouteForm(false);
@@ -370,20 +367,7 @@ export default function IceShopDetailPage() {
       </div>
     );
 
-  const status = shopStatus(shop),
-    prices = data.preise || {},
-    scores = data.scores || {},
-    statistics = data.statistiken || {};
-  const ratings = Object.entries(RATING_LABELS).filter(([key]) =>
-    hasShopNumber(scores[key]),
-  );
-  const primaryPrice = hasShopNumber(prices.kugel?.preis)
-    ? ["Kugelpreis", prices.kugel]
-    : hasShopNumber(prices.softeis?.preis)
-      ? ["Softeispreis", prices.softeis]
-      : ["Kugelpreis", null];
-  const primaryRating = ratings[0],
-    popular = data.beliebte_sorten?.meistgegessen || [],
+  const popular = data.beliebte_sorten?.meistgegessen || [],
     attributes = data.attribute || [];
   const positionValid = isValidShopPosition(shop.latitude, shop.longitude);
   const destination = positionValid
@@ -569,110 +553,31 @@ export default function IceShopDetailPage() {
           ref={heroRef}
           aria-labelledby="shopdetail-name"
         >
-          <div className="shopdetail-hero-top">
-            <div className="shopdetail-heading">
-              <div className="shopdetail-badges">
-                <span
-                  className={
-                    "shopdetail-status shopdetail-status-" + status.tone
-                  }
-                >
-                  {status.label}
-                </span>
-                {!isIceShop && (
-                  <span className="shopdetail-place-type">
-                    {PLACE_LABELS[shop.place_type] || "Eis-Ort"}
-                  </span>
-                )}
-              </div>
-              <h1 id="shopdetail-name">{shop.name}</h1>
-              <p className="shopdetail-address">
-                <MapPin size={17} aria-hidden="true" />
-                <span>{shop.adresse || "Adresse noch nicht hinterlegt"}</span>
-              </p>
-            </div>
-            <div className="shopdetail-utilities">
-              {isLoggedIn && (
-                <FavoritenButton
-                  key={shop.id + ":" + userId}
-                  eisdieleId={shop.id}
-                />
-              )}
-              <button
-                className="shopdetail-button shopdetail-icon-button"
-                onClick={share}
-                disabled={sharing}
-                aria-label="Eisdiele teilen"
-                title="Eisdiele teilen"
-              >
-                <Share2 size={20} />
+          <ShopIdentity shop={shop} headingId="shopdetail-name"
+            category={!isIceShop ? PLACE_LABELS[shop.place_type] || "Eis-Ort" : undefined}
+            utilities={<>
+              {isLoggedIn && <FavoritenButton key={shop.id + ":" + userId} eisdieleId={shop.id} />}
+              <button type="button" onClick={share} disabled={sharing}
+                aria-label="Eisdiele teilen" title="Eisdiele teilen">
+                <Share2 size={20} aria-hidden="true" />
               </button>
-            </div>
-          </div>
+            </>} />
           <div className="shopdetail-hero-bottom">
             <div className="shopdetail-hero-body">
-              <div className="shopdetail-glance">
+              <ShopGlance data={data} />
+              <ShopMainActions>
+                <ShopButton $primary onClick={startCheckin}>
+                  Einchecken
+                </ShopButton>
+                {isIceShop && <ShopButton onClick={() => authenticated(() => setShowReviewForm(true))}>
+                  Bewerten
+                </ShopButton>}
                 {isIceShop && (
-                  <div>
-                    <strong>
-                      {primaryPrice[1] ? shopPrice(primaryPrice[1]) : "–"}
-                    </strong>
-                    <span>
-                      {primaryPrice[1] ? primaryPrice[0] : "Preis fehlt"}
-                    </span>
-                  </div>
-                )}
-                {isIceShop && (
-                  <div>
-                    <strong>
-                      <Star size={17} aria-hidden="true" />
-                      {primaryRating
-                        ? shopNumber(scores[primaryRating[0]])
-                        : "–"}
-                    </strong>
-                    <span>
-                      {primaryRating
-                        ? primaryRating[1] + " · von 5"
-                        : "Noch keine Wertung"}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <strong>
-                    {Number(
-                      statistics.gesamt_checkins ?? checkins.length,
-                    ).toLocaleString("de-DE")}
-                  </strong>
-                  <span>Check-ins</span>
-                </div>
-              </div>
-              <div className="shopdetail-actions">
-                <button
-                  className="shopdetail-button shopdetail-button-primary"
-                  onClick={startCheckin}
-                >
-                  <IceCreamCone size={18} /> Eis einchecken
-                </button>
-                <a
-                  className="shopdetail-button"
-                  href={
-                    "https://www.google.com/maps/search/?api=1&query=" +
-                    encodeURIComponent(destination)
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Navigation size={18} /> Route dorthin
-                </a>
-                {isIceShop && (
-                  <Link
-                    className="shopdetail-button"
-                    to={"/ice-date/new?shopId=" + shop.id}
-                  >
+                  <ShopTertiaryAction to={"/ice-date/new?shopId=" + shop.id}>
                     <CalendarDays size={18} /> Eis-Date planen
-                  </Link>
+                  </ShopTertiaryAction>
                 )}
-              </div>
+              </ShopMainActions>
             </div>
             {photos.length > 0 && (
               <ShopPhoto
@@ -763,76 +668,9 @@ export default function IceShopDetailPage() {
                     </p>
                   )}
                 </section>
-                {isIceShop && (
-                  <section className="shopdetail-panel">
-                    <h2>
-                      <IceCreamCone size={20} aria-hidden="true" /> Preise &
-                      Bewertungen
-                    </h2>
-                    <dl className="shopdetail-prices">
-                      {[
-                        ["Kugel", prices.kugel],
-                        ["Softeis", prices.softeis],
-                      ].map(([label, entry]) => (
-                        <div key={label}>
-                          <dt>{label}</dt>
-                          <dd>
-                            <strong>{shopPrice(entry)}</strong>
-                            {entry?.letztes_update && (
-                              <span>
-                                Gemeldet am {shopDate(entry.letztes_update)}
-                              </span>
-                            )}
-                            {entry?.beschreibung && (
-                              <span>{entry.beschreibung}</span>
-                            )}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                    {ratings.length ? (
-                      <ul className="shopdetail-ratings">
-                        {ratings.map(([key, label]) => (
-                          <li key={key}>
-                            <span>{label}</span>
-                            <strong>
-                              <Star size={15} aria-hidden="true" />{" "}
-                              {shopNumber(scores[key])} / 5
-                            </strong>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="shopdetail-muted">
-                        Noch keine Community-Bewertungen vorhanden.
-                      </p>
-                    )}
-                    {hasShopNumber(data.bewertungen?.auswahl) && (
-                      <p className="shopdetail-muted">
-                        Auswahl: etwa {shopNumber(data.bewertungen.auswahl, 0)}{" "}
-                        Sorten
-                      </p>
-                    )}
-                    <div className="shopdetail-actions">
-                      <button
-                        className="shopdetail-button"
-                        onClick={() =>
-                          authenticated(() => setShowPriceForm(true))
-                        }
-                      >
-                        Preis melden
-                      </button>
-                      <button
-                        className="shopdetail-button"
-                        onClick={() =>
-                          authenticated(() => setShowReviewForm(true))
-                        }
-                      >
-                        Bewertung abgeben
-                      </button>
-                    </div>
-                  </section>
-                )}
+                <ShopPricesAndRatings data={data}
+                  onPrice={() => authenticated(() => setShowPriceForm(true))}
+                  onReport={() => authenticated(() => setShowOfferingDialog(true))} />
                 <section className="shopdetail-panel">
                   <h2>
                     <MapPin size={20} aria-hidden="true" /> Standort
@@ -884,6 +722,13 @@ export default function IceShopDetailPage() {
                       ))}
                     {shop.land && <span>{shop.land}</span>}
                   </div>
+                  <div className="shopdetail-actions">
+                    <a className="shopdetail-button"
+                      href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(destination)}
+                      target="_blank" rel="noopener noreferrer">
+                      <Navigation size={18} /> Route dorthin
+                    </a>
+                  </div>
                 </section>
                 <section className="shopdetail-panel">
                   <h2>
@@ -895,7 +740,7 @@ export default function IceShopDetailPage() {
                       <ol className="shopdetail-ranking">
                         {popular.slice(0, 3).map((flavor, index) => (
                           <li key={flavor.sortenname + ":" + index}>
-                            <span>{flavor.sortenname}</span>
+                            <FlavorChip name={flavor.sortenname} />
                             <strong>{flavor.anzahl}×</strong>
                           </li>
                         ))}
@@ -912,9 +757,7 @@ export default function IceShopDetailPage() {
                       <h3>Häufig genannte Merkmale</h3>
                       <div className="shopdetail-attributes">
                         {attributes.slice(0, 6).map((attribute, index) => (
-                          <span key={index}>
-                            {attribute.name} <small>{attribute.anzahl}×</small>
-                          </span>
+                          <AttributeChip key={attribute.id || index} attribute={attribute} />
                         ))}
                       </div>
                       {attributes.length > 6 && (
@@ -924,10 +767,7 @@ export default function IceShopDetailPage() {
                           </summary>
                           <div className="shopdetail-attributes">
                             {attributes.slice(6).map((attribute, index) => (
-                              <span key={index}>
-                                {attribute.name}{" "}
-                                <small>{attribute.anzahl}×</small>
-                              </span>
+                              <AttributeChip key={attribute.id || index} attribute={attribute} />
                             ))}
                           </div>
                         </details>
@@ -1118,7 +958,8 @@ export default function IceShopDetailPage() {
           refreshShops={refreshShop}
         />
       )}
-      {isIceShop && showPriceForm && (
+      {showOfferingDialog && <ShopOfferingDialog data={data} onClose={() => setShowOfferingDialog(false)} onChanged={refreshShop} />}
+      {showPriceForm && (
         <SubmitPriceModal
           shop={data}
           userId={userId}

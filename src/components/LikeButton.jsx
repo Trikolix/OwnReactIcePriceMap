@@ -9,10 +9,11 @@ const LikeActions = styled.div`
   align-items: center;
   gap: 0.15rem;
   margin-top: ${({ $compact }) => ($compact ? "0" : "0.65rem")};
-  min-height: 28px;
+  min-height: 44px;
 `;
 
 const HeartButton = styled.button.attrs({ type: "button" })`
+  min-width: 44px; min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -30,6 +31,7 @@ const HeartButton = styled.button.attrs({ type: "button" })`
     transform: ${({ $canLike }) => ($canLike ? "translateY(-1px)" : "none")};
   }
 
+  &:focus-visible { outline: 3px solid #986b0e; outline-offset: 3px; }
   svg {
     fill: ${({ $hasLiked }) => ($hasLiked ? "currentColor" : "none")};
     transition: fill 0.2s;
@@ -37,6 +39,7 @@ const HeartButton = styled.button.attrs({ type: "button" })`
 `;
 
 const CountButton = styled.button.attrs({ type: "button" })`
+  min-width: 44px; min-height: 44px;
   background: transparent;
   border: none;
   color: #8a5600;
@@ -45,6 +48,7 @@ const CountButton = styled.button.attrs({ type: "button" })`
   padding: 0.3rem 0;
   text-align: left;
   border-radius: 8px;
+  &:focus-visible { outline: 3px solid #986b0e; outline-offset: 3px; }
 
   &:hover {
     text-decoration: underline;

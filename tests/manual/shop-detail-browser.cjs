@@ -178,7 +178,7 @@ async function connect(url) {
       }
       throw new Error("Fixture timed out");
     };
-    for (const [width, height] of [
+    if (!process.argv.includes("--keyboard-only")) for (const [width, height] of [
       [320, 740],
       [390, 844],
       [768, 900],
@@ -196,16 +196,22 @@ async function connect(url) {
       if (process.argv.includes("--screenshots"))
         for (const preview of [
           "overview",
+          "prices",
           "checkins",
+          "reviews",
+          "routes",
           "photos",
           "stats",
           "empty",
           "cards",
+          "sideview",
         ]) {
           await navigate(width, height, preview);
+          const clip = preview === "prices" ? await evaluate('(() => { const bounds = document.querySelector("[data-shop-prices]").getBoundingClientRect(); return { x: bounds.left + scrollX, y: bounds.top + scrollY, width: bounds.width, height: bounds.height, scale: 1 }; })()') : null;
           const screenshot = await cdp.call("Page.captureScreenshot", {
             format: "png",
             captureBeyondViewport: preview !== "cards",
+            ...(clip ? { clip } : {}),
           });
           fs.writeFileSync(
             path.join(output, `${preview}-${width}.png`),
@@ -214,6 +220,7 @@ async function connect(url) {
         }
     }
     await navigate(390, 844, "overview");
+    await cdp.call("Page.bringToFront");
     const press = async (key, code, keyCode) => {
       await cdp.call("Input.dispatchKeyEvent", {
         type: "keyDown",
@@ -239,7 +246,7 @@ async function connect(url) {
         'document.activeElement.id === "shopdetail-tab-community" && document.activeElement.getAttribute("aria-selected") === "true"',
       ))
     )
-      throw new Error("Arrow key selects and focuses next tab");
+      throw new Error("Arrow key selects and focuses next tab: " + JSON.stringify(await evaluate('({focused:document.activeElement.id,selected:document.querySelector("[role=tab][aria-selected=true]")?.id})')));
     await evaluate(
       '[...document.querySelectorAll(".shopdetail-feed-card button")].find(button => button.title === "Kommentare einblenden").focus()',
     );
@@ -306,6 +313,28 @@ async function connect(url) {
         checks: "Real keyboard tabs, details and photo dialog",
       }),
     );
+    await navigate(390, 844, "sideview");
+    const sheetHeight = () => evaluate('document.querySelector("[data-shop-sideview]").getBoundingClientRect().height');
+    const dragSheet = async delta => {
+      const origin = await evaluate('(() => { const bounds = document.querySelector("[data-shop-drag]").getBoundingClientRect(); return { x: bounds.left + 30, y: bounds.top + 20 }; })()');
+      await cdp.call("Input.dispatchMouseEvent", { type: "mousePressed", ...origin, button: "left", clickCount: 1 });
+      await cdp.call("Input.dispatchMouseEvent", { type: "mouseMoved", x: origin.x, y: origin.y + delta, button: "left", buttons: 1 });
+      await cdp.call("Input.dispatchMouseEvent", { type: "mouseReleased", x: origin.x, y: origin.y + delta, button: "left", clickCount: 1 });
+      await delay(350);
+    };
+    const initialHeight = await sheetHeight();
+    await dragSheet(-220);
+    if ((await sheetHeight()) < initialHeight + 100) throw new Error("Mobile map sideview expands when dragged up");
+    await dragSheet(220);
+    if (Math.abs((await sheetHeight()) - initialHeight) > 3) throw new Error("Mobile map sideview returns to its original snap point");
+    await evaluate('[...document.querySelectorAll("[data-shop-sideview] button")].find(button => button.textContent === "Angebot korrigieren").focus()');
+    await press("Enter", "Enter", 13);
+    if (!(await evaluate('document.activeElement.id === "offering-kugel"'))) throw new Error("Offering dialog focuses its first ice type");
+    for (let i = 0; i < 5; i++) await press("Tab", "Tab", 9);
+    if (!(await evaluate('document.activeElement.id === "offering-kugel"'))) throw new Error("Offering dialog traps keyboard focus");
+    await press("Escape", "Escape", 27);
+    if (!(await evaluate('!document.querySelector("[role=dialog]") && document.activeElement.textContent === "Angebot korrigieren"'))) throw new Error("Offering dialog restores focus when dismissed");
+    console.log(JSON.stringify({ passed: 5, checks: "Real sideview dragging and offering-dialog keyboard navigation" }));
   } finally {
     cdp?.close();
     browser.kill();

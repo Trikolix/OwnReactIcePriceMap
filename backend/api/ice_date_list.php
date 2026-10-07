@@ -7,7 +7,10 @@ ensureIceDateSchema($pdo);
 $authData = requireAuth($pdo);
 $userId = (int)$authData['user_id'];
 
-$stmt = $pdo->prepare("SELECT d.id FROM ice_dates d JOIN ice_date_participants p ON p.date_id = d.id AND p.user_id = :user_id WHERE d.status <> 'cancelled' ORDER BY d.starts_at DESC LIMIT 50");
+$stmt = $pdo->prepare("SELECT d.id FROM ice_dates d JOIN ice_date_participants p ON p.date_id = d.id AND p.user_id = :user_id
+    ORDER BY CASE WHEN d.status = 'planned' AND d.starts_at >= DATE_SUB(NOW(), INTERVAL 1 DAY) THEN 0 ELSE 1 END,
+    CASE WHEN d.status = 'planned' AND d.starts_at >= DATE_SUB(NOW(), INTERVAL 1 DAY) THEN d.starts_at END ASC,
+    d.starts_at DESC LIMIT 50");
 $stmt->execute(['user_id' => $userId]);
 $dates = [];
 foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $dateId) {

@@ -8,6 +8,8 @@ function rejectsL(callable $fn,int $status,string $message): void { try { $fn();
 $pdo->exec("CREATE TABLE nutzer (id INT PRIMARY KEY,username VARCHAR(100) NOT NULL);
 CREATE TABLE eisdielen (id INT PRIMARY KEY,name VARCHAR(255),website VARCHAR(500),status VARCHAR(30),openingHours TEXT,opening_hours_note TEXT,reopening_date DATE,closing_date DATE);
 CREATE TABLE eisdiele_opening_hours (id INT AUTO_INCREMENT PRIMARY KEY,eisdiele_id INT,weekday INT,opens_at TIME,closes_at TIME,overnight INT,sort_order INT);
+CREATE TABLE checkins (id INT AUTO_INCREMENT PRIMARY KEY,eisdiele_id INT,nutzer_id INT,typ VARCHAR(20),datum DATETIME);
+CREATE TABLE preise (id INT AUTO_INCREMENT PRIMARY KEY,eisdiele_id INT,typ VARCHAR(20),preis DECIMAL(5,2),gemeldet_am DATETIME);
 CREATE TABLE user_api_tokens (id INT AUTO_INCREMENT PRIMARY KEY,user_id INT,token_hash CHAR(64),user_agent TEXT,ip_address VARCHAR(50),created_at DATETIME,last_used_at DATETIME,expires_at DATETIME,revoked_at DATETIME);
 INSERT INTO nutzer VALUES (1,'Admin'),(2,'Betreiber'),(3,'Mitarbeiter'),(4,'Kunde'),(5,'Fremder');
 INSERT INTO eisdielen (id,name) VALUES (10,'Pilot Eisdiele'),(20,'Andere Eisdiele');");

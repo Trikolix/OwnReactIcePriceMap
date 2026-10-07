@@ -570,6 +570,7 @@ try {
             WHERE nutzer_id = :userId
               AND c.eisdiele_id = :shopId
               AND c.completed = 0
+              AND (c.valid_from IS NULL OR c.valid_from <= NOW())
               AND c.valid_until >= NOW()
             ORDER BY c.created_at ASC
             LIMIT 1

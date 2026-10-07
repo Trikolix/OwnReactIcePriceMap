@@ -14,7 +14,7 @@ export default function HeaderNavigation({
   logo, promoIcon, userId, username, isLoggedIn, currentLevel, avatarSrc, progress,
   menuOpen, onMenuChange, notificationsOpen, onNotificationsChange,
   onCheckin, checkinOpen, onLogin, onAddShop, onLogout,
-  actionCount, hasActivePhotoChallenge, dashboardNewCount,
+  actionCount, hasActivePhotoChallenge, dashboardNewCount, pendingShopChangeCount = 0,
 }) {
   const headerRef = useRef(null);
   const menuButtonRef = useRef(null);
@@ -164,7 +164,8 @@ export default function HeaderNavigation({
                 </Submenu>}
                 {menuLink('/admin/instagram', 'Instagram-Fotoexport', Instagram)}
                 {menuLink('/photo-challenge-admin', 'Fotochallenges verwalten', Camera)}
-                {menuLink('/shop-change-requests', 'Änderungsvorschläge', ClipboardList)}
+                {menuLink('/shop-change-requests', 'Änderungsvorschläge', ClipboardList, pendingShopChangeCount > 0
+                  ? <span aria-label={`${pendingShopChangeCount} offene Änderungsvorschläge`}>{badgeCount(pendingShopChangeCount)} offen</span> : null)}
               </>}
             </Section>}
             <Section aria-labelledby="menu-info"><SectionTitle id="menu-info">Informationen</SectionTitle>

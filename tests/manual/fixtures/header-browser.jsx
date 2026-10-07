@@ -36,12 +36,17 @@ window.Date = class extends nativeDate { constructor(...args) { super(...(args.l
 let key = 0;
 let user = { userId: 42, username: 'TheGourmetCyclist', currentLevel: 59 };
 let unread = 120;
+let pendingChanges = 7;
+let failPendingChanges = false;
 const calls = [];
 window.fetch = async (input, init = {}) => {
   const url = String(input);
   if (!url.startsWith('https://test.invalid/')) throw new Error('Unexpected external fetch: ' + url);
-  calls.push({ url, method: init.method || 'GET' });
+  calls.push({ url, method: init.method || 'GET', init });
   let data = { status: 'success' };
+  if (url.includes('get_shop_change_request_count.php')) {
+    return { ok: !failPendingChanges, json: async () => ({ status: failPendingChanges ? 'error' : 'success', pending_count: pendingChanges }) };
+  }
   if (url.includes('session.php') || url.includes('login.php')) data = { ...data, ...user, token: 'test-token', expires_at: '2030-01-01' };
   else if (url.includes('list_public_challenges.php')) data.data = [{ status: 'active' }];
   else if (url.includes('get_user_stats.php')) data.avatar_url = 'fixture-avatar.png';
@@ -148,6 +153,7 @@ async function run() {
     return 'preview';
   }
   for (const role of ['guest', 'user', 'admin', 'long', 'low', 'staff']) {
+    const startCall = calls.length;
     await mount(role);
     headerLayout();
     if (role !== 'guest') {
@@ -169,7 +175,29 @@ async function run() {
     }
     check(Boolean(menu().querySelector('[href="/systemmeldungenform"]')) === (role === 'admin'), 'Administrator permissions are preserved');
     check(Boolean(menu().querySelector('[href="/admin/weekly-stats"]')) === ['admin', 'staff'].includes(role), 'User 2 statistics permissions are preserved');
+    check(Boolean(menu().querySelector('[href="/shop-change-requests"]')) === (role === 'admin'), 'Moderation menu is restricted to administrators');
+    check(calls.slice(startCall).some(call => call.url.includes('get_shop_change_request_count.php')) === (role === 'admin'), 'Only administrators request the moderation count');
     if (role === 'admin') {
+      const changeLink = () => menu().querySelector('[href="/shop-change-requests"]');
+      check(changeLink().textContent === 'Änderungsvorschläge7 offen', 'Menu shows the number of pending suggestions next to the label');
+      check(calls.findLast(call => call.url.includes('get_shop_change_request_count.php')).init.headers.Authorization === 'Bearer test-token', 'Moderation count uses the authenticated session');
+      pendingChanges = 3;
+      window.dispatchEvent(new Event('shop-change-requests-updated')); await tick();
+      check(changeLink().textContent.endsWith('3 offen'), 'Decisions refresh the moderation count immediately');
+      pendingChanges = 125;
+      window.dispatchEvent(new Event('focus')); await tick();
+      check(changeLink().textContent.endsWith('99+ offen') && changeLink().querySelector('[aria-label="125 offene Änderungsvorschläge"]'), 'Large pending counts are compact with an accessible exact total');
+      failPendingChanges = true;
+      window.dispatchEvent(new Event('shop-change-requests-updated')); await tick();
+      check(changeLink().textContent.endsWith('99+ offen'), 'A failed refresh keeps the last confirmed count');
+      failPendingChanges = false;
+      pendingChanges = 0;
+      window.dispatchEvent(new Event('shop-change-requests-updated')); await tick();
+      check(changeLink().textContent === 'Änderungsvorschläge', 'An empty queue hides the badge');
+      await click('Menü schließen');
+      pendingChanges = 7;
+      await click('Menü öffnen');
+      check(changeLink().textContent.endsWith('7 offen'), 'Reopening the menu refreshes newly arrived suggestions');
       await click('Awards / Aktionen');
       check(menu().querySelectorAll('#menu-awards a').length === 4, 'All award administration links remain available');
     }

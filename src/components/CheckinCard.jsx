@@ -2,13 +2,15 @@ import React, { useState, forwardRef, useEffect } from "react";
 import { Bike, Car, Footprints, HelpCircle, MapPin, MessageCircle } from "lucide-react";
 import styled from "styled-components";
 import Rating from "./Rating";
-import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import CheckinForm from "../CheckinForm";
 import ImageGalleryWithLightbox from './ImageGalleryWithLightbox';
 import CommentSection from "./CommentSection";
 import { Modal } from "./Modal";
-import { SamllerSubmitButton, ContentWrapper, LeftContent, RightContent, CommentToggle, Card } from '../styles/SharedStyles';
+import { ActivityCard as Card, ActivityHeader, ActivityLayout, ActivityText as LeftContent, ActivityMedia, ActivityChipLink, ActivityChip, ShopButton as SamllerSubmitButton, ActivityMetaRow as CardMetaRow, ActivityDate as DateText, ActivityUserHeader as UserHeader, ActivityHeaderText as HeaderText, ActivityLink as CleanLink, ActivitySocialActions as ActionRow, ActivityCommentButton as CommentToggle } from '../styles/ShopUi';
+import { formatActivityDate } from '../utils/activityFeed';
+import { flavorPath } from '../utils/shopOfferings.mjs';
+import { shopAssetUrl, hasShopNumber } from '../utils/shopDetail';
 import UserAvatar from "./UserAvatar";
 import MentionFormatter from "./MentionFormatter";
 import LikeButton from "./LikeButton";
@@ -54,43 +56,38 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
   return (
     <>
       <Card ref={ref}>
-        <CardMetaRow>
-          <DateText dateTime={checkin.datum}>
-            {new Date(checkin.datum).toLocaleDateString("de-DE", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-            })}
-          </DateText>
-        </CardMetaRow>
+        <ActivityHeader>
+          <UserHeader>
+            <UserAvatar
+              userId={checkin.nutzer_id}
+              name={checkin.nutzer_name}
+              avatarUrl={checkin.avatar_url}
+              size={48}
+            />
+            <HeaderText>
+              <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong>{" "}
+              {hasPublicPlace ? (
+                <>hat bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt.</>
+              ) : (
+                <>hat Eis ohne öffentlichen Ort eingecheckt.</>
+              )}{" "}<TypText>(Typ: {checkin.typ})</TypText>
+            </HeaderText>
+          </UserHeader>
+          <CardMetaRow>
+            <DateText dateTime={checkin.datum}>
+              {formatActivityDate(checkin.datum)}
+            </DateText>
+          </CardMetaRow>
+        </ActivityHeader>
         <StyledContentWrapper>
           <LeftContent>
-            <UserHeader>
-              <UserAvatar
-                userId={checkin.nutzer_id}
-                name={checkin.nutzer_name}
-                avatarUrl={checkin.avatar_url}
-                size={48}
-              />
-              <HeaderText>
-                <strong><CleanLink to={`/user/${checkin.nutzer_id}`}>{checkin.nutzer_name}</CleanLink></strong>{" "}
-                {hasPublicPlace ? (
-                  <>hat bei <strong><CleanLink to={`/map/activeShop/${checkin.eisdiele_id}`}>{checkin.eisdiele_name}</CleanLink></strong> eingecheckt.</>
-                ) : (
-                  <>hat Eis ohne öffentlichen Ort eingecheckt.</>
-                )}{" "}<TypText>(Typ: {checkin.typ})</TypText>
-              </HeaderText>
-            </UserHeader>
-
             {checkin.eissorten && checkin.eissorten.length > 0 && (
               <AttributeSection>
                 <strong>Sorten:</strong>
                 {checkin.eissorten.map((sorte, index) => (
                   <AttributeBadge
                     key={index}
-                    to={`/statistics/flavours/${encodeURIComponent(String(sorte.sortenname || '').trim())}?type=${encodeURIComponent(checkin.typ || 'all')}`}
+                    to={flavorPath(sorte.sortenname, checkin.typ || 'all')}
                     aria-label={`Sorten-Details für ${String(sorte.sortenname || '').trim()}`}
                   >
                     {sorte.sortenname} ({sorte.bewertung}&#9733;)
@@ -101,31 +98,31 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
 
             <Table>
               <tbody>
-                {checkin.geschmackbewertung !== null && (<tr>
+                {hasShopNumber(checkin.geschmackbewertung) && (<tr>
                   <th>Geschmack:</th>
                   <td>
-                    <Rating stars={checkin.geschmackbewertung} />{" "}
+                    <Rating stars={Number(checkin.geschmackbewertung)} />{" "}
                     <strong>{checkin.geschmackbewertung}</strong>
                   </td>
                 </tr>)}
-                {checkin.größenbewertung !== null && checkin.typ === "Kugel" && (<tr>
+                {hasShopNumber(checkin.größenbewertung) && checkin.typ === "Kugel" && (<tr>
                   <th>Größe:</th>
                   <td>
-                    <Rating stars={checkin.größenbewertung} />{" "}
+                    <Rating stars={Number(checkin.größenbewertung)} />{" "}
                     <strong>{checkin.größenbewertung}</strong>
                   </td>
                 </tr>)}
-                {checkin.preisleistungsbewertung !== null && (<tr>
+                {hasShopNumber(checkin.preisleistungsbewertung) && (<tr>
                   <th>Preis-Leistung:</th>
                   <td>
-                    <Rating stars={checkin.preisleistungsbewertung} />{" "}
+                    <Rating stars={Number(checkin.preisleistungsbewertung)} />{" "}
                     <strong>{checkin.preisleistungsbewertung}</strong>
                   </td>
                 </tr>)}
-                {checkin.waffelbewertung !== null && (<tr>
+                {hasShopNumber(checkin.waffelbewertung) && (<tr>
                   <th>Waffel:</th>
                   <td>
-                    <Rating stars={checkin.waffelbewertung} />{" "}
+                    <Rating stars={Number(checkin.waffelbewertung)} />{" "}
                     <strong>{checkin.waffelbewertung}</strong>
                   </td>
                 </tr>)}
@@ -144,15 +141,16 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
               <SamllerSubmitButton onClick={handleEditClick}>Bearbeiten</SamllerSubmitButton>
             )}
           </LeftContent>
-          <MediaColumn>
+          {checkin.bilder?.length > 0 && <MediaColumn>
             <ImageGalleryWithLightbox
+              large
               images={(checkin.bilder || []).map(b => ({
-                url: `https://ice-app.de/${b.url}`,
+                url: shopAssetUrl(b.url),
                 beschreibung: b.beschreibung
               }))}
               fallbackTitle={`${(checkin.eissorten || []).map(s => s.sortenname).join(', ')} Eis${hasPublicPlace ? ` bei ${checkin.eisdiele_name}` : ''}`}
             />
-          </MediaColumn>
+          </MediaColumn>}
         </StyledContentWrapper>
         <ActionRow>
           <LikeButton
@@ -162,6 +160,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
             initialHasLiked={checkin.has_liked}
           />
           <CommentToggle
+            aria-expanded={areCommentsVisible}
             title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
             onClick={() => setAreCommentsVisible(!areCommentsVisible)}
           >
@@ -201,67 +200,14 @@ export default CheckinCard;
 
 // ---------- Styled Components ----------
 
-const CleanLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-`;
 
-const ActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-`;
 
-const CardMetaRow = styled.div`
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-  z-index: 1;
-  pointer-events: none;
 
-  @media (max-width: 640px) {
-    position: static;
-    justify-content: flex-end;
-    margin-bottom: 0.5rem;
-    pointer-events: auto;
-  }
-`;
+const StyledContentWrapper = ActivityLayout;
 
-const StyledContentWrapper = styled(ContentWrapper)`
-  align-items: flex-start;
-`;
+const MediaColumn = ActivityMedia;
 
-const MediaColumn = styled(RightContent)`
-  flex: 1 1 320px;
-  min-width: min(100%, 280px);
-  max-width: 520px;
-  width: 100%;
-  justify-content: flex-end;
-  overflow: visible;
-  padding-bottom: 0;
-  margin-top: 0.55rem;
 
-  @media (max-width: 900px) {
-    max-width: none;
-    justify-content: flex-start;
-    margin-top: 0;
-  }
-`;
-
-const UserHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-`;
-
-const HeaderText = styled.div`
-  line-height: 1.4;
-`;
 
 const Table = styled.table`
   border-collapse: collapse;
@@ -275,7 +221,7 @@ const Table = styled.table`
   th {
     color: #666;
     font-weight: 500;
-    width: 90px;
+    overflow-wrap: normal;
   }
 
   td {
@@ -288,29 +234,12 @@ const Table = styled.table`
 `;
 const AttributeSection = styled.div`
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 4px 8px;
 `;
 
-const AttributeBadge = styled(Link)`
-  background: rgba(255, 181, 34, 0.12);
-  color: #7a4a00;
-  border: 1px solid rgba(255, 181, 34, 0.24);
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-decoration: none;
-
-  &:hover {
-    background: rgba(255, 181, 34, 0.24);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(255, 181, 34, 0.52);
-    outline-offset: 2px;
-  }
-`;
+const AttributeBadge = ActivityChipLink;
 
 const TypText = styled.em`
   font-size: 0.85rem;
@@ -324,47 +253,6 @@ const ArrivalInfo = styled.div`
   gap: 5px;
 `;
 
-const ArrivalBadge = styled.div`
-  display: inline-block;
-  background-color: #ffe5b4;
-  color: #8a4f00;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-`;
+const ArrivalBadge = ActivityChip;
 
-const OnSiteBadge = styled.div`
-  display: inline-block;
-  background-color: #ffb4b4ff;
-  color: #8a0000ff;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-`;
-
-const DateText = styled.time`
-  position: static;
-  font-size: 0.85rem;
-  color: #777;
-  font-style: italic;
-  user-select: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-
-  @media (max-width: 640px) {
-    margin-bottom: 0;
-    justify-content: flex-end;
-    font-size: 0.78rem;
-    line-height: 1.2;
-    flex-wrap: wrap;
-  }
-`;
+const OnSiteBadge = styled(ActivityChip)`background: #fff0ec; border-color: #f1ccc0; color: #8a4030;`;

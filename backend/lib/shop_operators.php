@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/loyalty.php';
 require_once __DIR__ . '/opening_hours.php';
+require_once __DIR__ . '/shop_ice_offerings.php';
 
 function shopOperatorPermissions(PDO $pdo,int $shopId,int $userId): array {
     $role=null;
@@ -125,13 +126,17 @@ function operatorUpdateBusiness(PDO $pdo,int $userId,array $data): array {
     }
     loyaltyText($hours['note']??'',1000,'Hinweis',true); $hours['timezone']=OPENING_HOURS_DEFAULT_TIMEZONE;
     $normalized=normalize_structured_opening_hours($hours);
-    return loyaltyTransaction($pdo,function() use($pdo,$shop,$userId,$website,$status,$normalized) {
+    $iceOfferings=array_key_exists('ice_offerings',$data)?offeringStates($data['ice_offerings']):null;
+    return loyaltyTransaction($pdo,function() use($pdo,$shop,$userId,$website,$status,$normalized,$iceOfferings) {
         $original=loyaltyLockShop($pdo,$shop); loyaltyRequireRole($pdo,$shop,$userId,true);
         $text=build_opening_hours_display($normalized['rows'],$normalized['note']);
         $sameStatus=($original['status']??'open')===$status;
         loyaltyQuery($pdo,'UPDATE eisdielen SET website=?,status=?,openingHours=?,opening_hours_note=?,reopening_date=?,closing_date=? WHERE id=?',[$website,$status,$text,$normalized['note'],$sameStatus?($original['reopening_date']??null):null,$sameStatus?($original['closing_date']??null):null,$shop]);
         replace_opening_hours($pdo,$shop,$normalized['rows']);
-        loyaltyAudit($pdo,$shop,$userId,'business_updated',['website'=>$website,'status'=>$status,'opening_hours'=>$normalized]); return ['message'=>'Eisdielendaten gespeichert.'];
+        if ($iceOfferings!==null) saveOperatorIceOfferings($pdo,$shop,$userId,$iceOfferings);
+        $audit=['website'=>$website,'status'=>$status,'opening_hours'=>$normalized];
+        if ($iceOfferings!==null) $audit['ice_offerings']=$iceOfferings;
+        loyaltyAudit($pdo,$shop,$userId,'business_updated',$audit); return ['message'=>'Eisdielendaten gespeichert.'];
     });
 }
 function operatorShop(PDO $pdo,int $userId,int $shopId): array {
@@ -141,6 +146,7 @@ function operatorShop(PDO $pdo,int $userId,int $shopId): array {
     $rows=fetch_opening_hours_rows($pdo,$shopId);
     if (!$rows && !empty($shop['openingHours'])) $rows=parse_legacy_opening_hours($shop['openingHours'])['rows'];
     $shop['opening_hours']=build_structured_opening_hours($rows,$shop['opening_hours_note']);
+    $shop['ice_offerings']=getShopIceOfferings($pdo,$shopId,$userId);
     $programs=loyaltyQuery($pdo,'SELECT * FROM loyalty_programs WHERE shop_id=? ORDER BY id DESC',[$shopId])->fetchAll(PDO::FETCH_ASSOC);
     $result=['shop'=>$shop,'role'=>$role,'programs'=>$programs];
     if ($role==='operator') {

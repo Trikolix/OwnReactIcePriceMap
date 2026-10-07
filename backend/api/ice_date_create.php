@@ -3,6 +3,12 @@ require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/ice_dates.php';
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    echo json_encode(['status' => 'error', 'message' => 'Bitte verwende POST.']);
+    exit;
+}
 ensureIceDateSchema($pdo);
 $authData = requireAuth($pdo);
 $creatorId = (int)$authData['user_id'];

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { primaryIceType, iceOfferings, flavorPath, attributePath } from '../../src/utils/shopOfferings.mjs';
+const data = (entries) => ({ eisdiele: { ice_offerings: entries } });
+assert.equal(primaryIceType(data({ kugel: { checkin_count: 10 }, softeis: { checkin_count: 20 } })), 'softeis');
+assert.equal(primaryIceType(data({ kugel: { checkin_count: 10, state: 'not_offered' }, eisbecher: { checkin_count: 8 } })), 'eisbecher');
+assert.equal(primaryIceType(data({ kugel: { checkin_count: 10 }, softeis: { checkin_count: 10 } })), 'kugel');
+assert.equal(primaryIceType(data(Object.fromEntries(['kugel', 'softeis', 'eisbecher'].map(type => [type, { state: 'not_offered' }])))), null);
+assert.equal(iceOfferings({}).kugel.state, 'unknown');
+assert.equal(flavorPath('  Dunkle Schokolade & Minze '), '/statistics/flavours/Dunkle%20Schokolade%20%26%20Minze');
+assert.equal(flavorPath('Vanille', 'Softeis'), '/statistics/flavours/Vanille?type=Softeis');
+assert.equal(attributePath('4'), '/map?attributes=4');
+assert.equal(attributePath(null), null);
+assert.equal(attributePath('bad'), null);
+console.log('Shop offering presentation tests passed');

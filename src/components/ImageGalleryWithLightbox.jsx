@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import styled, { css } from 'styled-components';
 import { useSwipeable } from 'react-swipeable';
 import { Modal } from "./Modal";
 
@@ -23,9 +23,18 @@ const GalleryWrapper = styled.div`
   @media (min-width: 1200px) {
     grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
   }
+  ${({ $large }) => $large && css`
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+    > button { width: 100%; height: auto; aspect-ratio: 1; }
+    > button:first-child { grid-column: 1 / -1; aspect-ratio: 4 / 3; }
+    @media (min-width: 768px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  `}
 `;
 
-const ThumbnailWrapper = styled.div`
+const ThumbnailWrapper = styled.button.attrs({ type: 'button' })`
+  padding: 0;
   flex: 0 0 auto;
   width: 100px;
   height: 100px;
@@ -86,6 +95,8 @@ const LightboxTitle = styled.div`
 `;
 
 const NavButton = styled.button`
+  min-width: 44px;
+  min-height: 44px;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -100,6 +111,7 @@ const NavButton = styled.button`
   &:hover {
     background: rgba(0, 0, 0, 0.6);
   }
+  &:focus-visible { outline: 3px solid #ffb522; outline-offset: 3px; }
 
   @media (max-width: 600px) {
     font-size: 2rem;
@@ -108,6 +120,8 @@ const NavButton = styled.button`
 `;
 
 const CloseButton = styled.button`
+  min-width: 44px;
+  min-height: 44px;
   position: fixed;
   top: 16px;
   right: 16px;
@@ -121,6 +135,7 @@ const CloseButton = styled.button`
   &:hover {
     color: #ccc;
   }
+  &:focus-visible { outline: 3px solid #ffb522; outline-offset: 3px; }
 `;
 
 const PrevButton = styled(NavButton)`
@@ -139,7 +154,8 @@ const NextButton = styled(NavButton)`
   }
 `;
 
-const ImageGalleryWithLightbox = ({ images, fallbackTitle }) => {
+const ImageGalleryWithLightbox = ({ images = [], fallbackTitle, large = false }) => {
+  const lightboxRef = useRef(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -159,15 +175,28 @@ const ImageGalleryWithLightbox = ({ images, fallbackTitle }) => {
   // ⌨️ Tastatursteuerung
   const handleKeyDown = useCallback((e) => {
     if (!lightboxOpen) return;
-    if (e.key === 'ArrowRight') showNext();
-    if (e.key === 'ArrowLeft') showPrev();
+    if (e.key === 'ArrowRight') { e.preventDefault(); setLightboxIndex(prev => (prev + 1) % images.length); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setLightboxIndex(prev => (prev - 1 + images.length) % images.length); }
     if (e.key === 'Escape') setLightboxOpen(false);
-  }, [lightboxOpen]);
+    if (e.key === 'Tab') {
+      const controls = [...(lightboxRef.current?.querySelectorAll('button') || [])];
+      const first = controls[0], last = controls.at(-1);
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, [lightboxOpen, images.length]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const previous = document.activeElement;
+    lightboxRef.current?.querySelector('button')?.focus();
+    return () => { if (previous?.isConnected) previous.focus(); };
+  }, [lightboxOpen]);
 
   // 📱 Swipe-Handling
   const swipeHandlers = useSwipeable({
@@ -178,22 +207,22 @@ const ImageGalleryWithLightbox = ({ images, fallbackTitle }) => {
 
   return (
     <>
-      <GalleryWrapper>
+      <GalleryWrapper $large={large}>
         {images.map((img, idx) => (
-          <ThumbnailWrapper key={idx} onClick={() => openLightbox(idx)}>
+          <ThumbnailWrapper key={idx} onClick={() => openLightbox(idx)} aria-label={`Foto ${idx + 1} öffnen`}>
             <ThumbnailImage src={img.url} alt={img.alt || `Bild ${idx + 1}`} />
           </ThumbnailWrapper>
         ))}
       </GalleryWrapper>
 
       {lightboxOpen && (
-        <Modal>
+        <Modal onClose={() => setLightboxOpen(false)}>
           <LightboxOverlay onClick={() => setLightboxOpen(false)}>
-            <LightboxContent {...swipeHandlers} onClick={(e) => e.stopPropagation()}>
-              <CloseButton onClick={() => setLightboxOpen(false)}>×</CloseButton>
-              <PrevButton onClick={showPrev}>‹</PrevButton>
+            <LightboxContent {...swipeHandlers} ref={node => { lightboxRef.current = node; swipeHandlers.ref(node); }} role="dialog" aria-modal="true" aria-label={fallbackTitle || "Fotogalerie"} onClick={(e) => e.stopPropagation()}>
+              <CloseButton onClick={() => setLightboxOpen(false)} aria-label="Fotogalerie schließen">×</CloseButton>
+              <PrevButton onClick={showPrev} aria-label="Vorheriges Foto">‹</PrevButton>
               <LightboxImage src={images[lightboxIndex].url} alt={images[lightboxIndex].alt || `Bild ${lightboxIndex + 1}`} />
-              <NextButton onClick={showNext}>›</NextButton>
+              <NextButton onClick={showNext} aria-label="Nächstes Foto">›</NextButton>
               <LightboxTitle>
                 {images[lightboxIndex].beschreibung || fallbackTitle}
               </LightboxTitle>

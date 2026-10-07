@@ -22,7 +22,7 @@ try {
 set -eu
 docker-php-ext-install pdo_mysql >/tmp/extensions.log 2>&1 || { cat /tmp/extensions.log; exit 1; }
 mkdir -p /tmp/ice-loyalty-test/backend/lib
-cp /workspace/backend/lib/loyalty.php /workspace/backend/lib/shop_operators.php /workspace/backend/lib/opening_hours.php /workspace/backend/lib/auth.php /tmp/ice-loyalty-test/backend/lib/
+cp /workspace/backend/lib/loyalty.php /workspace/backend/lib/shop_operators.php /workspace/backend/lib/shop_ice_offerings.php /workspace/backend/lib/opening_hours.php /workspace/backend/lib/auth.php /tmp/ice-loyalty-test/backend/lib/
 cp /workspace/backend/loyalty.php /tmp/ice-loyalty-test/backend/
 cp /workspace/tests/php/fixtures/systemmeldung-db.php /tmp/ice-loyalty-test/backend/db_connect.php
 ICE_LOYALTY_TEST_BACKEND=/tmp/ice-loyalty-test/backend php /workspace/tests/php/loyalty_integration_test.php

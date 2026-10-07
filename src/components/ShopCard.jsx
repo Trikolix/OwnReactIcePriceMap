@@ -5,7 +5,8 @@ import { useUser } from "../context/UserContext";
 import OpeningHours from "./OpeningHours";
 import ShopWebsite from "./ShopWebsite";
 import SubmitIceShopModal from "../SubmitIceShopModal";
-import { Card } from "../styles/SharedStyles";
+import { ActivityCard as Card, ActivityHeader, ActivityMetaRow as CardMetaRow, ActivityDate as DateText, ActivityUserHeader as Header, ActivityHeaderText as HeaderText, ActivityLink as CleanLink, ShopButton } from "../styles/ShopUi";
+import { formatActivityDate } from '../utils/activityFeed';
 import UserAvatar from "./UserAvatar";
 import { getShopEditAccess } from "../utils/shopEditing";
 
@@ -16,9 +17,6 @@ const ShopCard = ({ iceShop, onSuccess }) => {
   const [isLoadingEditShop, setIsLoadingEditShop] = useState(false);
   const { userId, isLoggedIn } = useUser();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
-
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString("de-DE");
 
   const handleEditClick = async () => {
     setIsLoadingEditShop(true);
@@ -42,36 +40,37 @@ const ShopCard = ({ iceShop, onSuccess }) => {
   return (<>
 
     <Card>
-      <CardMetaRow>
-        <DateText dateTime={iceShop.erstellt_am}>
-          {new Date(iceShop.erstellt_am).toLocaleDateString("de-DE", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-            })}
-        </DateText>
-      </CardMetaRow>
-      <Header>
-        <UserAvatar
-          userId={iceShop.user_id}
-          name={iceShop.nutzer_name}
-          avatarUrl={iceShop.avatar_url}
-        />
-        <HeaderText>
-          <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}
-          <strong><CleanLink to={`/map/activeShop/${iceShop.id}`}>{iceShop.name}</CleanLink></strong> erstellt.{" "}
-        </HeaderText>
-      </Header>
-      <strong>Adresse:</strong> {iceShop.adresse || "keine Adresse eingetagen"}<br />
-      <OpeningHours eisdiele={iceShop} />
-      <ShopWebsite eisdiele={iceShop} showSubmitAction={false} />
+      <ActivityHeader>
+        <Header>
+          <UserAvatar
+            userId={iceShop.user_id}
+            name={iceShop.nutzer_name}
+            avatarUrl={iceShop.avatar_url}
+          />
+          <HeaderText>
+            <strong><CleanLink to={`/user/${iceShop.user_id}`}>{iceShop.nutzer_name}</CleanLink></strong> hat die Eisdiele{" "}
+            <strong><CleanLink to={`/map/activeShop/${iceShop.id}`}>{iceShop.name}</CleanLink></strong> erstellt.{" "}
+          </HeaderText>
+        </Header>
+        <CardMetaRow>
+          <DateText dateTime={iceShop.erstellt_am}>
+            {formatActivityDate(iceShop.erstellt_am)}
+          </DateText>
+        </CardMetaRow>
+      </ActivityHeader>
+      <Details>
+        <div><strong>Adresse:</strong> {iceShop.adresse || "Keine Adresse eingetragen"}</div>
+        <OpeningHours eisdiele={iceShop} />
+        <ShopWebsite eisdiele={iceShop} showSubmitAction={false} />
+      </Details>
+      <Actions>
+      <ShopButton as={Link} to={`/shop/${iceShop.id}`} $primary>Eisdiele ansehen</ShopButton>
       {isLoggedIn && (
         <SuggestionLink type="button" onClick={handleEditClick} disabled={isLoadingEditShop}>
           {isLoadingEditShop ? "Lade Details..." : getShopEditAccess(iceShop, userId).canEditDirectly ? "Eintrag bearbeiten" : "Änderung vorschlagen"}
         </SuggestionLink>
       )}
+      </Actions>
     </Card>
 
     {showEditModal && (
@@ -89,81 +88,7 @@ const ShopCard = ({ iceShop, onSuccess }) => {
 
 export default ShopCard;
 
-const CleanLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-`;
-
-const HeaderText = styled.div`
-  line-height: 1.4;
-`;
-
-const CardMetaRow = styled.div`
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-  z-index: 1;
-  pointer-events: none;
-
-  @media (max-width: 640px) {
-    position: static;
-    justify-content: flex-end;
-    margin-bottom: 0.5rem;
-    pointer-events: auto;
-  }
-`;
-
-const DateText = styled.time`
-  position: static;
-  font-size: 0.85rem;
-  color: rgba(47, 33, 0, 0.56);
-  font-style: italic;
-  user-select: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-
-  @media (max-width: 640px) {
-    margin-bottom: 0;
-    justify-content: flex-end;
-    font-size: 0.78rem;
-    line-height: 1.2;
-    flex-wrap: wrap;
-  }
-`;
-
-const SuggestionLink = styled.button`
-  margin-top: 0.75rem;
-  background: none;
-  border: none;
-  color: #4f4f4f;
-  font-size: 0.9rem;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-  font-weight: 500;
-
-  &:hover {
-    color: #1f1f1f;
-  }
-
-  &:disabled {
-    opacity: 0.65;
-    cursor: wait;
-  }
-`;
+const Details = styled.div`display: grid; gap: 12px; line-height: 1.5; min-width: 0;`;
+const Actions = styled.div`display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;`;
+const SuggestionLink = ShopButton;
 

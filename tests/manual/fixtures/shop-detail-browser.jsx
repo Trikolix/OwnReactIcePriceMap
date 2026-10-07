@@ -6,10 +6,13 @@ import {
   Route,
   useLocation,
   useNavigate,
+  useParams,
 } from "react-router-dom";
 import { configure, fireEvent, getByRole, waitFor } from "@testing-library/dom";
 import { UserProvider } from "../../../src/context/UserContext";
 import IceShopDetailPage from "../../../src/pages/IceShopDetailPage";
+import ShopDetailsView from "../../../src/ShopDetailsView";
+import ShopChangeRequestsAdmin from "../../../src/pages/ShopChangeRequestsAdmin";
 import {
   shopStatus,
   shopAssetUrl,
@@ -25,12 +28,18 @@ configure({
 const root = createRoot(document.getElementById("app")),
   checks = [],
   calls = [];
+const browserErrors = [];
+window.addEventListener("error", event => browserErrors.push(event.error?.stack || event.message));
+let loginRequests = 0;
+window.addEventListener("auth:open-login", () => loginRequests++);
 let mountId = 0,
   user = 4,
   failShop = false,
   delayShop = 0,
   copied = "",
   nativeShare = null;
+let offeringReports = [{ id: 1, shop_id: 1, user_id: 4, ice_type: "softeis", state: "not_offered", status: "pending", updated_at: "2026-10-07 12:00:00.000000", shop_name: "Eismanufaktur Emilia", requester_name: "Mia" }];
+let shopChanges = [{ id: 1, eisdiele_id: 1, shop_name: "Eismanufaktur Emilia", requester_name: "Mia", status: "pending", created_at: "2026-10-07 12:00:00", changes: { name: "Emilia" } }];
 const longName =
   "Eismanufaktur mit einem außergewöhnlich langen Namen in der historischen Altstadt";
 const comment =
@@ -143,7 +152,7 @@ const baseData = {
     anreise: "Fahrrad",
     is_on_site: 1,
     kommentar: comment,
-    bilder: [],
+    bilder: i === 0 ? [{ url: "/fixture-ice.svg" }, { url: "/fixture-ice.svg?second" }] : [],
     likes_count: 2,
     has_liked: false,
     commentCount: 1,
@@ -159,7 +168,7 @@ const baseData = {
     auswahl: 24,
     beschreibung: comment,
     attribute_details: [{ id: 1, name: "Vegane Sorten" }],
-    bilder: [],
+    bilder: i === 0 ? [{ url: "/fixture-ice.svg" }, { url: "/fixture-ice.svg?second" }] : [],
     likes_count: 2,
     has_liked: false,
     commentCount: 1,
@@ -194,6 +203,17 @@ const baseData = {
   },
 };
 let data = structuredClone(baseData);
+const priceExample = () => {
+  const example = structuredClone(baseData);
+  example.eisdiele.ice_offerings = Object.fromEntries(["kugel", "softeis", "eisbecher"].map(type => [type, { state: "offered", source: "observed", checkin_count: type === "kugel" ? 20 : 5 }]));
+  example.preise = {
+    kugel: { preis: 2.1, waehrung_symbol: "EUR", letztes_update: "2026-10-01 12:00:00", beschreibung: "Premiumsorten 2,60 €" },
+    softeis: { preis: 2.8, waehrung_symbol: "EUR", letztes_update: "2026-10-01 12:00:00", beschreibung: "Kleines Softeis: 2,80 € / großes Softeis: 3,80 €" },
+  };
+  example.scores = { kugel: 4.7, softeis: null, eisbecher: 5 };
+  example.bewertungen.auswahl = 22;
+  return example;
+};
 const tick = () => new Promise((resolve) => setTimeout(resolve, 90));
 const check = (value, message) => {
   if (!value) throw new Error(message);
@@ -210,7 +230,7 @@ const overflow = (message) => {
   );
 };
 const cardFits = (message) => {
-  const card = main().querySelector(".shopdetail-feed-card > div");
+  const card = main().querySelector(".shopdetail-feed-card > [data-activity-card]");
   const oversized = [card, ...card.querySelectorAll("div,table")].filter(
     (el) => el.clientWidth && el.scrollWidth > el.clientWidth + 1,
   );
@@ -243,7 +263,7 @@ window.fetch = async (input, init = {}) => {
   if (!url.href.startsWith("https://test.invalid/"))
     throw new Error("External API request rejected");
   calls.push({ url: url.href, init });
-  if (url.pathname.endsWith("get_eisdiele_details.php")) {
+  if (url.pathname.endsWith("get_eisdiele_details.php") || url.pathname.endsWith("get_eisdiele.php")) {
     if (delayShop)
       await new Promise((resolve, reject) => {
         const timer = setTimeout(resolve, delayShop);
@@ -260,6 +280,22 @@ window.fetch = async (input, init = {}) => {
       ? response({ status: "error" }, 503)
       : response(structuredClone(data));
   }
+  if (url.pathname.endsWith("getRoutes.php")) return response(structuredClone(data.routen));
+  if (url.pathname.endsWith("shop_ice_offerings.php")) {
+    if (url.searchParams.get("action") === "list") return response({ status: "success", reports: offeringReports.filter(report => url.searchParams.get("status") === "all" || report.status === url.searchParams.get("status")) });
+    if (url.searchParams.get("action") === "review") { const payload = JSON.parse(init.body); offeringReports[0].status = payload.decision === "approve" ? "approved" : "rejected"; return response({ status: "success" }); }
+    if (init.method === "POST") {
+      const payload = JSON.parse(init.body);
+      for (const [type, state] of Object.entries(payload.states)) {
+        data.eisdiele.ice_offerings[type].my_state = state;
+        if (user === 1) Object.assign(data.eisdiele.ice_offerings[type], { state, source: "admin" });
+      }
+    }
+    return response({ status: "success", message: "Gespeichert" });
+  }
+  if (url.pathname.endsWith("get_shop_change_request_count.php")) return response({ status: "success", pending_count: shopChanges.filter(change => change.status === "pending").length + offeringReports.filter(report => report.status === "pending").length });
+  if (url.pathname.endsWith("get_shop_change_requests.php")) return response({ requests: shopChanges.filter(change => url.searchParams.get("status") === "all" || change.status === url.searchParams.get("status")) });
+  if (url.pathname.endsWith("handle_shop_change_request.php")) { shopChanges[0].status = JSON.parse(init.body).action === "approve" ? "approved" : "rejected"; return response({ status: "success" }); }
   if (url.pathname.includes("session.php"))
     return response({
       status: "success",
@@ -308,6 +344,10 @@ window.fetch = async (input, init = {}) => {
     users: [],
   });
 };
+function SideFixture() {
+  const { shopId } = useParams();
+  return <main className="shopdetail-main"><ShopDetailsView shopId={shopId} onClose={() => window.shopNavigate("/map")} refreshMapShops={() => {}} /></main>;
+}
 function Probe() {
   const location = useLocation(),
     navigate = useNavigate();
@@ -316,6 +356,21 @@ function Probe() {
   return null;
 }
 const main = () => document.querySelector("main.shopdetail-main");
+const checkShopActions = (container, checkinLabel, context) => {
+  const actions = container.querySelector("[data-shop-actions]");
+  check([...actions.children].map(control => control.textContent.trim()).join("|") === `${checkinLabel}|Bewerten|Eis-Date planen`, `${context}: check-in and rating precede ice dates`);
+  const [checkin, review, date] = [...actions.children].map(control => control.getBoundingClientRect());
+  check(checkin.width >= 44 && checkin.height >= 44 && review.width >= 44 && review.height >= 44, `${context}: both main actions stay visible and usable`);
+  check(Math.abs(checkin.top - review.top) < 2 && date.top >= review.bottom, `${context}: ice dates occupy a separate, secondary row`);
+};
+const checkShopIdentity = (container, context) => {
+  const identity = container.querySelector("[data-shop-identity]");
+  const name = identity.querySelector("h1, h2").getBoundingClientRect();
+  const tools = [...identity.querySelectorAll("[data-shop-utilities] > button")].map(button => button.getBoundingClientRect());
+  check(name.width >= identity.getBoundingClientRect().width - 1, `${context}: the shop name uses the entire header width`);
+  check(tools.every(bounds => bounds.width >= 44 && bounds.height >= 44 && Math.abs(bounds.top - tools[0].top) < 1), `${context}: header tools form one accessible row`);
+  check(tools.every(bounds => bounds.bottom <= name.top), `${context}: header tools do not overlap the shop name`);
+};
 const button = (label) =>
   getByRole(main(), "button", { name: label, exact: true });
 const click = async (label) => {
@@ -343,6 +398,8 @@ async function mount(path = "/shop/1", id = 4) {
         <Probe />
         <Routes>
           <Route path="/shop/:shopId" element={<IceShopDetailPage />} />
+          <Route path="/map/activeShop/:shopId" element={<SideFixture />} />
+          <Route path="/admin/shop-changes" element={<ShopChangeRequestsAdmin />} />
           <Route path="*" element={<p>Andere Seite</p>} />
         </Routes>
       </UserProvider>
@@ -353,6 +410,7 @@ async function mount(path = "/shop/1", id = 4) {
 }
 window.shopPreview = async (kind) => {
   data = structuredClone(baseData);
+  if (kind === "prices") data = priceExample();
   failShop = false;
   if (kind === "empty") {
     data.checkins = [];
@@ -362,15 +420,24 @@ window.shopPreview = async (kind) => {
     data.eisdiele.openingHoursStructured = null;
     data.eisdiele.is_open_now = false;
   }
-  await mount(
+  await mount(kind === "sideview" ? "/map/activeShop/1" :
     "/shop/1" +
-      (["photos", "checkins", "stats", "routes"].includes(kind)
+      (["photos", "checkins", "reviews", "stats", "routes"].includes(kind)
         ? "?tab=" + kind
         : ""),
   );
+  await waitFor(() => {
+    if (!main().querySelector(kind === "sideview" ? "[data-shop-sideview]" : ".shopdetail-hero")) {
+      throw new Error("Waiting for the shop preview to finish loading");
+    }
+  });
   if (kind === "cards") {
     await selectTab("Beiträge");
-    main().querySelector(".shopdetail-feed-card").scrollIntoView();
+    await waitFor(() => {
+      const card = main().querySelector(".shopdetail-feed-card");
+      if (!card) throw new Error("Waiting for activity cards in the preview");
+      card.scrollIntoView();
+    });
   }
 };
 (async () => {
@@ -385,6 +452,11 @@ window.shopPreview = async (kind) => {
     main().querySelector("h1").textContent === data.eisdiele.name,
     "Shop heading displayed",
   );
+  checkShopActions(main(), "Einchecken", "Full shop");
+  checkShopIdentity(main(), "Full shop");
+  const favorite = getByRole(main(), "button", { name: "Zu Favoriten hinzufügen" });
+  fireEvent.click(favorite); await tick();
+  check(favorite.getAttribute("aria-pressed") === "true" && favorite.getAttribute("aria-label") === "Aus Favoriten entfernen", "Favorite action exposes its selected state and next action");
   check(
     main().textContent.includes("2,20 €"),
     "Price uses German formatting and currency",
@@ -466,22 +538,27 @@ window.shopPreview = async (kind) => {
     window.shopLocation.search === "?tab=checkins",
     "Section selection stored in URL",
   );
+  await waitFor(() => check(main().querySelectorAll(".shopdetail-feed-card").length === 12, "Contributions initially show twelve"));
   check(
-    main().querySelectorAll(".shopdetail-feed-card").length === 12,
-    "Contributions initially show twelve",
-  );
-  check(
-    main().querySelectorAll(".shopdetail-feed-card > div").length === 12,
+    main().querySelectorAll(".shopdetail-feed-card > [data-activity-card]").length === 12,
     "Check-in cards are directly visible",
   );
+  const activityPhoto = main().querySelector('[data-activity-media] button');
+  activityPhoto.focus(); fireEvent.click(activityPhoto); await tick();
+  await waitFor(() => check(document.querySelector('[role="dialog"]')?.contains(document.activeElement), "Activity photo gallery opens with focus inside the dialog"));
+  const activityDialog = document.querySelector('[role="dialog"]');
+  fireEvent.keyDown(document, { key: "ArrowRight" }); await tick();
+  check(activityDialog.querySelector('img').src.includes("second"), "Activity gallery keeps next-photo keyboard navigation");
+  fireEvent.keyDown(document, { key: "Escape" }); await tick();
+  check(!document.querySelector('[role="dialog"]') && document.activeElement === activityPhoto, "Closing activity photos restores keyboard focus");
   check(
     !main().querySelector(".shopdetail-feed-card details"),
     "Cards have no disclosure wrapper",
   );
   check(
-    getComputedStyle(main().querySelector(".shopdetail-feed-card > div"))
-      .boxShadow !== "none",
-    "Shared card appearance retained",
+    getComputedStyle(main().querySelector(".shopdetail-feed-card > [data-activity-card]"))
+      .backgroundColor === "rgb(255, 255, 255)",
+    "Cards use the white shop-panel surface",
   );
   overflow("Check-in has no horizontal overflow");
   cardFits("Check-in content fits inside its card");
@@ -505,7 +582,7 @@ window.shopPreview = async (kind) => {
     "Review subsection stored in URL",
   );
   check(
-    main().querySelectorAll(".shopdetail-feed-card > div").length === 12,
+    main().querySelectorAll(".shopdetail-feed-card > [data-activity-card]").length === 12,
     "Review cards are directly visible",
   );
   overflow("Review has no horizontal overflow");
@@ -559,7 +636,7 @@ window.shopPreview = async (kind) => {
   overflow("Gallery has no horizontal overflow");
   await selectTab("Routen");
   check(
-    main().querySelectorAll(".shopdetail-feed-card > div").length === 12 &&
+    main().querySelectorAll(".shopdetail-feed-card > [data-activity-card]").length === 12 &&
       main().querySelector("[aria-label=Tourdaten]"),
     "Route cards are directly visible",
   );
@@ -604,7 +681,7 @@ window.shopPreview = async (kind) => {
     ),
   );
   check(
-    main().querySelector(".shopdetail-feed-card[data-focused] > div"),
+    main().querySelector(".shopdetail-feed-card[data-focused] > [data-activity-card]"),
     "Notification highlights target card",
   );
   check(
@@ -662,7 +739,7 @@ window.shopPreview = async (kind) => {
     "Zero coordinates produce valid map",
   );
   check(
-    new URL(main().querySelector("a[target=_blank]").href).searchParams.get(
+    new URL(getByRole(main(), "link", { name: "Route dorthin" }).href).searchParams.get(
       "query",
     ) === "0,0",
     "Zero coordinates used by route link",
@@ -690,7 +767,7 @@ window.shopPreview = async (kind) => {
     "No empty gallery space",
   );
   check(
-    main().textContent.includes("Noch keine Community-Bewertungen"),
+    main().textContent.includes("Noch nicht bewertet"),
     "Missing scores have empty state",
   );
   await selectTab("Fotos");
@@ -706,8 +783,8 @@ window.shopPreview = async (kind) => {
     "Non-ice shops omit route tab",
   );
   check(
-    !main().textContent.includes("Preise & Bewertungen"),
-    "Non-ice shops omit inappropriate ratings",
+    main().textContent.includes("Preise & Bewertungen"),
+    "Non-ice shops expose their ice ratings",
   );
   check(
     main().textContent.includes("Stand beendet"),
@@ -781,13 +858,134 @@ window.shopPreview = async (kind) => {
     panelTop >= tabsBottom && panelTop <= tabsBottom + 24,
     "New section starts at its first content after scroll",
   );
+  data = priceExample();
+  await mount();
+  const pricesPanel = getByRole(main(), "region", { name: "Preise und Bewertungen" });
+  check(!pricesPanel.textContent.includes("Wird angeboten") && !pricesPanel.textContent.includes("Bei Besuchen gemeldet"), "Routine offering sources do not clutter the prices panel");
+  check(pricesPanel.textContent.includes("2,10 EUR") && pricesPanel.textContent.includes("4,7 / 5") && pricesPanel.textContent.includes("5,0 / 5"), "Compact rows preserve prices and ice-type ratings");
+  const priceDetails = pricesPanel.querySelector("[data-price-details]");
+  check(!priceDetails.open && priceDetails.textContent.includes("Premiumsorten 2,60 €"), "Price notes remain available without expanding the initial panel");
+  fireEvent.click(priceDetails.querySelector("summary")); await tick();
+  check(priceDetails.open && priceDetails.textContent.includes("großes Softeis: 3,80 €") && priceDetails.textContent.includes("Gemeldet am"), "Price details expose variants and reporting dates");
+  fireEvent.click(priceDetails.querySelector("summary")); await tick();
+  check(!pricesPanel.querySelector("button").textContent.includes("Bewertung abgeben") && [...pricesPanel.querySelectorAll("button")].length === 2, "The prices panel keeps two focused actions while rating remains in the header");
   data = structuredClone(baseData);
+  data.eisdiele.ice_offerings = {
+    kugel: { state: "not_offered", source: "inferred", checkin_count: 0, my_state: "unknown" },
+    softeis: { state: "offered", source: "observed", checkin_count: 14, my_state: "unknown" },
+    eisbecher: { state: "unknown", source: "unknown", checkin_count: 1, my_state: "unknown" },
+  };
+  data.scores = { kugel: 4.9, softeis: 4.6, eisbecher: 3.8 };
+  data.preise.softeis = { preis: 3.1, waehrung_symbol: "\u20ac" };
+  await mount();
+  check(main().querySelector('.shopdetail-glance').textContent.includes("Softeis"), "Most visited available type supplies the header rating");
+  check(!main().querySelector('[data-ice-type="kugel"]') && main().querySelector('[data-ice-type="softeis"]'), "Inferred absence hides the irrelevant price and rating row");
+  check(main().textContent.includes("Vermutlich nicht angeboten"), "Automatic absence is explicitly labelled");
+  check(main().querySelector('a[href="/statistics/flavours/Pistazie"]'), "Aggregated flavors link without a misleading type filter");
+  check(main().querySelector('a[href="/map?attributes=1"]'), "Shop attributes link to the map filter");
+  await click("Angebot korrigieren");
+  let offeringDialog = document.querySelector('[role="dialog"]');
+  check(offeringDialog && offeringDialog.querySelectorAll("select").length === 3, "Reporting dialog exposes all three ice types");
+  fireEvent.change(offeringDialog.querySelector("#offering-kugel"), { target: { value: "offered" } });
+  fireEvent.click(getByRole(offeringDialog, "button", { name: "Angaben speichern" }));
+  await tick(); await tick();
+  check(!document.querySelector('[role="dialog"]') && data.eisdiele.ice_offerings.kugel.my_state === "offered", "Saving an offering report submits and closes the dialog");
+  const reportCall = calls.findLast(call => call.url.includes("shop_ice_offerings.php"));
+  check(reportCall.init.headers.Authorization === "Bearer test-token" && JSON.parse(reportCall.init.body).shop_id === 1, "Offering reporting retains authentication and shop context");
+  check(Object.keys(JSON.parse(reportCall.init.body).states).join(",") === "kugel", "Reporting leaves unchanged votes and their moderation decisions untouched");
+  await mount("/map/activeShop/1");
+  await tick();
+  const side = document.querySelector('[data-shop-sideview]');
+  checkShopActions(side, "Einchecken", "Map sideview");
+  checkShopIdentity(side, "Map sideview");
+  check(side && side.querySelector('.shopdetail-glance').textContent.includes("Softeis"), "Sideview uses the same main ice type: " + browserErrors.join("; "));
+  check(!side.querySelector('[data-ice-type="kugel"]') && side.querySelector('[data-ice-type="softeis"]'), "Sideview uses the same offering visibility");
+  check(side.querySelector('a[href="/statistics/flavours/Pistazie"]'), "Sideview flavors are linked");
+  check([...side.querySelectorAll("button")].every(button => {
+    const bounds = button.getBoundingClientRect();
+    return bounds.width >= 44 && bounds.height >= 44;
+  }), "Sideview buttons provide at least 44px action surfaces");
+  check(getByRole(side, "button", { name: "Eisdiele teilen" }), "Sideview sharing supports keyboard activation");
+  fireEvent.click(getByRole(side, "button", { name: "Eisdiele teilen" })); await tick();
+  check(copied === location.origin + "/map/activeShop/1" && side.querySelector('[role="status"]').textContent.includes("Link kopiert"), "Sideview sharing copies the route URL with inline confirmation");
+  fireEvent.click(getByRole(side, "button", { name: "Angebot korrigieren" })); await tick();
+  offeringDialog = document.querySelector('[role="dialog"]');
+  check(offeringDialog.querySelector("#offering-kugel").value === "offered", "Sideview reporting prefills the user's own vote");
+  fireEvent.click(getByRole(offeringDialog, "button", { name: "Abbrechen" })); await tick();
+  fireEvent.click(getByRole(side, "button", { name: "Check-ins", exact: true })); await tick();
+  const sideCard = side.querySelector('[data-activity-card]');
+  const sideMedia = sideCard.querySelector('[data-activity-media]');
+  const sideText = sideCard.querySelector('[data-activity-text]');
+  check(sideText.getBoundingClientRect().top > sideMedia.getBoundingClientRect().top, "Photos precede text in narrow cards on every viewport");
+  sideCard.style.width = "719px";
+  check(sideText.getBoundingClientRect().top > sideMedia.getBoundingClientRect().top, "719px cards retain the stacked photo layout");
+  sideCard.style.width = "720px";
+  check(Math.abs(sideText.getBoundingClientRect().top - sideMedia.getBoundingClientRect().top) < 2, "720px cards place the photo next to their text");
+  sideCard.style.width = "";
+  const sideImage = side.querySelector('[data-activity-media] img');
+  check(sideImage && sideImage.getBoundingClientRect().width > 180, "Narrow sideview retains a large activity photo");
+  overflow("Sideview and activity photos have no horizontal overflow");
+  data.eisdiele.place_type = "restaurant";
+  data.eisdiele.ice_offerings.softeis.state = "not_offered";
+  data.eisdiele.ice_offerings.eisbecher = { state: "offered", source: "operator", checkin_count: 20 };
+  await mount();
+  check(main().querySelector('.shopdetail-glance').textContent.includes("Eisbecher"), "Restaurants expose their sundae main rating");
+  check(!main().querySelector('.shopdetail-glance').textContent.includes("preis"), "Sundae headers do not invent a unit price");
+  check(main().querySelector('[data-ice-type="eisbecher"]'), "Restaurants retain the relevant rating tile");
+  data = priceExample();
+  await mount("/shop/1", 1);
+  await click("Angebot korrigieren");
+  offeringDialog = document.querySelector('[role="dialog"]');
+  check(offeringDialog.textContent.includes("als Admin direkt übernommen") && !offeringDialog.textContent.includes("Zwei übereinstimmende"), "Admin dialog explains immediate changes without community confirmation");
+  fireEvent.change(offeringDialog.querySelector("#offering-kugel"), { target: { value: "not_offered" } });
+  fireEvent.click(getByRole(offeringDialog, "button", { name: "Angaben speichern" })); await tick(); await tick();
+  check(!document.querySelector('[role="dialog"]') && !main().querySelector('[data-ice-type="kugel"]'), "Admin correction immediately updates the full shop without a confirmation step");
+  await mount("/map/activeShop/1", 1);
+  check(!document.querySelector('[data-shop-sideview] [data-ice-type="kugel"]'), "Admin correction is also effective in the map sideview");
+  await click("Angebot korrigieren");
+  offeringDialog = document.querySelector('[role="dialog"]');
+  fireEvent.change(offeringDialog.querySelector("#offering-kugel"), { target: { value: "offered" } });
+  fireEvent.click(getByRole(offeringDialog, "button", { name: "Angaben speichern" })); await tick(); await tick();
+  check(!document.querySelector('[role="dialog"]') && document.querySelector('[data-shop-sideview] [data-ice-type="kugel"]'), "Admin can restore an offering directly from the sideview");
+  await mount("/admin/shop-changes", 1);
+  check(document.body.textContent.includes("Eisangebot aus der Community"), "Existing shop-change administration includes offering moderation");
+  const toggleAdminMenu = async name => { fireEvent.click(getByRole(document.body, "button", { name, exact: true })); await tick(); };
+  await toggleAdminMenu("Menü öffnen");
+  check(document.querySelector('[href="/shop-change-requests"]').textContent.endsWith("2 offen"), "Menu combines pending shop changes and offering reports");
+  await toggleAdminMenu("Menü schließen");
+  const beforeOfferingDecision = calls.filter(call => call.url.includes("get_shop_change_request_count.php")).length;
+  fireEvent.click(getByRole(document.body, "button", { name: "Freigeben", exact: true })); await tick(); await tick();
+  check(offeringReports[0].status === "approved", "Offering moderation approves an individual report");
+  const decisionCall = calls.findLast(call => call.url.includes("action=review"));
+  check(decisionCall.init.headers.Authorization === "Bearer test-token" && JSON.parse(decisionCall.init.body).updated_at === "2026-10-07 12:00:00.000000", "Moderation sends authentication and the exact report version");
+  check(calls.filter(call => call.url.includes("get_shop_change_request_count.php")).length > beforeOfferingDecision, "Offering moderation immediately refreshes the menu count");
+  await toggleAdminMenu("Menü öffnen");
+  check(document.querySelector('[href="/shop-change-requests"]').textContent.endsWith("1 offen"), "Approved offering reports disappear from the menu count");
+  await toggleAdminMenu("Menü schließen");
+  const beforeShopDecision = calls.filter(call => call.url.includes("get_shop_change_request_count.php")).length;
+  fireEvent.click(getByRole(document.body, "button", { name: "Genehmigen", exact: true })); await tick(); await tick();
+  check(calls.filter(call => call.url.includes("get_shop_change_request_count.php")).length > beforeShopDecision, "Shop-change moderation immediately refreshes the menu count");
+  await toggleAdminMenu("Menü öffnen");
+  check(document.querySelector('[href="/shop-change-requests"]').textContent === "Änderungsvorschläge", "Badge disappears after the final pending suggestion is handled");
+  await toggleAdminMenu("Menü schließen");
+  data = structuredClone(baseData);
+  await mount("/map/activeShop/1", null);
+  const guestSide = document.querySelector('[data-shop-sideview]');
+  checkShopActions(guestSide, "Einchecken", "Guest map sideview");
+  const previousLoginRequests = loginRequests;
+  fireEvent.click(getByRole(guestSide, "button", { name: "Einchecken", exact: true }));
+  fireEvent.click(getByRole(guestSide, "button", { name: "Bewerten", exact: true }));
+  check(loginRequests === previousLoginRequests + 2, "Both guest sideview actions open login instead of disappearing");
+  await mount("/shop/1", null);
+  checkShopActions(main(), "Einchecken", "Guest full shop");
+  await click("Bewerten");
+  check(document.body.textContent.includes("Einloggen"), "Guest header rating opens login");
   await mount("/shop/1", null);
   check(
     !main().querySelector(".favoriten-button"),
     "Guests have no unusable favorite button",
   );
-  await click("Eis einchecken");
+  await click("Einchecken");
   check(
     document.body.textContent.includes("Einloggen"),
     "Guest check-in opens login",

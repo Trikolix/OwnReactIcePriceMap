@@ -7,6 +7,7 @@ require_once  __DIR__ . '/lib/opening_hours.php';
 require_once __DIR__ . '/lib/shop_editing.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/shop_operators.php';
+require_once __DIR__ . '/lib/shop_ice_offerings.php';
 header('Cache-Control: private, no-store');
 
 // Eisdiele-ID aus Anfrage holen
@@ -48,6 +49,7 @@ $ownerEditDeadline = shopOwnerEditDeadline($eisdiele);
 $eisdiele['owner_edit_until'] = $ownerEditDeadline !== null ? date(DATE_ATOM, $ownerEditDeadline) : null;
 $operatorAuth = authenticateRequest($pdo, false);
 $eisdiele = array_merge($eisdiele, shopLoyaltyMetadata($pdo, (int)$eisdiele['id'], (int)($operatorAuth['user_id'] ?? 0)));
+$eisdiele['ice_offerings'] = getShopIceOfferings($pdo, (int)$eisdiele['id'], (int)($operatorAuth['user_id'] ?? 0));
 
 $openingRows = fetch_opening_hours_rows($pdo, (int)$eisdiele['id']);
 $openingNote = $eisdiele['opening_hours_note'] ?? null;

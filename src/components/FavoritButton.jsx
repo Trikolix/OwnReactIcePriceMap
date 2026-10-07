@@ -64,9 +64,12 @@ const FavoritenButton = ({ eisdieleId, setIceCreamShops }) => {
 
     return (
         <button
+            type="button"
             className="favoriten-button"
             onClick={handleToggle}
             title={favorisiert ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+            aria-label={favorisiert ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+            aria-pressed={favorisiert}
             disabled={loading}
         >
             <span style={{ fontSize: "20px", color: favorisiert ? "gold" : "#888" }}>

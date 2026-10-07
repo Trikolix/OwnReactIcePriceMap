@@ -24,6 +24,7 @@ import ActionsOverviewModal from './pages/ActionsOverview';
 import GlobalCheckinModal from './components/GlobalCheckinModal';
 
 import useStreakStatus from './hooks/useStreakStatus';
+import usePendingShopChanges from './hooks/usePendingShopChanges';
 
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
@@ -54,6 +55,7 @@ const Header = ({ refreshShops }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = Number(userId) === 1;
+  const pendingShopChangeCount = usePendingShopChanges({ apiUrl, authToken, isAdmin, isLoggedIn, menuOpen });
   const now = new Date();
   const seasonalState = getResolvedSeasonalCampaigns(now, { isAdmin });
   const seasonalActionCount = seasonalState.activeCampaigns.filter((campaign) => ['summer_2026', 'tour_de_glace_2026', 'tour_de_glace_femme_2026'].includes(campaign.id)).length;
@@ -681,6 +683,7 @@ const Header = ({ refreshShops }) => {
         actionCount={actionHubCount}
         hasActivePhotoChallenge={hasActivePhotoChallenge}
         dashboardNewCount={dashboardNewCount}
+        pendingShopChangeCount={pendingShopChangeCount}
       />
       {showLoginModal &&
         <LoginModal

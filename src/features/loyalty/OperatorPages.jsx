@@ -5,6 +5,7 @@ import OpeningHoursEditor from "../../components/OpeningHoursEditor";
 import { hydrateOpeningHours } from "../../utils/openingHours";
 import LoyaltyLayout, { Feedback } from "./LoyaltyLayout";
 import CounterPanel from "./CounterPanel";
+import { ICE_TYPES, ICE_LABELS, OFFERING_STATES } from "../../utils/shopOfferings.mjs";
 import {
   loyaltyApi,
   loyaltyDate,
@@ -211,6 +212,7 @@ function OperatorManagement({ data, token, onChanged }) {
     [target, setTarget] = useState(14),
     [reward, setReward] = useState("Eine Kugel Eis gratis"),
     [username, setUsername] = useState("");
+  const [iceOfferings, setIceOfferings] = useState(() => Object.fromEntries(ICE_TYPES.map(type => [type, data.shop.ice_offerings?.[type]?.operator_state || "unknown"])));
   const [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -270,6 +272,7 @@ function OperatorManagement({ data, token, onChanged }) {
               website,
               status,
               opening_hours: hours,
+              ice_offerings: iceOfferings,
             });
           }}
         >
@@ -299,6 +302,13 @@ function OperatorManagement({ data, token, onChanged }) {
               value={hours}
               onChange={setHours}
             />
+            <h3>Unser Eisangebot</h3>
+            {ICE_TYPES.map(type => <label key={type} htmlFor={`business-ice-${type}`}>{ICE_LABELS[type]}
+              <select id={`business-ice-${type}`} value={iceOfferings[type]} onChange={event => setIceOfferings(old => ({ ...old, [type]: event.target.value }))}>
+                {Object.entries(OFFERING_STATES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>)}
+            <p className="loyalty-muted">Deine Angaben haben Vorrang vor Community-Meldungen. „Keine Angabe“ gibt die Ermittlung wieder an die Community zurück.</p>
             <p className="loyalty-muted">
               Name, Adresse und Kartenposition kannst du auf der Eisdielenseite
               zur Prüfung vorschlagen.

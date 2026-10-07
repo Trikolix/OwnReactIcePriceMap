@@ -1,206 +1,33 @@
-import React, { useEffect, useRef, useState } from "react";
-import styled from "styled-components";
-import { Link } from "react-router-dom";
-import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-import "swiper/css/navigation";
-import { Navigation, Pagination } from "swiper/modules";
-import AwardCard from "./AwardCard";
-import { Card as SharedCard } from "../styles/SharedStyles";
-
-const normalizeDateString = (value) => {
-  if (typeof value !== "string") return value;
-  return value.includes("T") ? value : value.replace(" ", "T");
-};
-
-const parseAwardDate = (value) => {
-  if (!value) return null;
-  const parsed = new Date(normalizeDateString(value));
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
+import React from 'react';
+import { ActivityCard as Card, ActivityHeader, ActivityMetaRow as CardMetaRow, ActivityDate as DateText, ActivityLink as CleanLink, ActivityAvatarRow } from '../styles/ShopUi';
+import { parseActivityDate, formatActivityDate } from '../utils/activityFeed';
+import UserAvatar from './UserAvatar';
+import ActivityCarousel from './ActivityCarousel';
+import AwardCard from './AwardCard';
 
 const AwardWaveCard = ({ wave, focusAwardId = null, focusCommentId = null }) => {
   const awards = Array.isArray(wave?.recipients) ? wave.recipients : [];
-  const [cardHeight, setCardHeight] = useState();
-  const focusedAwardIndex = focusAwardId
-    ? awards.findIndex((award) => String(award.id) === String(focusAwardId))
-    : -1;
-  const initialIndex = focusedAwardIndex >= 0 ? focusedAwardIndex : 0;
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
-  const cardRef = useRef(null);
-  const swiperRef = useRef(null);
-  const parsedDate = parseAwardDate(wave?.datum);
-
-  const updateHeight = () => {
-    if (cardRef.current) {
-      setCardHeight(cardRef.current.offsetHeight);
-    }
-  };
-
-  useEffect(() => {
-    if (!awards.length) return;
-    updateHeight();
-    const el = cardRef.current;
-    if (el) {
-      el.addEventListener("awardCardResize", updateHeight);
-    }
-    return () => {
-      if (el) {
-        el.removeEventListener("awardCardResize", updateHeight);
-      }
-    };
-  }, [awards, activeIndex]);
-
-  useEffect(() => {
-    if (focusedAwardIndex < 0) return;
-    setActiveIndex(focusedAwardIndex);
-    if (swiperRef.current && typeof swiperRef.current.slideTo === "function") {
-      swiperRef.current.slideTo(focusedAwardIndex, 0);
-    }
-  }, [focusedAwardIndex]);
-
   if (!awards.length) return null;
-
-  const formatName = (award) => (
-    <strong key={`${award.user_id}-${award.id}`}>
-      <CleanLink to={`/user/${award.user_id}`}>{award.user_name}</CleanLink>
-    </strong>
-  );
-
-  const renderNames = () => {
-    if (awards.length === 1) {
-      return formatName(awards[0]);
-    }
-
-    if (awards.length === 2) {
-      return (
-        <>
-          {formatName(awards[0])} und {formatName(awards[1])}
-        </>
-      );
-    }
-
-    return (
-      <>
-        {awards.slice(0, -1).map((award, index) => (
-          <React.Fragment key={`${award.user_id}-${award.id}`}>
-            {formatName(award)}
-            {index < awards.length - 2 && ", "}
-          </React.Fragment>
-        ))}{" "}
-        und {formatName(awards[awards.length - 1])}
-      </>
-    );
-  };
-
-  return (
-    <Card style={cardHeight ? { minHeight: cardHeight } : {}}>
-      <CardMetaRow>
-        <DateText dateTime={parsedDate ? parsedDate.toISOString() : undefined}>
-          {parsedDate
-            ? parsedDate.toLocaleDateString("de-DE", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "numeric",
-                minute: "numeric",
-              })
-            : wave?.datum}
-        </DateText>
-      </CardMetaRow>
-      <ContentWrapper>
-        <LeftContent>
-          {renderNames()} haben kurz nacheinander den Award <strong>{wave?.title_de}</strong> erhalten
-        </LeftContent>
-      </ContentWrapper>
-      <Swiper
-        modules={[Navigation, Pagination]}
-        spaceBetween={20}
-        slidesPerView={1}
-        navigation
-        pagination={{ clickable: true }}
-        autoHeight={true}
-        initialSlide={initialIndex}
-        style={{ marginTop: "1rem", marginLeft: "-2rem", marginRight: "-2rem", marginBottom: "-3.5rem" }}
-        onSwiper={(swiper) => {
-          swiperRef.current = swiper;
-        }}
-        onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
-      >
-        {awards.map((award, idx) => (
-          <SwiperSlide key={award.id}>
-            <AwardCard
-              ref={idx === activeIndex ? cardRef : null}
-              award={award}
-              showComments={String(award.id) === String(focusAwardId)}
-              focusCommentId={String(award.id) === String(focusAwardId) ? focusCommentId : null}
-            />
-          </SwiperSlide>
-        ))}
-      </Swiper>
-    </Card>
-  );
+  const focusedIndex = awards.findIndex(award => String(award.id) === String(focusAwardId));
+  const date = parseActivityDate(wave.datum);
+  const users = [...new Map(awards.map(award => [award.user_id, award])).values()];
+  return <Card>
+    <ActivityHeader>
+      <div data-activity-identity>
+        <ActivityAvatarRow>{users.map(user => <UserAvatar key={user.user_id} userId={user.user_id} name={user.user_name} avatarUrl={user.avatar_url} />)}</ActivityAvatarRow>
+        <p style={{ margin: 0, lineHeight: 1.5 }}>
+          {awards.map((award, index) => <React.Fragment key={award.id}>
+            {index > 0 && (index === awards.length - 1 ? ' und ' : ', ')}
+            <strong><CleanLink to={`/user/${award.user_id}`}>{award.user_name}</CleanLink></strong>
+          </React.Fragment>)} haben kurz nacheinander den Award <strong>{wave.title_de}</strong> erhalten.
+        </p>
+      </div>
+      <CardMetaRow><DateText dateTime={date?.toISOString()}>{formatActivityDate(date)}</DateText></CardMetaRow>
+    </ActivityHeader>
+    <ActivityCarousel label="Award-Empfänger" entryLabel="Award" initialIndex={Math.max(0, focusedIndex)}>
+      {awards.map(award => <AwardCard key={award.id} award={award}
+        showComments={String(award.id) === String(focusAwardId)} focusCommentId={String(award.id) === String(focusAwardId) ? focusCommentId : null} />)}
+    </ActivityCarousel>
+  </Card>;
 };
-
 export default AwardWaveCard;
-
-const Card = styled(SharedCard)`
-  padding: 1rem 1rem 3.35rem;
-`;
-
-const CardMetaRow = styled.div`
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-  z-index: 1;
-  pointer-events: none;
-
-  @media (max-width: 640px) {
-    position: static;
-    justify-content: flex-end;
-    margin-bottom: 0.5rem;
-    pointer-events: auto;
-  }
-`;
-
-const DateText = styled.time`
-  position: static;
-  font-size: 0.85rem;
-  color: rgba(47, 33, 0, 0.5);
-  font-style: italic;
-  user-select: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-
-  @media (max-width: 640px) {
-    margin-bottom: 0;
-    justify-content: flex-end;
-    font-size: 0.78rem;
-    line-height: 1.2;
-    flex-wrap: wrap;
-  }
-`;
-
-const ContentWrapper = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-`;
-
-const LeftContent = styled.div`
-  flex: 1 1 300px;
-  min-width: 250px;
-`;
-
-const CleanLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-`;

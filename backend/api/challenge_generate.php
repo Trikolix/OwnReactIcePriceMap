@@ -9,6 +9,7 @@ try {
     $type = $_POST['type'] ?? null; // 'daily' oder 'weekly'
     $difficulty = $_POST['difficulty'] ?? 'leicht';
     $challengeId = $_POST['challenge_id'] ?? null; // Falls übergeben → Refresh
+    $forTomorrow = filter_var($_POST['for_tomorrow'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
     if (!$userId || !$latUser || !$lonUser || !$type) {
         echo json_encode(['status' => 'error', "message" => "Fehlende Parameter."]);
@@ -20,10 +21,22 @@ try {
         exit;
     }
 
-    if (!in_array($difficulty, ['leicht', 'mittel', 'schwer'])) {
+    if (!in_array($difficulty, ['leicht', 'mittel', 'schwer', 'individuell'])) {
         echo json_encode(['status' => 'error', "message" => "Ungültige Schwierigkeit."]);
         exit;
     }
+
+    if ($forTomorrow === null) {
+        throw new RuntimeException('Ungültiger Zeitpunkt.');
+    }
+
+    // Use the database clock, matching valid_from defaults and all activity checks.
+    $now = new DateTimeImmutable((string)$pdo->query('SELECT NOW()')->fetchColumn());
+    $validFrom = $type === 'daily' && $forTomorrow
+        ? $now->modify('tomorrow')->setTime(0, 0)
+        : $now;
+    $validUntil = ($type === 'daily' ? $validFrom : $now->modify('next sunday'))
+        ->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
     // Wenn Refresh → prüfen ob Challenge existiert
     if ($challengeId) {
@@ -36,26 +49,49 @@ try {
             exit;
         }
 
+        if ($oldChallenge['type'] !== $type || $oldChallenge['difficulty'] !== $difficulty) {
+            throw new RuntimeException('Typ und Schwierigkeit der Challenge können beim Neuversuch nicht geändert werden.');
+        }
+
+        if ((int)$oldChallenge['completed'] === 1) {
+            throw new RuntimeException('Diese Challenge wurde bereits abgeschlossen.');
+        }
+
         if ($oldChallenge['recreated'] == 1) {
             echo json_encode(['status' => 'error', 'message' => 'Diese Challenge wurde bereits neu generiert.']);
             exit;
         }
 
-        if ($oldChallenge['valid_until'] < date('Y-m-d H:i:s')) {
+        if ($oldChallenge['valid_until'] < $now->format('Y-m-d H:i:s')) {
             echo json_encode(['status' => 'error', 'message' => 'Challenge ist abgelaufen.']);
             exit;
         }
+
+        // A retry changes the shop, preserving the originally selected day and deadline.
+        $validFrom = new DateTimeImmutable($oldChallenge['valid_from'] ?? $oldChallenge['created_at']);
+        $validUntil = $oldChallenge['valid_until'];
     } else {
-        // Nur prüfen ob User bereits aktive Challenge hat (aber nur bei "neu")
+        // Today and tomorrow are separate daily slots, including completed challenges.
+        // Older evening challenges still running today occupy today's slot too.
+        $dailySlot = $type === 'daily'
+            ? ' AND COALESCE(valid_from, created_at) >= ? AND COALESCE(valid_from, created_at) < ?'
+            : '';
+        $parameters = [$userId, $type, $difficulty, $now->format('Y-m-d H:i:s')];
+        if ($type === 'daily') {
+            $parameters[] = $forTomorrow ? $validFrom->format('Y-m-d H:i:s') : '1000-01-01 00:00:00';
+            $parameters[] = $validFrom->modify('tomorrow')->setTime(0, 0)->format('Y-m-d H:i:s');
+        }
         $stmt = $pdo->prepare("
-            SELECT * FROM challenges
+            SELECT id FROM challenges
             WHERE nutzer_id = ?
             AND type = ?
             AND difficulty = ?
-            AND valid_until > NOW()
+            AND valid_until >= ?
+            $dailySlot
+            LIMIT 1
         ");
-        $stmt->execute([$userId, $type, $difficulty]);
-        if ($stmt->rowCount() > 0) {
+        $stmt->execute($parameters);
+        if ($stmt->fetchColumn() !== false) {
             echo json_encode(['status' => 'error', "message" => "Du hast bereits eine aktive Challenge dieses Typs."]);
             exit;
         }
@@ -68,6 +104,16 @@ try {
         'schwer' => [15000, 45000],
         default => [0, 5000],
     };
+    if ($difficulty === 'individuell') {
+        $minKm = filter_var($_POST['custom_min_km'] ?? null, FILTER_VALIDATE_FLOAT);
+        $maxKm = filter_var($_POST['custom_max_km'] ?? null, FILTER_VALIDATE_FLOAT);
+        if ($minKm === false || $maxKm === false || $minKm < 15 || $minKm > 60 || $maxKm < 45 || $maxKm > 100 || $maxKm < $minKm + 5) {
+            throw new RuntimeException('Ungültiger individueller Distanzbereich.');
+        }
+        $radius = [(int)round($minKm * 1000), (int)round($maxKm * 1000)];
+    }
+
+    $validFrom = $validFrom->format('Y-m-d H:i:s');
 
     // Bounding Box berechnen um Anfrage zu optimieren
     $lat = floatval($latUser);
@@ -87,7 +133,7 @@ try {
             (6371000 * ACOS(
                 COS(RADIANS(:lat)) * COS(RADIANS(e.latitude)) *
                 COS(RADIANS(e.longitude) - RADIANS(:lon)) +
-                SIN(RADIANS(:lat)) * SIN(RADIANS(e.latitude))
+                SIN(RADIANS(:latSin)) * SIN(RADIANS(e.latitude))
             )) AS distance,
             CASE WHEN c.id IS NULL THEN 0 ELSE 1 END AS has_active_challenge
         FROM eisdielen e
@@ -105,6 +151,7 @@ try {
     ");
     $stmt->execute([
         ':lat' => $lat,
+        ':latSin' => $lat,
         ':lon' => $lon,
         ':minLat' => $minLat,
         ':maxLat' => $maxLat,
@@ -136,39 +183,24 @@ try {
     // Zufällige Eisdiele auswählen
     $randomShop = $freeShops[array_rand($freeShops)];
 
-    // Valid-Until setzen
-    $now = new DateTime();
-    if ($type === 'daily') {
-        if ((int)$now->format('H') >= 18) {
-            // nach 18 Uhr → gültig bis morgen 23:59:59
-            $validUntil = $now->modify('tomorrow')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-        } else {
-            // sonst bis heute 23:59:59
-            $validUntil = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-        }
-    } else {
-        // weekly → bis kommenden Sonntag 23:59:59
-        $validUntil = $now->modify('next sunday')->setTime(23, 59, 59)->format('Y-m-d H:i:s');
-    }
-
     if ($challengeId) {
         // --- Recreate: Alte Challenge aktualisieren ---
         $stmt = $pdo->prepare("
             UPDATE challenges
-            SET eisdiele_id = ?, valid_until = ?, recreated = 1
+            SET eisdiele_id = ?, valid_from = ?, valid_until = ?, custom_min_distance_m = ?, custom_max_distance_m = ?, recreated = 1
             WHERE id = ? AND nutzer_id = ?
         ");
-        $stmt->execute([$randomShop['id'], $validUntil, $challengeId, $userId]);
+        $stmt->execute([$randomShop['id'], $validFrom, $validUntil, $radius[0], $radius[1], $challengeId, $userId]);
 
         $newChallengeId = $challengeId; // gleiche ID, nur geupdated
         $isRecreated = true;
     } else {
         // --- Neue Challenge anlegen ---
         $stmt = $pdo->prepare("
-            INSERT INTO challenges (nutzer_id, eisdiele_id, type, difficulty, valid_until, recreated)
-            VALUES (?, ?, ?, ?, ?, 0)
+            INSERT INTO challenges (nutzer_id, eisdiele_id, type, difficulty, valid_from, valid_until, custom_min_distance_m, custom_max_distance_m, recreated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         ");
-        $stmt->execute([$userId, $randomShop['id'], $type, $difficulty, $validUntil]);
+        $stmt->execute([$userId, $randomShop['id'], $type, $difficulty, $validFrom, $validUntil, $radius[0], $radius[1]]);
         $newChallengeId = $pdo->lastInsertId();
         $isRecreated = false;
     }
@@ -201,7 +233,10 @@ try {
         "challenge_id" => (int)$newChallengeId,
         "type" => $type,
         "difficulty" => $difficulty,
+        "valid_from" => $validFrom,
         "valid_until" => $validUntil,
+        "custom_min_distance_m" => $radius[0],
+        "custom_max_distance_m" => $radius[1],
         "completed" => 0,
         "recreated" => $isRecreated ? 1 : 0,
         "shop_id" => isset($randomShop['id']) ? (int)$randomShop['id'] : null,
@@ -219,7 +254,10 @@ try {
         "challenge_id" => $newChallengeId,
         "type" => $type,
         "difficulty" => $difficulty,
+        "valid_from" => $validFrom,
         "valid_until" => $validUntil,
+        "custom_min_distance_m" => $radius[0],
+        "custom_max_distance_m" => $radius[1],
         "shop" => $shopOut,
         "recreated" => $isRecreated,
         "challenge" => $challengeOut

@@ -103,6 +103,18 @@ const connect = async url => {
       }
       throw new Error('Browser test timed out at ' + width + 'x' + height);
     };
+    const capturePendingBadges = async () => {
+      for (const [width, height] of [[320, 740], [390, 844], [768, 900], [1280, 900]]) {
+        await navigate(width, height, 'menu', '&role=admin');
+        if (!await evaluate('document.querySelector("[href=\\"/shop-change-requests\\"]").textContent.endsWith("7 offen") && document.documentElement.scrollWidth <= innerWidth')) throw new Error('Pending badge missing or overflowing');
+        await evaluate('document.querySelector("[href=\\"/shop-change-requests\\"]").scrollIntoView({block:"center"})');
+        await delay(100);
+        const screenshot = await cdp.call('Page.captureScreenshot', { format: 'png' });
+        fs.writeFileSync(path.join(output, `menu-admin-pending-${width}.png`), Buffer.from(screenshot.data, 'base64'));
+        console.log(JSON.stringify({ passed: 1, viewport: [width, height], checks: 'Visible pending-suggestion badge screenshot' }));
+      }
+    };
+    if (process.argv.includes('--pending-badge-only')) { await capturePendingBadges(); return; }
     const viewports = systemSuite ? [[320,740],[390,844],[768,900],[1280,900]] : process.argv.includes('--all')
       ? [[320, 740], [360, 780], [390, 844], [768, 900], [1024, 768], [1200, 900], [1280, 900], [2560, 1440], [844, 390], [390, 440]]
       : [[390, 844]];
@@ -194,6 +206,7 @@ const connect = async url => {
         const screenshot = await cdp.call('Page.captureScreenshot', { format: 'png' });
         fs.writeFileSync(path.join(output, 'menu-' + role + '.png'), Buffer.from(screenshot.data, 'base64'));
       }
+      await capturePendingBadges();
     }
   } finally {
     cdp?.close();

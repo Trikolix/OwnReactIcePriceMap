@@ -68,7 +68,7 @@ try {
         case 'update_business': $result=operatorUpdateBusiness($pdo,$userId,$data); break;
     }
     echo json_encode(['status'=>'success']+$result,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
-} catch (LoyaltyError $e) {
+} catch (LoyaltyError | ShopOfferingError $e) {
     http_response_code($e->getCode()); echo json_encode(['status'=>'error','message'=>$e->getMessage()],JSON_UNESCAPED_UNICODE);
 } catch (JsonException $e) {
     http_response_code(400); echo json_encode(['status'=>'error','message'=>'Ungültige JSON-Anfrage.']);

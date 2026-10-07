@@ -5,21 +5,8 @@ import { MessageCircle, Sparkles, UserPlus } from "lucide-react";
 import UserAvatar from "./UserAvatar";
 import CommentSection from "./CommentSection";
 import LikeButton from "./LikeButton";
-import { Card, CommentToggle } from "../styles/SharedStyles";
-
-const formatCreatedAt = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Unbekannt";
-  }
-  return date.toLocaleDateString("de-DE", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+import { ActivityCard as Card, ActivityHeader, ActivityMetaRow as CardMetaRow, ActivityDate as DateText, ActivityUserHeader as HeaderRow, ActivityHeaderText as HeaderContent, ActivitySocialActions as SocialActionRow, ActivityCommentButton as CommentToggle, ActivityLink, ShopButton, ActivityChip, SHOP_COLORS } from "../styles/ShopUi";
+import { formatActivityDate } from '../utils/activityFeed';
 
 const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
@@ -34,41 +21,41 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
 
   return (
     <StyledCard>
-      <CardMetaRow>
-        <DateText dateTime={user.erstellt_am}>{formatCreatedAt(user.erstellt_am)}</DateText>
-      </CardMetaRow>
-
-      <HeaderRow>
-        <UserAvatar
-          userId={user.id}
-          name={user.username}
-          avatarUrl={user.avatar_url}
-          size={52}
-        />
-        <HeaderContent>
-          <BadgeRow>
-            <Badge>
-              <UserPlus size={14} />
-              Neu registriert
-            </Badge>
-            {Number(user.current_level) > 0 && (
-              <Badge $variant="soft">
-                <Sparkles size={14} />
-                Level {user.current_level}
+      <ActivityHeader>
+        <HeaderRow>
+          <UserAvatar
+            userId={user.id}
+            name={user.username}
+            avatarUrl={user.avatar_url}
+          />
+          <HeaderContent>
+            <BadgeRow>
+              <Badge>
+                <UserPlus size={14} />
+                Neu registriert
               </Badge>
-            )}
-          </BadgeRow>
-          <Headline>
-            <StrongLink to={`/user/${user.id}`}>{user.username}</StrongLink> ist neu bei ice-app.de
-          </Headline>
-          <Subline>
-            Begrüße den neuen Nutzer oder gib Tipps für gute Eisdielen in deiner Region.
-          </Subline>
-        </HeaderContent>
-      </HeaderRow>
+              {Number(user.current_level) > 0 && (
+                <Badge $variant="soft">
+                  <Sparkles size={14} />
+                  Level {user.current_level}
+                </Badge>
+              )}
+            </BadgeRow>
+            <Headline>
+              <StrongLink to={`/user/${user.id}`}>{user.username}</StrongLink> ist neu bei ice-app.de
+            </Headline>
+            <Subline>
+              Begrüße den neuen Nutzer oder gib Tipps für gute Eisdielen in deiner Region.
+            </Subline>
+          </HeaderContent>
+        </HeaderRow>
+        <CardMetaRow>
+          <DateText dateTime={user.erstellt_am}>{formatActivityDate(user.erstellt_am)}</DateText>
+        </CardMetaRow>
+      </ActivityHeader>
 
       <ActionRow>
-        <ProfileLink to={`/user/${user.id}`}>Profil ansehen</ProfileLink>
+        <ProfileLink $primary to={`/user/${user.id}`}>Profil ansehen</ProfileLink>
       </ActionRow>
 
       <SocialActionRow>
@@ -79,6 +66,7 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
           initialHasLiked={user.has_liked}
         />
         <CommentToggle
+          aria-expanded={areCommentsVisible}
           title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
           onClick={() => setAreCommentsVisible((prev) => !prev)}
         >
@@ -99,130 +87,11 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
 
 export default NewUserCard;
 
-const StyledCard = styled(Card)`
-  background:
-    radial-gradient(circle at top right, rgba(255, 181, 34, 0.14), transparent 42%),
-    rgba(255, 255, 255, 0.96);
-`;
-
-const CardMetaRow = styled.div`
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-  z-index: 1;
-  pointer-events: none;
-
-  @media (max-width: 640px) {
-    position: static;
-    justify-content: flex-end;
-    margin-bottom: 0.45rem;
-    pointer-events: auto;
-  }
-`;
-
-const HeaderRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-`;
-
-const HeaderContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const BadgeRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.45rem;
-`;
-
-const Badge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: ${({ $variant }) => ($variant === "soft" ? "#7a4b00" : "#8c4600")};
-  background: ${({ $variant }) => ($variant === "soft" ? "rgba(255, 181, 34, 0.10)" : "rgba(255, 181, 34, 0.18)")};
-  border: 1px solid rgba(255, 181, 34, 0.28);
-`;
-
-const Headline = styled.p`
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.35;
-  color: #2f2100;
-`;
-
-const Subline = styled.p`
-  margin: 0.35rem 0 0;
-  color: rgba(47, 33, 0, 0.68);
-  font-size: 0.9rem;
-  line-height: 1.35;
-`;
-
-const StrongLink = styled(Link)`
-  color: inherit;
-  text-decoration: none;
-  font-weight: 800;
-
-  &:hover {
-    color: #8a5600;
-    text-decoration: underline;
-  }
-`;
-
-const ActionRow = styled.div`
-  margin-top: 0.85rem;
-  display: flex;
-  justify-content: flex-start;
-`;
-
-const SocialActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-`;
-
-const ProfileLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.45rem 0.8rem;
-  border-radius: 10px;
-  text-decoration: none;
-  font-weight: 700;
-  color: #6c4300;
-  background: rgba(255, 181, 34, 0.12);
-  border: 1px solid rgba(255, 181, 34, 0.28);
-
-  &:hover {
-    background: rgba(255, 181, 34, 0.2);
-  }
-`;
-
-const DateText = styled.time`
-  position: static;
-  font-size: 0.8rem;
-  color: rgba(47, 33, 0, 0.5);
-  font-style: italic;
-  display: inline-flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 999px;
-  padding: 0.2rem 0.6rem;
-
-  @media (max-width: 640px) {
-    margin-bottom: 0;
-    font-size: 0.78rem;
-    line-height: 1.2;
-  }
-`;
+const StyledCard = Card;
+const BadgeRow = styled.div`display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;`;
+const Badge = ActivityChip;
+const Headline = styled.p`margin: 0; font-size: 1rem; line-height: 1.5;`;
+const Subline = styled.p`margin: 6px 0 0; color: ${SHOP_COLORS.muted}; font-size: .9rem; line-height: 1.5;`;
+const StrongLink = styled(ActivityLink)`font-weight: 700;`;
+const ActionRow = styled.div`display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;`;
+const ProfileLink = styled(ShopButton).attrs({ as: Link })``;

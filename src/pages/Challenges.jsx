@@ -1075,7 +1075,7 @@ function Challenges() {
                           i
                         </InfoTooltipButton>
                         <InfoTooltipBubble $visible={showTypeInfo}>
-                          Daily-Challenges laufen bis Mitternacht, Weekly-Challenges bis Sonntag 23:59 Uhr. Dailys nach 18 Uhr gelten für den nächsten Tag, Weeklys am Sonntag für die nächste Woche. Läuft eine Challenge ab, kannst du wieder eine neue generieren.
+                          Daily-Challenges gelten für den gewählten Tag bis Mitternacht. Für morgen geplante Dailys starten um Mitternacht. Weekly-Challenges laufen bis Sonntag 23:59 Uhr; am Sonntag erstellte Weeklys bis zum nächsten Sonntag. Läuft eine Challenge ab, kannst du wieder eine neue generieren.
                         </InfoTooltipBubble>
                       </InfoTooltipWrap>
                     </SelectionHeadingRow>
