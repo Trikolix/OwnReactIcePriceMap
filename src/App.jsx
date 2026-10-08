@@ -15,6 +15,8 @@ import PushOptInOverlay from './components/PushOptInOverlay';
 import CookieBanner from './components/CookieBanner';
 import GuestMotivation from './components/GuestMotivation';
 import MatomoTracker from './components/MatomoTracker';
+import { OnboardingProvider } from './features/onboarding/OnboardingContext';
+import OnboardingDock from './features/onboarding/OnboardingDock';
 import ActiveSelfRideCta from './pages/Event/ActiveSelfRideCta';
 
 
@@ -55,19 +57,22 @@ const App = () => {
   return (
     <Router>
       <UserProvider>
-        <ScrollToTopOnRouteChange />
-        <MatomoTracker />
-        <PushBootstrap />
-        <PushOptInOverlay />
-        <AppUpdateBanner />
-        <CookieBanner />
-        <GuestMotivation />
-        <ActiveSelfRideCta />
-        <Routes>
-          {allRoutes.map((routeDef) => (
-            <Route key={routeDef.path} path={routeDef.path} element={routeDef.element} />
-          ))}
-        </Routes>
+        <OnboardingProvider>
+          <OnboardingDock />
+          <ScrollToTopOnRouteChange />
+          <MatomoTracker />
+          <PushBootstrap />
+          <PushOptInOverlay />
+          <AppUpdateBanner />
+          <CookieBanner />
+          <GuestMotivation />
+          <ActiveSelfRideCta />
+          <Routes>
+            {allRoutes.map((routeDef) => (
+              <Route key={routeDef.path} path={routeDef.path} element={routeDef.element} />
+            ))}
+          </Routes>
+        </OnboardingProvider>
       </UserProvider>
     </Router>
   );

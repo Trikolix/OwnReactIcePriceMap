@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { fireEvent, getByRole, waitFor } from '@testing-library/dom';
-import { UserProvider } from '../../../src/context/UserContext';
+import { UserProvider, useUser } from '../../../src/context/UserContext';
 import OnboardingChecklist from '../../../src/components/OnboardingChecklist';
 import PushDeviceSettings from '../../../src/components/PushDeviceSettings';
 import UserSettings from '../../../src/pages/UserSettings';
+import { OnboardingProvider } from '../../../src/features/onboarding/OnboardingContext';
+import OnboardingDock from '../../../src/features/onboarding/OnboardingDock';
 import '../../../src/index.css';
 
 const checks = [], calls = [];
@@ -22,6 +24,7 @@ const progress = {
   stages: { 1: { avatar: false, installation: false, push: false, checkin: false, invitation: false, social: false },
     2: { shop: false, review: false, checkins: false, challenge: false, route: false, likes: false } },
 };
+const otherProgress = structuredClone(progress);
 window.fetch = async (input, init = {}) => {
   const url = new URL(String(input));
   if (url.origin !== 'https://test.invalid') throw new Error('Unexpected external request');
@@ -40,7 +43,7 @@ window.fetch = async (input, init = {}) => {
   } else if (url.pathname.endsWith('/onboarding.php')) {
     if (body?.action === 'invite_shared') { progress.stats.invite_shared = true; progress.stages[1].invitation = true; }
     if (body?.action === 'app_installed') { progress.stats.app_installed = true; progress.stages[1].installation = true; }
-    json.data = structuredClone(progress);
+    json.data = structuredClone(localStorage.getItem('userId') === '42' ? progress : otherProgress);
   } else if (url.pathname.endsWith('/claim_onboarding_award.php')) {
     maxClaimsInFlight = Math.max(maxClaimsInFlight, ++claimsInFlight);
     await new Promise(resolve => setTimeout(resolve, 30));
@@ -62,25 +65,44 @@ Object.defineProperty(window, 'Notification', { configurable: true, value: { per
 const subscription = { endpoint: 'https://push.invalid/current', unsubscribe: async () => true };
 const registration = { pushManager: { getSubscription: async () => subscription } };
 Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { getRegistration: async () => registration } });
-localStorage.clear();
+if (!new URLSearchParams(location.search).has('persist')) localStorage.clear();
 for (const [key, value] of Object.entries({ userId: '42', username: 'Mia', authToken: 'fixture-token', currentLevel: '1' })) localStorage.setItem(key, value);
 const root = createRoot(document.getElementById('app'));
 function Demo() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { login } = useUser();
+  const location = useLocation(), navigate = useNavigate();
+  window.questNavigate = navigate;
+  window.questSwitchAccount = id => login(id, id === '42' ? 'Mia' : 'Alex', 'fixture-token', null, { reload: false, currentLevel: 1 });
   return <main style={{ maxWidth: 850, margin: 'auto', padding: 12 }}>
-    <OnboardingChecklist /><PushDeviceSettings userId="42" settings={{ push_enabled_android: 0 }} onSettingsChanged={async () => {}} />
+    {location.pathname === '/' ? <OnboardingChecklist /> : <p>Andere Seite – der Einstieg bleibt angepinnt.</p>}
+    <PushDeviceSettings userId="42" settings={{ push_enabled_android: 0 }} onSettingsChanged={async () => {}} />
     <button type="button" onClick={() => setSettingsOpen(true)}>Profileinstellungen öffnen</button>
     {settingsOpen && <UserSettings onClose={() => setSettingsOpen(false)} />}
   </main>;
 }
-root.render(<MemoryRouter><UserProvider><Demo /></UserProvider></MemoryRouter>);
+root.render(<MemoryRouter><UserProvider><OnboardingProvider><OnboardingDock /><Demo /></OnboardingProvider></UserProvider></MemoryRouter>);
 const report = document.getElementById('results');
 window.prepareInviteKeyboard = () => button('Einladen').focus();
+window.pinQuest = () => button('Ice-App Einstieg anpinnen').click();
+window.questCompleteTask = async id => {
+  progress.stages[1][id] = true;
+  await fetch('https://test.invalid/api/update_user_profile.php', { method: 'POST', body: '{}' });
+};
+window.questFinishChapter = () => {
+  Object.keys(progress.stages[1]).forEach(key => { progress.stages[1][key] = true; });
+  window.dispatchEvent(new CustomEvent('onboarding:changed', { detail: structuredClone(progress) }));
+};
 window.onboardingMeasure = () => ({ overflow: document.documentElement.scrollWidth > innerWidth,
   dialogOverflow: [...document.querySelectorAll('[role=dialog]')].some(node => node.scrollWidth > node.clientWidth) });
 (async () => {
-  await waitFor(() => button('Installieren'));
+  await import('../../../src/utils/installAuthFetch');
+  await waitFor(() => { if (!document.querySelector('[data-testid=floating-quest]')) return button('Installieren'); });
   await waitFor(() => button('Firefox · Mac deaktivieren'));
+  if (!new URLSearchParams(location.search).has('persist')) {
+    check(Boolean(document.querySelector('[data-testid=floating-quest]')), 'Visible onboarding is pinned by default without a saved preference');
+    await click('Ice-App Einstieg loslösen');
+  }
   if (new URLSearchParams(location.search).has('preview')) { report.dataset.status = 'preview'; return; }
   check(document.body.textContent.includes('0 von 6 Aufgaben'), 'Starter progress is visible');
   check(!document.body.textContent.includes('Test-Push'), 'Normal users have no test-push action');

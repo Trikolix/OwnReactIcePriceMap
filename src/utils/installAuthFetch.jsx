@@ -1,3 +1,5 @@
+import { isQuestProgressMutation } from '../features/quests/progress.mjs';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 
@@ -35,6 +37,11 @@ const installAuthFetch = () => {
     options.headers = headers;
 
     const response = await originalFetch(input, options);
+
+    if (response.ok && shouldAttachAuth(requestUrl)
+        && isQuestProgressMutation(requestUrl, options.method || input?.method || 'GET')) {
+      window.dispatchEvent(new Event('iceapp:activity-changed'));
+    }
 
     if (response.status === 401) {
       window.dispatchEvent(new Event('auth:unauthorized'));

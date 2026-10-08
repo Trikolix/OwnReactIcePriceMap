@@ -6,6 +6,9 @@ Die Integration übernimmt die betreffenden Funktionen aus `origin/feature/price
 
 - Dashboard und eigenes Profil zeigen die Startklar- und Experten-Checkliste. Einklappen gilt für das jeweilige Gerät; Ausblenden wird im Konto gespeichert. Über die Profileinstellungen oder „Dein Ice-App Einstieg“ im Menü lässt sie sich wieder anzeigen.
 - In den Profileinstellungen wird die Checklisten-Sichtbarkeit erst mit „Onboarding speichern“ übernommen. Benachrichtigungseinstellungen werden separat gespeichert. Das Ausblenden direkt an der Checkliste bleibt eine unmittelbare Aktion.
+- Bei aktivierter Einstellung „Startklar- und Experten-Checkliste anzeigen“ ist der Ice-App Einstieg standardmäßig als schwebender Button angepinnt. Er bleibt auf allen Seiten erreichbar und öffnet das aktuelle, noch nicht ausgezeichnete Kapitel. Im Kapitel oder an der kompakten Checkliste lässt er sich lösen und über die Pinnadel wieder anpinnen. Bewusstes Loslösen bleibt je Konto auf diesem Gerät gespeichert.
+- Der Button lässt sich mit Maus oder Touch frei verschieben. Mit den Pfeiltasten verschiebt er sich um 10 Pixel, mit Umschalt um 40 Pixel; Pos1 setzt die Position zurück. Ziehen öffnet keinen Dialog. Anpinnen und Position werden je Konto auf diesem Gerät gespeichert; bei einer kleineren Bildschirmgröße bleibt der Button erreichbar.
+- Neue erledigte Aufgaben und Kapitelabschlüsse erscheinen als Hinweis innerhalb der App. Der Fortschrittsring und ein ungelesener Punkt am Button ergänzen den Hinweis. Bereits bekannte Fortschritte werden nicht erneut angekündigt; beim erstmaligen Laden erscheint keine Meldung für alte Aufgaben. Ausblenden der Checkliste blendet auch den Button und die Hinweise aus.
 - „Ice-App installieren“ nutzt den Installationsdialog des Browsers, soweit verfügbar. Sonst erscheinen passende Hinweise für Safari auf iOS bzw. Chrome/Edge. Erst `appinstalled`, Standalone-Anzeige oder die native App melden eine abgeschlossene Installation.
 - Der Einladungsdialog im Profil und in der Checkliste bietet Teilen und Kopieren sowie die Anzahl bestätigter und ausstehender Einladungen. Abbrechen zählt nicht als geteilte Einladung.
 - Die Profileinstellungen zeigen den Push-Status dieses Geräts und die aktivierten Browser. Verbindung erneuern, einzelnes Gerät abmelden und alle Browser abmelden sind getrennte Aktionen. Test-Push bleibt ausschließlich für den bisherigen Administrator verfügbar.
@@ -22,6 +25,12 @@ Einstellungen werden ausdrücklich per `UPDATE ... WHERE user_id` gespeichert; e
 
 `POST /api/claim_onboarding_award.php` mit `level: 1` bzw. `level: 2` prüft die Voraussetzungen erneut auf dem Server. Eine Transaktion mit Nutzersperre verhindert doppelte Awards bei gleichzeitigen Anfragen. Vergabe und Anzeige nutzen die vorhandenen Award-Popups und EP-Berechnung.
 
+## Gemeinsamer Quest-Einstieg
+
+`OnboardingProvider` hält den Fortschritt einmal für die gesamte App. Erfolgreiche relevante Schreibzugriffe, Check-ins, Push-/Profiländerungen, Rückkehr zur App und das Teilen einer Einladung aktualisieren ihn. Solange der Einstieg angepinnt und die Seite sichtbar ist, fragt er zusätzlich alle 30 Sekunden nach Fortschritten, die anderswo entstanden sind. Ein Kontowechsel verwirft die Anzeige des vorherigen Kontos.
+
+`features/onboarding/quest.js` übersetzt die bestehenden API-Daten in eine Quest mit `id`, `title` und `chapters`. Ein Kapitel enthält `id`, `title`, `reward`, `awarded` und `tasks`; Aufgaben enthalten `id`, `title` und `complete`. `FloatingQuestButton`, `QuestProgressNotice`, `useQuestProgress` und die Fortschrittsfunktionen unter `features/quests` hängen ausschließlich von diesem allgemeinen Modell ab und können für weitere Questreihen verwendet werden. Aktionen, Aufgabenbeschreibungen und die Anbindung an die API bleiben beim Onboarding. Für den schwebenden Einstieg ist keine zusätzliche Backend-Migration erforderlich.
+
 ## Push-Verhalten
 
 Die Anmeldung beim App-Start repariert Push nur bei erteilter Browserberechtigung und aktivierter Kontoeinstellung. Ein lokal oder aus einem anderen Browser abgemeldetes Gerät bleibt abgemeldet. Erneute Anmeldung erfordert die ausdrückliche Aktivierung; das Speichern anderer Profileinstellungen aktiviert kein Gerät.
@@ -36,13 +45,13 @@ Push-Avatare verwenden `ICEAPP_ASSET_BASE_URL` (Standard `https://ice-app.de/`);
 
 ```sh
 php tests/php/onboarding_rules_test.php
-node --test tests/unit/pushNotifications.test.cjs tests/unit/checkinShare.test.cjs
+node --test tests/unit/pushNotifications.test.cjs tests/unit/checkinShare.test.cjs tests/unit/quests.test.mjs
 node tests/manual/onboarding-browser.cjs
 node tests/manual/header-browser.cjs
 node node_modules/vite/bin/vite.js build
 ```
 
-Die Browserprüfungen benötigen Chrome (`CHROME_BIN` kann den Pfad setzen) und mocken sämtliche API-Aufrufe. Berichte und Screenshots landen unter `build/onboarding-browser`.
+Die Browserprüfungen benötigen Chrome (`CHROME_BIN` kann den Pfad setzen) und mocken sämtliche API-Aufrufe. Berichte und Screenshots landen unter `build/onboarding-browser`. Der Onboarding-Test prüft vier Bildschirmbreiten sowie echtes Ziehen mit Maus/Touch, Tastaturbedienung, Fokus im Kapitel, Navigation, Neuladen, Fortschrittshinweise und den Wechsel zum nächsten Kapitel. Vite-Build und Browserprüfung nacheinander ausführen, weil beide das Verzeichnis `build` verwenden.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tests/php/run-onboarding.ps1
