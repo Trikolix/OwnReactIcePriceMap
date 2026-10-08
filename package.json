@@ -1,14 +1,16 @@
 {
   "name": "ice-app",
-  "version": "2.15.0",
+  "version": "3.0.0",
   "private": true,
   "homepage": "https://ice-app.de/",
   "dependencies": {
     "@capacitor/android": "^8.3.0",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
+    "@capacitor/filesystem": "^8.1.4",
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/push-notifications": "^8.0.3",
+    "@capacitor/share": "^8.0.3",
     "@headlessui/react": "^2.2.4",
     "@react-spring/web": "^10.0.0",
     "@testing-library/dom": "^10.4.0",

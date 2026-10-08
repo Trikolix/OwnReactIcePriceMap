@@ -14,7 +14,7 @@ export default function SearchSelect({ id, label, placeholder, query, onQuery, i
   }, [expanded, active, id]);
   const choose = item => { onChoose(item); setActive(-1); setOpen(false); input.current?.focus(); };
   const onKeyDown = event => {
-    if (event.key === "Escape") { event.preventDefault(); setOpen(false); setActive(-1); }
+    if (event.key === "Escape") { if (expanded) { event.preventDefault(); event.stopPropagation(); } setOpen(false); setActive(-1); }
     else if (["ArrowDown", "ArrowUp"].includes(event.key) && items.length) {
       event.preventDefault(); setOpen(true);
       setActive(previous => event.key === "ArrowDown" ? (previous + 1) % items.length : (previous < 0 ? items.length - 1 : (previous + items.length - 1) % items.length));

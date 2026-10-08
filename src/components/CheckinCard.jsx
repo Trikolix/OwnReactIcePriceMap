@@ -1,5 +1,5 @@
 import React, { useState, forwardRef, useEffect } from "react";
-import { Bike, Car, Footprints, HelpCircle, MapPin, MessageCircle } from "lucide-react";
+import { Bike, Car, Footprints, HelpCircle, MapPin, MessageCircle, Share2 } from "lucide-react";
 import styled from "styled-components";
 import Rating from "./Rating";
 import { useUser } from "../context/UserContext";
@@ -14,10 +14,13 @@ import { shopAssetUrl, hasShopNumber } from '../utils/shopDetail';
 import UserAvatar from "./UserAvatar";
 import MentionFormatter from "./MentionFormatter";
 import LikeButton from "./LikeButton";
+import CheckinShareComposer from "./CheckinShareComposer";
 
 const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focusCommentId = null }, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
-  const { userId } = useUser();
+  const [showShareModal, setShowShareModal] = useState(false);
+  const { userId, isLoggedIn } = useUser();
+  const canShare = isLoggedIn && Number(userId) > 0 && Number(checkin.nutzer_id) === Number(userId);
   const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
   const contextType = checkin.context_type || (checkin.eisdiele_id ? "ice_shop" : "no_public_place");
   const hasPublicPlace = contextType !== "no_public_place" && Boolean(checkin.eisdiele_id);
@@ -161,11 +164,18 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
           />
           <CommentToggle
             aria-expanded={areCommentsVisible}
+            aria-label={`${checkin.commentCount || 0} ${Number(checkin.commentCount) === 1 ? 'Kommentar' : 'Kommentare'} ${areCommentsVisible ? 'ausblenden' : 'einblenden'}`}
             title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
             onClick={() => setAreCommentsVisible(!areCommentsVisible)}
           >
-            <MessageCircle size={18} /> {checkin.commentCount || 0} Kommentar(e)
+            <MessageCircle size={18} aria-hidden="true" /> {checkin.commentCount || 0}
+            <CommentLabel $compact={canShare} aria-hidden="true">{Number(checkin.commentCount) === 1 ? 'Kommentar' : 'Kommentare'}</CommentLabel>
           </CommentToggle>
+          {canShare && (
+            <ShareAction type="button" aria-label="Check-in teilen" title="Story oder Beitragsbild erstellen" onClick={() => setShowShareModal(true)}>
+              <Share2 size={18} aria-hidden="true" /> Teilen
+            </ShareAction>
+          )}
         </ActionRow>
         {areCommentsVisible && (
           <CommentSection
@@ -175,9 +185,9 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
           />
         )}
       </Card>
-
-
-
+      {showShareModal && canShare && (
+        <CheckinShareComposer checkinId={checkin.id} onClose={() => setShowShareModal(false)} />
+      )}
       {showEditModal && (
         <Modal onClose={() => setShowEditModal(false)}>
           <CheckinForm
@@ -205,6 +215,9 @@ export default CheckinCard;
 
 const StyledContentWrapper = ActivityLayout;
 const ShareAction = CommentToggle;
+const CommentLabel = styled.span`
+  @container activity (max-width: 340px) { display: ${p => p.$compact ? 'none' : 'inline'}; }
+`;
 
 const MediaColumn = ActivityMedia;
 

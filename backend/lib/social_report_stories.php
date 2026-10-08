@@ -39,6 +39,7 @@ function iceSocialReportFont(string $weight = 'regular'): string
 
     $candidates = $weight === 'bold'
         ? [
+            __DIR__ . '/../assets/fonts/Nunito-Bold.ttf',
             __DIR__ . '/../assets/fonts/Nunito.ttf',
             __DIR__ . '/../assets/fonts/Inter-Bold.ttf',
             __DIR__ . '/../assets/fonts/DejaVuSans-Bold.ttf',
@@ -51,6 +52,7 @@ function iceSocialReportFont(string $weight = 'regular'): string
             '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
         ]
         : [
+            __DIR__ . '/../assets/fonts/Nunito-Regular.ttf',
             __DIR__ . '/../assets/fonts/Nunito.ttf',
             __DIR__ . '/../assets/fonts/Inter-Regular.ttf',
             __DIR__ . '/../assets/fonts/DejaVuSans.ttf',

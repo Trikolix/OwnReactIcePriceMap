@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/social_report_stories.php';
+require_once __DIR__ . '/checkin_share_design.php';
 
 const ICE_SOCIAL_MEDIA_STORY_WIDTH = 1080;
 const ICE_SOCIAL_MEDIA_STORY_HEIGHT = 1920;
@@ -162,42 +163,52 @@ function iceSocialMediaFormatDate(?string $value): string
     return $timestamp === false ? '' : date('d.m.Y', $timestamp);
 }
 
+function iceSocialMediaDrawShadowedText($image, string $text, int $x, int $y, int $size, string $colorHex, string $weight = 'bold'): void
+{
+    $font = iceSocialReportFont($weight);
+    if ($font !== '') {
+        $shadowColor = iceSocialReportColor($image, '#000000', 25); // Kräftiges, tiefes Schwarz (~80% Deckkraft)
+        $textColor = iceSocialReportColor($image, $colorHex);
+
+        // 360-Grad Schatten-Halo für makellose Lesbarkeit auf beliebig hellem Untergrund (Asphalt, Sonne)
+        imagettftext($image, $size, 0, $x - 2, $y, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x + 2, $y, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x, $y - 2, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x, $y + 3, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x + 2, $y + 3, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x - 2, $y + 3, $shadowColor, $font, $text);
+        imagettftext($image, $size, 0, $x + 1, $y + 2, $shadowColor, $font, $text);
+
+        // Satte Bold-Striche (Multi-Pass Offset)
+        if ($weight === 'bold') {
+            imagettftext($image, $size, 0, $x + 1, $y, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x - 1, $y, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x, $y + 1, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x, $y - 1, $textColor, $font, $text);
+            imagettftext($image, $size, 0, $x + 1, $y + 1, $textColor, $font, $text);
+        }
+        imagettftext($image, $size, 0, $x, $y, $textColor, $font, $text);
+    } else {
+        iceSocialReportText($image, $text, $x, $y, $size, $colorHex, $weight);
+    }
+}
+
 function iceSocialMediaDrawOverlayShade($image, int $width, int $height): void
 {
-    // Nur der untere Textbereich bekommt einen weichen Verlauf. Der Rest des
-    // Fotos bleibt vollständig unverändert und hell.
-    $startY = (int)round($height * 0.68);
+    // Contrast follows the measured text block, including unusually long names.
+    $startY = (int)round($height * .48);
     $range = max(1, $height - $startY);
     for ($y = $startY; $y < $height; $y++) {
         $progress = ($y - $startY) / $range;
-        $alpha = (int)round(127 - ($progress * 72));
-        imagefilledrectangle($image, 0, $y, $width, $y, iceSocialReportColor($image, '#000000', $alpha));
+        $eased = sin(min(1, $progress * 3) * M_PI / 2);
+        $alpha = (int)round(127 - ($eased * 96));
+        imagefilledrectangle($image, 0, $y, $width, $y, iceSocialReportColor($image, '#060301', $alpha));
     }
 }
 
 function iceSocialMediaDrawInstagramOverlay($image, array $candidate, int $width, int $height): void
 {
-    $accent = '#ffb522';
-    $cream = '#fffaf0';
-    $left = 94;
-    $titleY = $height - 176;
-    $flavourY = $height - 112;
-    $userY = $height - 48;
-
-    $lineX = 56;
-    imagefilledrectangle($image, $lineX, $titleY - 58, $lineX + 8, $userY + 10, iceSocialReportColor($image, $accent));
-
-    $shopName = iceSocialMediaCleanText($candidate['shop_name'] ?? 'Unbekannte Eisdiele', 42);
-    $flavours = array_slice(array_map('iceSocialMediaCleanText', $candidate['flavours'] ?? []), 0, 2);
-    $flavourText = !empty($flavours) ? implode(' · ', $flavours) : 'Eis genießen';
-    $username = iceSocialMediaCleanText(ltrim((string)($candidate['username'] ?? 'Ice-App-Nutzer'), '@'), 34);
-
-    iceSocialReportText($image, $shopName, $left, $titleY, 52, $cream, 'regular');
-    iceSocialReportText($image, $flavourText, $left, $flavourY, 30, $cream, 'regular');
-    iceSocialReportText($image, 'von', $left, $userY, 27, $cream, 'regular');
-    iceSocialReportText($image, $username, $left + 70, $userY, 31, $accent, 'bold');
-    iceSocialMediaDrawGourmetCyclistLogo($image, $width - 300, $height - 180, 260);
-    iceSocialReportText($image, 'ice-app.de', $width - 190, $height - 48, 24, $accent, 'bold');
+    iceCheckinExportDrawPhoto($image, $candidate, $width, $height);
 }
 
 function iceSocialMediaDrawBrand($image, int $width, int $height): void
@@ -292,7 +303,12 @@ function iceSocialMediaRenderPhotoSlide(array $candidate, string $format, string
         $source = iceSocialMediaLoadImage((string)$candidate['image_url']);
         iceSocialMediaCopyCover($canvas, $source, $width, $height);
         imagedestroy($source);
-        iceSocialMediaDrawOverlayShade($canvas, $width, $height);
+        $layout = iceCheckinExportPhotoLayout($candidate, $format);
+        $start = max(0, $layout['top'] - 180);
+        for ($y = $start; $y < $height; $y++) {
+            $opacity = .76 * sin(min(1, ($y - $start) / 320) * M_PI / 2);
+            imagefilledrectangle($canvas, 0, $y, $width, $y, iceSocialReportColor($canvas, '#101810', (int)round(127 * (1 - $opacity))));
+        }
     } elseif (!iceSocialMediaResolveImagePath((string)$candidate['image_url'])) {
         imagedestroy($canvas);
         throw new RuntimeException('Originalbild konnte nicht gefunden werden.');
@@ -411,10 +427,15 @@ function iceSocialMediaDrawMap($image, array $candidate, int $x, int $y, int $wi
     $marker = iceSocialReportColor($image, '#f05a47');
     // Die Spitze, nicht der Kreismittelpunkt, ist der geografische Ankerpunkt.
     // Dadurch zeigt die Pin-Spitze exakt auf die Eisdielenkoordinate.
-    $markerCenterY = $markerTipY - 90;
-    imagefilledellipse($image, $markerX, $markerCenterY, 66, 66, $marker);
-    imagefilledpolygon($image, [$markerX - 25, $markerCenterY + 18, $markerX + 25, $markerCenterY + 18, $markerX, $markerTipY], 3, $marker);
-    imagefilledellipse($image, $markerX, $markerCenterY, 22, 22, iceSocialReportColor($image, '#fff7df'));
+    $markerStem = max(30, min(90, (int)round($height * .28)));
+    $markerScale = $markerStem / 90;
+    $markerCenterY = $markerTipY - $markerStem;
+    $markerDiameter = (int)round(66 * $markerScale);
+    $markerHalfWidth = (int)round(25 * $markerScale);
+    $markerShoulder = (int)round(18 * $markerScale);
+    imagefilledellipse($image, $markerX, $markerCenterY, $markerDiameter, $markerDiameter, $marker);
+    imagefilledpolygon($image, [$markerX - $markerHalfWidth, $markerCenterY + $markerShoulder, $markerX + $markerHalfWidth, $markerCenterY + $markerShoulder, $markerX, $markerTipY], $marker);
+    imagefilledellipse($image, $markerX, $markerCenterY, (int)round(22 * $markerScale), (int)round(22 * $markerScale), iceSocialReportColor($image, '#fff7df'));
     iceSocialReportText($image, '© OpenStreetMap contributors', $x + 12, $y + $height - 12, 16, '#503000');
     imagesetthickness($image, 1);
 }
@@ -496,20 +517,28 @@ function iceSocialMediaDrawStar($image, int $centerX, int $centerY, int $radius,
         $points[] = (int)round($centerY + sin($angle) * $pointRadius);
     }
     $outline = iceSocialReportColor($image, '#f0a500');
-    $fill = $fillLevel > 0.25 ? $outline : iceSocialReportColor($image, $background);
-    imagefilledpolygon($image, $points, 10, $fill);
-    if ($fillLevel > 0.25 && $fillLevel < 0.75) {
-        imagefilledrectangle(
-            $image,
-            $centerX,
-            $centerY - $radius - 2,
-            $centerX + $radius + 2,
-            $centerY + $radius + 2,
-            iceSocialReportColor($image, $background)
-        );
+    if ($fillLevel >= 1) {
+        imagefilledpolygon($image, $points, $outline);
+    } elseif ($fillLevel > 0) {
+        // Clip the polygon itself: the empty portion retains the photo beneath it.
+        $edge = $centerX - $radius + 2 * $radius * $fillLevel;
+        $clipped = [];
+        $previous = [ $points[18], $points[19] ];
+        for ($index = 0; $index < 20; $index += 2) {
+            $current = [ $points[$index], $points[$index + 1] ];
+            $previousInside = $previous[0] <= $edge;
+            $currentInside = $current[0] <= $edge;
+            if ($previousInside !== $currentInside) {
+                $clipped[] = (int)round($edge);
+                $clipped[] = (int)round($previous[1] + ($current[1] - $previous[1]) * ($edge - $previous[0]) / ($current[0] - $previous[0]));
+            }
+            if ($currentInside) { $clipped[] = $current[0]; $clipped[] = $current[1]; }
+            $previous = $current;
+        }
+        if (count($clipped) >= 6) imagefilledpolygon($image, $clipped, $outline);
     }
     imagesetthickness($image, 3);
-    imagepolygon($image, $points, 10, $outline);
+    imagepolygon($image, $points, $outline);
     imagesetthickness($image, 1);
 }
 
@@ -531,7 +560,7 @@ function iceSocialMediaDrawLocationGlyph($image, int $centerX, int $centerY, int
     $color = iceSocialReportColor($image, $hex);
     $radius = max(5, (int)round($size * 0.32));
     imagesetthickness($image, max(2, (int)round($size * 0.12)));
-    imageellipse($image, $centerX, $centerY - $size * 0.16, $radius * 2, $radius * 2, $color);
+    imageellipse($image, $centerX, $centerY - (int)round($size * 0.16), $radius * 2, $radius * 2, $color);
     imagefilledpolygon($image, [
         $centerX - $radius,
         $centerY,
@@ -539,7 +568,7 @@ function iceSocialMediaDrawLocationGlyph($image, int $centerX, int $centerY, int
         $centerY,
         $centerX,
         $centerY + (int)round($size * 0.72),
-    ], 3, $color);
+    ], $color);
     imagefilledellipse($image, $centerX, $centerY - (int)round($size * 0.16), max(3, $radius), max(3, $radius), iceSocialReportColor($image, '#fffaf0'));
     imagesetthickness($image, 1);
 }
@@ -640,162 +669,7 @@ function iceSocialMediaDrawRoundedMap($image, array $candidate, int $x, int $y, 
 
 function iceSocialMediaRenderReviewSlide(array $candidate, string $format)
 {
-    [$width, $height] = iceSocialMediaDimensions($format);
-    $canvas = iceSocialMediaCreateCanvas($width, $height, false);
-    $isStory = $height > ICE_SOCIAL_MEDIA_FEED_HEIGHT;
-    $margin = $isStory ? 68 : 58;
-    $contentWidth = $width - ($margin * 2);
-    $cream = '#fffaf0';
-    $ink = '#3d280b';
-    $accent = '#ff9f1c';
-    $muted = '#74532d';
-
-    imagefilledellipse($canvas, $width + 35, -48, $isStory ? 430 : 330, $isStory ? 430 : 330, iceSocialReportColor($canvas, '#ffe3a0', 12));
-    imagefilledellipse($canvas, -110, $height + 80, $isStory ? 380 : 260, $isStory ? 380 : 260, iceSocialReportColor($canvas, '#ffe9b6', 35));
-
-    $badgeX = $margin;
-    $badgeY = $isStory ? 70 : 48;
-    $badgeText = 'EIS-CHECK-IN';
-    $badgeTextSize = $isStory ? 34 : 29;
-    $badgeWidth = max(
-        $isStory ? 370 : 325,
-        82 + iceSocialMediaTextWidth($badgeText, $badgeTextSize, 'bold') + 30
-    );
-    $badgeHeight = $isStory ? 84 : 70;
-    iceSocialReportRoundedRect($canvas, $badgeX, $badgeY, $badgeWidth, $badgeHeight, (int)round($badgeHeight / 2), $accent);
-    iceSocialMediaDrawLocationGlyph($canvas, $badgeX + 36, $badgeY + (int)round($badgeHeight / 2) - 3, $isStory ? 27 : 24, $cream);
-    iceSocialReportText(
-        $canvas,
-        $badgeText,
-        $badgeX + 78,
-        $badgeY + (int)round(($badgeHeight + $badgeTextSize) / 2) - 2,
-        $badgeTextSize,
-        $cream,
-        'bold'
-    );
-
-    $shopName = iceSocialMediaCleanText($candidate['shop_name'] ?? 'Unbekannte Eisdiele', 90);
-    $titleSize = $isStory ? 68 : 54;
-    // Mehr Luft zwischen dem Badge und dem Eisdielennamen verhindert, dass
-    // sich die beiden visuellen Blöcke berühren.
-    $titleTop = $isStory ? 258 : 198;
-    $titleLines = iceSocialMediaWrapLines($shopName, $contentWidth, $titleSize, 'bold', 2);
-    iceSocialMediaDrawTextLines($canvas, $titleLines, $margin, $titleTop, $titleSize, $ink, 'bold', 1.02);
-
-    $address = iceSocialMediaCleanText((string)($candidate['shop_address'] ?? ''), 110);
-    $addressY = $titleTop + max(1, count($titleLines)) * (int)round($titleSize * 1.02) + ($isStory ? 28 : 22);
-    if ($address !== '') {
-        iceSocialMediaDrawLocationGlyph($canvas, $margin + 18, $addressY - 11, $isStory ? 26 : 22, $muted);
-        iceSocialReportWrapText($canvas, $address, $margin + ($isStory ? 54 : 46), $addressY, $contentWidth - ($isStory ? 54 : 46), $isStory ? 27 : 22, $muted, 'regular', 1.12);
-    }
-
-    $mapX = $margin;
-    $mapY = $addressY + ($isStory ? 66 : 52);
-    $mapWidth = $contentWidth;
-    $mapHeight = $isStory ? 650 : 345;
-    $hasCoordinates = $candidate['shop_latitude'] !== null && $candidate['shop_longitude'] !== null;
-    iceSocialReportRoundedRect($canvas, $mapX - 8, $mapY - 8, $mapWidth + 16, $mapHeight + 16, 38, '#ead7a8', 55);
-    if ($hasCoordinates) {
-        iceSocialMediaDrawRoundedMap($canvas, $candidate, $mapX, $mapY, $mapWidth, $mapHeight, 32);
-    } else {
-        iceSocialReportRoundedRect($canvas, $mapX, $mapY, $mapWidth, $mapHeight, 32, '#e5efdf');
-        iceSocialReportText($canvas, 'Kein Kartenstandort hinterlegt', $mapX + 42, $mapY + (int)round($mapHeight / 2), $isStory ? 30 : 24, $muted, 'bold');
-    }
-
-    $ratings = array_values(array_filter($candidate['ratings'] ?? [], static function ($rating) {
-        return is_array($rating) && isset($rating['value']) && $rating['value'] !== null;
-    }));
-    $flavours = array_slice(array_map(static function ($flavour) {
-        return iceSocialMediaCleanText($flavour, 28);
-    }, $candidate['flavours'] ?? []), 0, 3);
-    $arrival = iceSocialMediaCleanText($candidate['arrival'] ?? '', 32);
-    $comment = iceSocialMediaCleanText($candidate['comment'] ?? '', 140);
-    $commentSize = $isStory ? 28 : 21;
-    $commentLines = $comment !== '' ? iceSocialMediaWrapLines('„' . $comment . '“', $contentWidth - 100, $commentSize, 'italic', 2) : [];
-    $rowGap = $isStory ? 58 : 42;
-    $rowSize = $isStory ? 29 : 22;
-    // Karte und Bewertungskachel stehen bewusst untereinander statt sich zu
-    // überlappen. Ein kleiner Abstand hält die beiden Flächen optisch
-    // zusammen, ohne die Karte zu verdecken.
-    $cardTop = $mapY + $mapHeight + ($isStory ? 28 : 20);
-    $cardX = $isStory ? 74 : 68;
-    $cardWidth = $width - ($cardX * 2);
-    $flavourPillFontSize = $isStory ? 21 : 16;
-    $flavourPillHeight = $flavourPillFontSize + 28;
-    $arrivalPillFontSize = $isStory ? 22 : 17;
-    $arrivalPillHeight = $arrivalPillFontSize + 28;
-    $chipRowsHeight = (!empty($flavours) ? $flavourPillHeight : 0)
-        + (!empty($flavours) && $arrival !== '' ? ($isStory ? 14 : 10) : 0)
-        + ($arrival !== '' ? $arrivalPillHeight : 0);
-    $cardHeight = ($isStory ? 126 : 92)
-        + count($ratings) * $rowGap
-        + ($chipRowsHeight > 0 ? $chipRowsHeight + ($isStory ? 12 : 8) : 0)
-        + (!empty($commentLines) ? count($commentLines) * (int)round($commentSize * 1.18) + ($isStory ? 48 : 34) : 0)
-        + ($isStory ? 34 : 26);
-
-    iceSocialReportRoundedRect($canvas, $cardX + 10, $cardTop + 14, $cardWidth, $cardHeight, 34, '#dbab4d', 48);
-    iceSocialReportRoundedRect($canvas, $cardX, $cardTop, $cardWidth, $cardHeight, 34, '#fffdf8');
-
-    $username = iceSocialMediaCleanText(ltrim((string)($candidate['username'] ?? ''), '@'), 34);
-    $username = $username !== '' ? $username : 'Nutzer';
-    $avatarDiameter = $isStory ? 72 : 56;
-    $avatarX = $cardX + 34;
-    $avatarY = $cardTop + ($isStory ? 24 : 18);
-    $hasAvatar = iceSocialMediaDrawAvatar($canvas, (string)($candidate['avatar_url'] ?? ''), $avatarX, $avatarY, $avatarDiameter);
-    $headerX = $hasAvatar ? $avatarX + $avatarDiameter + 20 : $cardX + 38;
-    $headerY = $cardTop + ($isStory ? 74 : 58);
-    iceSocialReportText($canvas, $username, $headerX, $headerY, $isStory ? 30 : 24, $ink, 'bold');
-    $usernameWidth = iceSocialMediaTextWidth($username, $isStory ? 30 : 24, 'bold');
-    iceSocialReportText($canvas, ' bewertet', $headerX + $usernameWidth + 8, $headerY, $isStory ? 28 : 22, $muted, 'regular');
-
-    $rowY = $cardTop + ($isStory ? 142 : 105);
-    foreach ($ratings as $rating) {
-        iceSocialMediaDrawRatingRow($canvas, (string)$rating['label'], (float)$rating['value'], $cardX + 42, $rowY, $cardWidth - 84, $rowSize);
-        $rowY += $rowGap;
-    }
-
-    if (!empty($flavours) || $arrival !== '') {
-        $chipY = $rowY + ($isStory ? 2 : 0);
-        $chipX = $cardX + 38;
-        if (!empty($flavours)) {
-            $flavourLabelWidth = iceSocialMediaTextWidth('Sorten:', $flavourPillFontSize, 'bold');
-            iceSocialReportText(
-                $canvas,
-                'Sorten:',
-                $chipX,
-                $chipY + $flavourPillFontSize + 9,
-                $flavourPillFontSize,
-                '#74532d',
-                'bold'
-            );
-            $chipX += $flavourLabelWidth + 14;
-            $pillGap = 10;
-            $pillAreaWidth = $cardWidth - 76 - $flavourLabelWidth - 14;
-            $pillMaxWidth = (int)floor(($pillAreaWidth - $pillGap * (count($flavours) - 1)) / max(1, count($flavours)));
-            foreach ($flavours as $flavour) {
-                $pillWidth = iceSocialMediaDrawChip($canvas, $flavour, $chipX, $chipY, $pillMaxWidth, $flavourPillFontSize);
-                $chipX += $pillWidth + $pillGap;
-            }
-            $chipY += $flavourPillHeight + ($isStory ? 14 : 10);
-        }
-        if ($arrival !== '') {
-            iceSocialMediaDrawChip($canvas, 'Anreise: ' . $arrival, $cardX + 38, $chipY, $cardWidth - 76, $arrivalPillFontSize);
-        }
-        $rowY = $chipY + ($arrival !== '' ? $arrivalPillHeight : 0);
-    }
-
-    if (!empty($commentLines)) {
-        iceSocialMediaDrawTextLines($canvas, $commentLines, $cardX + 42, $rowY + ($isStory ? 34 : 25), $commentSize, $muted, 'italic', 1.18);
-    }
-
-    $footerY = $height - ($isStory ? 220 : 145);
-    iceSocialReportText($canvas, 'Mehr entdecken in der Ice-App', $margin, $height - ($isStory ? 72 : 42), $isStory ? 26 : 21, $ink, 'bold');
-    $logoWidth = $isStory ? 300 : 220;
-    $logoX = $width - $margin - $logoWidth;
-    $logoY = $height - ($isStory ? 215 : 145);
-    iceSocialMediaDrawGourmetCyclistLogo($canvas, $logoX, $logoY, $logoWidth);
-    iceSocialReportText($canvas, 'ice-app.de', $width - $margin - ($isStory ? 150 : 112), $height - ($isStory ? 42 : 28), $isStory ? 24 : 18, $accent, 'bold');
-    return $canvas;
+    return iceCheckinExportDrawReview($candidate, $format);
 }
 
 function iceSocialMediaBuildSlides(array $candidate, string $format = 'story', string $mode = 'composite', bool $includeReviewSlide = true): array
