@@ -98,8 +98,10 @@ const ShopMarker = ({
   const hasActiveTeamChallenge = Number(shop.has_active_team_challenge) === 1;
   const hasAnyChallenge = hasActivePersonalChallenge || hasUpcomingPersonalChallenge || hasActiveTeamChallenge;
   const markerOpacity = getMarkerOpacity(shop.status);
+  const placeType = shop.place_type || "ice_shop";
+  const isSecondaryPlace = placeType !== "ice_shop";
   const stableHash = getStableHash(`${shop.eisdielen_id}:${shop.name}:${shop.latitude}:${shop.longitude}`);
-  const showEasterStyle = seasonalVariant === "easter";
+  const showEasterStyle = seasonalVariant === "easter" && !isSecondaryPlace;
   const easterPalette = EASTER_EGG_PALETTES[stableHash % EASTER_EGG_PALETTES.length];
   const bunnyOnLeft = stableHash % 2 === 0;
   const size = isFocused ? 48 : 40;
@@ -133,6 +135,12 @@ const ShopMarker = ({
   const eggLeft = Math.round((markerWidth - eggWidth) / 2);
   const eggTop = Math.round((markerHeight - eggHeight) / 2);
   const escapedValue = escapeHtml(formattedValue);
+  const secondaryMarkerBackground = placeType === "restaurant"
+    ? "linear-gradient(180deg,#7c6be8 0%,#4f46b8 100%)"
+    : "linear-gradient(180deg,#38bdf8 0%,#2563eb 100%)";
+  const secondarySymbolSize = placeType === "restaurant"
+    ? (isFocused ? 25 : 22)
+    : (isFocused ? 20 : 17);
   const bunnyStyle = encounterBunny
     ? `position:absolute; top:-24px; ${bunnyOnLeft ? "left:-4px; transform:rotate(-4deg);" : "right:-4px; transform:scaleX(-1) rotate(4deg);"} width:${isFocused ? 58 : 54}px; height:auto; z-index:0; pointer-events:auto; cursor:pointer; filter:drop-shadow(0 7px 14px rgba(0,0,0,0.32));`
     : `position:absolute; top:-12px; ${bunnyOnLeft ? "left:1px; transform:rotate(-5deg);" : "right:1px; transform:scaleX(-1) rotate(5deg);"} width:${isFocused ? 40 : 36}px; height:auto; z-index:0; pointer-events:none; filter:drop-shadow(0 5px 10px rgba(0,0,0,0.24));`;
@@ -153,6 +161,14 @@ const ShopMarker = ({
         ${escapedValue}
       </div>
       ${challengeBadgeHtml}
+    </div>
+  `;
+  const secondaryMarkerHtml = `
+    <div style="position:relative; width:${size}px; height:${size}px;">
+      <div title="${placeType === "restaurant" ? "Restaurant/Café mit Eisangebot" : "Temporärer Eisstand"}" style="width:${size}px; height:${size}px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; border:3px solid #ffffff; border-radius:${placeType === "restaurant" ? "12px" : "50% 50% 50% 0"}; transform:${placeType === "temporary_stand" ? "rotate(-45deg)" : "none"}; background:${secondaryMarkerBackground}; box-shadow:${focusGlow}; opacity:${markerOpacity}; font-size:${secondarySymbolSize}px;">
+        <span style="transform:${placeType === "temporary_stand" ? "rotate(45deg)" : "none"}; line-height:1;">${placeType === "restaurant" ? "🍽" : "⏱"}</span>
+      </div>
+      <span style="position:absolute; right:-7px; bottom:-5px; min-width:20px; padding:2px 4px; border-radius:999px; background:#ffffff; color:#3d2c00; border:1px solid rgba(47,33,0,.14); box-shadow:0 2px 6px rgba(0,0,0,.2); font-size:9px; font-weight:800; text-align:center;">${escapedValue}</span>
     </div>
   `;
   const easterMarkerHtml = `
@@ -184,7 +200,7 @@ const ShopMarker = ({
       displayValue={displayValue}
       icon={L.divIcon({
         className: "price-icon",
-        html: showEasterStyle ? easterMarkerHtml : defaultMarkerHtml,
+        html: showEasterStyle ? easterMarkerHtml : isSecondaryPlace ? secondaryMarkerHtml : defaultMarkerHtml,
         iconSize: [markerWidth, markerHeight],
         iconAnchor: [Math.round(markerWidth / 2), Math.round(markerHeight / 2)],
         popupAnchor: [0, -Math.round(markerHeight / 2)],

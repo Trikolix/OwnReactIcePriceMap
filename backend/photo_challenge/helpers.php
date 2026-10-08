@@ -89,6 +89,7 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             id INT AUTO_INCREMENT PRIMARY KEY,
             challenge_id INT NOT NULL,
             phase ENUM('group', 'ko') NOT NULL,
+            bracket_type ENUM('main', 'third_place') NOT NULL DEFAULT 'main',
             round INT NOT NULL DEFAULT 1,
             group_id INT NULL,
             position INT NOT NULL,
@@ -98,13 +99,19 @@ function ensurePhotoChallengeSchema(PDO $pdo): void
             status ENUM('open', 'closed') NOT NULL DEFAULT 'open',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             locked_at TIMESTAMP NULL,
-            UNIQUE KEY uniq_match_position (challenge_id, phase, round, position),
+            UNIQUE KEY uniq_match_position (challenge_id, phase, bracket_type, round, position),
             CONSTRAINT fk_match_challenge FOREIGN KEY (challenge_id) REFERENCES photo_challenges(id) ON DELETE CASCADE,
             CONSTRAINT fk_match_group FOREIGN KEY (group_id) REFERENCES photo_challenge_groups(id) ON DELETE CASCADE,
             CONSTRAINT fk_match_image_a FOREIGN KEY (image_a_id) REFERENCES bilder(id) ON DELETE CASCADE,
             CONSTRAINT fk_match_image_b FOREIGN KEY (image_b_id) REFERENCES bilder(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+    addColumnIfMissing($pdo, 'photo_challenge_matches', 'bracket_type', "ENUM('main', 'third_place') NOT NULL DEFAULT 'main' AFTER phase");
+    $indexStmt = $pdo->query("SHOW INDEX FROM photo_challenge_matches WHERE Key_name = 'uniq_match_position'");
+    $indexColumns = $indexStmt ? $indexStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    if ($indexColumns && !in_array('bracket_type', array_column($indexColumns, 'Column_name'), true)) {
+        $pdo->exec("ALTER TABLE photo_challenge_matches DROP INDEX uniq_match_position, ADD UNIQUE KEY uniq_match_position (challenge_id, phase, bracket_type, round, position)");
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS photo_challenge_votes (

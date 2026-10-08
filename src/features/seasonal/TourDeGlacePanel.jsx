@@ -250,7 +250,7 @@ const RiderSuggestInput = ({ id, label, value, onChange, disabled = false }) => 
   );
 };
 
-const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
+const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin, archived = false }) => {
   const { authToken } = useUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [state, setState] = useState({ loading: false, error: '', data: null });
@@ -594,17 +594,26 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
       <HeaderRow>
         <div>
           <SectionTitle>Tour de Glace 2026</SectionTitle>
-          <Lead>Fahrertyp wählen, Tipps abgeben und während der Tour Punkte für fünf Trikots sammeln.</Lead>
+          <Lead>{archived
+            ? 'Der komplette Tour-Rückblick mit offiziellen Ergebnissen, Ranglisten, Tippspiel und Awards.'
+            : 'Fahrertyp wählen, Tipps abgeben und während der Tour Punkte für fünf Trikots sammeln.'}</Lead>
         </div>
         <Badge><Flag size={16} /> {phaseLabel}</Badge>
       </HeaderRow>
 
-      {!isLoggedIn && (
+      {!isLoggedIn && !archived && (
         <GuestBox>
           <strong>Login erforderlich für Teilnahme.</strong>
           <p>Regeln und Ranglisten sind sichtbar, Punkte, Tipps und Etappensichtungen werden nach dem Login gespeichert.</p>
           <ActionButton type="button" onClick={onLogin}>Login / Registrieren</ActionButton>
         </GuestBox>
+      )}
+
+      {archived && (
+        <ArchiveIntro>
+          <strong>Tour beendet · Ergebnisarchiv</strong>
+          <span>Die Aktionspunkte, offiziellen Trikotwertungen und Tippspiel-Ergebnisse bleiben als Nachlese erhalten. Neue Punkte und Tipps können nicht mehr abgegeben werden.</span>
+        </ArchiveIntro>
       )}
 
       {state.loading && <Hint>Lade Tour de Glace...</Hint>}
@@ -616,7 +625,7 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
           <Tabs>
             {[
               ['overview', 'Übersicht'],
-              ['rider', 'Fahrertyp'],
+              ...(!archived ? [['rider', 'Fahrertyp']] : []),
               ['tips', 'Tippspiel'],
               ['eggs', 'Sichtungen'],
               ['awards', 'Awards'],
@@ -632,8 +641,32 @@ const TourDeGlacePanel = ({ campaign, isLoggedIn, onLogin }) => {
             <Stack>
               <InfoBand>
                 <strong>{formatDateTime(data.campaign.start)} bis {formatDateTime(data.campaign.end)}</strong>
-                <span>{selectedRiderType ? `Dein Fahrertyp: ${riderTypes[selectedRiderType]?.name || selectedRiderType}` : 'Noch kein Fahrertyp gewählt'}</span>
+                <span>{archived ? 'Abgeschlossenes Ergebnisarchiv' : selectedRiderType ? `Dein Fahrertyp: ${riderTypes[selectedRiderType]?.name || selectedRiderType}` : 'Noch kein Fahrertyp gewählt'}</span>
               </InfoBand>
+              {archived && data.final_results && (
+                <FinalResultsBox>
+                  <SubHeading>Offizielle Tour-Ergebnisse</SubHeading>
+                  <FinalResultsGrid>
+                    <FinalResultItem $accent={JERSEY_META.yellow.color}>
+                      <span>Gesamtwertung</span>
+                      <strong>1. {data.final_results.result_gc_winner}</strong>
+                      <small>2. {data.final_results.result_gc_second} · 3. {data.final_results.result_gc_third}</small>
+                    </FinalResultItem>
+                    <FinalResultItem $accent={JERSEY_META.green.color}>
+                      <span>Grünes Trikot</span>
+                      <strong>{data.final_results.result_green_winner}</strong>
+                    </FinalResultItem>
+                    <FinalResultItem $accent={JERSEY_META.mountain.color}>
+                      <span>Bergtrikot</span>
+                      <strong>{data.final_results.result_mountain_winner}</strong>
+                    </FinalResultItem>
+                    <FinalResultItem $accent={JERSEY_META.white.color}>
+                      <span>Weißes Trikot</span>
+                      <strong>{data.final_results.result_white_winner}</strong>
+                    </FinalResultItem>
+                  </FinalResultsGrid>
+                </FinalResultsBox>
+              )}
               {isPreviewPhase && (
                 <PreviewBox>
                   <strong>Preview bis zum Tourstart</strong>
@@ -1344,6 +1377,21 @@ const GuestBox = styled.div`
   }
 `;
 
+const ArchiveIntro = styled.div`
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.85rem;
+  border: 1px solid #cbdcf3;
+  border-radius: 10px;
+  background: #f3f8ff;
+  color: #17436f;
+  padding: 0.85rem;
+
+  span {
+    line-height: 1.4;
+  }
+`;
+
 const ActionButton = styled.button`
   border: none;
   border-radius: 8px;
@@ -1401,6 +1449,49 @@ const InfoBand = styled.div`
   background: #f5f7fb;
   padding: 0.75rem;
   color: #303746;
+`;
+
+const FinalResultsBox = styled.section`
+  display: grid;
+  gap: 0.7rem;
+  border: 1px solid #d7dce4;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.85rem;
+`;
+
+const FinalResultsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 0.55rem;
+`;
+
+const FinalResultItem = styled.div`
+  display: grid;
+  gap: 0.2rem;
+  border-left: 4px solid ${({ $accent }) => $accent};
+  border-radius: 7px;
+  background: #f7f8fa;
+  padding: 0.6rem 0.65rem;
+
+  span,
+  small {
+    color: #5b6270;
+  }
+
+  span {
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  strong {
+    color: #202124;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    line-height: 1.35;
+  }
 `;
 
 const PreviewBox = styled(InfoBand)`

@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { getActiveAwardEffectTier } from "../shared/awardEffects";
 import { getAwardIconSources, handleAwardIconFallback } from "../utils/awardIcons";
-import { Card as SharedCard, CommentToggle } from "../styles/SharedStyles";
+import { ActivityCard as Card, ActivityHeader, ActivityMetaRow as CardMetaRow, ActivityDate as DateText, ActivitySocialActions as ActionRow, ActivityCommentButton as CommentToggle, ActivityUserHeader, ActivityHeaderText, ActivityLink as CleanLink, ShopButton, SHOP_COLORS } from "../styles/ShopUi";
+import { formatActivityDate } from '../utils/activityFeed';
+import UserAvatar from './UserAvatar';
 import CommentSection from "./CommentSection";
 import LikeButton from "./LikeButton";
 import { MessageCircle } from "lucide-react";
@@ -28,6 +29,7 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
     const iconSources = getAwardIconSources(award?.icon_path, 512);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [areCommentsVisible, setAreCommentsVisible] = useState(showComments);
+    const lightboxRef = useRef(null);
     const epicTier = getActiveAwardEffectTier(award?.ep);
 
     useEffect(() => {
@@ -38,13 +40,18 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
 
     useEffect(() => {
       if (!isLightboxOpen) return undefined;
+      const previous = document.activeElement;
+      lightboxRef.current?.querySelector('button')?.focus();
       const onKeyDown = (event) => {
         if (event.key === "Escape") {
           setIsLightboxOpen(false);
         }
+        if (event.key === 'Tab') {
+          event.preventDefault(); lightboxRef.current?.querySelector('button')?.focus();
+        }
       };
       window.addEventListener("keydown", onKeyDown);
-      return () => window.removeEventListener("keydown", onKeyDown);
+      return () => { window.removeEventListener("keydown", onKeyDown); previous?.focus?.(); };
     }, [isLightboxOpen]);
 
     useEffect(() => {
@@ -64,20 +71,20 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
           $epicTier={epicTier}
           ref={ref}
         >
-          <CardMetaRow>
-            <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
-              {awardDate
-                ? awardDate.toLocaleDateString("de-DE", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                  })
-                : award?.datum}
-            </DateText>
-          </CardMetaRow>
-
+          <ActivityHeader>
+            <ActivityUserHeader>
+              <UserAvatar userId={award.user_id} name={award.user_name} avatarUrl={award.avatar_url} />
+              <ActivityHeaderText>{Number(userId) === Number(award.user_id)
+                ? 'Du hast einen Award erhalten.'
+                : <><strong><CleanLink to={`/user/${award.user_id}`}>{award.user_name}</CleanLink></strong> hat einen Award erhalten.</>}
+              </ActivityHeaderText>
+            </ActivityUserHeader>
+            <CardMetaRow>
+              <DateText dateTime={awardDate ? awardDate.toISOString() : undefined}>
+                {formatActivityDate(awardDate)}
+              </DateText>
+            </CardMetaRow>
+          </ActivityHeader>
           <ContentWrapper>
             {/* --- Icon links --- */}
             <IconWrapper>
@@ -102,22 +109,7 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
 
             {/* --- Text rechts --- */}
             <TextContent>
-              {userId === award.user_id ? (
-                <>Du hast den Award <strong>{award.title_de}</strong> erhalten.</>
-              ) : (
-                <>
-                  <strong>
-                    <CleanLink
-                      to={`/user/${award.user_id}`}
-                      onClick={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => event.stopPropagation()}
-                    >
-                      {award.user_name}
-                    </CleanLink>
-                  </strong>{" "}
-                  hat den Award <strong>{award.title_de}</strong> erhalten.
-                </>
-              )}
+              <strong>{award.title_de}</strong>
               <p>{award.description_de}</p>
             </TextContent>
           </ContentWrapper>
@@ -129,13 +121,14 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
               initialHasLiked={award.has_liked}
             />
             <CommentToggle
+              aria-expanded={areCommentsVisible}
               title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
               onClick={(event) => {
                 event.preventDefault();
                 setAreCommentsVisible((prev) => !prev);
               }}
             >
-              <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {award.commentCount || 0} Kommentar(e)
+              <MessageCircle size={18} /> {award.commentCount || 0} Kommentar(e)
             </CommentToggle>
           </ActionRow>
           {areCommentsVisible && (
@@ -149,7 +142,7 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
         </Card>
         {isLightboxOpen && typeof document !== "undefined" && createPortal(
           <LightboxOverlay onClick={() => setIsLightboxOpen(false)}>
-            <LightboxCard onClick={(event) => event.stopPropagation()}>
+            <LightboxCard ref={lightboxRef} role="dialog" aria-modal="true" aria-label={`Award ${award.title_de}`} onClick={(event) => event.stopPropagation()}>
               <LightboxClose type="button" onClick={() => setIsLightboxOpen(false)}>
                 Schließen
               </LightboxClose>
@@ -187,17 +180,7 @@ export default AwardCard;
 
 // ---------- Styled Components ----------
 
-const CleanLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-`;
 
-const ActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-`;
 
 const SHIMMER_KEYFRAMES = `
   @keyframes awardShimmerSweep {
@@ -215,52 +198,24 @@ const SHIMMER_KEYFRAMES = `
   }
 `;
 
-const Card = styled(SharedCard)`
-  padding: 1rem;
-`;
 
-const CardMetaRow = styled.div`
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0;
-  z-index: 1;
-  pointer-events: none;
-
-  @media (max-width: 640px) {
-    position: static;
-    justify-content: flex-end;
-    margin-bottom: 0.4rem;
-    pointer-events: auto;
-  }
-`;
 
 const ContentWrapper = styled.div`
   display: flex;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-
-  @media (max-width: 640px) {
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 0.8rem;
-  }
+  align-items: flex-start; gap: 16px; margin-top: 16px;
 `;
 
 const TextContent = styled.div`
   flex: 1;
-  min-width: 220px;
+  min-width: 0;
   font-size: 1rem;
+  line-height: 1.5;
 
   p {
     margin: 0.35rem 0 0;
   }
 
-  @media (max-width: 640px) {
-    min-width: 0;
+  @container activity (max-width: 420px) {
     font-size: 0.92rem;
     line-height: 1.3;
   }
@@ -330,10 +285,11 @@ const IconButton = styled.button`
   }
 
   ${SHIMMER_KEYFRAMES}
+  @media (prefers-reduced-motion: reduce) { &::before, &::after { animation: none; } }
 `;
 
 const AwardIcon = styled.img`
-  height: 150px;
+  width: 132px; height: 132px; object-fit: contain;
   position: relative;
   z-index: 1;
   transition: filter 220ms ease;
@@ -347,8 +303,8 @@ const AwardIcon = styled.img`
     filter: drop-shadow(0 0 24px rgba(255, 196, 92, 0.52)) drop-shadow(0 0 44px rgba(255, 166, 48, 0.28)) brightness(1.08) saturate(1.18) contrast(1.08);
   `}
 
-  @media (max-width: 640px) {
-    height: 92px;
+  @container activity (max-width: 420px) {
+    width: 88px; height: 88px;
   }
 `;
 
@@ -395,17 +351,11 @@ const LightboxImage = styled.img`
   `}
 `;
 
-const LightboxClose = styled.button`
+const LightboxClose = styled(ShopButton)`
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 3;
-  border: none;
-  border-radius: 8px;
-  background: #111827;
-  color: #fff;
-  padding: 0.35rem 0.6rem;
-  cursor: pointer;
 `;
 
 const LightboxMeta = styled.div`
@@ -437,8 +387,8 @@ const EPBadge = styled.div`
   position: absolute;
   top: -10px;
   right: -10px;
-  background: linear-gradient(135deg, #FFD700, #FFC107);
-  color: #fff;
+  display: inline-flex; align-items: center; background: ${SHOP_COLORS.accent};
+  color: ${SHOP_COLORS.text}; border: 1px solid #e8a20c;
   font-size: 0.8rem;
   font-weight: bold;
   padding: 4px 8px;
@@ -447,7 +397,7 @@ const EPBadge = styled.div`
   z-index: 4;
   animation: popIn 0.4s ease-out;
 
-  @media (max-width: 640px) {
+  @container activity (max-width: 420px) {
     top: -6px;
     right: -6px;
     font-size: 0.68rem;
@@ -458,27 +408,5 @@ const EPBadge = styled.div`
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
   }
-`;
-
-const DateText = styled.time`
-  position: static;
-  font-size: 0.85rem;
-  color: rgba(47, 33, 0, 0.5);
-  font-style: italic;
-  user-select: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-
-  @media (max-width: 640px) {
-    margin-bottom: 0;
-    justify-content: flex-end;
-    font-size: 0.78rem;
-    line-height: 1.2;
-    flex-wrap: wrap;
-  }
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 `;

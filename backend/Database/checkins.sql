@@ -30,7 +30,8 @@ SET time_zone = "+00:00";
 CREATE TABLE `checkins` (
   `id` int NOT NULL,
   `nutzer_id` int NOT NULL,
-  `eisdiele_id` int NOT NULL,
+  `eisdiele_id` int DEFAULT NULL,
+  `context_type` enum('ice_shop','restaurant','temporary_stand','no_public_place') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ice_shop',
   `datum` datetime DEFAULT CURRENT_TIMESTAMP,
   `typ` enum('Kugel','Softeis','Eisbecher') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `geschmackbewertung` decimal(2,1) DEFAULT NULL,
@@ -679,7 +680,8 @@ ALTER TABLE `checkins`
   ADD PRIMARY KEY (`id`),
   ADD KEY `nutzer_id` (`nutzer_id`),
   ADD KEY `eisdiele_id` (`eisdiele_id`),
-  ADD KEY `checkins_ibfk_3` (`group_id`);
+  ADD KEY `checkins_ibfk_3` (`group_id`),
+  ADD KEY `idx_checkins_context_type` (`context_type`);
 
 --
 -- AUTO_INCREMENT für exportierte Tabellen

@@ -34,7 +34,7 @@ if (empty($targetCheckins)) {
 try {
     $pdo->beginTransaction();
 
-    $ownerStmt = $pdo->prepare("SELECT nutzer_id, eisdiele_id, datum FROM checkins WHERE id = ? LIMIT 1");
+    $ownerStmt = $pdo->prepare("SELECT nutzer_id, eisdiele_id, context_type, datum FROM checkins WHERE id = ? LIMIT 1");
     $ownerStmt->execute([$checkinId]);
     $owner = $ownerStmt->fetch(PDO::FETCH_ASSOC);
     if (!$owner) {
@@ -42,6 +42,9 @@ try {
     }
     if ((int)$owner['nutzer_id'] !== $userId) {
         throw new RuntimeException('Keine Berechtigung');
+    }
+    if ($owner['eisdiele_id'] === null || $owner['context_type'] === 'no_public_place') {
+        throw new RuntimeException('Check-ins ohne öffentlichen Ort können nicht gruppiert werden');
     }
 
     $windowMinutes = 180;
@@ -76,4 +79,3 @@ try {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-

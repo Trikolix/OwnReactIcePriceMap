@@ -46,36 +46,10 @@ class PerfectWeekEvaluator extends BaseAwardEvaluator {
 
     private function getDailyIceStreaks(int $userId): array {
         global $pdo;
-
-        $sql = "WITH checkin_days AS (
-                    SELECT DISTINCT DATE(datum) AS checkin_date
-                    FROM checkins
-                    WHERE nutzer_id = :userId
-                ),
-                numbered_days AS (
-                    SELECT
-                        checkin_date,
-                        ROW_NUMBER() OVER (ORDER BY checkin_date) AS row_num
-                    FROM checkin_days
-                ),
-                streak_groups AS (
-                    SELECT
-                        checkin_date,
-                        DATE_SUB(checkin_date, INTERVAL row_num DAY) AS streak_group
-                    FROM numbered_days
-                )
-                SELECT
-                    MIN(checkin_date) AS start_date,
-                    MAX(checkin_date) AS end_date,
-                    COUNT(*) AS streak_length
-                FROM streak_groups
-                GROUP BY streak_group
-                ORDER BY start_date ASC";
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(['userId' => $userId]);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        require_once __DIR__ . '/../lib/streaks.php';
+        $now = streakNow();
+        $data = streakLoad($pdo, $userId, $now);
+        [, $protected] = streakSettle($data['states']['day'], $data['real']['day'], $data['protected']['day'], 'day', $now);
+        return array_map(fn($run) => ['streak_length' => $run['value'], 'end_date' => $run['end']], streakRuns($data['real']['day'], $protected, 'day'));
     }
 }
-?>

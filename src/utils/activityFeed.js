@@ -30,6 +30,12 @@ export const parseActivityDate = (rawValue) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+export const formatActivityDate = (value) => {
+  const date = parseActivityDate(value);
+  if (!date || Number.isNaN(date.getTime())) return 'Unbekannt';
+  return `${date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })} · ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 export const extractActivityDate = (data) => {
   if (!data) return null;
   return parseActivityDate(data.aktivitaet_am || data.datum || data.erstellt_am || data.created_at || null);

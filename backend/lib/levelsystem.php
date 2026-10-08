@@ -2,9 +2,9 @@
 
 require_once __DIR__ . '/shop_maintenance.php';
 
-function getLevelInformationForUser(PDO $pdo, int $userId): ?array {
+function getLevelInformationForUser(PDO $pdo, int $userId, bool $ensureSchema = true): ?array {
 
-    $epGesamt = getOverallEpForUser($pdo, $userId);
+    $epGesamt = getOverallEpForUser($pdo, $userId, $ensureSchema);
 
     // 2. Hole Level-Information
     $stmt = $pdo->prepare("
@@ -52,8 +52,8 @@ function getLevelInformationForUser(PDO $pdo, int $userId): ?array {
 
 }
 
-function getOverallEpForUser(PDO $pdo, int $userId): int {
-    ensureShopMaintenanceSchema($pdo);
+function getOverallEpForUser(PDO $pdo, int $userId, bool $ensureSchema = true): int {
+    if ($ensureSchema) ensureShopMaintenanceSchema($pdo);
     $stmt = $pdo->prepare("SELECT 
                 n.id AS nutzer_id,
                 n.username,

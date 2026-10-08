@@ -16,6 +16,7 @@ $allAttributes = getAllAttributes($pdo);
 echo json_encode([
     'review' => $review,
     'attributes' => $review['attribute'] ?? null,
+    'attribute_details' => $review['attribute_details'] ?? [],
     'bilder' => $review['bilder'] ?? [],
     'allAttributes' => $allAttributes
 ]);

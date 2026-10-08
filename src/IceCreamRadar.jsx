@@ -9,7 +9,8 @@ import 'react-leaflet-cluster/lib/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/lib/assets/MarkerCluster.Default.css';
 import LoginModal from './LoginModal';
 import Header from './Header';
-import DropdownSelect from './components/DropdownSelect';
+import MapToolbar from './components/MapToolbar';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import styled from 'styled-components';
 import { useUser } from './context/UserContext';
 import ShopDetailsView from './ShopDetailsView';
@@ -25,6 +26,7 @@ import Seo from './components/Seo';
 import { CAMPAIGN_STATUS, getCampaignDefinition, getCampaignStatus } from './features/seasonal/campaigns';
 import { canUseExternalDiscovery } from './utils/featureAccess';
 import { formatDateTimeLocalInputValue } from './utils/dateTimeLocal';
+import { getPlaceTypeFilterQuery, matchesPlaceTypeFilters } from './utils/placeTypeFilters';
 const MIN_CONTEXT_MENU_ZOOM = 7;
 const EXTERNAL_DISCOVERY_MIN_ZOOM_FALLBACK = 9;
 const EASTER_MAP_TOGGLE_STORAGE_KEY = 'ice-app:easter-map-visuals';
@@ -41,6 +43,12 @@ const getMapActionDismissKey = () => `action-map-nudge-dismissed:${getTodayKey()
 const DISCOVERY_SLOT_LIMIT = 5;
 const SEARCH_PLACE_MIN_QUERY_LENGTH = 3;
 const SEARCH_PLACE_DEBOUNCE_MS = 450;
+const parseMapAttributeIds = (value) => Array.from(new Set(
+  String(value || '')
+    .split(',')
+    .map((id) => Number.parseInt(id, 10))
+    .filter((id) => Number.isInteger(id) && id > 0)
+)).sort((a, b) => a - b);
 const DEFAULT_DISCOVERY_META = {
   hiddenExisting: 0,
   hiddenDuplicate: 0,
@@ -383,6 +391,11 @@ const createDefaultFilters = () => ({
   visited: false,
   notVisited: false,
   showPermanentClosed: false,
+  placeTypes: {
+    ice_shop: true,
+    temporary_stand: true,
+    restaurant: false,
+  },
   types: {
     kugel: false,
     softeis: false,
@@ -756,6 +769,11 @@ const IceCreamRadar = () => {
   const latestUserPositionRef = useRef(userPosition);
   const latestLocationAccuracyRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const mapAttributeIds = useMemo(
+    () => parseMapAttributeIds(new URLSearchParams(location.search).get('attributes')),
+    [location.search]
+  );
+  const [attributeOptions, setAttributeOptions] = useState([]);
   const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
   const [openFilterMode, setOpenFilterMode] = useState('all');
   const [openFilterDateTime, setOpenFilterDateTime] = useState('');
@@ -769,6 +787,7 @@ const IceCreamRadar = () => {
   const [activeSearchSuggestionIndex, setActiveSearchSuggestionIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const filterCloseButtonRef = useRef(null);
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
   const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(true);
@@ -954,8 +973,28 @@ const IceCreamRadar = () => {
   }, [openFilterMode, openFilterDateTime]);
   const { shopId, token } = useParams();
   const navigate = useNavigate();
+  const mapAttributeQueryString = useMemo(
+    () => mapAttributeIds.length ? `attributes=${encodeURIComponent(mapAttributeIds.join(','))}` : '',
+    [mapAttributeIds]
+  );
+  const placeTypeFilters = filters.placeTypes ?? createDefaultFilters().placeTypes;
+  const placeTypeQueryString = getPlaceTypeFilterQuery(placeTypeFilters);
+  const mapDataQueryString = useMemo(
+    () => [openFilterQueryString, mapAttributeQueryString, placeTypeQueryString].filter(Boolean).join('&'),
+    [openFilterQueryString, mapAttributeQueryString, placeTypeQueryString]
+  );
+  const updateMapAttributeIds = useCallback((ids) => {
+    const params = new URLSearchParams(location.search);
+    const normalizedIds = parseMapAttributeIds(ids.join(','));
+    if (normalizedIds.length) {
+      params.set('attributes', normalizedIds.join(','));
+    } else {
+      params.delete('attributes');
+    }
+    navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+  }, [location.pathname, location.search, navigate]);
   const getShopCacheKey = useCallback(
-    (queryString) => `iceCreamShopsCache::user:${userId ?? 'guest'}::filter:${queryString || 'all'}`,
+    (queryString) => `iceCreamShopsCache::v2::user:${userId ?? 'guest'}::filter:${queryString || 'all'}`,
     [userId]
   );
 
@@ -964,6 +1003,24 @@ const IceCreamRadar = () => {
       setShowLoginModal(true);
     }
   }, [location]);
+
+  useEffect(() => {
+    if (!apiUrl) return undefined;
+    const controller = new AbortController();
+    fetch(`${apiUrl}/get_attribute.php`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : [])
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        setAttributeOptions(data
+          .map((attribute) => ({ id: Number(attribute.id), name: attribute.name }))
+          .filter((attribute) => Number.isInteger(attribute.id) && attribute.id > 0 && attribute.name)
+        );
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') console.warn('Attribute konnten nicht geladen werden:', error);
+      });
+    return () => controller.abort();
+  }, [apiUrl]);
 
   const buildActiveShopPreview = useCallback((shopLike) => {
     if (!shopLike) return null;
@@ -1172,7 +1229,7 @@ const IceCreamRadar = () => {
 
   const loadIceCreamShops = useCallback(async () => {
     const requestId = ++shopListRequestRef.current;
-    const cacheKey = getShopCacheKey(openFilterQueryString);
+    const cacheKey = getShopCacheKey(mapDataQueryString);
     const fallbackCacheKey = getShopCacheKey('');
     const parseCachedShops = (key) => {
       const cachedValue = localStorage.getItem(key);
@@ -1212,7 +1269,8 @@ const IceCreamRadar = () => {
       }
     };
 
-    const cachedShops = parseCachedShops(cacheKey) ?? parseCachedShops(fallbackCacheKey);
+    const cachedShops = parseCachedShops(cacheKey)
+      ?? (mapAttributeIds.length === 0 ? parseCachedShops(fallbackCacheKey) : null);
     if (cachedShops) {
       setIceCreamShops(cachedShops);
     }
@@ -1222,9 +1280,9 @@ const IceCreamRadar = () => {
     }
 
     try {
-      const querySuffix = openFilterQueryString ? `&${openFilterQueryString}` : '';
+      const querySuffix = mapDataQueryString ? `&${mapDataQueryString}` : '';
       const query = `${apiUrl}/get_all_eisdielen.php?userId=${userId}${querySuffix}`;
-      const response = await fetch(query);
+      const response = await fetch(query, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`Eisdielen-Request fehlgeschlagen: ${response.status}`);
       }
@@ -1245,7 +1303,7 @@ const IceCreamRadar = () => {
       }
       console.error('Fehler beim Abrufen der Eisdielen:', error);
     }
-  }, [apiUrl, userId, openFilterQueryString, getShopCacheKey]);
+  }, [apiUrl, userId, mapDataQueryString, mapAttributeIds.length, getShopCacheKey]);
 
   const fetchIceCreamShops = loadIceCreamShops;
   const refreshShops = loadIceCreamShops;
@@ -1696,6 +1754,16 @@ const IceCreamRadar = () => {
     }));
   };
 
+  const handlePlaceTypeToggle = (placeType) => {
+    setFilters((prev) => ({
+      ...prev,
+      placeTypes: {
+        ...(prev.placeTypes ?? createDefaultFilters().placeTypes),
+        [placeType]: !(prev.placeTypes ?? createDefaultFilters().placeTypes)[placeType],
+      },
+    }));
+  };
+
   const handleAdvancedTypeChange = (value) => {
     setFilters((prev) => ({
       ...prev,
@@ -1815,6 +1883,9 @@ const IceCreamRadar = () => {
       return [];
     }
     const filteredShops = iceCreamShops.reduce((acc, shop) => {
+      if (!matchesPlaceTypeFilters(shop, placeTypeFilters)) {
+        return acc;
+      }
       if (favoritesFilterActive && shop.is_favorit !== 1) {
         return acc;
       }
@@ -1874,7 +1945,7 @@ const IceCreamRadar = () => {
     const focusedShop = iceCreamShops.find(
       (shop) => String(shop.eisdielen_id) === String(activeShopId)
     );
-    if (!focusedShop || focusedShop.status !== 'permanent_closed') {
+    if (!focusedShop || focusedShop.status !== 'permanent_closed' || !matchesPlaceTypeFilters(focusedShop, placeTypeFilters)) {
       return filteredShops;
     }
 
@@ -1892,6 +1963,7 @@ const IceCreamRadar = () => {
     showPermanentClosedFilterActive,
     hasTypeFilter,
     typeFilters,
+    placeTypeFilters,
     hasAdvancedFilter,
     isAdvancedRatingActive,
     isAdvancedPriceActive,
@@ -1921,19 +1993,25 @@ const IceCreamRadar = () => {
     if (visitedFilterActive) count += 1;
     if (notVisitedFilterActive) count += 1;
     if (showPermanentClosedFilterActive) count += 1;
+    if (!placeTypeFilters.ice_shop) count += 1;
+    if (!placeTypeFilters.temporary_stand) count += 1;
+    if (placeTypeFilters.restaurant) count += 1;
     const typeCount = Object.values(typeFilters).filter(Boolean).length;
     count += typeCount;
     if (hasAdvancedFilter) count += 1;
     if (openFilterMode === 'now') count += 1;
     if (openFilterMode === 'custom' && openFilterDateTime) count += 1;
+    if (mapAttributeIds.length > 0) count += 1;
     return count;
   }, [
     favoritesFilterActive,
     visitedFilterActive,
     notVisitedFilterActive,
     showPermanentClosedFilterActive,
+    placeTypeFilters,
     typeFilters,
     hasAdvancedFilter,
+    mapAttributeIds.length,
     openFilterMode,
     openFilterDateTime,
   ]);
@@ -2114,19 +2192,15 @@ const IceCreamRadar = () => {
       <Header
         refreshShops={refreshShops}
       />
-      <LogoContainer>
-        <DropdownSelect
+      <MapSection>
+        <MapToolbar
           options={displayDropdownOptions}
           value={displayMode}
-          onChange={(value) => setDisplayMode(value)}
+          onChange={setDisplayMode}
+          activeFilterCount={activeFilterCount}
+          onOpenFilters={() => setIsFilterModalOpen(true)}
+          filtersOpen={isFilterModalOpen}
         />
-        <FilterButton type="button" onClick={() => setIsFilterModalOpen(true)}>
-          Filter
-          {activeFilterCount > 0 && <FilterBadge>{activeFilterCount}</FilterBadge>}
-        </FilterButton>
-      </LogoContainer>
-
-      <MapSection>
         {isSearchVisible && (
           <SearchOverlay>
             <SearchCard onSubmit={handleSearchSubmit}>
@@ -2354,7 +2428,7 @@ const IceCreamRadar = () => {
           />
           {clustering ? ( // show the clustered
             <MarkerClusterGroup
-              key={`${easterMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}`}
+              key={`${easterMapVisible ? 'cluster-easter' : 'cluster-default'}-${easterEncounterState.bunnyShopId ?? 'none'}-${placeTypeQueryString}`}
               maxClusterRadius={25}
               iconCreateFunction={clusterIconCreateFunction}
             >
@@ -2494,15 +2568,70 @@ const IceCreamRadar = () => {
           )}
         </MapContainer>
       </MapSection>
-      {isFilterModalOpen && (
-        <FilterModalOverlay onClick={() => setIsFilterModalOpen(false)}>
-          <FilterModalContent onClick={(event) => event.stopPropagation()}>
+      <FilterDialog open={isFilterModalOpen} onClose={() => setIsFilterModalOpen(false)} initialFocus={filterCloseButtonRef}>
+        <FilterModalOverlay />
+        <FilterModalLayout>
+          <FilterModalContent>
             <FilterModalHeader>
               <FilterModalTitle>Filter</FilterModalTitle>
-              <CloseModalButton type="button" onClick={() => setIsFilterModalOpen(false)}>
-                ×
+              <CloseModalButton ref={filterCloseButtonRef} type="button" aria-label="Filter schließen" onClick={() => setIsFilterModalOpen(false)}>
+                <span aria-hidden="true">×</span>
               </CloseModalButton>
             </FilterModalHeader>
+            <FilterModalBody>
+            {mapAttributeIds.length > 0 && (
+              <FilterSection>
+                <FilterSectionTitle>Review-Attribute</FilterSectionTitle>
+                <MapAttributePills>
+                  {mapAttributeIds.map((attributeId) => {
+                    const attribute = attributeOptions.find((option) => option.id === attributeId);
+                    const attributeName = attribute?.name || `Attribut ${attributeId}`;
+                    return (
+                      <MapAttributePill
+                        type="button"
+                        key={attributeId}
+                        onClick={() => updateMapAttributeIds(mapAttributeIds.filter((id) => id !== attributeId))}
+                        aria-label={`Attribut ${attributeName} entfernen`}
+                        title="Attribut entfernen"
+                      >
+                        {attributeName} <span aria-hidden="true">×</span>
+                      </MapAttributePill>
+                    );
+                  })}
+                </MapAttributePills>
+                <ClearMapAttributesButton type="button" onClick={() => updateMapAttributeIds([])}>
+                  Attributfilter zurücksetzen
+                </ClearMapAttributesButton>
+              </FilterSection>
+            )}
+            <FilterSection>
+              <FilterSectionTitle>Ortstypen</FilterSectionTitle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!placeTypeFilters.ice_shop}
+                  onChange={() => handlePlaceTypeToggle('ice_shop')}
+                />
+                <span>Eisdielen</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!placeTypeFilters.temporary_stand}
+                  onChange={() => handlePlaceTypeToggle('temporary_stand')}
+                />
+                <span>Aktive temporäre Stände</span>
+              </FilterToggle>
+              <FilterToggle>
+                <input
+                  type="checkbox"
+                  checked={!!placeTypeFilters.restaurant}
+                  onChange={() => handlePlaceTypeToggle('restaurant')}
+                />
+                <span>Restaurants/Cafés mit Eisangebot</span>
+              </FilterToggle>
+              <FilterHint>Temporäre Stände sind nur bis zu ihrem angegebenen Enddatum sichtbar.</FilterHint>
+            </FilterSection>
             <FilterSection>
               <FilterSectionTitle>Favoriten & Besuche</FilterSectionTitle>
               <FilterToggle disabled={!userId}>
@@ -2710,6 +2839,7 @@ const IceCreamRadar = () => {
                 />
               )}
             </FilterSection>
+            </FilterModalBody>
             <FilterActions>
               <SecondaryButton type="button" onClick={handleResetFilters}>
                 Zurücksetzen
@@ -2719,8 +2849,8 @@ const IceCreamRadar = () => {
               </YellowButton>
             </FilterActions>
           </FilterModalContent>
-        </FilterModalOverlay>
-      )}
+        </FilterModalLayout>
+      </FilterDialog>
       {token && (
         <ResetPasswordModal resetToken={token} isOpen={true} onClose={() => (window.location.href = "/login")} />
       )}
@@ -2785,20 +2915,6 @@ const MapPageShell = styled.div`
   }
 `;
 
-const LogoContainer = styled.div`
-  display: ruby;
-  align-items: center;
-  margin: 5px auto;
-  color: black;
-  @media (max-width: 768px) {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    align-content: center;
-    justify-content: center;
-  }
-`;
-
 const YellowButton = styled.button`
   background-color: #ffb522;
   color: black;
@@ -2816,21 +2932,6 @@ const YellowButton = styled.button`
   @media (max-width: 768px) {
     font-size: 0.9rem;
   }
-`;
-
-const FilterButton = styled(YellowButton)`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-`;
-
-const FilterBadge = styled.span`
-  background: #fff;
-  color: #000;
-  border-radius: 999px;
-  padding: 0 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 700;
 `;
 
 const DateTimeInput = styled.input`
@@ -2945,7 +3046,7 @@ const MapContextMenuHint = styled.p`
 
 const SearchOverlay = styled.div`
   position: absolute;
-  top: 12px;
+  top: 76px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -2954,6 +3055,8 @@ const SearchOverlay = styled.div`
   flex-direction: column;
   gap: 0.35rem;
   pointer-events: none;
+
+  @media (min-width: 768px) { top: 80px; }
 
   @media (max-width: 520px) {
     left: 12px;
@@ -3093,11 +3196,12 @@ const SearchStatusText = styled.p`
 
 const DiscoveryOverlay = styled.div`
   position: absolute;
-  top: 12px;
+  top: 76px;
   left: 12px;
   z-index: 1000;
   width: min(90vw, 360px);
   pointer-events: none;
+  @media (min-width: 768px) { top: 80px; left: 16px; }
 `;
 
 const DiscoveryCard = styled.div`
@@ -3288,48 +3392,121 @@ const DiscoveryPopupLink = styled.a`
   text-decoration: none;
 `;
 
-const FilterModalOverlay = styled.div`
+const FilterDialog = styled(Dialog)`position: relative; z-index: 2200;`;
+const FilterModalOverlay = styled(DialogBackdrop)`
+  position: fixed;
+  inset: 0;
+  background: #2f210059;
+`;
+const FilterModalLayout = styled.div`
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 2200;
+  padding: 16px;
+  box-sizing: border-box;
+  pointer-events: none;
+  @media (max-width: 767px) { align-items: flex-end; padding: 0; }
 `;
 
-const FilterModalContent = styled.div`
-  background: #fffbe6;
+const FilterModalContent = styled(DialogPanel)`
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: min(520px, 100%);
+  max-height: min(86dvh, 760px);
+  background: #ffffff;
+  color: #2f2100;
   border-radius: 16px;
-  padding: 1.5rem;
-  width: min(480px, 90%);
-  max-height: min(86vh, 760px);
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  @media (max-width: 767px) {
+    width: 100%;
+    max-height: min(86dvh, calc(100dvh - max(12px, env(safe-area-inset-top))));
+    border-radius: 20px 20px 0 0;
+  }
 `;
 
 const FilterModalHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  flex-shrink: 0;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e6ddc9;
+  @media (max-width: 767px) { padding: 12px 16px; }
 `;
 
-const FilterModalTitle = styled.h3`
+const FilterModalTitle = styled(DialogTitle)`
   margin: 0;
   font-size: 1.4rem;
-  color: #503000;
+  color: inherit;
 `;
 
 const CloseModalButton = styled.button`
   border: none;
   background: transparent;
+  color: inherit;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 10px;
   font-size: 1.5rem;
   cursor: pointer;
+  &:hover { background: #fff0c6; }
+  &:focus-visible { outline: 2px solid #633e14; outline-offset: 2px; }
+`;
+const FilterModalBody = styled.div`
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 24px 0;
+  @media (max-width: 767px) { padding: 16px 16px 0; }
 `;
 
 const FilterSection = styled.div`
   margin-bottom: 1.5rem;
+`;
+
+const MapAttributePills = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`;
+
+const MapAttributePill = styled.button`
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(255, 181, 34, 0.7);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(255, 244, 217, 0.92);
+  color: #754500;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover { background: #ffe2a9; }
+  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.65); outline-offset: 2px; }
+`;
+
+const ClearMapAttributesButton = styled.button`
+  margin-top: 0.65rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #825000;
+  font: inherit;
+  font-size: 0.86rem;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.65); outline-offset: 2px; }
 `;
 
 const FilterSectionTitle = styled.h4`
@@ -3342,6 +3519,7 @@ const FilterToggle = styled.label`
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  min-height: 44px;
   font-size: 0.95rem;
   margin-bottom: 0.4rem;
   opacity: ${(props) => (props.disabled ? 0.5 : 1)};
@@ -3513,6 +3691,15 @@ const FilterActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #e6ddc9;
+  & > button { min-height: 44px; }
+  & > button:focus-visible { outline: 2px solid #633e14; outline-offset: 2px; }
+  @media (max-width: 767px) {
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+    & > button { flex: 1; }
+  }
 `;
 
 const SecondaryButton = styled.button`

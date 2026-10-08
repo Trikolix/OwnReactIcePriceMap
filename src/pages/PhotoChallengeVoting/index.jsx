@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Header from '../../Header';
+import { Button, ActionRow, Notice, ChallengeDialog } from '../../components/ChallengeUI';
+import { photoStatusLabel, photoDateValue } from '../../utils/photoChallengePresentation';
 import NewAwards from '../../components/NewAwards';
 import { useUser } from '../../context/UserContext';
 import {
@@ -26,6 +28,12 @@ function PhotoChallengeVoting() {
   const [error, setError] = useState(null);
   const [activePhase, setActivePhase] = useState('group');
   const [actionMessage, setActionMessage] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const [mutationBusy, setMutationBusy] = useState(false);
+  const mutationRef = React.useRef(false);
+  const contextRef = React.useRef('');
+  contextRef.current = `${challengeId}:${userId || ''}`;
+  const [submissionOpen, setSubmissionOpen] = useState(false);
   const [newAwards, setNewAwards] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [groupModal, setGroupModal] = useState(null); // { groupId, mode, matchOrder, matchIndex, orientation }
@@ -33,6 +41,7 @@ function PhotoChallengeVoting() {
   const [imagePreview, setImagePreview] = useState(null); // { url, label }
   const [userImages, setUserImages] = useState([]);
   const [userImagesLoading, setUserImagesLoading] = useState(false);
+  const [userImagesError, setUserImagesError] = useState(null);
   const [userImagesHasMore, setUserImagesHasMore] = useState(false);
   const [userImagesPage, setUserImagesPage] = useState(1);
   const getKoRoundLabel = useKoRoundLabel(overview);
@@ -42,6 +51,11 @@ function PhotoChallengeVoting() {
   const isSubmissionStage = Boolean(
     challengeFlags.submission_is_open_effective || challengeFlags.submission_is_closed_effective
   );
+
+  useEffect(() => {
+    setOverview(null); setSubmissionOpen(false); setGroupModal(null); setKoModal(null); setImagePreview(null);
+    setActionError(null); setActionMessage(null); setNewAwards([]); setUserImages([]); setUserImagesError(null);
+  }, [challengeId, userId]);
 
   const fetchOverview = useCallback(async () => {
     if (!apiUrl || !challengeId) return;
@@ -85,7 +99,6 @@ function PhotoChallengeVoting() {
       }
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
-      setOverview(null);
       setError(err.message || 'Challenge konnte nicht geladen werden.');
     } finally {
       if (requestId === requestIdRef.current) {
@@ -97,7 +110,8 @@ function PhotoChallengeVoting() {
   const loadUserImages = useCallback(
     async (page = 1, append = false) => {
       if (!apiUrl || !userId) return;
-      setUserImagesLoading(true);
+      const context = contextRef.current;
+      setUserImagesLoading(true); setUserImagesError(null);
       try {
         const params = new URLSearchParams({
           nutzer_id: userId,
@@ -106,6 +120,7 @@ function PhotoChallengeVoting() {
         });
         const res = await fetch(`${apiUrl}/photo_challenge/list_user_images.php?${params.toString()}`);
         const data = await res.json();
+        if (context !== contextRef.current) return;
         if (data.status === 'success') {
           setUserImages((prev) => (append ? [...prev, ...(data.data || [])] : data.data || []));
           setUserImagesHasMore(Boolean(data.data && data.data.length === (data.meta?.limit || 30)));
@@ -114,12 +129,14 @@ function PhotoChallengeVoting() {
           throw new Error(data.message || 'Bilder konnten nicht geladen werden.');
         }
       } catch (err) {
+        if (context !== contextRef.current) return;
+        setUserImagesError(err.message || 'Deine Fotos konnten nicht geladen werden.');
         if (!append) {
           setUserImages([]);
         }
         setUserImagesHasMore(false);
       } finally {
-        setUserImagesLoading(false);
+        if (context === contextRef.current) setUserImagesLoading(false);
       }
     },
     [apiUrl, challengeId, userId]
@@ -147,7 +164,7 @@ function PhotoChallengeVoting() {
         setActivePhase(`ko_round_${maxRound}`);
       }
     }
-  }, [overview, challengeFlags.submission_is_open_effective, challengeFlags.submission_is_closed_effective]);
+  }, [overview?.challenge?.id, overview?.challenge?.status, challengeFlags.submission_is_open_effective, challengeFlags.submission_is_closed_effective]);
 
   useEffect(() => {
     if (isSubmissionStage && isLoggedIn) {
@@ -178,6 +195,24 @@ function PhotoChallengeVoting() {
     return base;
   }, [overview?.ko_matches, getKoRoundLabel]);
 
+  const postAction = async (endpoint, fields) => {
+    if (mutationRef.current || !apiUrl || !userId) return null;
+    mutationRef.current = true; setMutationBusy(true); setActionError(null);
+    const context = contextRef.current;
+    try {
+      const form = new FormData();
+      Object.entries(fields).forEach(([key, value]) => { if (value !== null && value !== undefined) form.append(key, value); });
+      const response = await fetch(`${apiUrl}/photo_challenge/${endpoint}`, { method: 'POST', body: form });
+      const data = await response.json();
+      if (context !== contextRef.current) return null;
+      if (!response.ok || data.status !== 'success') throw new Error(data.message || 'Die Aktion konnte nicht gespeichert werden.');
+      return data;
+    } catch (error) {
+      if (context === contextRef.current) setActionError(error.message || 'Verbindung fehlgeschlagen. Bitte versuche es erneut.');
+      return null;
+    } finally { mutationRef.current = false; setMutationBusy(false); }
+  };
+
   const handleVote = async (matchId, imageId, options = {}) => {
     if (!isLoggedIn || !userId) {
       setActionMessage('Bitte logge dich ein, um abzustimmen.');
@@ -188,31 +223,21 @@ function PhotoChallengeVoting() {
       setActionMessage('Das ist bereits deine aktuelle Stimme.');
       return;
     }
-    try {
-      const formData = new FormData();
-      formData.append('match_id', matchId);
-      formData.append('image_id', imageId);
-      formData.append('nutzer_id', userId);
-      const res = await fetch(`${apiUrl}/photo_challenge/vote.php`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.status === 'success') {
-        setActionMessage(data.message || 'Stimme gespeichert – danke!');
-        setNewAwards(Array.isArray(data.new_awards) ? data.new_awards : []);
-        if (data.vote_action === 'updated' && typeof options.onUpdate === 'function') {
-          options.onUpdate(data);
-        } else if (data.vote_action !== 'unchanged' && typeof options.onSuccess === 'function') {
-          options.onSuccess();
-        }
-        setRefreshKey((val) => val + 1);
-      } else {
-        throw new Error(data.message || 'Voting fehlgeschlagen.');
-      }
-    } catch (err) {
-      setActionMessage(err.message || 'Voting fehlgeschlagen.');
-    }
+    const data = await postAction('vote.php', { match_id: matchId, image_id: imageId, nutzer_id: userId });
+    if (!data) return;
+    setActionMessage(data.message || 'Stimme gespeichert – danke!');
+    setNewAwards(Array.isArray(data.new_awards) ? data.new_awards : []);
+    // Update locally before advancing, so the next button cannot submit the same duel again.
+    setOverview(previous => previous && ({ ...previous,
+      groups: (previous.groups || []).map(group => {
+        const matches = group.matches.map(match => String(match.id) === String(matchId) ? { ...match, has_voted: true, user_choice: imageId } : match);
+        return { ...group, matches, user_votes: matches.filter(match => match.has_voted).length };
+      }),
+      ko_matches: (previous.ko_matches || []).map(match => String(match.id) === String(matchId) ? { ...match, has_voted: true, user_choice: imageId } : match),
+    }));
+    if (data.vote_action === 'updated') options.onUpdate?.(data);
+    else if (data.vote_action !== 'unchanged') options.onSuccess?.();
+    setRefreshKey(value => value + 1);
   };
 
   const groupsSorted = useMemo(() => {
@@ -287,7 +312,8 @@ function PhotoChallengeVoting() {
       setActionMessage('Für diese Gruppe sind noch keine Duelle verfügbar.');
       return;
     }
-    const matchOrder = shuffleArray(group.matches.map((match) => match.id));
+    const shuffled = shuffleArray(group.matches);
+    const matchOrder = [...shuffled.filter(match => match.status === 'open' && !match.has_voted), ...shuffled.filter(match => match.status !== 'open' || match.has_voted)].map(match => match.id);
     const orientation = {};
     group.matches.forEach((match) => {
       orientation[match.id] = Math.random() < 0.5 ? 'swap' : 'keep';
@@ -371,11 +397,6 @@ function PhotoChallengeVoting() {
 
   const goPrevKoModalMatch = useCallback(() => goKoMatch(-1), [goKoMatch]);
   const goNextKoModalMatch = useCallback(() => goKoMatch(1, { closeOnEnd: false }), [goKoMatch]);
-  const advanceKoModalMatch = useCallback(
-    (closeOnEnd = true) => goKoMatch(1, { closeOnEnd }),
-    [goKoMatch]
-  );
-
   useEffect(() => {
     if (!groupModal || groupModal.mode !== 'active') return;
     if (!activeModalGroup) {
@@ -402,7 +423,12 @@ function PhotoChallengeVoting() {
   const handleModalVote = (match, imageId) => {
     handleVote(match.id, imageId, {
       currentChoice: match.user_choice,
-      onSuccess: () => advanceModalMatch(true),
+      onSuccess: () => {
+        const group = overview?.groups.find(item => String(item.id) === String(groupModal?.groupId));
+        const index = groupModal?.matchOrder.findIndex(id => String(id) !== String(match.id) && group?.matches.some(item => String(item.id) === String(id) && item.status === 'open' && !item.has_voted && item.user_choice == null));
+        if (index >= 0) setGroupModal(previous => ({ ...previous, matchIndex: index }));
+        else { setGroupModal(null); setActionMessage('Alle offenen Duelle dieser Gruppe beantwortet. Danke!'); }
+      },
       onUpdate: () => undefined,
     });
   };
@@ -410,92 +436,43 @@ function PhotoChallengeVoting() {
   const handleKoModalVote = (match, imageId) => {
     handleVote(match.id, imageId, {
       currentChoice: match.user_choice,
-      onSuccess: () => advanceKoModalMatch(true),
+      onSuccess: () => {
+        const index = koModal?.matchIds.findIndex(id => String(id) !== String(match.id) && overview?.ko_matches.some(item => String(item.id) === String(id) && item.status === 'open' && !item.has_voted && item.user_choice == null));
+        if (index >= 0) setKoModal(previous => ({ ...previous, matchIndex: index }));
+        else { setKoModal(null); setActionMessage('Alle offenen Duelle dieser Runde beantwortet. Danke!'); }
+      },
       onUpdate: () => undefined,
     });
   };
 
   const handleSubmitPhoto = async (imageId, title = '', file = null) => {
-    if (!apiUrl || !challengeId || !userId) {
-      setActionMessage('Bitte logge dich ein, um einzureichen.');
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('nutzer_id', userId);
-      formData.append('challenge_id', challengeId);
-      if (file) {
-        formData.append('image', file);
-      } else {
-        formData.append('image_id', imageId);
-      }
-      if (title) {
-        formData.append('title', title);
-      }
-      const res = await fetch(`${apiUrl}/photo_challenge/submit_image.php`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.status === 'success') {
-        setActionMessage('Einreichung gespeichert – danke!');
-        setRefreshKey((val) => val + 1);
-      } else {
-        throw new Error(data.message || 'Einreichung fehlgeschlagen.');
-      }
-    } catch (err) {
-      setActionMessage(err.message || 'Einreichung fehlgeschlagen.');
-    }
+    const data = await postAction('submit_image.php', { nutzer_id: userId, challenge_id: challengeId,
+      image_id: file ? null : imageId, image: file, title });
+    if (!data) return false;
+    setActionMessage('Dein Foto wurde eingereicht.'); setRefreshKey(value => value + 1); return true;
   };
-
-  const handleDeleteSubmission = async (submissionId) => {
-    if (!apiUrl || !userId) {
-      setActionMessage('Bitte logge dich ein, um Einreichungen zu verwalten.');
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('nutzer_id', userId);
-      formData.append('submission_id', submissionId);
-      const res = await fetch(`${apiUrl}/photo_challenge/delete_submission.php`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.status !== 'success') {
-        throw new Error(data.message || 'Einreichung konnte nicht entfernt werden.');
-      }
-      setActionMessage(data.message || 'Einreichung wurde entfernt.');
-      setRefreshKey((val) => val + 1);
-    } catch (err) {
-      setActionMessage(err.message || 'Einreichung konnte nicht entfernt werden.');
-    }
+  const handleDeleteSubmission = async submissionId => {
+    const data = await postAction('delete_submission.php', { nutzer_id: userId, submission_id: submissionId });
+    if (!data) return false;
+    setActionMessage('Dein Foto wurde aus der Challenge entfernt.'); setRefreshKey(value => value + 1); return true;
   };
-
   const handleUpdateSubmissionTitle = async (submissionId, title = '') => {
-    if (!apiUrl || !userId) {
-      setActionMessage('Bitte logge dich ein, um Einreichungen zu verwalten.');
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('nutzer_id', userId);
-      formData.append('submission_id', submissionId);
-      formData.append('title', title);
-      const res = await fetch(`${apiUrl}/photo_challenge/update_submission.php`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.status !== 'success') {
-        throw new Error(data.message || 'Einreichung konnte nicht aktualisiert werden.');
-      }
-      setActionMessage(data.message || 'Einreichung wurde aktualisiert.');
-      setRefreshKey((val) => val + 1);
-    } catch (err) {
-      setActionMessage(err.message || 'Einreichung konnte nicht aktualisiert werden.');
-    }
+    const data = await postAction('update_submission.php', { nutzer_id: userId, submission_id: submissionId, title });
+    if (!data) return false;
+    setActionMessage('Der Foto-Titel wurde gespeichert.'); setRefreshKey(value => value + 1); return true;
   };
+
+  useEffect(() => {
+    const deadline = photoDateValue(overview?.challenge?.submission_deadline);
+    let timer;
+    if (challengeFlags.submission_is_open_effective && deadline) {
+      const remaining = deadline.getTime() - Date.now();
+      if (remaining >= 0 && remaining < 2147483000) timer = setTimeout(() => fetchOverview(), remaining + 100);
+    }
+    const refresh = () => { if (document.visibilityState === 'visible') fetchOverview(); };
+    document.addEventListener('visibilitychange', refresh);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', refresh); };
+  }, [fetchOverview, overview?.challenge?.submission_deadline, challengeFlags.submission_is_open_effective]);
 
   const submissionLimit = overview?.challenge?.submission_limit_per_user
     ? Number(overview.challenge.submission_limit_per_user)
@@ -555,6 +532,33 @@ function PhotoChallengeVoting() {
     return orientation ? [baseSides[1], baseSides[0]] : baseSides;
   }, [activeKoModalMatch, koModal]);
 
+  const detailStatus = overview?.challenge?.status || '';
+  const detailStatusLabel = photoStatusLabel(detailStatus);
+  const detailStatusHint = detailStatus === 'finished'
+    ? 'Die Ergebnisse stehen fest.'
+    : isSubmissionStage
+    ? challengeFlags.submission_is_open_effective ? 'Reiche deinen Eis-Moment ein.' : 'Die Fotos werden für die Abstimmung vorbereitet.'
+    : 'Deine Stimme entscheidet, wer weiterkommt.';
+
+  const login = () => {
+    setGroupModal(null); setKoModal(null); setSubmissionOpen(false);
+    requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('auth:open-login')));
+  };
+  const startVoting = () => {
+    if (detailStatus === 'group_running') {
+      const group = groupsSorted.find(item => item.status !== 'finished' && item.status !== 'upcoming' && item.matches.some(match => match.status === 'open' && !match.has_voted))
+        || groupsSorted.find(item => item.status !== 'finished' && item.status !== 'upcoming');
+      if (group) openGroupModal(group);
+    } else {
+      const matches = (overview?.ko_matches || []).filter(match => match.status === 'open').sort((a, b) => a.round - b.round || a.position - b.position);
+      const match = matches.find(item => !item.has_voted && item.user_choice == null) || matches[0];
+      if (match) openKoModal(match.round, match.id);
+    }
+  };
+  const hasOpenVotes = detailStatus === 'group_running'
+    ? groupsSorted.some(group => !['upcoming', 'finished'].includes(group.status) && group.matches.some(match => match.status === 'open'))
+    : (overview?.ko_matches || []).some(match => match.status === 'open');
+
   if (!challengeId) {
     return (
       <S.FullPage>
@@ -570,19 +574,29 @@ function PhotoChallengeVoting() {
     <S.FullPage>
       <Header />
       <S.Content>
+        <Button as={Link} $secondary to="/photo-challenge" style={{ marginBottom: 16 }}>Zur Übersicht</Button>
         <S.HeroSection>
-          <div>
+          <S.HeroCopy>
+            <S.HeroEyebrow>Foto-Challenge</S.HeroEyebrow>
             <h1>{overview?.challenge ? (overview.challenge.title) : "Foto-Challenge"}</h1>
             <S.HeroDescription>
               {overview?.challenge?.description || 'Stimme für deine Lieblingsbilder und hilf mit zu entscheiden, wer weiterkommt.'}
             </S.HeroDescription>
-          </div>
+          </S.HeroCopy>
+          <S.HeroStatusPanel>
+            <S.HeroStatusChip $status={detailStatus}>{detailStatusLabel}</S.HeroStatusChip>
+            <span>{detailStatusHint}</span>
+          </S.HeroStatusPanel>
         </S.HeroSection>
 
-        {!isLoggedIn && (
-          <S.WarningBox>Bitte logge dich ein, um abstimmen zu können. Stimmen ohne Login werden nicht gezählt.</S.WarningBox>
-        )}
-        {error && <S.WarningBox>{error}</S.WarningBox>}
+        <S.Journey aria-label="Ablauf der Foto-Challenge">{['Einreichen', 'Abstimmen', 'Ergebnisse'].map((label, index) => <li key={label} aria-current={(isSubmissionStage ? 0 : detailStatus === 'finished' ? 2 : 1) === index ? 'step' : undefined}>{index + 1}. {label}</li>)}</S.Journey>
+        <ActionRow style={{ marginBottom: 20 }}>
+          {challengeFlags.submission_is_open_effective && <Button disabled={loading || submissionsRemaining === 0} onClick={() => isLoggedIn ? setSubmissionOpen(true) : login()}>Foto einreichen</Button>}
+          {['group_running', 'ko_running'].includes(detailStatus) && hasOpenVotes && <Button disabled={loading} onClick={() => isLoggedIn ? startVoting() : login()}>Jetzt abstimmen</Button>}
+          {!isLoggedIn && <Button $secondary onClick={login}>Einloggen und mitmachen</Button>}
+        </ActionRow>
+        {error && <Notice $error role="alert">{error} <Button $secondary onClick={fetchOverview}>Erneut versuchen</Button></Notice>}
+        {actionError && <Notice $error role="alert">{actionError}</Notice>}
         {actionMessage && (
           <S.ActionMessage>
             {actionMessage}
@@ -592,24 +606,18 @@ function PhotoChallengeVoting() {
           </S.ActionMessage>
         )}
 
-        {newAwards.length > 0 && (
-          <S.AwardOverlay>
-            <S.AwardOverlayCard>
-              <S.AwardOverlayClose type="button" onClick={() => setNewAwards([])} aria-label="Auszeichnung schließen">
-                ×
-              </S.AwardOverlayClose>
-              <NewAwards awards={newAwards} />
-            </S.AwardOverlayCard>
-          </S.AwardOverlay>
-        )}
+        <ChallengeDialog open={newAwards.length > 0} title="Neue Auszeichnungen" onClose={() => setNewAwards([])}><NewAwards awards={newAwards} /></ChallengeDialog>
 
         <SubmissionPanel
+          key={`${challengeId}:${userId || "guest"}`}
+          dialogOpen={submissionOpen} setDialogOpen={setSubmissionOpen}
+          mutationBusy={mutationBusy} actionError={actionError}
           overview={overview}
           challengeFlags={challengeFlags}
           isLoggedIn={isLoggedIn}
           submissionsRemaining={submissionsRemaining}
           userImages={userImages}
-          userImagesLoading={userImagesLoading}
+          userImagesLoading={userImagesLoading} userImagesError={userImagesError}
           submittedImageIds={submittedImageIds}
           submissionLimit={submissionLimit}
           handleSubmitPhoto={handleSubmitPhoto}
@@ -628,7 +636,7 @@ function PhotoChallengeVoting() {
               <S.PhasePill
                 key={phase.key}
                 type="button"
-                $active={activePhase === phase.key}
+                $active={activePhase === phase.key} aria-pressed={activePhase === phase.key}
                 disabled={phase.disabled}
                 onClick={() => !phase.disabled && setActivePhase(phase.key)}
               >
@@ -641,7 +649,7 @@ function PhotoChallengeVoting() {
         {loading && <S.PlaceholderText>Lade Challenge …</S.PlaceholderText>}
 
         {!loading && activePhase === 'winner' && overview?.winner && (
-          <Winner winner={overview.winner} />
+          <Winner winner={overview.winner} thirdPlace={overview.third_place} />
         )}
 
         {!loading && !isSubmissionStage && activePhase === 'group' && (
@@ -666,6 +674,7 @@ function PhotoChallengeVoting() {
         }
 
         <GroupModal
+          mutationBusy={mutationBusy} actionError={actionError} onLogin={login}
           groupModal={groupModal}
           activeModalGroup={activeModalGroup}
           closeGroupModal={closeGroupModal}
@@ -680,6 +689,7 @@ function PhotoChallengeVoting() {
         />
 
         <KoModal
+          mutationBusy={mutationBusy} actionError={actionError} onLogin={login}
           koModal={koModal}
           activeKoModalMatch={activeKoModalMatch}
           closeKoModal={closeKoModal}

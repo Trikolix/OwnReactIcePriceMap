@@ -49,7 +49,7 @@ class DifferentIceShopCountEvaluator extends BaseAwardEvaluator {
 
         $sql = "SELECT eisdiele_id, MIN(datum) AS first_checkin_at
                 FROM checkins
-                WHERE nutzer_id = ?
+                WHERE nutzer_id = ? AND context_type = 'ice_shop' AND eisdiele_id IS NOT NULL
                 GROUP BY eisdiele_id
                 ORDER BY first_checkin_at ASC, eisdiele_id ASC";
         $stmt = $pdo->prepare($sql);

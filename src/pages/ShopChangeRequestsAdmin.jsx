@@ -1,4 +1,5 @@
 import Header from '../Header';
+import ShopOfferingModeration from '../components/shopDetail/ShopOfferingModeration';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -20,6 +21,10 @@ const fieldLabels = {
   openingHoursStructured: "Öffnungszeiten (Vorschlag)",
   status: "Status",
   reopening_date: "Wiedereröffnungsdatum",
+  closing_date: "Saison-Ende",
+  place_type: "Ortstyp",
+  active_until: "Sichtbar bis",
+  closed_early_at: "Vorzeitig geschlossen am",
 };
 
 const ShopChangeRequestsAdmin = () => {
@@ -82,6 +87,7 @@ const ShopChangeRequestsAdmin = () => {
       );
       const data = await response.json();
       if (data.status === "success") {
+        window.dispatchEvent(new Event("shop-change-requests-updated"));
         setMessageMap((prev) => {
           const clone = { ...prev };
           delete clone[requestId];
@@ -138,6 +144,14 @@ const ShopChangeRequestsAdmin = () => {
         return request.shop_status;
       case "reopening_date":
         return request.shop_reopening_date;
+      case "closing_date":
+        return request.shop_closing_date;
+      case "place_type":
+        return request.shop_place_type;
+      case "active_until":
+        return request.shop_active_until;
+      case "closed_early_at":
+        return request.shop_closed_early_at;
       default:
         return "";
     }
@@ -169,6 +183,7 @@ const ShopChangeRequestsAdmin = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
     <PageWrapper>
+      <ShopOfferingModeration />
       <HeaderRow>
         <h1>Eisdielen-Änderungsvorschläge</h1>
         <StatusSelect

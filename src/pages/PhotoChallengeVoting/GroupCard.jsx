@@ -27,7 +27,7 @@ const GroupCard = ({ group, openGroupModal, showCountryBadges = false }) => {
       ? 'Ergebnisse und Bilder ansehen'
       : group.status === 'upcoming'
       ? 'Bilder vorab ansehen'
-      : 'Gruppe öffnen und voten';
+      : 'Gruppe öffnen und abstimmen';
 
   return (
     <S.GroupCard key={group.id} type="button" onClick={() => openGroupModal(group)}>
@@ -39,7 +39,7 @@ const GroupCard = ({ group, openGroupModal, showCountryBadges = false }) => {
         <S.ProgressTag $complete={isComplete}>
           <S.ProgressTagFill $progress={progress} />
           <S.ProgressTagContent>
-            {completedMatches}/{totalMatches} Votes
+            {completedMatches}/{totalMatches} Stimmen
           </S.ProgressTagContent>
         </S.ProgressTag>
       </S.GroupHeader>

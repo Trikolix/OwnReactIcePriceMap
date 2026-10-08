@@ -1,10 +1,13 @@
 <?php
+require_once __DIR__ . '/../lib/streaks.php';
+require_once __DIR__ . '/../lib/auth.php';
 require_once  __DIR__ . '/../db_connect.php';
 
 // Daten aus der Anfrage holen
 $data = json_decode(file_get_contents('php://input'), true);
 $checkin_id = $data['id'] ?? null;
-$nutzer_id = $data['nutzer_id'] ?? null;
+$auth = requireAuth($pdo);
+$nutzer_id = (int)$auth['user_id'];
 
 if (!$checkin_id || !$nutzer_id) {
     echo json_encode([
@@ -17,6 +20,10 @@ if (!$checkin_id || !$nutzer_id) {
 try {
     // Transaktion starten
     $pdo->beginTransaction();
+    streakReconcile($pdo, $nutzer_id);
+    $owner = $pdo->prepare('SELECT id FROM checkins WHERE id=? AND nutzer_id=? FOR UPDATE');
+    $owner->execute([$checkin_id, $nutzer_id]);
+    if (!$owner->fetchColumn()) throw new RuntimeException('Check-in nicht gefunden');
 
     // Bilder zum Checkin holen
     $sql_select = "

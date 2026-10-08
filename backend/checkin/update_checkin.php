@@ -28,6 +28,7 @@ function validateRatingRange($val, $fieldName) {
 $checkinId = $_POST['checkin_id'] ?? null;
 $userId = $_POST['userId'] ?? null;
 $shopId = $_POST['shopId'] ?? null;
+$requestedContextType = (string)($_POST['contextType'] ?? '');
 $type = $_POST['type'] ?? null;
 $geschmack = sanitizeRating($_POST['geschmackbewertung'] ?? '');
 $waffel = sanitizeRating($_POST['waffelbewertung'] ?? '');
@@ -61,7 +62,7 @@ function respondWithError($message, $httpCode = 400, $exception = null) {
 }
 
 // Validierung
-if (!$checkinId || !$userId || !$shopId || !$type) {
+if (!$checkinId || !$userId || !$type) {
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
@@ -73,6 +74,19 @@ if (!$checkinId || !$userId || !$shopId || !$type) {
 
 
 try {
+    $existingStmt = $pdo->prepare('SELECT eisdiele_id, context_type, nutzer_id FROM checkins WHERE id = ?');
+    $existingStmt->execute([(int)$checkinId]);
+    $existingCheckin = $existingStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$existingCheckin || (int)$existingCheckin['nutzer_id'] !== (int)$userId) {
+        respondWithError('Check-in nicht gefunden oder keine Berechtigung.', 403);
+    }
+    // The place association and context are immutable while editing. This
+    // prevents clients from turning an experience into an ice-shop visit.
+    $shopId = $existingCheckin['eisdiele_id'] !== null ? (int)$existingCheckin['eisdiele_id'] : null;
+    $contextType = (string)($existingCheckin['context_type'] ?? ($shopId ? 'ice_shop' : 'no_public_place'));
+    if ($contextType === 'no_public_place') {
+        $anreise = null;
+    }
     // Wenn keine Gesamtbewertung übergeben wurde, aber einige Sorten
     // Bewertungen enthalten, berechne den Durchschnitt aus den bewerteten
     // Sorten und setze diesen als Gesamtbewertung ($geschmack). Wenn gar
@@ -134,10 +148,10 @@ try {
     // Update in Tabelle `checkins`
     $stmt = $pdo->prepare("
         UPDATE checkins
-        SET nutzer_id = ?, eisdiele_id = ?, typ = ?, geschmackbewertung = ?, waffelbewertung = ?, größenbewertung = ?, preisleistungsbewertung = ?, kommentar = ?, anreise = ?
+        SET nutzer_id = ?, eisdiele_id = ?, context_type = ?, typ = ?, geschmackbewertung = ?, waffelbewertung = ?, größenbewertung = ?, preisleistungsbewertung = ?, kommentar = ?, anreise = ?
         WHERE id = ?
     ");
-    $stmt->execute([$userId, $shopId, $type, $geschmack, $waffel, $größe, $preisleistungsbewertung, $kommentar, $anreise, $checkinId]);
+    $stmt->execute([$userId, $shopId, $contextType, $type, $geschmack, $waffel, $größe, $preisleistungsbewertung, $kommentar, $anreise, $checkinId]);
 
     if (!empty($bildUrls)) {
         $insertImgStmt = $pdo->prepare("
@@ -201,7 +215,7 @@ try {
         $inviterName = $inviter['username'] ?? 'Ein Nutzer';
 
         // Metadaten des Checkins laden
-        $metaStmt = $pdo->prepare("SELECT c.id, c.eisdiele_id, e.name AS shop_name FROM checkins c JOIN eisdielen e ON c.eisdiele_id = e.id WHERE c.id = ?");
+        $metaStmt = $pdo->prepare("SELECT c.id, c.eisdiele_id, e.name AS shop_name FROM checkins c LEFT JOIN eisdielen e ON c.eisdiele_id = e.id WHERE c.id = ?");
         $metaStmt->execute([$checkinId]);
         $meta = $metaStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -227,14 +241,16 @@ try {
                     'by_user' => $userId,
                     'shop_id' => $shopId,
                     'username' => $inviterName,
-                    'shop_name' => $meta['shop_name'] ?? 'einer Eisdiele',
+                    'shop_name' => $meta['shop_name'] ?? 'Eis ohne öffentlichen Ort',
+                    'eisdiele_id' => $shopId,
+                    'user_id' => (int)$userId,
                 ],
                 [
                     'email' => [
                         'type' => 'checkin_mention',
                         'senderName' => $inviterName,
                         'extra' => [
-                            'shopName' => $meta['shop_name'] ?? 'einer Eisdiele',
+                            'shopName' => $meta['shop_name'] ?? 'Eis ohne öffentlichen Ort',
                             'shopId' => $shopId,
                             'checkinId' => $checkinId,
                             'mentionId' => $mentionId,
@@ -280,7 +296,7 @@ try {
         }
     }
 
-    echo json_encode(['status' => 'success']);
+    echo json_encode(['status' => 'success', 'checkin_id' => (int)$checkinId, 'context_type' => $contextType]);
 } catch (Exception $e) {
     // Rollback der Transaktion im Falle eines Fehlers (nur wenn aktiv)
     try {

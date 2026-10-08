@@ -2,6 +2,7 @@ import Header from '../Header';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styled from "styled-components";
 import { Settings } from "lucide-react";
+import { SHOP_COLORS, ShopButton } from "../styles/ShopUi";
 import ReviewCard from "../components/ReviewCard";
 import CheckinCard from '../components/CheckinCard';
 import GroupCheckinCard from '../components/GroupCheckinCard';
@@ -11,6 +12,7 @@ import AwardCard from '../components/AwardCard';
 import AwardBundleCard from '../components/AwardBundleCard';
 import AwardWaveCard from '../components/AwardWaveCard';
 import NewUserCard from '../components/NewUserCard';
+import OnboardingChecklist from '../components/OnboardingChecklist';
 import { useUser } from '../context/UserContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -417,12 +419,13 @@ function DashBoard() {
             Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
           </Subtitle>
         </PageHeader>
+        <OnboardingChecklist />
 
         {showActionNudge && (
           <ActionNudge>
             <div>
               <strong>Aktive Aktionen</strong>
-              <span>Aktuell laufen Foto-Challenges, Sammelaktionen und Tagesaufgaben. Hier geht es zu den Aktionen.</span>
+              <span>Aktuell läuft eine Foto-Challenge und du kannst an Tagesaufgaben teilnehmen. Hier geht es zu den Aktionen.</span>
             </div>
             <ActionNudgeButton type="button" onClick={openActionsHub}>Zu den aktiven Aktionen</ActionNudgeButton>
             <ActionNudgeClose type="button" onClick={dismissActionNudge} aria-label="Aktionshinweis ausblenden">×</ActionNudgeClose>
@@ -541,253 +544,66 @@ export default DashBoard;
 
 /* ===== Styles ===== */
 const Page = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, rgba(255, 218, 140, 0.35), transparent 40%),
-    linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
+  display: flex; flex-direction: column; min-height: 100vh; background: #fffaf2; color: ${SHOP_COLORS.text};
 `;
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  justify-content: center;
-  width: min(96%, 1200px);
-  box-sizing: border-box;
-  margin: 0 auto;
-  padding-top: 0.5rem;
+const Container = styled.main`
+  width: min(calc(100% - 24px), 1040px); margin: 0 auto; padding-top: 20px;
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
 `;
-
-const Title = styled.h2`
-  font-size: clamp(1.35rem, 2vw, 1.9rem);
-  font-weight: 800;
-  margin: 0;
-  text-align: center;
-  color: #2f2100;
-`;
-
+const Title = styled.h2`margin: 0; text-align: center; font-size: 1.5rem;`;
 const Section = styled.div`
-  width: 100%;
+  width: 100%; min-width: 0; display: grid; gap: 12px;
+  > [data-activity-card], > div > [data-activity-card] { margin-bottom: 0; }
 `;
-
-const FocusedActivityAnchor = styled.div`
-  scroll-margin-top: 96px;
+const FocusedActivityAnchor = styled.div`scroll-margin-top: 96px; min-width: 0;`;
+const BackToTopButton = styled(ShopButton)`
+  position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 50; min-width: 44px; border-radius: 999px; background: ${SHOP_COLORS.accent};
+  @media (max-width: 520px) { right: .75rem; span { display: none; } }
 `;
-
-const BackToTopButton = styled.button`
-  position: fixed;
-  right: 1rem;
-  bottom: calc(1rem + env(safe-area-inset-bottom));
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 42px;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid rgba(108, 67, 0, 0.22);
-  border-radius: 999px;
-  background: rgba(255, 181, 34, 0.96);
-  color: #2f2100;
-  box-shadow: 0 8px 22px rgba(47, 33, 0, 0.2);
-  cursor: pointer;
-  font-weight: 800;
-
-  &:hover {
-    background: #ffc34a;
-  }
-
-  @media (max-width: 520px) {
-    right: 0.75rem;
-    padding: 0.7rem;
-
-    span {
-      display: none;
-    }
-  }
-`;
-
-const Controls = styled.div`
-  margin: 1rem 0 3rem;
-  text-align: center;
-`;
-
+const Controls = styled.div`margin: 1rem 0 3rem; text-align: center;`;
 const Placeholder = styled.div`
-  width: 100%;
-  text-align: center;
-  padding: 1.25rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: none;
-  color: #6b5327;
+  padding: 20px; border: 1px solid ${SHOP_COLORS.border}; border-radius: 18px;
+  background: #fff; color: ${SHOP_COLORS.muted}; text-align: center;
 `;
-
-const LoadButton = styled.button`
-  align-self: flex-start;
-  background-color: #ffb522;
-  color: #2f2100;
-  border: 1px solid rgba(255, 181, 34, 0.55);
-  padding: 0.65rem 1rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
-
-  &:hover {
-    background-color: #ffc34a;
-    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
-  }
-`;
-
+const LoadButton = styled(ShopButton).attrs({ $primary: true })``;
 const PageHeader = styled.header`
-  position: relative;
-  padding: 0.7rem 2.8rem 0.5rem 0.25rem;
-  margin-bottom: 0.1rem;
-
-  @media (max-width: 700px) {
-    padding: 0.55rem 2.6rem 0.35rem 0.1rem;
-    margin-bottom: 0.2rem;
-  }
+  position: relative; padding: 8px 52px; margin-bottom: 4px; min-height: 44px;
 `;
-
-const SettingsContainer = styled.div`
-  position: absolute;
-  top: 0.55rem;
-  right: 0.2rem;
-  z-index: 10;
-`;
-
-const SettingsButton = styled.button`
-  position: relative;
-  min-width: 38px;
-  min-height: 38px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: rgba(47, 33, 0, 0.05);
-  }
-`;
-
+const SettingsContainer = styled.div`position: absolute; top: 4px; right: 0; z-index: 10;`;
+const SettingsButton = styled(ShopButton)`position: relative; min-width: 44px; padding: 8px;`;
 const FilterStatusDot = styled.span`
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid #fffaf0;
-  border-radius: 50%;
-  background: #d97706;
+  position: absolute; top: 4px; right: 4px; width: 7px; height: 7px;
+  border: 1px solid #fffaf2; border-radius: 50%; background: #d97706;
 `;
-
 const FilterMenu = styled.div`
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0.25rem;
-  background: white;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 150px;
+  position: absolute; top: 100%; right: 0; margin-top: 8px; background: #fff;
+  border: 1px solid ${SHOP_COLORS.border}; border-radius: 12px; padding: 8px;
+  box-shadow: 0 4px 20px rgba(47, 33, 0, .1); display: grid; min-width: 170px;
 `;
-
 const FilterLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #2f2100;
-  cursor: pointer;
+  display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: .85rem; cursor: pointer;
 `;
-
 const FilterCheckbox = styled.input`
-  cursor: pointer;
-  accent-color: #ffb522;
+  cursor: pointer; accent-color: ${SHOP_COLORS.accent};
+  &:focus-visible { outline: 3px solid #986b0e; outline-offset: 3px; }
 `;
-
 const Subtitle = styled.p`
-  margin: 0.4rem 0 0;
-  text-align: center;
-  color: rgba(47, 33, 0, 0.68);
-  font-size: 0.95rem;
-
-  @media (max-width: 700px) {
-    display: none;
-  }
+  margin: 8px 0 0; text-align: center; color: ${SHOP_COLORS.muted}; font-size: .95rem;
+  @media (max-width: 700px) { display: none; }
 `;
-
 const ActionNudge = styled.div`
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  align-items: center;
-  border: 1px solid rgba(31, 111, 235, 0.18);
-  border-left: 4px solid #1f6feb;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: none;
-  padding: 0.75rem 2.4rem 0.75rem 0.85rem;
-  color: #2f2100;
-
-  div {
-    display: grid;
-    gap: 0.15rem;
-  }
-
-  span {
-    color: rgba(47, 33, 0, 0.68);
-    font-size: 0.9rem;
-    line-height: 1.35;
-  }
-
-  @media (max-width: 620px) {
-    grid-template-columns: 1fr;
-  }
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px; align-items: center; padding: 16px 60px 16px 20px;
+  border: 1px solid ${SHOP_COLORS.border}; border-radius: 18px; background: #fff;
+  div { display: grid; gap: 4px; min-width: 0; }
+  span { color: ${SHOP_COLORS.muted}; font-size: .9rem; line-height: 1.5; }
+  @media (max-width: 620px) { grid-template-columns: minmax(0, 1fr); }
 `;
-
-const ActionNudgeButton = styled.button`
-  justify-self: end;
-  border: none;
-  border-radius: 8px;
-  background: #1f6feb;
-  color: #ffffff;
-  padding: 0.5rem 0.7rem;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 800;
-  white-space: nowrap;
-  cursor: pointer;
-
-  @media (max-width: 620px) {
-    justify-self: start;
-  }
+const ActionNudgeButton = styled(ShopButton).attrs({ $primary: true })`
+  justify-self: end; @media (max-width: 620px) { justify-self: start; }
 `;
-
-const ActionNudgeClose = styled.button`
-  position: absolute;
-  top: 0.35rem;
-  right: 0.45rem;
-  border: none;
-  background: transparent;
-  color: rgba(47, 33, 0, 0.58);
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
+const ActionNudgeClose = styled(ShopButton)`
+  position: absolute; top: 4px; right: 4px; min-width: 44px; padding: 8px;
+  border: 0; background: transparent; color: ${SHOP_COLORS.muted}; font-size: 1.25rem;
 `;

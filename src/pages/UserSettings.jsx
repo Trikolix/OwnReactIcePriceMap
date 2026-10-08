@@ -2,17 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
+import PushDeviceSettings from "../components/PushDeviceSettings";
 import getCroppedImg from "../utils/cropImage";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
 import { SubmitButton } from "../styles/SharedStyles";
 import { Capacitor } from "@capacitor/core";
 import {
-  disableBrowserPush,
-  disableNativePush,
-  enableBrowserPush,
   getBrowserPushStatus,
-  initializeNativePush,
 } from "../services/pushNotifications";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -40,14 +37,18 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     notify_news_push: 1,
     notify_team_challenge: 1,
     notify_team_challenge_push: 1,
+    notify_ice_date: 1,
+    notify_ice_date_push: 1,
     notify_photo_challenge: 1,
     notify_photo_challenge_push: 1,
     notify_like: 0,
     notify_like_push: 1,
     push_enabled_web: 1,
     push_enabled_android: 1,
+    show_onboarding_checklist: 1,
   });
   const [loading, setLoading] = useState(true);
+  const [onboardingVisible, setOnboardingVisible] = useState(true);
   const [savingSection, setSavingSection] = useState(null);
   const [error, setError] = useState(null);
   const [successSection, setSuccessSection] = useState(null);
@@ -81,7 +82,9 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       try {
         const res = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
         const json = await res.json();
+        if (!res.ok || json.error) throw new Error(json.error || 'Einstellungen konnten nicht geladen werden.');
         setSettings(json);
+        setOnboardingVisible(Number(json.show_onboarding_checklist ?? 1) === 1);
       } catch (e) {
         setError("Fehler beim Laden der Einstellungen.");
       } finally {
@@ -389,9 +392,21 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
       body: JSON.stringify(targetSettings),
     });
     const json = await res.json();
-    if (!json.success) {
+    if (!res.ok || !json.success) {
       throw new Error(json.error || "Fehler beim Speichern.");
     }
+  };
+
+  const handleSaveOnboarding = async () => {
+    setSavingSection('onboarding');
+    setError(null); setSuccessSection(null);
+    try {
+      await persistNotificationSettings({ show_onboarding_checklist: onboardingVisible ? 1 : 0 });
+      setSettings(previous => ({ ...previous, show_onboarding_checklist: onboardingVisible ? 1 : 0 }));
+      window.dispatchEvent(new Event('onboarding:changed'));
+      setSuccessSection('onboarding');
+    } catch (reason) { setError(reason.message); }
+    finally { setSavingSection(null); }
   };
 
   const handleSaveAvatar = async () => {
@@ -413,35 +428,9 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
     setError(null);
     setSuccessSection(null);
     try {
-      const hasAnyPushEnabled = Object.keys(settings).some(key => key.endsWith('_push') && settings[key] === 1);
-      const isNative = Capacitor.isNativePlatform();
-
-      const updatedSettings = {
-        ...settings,
-        push_enabled_web: (!isNative && hasAnyPushEnabled) ? 1 : (isNative ? settings.push_enabled_web : 0),
-        push_enabled_android: (isNative && hasAnyPushEnabled) ? 1 : (!isNative ? settings.push_enabled_android : 0),
-      };
-
-      await persistNotificationSettings(updatedSettings);
-
-      if (isNative) {
-        // Native Plattform (Android)
-        if (hasAnyPushEnabled) {
-          await initializeNativePush(userId);
-        } else {
-          await disableNativePush(userId);
-        }
-      } else {
-        // Web Plattform
-        if (hasAnyPushEnabled) {
-          await enableBrowserPush(userId);
-        } else {
-          await disableBrowserPush(userId);
-        }
-      }
-
-      setBrowserPushStatus(await getBrowserPushStatus());
-      setSettings(updatedSettings);
+      const notificationSettings = Object.fromEntries(Object.entries(settings).filter(([key]) => key.startsWith('notify_')));
+      await persistNotificationSettings(notificationSettings);
+      window.dispatchEvent(new Event('onboarding:changed'));
       setSuccessSection("notifications");
     } catch (e) {
       setError(e.message || "Fehler beim Speichern der Benachrichtigungen.");
@@ -465,6 +454,7 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         throw new Error(json.error || "Fehler beim Speichern der Social Media Accounts.");
       }
       setSuccessSection("social");
+      window.dispatchEvent(new Event("onboarding:changed"));
     } catch (e) {
       setError(e.message || "Fehler beim Speichern der Social Media Accounts.");
     } finally {
@@ -474,12 +464,12 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
 
   const handleSendTest = async () => {
     const isNative = Capacitor.isNativePlatform();
-    
+
     if (!isNative && browserPushStatus.permission !== 'granted') {
       alert("Push-Berechtigung ist nicht erteilt. Bitte aktiviere Push zuerst in den Browsereinstellungen oder speichere die Einstellungen.");
       return;
     }
-    
+
     try {
       const res = await fetch(`${API_BASE}/api/push/send-test.php`, {
         method: "POST",
@@ -684,8 +674,20 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           </CropModalOverlay>
         )}
         <Divider />
+        <h3>Dein Ice-App Einstieg</h3>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
+          <input type="checkbox" checked={onboardingVisible} disabled={isBusy}
+            onChange={event => { setOnboardingVisible(event.target.checked); setSuccessSection(null); }} />Startklar- und Experten-Checkliste anzeigen
+        </label>
+        <SectionActions>
+          <SubmitButton type="button" onClick={handleSaveOnboarding} disabled={isBusy}>
+            {savingSection === 'onboarding' ? 'Speichert...' : 'Onboarding speichern'}
+          </SubmitButton>
+          {successSection === 'onboarding' && <SuccessMsg>Onboarding gespeichert.</SuccessMsg>}
+        </SectionActions>
+        <Divider />
         <h3>Benachrichtigungseinstellungen</h3>
-        
+
         <SettingsTable>
           <thead>
             <tr>
@@ -737,6 +739,11 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
               <td><input type="checkbox" name="notify_like" checked={!!settings.notify_like} onChange={handleChange} /></td>
               <td><input type="checkbox" name="notify_like_push" checked={!!settings.notify_like_push} onChange={handleChange} /></td>
             </tr>
+            <tr>
+              <td>Eis-Dates</td>
+              <td><input type="checkbox" name="notify_ice_date" checked={!!settings.notify_ice_date} onChange={handleChange} /></td>
+              <td><input type="checkbox" name="notify_ice_date_push" checked={!!settings.notify_ice_date_push} onChange={handleChange} /></td>
+            </tr>
           </tbody>
         </SettingsTable>
 
@@ -754,22 +761,29 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
         </SectionActions>
 
         <Divider />
+        <PushDeviceSettings userId={userId} settings={settings} onSettingsChanged={async () => {
+          const response = await fetch(`${API_BASE}/api/get_user_notification_settings.php`);
+          if (!response.ok) throw new Error('Gerätestatus konnte nicht geladen werden.');
+          const updated = await response.json();
+          setSettings(previous => ({ ...previous, push_enabled_web: updated.push_enabled_web, push_enabled_android: updated.push_enabled_android }));
+        }} />
+        <Divider />
         <h3>Social Media Accounts</h3>
         <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '1rem' }}>Verlinke deine Accounts, um sie auf deinem Profil anzuzeigen.</p>
         <SocialInputGroup>
           <label>Instagram Benutzername oder Link:</label>
-          <input 
-            type="text" 
-            placeholder="z.B. https://instagram.com/iceapp oder @iceapp" 
+          <input
+            type="text"
+            placeholder="z.B. https://instagram.com/iceapp oder @iceapp"
             value={socialAccounts.instagram_account}
             onChange={(e) => setSocialAccounts({...socialAccounts, instagram_account: e.target.value})}
           />
         </SocialInputGroup>
         <SocialInputGroup>
           <label>Strava Profil-Link:</label>
-          <input 
-            type="text" 
-            placeholder="z.B. https://www.strava.com/athletes/12345" 
+          <input
+            type="text"
+            placeholder="z.B. https://www.strava.com/athletes/12345"
             value={socialAccounts.strava_account}
             onChange={(e) => setSocialAccounts({...socialAccounts, strava_account: e.target.value})}
           />
@@ -797,19 +811,19 @@ function UserSettings({ onClose, currentAvatar, onAvatarUpdated }) {
           ) : (
             <DeleteForm onSubmit={handleDeleteAccount}>
               <p>Bitte gib dein Passwort ein, um die Löschung zu bestätigen:</p>
-              <input 
-                type="password" 
-                placeholder="Dein Passwort" 
+              <input
+                type="password"
+                placeholder="Dein Passwort"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
                 required
                 autoFocus
               />
               <ConfirmationLabel>
-                <input 
-                  type="checkbox" 
-                  checked={deleteConfirmed} 
-                  onChange={(e) => setDeleteConfirmed(e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={deleteConfirmed}
+                  onChange={(e) => setDeleteConfirmed(e.target.checked)}
                 />
                 <span>Ich verstehe, dass mein Profil dauerhaft anonymisiert wird. Persönliche Daten (Favoriten, Profilbild) werden gelöscht, während meine Beiträge (Preise, Kommentare) anonymisiert erhalten bleiben.</span>
               </ConfirmationLabel>
@@ -1270,25 +1284,25 @@ const SettingsTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.5rem;
-  
+
   th, td {
     padding: 0.75rem 0.5rem;
     text-align: left;
     border-bottom: 1px solid #eee;
   }
-  
+
   th {
     font-size: 0.85rem;
     color: #888;
     text-transform: uppercase;
     font-weight: 700;
   }
-  
+
   td:first-child {
     font-weight: 500;
     color: #333;
   }
-  
+
   td:not(:first-child) {
     text-align: center;
   }

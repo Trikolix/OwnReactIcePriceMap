@@ -163,6 +163,7 @@ try {
         $payload = [
             'id' => (int)$match['id'],
             'phase' => $match['phase'],
+            'bracket_type' => $match['bracket_type'] ?? 'main',
             'round' => (int)$match['round'],
             'group_id' => $match['group_id'] ? (int)$match['group_id'] : null,
             'position' => (int)$match['position'],
@@ -429,10 +430,11 @@ try {
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 
     $winnerPayload = null;
+    $thirdPlacePayload = null;
     if ($challenge['status'] === 'finished') {
         $finalMatch = null;
         foreach ($koMatches as $match) {
-            if ($match['status'] !== 'closed' || empty($match['winner'])) {
+            if (($match['bracket_type'] ?? 'main') !== 'main' || $match['status'] !== 'closed' || empty($match['winner'])) {
                 continue;
             }
             if (!$finalMatch || $match['round'] > $finalMatch['round'] || ($match['round'] === $finalMatch['round'] && $match['position'] > $finalMatch['position'])) {
@@ -470,6 +472,36 @@ try {
                 ];
             }
         }
+
+        $thirdMatch = null;
+        foreach ($koMatches as $match) {
+            if (($match['bracket_type'] ?? 'main') !== 'third_place' || $match['status'] !== 'closed' || empty($match['winner'])) {
+                continue;
+            }
+            if (!$thirdMatch || $match['round'] > $thirdMatch['round']) {
+                $thirdMatch = $match;
+            }
+        }
+        if ($thirdMatch && !empty($thirdMatch['winner'])) {
+            $stmt->execute(['image_id' => $thirdMatch['winner']]);
+            if ($thirdImage = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $stmtThirdTitle = $pdo->prepare("SELECT CASE WHEN ch.is_country_challenge = 1 THEN COALESCE(NULLIF(pci.title, ''), NULLIF(l.name, ''), NULLIF(s.title, ''), b.beschreibung) ELSE COALESCE(NULLIF(s.title, ''), b.beschreibung) END AS title, CASE WHEN ch.is_country_challenge = 1 THEN l.name ELSE NULL END AS country_name, CASE WHEN ch.is_country_challenge = 1 THEN l.country_code ELSE NULL END AS country_code FROM bilder b JOIN photo_challenges ch ON ch.id = :challenge_id LEFT JOIN photo_challenge_images pci ON pci.challenge_id = ch.id AND pci.image_id = b.id LEFT JOIN photo_challenge_submissions s ON s.challenge_id = ch.id AND s.image_id = b.id LEFT JOIN laender l ON l.id = pci.land_id WHERE b.id = :image_id LIMIT 1");
+                $stmtThirdTitle->execute(['challenge_id' => $challengeId, 'image_id' => $thirdImage['id']]);
+                $thirdTitleRow = $stmtThirdTitle->fetch(PDO::FETCH_ASSOC) ?: [];
+                $thirdPlacePayload = [
+                    'image_id' => (int)$thirdImage['id'],
+                    'title' => $thirdTitleRow['title'] ?? null,
+                    'country_name' => $thirdTitleRow['country_name'] ?? null,
+                    'country_code' => $thirdTitleRow['country_code'] ?? null,
+                    'url' => $thirdImage['url'],
+                    'beschreibung' => $thirdImage['beschreibung'],
+                    'nutzer_id' => (int)$thirdImage['nutzer_id'],
+                    'username' => $thirdImage['username'],
+                    'round' => $thirdMatch['round'],
+                    'decided_at' => $thirdMatch['locked_at'] ?? null,
+                ];
+            }
+        }
     }
 
     $response = [
@@ -486,6 +518,7 @@ try {
         'ko_matches' => $koMatches,
         'vote_stats' => $voteStats,
         'winner' => $winnerPayload,
+        'third_place' => $thirdPlacePayload,
         'user_submissions' => $userSubmissions,
     ];
     if (isset($_GET['debug'])) {

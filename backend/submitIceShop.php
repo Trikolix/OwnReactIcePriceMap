@@ -8,14 +8,47 @@ require_once __DIR__ . '/lib/currency.php';
 require_once __DIR__ . '/lib/shop_maintenance.php';
 require_once __DIR__ . '/lib/external_shop_discovery.php';
 require_once __DIR__ . '/lib/feature_access.php';
+require_once __DIR__ . '/lib/shop_editing.php';
 
 $authData = requireAuth($pdo);
 $currentUserId = (int)$authData['user_id'];
 
 $data = json_decode(file_get_contents("php://input"), true);
 
+$allowedPlaceTypes = ['ice_shop', 'restaurant', 'temporary_stand'];
+$placeType = (string)($data['place_type'] ?? 'ice_shop');
+if (!in_array($placeType, $allowedPlaceTypes, true)) {
+    echo json_encode(["status" => "error", "message" => "Ungültiger Ortstyp."]);
+    exit;
+}
+
+$activeUntil = null;
+if ($placeType === 'temporary_stand') {
+    $rawActiveUntil = trim((string)($data['active_until'] ?? ''));
+    if ($rawActiveUntil === '') {
+        echo json_encode(["status" => "error", "message" => "Für einen temporären Stand ist ein Enddatum erforderlich."]);
+        exit;
+    }
+    try {
+        $activeUntilDate = new DateTimeImmutable($rawActiveUntil);
+        if ($activeUntilDate <= new DateTimeImmutable('now')) {
+            throw new RuntimeException('Das Enddatum muss in der Zukunft liegen.');
+        }
+        $activeUntil = $activeUntilDate->format('Y-m-d H:i:s');
+    } catch (Throwable $e) {
+        echo json_encode(["status" => "error", "message" => "Ungültiges Enddatum für den temporären Stand."]);
+        exit;
+    }
+}
+
 if (!isset($data['name']) || !isset($data['adresse']) || !isset($data['latitude']) || !isset($data['longitude'])) {
     echo json_encode(["status" => "error", "message" => "Fehlende Parameter"]);
+    exit;
+}
+
+if (!shopCoordinatesAreValid($data['latitude'], $data['longitude'])) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Bitte wähle eine gültige Position auf der Karte."]);
     exit;
 }
 
@@ -39,7 +72,7 @@ $checkStmt->execute([
 if ($checkStmt->fetch()) {
     echo json_encode([
         "status" => "error",
-        "message" => "Eine Eisdiele mit diesem Namen ist bereits in der Nähe vorhanden."
+        "message" => "Ein öffentlicher Eis-Ort mit diesem Namen ist bereits in der Nähe vorhanden."
     ]);
     exit;
 }
@@ -199,7 +232,7 @@ if ($externalSource && !empty($externalSource['provider']) && !empty($externalSo
     externalShopAssertDiscoverySlotsAvailable($pdo, $currentUserId);
 }
 
-$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, opening_hours_note, user_id, landkreis_id, bundesland_id, land_id) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :openingHoursNote, :userId, :landkreisId, :bundeslandId, :landId)";
+$sql = "INSERT INTO eisdielen (name, adresse, latitude, longitude, website, openingHours, opening_hours_note, user_id, landkreis_id, bundesland_id, land_id, place_type, active_until) VALUES (:name, :adresse, :latitude, :longitude, :website, :openingHours, :openingHoursNote, :userId, :landkreisId, :bundeslandId, :landId, :placeType, :activeUntil)";
 $stmt = $pdo->prepare($sql);
 
 $lat = $data['latitude'];
@@ -231,7 +264,9 @@ if ($location) {
             ':userId' => $currentUserId,
             ':landkreisId' => $landkreisId,
             ':bundeslandId' => $bundeslandId,
-            ':landId' => $landId
+            ':landId' => $landId,
+            ':placeType' => $placeType,
+            ':activeUntil' => $activeUntil,
         ]);
         $newShopId = (int)$pdo->lastInsertId();
         replace_opening_hours($pdo, $newShopId, $normalizedHours['rows']);
@@ -265,11 +300,13 @@ if ($location) {
             );
         }
         $pdo->commit();
-        shopMaintenanceSyncTaskForShop($pdo, $newShopId);
-        // Evaluate Awards
-        $evaluators = [
-            new IceShopSubmitCountEvaluator()
-        ];
+        if ($placeType === 'ice_shop') {
+            shopMaintenanceSyncTaskForShop($pdo, $newShopId);
+        }
+        // Only actual ice shops contribute to ice-shop submission awards.
+        $evaluators = $placeType === 'ice_shop'
+            ? [new IceShopSubmitCountEvaluator()]
+            : [];
         
         $newAwards = [];
         foreach ($evaluators as $evaluator) {
@@ -280,6 +317,16 @@ if ($location) {
 
         echo json_encode([
             "status" => "success",
+            'place_id' => $newShopId,
+            'place' => [
+                'id' => $newShopId,
+                'name' => (string)$data['name'],
+                'adresse' => (string)$data['adresse'],
+                'latitude' => (float)$data['latitude'],
+                'longitude' => (float)$data['longitude'],
+                'place_type' => $placeType,
+                'active_until' => $activeUntil,
+            ],
             'new_awards' => $newAwards,
             'level_up' => $levelChange['level_up'] ?? false,
             'new_level' => $levelChange['level_up'] ? $levelChange['new_level'] : null,

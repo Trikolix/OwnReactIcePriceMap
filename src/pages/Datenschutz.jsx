@@ -45,7 +45,27 @@ export default function Datenschutz() {
         <li>Bearbeitung von Kontaktanfragen zur Ice-Tour und zu Unterstützungsangeboten</li>
       </ul>
 
-      <SubHeading>4. Kontaktformular zur Ice-Tour</SubHeading>
+      <SubHeading>4. Veröffentlichung von Community-Fotos</SubHeading>
+      <p>
+        Wenn du Bilder zu einem Check-in hochlädst, können diese nach redaktioneller Prüfung im Zusammenhang mit der
+        Ice-App in unseren Social-Media-Kanälen, insbesondere Instagram und Facebook, sowie auf der Ice-App-Website
+        veröffentlicht werden. Dabei können der Nutzername, die besuchte Eisdiele, der Check-in-Typ, das Datum und
+        die im Check-in gespeicherten Einzelbewertungen zusammen mit dem Bild dargestellt werden.
+      </p>
+      <p>
+        Für einen optionalen Zusatz-Slide kann der öffentlich bekannte Standort der Eisdiele als Kartenmarker angezeigt
+        werden. Der persönliche Standort des Nutzers sowie E-Mail-Adresse, Nutzer-ID und ausführliche Check-in-Texte
+        werden nicht veröffentlicht. Für die Veröffentlichung können Inhalte technisch zugeschnitten, skaliert und
+        mit Ice-App-Branding versehen werden.
+      </p>
+      <p>
+        Die Veröffentlichung erfolgt nur im Zusammenhang mit der Ice-App. Du kannst der künftigen Nutzung eines Bildes
+        jederzeit widersprechen oder die Entfernung aus unseren eigenen Veröffentlichungs- und Exportprozessen unter
+        <a href="mailto:admin@ice-app.de"> admin@ice-app.de</a> verlangen. Bereits von Dritten übernommene oder
+        archivierte Beiträge können wir nicht vollständig kontrollieren.
+      </p>
+
+      <SubHeading>5. Kontaktformular zur Ice-Tour</SubHeading>
       <p>
         Wenn du uns über das Kontaktformular zur Ice-Tour schreibst, speichern wir die von dir eingegebenen Angaben
         wie Name, E-Mail-Adresse, optionale Organisations- oder Telefonnummer und deine Nachricht, damit wir dein
@@ -60,16 +80,16 @@ export default function Datenschutz() {
         Unterstützungsangebote und organisatorische Rückfragen.
       </p>
 
-      <SubHeading>5. Cookies & Drittanbieter</SubHeading>
+      <SubHeading>6. Cookies & Drittanbieter</SubHeading>
       <p>Wir verwenden essentielle Technologien wie Local Storage zur Speicherung von Anmeldeinformationen und Einstellungen (z. B. Cookie-Banner-Zustimmung). Weiterhin nutzen wir Dienste wie OpenStreetMap. Dabei können Cookies eingesetzt und Daten an OpenStreetMap übermittelt werden. Für den Login via Google werden ebenfalls Cookies des Drittanbieters gesetzt.</p>
 
-      <SubHeading>6. Deine Rechte</SubHeading>
+      <SubHeading>7. Deine Rechte</SubHeading>
       <p>Du hast das Recht auf Auskunft, Löschung, Berichtigung und Einschränkung der Verarbeitung deiner Daten. Kontaktiere uns jederzeit unter der oben genannten E-Mail-Adresse.</p>
 
-      <SubHeading>7. Speicherung</SubHeading>
+      <SubHeading>8. Speicherung</SubHeading>
       <p>Wir speichern deine Daten nur so lange, wie es für die Nutzung der App erforderlich ist oder gesetzlich vorgeschrieben.</p>
 
-      <SubHeading>8. Einwilligung</SubHeading>
+      <SubHeading>9. Einwilligung</SubHeading>
       <p>Mit der Nutzung der App willigst du in diese Datenschutzerklärung ein.</p>
     </Container>
   );

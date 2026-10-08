@@ -20,6 +20,8 @@ import {
     Message as SharedMessage,
     LevelInfo as SharedLevelInfo,
 } from './styles/SharedStyles';
+import { publishStreakUpdate } from './hooks/useStreakStatus';
+import { StreakCelebration } from './components/ProfileProgress';
 import NewAwards from "./components/NewAwards";
 import Rating from "./components/Rating";
 import SorteAutocomplete from "./components/SorteAutocomplete";
@@ -29,7 +31,7 @@ import UserMentionMultiSelect from "./components/UserMentionField";
 import ImageChooserModal from "./components/ImageChooserModal";
 import { compressImageFile as sharedCompressImageFile, isMobileDevice as sharedIsMobileDevice, MAX_IMAGES as SHARED_MAX_IMAGES, MAX_UPLOAD_BYTES } from "./utils/imageUtils";
 import { getSubmitPriceErrorMessage } from "./utils/submitPriceResponse";
-import { Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin } from "lucide-react";
+import { ArrowLeft, Bike, Bus, Car, Footprints, HelpCircle, IceCreamBowl, IceCreamCone, MapPin } from "lucide-react";
 
 const TYPE_OPTIONS = [
     { value: "Kugel", label: "Kugeleis", description: "Einzelne Kugeln, auch im Becher", tone: "kugel", icon: IceCreamCone },
@@ -53,23 +55,25 @@ const normalizeRatingStars = (value) => {
     return Number.isFinite(numeric) ? numeric : 0;
 };
 
-const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, setShowPriceForm, shop, referencedCheckinId, initialLocation = null }) => {
+const CheckinForm = ({ shopId = null, shopName = "", contextType = "ice_shop", userId, showCheckinForm, setShowCheckinForm, checkinId = null, onSuccess, onBack = null, setShowPriceForm, shop, referencedCheckinId, initialLocation = null }) => {
+    const [effectiveContextType, setEffectiveContextType] = useState(contextType || "ice_shop");
     const [type, setType] = useState("Kugel");
     const [sorten, setSorten] = useState([{ name: "", bewertung: "" }]);
     const [showSortenBewertung, setShowSortenBewertung] = useState(false);
     const [geschmackbewertung, setGeschmackbewertung] = useState("");
     const [waffelbewertung, setWaffelbewertung] = useState("");
-    const [größenbewertung, setGrößenbewertung] = useState(null);
     const [preisleistungsbewertung, setPreisleistungsbewertung] = useState("");
     const [kommentar, setKommentar] = useState("");
     const [anreise, setAnreise] = useState("");
     const [bilder, setBilder] = useState([]); // [{ file, previewUrl, beschreibung }]
     const [message, setMessage] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [streakEvents, setStreakEvents] = useState([]);
     const [awards, setAwards] = useState([]);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
     const [challenges, setChallenges] = useState([]);
     const [teamChallengeCompletion, setTeamChallengeCompletion] = useState(null);
+    const [iceDateCompletion, setIceDateCompletion] = useState(null);
     const [isAllowed, setIsAllowed] = useState(true);
     const [alleSorten, setAlleSorten] = useState([]);
     const [preisfrage, setPreisfrage] = useState(false);
@@ -87,15 +91,25 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
     const [groupSuggestions, setGroupSuggestions] = useState([]);
     const [groupSuggestionCheckinId, setGroupSuggestionCheckinId] = useState(null);
     const [groupLinkLoading, setGroupLinkLoading] = useState(false);
+    const isNoPublicPlace = effectiveContextType === "no_public_place";
+    const isCoreIceShop = effectiveContextType === "ice_shop";
+
+    useEffect(() => {
+        setEffectiveContextType(contextType || "ice_shop");
+    }, [contextType]);
 
     // Läuft beim Laden der Seite automatisch
     useEffect(() => {
-        if (initialLocation?.lat && initialLocation?.lon) {
+        if (!isNoPublicPlace && initialLocation?.lat && initialLocation?.lon) {
             setLocation(initialLocation);
         }
-    }, [initialLocation]);
+    }, [initialLocation, isNoPublicPlace]);
 
     useEffect(() => {
+        if (isNoPublicPlace) {
+            setLocation(null);
+            return undefined;
+        }
         let watchId;
 
         if (!navigator.geolocation) {
@@ -135,7 +149,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         return () => {
             if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
         };
-    }, []);
+    }, [isNoPublicPlace]);
 
     useEffect(() => {
         if (referencedCheckinId) {
@@ -182,10 +196,11 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 }
 
                 setType(checkin.typ);
+                setEffectiveContextType(checkin.context_type || (checkin.eisdiele_id ? "ice_shop" : "no_public_place"));
                 setGeschmackbewertung(normalizeScoreInputValue(checkin.geschmackbewertung));
                 setWaffelbewertung(normalizeScoreInputValue(checkin.waffelbewertung));
                 if (checkin.preisleistungsbewertung == null && checkin.größenbewertung != null) {
-                    setPreisleistungsbewertung(checkin.größenbewertung);
+                    setPreisleistungsbewertung(normalizeScoreInputValue(checkin.größenbewertung));
                 } else {
                     setPreisleistungsbewertung(normalizeScoreInputValue(checkin.preisleistungsbewertung));
                 }
@@ -237,15 +252,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
         try {
             const formData = new FormData();
             formData.append("userId", userId);
-            formData.append("shopId", shopId);
+            if (!isNoPublicPlace && shopId) formData.append("shopId", shopId);
+            formData.append("contextType", effectiveContextType);
             formData.append("type", type);
             formData.append("geschmackbewertung", geschmackbewertung);
-            formData.append("waffelbewertung", waffelbewertung);
-            formData.append("größenbewertung", größenbewertung);
+            formData.append("waffelbewertung", type !== "Eisbecher" ? waffelbewertung : "");
+            formData.append("größenbewertung", "");
             formData.append("preisleistungsbewertung", preisleistungsbewertung);
             formData.append("kommentar", kommentar);
             formData.append("sorten", JSON.stringify(sorten));
-            formData.append("anreise", anreise);
+            formData.append("anreise", isNoPublicPlace ? "" : anreise);
             formData.append("mentionedUsers", JSON.stringify(mentionedUsers.map(u => u.id)));
             bilder.forEach((bild, index) => {
                 if (!bild.isExisting) {
@@ -264,7 +280,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
             if (referencedCheckinId) formData.append("referencedCheckinId", referencedCheckinId);
             if (referencedCheckin && referencedCheckin.group_id !== null) formData.append("group_id", referencedCheckin.group_id);
             if (referencedCheckin && referencedCheckin.datum) formData.append("datum", referencedCheckin.datum);
-            if (location) {
+            if (!isNoPublicPlace && location) {
                 formData.append("lat", location.lat);
                 formData.append("lon", location.lon);
             } else {
@@ -292,12 +308,14 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     setMessage("Checkin erfolgreich gespeichert!");
                 }
 
+                setStreakEvents(data.streak_events || []);
+                publishStreakUpdate(userId, data);
                 if (onSuccess) onSuccess();
                 let suggestionsFound = false;
-                if (!checkinId && !referencedCheckinId && data.checkin_id) {
+                if (!isNoPublicPlace && !checkinId && !referencedCheckinId && data.checkin_id) {
                     suggestionsFound = await loadGroupSuggestions(data.checkin_id);
                 }
-                if (data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null)) {
+                if (data.streak_events?.length || data.level_up || (data.new_awards && data.new_awards.length > 0) || (data.completed_challenge !== null) || (data.completed_team_challenge !== null) || (data.completed_ice_date !== null)) {
                     if (data.level_up) {
                         setLevelUpInfo({
                             level: data.new_level,
@@ -313,13 +331,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     if (data.completed_team_challenge !== null) {
                         setTeamChallengeCompletion(data.completed_team_challenge);
                     }
+                    if (data.completed_ice_date !== null) {
+                        setIceDateCompletion(data.completed_ice_date);
+                    }
 
-                    if (!checkinId && shouldAskForPriceUpdate(shop)) {
+                    if (isCoreIceShop && shop?.eisdiele && !checkinId && shouldAskForPriceUpdate(shop)) {
                         setPreisfrage(true);
                     }
 
                 } else {
-                    if (!checkinId && shouldAskForPriceUpdate(shop)) {
+                    if (isCoreIceShop && shop?.eisdiele && !checkinId && shouldAskForPriceUpdate(shop)) {
                         setPreisfrage(true);
                     } else {
                         if (!suggestionsFound) {
@@ -417,6 +438,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 if (onSuccess) onSuccess();
                 setSubmitted(true);
                 setMessage("Checkin erfolgreich gelöscht!");
+                publishStreakUpdate(userId);
                 setTimeout(() => {
                     setShowCheckinForm(false);
                 }, 2000);
@@ -494,7 +516,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
     const openSubmitPriceForm = () => {
         setShowCheckinForm(false);
-        setShowPriceForm(true);
+        if (setShowPriceForm) setShowPriceForm(true);
     };
 
     const confirmPrice = async () => {
@@ -563,8 +585,20 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                 <CloseButton onClick={() => setShowCheckinForm(false)}>×</CloseButton>
                 {isAllowed && (<>
                     {!submitted && (<Form onSubmit={submit}>
-                        <Heading>Eis-Checkin für {shopName} {checkinId && ("bearbeiten")}</Heading>
+                        {onBack && (
+                            <BackToChooserButton type="button" onClick={onBack}>
+                                <ArrowLeft size={17} aria-hidden="true" />
+                                Zurück zur Ortsauswahl
+                            </BackToChooserButton>
+                        )}
+                        <Heading>{isNoPublicPlace ? "Eis ohne öffentlichen Ort einchecken" : `Eis-Checkin für ${shopName}`} {checkinId && ("bearbeiten")}</Heading>
                         <IntroText>Bewerte dein Eis kurz und teile bei Bedarf Fotos und Notizen mit der Community.</IntroText>
+                        {isNoPublicPlace && (
+                            <ContextNotice>
+                                <MapPin size={17} aria-hidden="true" />
+                                Dieser Check-in wird keinem Kartenort zugeordnet. Es werden keine Standortdaten gespeichert.
+                            </ContextNotice>
+                        )}
                         <Section>
                             <Label>Eistyp</Label>
                             <OptionGrid>
@@ -710,8 +744,8 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             </tbody>
                         </Table>
 
-                        <Section>
-                            <Label>Wie bist du zur Eisdiele gekommen?</Label>
+                        {!isNoPublicPlace && (<Section>
+                            <Label>Wie bist du zu diesem Eis-Ort gekommen?</Label>
                             <ArrivalSelectRow>
                                 <ArrivalIconBadge>
                                     <SelectedArrivalIcon size={16} />
@@ -723,7 +757,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                                     ))}
                                 </Select>
                             </ArrivalSelectRow>
-                        </Section>
+                        </Section>)}
 
                         <Section>
                             <Label>Kommentar</Label>
@@ -791,7 +825,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </Section>
                         {!referencedCheckin ?
                             (<Section>
-                                <Label>Du warst mit jemanden anderen Eis essen? Erwähne ihn und lade ihn ein sein Checkin zu teilen!</Label>
+                                <Label>{isNoPublicPlace
+                                    ? "Mit wem möchtest du diesen Eis-Moment teilen? Erwähne die Person hier."
+                                    : "Du warst mit jemand anderem Eis essen? Erwähne die Person und lade sie ein, ihren Check-in zu teilen!"}</Label>
                                 <UserMentionMultiSelect onChange={setMentionedUsers} />
                             </Section>) :
                             (<Section>
@@ -803,7 +839,9 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
 
                         <FormButtonGroup>
                             <PrimaryAction type="submit" disabled={submitted}>{checkinId ? "Änderungen speichern" : "Check-in"}</PrimaryAction>
-                            <SecondaryAction type="button" onClick={() => setShowCheckinForm(false)}>Abbrechen</SecondaryAction>
+                            <SecondaryAction type="button" onClick={onBack || (() => setShowCheckinForm(false))}>
+                                {onBack ? "Zurück zur Ortsauswahl" : "Abbrechen"}
+                            </SecondaryAction>
                             {checkinId && (<>
                                 <DeleteButton type="button" onClick={handleDeleteClick} >
                                     Check-in löschen
@@ -813,7 +851,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                     </Form>)}
                 </>)}
                 <Message>{message}</Message>
-                {groupSuggestions.length > 0 && (
+                {!isNoPublicPlace && groupSuggestions.length > 0 && (
                     <SuggestionBox>
                         <h4>Gemeinsamer Checkin?</h4>
                         <p>Andere Nutzer haben in den letzten Minuten ebenfalls hier eingecheckt:</p>
@@ -832,7 +870,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </ButtonGroup>
                     </SuggestionBox>
                 )}
-                {preisfrage && (
+                {isCoreIceShop && preisfrage && shop && (
                     <>
                         <Text>Stimmt der Preis von <strong>{shop.eisdiele.name}</strong> noch?</Text>
                         <p>
@@ -849,6 +887,7 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                         </ButtonGroup>
                     </>
                 )}
+                <StreakCelebration events={streakEvents} />
                 {levelUpInfo && (
                     <LevelInfo>
                         <h2>🎉 Level-Up!</h2>
@@ -869,6 +908,16 @@ const CheckinForm = ({ shopId, shopName, userId, showCheckinForm, setShowCheckin
                             <p>
                                 Dein Check-in bei <strong>{teamChallengeCompletion.shop_name}</strong> wurde für die Team-Challenge gespeichert.
                             </p>
+                        )}
+                    </TeamChallengeSuccessBox>
+                )}
+                {iceDateCompletion && (
+                    <TeamChallengeSuccessBox>
+                        <h3>Gemeinsames Eis-Date</h3>
+                        {iceDateCompletion.status === 'completed' ? (
+                            <p>Ihr habt euer Eis-Date bei <strong>{iceDateCompletion.shop_name}</strong> gemeinsam festgehalten.</p>
+                        ) : (
+                            <p>Dein Check-in wurde für das Eis-Date bei <strong>{iceDateCompletion.shop_name}</strong> gespeichert.</p>
                         )}
                     </TeamChallengeSuccessBox>
                 )}
@@ -911,6 +960,51 @@ const IntroText = styled.p`
     margin: -0.3rem 0 0.9rem;
     color: rgba(47, 33, 0, 0.72);
     font-size: 0.92rem;
+`;
+
+const BackToChooserButton = styled.button`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    margin: -0.35rem 2.25rem 0.45rem 0;
+    padding: 0.4rem 0.55rem;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #76500a;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 750;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 181, 34, 0.13);
+    }
+
+    &:focus-visible {
+        outline: 3px solid rgba(224, 154, 0, 0.3);
+        outline-offset: 2px;
+    }
+`;
+
+const ContextNotice = styled.div`
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    margin: 0 0 0.9rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: 12px;
+    background: rgba(219, 234, 254, 0.65);
+    color: #1e3a5f;
+    font-size: 0.9rem;
+    line-height: 1.4;
+
+    svg {
+        flex: 0 0 auto;
+        margin-top: 0.08rem;
+    }
 `;
 
 const Row = styled.div`

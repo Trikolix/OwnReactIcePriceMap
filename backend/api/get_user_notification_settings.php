@@ -1,7 +1,7 @@
 <?php
-require_once '../db_connect.php';
-require_once '../lib/auth.php';
-require_once '../lib/user_notification_settings.php';
+require_once __DIR__ . '/../db_connect.php';
+require_once __DIR__ . '/../lib/auth.php';
+require_once __DIR__ . '/../lib/user_notification_settings.php';
 header('Content-Type: application/json');
 
 ensureUserNotificationSettingsSchema($pdo);
@@ -23,13 +23,13 @@ if ($user_id <= 0) {
 }
 
 
-$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, notify_checkin_mention_push, notify_comment_push, notify_comment_participated_push, notify_news_push, notify_team_challenge_push, notify_photo_challenge, notify_photo_challenge_push, notify_like, notify_like_push, push_enabled_web, push_enabled_android FROM user_notification_settings WHERE user_id = :user_id";
+$sql = "SELECT notify_checkin_mention, notify_comment, notify_comment_participated, notify_news, notify_team_challenge, notify_ice_date, notify_checkin_mention_push, notify_comment_push, notify_comment_participated_push, notify_news_push, notify_team_challenge_push, notify_ice_date_push, notify_photo_challenge, notify_photo_challenge_push, notify_like, notify_like_push, push_enabled_web, push_enabled_android, show_onboarding_checklist FROM user_notification_settings WHERE user_id = :user_id ORDER BY id ASC LIMIT 1";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['user_id' => $user_id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($row) {
-    echo json_encode($row);
+    echo json_encode(array_map('intval', $row));
 } else {
     // Default-Werte, falls keine Settings existieren
     echo json_encode([
@@ -38,17 +38,20 @@ if ($row) {
         'notify_comment_participated' => 1,
         'notify_news' => 0,
         'notify_team_challenge' => 1,
+        'notify_ice_date' => 1,
         'notify_checkin_mention_push' => 1,
         'notify_comment_push' => 1,
         'notify_comment_participated_push' => 1,
         'notify_news_push' => 1,
         'notify_team_challenge_push' => 1,
+        'notify_ice_date_push' => 1,
         'notify_photo_challenge' => 1,
         'notify_photo_challenge_push' => 1,
         'notify_like' => 0,
         'notify_like_push' => 1,
         'push_enabled_web' => 0,
         'push_enabled_android' => 0,
+        'show_onboarding_checklist' => 1,
     ]);
 }
 ?>

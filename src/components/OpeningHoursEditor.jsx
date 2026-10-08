@@ -1,9 +1,9 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { createEmptyOpeningHours, hydrateOpeningHours, mergeOpeningHoursChanges, WEEKDAYS } from "../utils/openingHours";
 
 const MAX_RANGES_PER_DAY = 3;
 
-const OpeningHoursEditor = ({ value, onChange }) => {
+const OpeningHoursEditor = ({ value, onChange, touchFriendly = false }) => {
   const hydrated = hydrateOpeningHours(value);
 
   const updateHours = (nextValue) => {
@@ -65,7 +65,7 @@ const OpeningHoursEditor = ({ value, onChange }) => {
   };
 
   return (
-    <Wrapper>
+    <Wrapper $touchFriendly={touchFriendly}>
       <HeaderRow>
         <strong>Wöchentliche Zeiten</strong>
         <ResetButton type="button" onClick={handleReset}>
@@ -107,7 +107,7 @@ const OpeningHoursEditor = ({ value, onChange }) => {
                     />
                     <span>geht nach 24 Uhr weiter</span>
                   </OvernightToggle>
-                  <RemoveButton type="button" onClick={() => handleRemoveRange(day.weekday, index)}>
+                  <RemoveButton type="button" aria-label={`${day.label}: Zeitspanne entfernen`} onClick={() => handleRemoveRange(day.weekday, index)}>
                     ×
                   </RemoveButton>
                 </RangeRow>
@@ -157,6 +157,17 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  ${({ $touchFriendly }) => $touchFriendly && css`
+    input, textarea { font-size: 16px; min-height: 44px; max-width: 100%; }
+    input[type=checkbox] { min-height: auto; }
+    button, label:has(input[type=checkbox]) { min-height: 44px; min-width: 44px; }
+    ${HeaderRow}, ${DayActions} { flex-wrap: wrap; gap: 6px; }
+    ${RangeColumn} { min-width: 0; }
+    ${TimeInput} { width: 105px; }
+    @media (max-width: 640px) {
+      ${DayRow} { grid-template-columns: minmax(0, 1fr); }
+    }
+  `}
 `;
 
 const HeaderRow = styled.div`

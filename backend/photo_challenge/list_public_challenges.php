@@ -62,6 +62,7 @@ function fetchPublicChallengeWinnerImage(PDO $pdo, int $challengeId): ?array
         LEFT JOIN laender l ON l.id = pci.land_id
         WHERE m.challenge_id = :challenge_id
           AND m.phase = 'ko'
+          AND COALESCE(m.bracket_type, 'main') = 'main'
           AND m.status = 'closed'
           AND m.winner_image_id IS NOT NULL
         ORDER BY m.round DESC, m.position ASC

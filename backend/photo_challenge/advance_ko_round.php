@@ -70,6 +70,10 @@ try {
     ");
 
     $roundWinnerIds = [];
+    $mainWinnerIds = [];
+    $mainMatches = array_values(array_filter($matches, static fn(array $match): bool => ($match['bracket_type'] ?? 'main') === 'main'));
+    $thirdPlaceMatches = array_values(array_filter($matches, static fn(array $match): bool => ($match['bracket_type'] ?? 'main') === 'third_place'));
+    $mainLoserIds = [];
 
     foreach ($matches as $match) {
         if ($match['status'] !== 'open') {
@@ -83,22 +87,76 @@ try {
         }
         $roundWinnerIds[] = $winner;
 
+        if (($match['bracket_type'] ?? 'main') === 'main') {
+            $mainWinnerIds[] = $winner;
+            $mainLoserIds[] = $winner === (int)$match['image_a_id']
+                ? (int)$match['image_b_id']
+                : (int)$match['image_a_id'];
+        }
+
         $updateMatch->execute([
             'winner' => $winner,
             'id' => $match['id'],
         ]);
     }
 
-    if (count($roundWinnerIds) < 2) {
+    // A two-match main round is the semifinal. Preserve both semifinal losers
+    // for a separate third-place match alongside the final.
+    if (!$thirdPlaceMatches && count($mainMatches) === 2) {
+        $mainWinners = array_values(array_filter(array_map('intval', $mainWinnerIds)));
+        if (count($mainWinners) === 2 && count($mainLoserIds) === 2) {
+            $nextRound = $round + 1;
+            $insertMatch = $pdo->prepare("
+                INSERT INTO photo_challenge_matches
+                    (challenge_id, phase, bracket_type, round, group_id, position, image_a_id, image_b_id, status)
+                VALUES
+                    (:challenge_id, 'ko', :bracket_type, :round, NULL, :position, :image_a, :image_b, 'open')
+            ");
+            $insertMatch->execute([
+                'challenge_id' => $challengeId,
+                'bracket_type' => 'main',
+                'round' => $nextRound,
+                'position' => 1,
+                'image_a' => $mainWinners[0],
+                'image_b' => $mainWinners[1],
+            ]);
+            $insertMatch->execute([
+                'challenge_id' => $challengeId,
+                'bracket_type' => 'third_place',
+                'round' => $nextRound,
+                'position' => 1,
+                'image_a' => $mainLoserIds[0],
+                'image_b' => $mainLoserIds[1],
+            ]);
+
+            $pdo->commit();
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Halbfinale abgeschlossen. Finale und Duell um Platz 3 wurden angelegt.',
+                'next_round_created' => true,
+                'round_closed' => $round,
+                'next_round' => $nextRound,
+                'third_place_created' => true,
+            ]);
+            return;
+        }
+    }
+
+    // The final and the third-place match are closed together. The main
+    // bracket winner decides the champion; the third-place winner is exposed
+    // by the overview endpoint.
+    if (count($mainMatches) === 1) {
         $stmt = $pdo->prepare("UPDATE photo_challenges SET status = 'finished' WHERE id = :id");
         $stmt->execute(['id' => $challengeId]);
         $pdo->commit();
+        $mainWinner = null;
+        $mainWinner = (int)($mainWinnerIds[0] ?? 0) ?: null;
         echo json_encode([
             'status' => 'success',
-            'message' => 'Finale abgeschlossen – Challenge ist beendet.',
+            'message' => $thirdPlaceMatches ? 'Finale und Duell um Platz 3 abgeschlossen – Challenge ist beendet.' : 'Finale abgeschlossen – Challenge ist beendet.',
             'next_round_created' => false,
             'round_closed' => $round,
-            'winner_image_id' => $roundWinnerIds[0] ?? null,
+            'winner_image_id' => $mainWinner,
         ]);
         return;
     }
@@ -110,9 +168,9 @@ try {
 
     $insertMatch = $pdo->prepare("
         INSERT INTO photo_challenge_matches
-            (challenge_id, phase, round, group_id, position, image_a_id, image_b_id, status)
+            (challenge_id, phase, bracket_type, round, group_id, position, image_a_id, image_b_id, status)
         VALUES
-            (:challenge_id, 'ko', :round, NULL, :position, :image_a, :image_b, 'open')
+            (:challenge_id, 'ko', 'main', :round, NULL, :position, :image_a, :image_b, 'open')
     ");
     $position = 1;
     for ($i = 0; $i < count($nextRoundParticipants); $i += 2) {

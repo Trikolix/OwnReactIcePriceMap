@@ -19,6 +19,11 @@ export const fetchSummerCampaignProgress = async (authToken = null) => {
   return toJson(response);
 };
 
+export const fetchSummerCampaignResults = async () => {
+  const response = await fetch(`${getApiBase()}/api/summer_campaign_results.php`);
+  return toJson(response);
+};
+
 export const fetchSummerAdminState = async (authToken) => {
   const response = await fetch(`${getApiBase()}/admin/summer_campaign.php`, {
     headers: authHeaders(authToken),

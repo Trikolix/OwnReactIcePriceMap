@@ -1,8 +1,17 @@
 <?php
 require_once __DIR__ . '/db_connect.php';
 
-$sortenname = $_GET['sortenname'];
-$typ = $_GET['iceType'];
+// Deprecated compatibility endpoint. The frontend uses get_flavour_statistics.php,
+// which applies the user-weighted recommendation score.
+$sortenname = trim((string)($_GET['sortenname'] ?? ''));
+$typ = trim((string)($_GET['iceType'] ?? ''));
+
+if ($sortenname === '' || !in_array($typ, ['Kugel', 'Softeis', 'Eisbecher'], true)) {
+    http_response_code(400);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => 'sortenname und ein gültiger iceType sind erforderlich.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $stmt = $pdo->prepare("
 SELECT 
@@ -14,6 +23,7 @@ FROM checkin_sorten
 JOIN checkins ON checkin_sorten.checkin_id = checkins.id
 JOIN eisdielen ON checkins.eisdiele_id = eisdielen.id
 WHERE checkin_sorten.sortenname = :sortenname AND checkins.typ = :typ
+  AND checkins.context_type = 'ice_shop' AND eisdielen.place_type = 'ice_shop'
 GROUP BY eisdielen.id, checkin_sorten.sortenname
 ORDER BY durchschnittsbewertung DESC
 LIMIT 10

@@ -61,6 +61,7 @@ try {
     // Include all user- and filter-dependent values to prevent personalised
     // responses from ever being reused by another viewer.
     $cacheKey = ranking_cache_key([
+        'schema_version' => 2,
         'scope' => $scope,
         'rated_user_id' => $userId,
         'viewer_id' => $viewerId,
@@ -78,7 +79,7 @@ try {
     $openShopIds = rankingOpenShopIds($pdo);
     $markStage('open_filter');
     if (is_array($openShopIds) && !$openShopIds) {
-        $emptyResponse = json_encode(['meta' => ['scope' => $scope, 'single_rater_scope' => $isSingleRaterScope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1], 'kugel' => [], 'softeis' => [], 'eisbecher' => []], JSON_UNESCAPED_UNICODE);
+        $emptyResponse = json_encode(['meta' => ['scope' => $scope, 'single_rater_scope' => $isSingleRaterScope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 2], 'kugel' => [], 'softeis' => [], 'eisbecher' => []], JSON_UNESCAPED_UNICODE);
         if ($emptyResponse !== false) {
             ranking_cache_write($cacheKey, $emptyResponse);
             $markStage('json');
@@ -143,6 +144,7 @@ WITH eligible AS (
       END AS score
     FROM checkins c
     WHERE c.typ IN ('Kugel', 'Softeis', 'Eisbecher')
+      AND c.context_type = 'ice_shop'
       AND c.geschmackbewertung IS NOT NULL
       AND (CASE WHEN c.typ = 'Kugel' THEN COALESCE(c.preisleistungsbewertung, c.größenbewertung)
                 ELSE c.preisleistungsbewertung END) IS NOT NULL
@@ -178,7 +180,7 @@ SELECT s.eisdiele_id, s.typ, e.name, e.adresse, e.openingHours, e.opening_hours_
 FROM shop_scores s
 {$typeMeansJoin}
 JOIN eisdielen e ON e.id = s.eisdiele_id
-WHERE COALESCE(e.status, 'open') <> 'permanent_closed' {$openCondition} {$favoriteCondition}
+WHERE e.place_type = 'ice_shop' AND COALESCE(e.status, 'open') <> 'permanent_closed' {$openCondition} {$favoriteCondition}
 ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.name ASC";
 
     $stmt = $pdo->prepare($sql);
@@ -255,7 +257,7 @@ ORDER BY s.typ, ranking_score DESC, s.user_count DESC, s.rating_count DESC, e.na
     }
 
     $responseJson = json_encode([
-        'meta' => ['scope' => $scope, 'single_rater_scope' => $isSingleRaterScope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 1],
+        'meta' => ['scope' => $scope, 'single_rater_scope' => $isSingleRaterScope, 'favorites_only' => $favoritesOnly, 'generated_at' => gmdate(DATE_ATOM), 'version' => 2],
         ...$result,
     ], JSON_UNESCAPED_UNICODE);
     if ($responseJson === false) {

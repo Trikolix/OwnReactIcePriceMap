@@ -140,17 +140,10 @@ export const UserProvider = ({ children }) => {
     const { reload = true } = options;
     const storedToken = localStorage.getItem('authToken');
     const currentUserId = localStorage.getItem('userId');
-    if (storedToken && API_BASE) {
-      try {
-        await fetch(`${API_BASE}/userManagement/logout.php`, { method: 'POST' });
-      } catch (error) {
-        console.warn('Logout request failed', error);
-      }
-    }
 
     if (currentUserId) {
       try {
-        await disableBrowserPush(currentUserId);
+        await disableBrowserPush(currentUserId, { rememberOptOut: false });
       } catch (error) {
         console.warn('Browser push cleanup failed', error);
       }
@@ -159,6 +152,14 @@ export const UserProvider = ({ children }) => {
         await disableNativePush(currentUserId);
       } catch (error) {
         console.warn('Native push cleanup failed', error);
+      }
+    }
+
+    if (storedToken && API_BASE) {
+      try {
+        await fetch(`${API_BASE}/userManagement/logout.php`, { method: 'POST' });
+      } catch (error) {
+        console.warn('Logout request failed', error);
       }
     }
 

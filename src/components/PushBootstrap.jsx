@@ -8,6 +8,7 @@ import {
   reportNativePushClick,
   registerPushServiceWorker,
   syncPushConfigToServiceWorker,
+  ensurePushSubscriptionSynced,
 } from "../services/pushNotifications";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -45,14 +46,18 @@ const PushBootstrap = () => {
   }, []);
 
   useEffect(() => {
-    syncPushConfigToServiceWorker().catch((error) => {
+    syncPushConfigToServiceWorker(userId).catch((error) => {
       console.error("Push config sync failed", error);
     });
   }, [userId, isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") return;
+    if (!Capacitor.isNativePlatform()) {
+      ensurePushSubscriptionSynced(userId).catch(error => console.warn("Web push sync failed", error));
+      return;
+    }
+    if (Capacitor.getPlatform() !== "android") return;
     if (nativeInitializedForUserRef.current === userId) return;
     if (!API_BASE) return;
 

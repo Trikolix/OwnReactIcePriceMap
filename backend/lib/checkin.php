@@ -6,10 +6,11 @@ function getCheckinById(PDO $pdo, int $id): ?array {
                n.id AS nutzer_id,
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
+               e.place_type,
                up.avatar_path AS avatar_url
         FROM checkins c
         JOIN nutzer n ON n.id = c.nutzer_id
-        JOIN eisdielen e ON e.id = c.eisdiele_id
+        LEFT JOIN eisdielen e ON e.id = c.eisdiele_id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE c.id = :id
     ");
@@ -57,10 +58,11 @@ function getCheckinsByEisdieleId(PDO $pdo, int $eisdieleId): array {
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
                e.adresse,
+               e.place_type,
                up.avatar_path AS avatar_url
         FROM checkins c
         JOIN nutzer n ON c.nutzer_id = n.id
-        JOIN eisdielen e ON c.eisdiele_id = e.id
+        LEFT JOIN eisdielen e ON c.eisdiele_id = e.id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
         WHERE c.eisdiele_id = ?
         ORDER BY c.datum DESC
@@ -89,10 +91,11 @@ function getCheckins(PDO $pdo, string $sort = 'datum', string $order = 'DESC', ?
                n.username AS nutzer_name,
                e.name AS eisdiele_name,
                e.adresse,
+               e.place_type,
                up.avatar_path AS avatar_url
         FROM checkins c
         JOIN nutzer n ON c.nutzer_id = n.id
-        JOIN eisdielen e ON c.eisdiele_id = e.id
+        LEFT JOIN eisdielen e ON c.eisdiele_id = e.id
         LEFT JOIN user_profile_images up ON up.user_id = n.id
         ORDER BY c.$sort $order
     ";
@@ -126,10 +129,11 @@ function getCheckinsByNutzerId(PDO $pdo, int $nutzerId): array {
                    n.username AS nutzer_name,
                    e.name AS eisdiele_name,
                    e.adresse,
+                   e.place_type,
                    up.avatar_path AS avatar_url
             FROM checkins c
             JOIN nutzer n ON c.nutzer_id = n.id
-            JOIN eisdielen e ON c.eisdiele_id = e.id
+            LEFT JOIN eisdielen e ON c.eisdiele_id = e.id
             LEFT JOIN user_profile_images up ON up.user_id = n.id
             WHERE c.nutzer_id = :nutzerId
             ORDER BY c.datum DESC";

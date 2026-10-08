@@ -13,8 +13,10 @@ import AdminPushStats from "../../pages/AdminPushStats";
 import SummerCampaignAdmin from "../../pages/SummerCampaignAdmin";
 import TourDeGlaceAdmin from "../../pages/TourDeGlaceAdmin";
 import TourDeGlaceFemmeAdmin from "../../pages/TourDeGlaceFemmeAdmin";
+import ActionsPage from "../../pages/ActionsPage";
 
 export const coreRoutes = [
+  { path: "/aktionen", element: <ActionsPage /> },
   { path: "/dashboard", element: <DashBoard /> },
   { path: "/dashboard/target", element: <DashboardTarget /> },
   { path: "/impressum", element: <Impressum /> },

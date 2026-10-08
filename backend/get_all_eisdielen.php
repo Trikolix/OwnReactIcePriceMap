@@ -2,15 +2,24 @@
 require_once  __DIR__ . '/db_connect.php';
 require_once  __DIR__ . '/lib/opening_hours.php';
 require_once  __DIR__ . '/lib/team_challenges.php';
+require_once __DIR__ . '/lib/shop_place_type.php';
 
 ensureTeamChallengeSchema($pdo);
 
 $userId = isset($_GET['userId']) ? (int) $_GET['userId'] : null;
+$placeTypeFilter = buildShopPlaceTypeFilter(isset($_GET['place_types']) ? (string)$_GET['place_types'] : null);
+$placeTypeClause = $placeTypeFilter['sql'];
+$attributeIds = array_values(array_unique(array_filter(
+    array_map('intval', explode(',', (string)($_GET['attributes'] ?? ''))),
+    static fn($id) => $id > 0
+)));
 $openMoment = parse_opening_hours_reference($_GET['open_at'] ?? null);
 $filterOpenNow = !$openMoment && isset($_GET['open_now']) && intval($_GET['open_now']) === 1;
 $openClause = '';
 $openParams = [];
 $openReferenceIso = null;
+$attributeClause = '';
+$attributeParams = [];
 
 if ($openMoment instanceof \DateTimeImmutable) {
     $openReferenceIso = $openMoment->format(\DateTimeInterface::ATOM);
@@ -35,6 +44,25 @@ if (is_array($openIds)) {
     $openClause = ' AND e.id IN (' . implode(',', $placeholders) . ')';
 }
 
+if (!empty($attributeIds)) {
+    $attributePlaceholders = [];
+    foreach ($attributeIds as $idx => $attributeId) {
+        $placeholder = ':attribute' . $idx;
+        $attributePlaceholders[] = $placeholder;
+        $attributeParams[$placeholder] = $attributeId;
+    }
+    $attributeClause = '
+        AND e.id IN (
+            SELECT b.eisdiele_id
+            FROM bewertung_attribute ba
+            INNER JOIN bewertungen b ON b.id = ba.bewertung_id
+            WHERE ba.attribut_id IN (' . implode(',', $attributePlaceholders) . ')
+            GROUP BY b.eisdiele_id
+            HAVING COUNT(DISTINCT ba.attribut_id) = :attributeCount
+        )';
+    $attributeParams[':attributeCount'] = count($attributeIds);
+}
+
 $sql = "SELECT  
     e.id AS eisdielen_id,
     e.name AS eisdielen_name,
@@ -44,6 +72,9 @@ $sql = "SELECT
     e.status,
     e.reopening_date,
     e.opening_hours_note,
+    e.place_type,
+    e.active_until,
+    e.closed_early_at,
 
     -- Letzter gemeldeter Preis für Kugel-Eis mit Währung
     (SELECT p1.preis 
@@ -208,15 +239,28 @@ LEFT JOIN kugel_scores ks ON ks.eisdiele_id = e.id
 LEFT JOIN softeis_scores ss ON ss.eisdiele_id = e.id
 LEFT JOIN eisbecher_scores es ON es.eisdiele_id = e.id
 
-WHERE 1=1{$openClause}
+WHERE (
+    e.place_type <> 'temporary_stand'
+    OR (
+        e.active_until IS NOT NULL
+        AND e.active_until >= CURRENT_TIMESTAMP
+        AND e.closed_early_at IS NULL
+    )
+){$placeTypeClause}{$openClause}{$attributeClause}
 ORDER BY finaler_kugel_score DESC, 
          finaler_softeis_score DESC, 
          finaler_eisbecher_score DESC;";
 $stmt = $pdo->prepare($sql);
 // Parameter binden
 $stmt->bindParam(':userId', $userId);
+foreach ($placeTypeFilter['params'] as $placeholder => $placeType) {
+    $stmt->bindValue($placeholder, $placeType, PDO::PARAM_STR);
+}
 foreach ($openParams as $placeholder => $shopId) {
     $stmt->bindValue($placeholder, $shopId, PDO::PARAM_INT);
+}
+foreach ($attributeParams as $placeholder => $attributeId) {
+    $stmt->bindValue($placeholder, $attributeId, PDO::PARAM_INT);
 }
 $stmt->execute();
 $eisdielen = $stmt->fetchAll(PDO::FETCH_ASSOC);

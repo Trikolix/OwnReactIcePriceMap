@@ -5,128 +5,9 @@ require_once  __DIR__ . '/lib/levelsystem.php';
 require_once  __DIR__ . '/lib/review.php';
 require_once  __DIR__ . '/lib/route_helpers.php';
 require_once  __DIR__ . '/lib/user_profile.php';
+require_once  __DIR__ . '/lib/auth.php';
 
-function consecutiveLengthBackward(array $set, DateTimeImmutable $start, string $stepSpec): int
-{
-    $count = 0;
-    $cursor = $start;
-    while (isset($set[$cursor->format('Y-m-d')])) {
-        $count++;
-        $cursor = $cursor->modify($stepSpec);
-    }
-    return $count;
-}
-
-function calculateRecordStreak(array $sortedDates, int $stepDays): int
-{
-    if (empty($sortedDates)) {
-        return 0;
-    }
-
-    $record = 0;
-    $current = 0;
-    $previous = null;
-    foreach ($sortedDates as $dateValue) {
-        $date = new DateTimeImmutable($dateValue);
-        if ($previous === null) {
-            $current = 1;
-        } else {
-            $diffDays = (int)$previous->diff($date)->format('%r%a');
-            $current = ($diffDays === $stepDays) ? ($current + 1) : 1;
-        }
-        $record = max($record, $current);
-        $previous = $date;
-    }
-
-    return $record;
-}
-
-function calculateStreakStats(array $dateRows): array
-{
-    $dateSet = [];
-    $weekSet = [];
-
-    foreach ($dateRows as $row) {
-        $dateValue = $row['d'] ?? null;
-        if (!$dateValue) {
-            continue;
-        }
-
-        $dateSet[$dateValue] = true;
-
-        $weekStart = (new DateTimeImmutable($dateValue))->modify('monday this week')->format('Y-m-d');
-        $weekSet[$weekStart] = true;
-    }
-
-    $dates = array_keys($dateSet);
-    sort($dates);
-    $weeks = array_keys($weekSet);
-    sort($weeks);
-
-    $now = new DateTimeImmutable('now');
-    $today = new DateTimeImmutable('today');
-    $yesterday = $today->modify('-1 day');
-
-    $dayRecord = calculateRecordStreak($dates, 1);
-    $dayValue = 0;
-    $dayState = 'none';
-    $dayDeadline = null;
-    $daySecondsLeft = 0;
-
-    if (isset($dateSet[$today->format('Y-m-d')])) {
-        $dayValue = consecutiveLengthBackward($dateSet, $today, '-1 day');
-        $dayState = 'active';
-    } elseif (isset($dateSet[$yesterday->format('Y-m-d')])) {
-        $dayValue = consecutiveLengthBackward($dateSet, $yesterday, '-1 day');
-        $dayState = 'at_risk';
-        $dayDeadlineObj = $today->setTime(23, 59, 59);
-        $dayDeadline = $dayDeadlineObj->format(DateTimeInterface::ATOM);
-        $daySecondsLeft = max(0, $dayDeadlineObj->getTimestamp() - $now->getTimestamp());
-    }
-
-    $thisWeekStartObj = $today->modify('monday this week');
-    $lastWeekStartObj = $thisWeekStartObj->modify('-7 days');
-    $thisWeekStart = $thisWeekStartObj->format('Y-m-d');
-    $lastWeekStart = $lastWeekStartObj->format('Y-m-d');
-
-    $weekRecord = calculateRecordStreak($weeks, 7);
-    $weekValue = 0;
-    $weekState = 'none';
-    $weekDeadline = null;
-    $weekSecondsLeft = 0;
-
-    if (isset($weekSet[$thisWeekStart])) {
-        $weekValue = consecutiveLengthBackward($weekSet, $thisWeekStartObj, '-7 days');
-        $weekState = 'active';
-    } elseif (isset($weekSet[$lastWeekStart])) {
-        $weekValue = consecutiveLengthBackward($weekSet, $lastWeekStartObj, '-7 days');
-        $weekState = 'at_risk';
-        $weekDeadlineObj = $thisWeekStartObj->modify('+6 days')->setTime(23, 59, 59);
-        $weekDeadline = $weekDeadlineObj->format(DateTimeInterface::ATOM);
-        $weekSecondsLeft = max(0, $weekDeadlineObj->getTimestamp() - $now->getTimestamp());
-    }
-
-    return [
-        'day_current' => $dayState === 'active' ? $dayValue : 0,
-        'day_record' => $dayRecord,
-        'week_current' => $weekState === 'active' ? $weekValue : 0,
-        'week_record' => $weekRecord,
-        'day' => [
-            'value' => $dayValue,
-            'record' => $dayRecord,
-            'state' => $dayState,
-            'deadline_iso' => $dayDeadline,
-            'seconds_left' => $daySecondsLeft,
-        ],
-        'week' => [
-            'value' => $weekValue,
-            'record' => $weekRecord,
-            'state' => $weekState,
-            'deadline_iso' => $weekDeadline,
-            'seconds_left' => $weekSecondsLeft,
-        ],
-    ];
-}
+require_once __DIR__ . '/lib/streaks.php';
 
 ensureUserProfileColumns($pdo);
 
@@ -140,16 +21,18 @@ if (strpos($nutzerParam, '@') === 0) {
     $nutzerId = (int)$nutzerParam;
 }
 
-$curUserId = intval($_GET['cur_user_id']);
+$authenticatedUser = authenticateRequest($pdo);
+$curUserId = (int)($authenticatedUser['user_id'] ?? 0);
 
 // Nutzername ermitteln
 $sql1 = "SELECT username, erstellt_am AS erstellungsdatum, invite_code, instagram_account, strava_account
          FROM nutzer WHERE id = ?";
 
 // Anzahl unterschiedlicher besuchter Eisdielen
-$sql2 = "SELECT COUNT(DISTINCT eisdiele_id) AS eisdielen_besucht
-         FROM checkins
-         WHERE nutzer_id = ?";
+$sql2 = "SELECT COUNT(DISTINCT c.eisdiele_id) AS eisdielen_besucht
+         FROM checkins c
+         JOIN eisdielen e ON e.id = c.eisdiele_id AND e.place_type = 'ice_shop'
+         WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop'";
 
 // Anzahl an Checkins
 $sql3 = "SELECT COUNT(DISTINCT id) AS anzahl_checkins
@@ -171,7 +54,7 @@ $sql5 = "SELECT e.landkreis_id AS landkreis_id,
          FROM checkins c
          JOIN eisdielen e ON c.eisdiele_id = e.id
          LEFT JOIN landkreise l ON e.landkreis_id = l.id
-         WHERE c.nutzer_id = ?
+         WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
          GROUP BY e.landkreis_id, l.name
          ORDER BY checkins DESC";
 
@@ -202,7 +85,7 @@ $sql7 = "SELECT
 $sql8 = "SELECT e.id AS eisdiele_id, e.name, COUNT(*) AS besuche
          FROM checkins c
          JOIN eisdielen e ON e.id = c.eisdiele_id
-         WHERE c.nutzer_id = ?
+         WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
          GROUP BY e.id, e.name
          ORDER BY besuche DESC";
 
@@ -229,7 +112,7 @@ $sql11 = "SELECT e.land_id AS land_id,
           FROM checkins c
           JOIN eisdielen e ON c.eisdiele_id = e.id
           LEFT JOIN laender la ON e.land_id = la.id
-          WHERE c.nutzer_id = ?
+          WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
           GROUP BY e.land_id, la.name
           ORDER BY checkins DESC";
 
@@ -241,7 +124,7 @@ $sql12 = "SELECT e.bundesland_id AS bundesland_id,
           FROM checkins c
           JOIN eisdielen e ON c.eisdiele_id = e.id
           LEFT JOIN bundeslaender bl ON e.bundesland_id = bl.id
-          WHERE c.nutzer_id = ?
+          WHERE c.nutzer_id = ? AND c.context_type = 'ice_shop' AND e.place_type = 'ice_shop'
           GROUP BY e.bundesland_id, bl.name
           ORDER BY checkins DESC";
 
@@ -340,10 +223,8 @@ try {
     $stmt->execute([$nutzerId]);
     $stats["comment_count"] = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->prepare("SELECT DATE(datum) AS d FROM checkins WHERE nutzer_id = ? GROUP BY DATE(datum) ORDER BY d ASC");
-    $stmt->execute([$nutzerId]);
-    $streakDates = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $stats["streaks"] = calculateStreakStats($streakDates);
+    $streakClock = streakNow();
+    $stats["streaks"] = streakPayload(streakLoad($pdo, $nutzerId, $streakClock), $streakClock, $curUserId === $nutzerId);
 
     echo json_encode($stats);
 

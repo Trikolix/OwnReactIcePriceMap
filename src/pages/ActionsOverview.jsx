@@ -11,8 +11,10 @@ import {
 } from '../features/seasonal/campaigns';
 import EasterCampaignPanel from '../features/seasonal/EasterCampaignPanel';
 import SummerCampaignPanel from '../features/seasonal/SummerCampaignPanel';
+import SummerCampaignResultsPanel from '../features/seasonal/SummerCampaignResultsPanel';
 import TourDeGlacePanel from '../features/seasonal/TourDeGlacePanel';
 import TourDeGlaceFemmePanel from '../features/seasonal/TourDeGlaceFemmePanel';
+import { trackEvent } from '../utils/analytics';
 
 const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
   'active',
@@ -81,6 +83,7 @@ const formatCampaignDate = (date) => {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'Europe/Berlin',
   }).format(date);
 };
 
@@ -104,7 +107,7 @@ const getPhotoChallengeVoteSummary = (challenges = []) => challenges.reduce((sum
   remainingVotes: 0,
 });
 
-const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
+const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin, fullPage = false }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const { userId } = useUser();
   const isAdmin = Number(userId) === 1;
@@ -127,8 +130,10 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   const [activeBreakdownUserId, setActiveBreakdownUserId] = useState(null);
   const [photoChallenges, setPhotoChallenges] = useState([]);
   const [isPhotoChallengesLoading, setIsPhotoChallengesLoading] = useState(false);
+  const [challengeSummary, setChallengeSummary] = useState({ personal: 0, team: 0, invitations: 0 });
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const [activeArchiveId, setActiveArchiveId] = useState(null);
   const [showPastUsers, setShowPastUsers] = useState(false);
   const [activeDetailPanel, setActiveDetailPanel] = useState(null);
   const detailPanelRef = useRef(null);
@@ -204,6 +209,24 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
   }, [apiUrl, open, userId]);
 
   useEffect(() => {
+    if (!open || !apiUrl || !userId) {
+      setChallengeSummary({ personal: 0, team: 0, invitations: 0 });
+      return;
+    }
+
+    Promise.all([
+      fetch(`${apiUrl}/api/challenge_list.php?nutzer_id=${encodeURIComponent(userId)}`).then((res) => res.json()),
+      fetch(`${apiUrl}/api/team_challenge_list.php?user_id=${encodeURIComponent(userId)}`).then((res) => res.json()),
+    ]).then(([personal, team]) => {
+      setChallengeSummary({
+        personal: Array.isArray(personal) ? personal.filter((challenge) => !Number(challenge.completed)).length : 0,
+        team: Array.isArray(team?.active_challenges) ? team.active_challenges.length : 0,
+        invitations: Array.isArray(team?.received_invitations) ? team.received_invitations.length : 0,
+      });
+    }).catch(() => setChallengeSummary({ personal: 0, team: 0, invitations: 0 }));
+  }, [apiUrl, open, userId]);
+
+  useEffect(() => {
     if (!open || !apiUrl) {
       return;
     }
@@ -263,12 +286,6 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     ? birthdayLeaderboard
     : birthdayLeaderboard.slice(0, LEADERBOARD_COLLAPSED_COUNT);
   const displayCampaigns = campaigns.map((campaign) => {
-    if (campaign.id !== 'tour_de_glace_2026') {
-      return campaign;
-    }
-    if (campaign.status === CAMPAIGN_STATUS.UPCOMING) {
-      return null;
-    }
     return campaign;
   }).filter(Boolean);
   const upcomingCampaigns = displayCampaigns.filter((campaign) => campaign.status === CAMPAIGN_STATUS.UPCOMING);
@@ -291,10 +308,32 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     ? now >= tourCampaign.schedule.start
     : false;
   const summerCampaign = displayCampaigns.find((campaign) => campaign.id === 'summer_2026');
+  const birthdayCampaign = displayCampaigns.find((campaign) => campaign.id === 'birthday_2026');
+  const olympicsCampaign = displayCampaigns.find((campaign) => campaign.id === 'olympics_2026');
   const femmeCampaign = displayCampaigns.find((campaign) => campaign.id === 'tour_de_glace_femme_2026');
   const femmeResultsHighlighted = femmeCampaign?.status === CAMPAIGN_STATUS.RESULTS
     && now < femmeCampaign.schedule.resultsHighlightEnd;
+  const femmeResultsArchived = femmeCampaign?.status === CAMPAIGN_STATUS.RESULTS && !femmeResultsHighlighted;
   const taskItems = [
+    isLoggedIn && {
+      id: 'ice-app-challenges',
+      type: 'challenge',
+      title: challengeSummary.invitations > 0
+        ? `${challengeSummary.invitations} Team-Einladung${challengeSummary.invitations === 1 ? '' : 'en'}`
+        : challengeSummary.team > 0
+          ? 'Deine Team-Challenge wartet'
+          : 'Zufallsziel für heute',
+      description: challengeSummary.invitations > 0
+        ? 'Nimm eine Einladung an und plant euren gemeinsamen Eis-Stopp.'
+        : challengeSummary.personal > 0
+          ? `${challengeSummary.personal} persönliche Challenge${challengeSummary.personal === 1 ? '' : 's'} sind aktiv.`
+          : 'Entdecke eine neue Eisdiele in deiner Nähe und sammle nebenbei Extra-EP.',
+      statusLabel: challengeSummary.invitations > 0 ? 'Antworten' : challengeSummary.personal > 0 || challengeSummary.team > 0 ? 'Aktiv' : 'Bereit',
+      statusTone: challengeSummary.invitations > 0 ? 'available' : challengeSummary.personal > 0 || challengeSummary.team > 0 ? 'active' : 'available',
+      priority: 1,
+      ctaLabel: challengeSummary.invitations > 0 ? 'Einladung öffnen' : 'Challenges öffnen',
+      ctaTarget: challengeSummary.invitations > 0 ? '/challenge?tab=team' : '/challenge',
+    },
     activePhotoChallenges.length > 0 && {
       id: 'photo-challenges',
       type: 'photo_challenge',
@@ -386,7 +425,8 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
       onClick: () => openDetailPanel('summer_2026', { toggle: true }),
     },
   ].filter(Boolean).sort((left, right) => left.priority - right.priority);
-  const visibleTasks = showAllTasks ? taskItems : taskItems.slice(0, 3);
+  const pageTaskItems = fullPage ? taskItems.filter((task) => ['photo_challenge', 'challenge'].includes(task.type)) : taskItems;
+  const visibleTasks = fullPage || showAllTasks ? pageTaskItems : pageTaskItems.slice(0, 3);
   const actionCampaignCards = displayCampaigns.filter((campaign) => (
     ['summer_2026', 'tour_de_glace_2026', 'tour_de_glace_femme_2026'].includes(campaign.id)
     && (
@@ -415,6 +455,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           campaign={campaign}
           isLoggedIn={isLoggedIn}
           onLogin={onLogin}
+          archived={tourResultsArchived}
         />
       );
     }
@@ -426,6 +467,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           campaign={campaign}
           isLoggedIn={isLoggedIn}
           onLogin={onLogin}
+          archived={femmeResultsArchived}
         />
       );
     }
@@ -440,21 +482,170 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
     );
   };
 
+  const renderBirthdayArchive = () => (
+    <>
+      <Hint>
+        Die Geburtstagschallenge lief vom <strong>6. März 2026</strong> bis zum <strong>22. März 2026</strong>.
+        Hier bleibt die Abschlussrangliste historisch sichtbar, die Live-Aktionslogik wurde aus dem regulären Produktfluss entfernt.
+      </Hint>
+      {isBirthdayLoading ? (
+        <Hint>Lade Geburtstags-Rangliste...</Hint>
+      ) : birthdayLeaderboard.length === 0 ? (
+        <Hint>Keine Geburtstags-Ergebnisse vorhanden.</Hint>
+      ) : (
+        <LeaderboardList>
+          {visibleBirthdayLeaderboard.map((entry) => (
+            <LeaderboardItem
+              key={`birthday-${entry.user_id}-${entry.rank}`}
+              $highlight={Number(userId) === Number(entry.user_id)}
+              onMouseEnter={() => setActiveBirthdayBreakdownUserId(entry.user_id)}
+              onMouseLeave={() => setActiveBirthdayBreakdownUserId(null)}
+            >
+              <span>#{entry.rank}</span>
+              <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
+              <strong>{entry.total_xp} XP</strong>
+              {activeBirthdayBreakdownUserId === entry.user_id && (
+                <BreakdownPopover>
+                  <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
+                  <BreakdownList>
+                    {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
+                      .filter(([, value]) => Number.isFinite(value) && value > 0)
+                      .map(([key, value]) => (
+                        <BreakdownListItem key={`birthday-${entry.user_id}-${key}`}>
+                          <span>{POINT_LABELS[key] || key}</span>
+                          <strong>+{value} XP</strong>
+                        </BreakdownListItem>
+                      ))}
+                  </BreakdownList>
+                  {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
+                    .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
+                    <small>Keine Punkte erfasst.</small>
+                  )}
+                </BreakdownPopover>
+              )}
+            </LeaderboardItem>
+          ))}
+        </LeaderboardList>
+      )}
+      {birthdayLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
+        <LeaderboardToggleButton type="button" onClick={() => setIsBirthdayExpanded((prev) => !prev)}>
+          {isBirthdayExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
+        </LeaderboardToggleButton>
+      )}
+      {birthdayUserRank && (
+        <Hint>
+          Dein Rang: <strong>#{birthdayUserRank.rank}</strong> mit <strong>{birthdayUserRank.total_xp} XP</strong>
+        </Hint>
+      )}
+    </>
+  );
+
+  const renderTourArchive = () => (
+    <>
+      <Hint>
+        Die Tour de Glace lief vom <strong>4. Juli 2026</strong> bis zum <strong>26. Juli 2026</strong>.
+        Ranglisten, Trikots, Etappentipps und Awards bleiben hier historisch sichtbar.
+      </Hint>
+      <TourArchivePanelWrap>{renderCampaignPanel(tourCampaign)}</TourArchivePanelWrap>
+    </>
+  );
+
+  const renderFemmeArchive = () => (
+    <>
+      <Hint>
+        Die Tour de Glace Femmes bleibt mit Gesamtwertung, Etappentipps und kombinierten Ranglisten als historische Nachlese erhalten.
+      </Hint>
+      <TourArchivePanelWrap>{renderCampaignPanel(femmeCampaign)}</TourArchivePanelWrap>
+    </>
+  );
+
+  const renderOlympicsArchive = () => (
+    <>
+      <Hint>
+        Die Eis-Winterolympiade fand vom <strong>6. Februar 2026</strong> bis zum <strong>22. Februar 2026</strong> statt.
+        Auch hier bleibt nur die historische Ergebnisansicht sichtbar.
+      </Hint>
+      {isOlympicsLoading ? (
+        <Hint>Lade Olympia-Rangliste...</Hint>
+      ) : olympicsLeaderboard.length === 0 ? (
+        <Hint>Keine Olympia-Ergebnisse vorhanden.</Hint>
+      ) : (
+        <LeaderboardList>
+          {visibleOlympicsLeaderboard.map((entry) => (
+            <LeaderboardItem
+              key={`${entry.user_id}-${entry.rank}`}
+              $highlight={Number(userId) === Number(entry.user_id)}
+              onMouseEnter={() => setActiveBreakdownUserId(entry.user_id)}
+              onMouseLeave={() => setActiveBreakdownUserId(null)}
+            >
+              <span>#{entry.rank}</span>
+              <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
+              <strong>{entry.total_xp} XP</strong>
+              {activeBreakdownUserId === entry.user_id && (
+                <BreakdownPopover>
+                  <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
+                  <BreakdownList>
+                    {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
+                      .filter(([, value]) => Number.isFinite(value) && value > 0)
+                      .map(([key, value]) => (
+                        <BreakdownListItem key={`${entry.user_id}-${key}`}>
+                          <span>{POINT_LABELS[key] || key}</span>
+                          <strong>+{value} XP</strong>
+                        </BreakdownListItem>
+                      ))}
+                  </BreakdownList>
+                  {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
+                    .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
+                    <small>Keine Punkte erfasst.</small>
+                  )}
+                </BreakdownPopover>
+              )}
+            </LeaderboardItem>
+          ))}
+        </LeaderboardList>
+      )}
+      {olympicsLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
+        <LeaderboardToggleButton type="button" onClick={() => setIsOlympicsExpanded((prev) => !prev)}>
+          {isOlympicsExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
+        </LeaderboardToggleButton>
+      )}
+      {olympicsUserRank && (
+        <Hint>
+          Dein Rang: <strong>#{olympicsUserRank.rank}</strong> mit <strong>{olympicsUserRank.total_xp} XP</strong>
+        </Hint>
+      )}
+    </>
+  );
+
+  const archiveEntries = [
+    { id: 'summer_2026', campaign: summerCampaign, title: 'Sommer-Sammelaktion 2026', summary: 'Abschlussrangliste, gesammelte Karten und Ergebnisse der Eisdielen', render: () => <SummerCampaignResultsPanel onClose={onClose} />, visible: summerCampaign?.status === CAMPAIGN_STATUS.RESULTS },
+    { id: 'tour_de_glace_femme_2026', campaign: femmeCampaign, title: 'Tour de Glace Femmes 2026', summary: 'Gesamtwertung, Etappentipps und kombinierte Rangliste', render: renderFemmeArchive, visible: femmeResultsArchived },
+    { id: 'tour_de_glace_2026', campaign: tourCampaign, title: 'Tour de Glace 2026', summary: 'Ranglisten, Trikots, Etappentipps und Awards', render: renderTourArchive, visible: tourResultsArchived },
+    { id: 'birthday_2026', campaign: birthdayCampaign, title: 'Ice-App Geburtstagschallenge 2026', summary: 'Abschlussrangliste und Punkteaufschlüsselung', render: renderBirthdayArchive, visible: true },
+    { id: 'olympics_2026', campaign: olympicsCampaign, title: 'Eis-Winterolympiade 2026', summary: 'Historische Rangliste und Punkteaufschlüsselung', render: renderOlympicsArchive, visible: true },
+  ].filter((entry) => entry.visible && entry.campaign)
+    .sort((left, right) => (right.campaign.schedule?.endExclusive?.getTime() || 0) - (left.campaign.schedule?.endExclusive?.getTime() || 0));
+
   return (
-    <OverlayBackground>
-      <Overlay>
-        <CloseButton onClick={onClose}>&times;</CloseButton>
+    <OverlayBackground $fullPage={fullPage}>
+      <Overlay $fullPage={fullPage}>
+        {!fullPage && <CloseButton onClick={onClose}>&times;</CloseButton>}
 
-        <MainHeading>Heute in der Ice-App</MainHeading>
-        <IntroText>Alles Wichtige auf einen Blick. Karte, Check-ins und Feed bleiben im Fokus.</IntroText>
+        <PageIntro $fullPage={fullPage}>
+          <MainHeading $fullPage={fullPage}>{fullPage ? 'Aktionen & Rückblicke' : 'Heute in der Ice-App'}</MainHeading>
+          <IntroText>{fullPage
+            ? 'Aktive Aktionen, kommende Events und historische Ergebnisse an einem übersichtlichen Ort.'
+            : 'Alles Wichtige auf einen Blick. Karte, Check-ins und Feed bleiben im Fokus.'}</IntroText>
+        </PageIntro>
 
-        <HubSection>
+        {(!fullPage || pageTaskItems.length > 0) && (
+        <HubSection $fullPage={fullPage}>
           <HubSectionHeader>
             <div>
                 <HubKicker>Aktuell</HubKicker>
-                <HubTitle>Aktuell in der Ice-App</HubTitle>
+                <HubTitle>{fullPage ? 'Jetzt aktiv' : 'Aktuell in der Ice-App'}</HubTitle>
             </div>
-            {taskItems.length > 0 && <TaskCount>{taskItems.length}</TaskCount>}
+            {pageTaskItems.length > 0 && <TaskCount>{pageTaskItems.length}</TaskCount>}
           </HubSectionHeader>
           {isPhotoChallengesLoading && taskItems.length === 0 ? (
             <EmptyHubState>Lade aktuelle Aufgaben...</EmptyHubState>
@@ -477,7 +668,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
                     <p>{task.description}</p>
                   </TaskContent>
                   {task.ctaTarget ? (
-                    <TaskLink to={task.ctaTarget} onClick={onClose}>{task.ctaLabel}</TaskLink>
+                  <TaskLink to={task.ctaTarget} onClick={() => { trackEvent('action_hub', 'task_click', task.id); onClose?.(); }}>{task.ctaLabel}</TaskLink>
                   ) : (
                     <TaskButton type="button" onClick={task.onClick}>{task.ctaLabel}</TaskButton>
                   )}
@@ -487,24 +678,25 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           ) : (
             <EmptyHubState>Heute ist nichts Dringendes offen. Schau später wieder rein.</EmptyHubState>
           )}
-          {taskItems.length > 3 && (
+          {!fullPage && taskItems.length > 3 && (
             <InlineToggle type="button" onClick={() => setShowAllTasks((previous) => !previous)}>
               {showAllTasks ? 'Weniger anzeigen' : `${taskItems.length - 3} weitere anzeigen`}
             </InlineToggle>
           )}
         </HubSection>
+        )}
 
         {actionCampaignCards.length > 0 && (
-          <HubSection>
+          <HubSection $fullPage={fullPage}>
             <HubSectionHeader>
               <div>
-                <HubKicker>Aktionsübersicht</HubKicker>
-                <HubTitle>Alle Aktionen und Rückblicke</HubTitle>
+                <HubKicker>{fullPage ? 'Aktuell' : 'Aktionsübersicht'}</HubKicker>
+                <HubTitle>{fullPage ? 'Aktive Aktionen' : 'Alle Aktionen und Rückblicke'}</HubTitle>
               </div>
             </HubSectionHeader>
             <CampaignSummaryGrid>
               {actionCampaignCards.map((campaign) => (
-                <CampaignSummaryCard key={campaign.id}>
+                <CampaignSummaryCard key={campaign.id} $fullPage={fullPage}>
                   <CampaignSummaryTop>
                     <CampaignSummaryImage
                       src={buildPublicAssetUrl(campaign.id === 'tour_de_glace_2026'
@@ -545,12 +737,18 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           </HubSection>
         )}
 
+        {!fullPage && (
+          <ActionsPageLink to="/aktionen" onClick={onClose}>
+            Alle Aktionen und Rückblicke anzeigen
+          </ActionsPageLink>
+        )}
+
         {upcomingCampaigns.length > 0 && (
-          <HubSection>
+          <HubSection $fullPage={fullPage}>
             <HubSectionHeader>
               <div>
                 <HubKicker>Bald</HubKicker>
-                <HubTitle>Anstehende Events</HubTitle>
+                <HubTitle>Demnächst</HubTitle>
               </div>
             </HubSectionHeader>
             <CompactList>
@@ -564,7 +762,7 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           </HubSection>
         )}
 
-        <HubSection>
+        <HubSection $fullPage={fullPage}>
           <HubSectionHeader>
             <div>
               <HubKicker>Community</HubKicker>
@@ -575,13 +773,13 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
             <EmptyHubState>Lade Community-Highlight...</EmptyHubState>
           ) : currentUser ? (
             <CommunityBlock>
-              <FeaturedCommunityCard to={`/user/${currentUser.id}`} onClick={onClose}>
-                <FeaturedBadge>
+              <FeaturedCommunityCard to={`/user/${currentUser.id}`} onClick={onClose} $fullPage={fullPage}>
+                <FeaturedBadge $fullPage={fullPage}>
                   <Trophy size={18} strokeWidth={2.3} />
                   <span>Aktuell</span>
                 </FeaturedBadge>
-                <FeaturedCommunityImage src={currentUser.image} alt={currentUser.name} />
-                <FeaturedCommunityText>
+                <FeaturedCommunityImage src={currentUser.image} alt={currentUser.name} $fullPage={fullPage} />
+                <FeaturedCommunityText $fullPage={fullPage}>
                   <strong>{currentUser.name}</strong>
                   <span>{currentUser.month}</span>
                 </FeaturedCommunityText>
@@ -620,141 +818,50 @@ const ActionsOverviewModal = ({ open, onClose, isLoggedIn, onLogin }) => {
           )}
         </HubSection>
 
-        {hasPastEvents && (
+        {hasPastEvents && !fullPage && (
           <ArchiveToggle type="button" onClick={() => setShowArchive((previous) => !previous)}>
             {showArchive ? 'Archiv ausblenden' : 'Archiv & Ergebnisse anzeigen'}
           </ArchiveToggle>
         )}
 
-        {hasPastEvents && showArchive && (
-          <>
-            <Section>
-              <SectionTitle>Ice-App Geburtstagschallenge 2026 - Ergebnisse</SectionTitle>
-              <Hint>
-                Die Geburtstagschallenge lief vom <strong>6. März 2026</strong> bis zum <strong>22. März 2026</strong>.
-                Hier bleibt die Abschlussrangliste historisch sichtbar, die Live-Aktionslogik wurde aus dem regulären Produktfluss entfernt.
-              </Hint>
-              {isBirthdayLoading ? (
-                <Hint>Lade Geburtstags-Rangliste...</Hint>
-              ) : birthdayLeaderboard.length === 0 ? (
-                <Hint>Keine Geburtstags-Ergebnisse vorhanden.</Hint>
-              ) : (
-                <LeaderboardList>
-                  {visibleBirthdayLeaderboard.map((entry) => (
-                    <LeaderboardItem
-                      key={`birthday-${entry.user_id}-${entry.rank}`}
-                      $highlight={Number(userId) === Number(entry.user_id)}
-                      onMouseEnter={() => setActiveBirthdayBreakdownUserId(entry.user_id)}
-                      onMouseLeave={() => setActiveBirthdayBreakdownUserId(null)}
-                    >
-                      <span>#{entry.rank}</span>
-                      <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
-                      <strong>{entry.total_xp} XP</strong>
-                      {activeBirthdayBreakdownUserId === entry.user_id && (
-                        <BreakdownPopover>
-                          <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
-                          <BreakdownList>
-                            {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
-                              .filter(([, value]) => Number.isFinite(value) && value > 0)
-                              .map(([key, value]) => (
-                                <BreakdownListItem key={`birthday-${entry.user_id}-${key}`}>
-                                  <span>{POINT_LABELS[key] || key}</span>
-                                  <strong>+{value} XP</strong>
-                                </BreakdownListItem>
-                              ))}
-                          </BreakdownList>
-                          {Object.entries(birthdayBreakdownByUser[entry.user_id]?.breakdown || {})
-                            .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
-                              <small>Keine Punkte erfasst.</small>
-                            )}
-                        </BreakdownPopover>
-                      )}
-                    </LeaderboardItem>
-                  ))}
-                </LeaderboardList>
-              )}
-              {birthdayLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
-                <LeaderboardToggleButton type="button" onClick={() => setIsBirthdayExpanded((prev) => !prev)}>
-                  {isBirthdayExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
-                </LeaderboardToggleButton>
-              )}
-              {birthdayUserRank && (
-                <Hint>
-                  Dein Rang: <strong>#{birthdayUserRank.rank}</strong> mit <strong>{birthdayUserRank.total_xp} XP</strong>
-                </Hint>
-              )}
-            </Section>
-
-            {tourResultsArchived && (
-              <Section>
-                <SectionTitle>Tour de Glace 2026 - Ergebnisse</SectionTitle>
-                <Hint>
-                  Die Tour de Glace lief vom <strong>4. Juli 2026</strong> bis zum <strong>26. Juli 2026</strong>.
-                  Ranglisten, Trikots, Etappentipps und Awards bleiben hier historisch sichtbar.
-                </Hint>
-                <TourArchivePanelWrap>
-                  {renderCampaignPanel(tourCampaign)}
-                </TourArchivePanelWrap>
-              </Section>
+        {hasPastEvents && (fullPage || showArchive) && (
+          <HubSection $fullPage={fullPage}>
+            {fullPage && (
+              <HubSectionHeader>
+                <div>
+                  <HubKicker>Vergangenheit</HubKicker>
+                  <HubTitle>Archiv &amp; Ergebnisse</HubTitle>
+                </div>
+              </HubSectionHeader>
             )}
-
-            <Section>
-              <SectionTitle>Eis-Winterolympiade 2026 - Ergebnisse</SectionTitle>
-              <Hint>
-                Die Eis-Winterolympiade fand vom <strong>6. Februar 2026</strong> bis zum <strong>22. Februar 2026</strong> statt.
-                Auch hier bleibt nur die historische Ergebnisansicht sichtbar.
-              </Hint>
-              {isOlympicsLoading ? (
-                <Hint>Lade Olympia-Rangliste...</Hint>
-              ) : olympicsLeaderboard.length === 0 ? (
-                <Hint>Keine Olympia-Ergebnisse vorhanden.</Hint>
-              ) : (
-                <LeaderboardList>
-                  {visibleOlympicsLeaderboard.map((entry) => (
-                    <LeaderboardItem
-                      key={`${entry.user_id}-${entry.rank}`}
-                      $highlight={Number(userId) === Number(entry.user_id)}
-                      onMouseEnter={() => setActiveBreakdownUserId(entry.user_id)}
-                      onMouseLeave={() => setActiveBreakdownUserId(null)}
+            <ArchiveResultsList>
+            <ArchiveIntroText>Zuletzt beendete Aktionen stehen oben. Öffne eine Karte, um die vollständigen Ergebnisse und Details zu sehen.</ArchiveIntroText>
+            {archiveEntries.map((entry) => {
+              const expanded = activeArchiveId === entry.id;
+              return (
+                <ArchiveResultCard key={entry.id}>
+                  <ArchiveResultHeader>
+                    <div>
+                      <strong>{entry.title}</strong>
+                      <span>{entry.summary}</span>
+                      <small>Beendet: {formatCampaignDate(new Date(entry.campaign.schedule.endExclusive.getTime() - 1))}</small>
+                    </div>
+                    <ArchiveResultToggle
+                      type="button"
+                      $expanded={expanded}
+                      aria-expanded={expanded}
+                      onClick={() => setActiveArchiveId((current) => (current === entry.id ? null : entry.id))}
                     >
-                      <span>#{entry.rank}</span>
-                      <UserLink to={`/user/${entry.user_id}`} onClick={onClose}>{entry.username}</UserLink>
-                      <strong>{entry.total_xp} XP</strong>
-                      {activeBreakdownUserId === entry.user_id && (
-                        <BreakdownPopover>
-                          <PopoverTitle>Punkteaufschlüsselung</PopoverTitle>
-                          <BreakdownList>
-                            {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
-                              .filter(([, value]) => Number.isFinite(value) && value > 0)
-                              .map(([key, value]) => (
-                                <BreakdownListItem key={`${entry.user_id}-${key}`}>
-                                  <span>{POINT_LABELS[key] || key}</span>
-                                  <strong>+{value} XP</strong>
-                                </BreakdownListItem>
-                              ))}
-                          </BreakdownList>
-                          {Object.entries(breakdownByUser[entry.user_id]?.breakdown || {})
-                            .filter(([, value]) => Number.isFinite(value) && value > 0).length === 0 && (
-                              <small>Keine Punkte erfasst.</small>
-                            )}
-                        </BreakdownPopover>
-                      )}
-                    </LeaderboardItem>
-                  ))}
-                </LeaderboardList>
-              )}
-              {olympicsLeaderboard.length > LEADERBOARD_COLLAPSED_COUNT && (
-                <LeaderboardToggleButton type="button" onClick={() => setIsOlympicsExpanded((prev) => !prev)}>
-                  {isOlympicsExpanded ? 'Ergebnisse einklappen' : 'Weitere Ergebnisse anzeigen'}
-                </LeaderboardToggleButton>
-              )}
-              {olympicsUserRank && (
-                <Hint>
-                  Dein Rang: <strong>#{olympicsUserRank.rank}</strong> mit <strong>{olympicsUserRank.total_xp} XP</strong>
-                </Hint>
-              )}
-            </Section>
-          </>
+                      {expanded ? 'Ergebnisse schließen' : 'Ergebnisse öffnen'}
+                      <ChevronDown size={17} strokeWidth={2.2} />
+                    </ArchiveResultToggle>
+                  </ArchiveResultHeader>
+                  {expanded && <ArchiveResultContent>{entry.render()}</ArchiveResultContent>}
+                </ArchiveResultCard>
+              );
+            })}
+            </ArchiveResultsList>
+          </HubSection>
         )}
       </Overlay>
     </OverlayBackground>
@@ -774,6 +881,14 @@ const OverlayBackground = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+
+  ${({ $fullPage }) => $fullPage && `
+    position: static;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #fffaf0 0%, #ffffff 38%);
+    z-index: auto;
+    align-items: flex-start;
+  `}
 `;
 
 const Overlay = styled.div`
@@ -786,12 +901,30 @@ const Overlay = styled.div`
   max-height: min(84vh, calc(100dvh - 24px));
   overflow-y: auto;
   text-align: left;
+
+  ${({ $fullPage }) => $fullPage && `
+    width: min(1080px, calc(100vw - 32px));
+    max-height: none;
+    min-height: 100vh;
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 2rem 0 4rem;
+  `}
+
   @media (max-width: 720px) {
     width: 100vw;
     max-height: 92dvh;
     align-self: flex-end;
     border-radius: 18px 18px 0 0;
     padding: 1rem;
+
+    ${({ $fullPage }) => $fullPage && `
+      width: min(100vw - 24px, 680px);
+      min-height: 100vh;
+      padding: 1.25rem 0 3rem;
+    `}
   }
 `;
 
@@ -823,10 +956,22 @@ const SectionTitle = styled.h3`
   text-align: center;
 `;
 
+const PageIntro = styled.header`
+  ${({ $fullPage }) => $fullPage && `
+    padding: 0.4rem 0 0.65rem;
+  `}
+`;
+
 const MainHeading = styled.h2`
   margin: 0.4rem 2rem 0.2rem 0;
   text-align: left;
   color: #202124;
+
+  ${({ $fullPage }) => $fullPage && `
+    font-size: clamp(1.65rem, 3vw, 2.15rem);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  `}
 `;
 
 const IntroText = styled.p`
@@ -835,10 +980,47 @@ const IntroText = styled.p`
   line-height: 1.4;
 `;
 
+const ActionsPageLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.7rem;
+  border-radius: 9px;
+  background: #fff4d7;
+  color: #7a4a00;
+  padding: 0.7rem 0.85rem;
+  font-weight: 900;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    background: #ffe7a9;
+    outline: none;
+  }
+`;
+
 const HubSection = styled.section`
   border-top: 1px solid #edf0f5;
   padding-top: 0.9rem;
   margin-top: 0.9rem;
+
+  ${({ $fullPage }) => $fullPage && `
+    margin-top: 1rem;
+    border: 1px solid #e4e8ef;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 8px 24px rgba(35, 45, 65, 0.055);
+    padding: 1.15rem;
+  `}
+
+  @media (max-width: 720px) {
+    ${({ $fullPage }) => $fullPage && `
+      margin-top: 0.75rem;
+      border-radius: 12px;
+      padding: 0.9rem;
+    `}
+  }
 `;
 
 const HubSectionHeader = styled.div`
@@ -1023,6 +1205,33 @@ const CampaignSummaryCard = styled.article`
     min-height: 2.4rem;
     white-space: normal;
   }
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 1rem;
+    border-radius: 10px;
+    padding: 0.85rem;
+
+    > button {
+      justify-self: end;
+      width: auto;
+      min-width: 10rem;
+    }
+  `}
+
+  @media (max-width: 620px) {
+    ${({ $fullPage }) => $fullPage && `
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+
+      > button {
+        justify-self: stretch;
+        width: 100%;
+      }
+    `}
+  }
 `;
 
 const CampaignSummaryTop = styled.div`
@@ -1097,6 +1306,7 @@ const CommunityBlock = styled.div`
 
 const FeaturedCommunityCard = styled(Link)`
   position: relative;
+  box-sizing: border-box;
   display: grid;
   justify-items: center;
   gap: 0.75rem;
@@ -1117,6 +1327,25 @@ const FeaturedCommunityCard = styled(Link)`
     box-shadow: 0 16px 34px rgba(24, 39, 75, 0.14);
     transform: translateY(-1px);
   }
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    gap: 0.45rem 1rem;
+    width: min(100%, 460px);
+    padding: 1rem 1.1rem;
+    text-align: left;
+  `}
+
+  @media (max-width: 520px) {
+    ${({ $fullPage }) => $fullPage && `
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 0.4rem 0.85rem;
+      padding: 0.85rem;
+    `}
+  }
 `;
 
 const FeaturedBadge = styled.div`
@@ -1129,6 +1358,10 @@ const FeaturedBadge = styled.div`
   padding: 0.28rem 0.6rem;
   font-size: 0.78rem;
   font-weight: 900;
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-column: 2;
+  `}
 `;
 
 const FeaturedCommunityImage = styled.img`
@@ -1138,6 +1371,20 @@ const FeaturedCommunityImage = styled.img`
   object-fit: cover;
   border: 4px solid #ffffff;
   box-shadow: 0 8px 22px rgba(24, 39, 75, 0.18);
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 96px;
+    height: 96px;
+  `}
+
+  @media (max-width: 520px) {
+    ${({ $fullPage }) => $fullPage && `
+      width: 82px;
+      height: 82px;
+    `}
+  }
 `;
 
 const FeaturedCommunityText = styled.div`
@@ -1156,6 +1403,11 @@ const FeaturedCommunityText = styled.div`
     font-size: 0.92rem;
     font-weight: 700;
   }
+
+  ${({ $fullPage }) => $fullPage && `
+    grid-column: 2;
+    justify-items: start;
+  `}
 `;
 
 const CommunityHistoryToggle = styled.button`
@@ -1180,10 +1432,27 @@ const CommunityHistoryToggle = styled.button`
 `;
 
 const CommunityHistoryList = styled.div`
+  box-sizing: border-box;
   width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.5rem;
+
+  @media (max-width: 620px) {
+    width: calc(100% + 0.9rem);
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(190px, 72vw);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
+    padding: 0.1rem 0.9rem 0.45rem 0;
+
+    > a {
+      scroll-snap-align: start;
+    }
+  }
 `;
 
 const CommunityHistoryItem = styled(Link)`
@@ -1230,6 +1499,104 @@ const ArchiveToggle = styled.button`
   padding: 0.65rem;
   font-weight: 800;
   cursor: pointer;
+`;
+
+const ArchiveResultsList = styled.div`
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+`;
+
+const ArchiveIntroText = styled.p`
+  margin: 0 0 0.15rem;
+  color: #5b6270;
+  font-size: 0.88rem;
+`;
+
+const ArchiveResultCard = styled.article`
+  border: 1px solid #e1e6ee;
+  border-radius: 10px;
+  background: #fbfcff;
+  overflow: hidden;
+`;
+
+const ArchiveResultHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem;
+
+  > div {
+    display: grid;
+    gap: 0.22rem;
+    min-width: 0;
+  }
+
+  strong {
+    color: #202124;
+    overflow-wrap: anywhere;
+  }
+
+  span,
+  small {
+    color: #5b6270;
+  }
+
+  span {
+    font-size: 0.86rem;
+  }
+
+  @media (max-width: 560px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+const ArchiveResultToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  border: 1px solid #d7dce4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #303746;
+  padding: 0.48rem 0.68rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  svg {
+    transition: transform 0.2s;
+    transform: rotate(${({ $expanded }) => ($expanded ? '180deg' : '0deg')});
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: #9db9e8;
+    outline: none;
+  }
+`;
+
+const ArchiveResultContent = styled.div`
+  border-top: 1px solid #e1e6ee;
+  background: #ffffff;
+  padding: 0.85rem;
+
+  ${SectionTitle} {
+    margin-top: 0;
+  }
+
+  > p {
+    margin-top: 0.55rem;
+  }
+
+  > div {
+    margin-top: 0.65rem;
+  }
 `;
 
 const CategoryHeading = styled.h3`

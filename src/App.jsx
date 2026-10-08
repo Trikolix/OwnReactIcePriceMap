@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { UserProvider } from './context/UserContext';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { coreRoutes } from './features/core/routes';
 import { eventRoutes } from './features/event/routes';
+import { socialMediaRoutes } from './features/socialMedia/routes';
 import { mapRoutes } from './features/map/routes';
 import { challengeRoutes } from './features/challenges/routes';
 import { photoChallengeRoutes } from './features/photoChallenge/routes';
 import { userRoutes } from './features/user/routes';
+import { loyaltyRoutes } from './features/loyalty/routes';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import PushBootstrap from './components/PushBootstrap';
 import PushOptInOverlay from './components/PushOptInOverlay';
@@ -22,18 +24,24 @@ const allRoutes = [
   ...challengeRoutes,
   ...photoChallengeRoutes,
   ...userRoutes,
+  ...loyaltyRoutes,
   ...eventRoutes,
+  ...socialMediaRoutes,
 ];
 
 const ScrollToTopOnRouteChange = () => {
   const location = useLocation();
+  const previousPath = useRef(null);
 
   useEffect(() => {
+    const isShopTabNavigation = /^\/shop\/[^/]+\/?$/.test(location.pathname)
+      && previousPath.current === location.pathname;
+    previousPath.current = location.pathname;
     const params = new URLSearchParams(location.search);
     const isDashboardFocusNavigation = location.pathname === '/dashboard'
       && (params.has('focusAward') || params.has('focusNewUser'));
 
-    if (isDashboardFocusNavigation) {
+    if (isDashboardFocusNavigation || isShopTabNavigation) {
       return;
     }
 

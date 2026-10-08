@@ -1,6 +1,6 @@
 import Header from './../Header';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useUser } from "../context/UserContext";
@@ -10,11 +10,17 @@ import GroupCheckinCard from '../components/GroupCheckinCard';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import RouteCard from '../components/RouteCard';
 import ShopCard from '../components/ShopCard';
-import LevelDisplay from '../components/LevelDisplay';
+import useStreakStatus from '../hooks/useStreakStatus';
+import { AvatarBadgeFrame, LevelBadge } from '../components/ProfileProgress';
+import StreakOverview from '../components/StreakOverview';
+import { Button, ChallengeDialog } from '../components/ChallengeUI';
 import UserSettings from './UserSettings';
+import OnboardingChecklist from '../components/OnboardingChecklist';
+import InviteFriendsModal from '../components/InviteFriendsModal';
 import SystemModal from '../components/SystemModal';
+import { notifyNotificationsChanged } from '../utils/systemMessages';
 import MentionInviteModal from '../components/MentionInviteModal';
-import { Sparkles, Calendar, MapPin, IceCream, Flame, CheckCircle2, CircleOff, Heart, SlidersHorizontal } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, IceCream, Heart, SlidersHorizontal, Settings, UserPlus, Activity, Trophy, ChartNoAxesCombined, Instagram } from 'lucide-react';
 import { getActiveAwardEffectTier } from '../shared/awardEffects';
 import { getAwardIconSources, handleAwardIconFallback } from '../utils/awardIcons';
 import { groupActivities } from '../utils/activityFeed';
@@ -22,18 +28,8 @@ import { groupActivities } from '../utils/activityFeed';
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL || "https://ice-app.de/").replace(/\/+$/, "");
 const TRAVEL_COLORS = ["#ffb522", "#ff8a00", "#ff595e", "#8ac926", "#33658a", "#6a4c93", "#1982c4", "#6f2dbd"];
+const PROFILE_TABS = ['feed', 'awards', 'stats'];
 const buildAssetUrl = (path) => (path ? `${ASSET_BASE}/${path.replace(/^\/+/, "")}` : null);
-const formatTimeLeft = (secondsInput) => {
-  const seconds = Math.max(0, Number(secondsInput) || 0);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (days > 0) return `${days}T ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}min`;
-  return `${minutes}min`;
-};
-
 function UserSite() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { userId: userIdFromUrl } = useParams();
@@ -41,8 +37,9 @@ function UserSite() {
   const viewerUserId = userIdFromContext || (typeof window !== 'undefined' ? localStorage.getItem('userId') : null);
   const [activeTab, setActiveTab] = useState('feed');
   const finalUserId = userIdFromUrl || userIdFromContext;
-  const isOwnProfile = Boolean(finalUserId && viewerUserId && String(finalUserId) === String(viewerUserId));
-  const [showToast, setShowToast] = useState(false);
+  const progress = useStreakStatus(finalUserId, viewerUserId);
+  const isOwnProfile = Boolean(finalUserId && viewerUserId && String(progress?.user_id ?? finalUserId) === String(viewerUserId));
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,6 +61,7 @@ function UserSite() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [systemModal, setSystemModal] = useState({ isOpen: false, title: "", message: "" });
+  const [systemReadError, setSystemReadError] = useState('');
   const [mentionModal, setMentionModal] = useState({ isOpen: false, data: null });
   const [activityLevel, setActivityLevel] = useState('land');
   const PREVIEW_COUNT = 5;
@@ -75,10 +73,14 @@ function UserSite() {
   const [flavorLoading, setFlavorLoading] = useState({});
   const [flavorErrors, setFlavorErrors] = useState({});
   const profile156AutoScanTriggeredRef = useRef(false);
-  const awardsGridRef = useRef(null);
+  const [awardsGridElement, setAwardsGridElement] = useState(null);
   const userDataRequestRef = useRef(0);
   const PROFILE_156_SCAN_CODE = '3cb55cb87747d1ed4069e612cef2e75d';
   const [selectedAward, setSelectedAward] = useState(null);
+
+  useEffect(() => {
+    setShowInviteDialog(false);
+  }, [finalUserId]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -98,14 +100,17 @@ function UserSite() {
         );
       }
     }
-    if (params.get('tab') === 'stats' && isOwnProfile) {
-      setActiveTab('stats');
-    } else if (params.get('tab') === 'routes' || params.get('tab') === 'checkins' || params.get('tab') === 'reviews') {
-      setActiveTab('feed');
-    } else if (!isOwnProfile) {
-      setActiveTab('feed');
-    }
+    const requestedTab = params.get('tab');
+    setActiveTab(PROFILE_TABS.includes(requestedTab) ? requestedTab : 'feed');
   }, [isOwnProfile, location.pathname, location.search, navigate]);
+
+  const selectProfileTab = index => {
+    const tab = PROFILE_TABS[index];
+    setActiveTab(tab);
+    const params = new URLSearchParams(location.search);
+    if (tab === 'feed') params.delete('tab'); else params.set('tab', tab);
+    navigate({ pathname: location.pathname, search: params.toString() ? `?${params}` : '' });
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -113,22 +118,28 @@ function UserSite() {
     const mentionNotificationId = params.get('mentionNotificationId');
     const notificationId = params.get('notificationId');
 
-    if (systemmeldungId) {
+    let cancelled = false;
+    if (systemmeldungId && viewerUserId) {
       fetch(`${API_BASE}/systemmeldung.php?action=get&id=${systemmeldungId}`)
-        .then((res) => res.json())
+        .then(async res => {
+          const json = await res.json();
+          if (!res.ok || json.status !== 'success') throw new Error(json.message || 'Systemmeldung nicht verfügbar.');
+          return json;
+        })
         .then((json) => {
-          if (json.status === 'success') {
+          if (!cancelled && json.status === 'success') {
             setSystemModal({
               isOpen: true,
               title: json.systemmeldung.titel,
               message: json.systemmeldung.nachricht,
               linkUrl: json.systemmeldung.link_url,
               linkLabel: json.systemmeldung.link_label,
+              notificationId: Number(json.systemmeldung.notification_id),
             });
           }
         })
         .catch((error) => {
-          console.error('Systemmeldung konnte nicht geladen werden', error);
+          if (!cancelled) setSystemModal({ isOpen: true, title: 'Systemmeldung nicht verfügbar', message: error.message, notificationId: null });
         });
     }
 
@@ -161,7 +172,21 @@ function UserSite() {
           console.error('Mention-Benachrichtigung konnte nicht geladen werden', error);
         });
     }
+    return () => { cancelled = true; };
   }, [location.search, viewerUserId]);
+
+  useEffect(() => {
+    if (!systemModal.isOpen || !systemModal.notificationId || !viewerUserId) return;
+    setSystemReadError('');
+    fetch(`${API_BASE}/benachrichtigungen.php?action=markAsRead`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: systemModal.notificationId }),
+    }).then(async response => {
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success') throw new Error('Lesestatus konnte nicht gespeichert werden.');
+      notifyNotificationsChanged();
+    }).catch(error => setSystemReadError(error.message));
+  }, [systemModal.isOpen, systemModal.notificationId, viewerUserId]);
 
   useEffect(() => {
     if (Number(finalUserId) !== 156) return;
@@ -186,15 +211,14 @@ function UserSite() {
 
   const loadMoreAwards = () => setAwardPage((prev) => prev + 1);
 
-  const fetchUserData = async (userIdToLoad, viewerId = viewerUserId, signal) => {
+  const fetchUserData = async (userIdToLoad, signal) => {
     const requestId = userDataRequestRef.current + 1;
     userDataRequestRef.current = requestId;
-    const currentViewerId = viewerId || 0;
 
     try {
       setLoading(true);
       const response = await fetch(
-        `${apiUrl}/get_user_stats.php?nutzer_id=${userIdToLoad}&cur_user_id=${currentViewerId}`,
+        `${apiUrl}/get_user_stats.php?nutzer_id=${userIdToLoad}`,
         { signal }
       );
       if (!response.ok) throw new Error("Fehler beim Abruf der Daten");
@@ -213,7 +237,7 @@ function UserSite() {
   useEffect(() => {
     if (!finalUserId) return;
     const controller = new AbortController();
-    fetchUserData(finalUserId, viewerUserId, controller.signal);
+    fetchUserData(finalUserId, controller.signal);
     return () => controller.abort();
   }, [finalUserId, viewerUserId]);
 
@@ -257,18 +281,7 @@ function UserSite() {
   }, [finalUserId, viewerUserId]);
 
   useEffect(() => {
-    if (!selectedAward) return undefined;
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        setSelectedAward(null);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedAward]);
-
-  useEffect(() => {
-    const grid = awardsGridRef.current;
+    const grid = awardsGridElement;
     if (!grid) return undefined;
 
     const updateAwardColumns = () => {
@@ -295,22 +308,12 @@ function UserSite() {
       observer.disconnect();
       window.removeEventListener('resize', updateAwardColumns);
     };
-  }, [data?.user_awards?.length]);
+  }, [awardsGridElement]);
 
   const refreshUser = () => {
-    fetchUserData(finalUserId, viewerUserId);
+    fetchUserData(finalUserId);
     fetchProfileActivities();
   };
-  const copyToClipboard = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-    } catch (err) {
-      alert('Kopieren fehlgeschlagen.');
-    }
-  };
-
   const awards = data?.user_awards || [];
   const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routeFocusParams = new URLSearchParams(location.search);
@@ -327,28 +330,10 @@ function UserSite() {
     setProfileFeedFilters((previous) => ({ ...previous, [type]: !previous[type] }));
   };
   const totalIcePortions = data ? (Number(data.eisarten?.Kugel || 0) + Number(data.eisarten?.Softeis || 0) + Number(data.eisarten?.Eisbecher || 0)) : 0;
-  const dayStreak = data?.streaks?.day || {};
-  const weekStreak = data?.streaks?.week || {};
-  const dayStreakState = dayStreak.state || 'none';
-  const weekStreakState = weekStreak.state || 'none';
-  const dayStreakValue = Number(dayStreak.value || 0);
-  const weekStreakValue = Number(weekStreak.value || 0);
-  const dayStreakHint = dayStreakState === 'at_risk'
-    ? `Heute noch kein Check-in. Noch ${formatTimeLeft(dayStreak.seconds_left)} bis der Streak verfällt.`
-    : dayStreakState === 'active'
-      ? 'Heute bereits eingecheckt. Streak gesichert.'
-      : 'Kein aktiver Tages-Streak. Check heute ein, um zu starten.';
-  const weekStreakHint = weekStreakState === 'at_risk'
-    ? `Diese Woche noch kein Check-in. Noch ${formatTimeLeft(weekStreak.seconds_left)} bis der Wochen-Streak verfällt.`
-    : weekStreakState === 'active'
-      ? 'Diese Woche bereits eingecheckt. Wochen-Streak gesichert.'
-      : 'Kein aktiver Wochen-Streak. Ein Check-in pro Woche startet die Serie.';
-
-  const renderStreakIcon = (state) => {
-    if (state === 'active') return <CheckCircle2 size={18} />;
-    if (state === 'at_risk') return <Flame size={18} />;
-    return <CircleOff size={18} />;
-  };
+  const visibleStreaks = progress?.streaks || data?.streaks;
+  const levelInfo = progress?.level_info || data?.level_info;
+  const isHighestLevel = levelInfo?.ep_to_next === null;
+  const levelPercent = isHighestLevel ? 100 : Math.max(0, Math.min(100, Number(levelInfo?.percent_to_next) || 0));
   const portionBreakdown = [
     { key: 'Kugel', label: 'Kugeleis', value: Number(data?.eisarten?.Kugel || 0) },
     { key: 'Softeis', label: 'Softeis', value: Number(data?.eisarten?.Softeis || 0) },
@@ -707,15 +692,23 @@ function UserSite() {
   const handleAvatarUpdated = (newPath) => {
     setData((prev) => (prev ? { ...prev, avatar_url: newPath } : prev));
   };
+  const systemMessageOverlay = <SystemModal
+    isOpen={systemModal.isOpen}
+    onClose={() => setSystemModal(prev => ({ ...prev, isOpen: false }))}
+    title={systemModal.title} message={systemModal.message}
+    linkUrl={systemModal.linkUrl} linkLabel={systemModal.linkLabel}
+    statusMessage={systemReadError}
+  />;
   if (loading) {
     return (
       <FullPage>
         <Header />
+        {systemMessageOverlay}
         <WhiteBackground>
           <DashboardWrapper>
             <LoadingCard>
               <h1>Nutzerseite</h1>
-              <p>Lade Nutzer Daten...</p>
+              <p>Profil wird geladen…</p>
             </LoadingCard>
           </DashboardWrapper>
         </WhiteBackground>
@@ -727,11 +720,12 @@ function UserSite() {
     return (
       <FullPage>
         <Header />
+        {systemMessageOverlay}
         <WhiteBackground>
           <DashboardWrapper>
             <LoadingCard>
               <h1>Nutzerseite</h1>
-              <p>Fehler beim Abruf der Daten</p>
+              <p>Das Profil konnte nicht geladen werden.</p><Button type="button" onClick={() => fetchUserData(finalUserId)}>Erneut versuchen</Button>
             </LoadingCard>
           </DashboardWrapper>
         </WhiteBackground>
@@ -742,78 +736,61 @@ function UserSite() {
   return (
     <FullPage>
       <Header />
+      {systemMessageOverlay}
       <WhiteBackground>
         <DashboardWrapper>
-            <ProfileHeader>
+            <ProfileHeader aria-label="Profilübersicht" $hasSeries={Boolean(visibleStreaks?.day && visibleStreaks?.week)}>
               <ProfileMainColumn>
                 <ProfileIdentity>
-                  <AvatarCircle onClick={avatarUrl ? () => setShowAvatarModal(true) : undefined} style={avatarUrl ? { cursor: 'pointer' } : {}}>
-                    {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
-                  </AvatarCircle>
+                  <AvatarBadgeFrame>
+                    <AvatarCircle type="button" disabled={!avatarUrl} aria-label={`Profilbild von ${data.nutzername} vergrößern`} onClick={() => setShowAvatarModal(true)}>
+                      {avatarUrl ? <img src={avatarUrl} alt={`Avatar von ${data.nutzername}`} /> : <span>{userInitial}</span>}
+                    </AvatarCircle>
+                    <LevelBadge large level={levelInfo?.level} />
+                  </AvatarBadgeFrame>
                   <ProfileInfo>
+                    <ProfileEyebrow>{isOwnProfile ? 'Dein Eis-Profil' : 'Eis-Profil'}</ProfileEyebrow>
                     <h1>{data.nutzername}</h1>
-                    {(data.instagram_account || data.strava_account || isOwnProfile) && (
-                      <SocialLinksRow>
-                        {data.instagram_account && (
-                          <SocialLink 
-                            href={(data.instagram_account.startsWith('http://') || data.instagram_account.startsWith('https://')) ? data.instagram_account : `https://instagram.com/${data.instagram_account.replace('@', '')}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            aria-label="Instagram Profil"
-                          >
-                            <img src="/icons/instagram.svg" alt="Instagram" width="20" height="20" onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn.simpleicons.org/instagram/2f2100'; }} />
-                          </SocialLink>
-                        )}
-                        {data.strava_account && (
-                          <SocialLink 
-                            href={(data.strava_account.startsWith('http://') || data.strava_account.startsWith('https://')) ? data.strava_account : `https://www.strava.com/athletes/${data.strava_account}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            aria-label="Strava Profil"
-                          >
-                            <img src="/icons/strava.svg" alt="Strava" width="20" height="20" onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn.simpleicons.org/strava/fc4c02'; }} />
-                          </SocialLink>
-                        )}
-                        {isOwnProfile && (
-                          <FavoriteSocialLink
-                            to="/favoriten"
-                            aria-label="Favoriten verwalten"
-                            title="Favoriten verwalten"
-                          >
-                            <Heart size={18} aria-hidden="true" />
-                          </FavoriteSocialLink>
-                        )}
-                      </SocialLinksRow>
-                    )}
+                    <MetaRow>Mitglied seit <time dateTime={data.erstellungsdatum}>{new Date(data.erstellungsdatum).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })}</time></MetaRow>
+
                   </ProfileInfo>
-                  <MetaRow>
-                    <Chip>Mitglied seit {new Date(data.erstellungsdatum).toLocaleDateString()}</Chip>
-                    {isOwnProfile && <Chip>Dein Profil</Chip>}
-                  </MetaRow>
                 </ProfileIdentity>
-                <LevelInlineCard>
-                  <LevelDisplay levelInfo={data.level_info} />
-                </LevelInlineCard>
+                {levelInfo && <LevelInlineCard aria-label="Level und Fortschritt">
+                  <LevelHeading><strong>Level {levelInfo.level} · {levelInfo.level_name}</strong><span>{Math.round(levelPercent)} %</span></LevelHeading>
+                  <progress max="100" value={levelPercent} aria-label={isHighestLevel ? 'Höchstes Level erreicht' : 'Fortschritt zum nächsten Level'} />
+                  <small>{levelInfo.ep_current} EP · {isHighestLevel ? 'Höchstes Level erreicht' : `Noch ${levelInfo.ep_to_next ?? 0} EP bis Level ${Number(levelInfo.level) + 1}`}</small>
+                </LevelInlineCard>}
+                {(isOwnProfile || data.instagram_account || data.strava_account) && <ProfileActions aria-label="Profilaktionen">
+                  {isOwnProfile && <>
+                    <SettingsButton type="button" aria-label="Profil bearbeiten" title="Profil bearbeiten" onClick={() => setShowSettings(true)}><Settings size={18} aria-hidden="true" /><span>Profil bearbeiten</span></SettingsButton>
+                    <FavoriteSocialLink to="/favoriten" aria-label="Favoriten verwalten" title="Favoriten verwalten"><Heart size={18} aria-hidden="true" /><span>Favoriten</span></FavoriteSocialLink>
+                    {data.invite_code && <InviteButton type="button" data-invite-trigger aria-haspopup="dialog" aria-expanded={showInviteDialog}
+                      onClick={() => setShowInviteDialog(true)}>
+                      <UserPlus size={18} aria-hidden="true" /><span>Freunde einladen</span>
+                    </InviteButton>}
+                  </>}
+                    {(data.instagram_account || data.strava_account) && <React.Fragment>
+                      {data.instagram_account && <SocialLink
+                        href={/^https?:\/\//.test(data.instagram_account) ? data.instagram_account : `https://instagram.com/${data.instagram_account.replace('@', '')}`}
+                        target="_blank" rel="noopener noreferrer" aria-label="Instagram Profil">
+                        <Instagram size={20} aria-hidden="true" />
+                      </SocialLink>}
+                      {data.strava_account && <SocialLink
+                        href={/^https?:\/\//.test(data.strava_account) ? data.strava_account : `https://www.strava.com/athletes/${data.strava_account}`}
+                        target="_blank" rel="noopener noreferrer" aria-label="Strava Profil">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#df5b21" aria-hidden="true"><path d="m10 2 6 11H4Zm6 20 4-7h-8Z" /></svg>
+                      </SocialLink>}
+                    </React.Fragment>}
+                </ProfileActions>}
               </ProfileMainColumn>
-              <ProfileActions>
-                {isOwnProfile && (
-                  <SettingsButton onClick={() => setShowSettings(true)}>
-                    ⚙️ Profil & Einstellungen
-                  </SettingsButton>
-                )}
-              </ProfileActions>
+              {visibleStreaks?.day && visibleStreaks?.week && <ProfileSeries><StreakOverview streaks={visibleStreaks} own={isOwnProfile} embedded /></ProfileSeries>}
+              <HighlightGrid aria-label="Profil auf einen Blick">
+                <HighlightCard><StatIconWrap><Calendar size={16} aria-hidden="true" /></StatIconWrap><strong>{data.anzahl_checkins || 0}</strong><h3>Check-ins</h3></HighlightCard>
+                <HighlightCard><StatIconWrap><MapPin size={16} aria-hidden="true" /></StatIconWrap><strong>{data.eisdielen_besucht || 0}</strong><h3>Eisdielen besucht</h3></HighlightCard>
+                <HighlightCard><StatIconWrap><IceCream size={16} aria-hidden="true" /></StatIconWrap><strong>{totalIcePortions}</strong><h3>Portionen Eis</h3></HighlightCard>
+              </HighlightGrid>
             </ProfileHeader>
-            {isOwnProfile && (
-              <InviteCard>
-                <h3>Lade neue Nutzer ein und verdiene extra EP <Sparkles size={21} style={{ verticalAlign: 'sub' }} /></h3>
-                <LinkContainer>
-                  Dein Einladungslink:
-                  <Input value={`https://ice-app.de/register/${data.invite_code}`} readOnly />
-                  <CopyButton onClick={() => copyToClipboard(`https://ice-app.de/register/${data.invite_code}`)}>Kopieren</CopyButton>
-                </LinkContainer>
-                {showToast && <Toast>Link wurde kopiert ✔️</Toast>}
-              </InviteCard>
-            )}
+            {isOwnProfile && <OnboardingChecklist onOpenAvatarSettings={() => setShowSettings(true)} />}
             {showSettings && (
               <UserSettings
                 onClose={() => setShowSettings(false)}
@@ -821,68 +798,110 @@ function UserSite() {
                 onAvatarUpdated={handleAvatarUpdated}
               />
             )}
-            <SystemModal
-              isOpen={systemModal.isOpen}
-              onClose={() => setSystemModal((prev) => ({ ...prev, isOpen: false }))}
-              title={systemModal.title}
-              message={systemModal.message}
-              linkUrl={systemModal.linkUrl}
-              linkLabel={systemModal.linkLabel}
-            />
             <MentionInviteModal
               open={mentionModal.isOpen}
               onClose={() => setMentionModal({ isOpen: false, data: null })}
               {...(mentionModal.data || {})}
             />
-            <HighlightGrid>
-              <HighlightCard>
-                <StatIconWrap><Calendar size={18} /></StatIconWrap>
-                <h3>Check-ins gesamt</h3>
-                <strong>{data.anzahl_checkins}</strong>
-              </HighlightCard>
-              <HighlightCard>
-                <StatIconWrap><MapPin size={18} /></StatIconWrap>
-                <h3>Verschiedene&nbsp;Eisdielen</h3>
-                <strong>{data.eisdielen_besucht}</strong>
-              </HighlightCard>
-              <HighlightCard>
-                <StatIconWrap><IceCream size={18} /></StatIconWrap>
-                <h3>Portionen Eis</h3>
-                <strong>{totalIcePortions}</strong>
-                <small>Kugel · Softeis · Becher</small>
-              </HighlightCard>
-              <HighlightCard>
-                <StatIconWrap $tone={dayStreakState}>
-                  {renderStreakIcon(dayStreakState)}
-                </StatIconWrap>
-                <h3>Tages-Streak</h3>
-                <strong>{dayStreakValue} Tage</strong>
-                <small>Rekord: {data?.streaks?.day_record ?? 0} Tage</small>
-                <small>{dayStreakHint}</small>
-              </HighlightCard>
-              <HighlightCard>
-                <StatIconWrap $tone={weekStreakState}>
-                  {renderStreakIcon(weekStreakState)}
-                </StatIconWrap>
-                <h3>Wochen-Streak</h3>
-                <strong>{weekStreakValue} Wochen</strong>
-                <small>Rekord: {data?.streaks?.week_record ?? 0} Wochen</small>
-                <small>{weekStreakHint}</small>
-              </HighlightCard>
-            </HighlightGrid>
+            <TabGroup selectedIndex={PROFILE_TABS.indexOf(activeTab)} onChange={selectProfileTab} manual>
+              <UnifiedTabBar aria-label="Profilbereiche">
+                <UnifiedTabButton><Activity size={18} aria-hidden="true" />Aktivitäten</UnifiedTabButton>
+                <UnifiedTabButton><Trophy size={18} aria-hidden="true" />Erfolge<small>{awards.length}</small></UnifiedTabButton>
+                <UnifiedTabButton><ChartNoAxesCombined size={18} aria-hidden="true" />Statistiken</UnifiedTabButton>
+              </UnifiedTabBar>
+              <TabPanels>
+                <ProfileTabPanel>
+              <FeedArea>
+                <FeedHeading>
+                  <h2>{isOwnProfile ? 'Deine Aktivitäten' : 'Aktivitäten'}</h2>
+                  <FeedHeaderTools>
+                    <FeedFilterToggle
+                      type="button"
+                      onClick={() => setShowFeedFilters((current) => !current)}
+                      aria-expanded={showFeedFilters}
+                      aria-controls="profile-feed-filters"
+                    >
+                      <SlidersHorizontal size={16} aria-hidden="true" />
+                      Filter{activeProfileFeedFilterCount < 4 ? ` · ${activeProfileFeedFilterCount}/4` : ''}
+                    </FeedFilterToggle>
+                  </FeedHeaderTools>
+                </FeedHeading>
+                {showFeedFilters && (
+                  <FeedFilterPanel id="profile-feed-filters" aria-label="Aktivitätstypen filtern">
+                    <FeedFilterChip type="button" $active={profileFeedFilters.checkin} aria-pressed={profileFeedFilters.checkin} onClick={() => toggleProfileFeedFilter('checkin')}>Check-ins</FeedFilterChip>
+                    <FeedFilterChip type="button" $active={profileFeedFilters.bewertung} aria-pressed={profileFeedFilters.bewertung} onClick={() => toggleProfileFeedFilter('bewertung')}>Bewertungen</FeedFilterChip>
+                    <FeedFilterChip type="button" $active={profileFeedFilters.route} aria-pressed={profileFeedFilters.route} onClick={() => toggleProfileFeedFilter('route')}>Routen</FeedFilterChip>
+                    <FeedFilterChip type="button" $active={profileFeedFilters.eisdiele} aria-pressed={profileFeedFilters.eisdiele} onClick={() => toggleProfileFeedFilter('eisdiele')}>Eisdielen</FeedFilterChip>
+                  </FeedFilterPanel>
+                )}
+                {profileFeedLoading && visibleProfileActivities.length === 0 && (
+                  <EmptyState>Aktivitäten werden geladen…</EmptyState>
+                )}
+                {profileFeedError && visibleProfileActivities.length === 0 && (
+                  <EmptyState><strong>Die Aktivitäten konnten nicht geladen werden.</strong><p>Bitte versuche es noch einmal.</p><Button type="button" $secondary onClick={() => fetchProfileActivities(false)}>Erneut versuchen</Button></EmptyState>
+                )}
+                {!profileFeedLoading && !profileFeedError && visibleProfileActivities.length === 0 && (
+                  <EmptyState><strong>{groupedProfileActivities.length ? 'Keine Aktivitäten für diese Auswahl.' : isOwnProfile ? 'Dein nächster Eis-Moment wartet.' : 'Hier gibt es noch keine Aktivitäten.'}</strong><p>{groupedProfileActivities.length ? 'Wähle andere Filter, um mehr zu entdecken.' : 'Check-ins, Bewertungen, Routen und neue Eis-Orte erscheinen hier.'}</p>{groupedProfileActivities.length > 0 && <Button type="button" $secondary onClick={() => setProfileFeedFilters({ checkin: true, bewertung: true, route: true, eisdiele: true })}>Filter zurücksetzen</Button>}</EmptyState>
+                )}
+                <FeedList>
+                  {visibleProfileActivities.map((activity) => {
+                    const { typ, id, data: activityData } = activity;
+                    switch (typ) {
+                      case 'checkin':
+                        return <CheckinCard key={`checkin-${id}`} checkin={activityData} onSuccess={refreshUser} />;
+                      case 'group_checkin':
+                        return <GroupCheckinCard key={id} checkins={activityData} onSuccess={refreshUser} />;
+                      case 'bewertung':
+                        return <ReviewCard key={`bewertung-${id}`} review={activityData} onSuccess={refreshUser} />;
+                      case 'eisdiele':
+                        return <ShopCard key={`eisdiele-${id}`} iceShop={activityData} onSuccess={refreshUser} />;
+                      case 'route':
+                        return (
+                          <FocusedFeedItem
+                            key={`route-${id}`}
+                            ref={(element) => { routeRefs.current[id] = element; }}
+                            data-focused={String(id) === String(focusRouteId)}
+                          >
+                            <RouteCard
+                              route={activityData}
+                              shopId={activityData.eisdielen?.[0]?.id || activityData.eisdiele_id}
+                              shopName={activityData.eisdielen?.[0]?.name || activityData.eisdiele_name}
+                              onSuccess={refreshUser}
+                              showComments={String(id) === String(focusRouteId)}
+                              focusCommentId={String(id) === String(focusRouteId) ? focusCommentId : null}
+                            />
+                          </FocusedFeedItem>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </FeedList>
+                {profileFeedHasMore && !profileFeedLoadingMore && (
+                  <LoadMoreButton type="button" onClick={() => fetchProfileActivities(true)}>
+                    Mehr laden
+                  </LoadMoreButton>
+                )}
+                {profileFeedLoadingMore && <FeedLoadingMore>Weitere Aktivitäten werden geladen…</FeedLoadingMore>}
+                {profileFeedError && visibleProfileActivities.length > 0 && (
+                  <FeedLoadingMore $error>Weitere Aktivitäten konnten nicht geladen werden. <Button type="button" $secondary onClick={() => fetchProfileActivities(true)}>Erneut versuchen</Button></FeedLoadingMore>
+                )}
+              </FeedArea>
+                </ProfileTabPanel>
+                <ProfileTabPanel>
             <AwardsCard>
               <SectionHeader>
-                <h3>Awards</h3>
+                <h2>{isOwnProfile ? 'Deine Auszeichnungen' : 'Auszeichnungen'}</h2>
                 <span>{awards.length}</span>
               </SectionHeader>
               {displayedAwards.length ? (
-                <AwardsGrid ref={awardsGridRef}>
+                <AwardsGrid ref={setAwardsGridElement} role="list">
                   {displayedAwards.map((award, index) => {
                     const iconSources = getAwardIconSources(award?.icon_path, 512);
                     const epicTier = getActiveAwardEffectTier(award?.ep);
 
                     return (
-                      <AwardCard key={index}>
+                      <AwardCard key={index} role="listitem">
                         <EPBadge>{award.ep} EP <Sparkles size={16} style={{ marginLeft: 2, verticalAlign: 'bottom' }} /></EPBadge>
                         <AwardImageButton
                           $epicTier={epicTier}
@@ -890,13 +909,13 @@ function UserSite() {
                           onClick={() => setSelectedAward({
                             src: iconSources.src || '',
                             fallbackSrc: iconSources.fallbackSrc || '',
-                            title: award.title_de || 'Award',
+                            title: award.title_de || 'Auszeichnung',
                             description: award.description_de || '',
                             ep: award.ep ?? 0,
                             epicTier,
                             awardedAt: award.awarded_at || null,
                           })}
-                          aria-label={`Award ${award.title_de || ''} groß anzeigen`}
+                          aria-label={`Auszeichnung ${award.title_de || ''} groß anzeigen`}
                         >
                           <AwardImage
                             $epicTier={epicTier}
@@ -916,66 +935,27 @@ function UserSite() {
                   })}
                 </AwardsGrid>
               ) : (
-                <EmptyState>Keine Awards vorhanden.</EmptyState>
+                <EmptyState>Noch keine Auszeichnungen gesammelt.</EmptyState>
               )}
               {(displayedAwards.length < awards.length || awardPage > 1) && (
                 <AwardsFooterActions>
                   {displayedAwards.length < awards.length && (
-                    <LoadMoreButton onClick={loadMoreAwards}>Mehr Awards laden</LoadMoreButton>
+                    <LoadMoreButton onClick={loadMoreAwards}>Weitere Auszeichnungen</LoadMoreButton>
                   )}
                   {awardPage > 1 && (
                     <LoadMoreButton type="button" onClick={() => setAwardPage(1)}>
-                      Awards einklappen
+                      Weniger anzeigen
                     </LoadMoreButton>
                   )}
                 </AwardsFooterActions>
               )}
             </AwardsCard>
-            {isOwnProfile && (
-              <UnifiedTabBar>
-                <UnifiedTabButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>
-                  Aktivitäten
-                </UnifiedTabButton>
-                <UnifiedTabButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')}>
-                  Statistiken
-                </UnifiedTabButton>
-              </UnifiedTabBar>
-            )}
-            {selectedAward && typeof document !== 'undefined' && createPortal(
-              <AwardLightboxOverlay onClick={() => setSelectedAward(null)}>
-                <AwardLightboxCard onClick={(event) => event.stopPropagation()}>
-                  <AwardLightboxClose type="button" onClick={() => setSelectedAward(null)}>
-                    Schließen
-                  </AwardLightboxClose>
-                  <AwardLightboxImage
-                    $epicTier={selectedAward.epicTier || getActiveAwardEffectTier(selectedAward.ep)}
-                    src={selectedAward.src}
-                    data-fallback-src={selectedAward.fallbackSrc || ''}
-                    onError={handleAwardIconFallback}
-                    alt={selectedAward.title}
-                  />
-                  <AwardLightboxMeta>
-                    <AwardLightboxTitle>{selectedAward.title}</AwardLightboxTitle>
-                    <AwardLightboxDescription>
-                      {selectedAward.description || 'Keine Beschreibung vorhanden.'}
-                    </AwardLightboxDescription>
-                    <AwardLightboxFooter>
-                      <strong>{selectedAward.ep} EP</strong>
-                      {selectedAward.awardedAt ? (
-                        <span>Vergeben am {new Date(selectedAward.awardedAt).toLocaleDateString()}</span>
-                      ) : null}
-                    </AwardLightboxFooter>
-                  </AwardLightboxMeta>
-                </AwardLightboxCard>
-              </AwardLightboxOverlay>,
-              document.body
-            )}
-
-          {activeTab === 'stats' && (
+                </ProfileTabPanel>
+                <ProfileTabPanel>
           <StatsArea>
             <SectionHeader>
-              <h2>Deine Statistiken</h2>
-              <span>Ein Überblick über deine Eis-Abenteuer</span>
+              <h2>{isOwnProfile ? 'Deine Eis-Statistik' : 'Eis-Statistik'}</h2>
+              <span>Ein Überblick über die Eis-Abenteuer</span>
             </SectionHeader>
             {Number(viewerUserId) === 1 && epBreakdown && (
               <ContentGrid>
@@ -1063,12 +1043,10 @@ function UserSite() {
                           nameKey="anreise"
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={110}
+                          innerRadius="45%"
+                          outerRadius="75%"
                           paddingAngle={2}
-                          label={({ anreise, percent }) =>
-                            `${anreise} ${(percent * 100).toFixed(0)}%`
-                          }
+                          label={false}
                         >
                           {travelDistribution.map((entry, index) => (
                             <Cell key={`anreise-${entry.anreise}-${index}`} fill={entry.fill} />
@@ -1114,110 +1092,30 @@ function UserSite() {
               </ContentCard>
             </ContentGrid>
           </StatsArea>
-          )}
-
-            {activeTab !== 'stats' && (
-              <FeedArea>
-                <SectionHeader>
-                  <h2>Aktivitätsfeed</h2>
-                  <FeedHeaderTools>
-                    <span>Check-ins, Reviews, Routen & Eisdielen</span>
-                    <FeedFilterToggle
-                      type="button"
-                      onClick={() => setShowFeedFilters((current) => !current)}
-                      aria-expanded={showFeedFilters}
-                    >
-                      <SlidersHorizontal size={16} aria-hidden="true" />
-                      Filter{activeProfileFeedFilterCount < 4 ? ` · ${activeProfileFeedFilterCount}/4` : ''}
-                    </FeedFilterToggle>
-                  </FeedHeaderTools>
-                </SectionHeader>
-                {showFeedFilters && (
-                  <FeedFilterPanel aria-label="Aktivitätstypen filtern">
-                    <FeedFilterChip type="button" $active={profileFeedFilters.checkin} onClick={() => toggleProfileFeedFilter('checkin')}>Check-ins</FeedFilterChip>
-                    <FeedFilterChip type="button" $active={profileFeedFilters.bewertung} onClick={() => toggleProfileFeedFilter('bewertung')}>Reviews</FeedFilterChip>
-                    <FeedFilterChip type="button" $active={profileFeedFilters.route} onClick={() => toggleProfileFeedFilter('route')}>Routen</FeedFilterChip>
-                    <FeedFilterChip type="button" $active={profileFeedFilters.eisdiele} onClick={() => toggleProfileFeedFilter('eisdiele')}>Eisdielen</FeedFilterChip>
-                  </FeedFilterPanel>
-                )}
-                {profileFeedLoading && visibleProfileActivities.length === 0 && (
-                  <EmptyState>Aktivitäten werden geladen…</EmptyState>
-                )}
-                {profileFeedError && visibleProfileActivities.length === 0 && (
-                  <EmptyState>Der Aktivitätsfeed konnte nicht geladen werden.</EmptyState>
-                )}
-                {!profileFeedLoading && !profileFeedError && visibleProfileActivities.length === 0 && (
-                  <EmptyState>{groupedProfileActivities.length ? 'Keine Aktivitäten für diese Filterauswahl.' : 'Noch keine Aktivitäten vorhanden.'}</EmptyState>
-                )}
-                <FeedList>
-                  {visibleProfileActivities.map((activity) => {
-                    const { typ, id, data: activityData } = activity;
-                    switch (typ) {
-                      case 'checkin':
-                        return <CheckinCard key={`checkin-${id}`} checkin={activityData} onSuccess={refreshUser} />;
-                      case 'group_checkin':
-                        return <GroupCheckinCard key={id} checkins={activityData} onSuccess={refreshUser} />;
-                      case 'bewertung':
-                        return <ReviewCard key={`bewertung-${id}`} review={activityData} onSuccess={refreshUser} />;
-                      case 'eisdiele':
-                        return <ShopCard key={`eisdiele-${id}`} iceShop={activityData} onSuccess={refreshUser} />;
-                      case 'route':
-                        return (
-                          <FocusedFeedItem
-                            key={`route-${id}`}
-                            ref={(element) => { routeRefs.current[id] = element; }}
-                            data-focused={String(id) === String(focusRouteId)}
-                          >
-                            <RouteCard
-                              route={activityData}
-                              shopId={activityData.eisdielen?.[0]?.id || activityData.eisdiele_id}
-                              shopName={activityData.eisdielen?.[0]?.name || activityData.eisdiele_name}
-                              onSuccess={refreshUser}
-                              showComments={String(id) === String(focusRouteId)}
-                              focusCommentId={String(id) === String(focusRouteId) ? focusCommentId : null}
-                            />
-                          </FocusedFeedItem>
-                        );
-                      default:
-                        return null;
-                    }
-                  })}
-                </FeedList>
-                {profileFeedHasMore && !profileFeedLoadingMore && (
-                  <LoadMoreButton type="button" onClick={() => fetchProfileActivities(true)}>
-                    Mehr laden
-                  </LoadMoreButton>
-                )}
-                {profileFeedLoadingMore && <FeedLoadingMore>Weitere Aktivitäten werden geladen…</FeedLoadingMore>}
-                {profileFeedError && visibleProfileActivities.length > 0 && (
-                  <FeedLoadingMore $error>Weitere Aktivitäten konnten nicht geladen werden.</FeedLoadingMore>
-                )}
-              </FeedArea>
-            )}
+                </ProfileTabPanel>
+              </TabPanels>
+            </TabGroup>
         </DashboardWrapper>
       </WhiteBackground>
-      {listModal && (
-        <ModalOverlay>
-          <ModalCard>
-            <ModalHeader>
-              <h3>{listModal.title}</h3>
-              <CloseModalButton onClick={closeModal}>×</CloseModalButton>
-            </ModalHeader>
-            <ModalBody>
-              {renderModalContent()}
-            </ModalBody>
-          </ModalCard>
-        </ModalOverlay>
-      )}
-      {showAvatarModal && avatarUrl && (
-        <ModalOverlay onClick={() => setShowAvatarModal(false)}>
-          <AvatarModalContent onClick={e => e.stopPropagation()}>
-            <CloseAvatarModalButton onClick={() => setShowAvatarModal(false)}>×</CloseAvatarModalButton>
-            <LargeAvatarImg src={avatarUrl} alt={`Avatar von ${data.nutzername}`} />
-          </AvatarModalContent>
-        </ModalOverlay>
-      )}
-
+      <InviteFriendsModal open={Boolean(showInviteDialog && isOwnProfile)} onClose={() => setShowInviteDialog(false)} inviteCode={data.invite_code} />
+      <ChallengeDialog open={Boolean(listModal)} onClose={closeModal} title={listModal?.title || 'Übersicht'}>
+        {listModal && renderModalContent()}
+      </ChallengeDialog>
+      <ChallengeDialog open={Boolean(showAvatarModal && avatarUrl)} onClose={() => setShowAvatarModal(false)} title={`Profilbild von ${data.nutzername}`}>
+        <LargeAvatarImg src={avatarUrl || undefined} alt={`Avatar von ${data.nutzername}`} />
+      </ChallengeDialog>
+      <ChallengeDialog open={Boolean(selectedAward)} onClose={() => setSelectedAward(null)} title={selectedAward?.title || 'Auszeichnung'}>
+        {selectedAward && <>
+          <AwardLightboxImage $epicTier={selectedAward.epicTier || getActiveAwardEffectTier(selectedAward.ep)} src={selectedAward.src}
+            data-fallback-src={selectedAward.fallbackSrc || ''} onError={handleAwardIconFallback} alt={selectedAward.title} />
+          <AwardLightboxMeta>
+            <AwardLightboxDescription>{selectedAward.description || 'Keine Beschreibung vorhanden.'}</AwardLightboxDescription>
+            <AwardLightboxFooter><strong>{selectedAward.ep} EP</strong>
+              {selectedAward.awardedAt && <span>Vergeben am {new Date(selectedAward.awardedAt).toLocaleDateString('de-DE')}</span>}
+            </AwardLightboxFooter>
+          </AwardLightboxMeta>
+        </>}
+      </ChallengeDialog>
     </FullPage>
   );
 }
@@ -1225,12 +1123,7 @@ function UserSite() {
 export default UserSite;
 
 const FullPage = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, rgba(255, 218, 140, 0.34), transparent 42%),
-    linear-gradient(180deg, #fff9ef 0%, #fff4da 100%);
+  display: flex; flex-direction: column; min-height: 100dvh; background: #fff8ec;
 `;
 
 const WhiteBackground = styled.div`
@@ -1239,11 +1132,16 @@ const WhiteBackground = styled.div`
   flex: 1;
 `;
 
-const DashboardWrapper = styled.div`
-  width: min(96%, 1120px);
-  margin: 0 auto;
-  padding: 0.5rem 0rem 0.5rem;
-  box-sizing: border-box;
+const DashboardWrapper = styled.main`
+  width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px; color: #2f2100; box-sizing: border-box;
+  *, *::before, *::after { box-sizing: border-box; }
+  h1, h2, h3 { text-align: left; text-shadow: none; overflow-wrap: anywhere; }
+  button, summary { min-height: 44px; }
+  button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #835500; outline-offset: 3px; }
+  input, select, textarea { font-size: 16px; }
+  @media(prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media(max-width: 767px) { padding: 16px; }
+  @media(max-width: 359px) { padding: 12px; }
 `;
 
 const LoadingCard = styled.div`
@@ -1255,342 +1153,102 @@ const LoadingCard = styled.div`
   color: #2f2100;
 `;
 
-const ProfileHeader = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1rem 1.2rem;
-  background: rgba(255, 252, 243, 0.96);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem;
-
-  @media (max-width: 980px) {
-    grid-template-columns: 1fr;
-    justify-items: stretch;
-  }
+const ProfileHeader = styled.section`
+  display: grid; grid-template-columns: ${p => p.$hasSeries ? 'minmax(0, 1fr) 300px' : 'minmax(0, 1fr)'};
+  align-items: center; gap: 20px 32px; padding: 24px; background: #fffdf8;
+  border: 1px solid #eadfc9; border-radius: 20px; box-shadow: 0 4px 24px #2f210008;
+  @media(min-width: 768px) and (max-width: 1023px) { grid-template-columns: ${p => p.$hasSeries ? 'minmax(0, 1fr) 260px' : 'minmax(0, 1fr)'}; column-gap: 20px; }
+  @media(max-width: 767px) { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
 `;
 
 const ProfileIdentity = styled.div`
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.8rem 1rem;
-
-  @media (max-width: 640px) {
-    align-items: flex-start;
-  }
-
-  @media (max-width: 480px) {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    text-align: center;
-  }
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; min-width: 0;
+  @media(max-width: 359px) { gap: 12px; }
 `;
 
-const AvatarCircle = styled.div`
-  width: 128px;
-  height: 128px;
-  min-width: 128px;
-  aspect-ratio: 1 / 1;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #ffe2b5, #ffd08a);
-  border: 3px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 20px rgba(255, 181, 34, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #a05c00;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  @media (max-width: 640px) {
-    width: 104px;
-    height: 104px;
-    min-width: 104px;
-    font-size: 1.7rem;
-  }
-
-  @media (max-width: 480px) {
-    width: 88px;
-    height: 88px;
-    min-width: 88px;
-    font-size: 1.45rem;
-  }
-`;
-
-const SocialLinksRow = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  justify-content: flex-start;
-  
-  @media (max-width: 480px) {
-    justify-content: center;
-  }
+const AvatarCircle = styled.button`
+  width: 96px; height: 96px; flex-shrink: 0; padding: 0; border: 3px solid #fff;
+  border-radius: 50%; background: #ffe4b7; box-shadow: 0 3px 12px #a0650018;
+  display: grid; place-items: center; color: #8c5300; font: inherit; font-size: 32px; font-weight: 750;
+  overflow: hidden; cursor: zoom-in;
+  &:disabled { cursor: default; }
+  img { width: 100%; height: 100%; object-fit: cover; }
+  @media(max-width: 767px) { width: 80px; height: 80px; }
+  @media(max-width: 359px) { width: 60px; height: 60px; }
 `;
 
 const SocialLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.9);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  }
-  
-  img {
-    display: block;
-  }
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border-radius: 12px; background: #fff5df; border: 1px solid #eadfc9;
+  &:hover { background: #ffecc4; } img { display: block; }
 `;
 
 const ProfileInfo = styled.div`
-  flex: 1;
   min-width: 0;
-  width: 100%;
-
-  h1 {
-    margin: 0;
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.02;
-    color: #2f2100;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  @media (max-width: 480px) {
-    text-align: center;
-  }
+  h1 { margin: 4px 0 6px; font-size: clamp(24px, 3vw, 36px); line-height: 1.15; color: #2f2100; overflow-wrap: anywhere; }
+  @media(max-width: 359px) { h1 { font-size: 20px; } }
 `;
 
-const ProfileMainColumn = styled.div`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-`;
+const ProfileMainColumn = styled.div`min-width: 0; display: flex; flex-direction: column; gap: 16px; @media(max-width: 767px) { gap: 12px; }`;
 
 const LevelInlineCard = styled.div`
-  position: relative;
-  border: 1px solid rgba(47, 33, 0, 0.1);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 229, 0.84)),
-    radial-gradient(circle at 90% 15%, rgba(255, 203, 91, 0.24), transparent 48%);
-  padding: 0.5rem 0.65rem 0.55rem;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0.4rem;
-    top: 0.45rem;
-    bottom: 0.45rem;
-    width: 4px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, #ffb522, #ffd978);
-    opacity: 0.8;
-  }
-
-  > div {
-    margin: 0;
-    max-width: none;
-    background: transparent;
-    box-shadow: none;
-    padding: 0.15rem 0.15rem 0.15rem 0.65rem;
-  }
-
-  > div h2 {
-    margin: 0;
-    font-size: 1rem;
-    text-align: left;
-    color: #2f2100;
-    letter-spacing: 0.01em;
-  }
-
-  > div p {
-    margin: 0.2rem 0 0;
-    text-align: left;
-    color: #5b4520;
-    font-size: 0.92rem;
-    line-height: 1.35;
-  }
-
-  > div p:last-child {
-    font-size: 0.85rem;
-    color: #6b5121;
-  }
-
-  > div > div {
-    margin-top: 0.5rem;
-    height: 12px;
-    border-radius: 999px;
-    background: rgba(47, 33, 0, 0.12);
-  }
-
-  > div > div > div {
-    border-radius: 999px;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-  }
+  display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #fff6e3;
+  small { color: #756951; font-size: 13px; line-height: 1.4; }
+  progress { appearance: none; width: 100%; height: 8px; border: 0; border-radius: 99px; overflow: hidden; background: #eadfc9; accent-color: #efaa18; }
+  progress::-webkit-progress-bar { background: #eadfc9; border-radius: 99px; }
+  progress::-webkit-progress-value { background: #efaa18; border-radius: 99px; }
+  progress::-moz-progress-bar { background: #efaa18; border-radius: 99px; }
 `;
 
 const ProfileActions = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.55rem;
-
-  @media (max-width: 980px) {
-    justify-content: stretch;
-    flex-direction: column;
-    align-items: stretch;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  @media(max-width: 1023px) {
+    > button:not([data-invite-trigger]), > a { width: 44px; padding: 0; }
+    > button:not([data-invite-trigger]) span, > a span { display: none; }
   }
 `;
 
 const FavoriteSocialLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  color: #725000;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #fff0c7;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  }
-
-  &:focus-visible { outline: 3px solid rgba(31, 104, 220, 0.7); outline-offset: 2px; }
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid #e4d6ba; background: #fffdf8;
+  color: #5a421b; font-size: 14px; font-weight: 650; text-decoration: none;
+  &:hover { background: #fff3d9; }
 `;
 
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  grid-column: 1 / -1;
-`;
-
-const Chip = styled.span`
-  background: rgba(47, 33, 0, 0.04);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
-  color: #5b4520;
-`;
+const MetaRow = styled.p`margin: 0; color: #756951; font-size: 13px; line-height: 1.5;`;
 
 const SettingsButton = styled.button`
-  background: #ffb522;
-  color: #2f2100;
-  border: 1px solid rgba(255, 181, 34, 0.5);
-  border-radius: 999px;
-  padding: 0.65rem 1.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(255, 181, 34, 0.22);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  &:hover {
-    background: #ffc34a;
-    box-shadow: 0 8px 18px rgba(255, 181, 34, 0.28);
-  }
-
-  @media (max-width: 900px) {
-    width: 100%;
-  }
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid #e4d6ba; background: #fffdf8;
+  color: #5a421b; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer;
+  &:hover { background: #fff3d9; } svg { flex-shrink: 0; }
 `;
 
-const InviteCard = styled.div`
-  background: rgba(255, 247, 230, 0.94);
-  border: 1px solid rgba(255, 181, 34, 0.2);
-  box-shadow: 0 10px 24px rgba(28, 20, 0, 0.05);
-  padding: 1.5rem;
-  border-radius: 18px;
-  margin-top: 1.5rem;
-  color: #2f2100;
-
-  h3 {
-    margin: 0 0 0.75rem;
-    color: #2f2100;
-  }
+const InviteButton = styled(SettingsButton)`
+  background: #fff3d9; border-color: #e7c985; white-space: nowrap;
+  &:hover { background: #ffe9bb; }
+  @media(max-width: 359px) { padding: 10px 8px; font-size: 13px; }
 `;
 
-const UnifiedTabBar = styled.div`
-  display: flex;
-  gap: 0.2rem;
-  justify-content: center;
-  width: fit-content;
-  margin: 1.25rem auto 0.5rem;
-  padding: 0.3rem;
-  border: 1px solid rgba(47, 33, 0, 0.06);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.46);
-
-  @media (max-width: 520px) {
-    width: min(100%, 360px);
-  }
+const UnifiedTabBar = styled(TabList)`
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+  margin: 16px 0; padding: 4px; border-radius: 14px; border: 1px solid #eadfc9; background: #fffdf8;
 `;
 
-const UnifiedTabButton = styled.button`
-  border: 1px solid ${({ active }) => (active ? 'rgba(255, 181, 34, 0.55)' : 'transparent')};
-  background: ${({ active }) => (active ? '#ffb522' : 'transparent')};
-  color: ${({ active }) => (active ? '#2f2100' : '#5c4a25')};
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 0.45rem 0.95rem;
-  min-width: 120px;
-  min-height: 42px;
-  cursor: pointer;
-  text-align: center;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    background: ${({ active }) => (active ? '#ffbf3f' : 'rgba(255, 181, 34, 0.1)')};
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(255, 181, 34, 0.48);
-    outline-offset: 2px;
-  }
-
-  @media (max-width: 520px) {
-    min-width: 0;
-    flex: 1;
-    padding: 0.45rem 0.4rem;
-  }
+const UnifiedTabButton = styled(Tab)`
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 48px;
+  padding: 10px 8px; border: 0; border-radius: 10px; background: transparent; color: #756951;
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  &[data-selected] { background: #ffbe35; color: #2f2100; }
+  &:hover:not([data-selected]) { background: #fff3d9; }
+  small { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 99px; background: #2f210014; font-size: 11px; }
+  @media(max-width: 639px) { font-size: 13px; gap: 4px; svg { display: none; } }
+  @media(max-width: 359px) { small { display: none; } }
 `;
 
-const AwardsCard = styled.div`
-  margin-top: 2rem;
-  background: rgba(255, 252, 243, 0.94);
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
-  padding: 1rem;
+const AwardsCard = styled.section`
+  padding: clamp(16px, 2vw, 24px); background: #fffdf8; border: 1px solid #eadfc9; border-radius: 18px;
+  h2 { font-size: 21px; }
 `;
 
 const AwardsFooterActions = styled.div`
@@ -1639,28 +1297,10 @@ const FeedHeaderTools = styled.div`
 `;
 
 const FeedFilterToggle = styled.button`
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.65rem;
-  border: 1px solid rgba(255, 181, 34, 0.4);
-  border-radius: 10px;
-  background: rgba(255, 244, 217, 0.66);
-  color: #754500;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 800;
-  cursor: pointer;
-
-  &:hover {
-    background: rgba(255, 232, 178, 0.8);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgba(255, 181, 34, 0.44);
-    outline-offset: 2px;
-  }
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 10px 12px;
+  border: 1px solid #e4d6ba; border-radius: 12px; background: #fff5df; color: #5a421b;
+  font: inherit; font-size: 14px; font-weight: 650; cursor: pointer;
+  &:hover { background: #ffecc4; }
 `;
 
 const FeedFilterPanel = styled.div`
@@ -1675,72 +1315,26 @@ const FeedFilterPanel = styled.div`
 `;
 
 const FeedFilterChip = styled.button`
-  min-height: 36px;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.55)' : 'rgba(47, 33, 0, 0.1)')};
-  border-radius: 999px;
-  background: ${({ $active }) => ($active ? 'rgba(255, 181, 34, 0.18)' : 'rgba(255, 255, 255, 0.58)')};
-  color: ${({ $active }) => ($active ? '#754500' : '#68572f')};
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 800;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 3px solid rgba(255, 181, 34, 0.44);
-    outline-offset: 2px;
-  }
+  min-height: 44px; padding: 10px 12px; border: 1px solid ${p => p.$active ? '#edb449' : '#e4d6ba'};
+  border-radius: 10px; background: ${p => p.$active ? '#fff0c7' : '#fffdf8'}; color: #5a421b;
+  font: inherit; font-size: 14px; font-weight: 650; cursor: pointer;
 `;
 
 const StatsArea = styled.section`
-  margin-bottom: 2.5rem;
-  margin-top: 2rem;
+  min-width: 0; h2 { font-size: 21px; } > :last-child { margin-bottom: 0; }
 `;
 
 const HighlightGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-  margin-bottom: 2rem;
+  grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px; border-top: 1px solid #eadfc9; padding-top: 16px;
 `;
 
 const HighlightCard = styled.div`
-  background: rgba(255, 252, 243, 0.94);
-  border-radius: 16px;
-  padding: 1.2rem 1rem 1.1rem;
-  text-align: center;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  box-shadow: 0 8px 22px rgba(28, 20, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  h3 {
-    margin: 0.35rem 0 0;
-    color: #6b5327;
-    font-size: 0.95rem;
-    min-height: 1.35rem;
-    white-space: nowrap;
-  }
-
-  strong {
-    display: block;
-    font-size: 2rem;
-    margin-top: 0.5rem;
-    color: #2f2100;
-  }
-
-  small {
-    color: rgba(47, 33, 0, 0.55);
-  }
-
-  @media (max-width: 520px) {
-    h3 {
-      white-space: normal;
-      min-height: auto;
-    }
-  }
+  display: grid; justify-items: center; align-content: start; gap: 4px; text-align: center; min-width: 0;
+  + & { border-left: 1px solid #eadfc9; }
+  strong { font-size: 26px; line-height: 1.15; color: #2f2100; overflow-wrap: anywhere; }
+  h3 { margin: 0; font-size: 13px; font-weight: 500; color: #756951; text-align: center; }
+  @media(max-width: 639px) { > div { display: none; } strong { font-size: 23px; } }
 `;
 
 const StatIconWrap = styled.div`
@@ -1751,7 +1345,7 @@ const StatIconWrap = styled.div`
   align-items: center;
   justify-content: center;
   background: ${({ $tone }) =>
-    $tone === 'active'
+    $tone === 'frozen' ? '#dceeff' : $tone === 'active'
       ? 'rgba(34, 197, 94, 0.2)'
       : $tone === 'at_risk'
         ? 'rgba(248, 113, 113, 0.2)'
@@ -1759,7 +1353,7 @@ const StatIconWrap = styled.div`
           ? 'rgba(148, 163, 184, 0.25)'
           : 'rgba(255, 181, 34, 0.22)'};
   color: ${({ $tone }) =>
-    $tone === 'active'
+    $tone === 'frozen' ? '#176bba' : $tone === 'active'
       ? '#15803d'
       : $tone === 'at_risk'
         ? '#b91c1c'
@@ -1777,18 +1371,11 @@ const StatIconWrap = styled.div`
 `;
 
 const ContentGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-bottom: 16px;
 `;
 
 const ContentCard = styled.div`
-  background: rgba(255, 252, 243, 0.94);
-  border-radius: 18px;
-  padding: 1.5rem;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  box-shadow: 0 10px 28px rgba(28, 20, 0, 0.08);
+  min-width: 0; padding: clamp(16px, 2vw, 24px); background: #fffdf8; border: 1px solid #eadfc9; border-radius: 18px;
 `;
 
 const CardTitle = styled.h3`
@@ -1828,6 +1415,7 @@ const RankingList = styled.ul`
 `;
 
 const RankingItem = styled.li`
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1878,6 +1466,7 @@ const FlavorDetailList = styled.ul`
 `;
 
 const FlavorDetailEntry = styled.li`
+  min-height: 44px;
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
   background: rgba(255, 252, 243, 0.95);
@@ -1937,67 +1526,14 @@ const ListToggle = styled.button`
   }
 `;
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(24, 17, 0, 0.38);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-`;
-
-const ModalCard = styled.div`
-  background: rgba(255, 252, 243, 0.98);
-  border-radius: 18px;
-  max-width: 640px;
-  width: 100%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  box-shadow: 0 20px 60px rgba(28, 20, 0, 0.2);
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid rgba(47, 33, 0, 0.08);
-
-  h3 {
-    margin: 0;
-    color: #2f2100;
-  }
-`;
-
-const CloseModalButton = styled.button`
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  background: rgba(255, 255, 255, 0.6);
-  font-size: 1.5rem;
-  cursor: pointer;
-  line-height: 1;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  color: #5b4520;
-`;
-
-const ModalBody = styled.div`
-  padding: 1rem 1.5rem 1.5rem;
-  overflow-y: auto;
-`;
-
-const EmptyState = styled.p`
-  margin: 0.5rem 0 0;
-  color: rgba(47, 33, 0, 0.55);
+const EmptyState = styled.div`
+  margin: 8px 0 0; padding: 20px; border: 1px dashed #e4d6ba; border-radius: 14px; background: #fffaf0;
+  color: #756951; line-height: 1.5; strong { color: #5a421b; } p { margin: 8px 0 0; } button { margin-top: 12px; }
 `;
 
 const ChartWrapper = styled.div`
   width: 100%;
-  height: 260px;
+  height: 300px;
 `;
 
 const ActivityTabs = styled.div`
@@ -2007,6 +1543,7 @@ const ActivityTabs = styled.div`
 `;
 
 const ActivityTabButton = styled.button`
+  min-height: 44px;
   border: 1px solid ${(props) => (props.active ? 'rgba(255,181,34,0.45)' : 'rgba(47,33,0,0.08)')};
   border-radius: 999px;
   padding: 0.4rem 1rem;
@@ -2057,19 +1594,13 @@ const ActivityTable = styled.table`
 `;
 
 const ActivityRegionLink = styled(Link)`
-  color: #7a4a00;
-  font-weight: 700;
-  text-decoration: none;
-
-  &:hover,
-  &:focus-visible {
-    color: #4f3000;
-    text-decoration: underline;
-  }
+  display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; color: #7a4a00;
+  font-weight: 700; text-decoration: none; overflow-wrap: anywhere;
+  &:hover { text-decoration: underline; }
 `;
 
 const FeedArea = styled.section`
-  margin-top: 1.1rem;
+  min-width: 0; padding: clamp(16px, 2vw, 24px); background: #fffdf8; border: 1px solid #eadfc9; border-radius: 18px;
 `;
 
 const FeedList = styled.div`
@@ -2116,61 +1647,9 @@ const LoadMoreButton = styled.button`
   }
 `;
 
-const LinkContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  flex-wrap: wrap;
-`;
-
-const Input = styled.input`
-  flex: 1;
-  min-width: min(100%, 200px);
-  padding: 0.5rem;
-  border-radius: 10px;
-  border: 1px solid rgba(47, 33, 0, 0.14);
-  background: rgba(255,255,255,0.95);
-  font-family: monospace;
-`;
-
-const CopyButton = styled.button`
-  padding: 0.5rem 1rem;
-  background-color: #ffb522;
-  color: #2f2100;
-  border: 1px solid rgba(255, 181, 34, 0.45);
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 700;
-`;
-
-const Toast = styled.div`
-  margin-top: 1rem;
-  background-color: #4caf50;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
-  animation: fadeOut 2.5s ease forwards;
-
-  @keyframes fadeOut {
-    0%   { opacity: 1; }
-    80%  { opacity: 1; }
-    100% { opacity: 0; }
-  }
-`;
-
 const AwardsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-
-  @media (max-width: 520px) {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-  }
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 16px;
+  @media(max-width: 639px) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 `;
 
 const AWARD_SHIMMER_KEYFRAMES = `
@@ -2193,17 +1672,19 @@ const AwardCard = styled.div`
   background-color: rgba(255, 252, 243, 0.95);
   border-radius: 14px;
   border: 1px solid rgba(47, 33, 0, 0.08);
-  box-shadow: 0 8px 20px rgba(28, 20, 0, 0.06);
+  box-shadow: 0 2px 10px #2f210005;
   padding: 16px;
   text-align: center;
   position: relative;
   overflow: hidden;
+  @media(max-width: 639px) { padding: 10px; }
 `;
 
 const AwardImage = styled.img`
   width: 100%;
   max-width: 140px;
-  height: 140px;
+  height: auto;
+  aspect-ratio: 1;
   object-fit: contain;
   position: relative;
   z-index: 1;
@@ -2219,6 +1700,7 @@ const AwardImage = styled.img`
   `}
 
   ${AWARD_SHIMMER_KEYFRAMES}
+  @media(max-width: 639px) { max-width: 104px; }
 `;
 
 const AwardImageButton = styled.button`
@@ -2282,14 +1764,22 @@ const AwardImageButton = styled.button`
 `;
 
 const AwardTitle = styled.h3`
+  margin: 12px 0 6px;
+  font-size: 16px;
+  line-height: 1.35;
+  min-height: 2.7em;
   font-weight: 600;
   color: #2f2100;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  @media(max-width: 639px) { font-size: 15px; }
 `;
 
 const AwardDescription = styled.p`
   font-size: 0.875rem;
   color: rgba(47, 33, 0, 0.62);
-  margin-top: 4px;
+  margin: 0;
+  line-height: 1.45;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 `;
 
 const AwardDate = styled.span`
@@ -2300,38 +1790,8 @@ const AwardDate = styled.span`
 `;
 
 const EPBadge = styled.div`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: linear-gradient(135deg, #FFD700, #FFC107);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: bold;
-  padding: 4px 8px;
-  border-radius: 20px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  z-index: 4;
-`;
-
-const AwardLightboxOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 5000;
-  background: rgba(0, 0, 0, 0.72);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-`;
-
-const AwardLightboxCard = styled.div`
-  position: relative;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 0.9rem;
-  max-width: min(92vw, 760px);
-  max-height: 92vh;
-  overflow: auto;
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 99px;
+  background: #fff0c7; color: #704300; font-size: 12px; font-weight: 750; margin-bottom: 8px;
 `;
 
 const AwardLightboxImage = styled.img`
@@ -2358,27 +1818,9 @@ const AwardLightboxImage = styled.img`
   ${AWARD_SHIMMER_KEYFRAMES}
 `;
 
-const AwardLightboxClose = styled.button`
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 3;
-  border: none;
-  border-radius: 8px;
-  background: #111827;
-  color: #fff;
-  padding: 0.35rem 0.6rem;
-  cursor: pointer;
-`;
-
 const AwardLightboxMeta = styled.div`
   margin-top: 0.85rem;
   color: #2f2100;
-`;
-
-const AwardLightboxTitle = styled.h3`
-  margin: 0;
-  padding-right: 4.8rem;
 `;
 
 const AwardLightboxDescription = styled.p`
@@ -2396,43 +1838,36 @@ const AwardLightboxFooter = styled.div`
   font-size: 0.9rem;
 `;
 
-const AvatarModalContent = styled.div`
-  position: relative;
-  background: rgba(255, 252, 243, 0.98);
-  border-radius: 18px;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  padding: 2rem;
-  max-width: 420px;
-  width: 90vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-`;
-
 const LargeAvatarImg = styled.img`
+  display: block;
+  width: 100%;
   max-width: 340px;
+  height: auto;
   max-height: 70vh;
+  object-fit: contain;
+  margin: 0 auto;
   border-radius: 50%;
   box-shadow: 0 2px 16px rgba(0,0,0,0.10);
 `;
 
-const CloseAvatarModalButton = styled.button`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: rgba(255,255,255,0.8);
-  color: #5b4520;
-  border: 1px solid rgba(47, 33, 0, 0.08);
-  border-radius: 50%;
-  width: 2.2rem;
-  height: 2.2rem;
-  font-size: 1.5rem;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 2;
-  &:hover {
-    background: rgba(255, 181, 34, 0.12);
-  }
+
+const ProfileEyebrow = styled.p`margin: 0; color: #806d4e; font-size: 12px; font-weight: 650;`;
+
+const LevelHeading = styled.div`
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  strong { font-size: 15px; overflow-wrap: anywhere; } span { color: #756951; font-size: 12px; white-space: nowrap; }
+`;
+
+const ProfileSeries = styled.div`
+  min-width: 0; border-left: 1px solid #eadfc9; padding-left: 24px;
+  @media(min-width: 768px) and (max-width: 1023px) { padding-left: 16px; }
+  @media(max-width: 767px) { border-left: 0; border-top: 1px solid #eadfc9; padding-left: 0; padding-top: 16px; }
+`;
+
+const ProfileTabPanel = styled(TabPanel)`min-width: 0; &:focus-visible { outline: 3px solid #835500; outline-offset: 3px; border-radius: 14px; }`;
+
+const FeedHeading = styled(SectionHeader)`
+  align-items: center; h2 { font-size: 21px; }
+  > div { width: auto; flex-shrink: 0; }
+  @media(max-width: 620px) { flex-direction: row; align-items: center; }
 `;

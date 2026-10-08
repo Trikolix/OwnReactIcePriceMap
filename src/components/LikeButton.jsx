@@ -3,54 +3,38 @@ import styled from "styled-components";
 import { Heart } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import LikeUsersModal from "./LikeUsersModal";
+import { ActivitySocialButton, SHOP_COLORS } from "../styles/ShopUi";
 
 const LikeActions = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
-  margin-top: 0.65rem;
+  flex-shrink: 0;
+  gap: 0;
+  margin-top: ${({ $compact }) => ($compact ? "0" : "0.65rem")};
+  min-height: 44px;
 `;
 
-const HeartButton = styled.button.attrs({ type: "button" })`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: ${({ $hasLiked }) => ($hasLiked ? "#c43f4c" : "#8a5600")};
+const HeartButton = styled(ActivitySocialButton)`
+  justify-content: flex-end;
+  padding-right: 3px;
+  color: ${({ $hasLiked }) => ($hasLiked ? "#c43f4c" : SHOP_COLORS.muted)};
   cursor: ${({ $canLike }) => ($canLike ? "pointer" : "default")};
-  font-weight: 700;
-  padding: 0.3rem 0.1rem 0.3rem 0;
-  border-radius: 8px;
-  transition: color 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    color: ${({ $canLike, $hasLiked }) => ($canLike || $hasLiked ? "#c43f4c" : "#8a5600")};
-    transform: ${({ $canLike }) => ($canLike ? "translateY(-1px)" : "none")};
+  &:hover:not(:disabled) {
+    color: ${({ $hasLiked }) => ($hasLiked ? "#b43644" : SHOP_COLORS.text)};
   }
-
   svg {
     fill: ${({ $hasLiked }) => ($hasLiked ? "currentColor" : "none")};
     transition: fill 0.2s;
   }
 `;
 
-const CountButton = styled.button.attrs({ type: "button" })`
-  background: transparent;
-  border: none;
-  color: #8a5600;
-  cursor: pointer;
-  font-weight: 700;
-  padding: 0.3rem 0;
-  text-align: left;
-  border-radius: 8px;
-
-  &:hover {
-    text-decoration: underline;
-  }
+const CountButton = styled(ActivitySocialButton)`
+  justify-content: flex-start;
+  padding-left: 3px;
+  font-variant-numeric: tabular-nums;
 `;
 
-const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHasLiked = null }) => {
+const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHasLiked = null, compact = false }) => {
   const { isLoggedIn } = useUser();
   const hasInitialLikeState = initialLikesCount !== null && initialHasLiked !== null;
   const [likesCount, setLikesCount] = useState(() => Number(initialLikesCount ?? 0));
@@ -143,7 +127,7 @@ const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHas
 
   return (
     <>
-      <LikeActions>
+      <LikeActions $compact={compact}>
         <HeartButton
           onClick={handleLike}
           $hasLiked={hasLiked}
@@ -151,13 +135,11 @@ const LikeButton = ({ entityType, entityId, initialLikesCount = null, initialHas
           aria-label={hasLiked ? "Gefällt dir" : "Gefällt mir"}
           title={!isLoggedIn ? "Zum Liken einloggen" : hasLiked ? "Gefällt dir" : "Gefällt mir"}
         >
-          <Heart size={18} />
+          <Heart size={18} aria-hidden="true" />
         </HeartButton>
-        {likesCount > 0 && (
-          <CountButton onClick={handleCountClick} aria-label={`${likesCount} Likes anzeigen`}>
-            {likesCount}
-          </CountButton>
-        )}
+        <CountButton onClick={handleCountClick} disabled={likesCount === 0} aria-label={`${likesCount} Likes anzeigen`}>
+          {likesCount}
+        </CountButton>
       </LikeActions>
       <LikeUsersModal
         isOpen={showLikersModal}

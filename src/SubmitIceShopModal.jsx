@@ -1,10 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { Overlay, Modal, CloseButton, Heading, Input, Select, ButtonGroup, SubmitButton, Button, Message, LevelInfo } from './styles/SharedStyles';
 import LocationPicker from "./components/LocationPicker";
 import NewAwards from "./components/NewAwards";
 import OpeningHoursEditor from "./components/OpeningHoursEditor";
 import { createEmptyOpeningHours, hydrateOpeningHours } from "./utils/openingHours";
+import { getShopEditAccess, isValidShopPosition } from "./utils/shopEditing";
+import CreateIceShopWizard from "./components/CreateIceShopWizard";
+
+const PLACE_TYPE_GUIDANCE = {
+  ice_shop: {
+    title: 'Eisdiele',
+    description: 'Wähle diesen Typ für jeden dauerhaften Ort, an dem man Kugel- oder Softeis direkt kaufen kann.',
+  },
+  restaurant: {
+    title: 'Restaurant/Café mit Eisangebot',
+    description: 'Wähle diesen Typ, wenn kein Eis direkt verkauft wird, aber Eis als Dessert oder Eisspeise auf der Karte steht.',
+  },
+  temporary_stand: {
+    title: 'Temporärer Eisstand',
+    description: 'Wähle diesen Typ für mobile Verkaufsstände, die nur zeitweise vor Ort sind, zum Beispiel während eines Festes.',
+  },
+};
 
 const SubmitIceShopModal = ({
   showForm,
@@ -22,13 +39,22 @@ const SubmitIceShopModal = ({
   initialExternalSource = null,
   initialOpeningHoursStructured = null,
   initialOpeningHoursNote = "",
-  onSubmitSuccess = null
+  initialPlaceType = "ice_shop",
+  onSubmitSuccess = null,
+  autoCloseAfterSuccess = true
 }) => {
   const [name, setName] = useState(existingIceShop?.name || "");
   const [adresse, setAdresse] = useState(existingIceShop?.adresse || "");
   const [website, setWebsite] = useState(existingIceShop?.website || "");
-  const [latitude, setLatitude] = useState(existingIceShop?.latitude || "");
-  const [longitude, setLongitude] = useState(existingIceShop?.longitude || "");
+  const [latitude, setLatitude] = useState(existingIceShop?.latitude ?? "");
+  const [longitude, setLongitude] = useState(existingIceShop?.longitude ?? "");
+  const [isPositionEditing, setIsPositionEditing] = useState(false);
+  const [positionConfirmed, setPositionConfirmed] = useState(Boolean(existingIceShop));
+  const [positionBeforeEdit, setPositionBeforeEdit] = useState(null);
+  const [isGeocoding, setIsGeocoding] = useState(null);
+  const [now, setNow] = useState(Date.now);
+  const geocodingRequest = useRef(null);
+  const closeTimer = useRef(null);
   const [openingHoursData, setOpeningHoursData] = useState(() =>
     hydrateOpeningHours(existingIceShop?.openingHoursStructured, existingIceShop?.opening_hours_note || "")
   );
@@ -41,33 +67,88 @@ const SubmitIceShopModal = ({
   const [closingDate, setClosingDate] = useState(existingIceShop?.closing_date || "");
   const [selectedExternalSource, setSelectedExternalSource] = useState(initialExternalSource || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [placeType, setPlaceType] = useState(existingIceShop?.place_type || initialPlaceType || 'ice_shop');
+  const [temporaryDuration, setTemporaryDuration] = useState(existingIceShop?.place_type === 'temporary_stand' ? 'date' : 'today');
+  const [temporaryEndDate, setTemporaryEndDate] = useState(existingIceShop?.active_until ? String(existingIceShop.active_until).slice(0, 10) : '');
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const isEditMode = Boolean(existingIceShop);
-  const isAdmin = Number(userId) === 1;
-  const isOwner = isEditMode && Number(existingIceShop?.user_id) === Number(userId);
-  const createdAt = existingIceShop?.erstellt_am ? new Date(existingIceShop.erstellt_am) : null;
-  const createdAtMs = createdAt ? createdAt.getTime() : null;
-  const isRecentOwner = Boolean(
-    isOwner &&
-    createdAtMs &&
-    !Number.isNaN(createdAtMs) &&
-    (Date.now() - createdAtMs <= 6 * 60 * 60 * 1000)
-  );
+  const { isAdmin, isOwner, isRecentOwner, ownerEditUntil } = getShopEditAccess(existingIceShop, userId, now);
   const autoApproveChanges = isEditMode ? (isAdmin || isRecentOwner) : true;
-  const coordinatesLocked = isEditMode && !isAdmin;
+  const coordinatesLocked = isEditMode && !autoApproveChanges;
+  const hasValidPosition = isValidShopPosition(latitude, longitude);
+  const hasUserPosition = isValidShopPosition(userLatitude, userLongitude);
+  const mapLatitude = hasValidPosition ? Number(latitude) : hasUserPosition ? Number(userLatitude) : 50.83;
+  const mapLongitude = hasValidPosition ? Number(longitude) : hasUserPosition ? Number(userLongitude) : 12.92;
+  const positionBusy = Boolean(isGeocoding) || isSubmitting;
+  const placeTypeLabel = placeType === 'restaurant' ? 'Restaurant/Café' : placeType === 'temporary_stand' ? 'Temporärer Stand' : 'Eisdiele';
   const modalTitle = isEditMode
-    ? (autoApproveChanges ? "Eisdiele bearbeiten" : "Änderung vorschlagen")
-    : "Neue Eisdiele eintragen";
+    ? (autoApproveChanges ? `${placeTypeLabel} bearbeiten` : "Änderung vorschlagen")
+    : placeType === 'ice_shop' ? 'Neue Eisdiele eintragen' : `${placeTypeLabel} eintragen`;
   const submitLabel = isEditMode
     ? (autoApproveChanges ? "Aktualisieren" : "Vorschlag senden")
     : "Einreichen";
 
   const formatCoordinate = (value) => {
     const number = typeof value === 'number' ? value : Number(value);
-    if (Number.isNaN(number)) {
+    if (value === null || value === undefined || String(value).trim() === '' || !Number.isFinite(number)) {
       return '';
     }
     return number.toFixed(6);
+  };
+
+  useEffect(() => {
+    if (!showForm) return;
+    setMessage('');
+    setSubmitted(false);
+    setAwards([]);
+    setLevelUpInfo(null);
+    return () => clearTimeout(closeTimer.current);
+  }, [showForm]);
+
+  useEffect(() => {
+    setNow(Date.now());
+    if (!showForm || !isEditMode || !isOwner || !Number.isFinite(ownerEditUntil)) return;
+    const remaining = ownerEditUntil - Date.now();
+    if (remaining < 0 || remaining > 6 * 60 * 60 * 1000) return;
+    const timer = setTimeout(() => setNow(Date.now()), remaining + 1);
+    return () => clearTimeout(timer);
+  }, [showForm, isEditMode, isOwner, ownerEditUntil]);
+
+  useEffect(() => {
+    if (showForm) setIsGeocoding(null);
+    return () => geocodingRequest.current?.abort();
+  }, [showForm, existingIceShop]);
+
+  const changeLatitude = (value) => {
+    setLatitude(value);
+    setPositionConfirmed(false);
+  };
+  const changeLongitude = (value) => {
+    setLongitude(value);
+    setPositionConfirmed(false);
+  };
+
+  const startPositionEdit = () => {
+    setPositionBeforeEdit({ latitude, longitude, confirmed: positionConfirmed });
+    setPositionConfirmed(false);
+    setIsPositionEditing(true);
+  };
+
+  const cancelPositionEdit = () => {
+    if (positionBeforeEdit) {
+      setLatitude(positionBeforeEdit.latitude);
+      setLongitude(positionBeforeEdit.longitude);
+      setPositionConfirmed(positionBeforeEdit.confirmed);
+    }
+    setIsPositionEditing(false);
+    setPositionBeforeEdit(null);
+  };
+
+  const confirmPosition = () => {
+    if (!hasValidPosition) return;
+    setPositionConfirmed(true);
+    setIsPositionEditing(false);
+    setPositionBeforeEdit(null);
   };
 
   useEffect(() => {
@@ -77,19 +158,26 @@ const SubmitIceShopModal = ({
     setName(existingIceShop.name || "");
     setAdresse(existingIceShop.adresse || "");
     setWebsite(existingIceShop.website || "");
-    setLatitude(existingIceShop.latitude || "");
-    setLongitude(existingIceShop.longitude || "");
+    setLatitude(existingIceShop.latitude ?? "");
+    setLongitude(existingIceShop.longitude ?? "");
+    setPositionConfirmed(true);
+    setIsPositionEditing(false);
+    setPositionBeforeEdit(null);
+    setIsGeocoding(null);
     setStatus(existingIceShop.status || 'open');
     setReopeningDate(existingIceShop.reopening_date || '');
     setClosingDate(existingIceShop.closing_date || '');
     setSelectedExternalSource(null);
+    setPlaceType(existingIceShop.place_type || 'ice_shop');
+    setTemporaryDuration(existingIceShop.place_type === 'temporary_stand' ? 'date' : 'today');
+    setTemporaryEndDate(existingIceShop.active_until ? String(existingIceShop.active_until).slice(0, 10) : '');
     setOpeningHoursData(
       hydrateOpeningHours(
         existingIceShop?.openingHoursStructured,
         existingIceShop?.opening_hours_note || ""
       )
     );
-  }, [existingIceShop]);
+  }, [existingIceShop, showForm]);
 
   useEffect(() => {
     if (!showForm || existingIceShop) {
@@ -100,6 +188,10 @@ const SubmitIceShopModal = ({
     setWebsite(initialWebsite || "");
     setLatitude(initialLatitude === null ? "" : formatCoordinate(initialLatitude));
     setLongitude(initialLongitude === null ? "" : formatCoordinate(initialLongitude));
+    setPositionConfirmed(false);
+    setIsPositionEditing(false);
+    setPositionBeforeEdit(null);
+    setIsGeocoding(null);
     setOpeningHoursData(
       hydrateOpeningHours(initialOpeningHoursStructured, initialOpeningHoursNote || "")
     );
@@ -107,6 +199,9 @@ const SubmitIceShopModal = ({
     setReopeningDate('');
     setClosingDate('');
     setSelectedExternalSource(initialExternalSource || null);
+    setPlaceType(initialPlaceType || 'ice_shop');
+    setTemporaryDuration('today');
+    setTemporaryEndDate('');
   }, [
     showForm,
     existingIceShop,
@@ -118,10 +213,33 @@ const SubmitIceShopModal = ({
     initialExternalSource,
     initialOpeningHoursStructured,
     initialOpeningHoursNote,
+    initialPlaceType,
   ]);
+
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const resolveTemporaryEnd = () => {
+    const date = new Date();
+    if (temporaryDuration === 'tomorrow') date.setDate(date.getDate() + 1);
+    const datePart = temporaryDuration === 'date' ? temporaryEndDate : formatLocalDate(date);
+    return datePart ? `${datePart} 23:59:59` : null;
+  };
 
   const submit = async () => {
     if (isSubmitting) return;
+    if (!hasValidPosition) {
+      setMessage('Bitte wähle eine gültige Position aus der Adresse oder auf der Karte.');
+      return;
+    }
+    if (isGeocoding || (!coordinatesLocked && (isPositionEditing || !positionConfirmed))) {
+      setMessage('Bitte prüfe und bestätige zuerst die Position auf der Karte.');
+      return;
+    }
     setIsSubmitting(true);
     try {
       setAwards([]);
@@ -138,8 +256,18 @@ const SubmitIceShopModal = ({
         longitude: parseFloat(longitude),
         openingHoursStructured: openingHoursData,
         userId,
-        closing_date: closingDate || null
+        closing_date: closingDate || null,
+        place_type: placeType,
       };
+      if (placeType === 'temporary_stand') {
+        body.active_until = resolveTemporaryEnd();
+        if (!body.active_until) {
+          setMessage('Bitte wähle aus, wie lange der Stand sichtbar sein soll.');
+          return;
+        }
+      } else if (existingIceShop) {
+        body.active_until = null;
+      }
 
       if (!existingIceShop && selectedExternalSource) {
         body.external_source = selectedExternalSource;
@@ -161,14 +289,29 @@ const SubmitIceShopModal = ({
 
       const data = await response.json();
 
+      if (data.status === 'success' && existingIceShop && placeType !== (existingIceShop.place_type || 'ice_shop')) {
+        try {
+          const savedResponse = await fetch(`${apiUrl}/get_eisdiele.php?eisdiele_id=${existingIceShop.id}`, { cache: 'no-store' });
+          const savedData = await savedResponse.json();
+          if (!savedResponse.ok || !savedData?.eisdiele) throw new Error('Eintrag konnte nicht geprüft werden.');
+          if ((savedData.eisdiele.place_type || 'ice_shop') !== placeType) {
+            setMessage('Der neue Ortstyp wurde vom Server nicht übernommen. Bitte lade die Seite neu oder melde den Fehler dem Team.');
+            return;
+          }
+        } catch {
+          setMessage('Die Änderungen wurden gespeichert, der neue Ortstyp konnte aber nicht geprüft werden. Bitte lade die Seite neu.');
+          return;
+        }
+      }
+
       if (data.status === "success" || data.status === "pending") {
         const isPending = data.status === "pending";
         const maintenanceHint = data?.maintenance_task_resolved?.bonus_ep
           ? ` +${data.maintenance_task_resolved.bonus_ep} Pflege-EP`
           : "";
         const fallbackMessage = existingIceShop
-          ? (isPending ? "Änderungsvorschlag gespeichert – wir prüfen ihn zeitnah." : "Eisdiele erfolgreich aktualisiert!")
-          : "Eisdiele erfolgreich hinzugefügt!";
+          ? (isPending ? "Änderungsvorschlag gespeichert – wir prüfen ihn zeitnah." : `${placeTypeLabel} erfolgreich aktualisiert!`)
+          : `${placeTypeLabel} erfolgreich hinzugefügt!`;
         setMessage((data.message || fallbackMessage) + maintenanceHint);
         setSubmitted(true);
         if (!isPending && refreshShops) {
@@ -197,14 +340,14 @@ const SubmitIceShopModal = ({
             if (data.new_awards?.length > 0) {
               setAwards(data.new_awards);
             }
-          } else {
-            setTimeout(() => {
+          } else if (autoCloseAfterSuccess) {
+            closeTimer.current = setTimeout(() => {
               setMessage("");
               setShowForm(false);
             }, 2000);
           }
         } else {
-          setTimeout(() => {
+          closeTimer.current = setTimeout(() => {
             setMessage("");
             setShowForm(false);
           }, 2500);
@@ -223,33 +366,43 @@ const SubmitIceShopModal = ({
   };
 
   const handleGeocode = async () => {
-    if (!adresse || coordinatesLocked) return;
+    if (!adresse.trim() || coordinatesLocked || positionBusy) return;
+    const controller = new AbortController();
+    geocodingRequest.current = controller;
+    setIsGeocoding('forward');
+    setMessage('');
 
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(adresse)}`, { signal: controller.signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
-        setLatitude(parseFloat(lat));
-        setLongitude(parseFloat(lon));
+        if (!isValidShopPosition(lat, lon)) throw new Error('Ungültige Position');
+        changeLatitude(formatCoordinate(lat));
+        changeLongitude(formatCoordinate(lon));
+        setIsPositionEditing(false);
+        setPositionBeforeEdit(null);
       } else {
-        alert("Adresse konnte nicht gefunden werden.");
+        setMessage('Adresse konnte nicht gefunden werden. Du kannst die Position auf der Karte setzen.');
       }
     } catch (error) {
-      console.error("Geocoding Fehler:", error);
-    }
-  };
-  const handleAddressBlur = () => {
-    if (!latitude && !longitude) {
-      handleGeocode();
+      if (error.name !== 'AbortError') setMessage('Die Position konnte nicht ermittelt werden. Bitte versuche es erneut oder setze sie auf der Karte.');
+    } finally {
+      if (!controller.signal.aborted) setIsGeocoding(null);
     }
   };
 
   const handleReverseGeocode = async () => {
-    if (!latitude || !longitude) return;
+    if (!hasValidPosition || positionBusy) return;
+    const controller = new AbortController();
+    geocodingRequest.current = controller;
+    setIsGeocoding('reverse');
+    setMessage('');
 
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=de`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=de`, { signal: controller.signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       if (data?.address) {
         const address = data.address;
@@ -270,21 +423,48 @@ const SubmitIceShopModal = ({
         setMessage("Adresse konnte nicht aus der Position ermittelt werden.");
       }
     } catch (error) {
-      console.error("Reverse-Geocoding Fehler:", error);
-      setMessage("Reverse-Geocoding fehlgeschlagen.");
+      if (error.name !== 'AbortError') setMessage('Adresse konnte nicht aus der Position ermittelt werden.');
+    } finally {
+      if (!controller.signal.aborted) setIsGeocoding(null);
     }
   };
 
-  return showForm && (
+  if (!showForm) return null;
+
+  if (!isEditMode) {
+    return <CreateIceShopWizard
+      values={{ name, adresse, website, placeType, temporaryDuration, temporaryEndDate, openingHoursData }}
+      changes={{ setName, setAdresse: (value) => { setAdresse(value); setPositionConfirmed(false); },
+        setWebsite, setPlaceType, setTemporaryDuration, setTemporaryEndDate, setOpeningHoursData }}
+      position={{ latitude, longitude, mapLatitude, mapLongitude, hasValidPosition, isPositionEditing,
+        isGeocoding, busy: positionBusy, changeLatitude, changeLongitude, startPositionEdit,
+        cancelPositionEdit, confirmPosition, handleGeocode, handleReverseGeocode }}
+      selectedExternalSource={selectedExternalSource}
+      temporaryEnd={resolveTemporaryEnd()}
+      formatLocalDate={formatLocalDate}
+      message={message}
+      clearMessage={() => setMessage('')}
+      isSubmitting={isSubmitting}
+      submitted={submitted}
+      awards={awards}
+      levelUpInfo={levelUpInfo}
+      onSubmit={submit}
+      onClose={() => setShowForm(false)}
+    />;
+  }
+
+  return (
     <Overlay>
       <StyledModal>
         <CloseButton onClick={() => setShowForm(false)}>×</CloseButton>
         <Heading>{modalTitle}</Heading>
-        <IntroText>Trage die wichtigsten Infos zur Eisdiele ein. Position und Öffnungszeiten helfen anderen Nutzerinnen und Nutzern besonders.</IntroText>
+        <IntroText>Trage die wichtigsten Infos zu diesem öffentlichen Eis-Ort ein. Position und Öffnungszeiten helfen anderen Nutzerinnen und Nutzern besonders.</IntroText>
         {existingIceShop && (
           <InfoBanner $needsReview={!autoApproveChanges}>
             {autoApproveChanges
-              ? "Du kannst diese Eisdiele direkt bearbeiten."
+              ? (isRecentOwner && !isAdmin
+                ? `Du kannst deinen Eintrag einschließlich der Position noch bis ${new Date(ownerEditUntil).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr direkt bearbeiten (6 Stunden nach dem Eintragen).`
+                : "Du kannst diesen Eis-Ort direkt bearbeiten.")
               : "Dein Vorschlag wird erst nach Freigabe übernommen."}
           </InfoBanner>
         )}
@@ -292,6 +472,39 @@ const SubmitIceShopModal = ({
           e.preventDefault();
           submit();
         }}>
+          <SectionCard>
+              <Group>
+                <label htmlFor="shop-place-type">Welche Art von Eis-Ort ist das?</label>
+                <Select id="shop-place-type" value={placeType} onChange={(event) => setPlaceType(event.target.value)}>
+                  <option value="ice_shop">Eisdiele – Kugel- oder Softeis direkt kaufen</option>
+                  <option value="restaurant">Restaurant/Café – Eis nur als Dessert</option>
+                  <option value="temporary_stand">Temporärer Eisstand – nur zeitweise vor Ort</option>
+                </Select>
+                <PlaceTypeGuidance $type={placeType} role="note">
+                  <strong>{PLACE_TYPE_GUIDANCE[placeType].title}</strong>
+                  <span>{PLACE_TYPE_GUIDANCE[placeType].description}</span>
+                </PlaceTypeGuidance>
+              </Group>
+              {placeType === 'temporary_stand' && (
+                <Group>
+                  <label>Auf der Karte sichtbar:</label>
+                  <Select value={temporaryDuration} onChange={(event) => setTemporaryDuration(event.target.value)}>
+                    <option value="today">Nur heute</option>
+                    <option value="tomorrow">Bis morgen</option>
+                    <option value="date">Bis zu einem Datum</option>
+                  </Select>
+                  {temporaryDuration === 'date' && (
+                    <Input
+                      type="date"
+                      min={formatLocalDate(new Date())}
+                      value={temporaryEndDate}
+                      onChange={(event) => setTemporaryEndDate(event.target.value)}
+                      required
+                    />
+                  )}
+                </Group>
+              )}
+          </SectionCard>
           {!existingIceShop && selectedExternalSource && (
             <SectionCard>
               <SearchHeading>Discovery-Import</SearchHeading>
@@ -314,64 +527,109 @@ const SubmitIceShopModal = ({
 
           <Group>
             <label>Adresse:</label>
-            <Input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} onBlur={handleAddressBlur} />
+            <Input type="text" value={adresse} disabled={positionBusy} onChange={(e) => {
+              setAdresse(e.target.value);
+              if (!coordinatesLocked) setPositionConfirmed(false);
+            }} />
           </Group>
           </SectionCard>
 
           <SectionCard>
+          <SearchHeading>Position prüfen</SearchHeading>
+          <CoordinateNotice role="status">
+            {isPositionEditing && !coordinatesLocked
+              ? 'Tippe auf den richtigen Standort oder ziehe den Marker. Übernimm anschließend die Position.'
+              : hasValidPosition
+                ? 'Die Position ist gegen versehentliches Verschieben gesichert. Du kannst die Karte frei bewegen und zoomen.'
+                : 'Bestimme die Position aus der Adresse oder setze sie bewusst auf der Karte.'}
+          </CoordinateNotice>
           <LocationPicker
-            latitude={latitude || userLatitude || 50.83}
-            longitude={longitude || userLongitude || 12.92}
-            setLatitude={setLatitude}
-            setLongitude={setLongitude}
-            readOnly={coordinatesLocked}
+            latitude={mapLatitude}
+            longitude={mapLongitude}
+            setLatitude={changeLatitude}
+            setLongitude={changeLongitude}
+            readOnly={coordinatesLocked || !isPositionEditing || positionBusy}
+            showMarker={hasValidPosition}
           />
+          {!coordinatesLocked && <ButtonGroup>
+            {isPositionEditing ? <>
+              <Button type="button" onClick={confirmPosition} disabled={!hasValidPosition || positionBusy}>
+                Position übernehmen
+              </Button>
+              <UtilityButton type="button" onClick={cancelPositionEdit} disabled={positionBusy}>Abbrechen</UtilityButton>
+            </> : <Button type="button" onClick={startPositionEdit} disabled={positionBusy}>
+              {hasValidPosition ? 'Position ändern' : 'Position auf Karte setzen'}
+            </Button>}
+          </ButtonGroup>}
           <ButtonGroup>
             <UtilityButton
               type="button"
               onClick={handleGeocode}
-              disabled={coordinatesLocked}
+              disabled={coordinatesLocked || !adresse.trim() || positionBusy}
             >
-              Position aus Adresse bestimmen
+              {isGeocoding === 'forward' ? 'Position wird gesucht…' : 'Position aus Adresse bestimmen'}
             </UtilityButton>
             <UtilityButton
               type="button"
               onClick={handleReverseGeocode}
-              disabled={!latitude || !longitude}
+              disabled={!hasValidPosition || positionBusy || isPositionEditing}
             >
-              Adresse aus Position übernehmen
+              {isGeocoding === 'reverse' ? 'Adresse wird gesucht…' : 'Adresse aus Position übernehmen'}
             </UtilityButton>
           </ButtonGroup>
           {coordinatesLocked && (
             <CoordinateNotice>
-              Koordinaten können aktuell nur vom Administrator angepasst werden.
+              {isOwner
+                ? 'Das Zeitfenster von 6 Stunden für Positionskorrekturen ist abgelaufen. Die Position kann jetzt vom Administrator angepasst werden.'
+                : 'Die Position kann vom Eintragenden innerhalb von 6 Stunden nach dem Eintragen oder vom Administrator angepasst werden.'}
             </CoordinateNotice>
           )}
 
+          {!coordinatesLocked && !isPositionEditing && <PositionConfirmation>
+            <input
+              type="checkbox"
+              checked={positionConfirmed}
+              onChange={(event) => setPositionConfirmed(event.target.checked)}
+              disabled={!hasValidPosition || positionBusy}
+              required
+            />
+            <span>Ich habe geprüft, dass der Marker auf der Eisdiele liegt.</span>
+          </PositionConfirmation>}
+          {!isEditMode && <CoordinateNotice>Du kannst deine Position nach dem Eintragen noch 6 Stunden lang korrigieren.</CoordinateNotice>}
+
+          <details>
+          <summary>Koordinaten anzeigen / manuell eingeben</summary>
           <GroupInline>
             <Group>
-              <label>Latitude:</label>
+              <label htmlFor="shop-latitude">Breitengrad:</label>
               <CoordinateInput
+                id="shop-latitude"
                 type="number"
+                min="-90"
+                max="90"
                 step="0.000001"
                 value={latitude}
-                onChange={(e) => setLatitude(e.target.value)}
+                onChange={(e) => changeLatitude(e.target.value)}
                 required
-                disabled={coordinatesLocked}
+                disabled={coordinatesLocked || positionBusy}
               />
             </Group>
             <Group>
-              <label>Longitude:</label>
+              <label htmlFor="shop-longitude">Längengrad:</label>
               <CoordinateInput
+                id="shop-longitude"
                 type="number"
+                min="-180"
+                max="180"
                 step="0.000001"
                 value={longitude}
-                onChange={(e) => setLongitude(e.target.value)}
+                onChange={(e) => changeLongitude(e.target.value)}
                 required
-                disabled={coordinatesLocked}
+                disabled={coordinatesLocked || positionBusy}
               />
             </Group>
           </GroupInline>
+          </details>
           </SectionCard>
 
           <SectionCard>
@@ -408,11 +666,11 @@ const SubmitIceShopModal = ({
           )}
 
           <ButtonGroup>
-            <PrimarySubmit type="submit" disabled={isSubmitting}>{submitLabel}</PrimarySubmit>
+            <PrimarySubmit type="submit" disabled={positionBusy || (!coordinatesLocked && (isPositionEditing || !positionConfirmed))}>{submitLabel}</PrimarySubmit>
           </ButtonGroup>
         </form>)}
 
-  {message && <Message>{message}</Message>}
+  {message && <Message role="status">{message}</Message>}
         {levelUpInfo && (
           <LevelInfo>
             <h2>🎉 Level-Up!</h2>
@@ -468,6 +726,24 @@ const StyledModal = styled(Modal)`
   border: 1px solid rgba(47, 33, 0, 0.12);
   border-radius: 18px;
   box-shadow: 0 18px 36px rgba(28, 20, 0, 0.2);
+`;
+
+const PositionConfirmation = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.8rem 0;
+  color: #4f3800;
+  line-height: 1.4;
+  cursor: pointer;
+
+  input {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #b57600;
+  }
 `;
 
 const IntroText = styled.p`
@@ -564,6 +840,35 @@ const SectionCard = styled.div`
   border-radius: 14px;
   padding: 0.75rem;
   margin-bottom: 0.75rem;
+`;
+
+const PlaceTypeGuidance = styled.div`
+  display: grid;
+  gap: 0.18rem;
+  margin-top: 0.55rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid ${({ $type }) => $type === 'restaurant'
+    ? 'rgba(79, 70, 165, 0.18)'
+    : $type === 'temporary_stand'
+      ? 'rgba(36, 112, 58, 0.18)'
+      : 'rgba(176, 116, 0, 0.2)'};
+  border-radius: 10px;
+  background: ${({ $type }) => $type === 'restaurant'
+    ? 'rgba(238, 240, 255, 0.72)'
+    : $type === 'temporary_stand'
+      ? 'rgba(232, 248, 236, 0.72)'
+      : 'rgba(255, 239, 199, 0.72)'};
+  color: #3f3218;
+  line-height: 1.4;
+
+  strong {
+    font-size: 0.88rem;
+  }
+
+  span {
+    font-size: 0.82rem;
+    color: rgba(47, 33, 0, 0.72);
+  }
 `;
 
 const UtilityButton = styled(Button)`

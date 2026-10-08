@@ -101,7 +101,7 @@ export default function PushOptInOverlay() {
       }
 
       const promptState = readPromptState(userId);
-      if (promptState.dismissed) return;
+      if (promptState.dismissed || localStorage.getItem(`iceapp:web-push-disabled:${userId}`) === "1") return;
       if (promptState.remindAfter && Date.now() < Number(promptState.remindAfter)) return;
 
       try {
