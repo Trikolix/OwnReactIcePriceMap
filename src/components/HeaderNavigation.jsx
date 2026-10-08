@@ -139,8 +139,8 @@ export default function HeaderNavigation({
               <MenuButton type="button" onClick={onCheckin}><IceCreamCone size={18} aria-hidden="true" /><span>Eis einchecken</span></MenuButton>
               {isLoggedIn ? <>
                 {menuLink(`/user/${userId}`, 'Profil', UserRound)}
-                {menuLink('/kundenkarten', 'Meine Kundenkarten', ClipboardList)}
-                {menuLink('/betreiber', 'Meine Eisdielen', Store)}
+                {isAdmin && menuLink('/kundenkarten', 'Meine Kundenkarten', ClipboardList)}
+                {isAdmin && menuLink('/betreiber', 'Meine Eisdielen', Store)}
                 {menuLink('/ice-date', 'Eis-Dates', CalendarDays)}
                 {canMaintain && menuLink('/pflege', 'Pflegeboard', Wrench)}
                 <MenuButton type="button" onClick={onAddShop}><Store size={18} aria-hidden="true" /><span>Eisdiele hinzufügen</span></MenuButton>

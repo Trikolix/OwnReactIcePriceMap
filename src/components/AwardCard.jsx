@@ -128,7 +128,7 @@ const AwardCard = React.forwardRef(function AwardCard({ award, showComments = fa
                 setAreCommentsVisible((prev) => !prev);
               }}
             >
-              <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {award.commentCount || 0} Kommentar(e)
+              <MessageCircle size={18} /> {award.commentCount || 0} Kommentar(e)
             </CommentToggle>
           </ActionRow>
           {areCommentsVisible && (

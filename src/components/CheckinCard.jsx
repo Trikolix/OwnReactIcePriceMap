@@ -164,7 +164,7 @@ const CheckinCard = forwardRef(({ checkin, onSuccess, showComments = false, focu
             title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
             onClick={() => setAreCommentsVisible(!areCommentsVisible)}
           >
-            <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: 'text-bottom' }} /> {checkin.commentCount || 0} Kommentar(e)
+            <MessageCircle size={18} /> {checkin.commentCount || 0} Kommentar(e)
           </CommentToggle>
         </ActionRow>
         {areCommentsVisible && (
@@ -204,6 +204,7 @@ export default CheckinCard;
 
 
 const StyledContentWrapper = ActivityLayout;
+const ShareAction = CommentToggle;
 
 const MediaColumn = ActivityMedia;
 

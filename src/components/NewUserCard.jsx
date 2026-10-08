@@ -70,7 +70,7 @@ const NewUserCard = ({ user, showComments = false, focusCommentId = null }) => {
           title={areCommentsVisible ? "Kommentare ausblenden" : "Kommentare einblenden"}
           onClick={() => setAreCommentsVisible((prev) => !prev)}
         >
-          <MessageCircle size={18} style={{ marginRight: 2, verticalAlign: "text-bottom" }} /> {user.commentCount || 0} Kommentar(e)
+          <MessageCircle size={18} /> {user.commentCount || 0} Kommentar(e)
         </CommentToggle>
       </SocialActionRow>
       {areCommentsVisible && (

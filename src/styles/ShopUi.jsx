@@ -125,13 +125,27 @@ export const ActivitySocialActions = styled.div.attrs({ 'data-activity-social': 
   margin-top: 8px; border-top: 1px solid ${SHOP_COLORS.border};
   > div { margin-top: 0; }
 `;
-export const ActivityCommentButton = styled.button.attrs({ type: 'button' })`
+export const ActivitySocialButton = styled.button.attrs({ type: 'button' })`
+  box-sizing: border-box;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: 44px; min-width: 44px; padding: 8px 0; border: 0; border-radius: 8px;
-  background: transparent; color: #78560e; font: inherit; font-size: .85rem;
-  font-weight: 600; cursor: pointer;
-  &:hover { text-decoration: underline; }
+  flex-shrink: 0;
+  min-height: 44px; min-width: 44px; padding: 8px; border: 0; border-radius: 8px;
+  background: transparent; color: ${SHOP_COLORS.muted}; font: inherit; font-size: .85rem;
+  font-weight: 600; line-height: 1.4; text-decoration: none; cursor: pointer;
+  transition: color .15s ease, transform .15s ease;
+  svg { flex-shrink: 0; }
+  &:hover:not(:disabled) {
+    color: ${SHOP_COLORS.text};
+    transform: scale(1.04);
+  }
+  &:focus-visible { outline: 3px solid #986b0e; outline-offset: 3px; }
+  &:disabled { cursor: default; }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover { transform: none; }
+  }
 `;
+export const ActivityCommentButton = ActivitySocialButton;
 export const ActivityAvatarRow = styled.div`
   display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
 `;
