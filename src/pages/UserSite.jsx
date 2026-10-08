@@ -15,6 +15,8 @@ import { AvatarBadgeFrame, LevelBadge } from '../components/ProfileProgress';
 import StreakOverview from '../components/StreakOverview';
 import { Button, ChallengeDialog } from '../components/ChallengeUI';
 import UserSettings from './UserSettings';
+import OnboardingChecklist from '../components/OnboardingChecklist';
+import InviteFriendsModal from '../components/InviteFriendsModal';
 import SystemModal from '../components/SystemModal';
 import { notifyNotificationsChanged } from '../utils/systemMessages';
 import MentionInviteModal from '../components/MentionInviteModal';
@@ -37,8 +39,6 @@ function UserSite() {
   const finalUserId = userIdFromUrl || userIdFromContext;
   const progress = useStreakStatus(finalUserId, viewerUserId);
   const isOwnProfile = Boolean(finalUserId && viewerUserId && String(progress?.user_id ?? finalUserId) === String(viewerUserId));
-  const [showToast, setShowToast] = useState(false);
-  const [copyError, setCopyError] = useState(null);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -80,8 +80,6 @@ function UserSite() {
 
   useEffect(() => {
     setShowInviteDialog(false);
-    setShowToast(false);
-    setCopyError(null);
   }, [finalUserId]);
 
   useEffect(() => {
@@ -316,18 +314,6 @@ function UserSite() {
     fetchUserData(finalUserId);
     fetchProfileActivities();
   };
-  const copyToClipboard = async (text) => {
-    setCopyError(null);
-    try {
-      await navigator.clipboard.writeText(text);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-    } catch (err) {
-      setShowToast(false);
-      setCopyError('Der Link konnte nicht kopiert werden. Du kannst ihn im Feld auswählen und kopieren.');
-    }
-  };
-
   const awards = data?.user_awards || [];
   const awardsBatchSize = Math.max(awardColumns * 2, 1);
   const routeFocusParams = new URLSearchParams(location.search);
@@ -779,7 +765,7 @@ function UserSite() {
                     <SettingsButton type="button" aria-label="Profil bearbeiten" title="Profil bearbeiten" onClick={() => setShowSettings(true)}><Settings size={18} aria-hidden="true" /><span>Profil bearbeiten</span></SettingsButton>
                     <FavoriteSocialLink to="/favoriten" aria-label="Favoriten verwalten" title="Favoriten verwalten"><Heart size={18} aria-hidden="true" /><span>Favoriten</span></FavoriteSocialLink>
                     {data.invite_code && <InviteButton type="button" data-invite-trigger aria-haspopup="dialog" aria-expanded={showInviteDialog}
-                      onClick={() => { setShowToast(false); setCopyError(null); setShowInviteDialog(true); }}>
+                      onClick={() => setShowInviteDialog(true)}>
                       <UserPlus size={18} aria-hidden="true" /><span>Freunde einladen</span>
                     </InviteButton>}
                   </>}
@@ -804,6 +790,7 @@ function UserSite() {
                 <HighlightCard><StatIconWrap><IceCream size={16} aria-hidden="true" /></StatIconWrap><strong>{totalIcePortions}</strong><h3>Portionen Eis</h3></HighlightCard>
               </HighlightGrid>
             </ProfileHeader>
+            {isOwnProfile && <OnboardingChecklist onOpenAvatarSettings={() => setShowSettings(true)} />}
             {showSettings && (
               <UserSettings
                 onClose={() => setShowSettings(false)}
@@ -1110,18 +1097,7 @@ function UserSite() {
             </TabGroup>
         </DashboardWrapper>
       </WhiteBackground>
-      <ChallengeDialog compact open={Boolean(showInviteDialog && isOwnProfile && data.invite_code)} onClose={() => setShowInviteDialog(false)} title="Freunde einladen">
-        <InviteContent>
-          <p>Teile deinen Einladungslink und sammle zusätzliche EP, wenn deine Freunde mitmachen.</p>
-          <label htmlFor="profile-invite-link">Dein Einladungslink</label>
-          <LinkContainer>
-            <Input id="profile-invite-link" value={`https://ice-app.de/register/${data.invite_code || ''}`} readOnly onFocus={event => event.target.select()} />
-            <CopyButton type="button" onClick={() => copyToClipboard(`https://ice-app.de/register/${data.invite_code}`)}>Link kopieren</CopyButton>
-          </LinkContainer>
-          {showToast && <Toast role="status">Einladungslink kopiert.</Toast>}
-          {copyError && <CopyError role="alert">{copyError}</CopyError>}
-        </InviteContent>
-      </ChallengeDialog>
+      <InviteFriendsModal open={Boolean(showInviteDialog && isOwnProfile)} onClose={() => setShowInviteDialog(false)} inviteCode={data.invite_code} />
       <ChallengeDialog open={Boolean(listModal)} onClose={closeModal} title={listModal?.title || 'Übersicht'}>
         {listModal && renderModalContent()}
       </ChallengeDialog>
@@ -1671,17 +1647,6 @@ const LoadMoreButton = styled.button`
   }
 `;
 
-const LinkContainer = styled.div`display: flex; align-items: stretch; flex-wrap: wrap; gap: 8px; margin-top: 8px;`;
-
-const Input = styled.input`
-  flex: 1; min-width: min(100%, 200px); width: 100%; min-height: 44px; padding: 10px 12px;
-  border-radius: 10px; border: 1px solid #e4d6ba; background: #fff; font: inherit; font-size: 16px; color: #5a421b;
-`;
-
-const CopyButton = styled(Button)`flex-shrink: 0;`;
-
-const Toast = styled.p`margin: 12px 0 0 !important; color: #526a36 !important; font-weight: 650;`;
-
 const AwardsGrid = styled.div`
   display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 16px;
   @media(max-width: 639px) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1899,13 +1864,6 @@ const ProfileSeries = styled.div`
   @media(max-width: 767px) { border-left: 0; border-top: 1px solid #eadfc9; padding-left: 0; padding-top: 16px; }
 `;
 
-const InviteContent = styled.div`
-  p { color: #756951; margin: 0 0 16px; line-height: 1.5; }
-  label { font-size: 14px; font-weight: 650; }
-  input:focus-visible { outline: 3px solid #835500; outline-offset: 2px; }
-  @media(max-width: 639px) { ${CopyButton} { width: 100%; } }
-`;
-
 const ProfileTabPanel = styled(TabPanel)`min-width: 0; &:focus-visible { outline: 3px solid #835500; outline-offset: 3px; border-radius: 14px; }`;
 
 const FeedHeading = styled(SectionHeader)`
@@ -1913,5 +1871,3 @@ const FeedHeading = styled(SectionHeader)`
   > div { width: auto; flex-shrink: 0; }
   @media(max-width: 620px) { flex-direction: row; align-items: center; }
 `;
-
-const CopyError = styled.p`margin: 12px 0 0 !important; color: #8e3528 !important;`;

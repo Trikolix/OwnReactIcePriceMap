@@ -10,6 +10,8 @@ import LoginModal from './LoginModal';
 import SubmitIceShopModal from './SubmitIceShopModal';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import HeaderNavigation from './components/HeaderNavigation';
+import { usePwaInstall } from './hooks/usePwaInstall';
+import PwaInstallModal from './components/PwaInstallModal';
 import QrScanModal from "./components/QrScanModal";
 import NewAwards from './components/NewAwards';
 import { getResolvedSeasonalCampaigns } from './features/seasonal/campaigns';
@@ -35,6 +37,7 @@ const ACTIVE_PHOTO_CHALLENGE_STATUSES = new Set([
 ]);
 const Header = ({ refreshShops }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pwa = usePwaInstall();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { userId, username, currentLevel, isLoggedIn, userPosition, authToken, login, logout, setCurrentLevel } = useUser();
   const progress = useStreakStatus(isLoggedIn ? userId : null, userId, true);
@@ -87,6 +90,11 @@ const Header = ({ refreshShops }) => {
     window.addEventListener('iceapp:open-checkin', handle);
     return () => window.removeEventListener('iceapp:open-checkin', handle);
   }, [isLoggedIn]);
+  useEffect(() => {
+    const handle = () => { closeMenu(); setShowSubmitNewIceShop(true); };
+    window.addEventListener('iceapp:open-add-shop', handle);
+    return () => window.removeEventListener('iceapp:open-add-shop', handle);
+  }, []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -684,7 +692,10 @@ const Header = ({ refreshShops }) => {
         hasActivePhotoChallenge={hasActivePhotoChallenge}
         dashboardNewCount={dashboardNewCount}
         pendingShopChangeCount={pendingShopChangeCount}
+        canInstall={pwa.canInstall}
+        onInstall={() => { closeMenu(); pwa.installApp(); }}
       />
+      <PwaInstallModal open={pwa.showInstructions} onClose={() => pwa.setShowInstructions(false)} />
       {showLoginModal &&
         <LoginModal
           userId={userId}

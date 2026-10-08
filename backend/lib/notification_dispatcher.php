@@ -267,9 +267,11 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
             notify_like,
             notify_like_push,
             push_enabled_web,
-            push_enabled_android
+            push_enabled_android,
+            show_onboarding_checklist
         FROM user_notification_settings
         WHERE user_id = :user_id
+        ORDER BY id ASC
         LIMIT 1
     ");
     $stmt->execute(['user_id' => $userId]);
@@ -296,9 +298,51 @@ function fetchUserNotificationSettings(PDO $pdo, int $userId): array
         'notify_photo_challenge_push' => 1,
         'notify_mention' => 1,
         'notify_mention_push' => 1,
+        'notify_like' => 0,
+        'notify_like_push' => 1,
         'push_enabled_web' => 0,
         'push_enabled_android' => 0,
+        'show_onboarding_checklist' => 1,
     ];
+}
+
+function saveUserNotificationSettings(PDO $pdo, int $userId, array $changes): array
+{
+    ensureUserNotificationSettingsSchema($pdo);
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) $pdo->beginTransaction();
+    try {
+        // The existing schema has a non-unique user_id index. Serialize writes
+        // on the user row instead of relying on INSERT ... ON DUPLICATE KEY.
+        $lock = $pdo->prepare('SELECT id FROM nutzer WHERE id = ? FOR UPDATE');
+        $lock->execute([$userId]);
+        if (!$lock->fetchColumn()) throw new InvalidArgumentException('Nutzer wurde nicht gefunden.');
+        $settings = fetchUserNotificationSettings($pdo, $userId);
+        $changes = array_intersect_key($changes, $settings);
+        foreach ($changes as $key => $value) $changes[$key] = (int)((int)$value === 1);
+        $existing = $pdo->prepare('SELECT id FROM user_notification_settings WHERE user_id = ? LIMIT 1');
+        $existing->execute([$userId]);
+        if ($existing->fetchColumn()) {
+            if ($changes) {
+                $assignments = array_map(static fn($key) => "$key = ?", array_keys($changes));
+                // Update submitted fields in every existing row, including
+                // duplicates left by older writes, without changing other preferences.
+                $pdo->prepare('UPDATE user_notification_settings SET ' . implode(', ', $assignments)
+                    . ', updated_at = NOW() WHERE user_id = ?')->execute([...array_values($changes), $userId]);
+            }
+        } else {
+            $settings = array_replace($settings, $changes);
+            $pdo->prepare('INSERT INTO user_notification_settings (user_id, ' . implode(', ', array_keys($settings))
+                . ') VALUES (' . implode(', ', array_fill(0, count($settings) + 1, '?')) . ')')
+                ->execute([$userId, ...array_values($settings)]);
+        }
+        $saved = fetchUserNotificationSettings($pdo, $userId);
+        if ($ownsTransaction) $pdo->commit();
+        return $saved;
+    } catch (Throwable $error) {
+        if ($ownsTransaction && $pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
 }
 
 function isNotificationAllowedForUser(PDO $pdo, int $userId, string $notificationType, string $channel = 'push'): bool
@@ -502,7 +546,99 @@ function buildNotificationDeeplink(array $notification): ?string
     }
 }
 
-function buildPushPayload(array $notification): array
+function resolveNotificationIconUrl(?PDO $pdo, array $notification): string
+{
+    $defaultIcon = 'https://ice-app.de/favicon.ico';
+
+    if (!$pdo || ($notification['typ'] ?? '') === 'systemmeldung') {
+        return $defaultIcon;
+    }
+
+    $actorUserId = null;
+    $data = pushNormalizeJsonData($notification['zusatzdaten'] ?? null);
+
+    // 1. Direkte User-ID aus Zusatzdaten
+    if (!empty($data['actor_user_id'])) {
+        $actorUserId = (int)$data['actor_user_id'];
+    } elseif (!empty($data['by_user'])) {
+        $actorUserId = (int)$data['by_user'];
+    } elseif (!empty($data['source_user_id'])) {
+        $actorUserId = (int)$data['source_user_id'];
+    } elseif (!empty($data['liker_id'])) {
+        $actorUserId = (int)$data['liker_id'];
+    } elseif (!empty($data['byUserId'])) {
+        $actorUserId = (int)$data['byUserId'];
+    } elseif (!empty($data['sender_user_id'])) {
+        $actorUserId = (int)$data['sender_user_id'];
+    }
+
+    // 2. Ableiten anhand von Notification-Typ und Referenz-ID
+    if (!$actorUserId) {
+        $type = (string)($notification['typ'] ?? '');
+        $refId = (int)($notification['referenz_id'] ?? 0);
+
+        if ($type === 'like') {
+            $entityType = (string)($data['entity_type'] ?? '');
+            if ($entityType !== '' && $refId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT user_id FROM likes WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC LIMIT 1");
+                    $stmt->execute([$entityType, $refId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        } elseif (strpos($type, 'kommentar') === 0) {
+            $kommentarId = (int)($data['kommentar_id'] ?? $refId);
+            if ($kommentarId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT nutzer_id FROM kommentare WHERE id = ?");
+                    $stmt->execute([$kommentarId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        } elseif ($type === 'checkin_mention') {
+            $checkinId = (int)($data['checkin_id'] ?? $refId);
+            if ($checkinId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT nutzer_id FROM checkins WHERE id = ?");
+                    $stmt->execute([$checkinId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        } elseif ($type === 'mention') {
+            if (!empty($data['source_user_id'])) {
+                $actorUserId = (int)$data['source_user_id'];
+            }
+        } elseif ($type === 'ice_date') {
+            $dateId = (int)($data['ice_date_id'] ?? $refId);
+            if ($dateId > 0) {
+                try {
+                    $stmt = $pdo->prepare("SELECT creator_user_id FROM ice_dates WHERE id = ?");
+                    $stmt->execute([$dateId]);
+                    $actorUserId = (int)$stmt->fetchColumn() ?: null;
+                } catch (Exception $e) {}
+            }
+        }
+    }
+
+    // 3. Wenn User-ID ermittelt wurde, Profilbild aus user_profile_images laden
+    if ($actorUserId && $actorUserId > 0) {
+        try {
+            require_once __DIR__ . '/user_profile.php';
+            $avatarPath = getUserAvatarPath($pdo, $actorUserId);
+            if ($avatarPath && trim($avatarPath) !== '') {
+                $cleanPath = ltrim(trim($avatarPath), '/');
+                if (preg_match('/^https?:\/\//i', $cleanPath)) {
+                    return $cleanPath;
+                }
+                return rtrim(pushEnv('ICEAPP_ASSET_BASE_URL', 'https://ice-app.de/'), '/') . '/' . $cleanPath;
+            }
+        } catch (Exception $e) {}
+    }
+
+    return $defaultIcon;
+}
+
+function buildPushPayload(array $notification, ?PDO $pdo = null): array
 {
     $data = pushNormalizeJsonData($notification['zusatzdaten'] ?? null);
     if (($notification['typ'] ?? '') === 'systemmeldung') $data = [];
@@ -513,6 +649,8 @@ function buildPushPayload(array $notification): array
         'type' => (string)$notification['typ'],
         'title' => 'Ice App',
         'body' => (string)$notification['text'],
+        'icon' => resolveNotificationIconUrl($pdo, $notification),
+        'badge' => 'https://ice-app.de/favicon.ico',
         'deeplink' => $deeplink,
         'reference_id' => (int)$notification['referenz_id'],
         'tag' => 'notification-' . (int)$notification['id'],
@@ -545,7 +683,7 @@ function dispatchNotification(PDO $pdo, array $notificationRecord, array $contex
     }
 
     $settings = fetchUserNotificationSettings($pdo, $recipientId);
-    $payload = buildPushPayload($notificationRecord);
+    $payload = buildPushPayload($notificationRecord, $pdo);
 
     if ((int)$settings['push_enabled_web'] === 1) {
         queueAndSendWebPush($pdo, $recipientId, $notificationRecord, $payload);
@@ -662,7 +800,7 @@ function updatePushDeliveryPayload(PDO $pdo, int $deliveryId, array $payload, st
     return $payload;
 }
 
-function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $limit = 5): array
+function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $limit = 20): array
 {
     ensurePushInfrastructureSchema($pdo);
 
@@ -672,13 +810,17 @@ function fetchPendingWebPushPayloads(PDO $pdo, string $subscriptionToken, int $l
         JOIN benachrichtigungen b ON b.id=d.notification_id
         JOIN web_push_subscriptions ws ON ws.subscription_token=d.subscription_token AND ws.user_id=d.user_id AND ws.invalidated_at IS NULL
         LEFT JOIN systemmeldungen m ON b.typ='systemmeldung' AND m.id=b.referenz_id
-        LEFT JOIN user_notification_settings s ON s.user_id=d.user_id
+        LEFT JOIN user_notification_settings s ON s.id=(SELECT MIN(settings.id) FROM user_notification_settings settings WHERE settings.user_id=d.user_id)
         WHERE d.channel = 'web'
           AND d.subscription_token = :subscription_token
           AND d.status = 'pending'
+          AND s.push_enabled_web = 1
+          AND d.shown_at IS NULL
+          AND d.created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+          AND (d.pulled_at IS NULL OR d.pulled_at < DATE_SUB(NOW(), INTERVAL 2 MINUTE))
           AND (b.typ <> 'systemmeldung' OR (m.state='published' AND s.notify_news_push=1 AND s.push_enabled_web=1))
         ORDER BY d.created_at ASC,d.id ASC
-        LIMIT " . max(1, (int)$limit)
+        LIMIT " . max(1, min(50, $limit))
     );
     $stmt->execute(['subscription_token' => $subscriptionToken]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -710,7 +852,7 @@ function generateWebPushSubscriptionToken(): string
     return bin2hex(random_bytes(16));
 }
 
-function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?string $userAgent = null): array
+function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?string $userAgent = null, bool $activate = false): array
 {
     ensurePushInfrastructureSchema($pdo);
 
@@ -725,7 +867,7 @@ function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?
 
     $endpointHash = hash('sha256', $endpoint);
     $stmt = $pdo->prepare("
-        SELECT id, subscription_token
+        SELECT id, user_id, subscription_token, invalidated_at
         FROM web_push_subscriptions
         WHERE endpoint_hash = :endpoint_hash
         LIMIT 1
@@ -734,13 +876,18 @@ function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
-        $subscriptionToken = (string)$existing['subscription_token'];
+        if (!$activate && ($existing['invalidated_at'] !== null || (int)$existing['user_id'] !== $userId)) {
+            throw new DomainException('Dieses Gerät muss erneut ausdrücklich aktiviert werden.');
+        }
+        $subscriptionToken = (int)$existing['user_id'] === $userId
+            ? (string)$existing['subscription_token'] : generateWebPushSubscriptionToken();
         $update = $pdo->prepare("
             UPDATE web_push_subscriptions
             SET user_id = :user_id,
                 endpoint = :endpoint,
                 p256dh = :p256dh,
                 auth = :auth,
+                subscription_token = :subscription_token,
                 user_agent = :user_agent,
                 invalidated_at = NULL,
                 updated_at = NOW()
@@ -751,6 +898,7 @@ function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?
             'endpoint' => $endpoint,
             'p256dh' => $p256dh,
             'auth' => $auth,
+            'subscription_token' => $subscriptionToken,
             'user_agent' => $userAgent,
             'id' => (int)$existing['id'],
         ]);
@@ -792,11 +940,27 @@ function upsertWebPushSubscription(PDO $pdo, int $userId, array $subscription, ?
     ];
 }
 
-function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint = null): void
+function renewWebPushSubscription(PDO $pdo, array $previous, array $subscription, ?string $userAgent): array
+{
+    $endpoint = trim((string)($subscription['endpoint'] ?? ''));
+    $p256dh = trim((string)($subscription['keys']['p256dh'] ?? ''));
+    $auth = trim((string)($subscription['keys']['auth'] ?? ''));
+    if ($endpoint === '' || $p256dh === '' || $auth === '') {
+        throw new InvalidArgumentException('Ungültige Web-Push-Subscription.');
+    }
+    // Preserve the device ID and delivery token so revocation and queued messages
+    // keep referring to this device when its browser endpoint changes.
+    $pdo->prepare('UPDATE web_push_subscriptions SET endpoint = ?, endpoint_hash = ?, p256dh = ?, auth = ?,
+        user_agent = ?, updated_at = NOW() WHERE id = ? AND user_id = ? AND invalidated_at IS NULL')
+        ->execute([$endpoint, hash('sha256', $endpoint), $p256dh, $auth, $userAgent, $previous['id'], $previous['user_id']]);
+    return ['endpoint' => $endpoint, 'subscription_token' => $previous['subscription_token']];
+}
+
+function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint = null, bool $allDevices = false): void
 {
     ensurePushInfrastructureSchema($pdo);
 
-    if ($endpoint) {
+    if ($endpoint && !$allDevices) {
         $stmt = $pdo->prepare("
             UPDATE web_push_subscriptions
             SET invalidated_at = NOW(), updated_at = NOW()
@@ -811,6 +975,8 @@ function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint 
         return;
     }
 
+    if (!$allDevices) return;
+
     $stmt = $pdo->prepare("
         UPDATE web_push_subscriptions
         SET invalidated_at = NOW(), updated_at = NOW()
@@ -818,6 +984,21 @@ function invalidateWebPushSubscription(PDO $pdo, int $userId, ?string $endpoint 
           AND invalidated_at IS NULL
     ");
     $stmt->execute(['user_id' => $userId]);
+}
+
+function fetchUserWebPushDevices(PDO $pdo, int $userId, ?string $endpoint = null): array
+{
+    ensurePushInfrastructureSchema($pdo);
+    $stmt = $pdo->prepare("SELECT id, endpoint_hash, user_agent, created_at, updated_at, last_success_at, last_failure_at
+        FROM web_push_subscriptions WHERE user_id = ? AND invalidated_at IS NULL ORDER BY updated_at DESC");
+    $stmt->execute([$userId]);
+    $hash = $endpoint ? hash('sha256', $endpoint) : null;
+    return array_map(static function (array $device) use ($hash): array {
+        $device['id'] = (int)$device['id'];
+        $device['is_current'] = $hash !== null && hash_equals($device['endpoint_hash'], $hash);
+        unset($device['endpoint_hash']);
+        return $device;
+    }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function upsertMobilePushDevice(PDO $pdo, int $userId, string $platform, string $provider, string $deviceToken, ?string $appVersion = null): void
@@ -1180,6 +1361,9 @@ function sendAndroidPushDelivery(PDO $pdo, array $device, array $payload, int $d
         'notification' => ['title' => (string)($payload['title'] ?? 'Ice App'), 'body' => (string)($payload['body'] ?? '')],
         'data' => flattenPushPayloadForFcm($payload),
         'android' => ['priority' => 'HIGH', 'notification' => ['channel_id' => 'ice_app_notifications', 'click_action' => 'FCM_PLUGIN_ACTIVITY']]]];
+    if (!empty($payload['icon']) && ($payload['type'] ?? '') !== 'systemmeldung') {
+        $body['message']['notification']['image'] = $payload['icon'];
+    }
     $encoded = pushJsonEncode($body);
     if (strlen($encoded) > 4096) {
         markPushDeliveryFailed($pdo, $deliveryId, 'FCM payload exceeds 4096 bytes.');

@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   Activity, Award, BarChart3, Bell, Bike, CalendarDays, Camera, ClipboardList,
   IceCreamCone, Info, Instagram, LogIn, LogOut, Map, Megaphone,
-  Menu as MenuIcon, Route, Store, Sun, Target, Trophy, UserRound, Wrench, X,
+  Menu as MenuIcon, Route, Smartphone, Store, Sun, Target, Trophy, UserRound, Wrench, X,
 } from 'lucide-react';
 import styled, { css } from 'styled-components';
 import NotificationBell from './NotificationBell';
@@ -13,7 +13,7 @@ import { AvatarBadgeFrame, LevelBadge, StreakFlames } from './ProfileProgress';
 export default function HeaderNavigation({
   logo, promoIcon, userId, username, isLoggedIn, currentLevel, avatarSrc, progress,
   menuOpen, onMenuChange, notificationsOpen, onNotificationsChange,
-  onCheckin, checkinOpen, onLogin, onAddShop, onLogout,
+  onCheckin, checkinOpen, onLogin, onAddShop, onLogout, canInstall, onInstall,
   actionCount, hasActivePhotoChallenge, dashboardNewCount, pendingShopChangeCount = 0,
 }) {
   const headerRef = useRef(null);
@@ -139,6 +139,7 @@ export default function HeaderNavigation({
               <MenuButton type="button" onClick={onCheckin}><IceCreamCone size={18} aria-hidden="true" /><span>Eis einchecken</span></MenuButton>
               {isLoggedIn ? <>
                 {menuLink(`/user/${userId}`, 'Profil', UserRound)}
+                {menuLink(`/user/${userId}?onboarding=1`, 'Dein Ice-App Einstieg', ClipboardList)}
                 {isAdmin && menuLink('/kundenkarten', 'Meine Kundenkarten', ClipboardList)}
                 {isAdmin && menuLink('/betreiber', 'Meine Eisdielen', Store)}
                 {menuLink('/ice-date', 'Eis-Dates', CalendarDays)}
@@ -167,6 +168,9 @@ export default function HeaderNavigation({
                 {menuLink('/shop-change-requests', 'Änderungsvorschläge', ClipboardList, pendingShopChangeCount > 0
                   ? <span aria-label={`${pendingShopChangeCount} offene Änderungsvorschläge`}>{badgeCount(pendingShopChangeCount)} offen</span> : null)}
               </>}
+            </Section>}
+            {canInstall && <Section aria-labelledby="menu-install"><SectionTitle id="menu-install">Auf deinem Gerät</SectionTitle>
+              <MenuButton type="button" onClick={onInstall}><Smartphone size={18} aria-hidden="true" /><span>Ice-App installieren</span></MenuButton>
             </Section>}
             <Section aria-labelledby="menu-info"><SectionTitle id="menu-info">Informationen</SectionTitle>
               {menuLink('/impressum', 'Über diese Website', Info)}

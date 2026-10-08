@@ -12,6 +12,7 @@ import AwardCard from '../components/AwardCard';
 import AwardBundleCard from '../components/AwardBundleCard';
 import AwardWaveCard from '../components/AwardWaveCard';
 import NewUserCard from '../components/NewUserCard';
+import OnboardingChecklist from '../components/OnboardingChecklist';
 import { useUser } from '../context/UserContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -418,6 +419,7 @@ function DashBoard() {
             Neue Check-ins, Bewertungen, Routen, Awards und jetzt auch frisch registrierte Nutzer in einem Feed.
           </Subtitle>
         </PageHeader>
+        <OnboardingChecklist />
 
         {showActionNudge && (
           <ActionNudge>
