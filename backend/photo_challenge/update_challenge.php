@@ -81,9 +81,6 @@ try {
             throw new RuntimeException('Die Teilnehmerzahl für die KO-Phase muss eine gerade Zahl sein.');
         }
     }
-    if ($startAt && $submissionDeadline && strtotime($submissionDeadline) <= strtotime($startAt)) {
-        throw new RuntimeException('Die Einreichdeadline muss nach dem Startzeitpunkt liegen.');
-    }
     if ($minImageCreatedAt && $submissionDeadline && strtotime($minImageCreatedAt) > strtotime($submissionDeadline)) {
         throw new RuntimeException('Das Mindestdatum für Bilder darf nicht nach der Einreichdeadline liegen.');
     }
