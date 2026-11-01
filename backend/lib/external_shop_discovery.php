@@ -64,7 +64,7 @@ function externalShopTableHasColumn(PDO $pdo, string $table, string $column): bo
 
 function ensureExternalShopDiscoverySchema(PDO $pdo): void
 {
-    if (isset($GLOBALS['__external_shop_discovery_schema_initialized'])) {
+    if (isset($GLOBALS['__external_shop_discovery_schema_initialized']) || $pdo->inTransaction()) {
         return;
     }
     $GLOBALS['__external_shop_discovery_schema_initialized'] = true;

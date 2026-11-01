@@ -107,7 +107,7 @@ function iceDateCancel(PDO $pdo, int $userId, int $dateId): void
 
 function ensureIceDateSchema(PDO $pdo): void
 {
-    if (isset($GLOBALS['__ice_date_schema_initialized'])) {
+    if (isset($GLOBALS['__ice_date_schema_initialized']) || $pdo->inTransaction()) {
         return;
     }
 

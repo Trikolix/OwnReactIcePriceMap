@@ -20,7 +20,7 @@ function teamChallengeEnsureColumn(PDO $pdo, string $table, string $column, stri
 
 function ensureTeamChallengeSchema(PDO $pdo): void
 {
-    if (isset($GLOBALS['__team_challenge_schema_initialized'])) {
+    if (isset($GLOBALS['__team_challenge_schema_initialized']) || $pdo->inTransaction()) {
         return;
     }
     $GLOBALS['__team_challenge_schema_initialized'] = true;

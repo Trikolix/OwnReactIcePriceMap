@@ -3,6 +3,7 @@ require_once __DIR__ . '/../lib/streaks.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../db_connect.php';
 require_once __DIR__ . '/../lib/notification_dispatcher.php';
+require_once __DIR__ . '/../lib/user_profile.php';
 require_once __DIR__ . '/../lib/levelsystem.php';
 require_once __DIR__ . '/../lib/image_upload.php';
 require_once __DIR__ . '/../lib/checkin_grouping.php';
@@ -55,6 +56,8 @@ require_once __DIR__ . '/../evaluators/Event2026CompletionEvaluator.php';
 require_once __DIR__ . '/../evaluators/TourDeGlaceAwardEvaluator.php';
 
 // Preflight OPTIONS-Request
+ob_start();
+header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -101,13 +104,22 @@ function validateRatingRange($val, $fieldName) {
 // an den Client. Optional kann eine Exception übergeben werden, deren
 // Nachricht ins Log geschrieben wird.
 function respondWithError($message, $httpCode = 400, $exception = null) {
+    if (ob_get_length()) {
+        $stray = trim((string)ob_get_clean());
+        if ($stray !== '') {
+            error_log("checkin_upload stray output before error: " . $stray);
+        }
+    }
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
     http_response_code($httpCode);
     if ($exception) {
         error_log("Fehler: $message | Exception: " . $exception->getMessage());
     } else {
         error_log("Fehler: $message");
     }
-    echo json_encode(['status' => 'error', 'message' => $message, 'error' => $message]);
+    echo json_encode(['status' => 'error', 'message' => $message, 'error' => $message], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -119,7 +131,7 @@ function logProfiling($userId, $shopId, $profiling, $evaluatorTimings) {
         'profiling'  => $profiling,
         'evaluators' => $evaluatorTimings
     ];
-    file_put_contents(
+    @file_put_contents(
         __DIR__ . '/../logs/profiling.log',
         json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL,
         FILE_APPEND
@@ -290,7 +302,7 @@ try {
                 'checkin_',
                 $_POST['beschreibungen'] ?? []
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             respondWithError($e->getMessage());
         }
     }
@@ -299,13 +311,17 @@ try {
 
     // Schema-Checks koennen implizite Commits ausloesen (z. B. ALTER TABLE).
     // Deshalb muessen sie vor der eigentlichen Checkin-Transaktion laufen.
+    ensureAwardShownAtColumn($pdo);
+    ensureUserProfileTable($pdo);
     ensureTeamChallengeSchema($pdo);
     ensureIceDateSchema($pdo);
     ensureUserNotificationSettingsSchema($pdo);
     ensurePushInfrastructureSchema($pdo);
     ensureExternalShopDiscoverySchema($pdo);
     try {
-        ensureTourDeGlaceTables($pdo);
+        if (isTourDeGlacePointCollectionActive((int)$userId)) {
+            ensureTourDeGlaceTables($pdo);
+        }
     } catch (Throwable $e) {
         error_log('Tour de Glace schema init failed: ' . $e->getMessage());
     }
@@ -316,10 +332,118 @@ try {
     // Wir führen mehrere DB-Operationen (insert checkins, bilder, mentions,
     // sorten, evaluators -> award inserts) durch. Damit diese atomar sind
     // beginnen wir eine Transaktion. Bei Fehlern wird zurückgerollt.
+    $explicitDatumProvided = !empty($datum);
     $pdo->beginTransaction();
     $streakClock = streakNow();
     $datum = $datum ?: $streakClock->format('Y-m-d H:i:s');
     $streakEvents = streakReconcile($pdo, (int)$userId, $streakClock);
+
+    // -------------------------
+    // Duplikat-Schutz (Idempotenz bei Netzwerkabbrüchen / erneutem Absenden):
+    // Durch streakReconcile() ist die nutzer-Zeile bereits per FOR UPDATE gesperrt.
+    // Falls derselbe Nutzer in den letzten 180 Sekunden bereits denselben Check-in
+    // (gleicher Ort/Kontext, Typ, Anreise, Bewertungen und Sorten) angelegt hat,
+    // geben wir den bestehenden Check-in zurück statt ein Duplikat anzulegen.
+    if (!$explicitDatumProvided && !$referencedCheckinId) {
+        $dupStmt = $pdo->prepare("
+            SELECT id, kommentar
+            FROM checkins
+            WHERE nutzer_id = ?
+              AND eisdiele_id <=> ?
+              AND context_type = ?
+              AND typ = ?
+              AND anreise <=> ?
+              AND geschmackbewertung <=> ?
+              AND waffelbewertung <=> ?
+              AND preisleistungsbewertung <=> ?
+              AND datum >= DATE_SUB(?, INTERVAL 180 SECOND)
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+        $dupStmt->execute([
+            $userId,
+            $shopId,
+            $contextType,
+            $type,
+            $anreise,
+            $geschmack,
+            $waffel,
+            $preisleistung,
+            $datum,
+        ]);
+        $existingDup = $dupStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingDup) {
+            $dupCheckinId = (int)$existingDup['id'];
+            $existingSortenStmt = $pdo->prepare("SELECT LOWER(TRIM(sortenname)) FROM checkin_sorten WHERE checkin_id = ? ORDER BY id ASC");
+            $existingSortenStmt->execute([$dupCheckinId]);
+            $existingSortenNames = array_values(array_filter($existingSortenStmt->fetchAll(PDO::FETCH_COLUMN)));
+
+            $incomingSortenNames = [];
+            foreach ($sorten as $s) {
+                $sName = mb_strtolower(trim((string)($s['name'] ?? '')), 'UTF-8');
+                if ($sName !== '') {
+                    $incomingSortenNames[] = $sName;
+                }
+            }
+
+            if ($existingSortenNames === $incomingSortenNames) {
+                if (trim((string)$kommentar) !== '' && trim((string)$kommentar) !== trim((string)($existingDup['kommentar'] ?? ''))) {
+                    $updCommentStmt = $pdo->prepare("UPDATE checkins SET kommentar = ? WHERE id = ?");
+                    $updCommentStmt->execute([$kommentar, $dupCheckinId]);
+                }
+
+                if (!empty($bildUrls)) {
+                    $existingImgStmt = $pdo->prepare("SELECT COUNT(*) FROM bilder WHERE checkin_id = ?");
+                    $existingImgStmt->execute([$dupCheckinId]);
+                    $hasExistingImages = (int)$existingImgStmt->fetchColumn() > 0;
+
+                    if ($hasExistingImages) {
+                        foreach ($bildUrls as $bild) {
+                            $fullPath = __DIR__ . '/../../' . ltrim((string)$bild['url'], '/');
+                            if (is_file($fullPath)) {
+                                @unlink($fullPath);
+                            }
+                        }
+                    } else {
+                        $insertDupImgStmt = $pdo->prepare("
+                            INSERT INTO bilder (checkin_id, nutzer_id, url, beschreibung, shop_id)
+                            VALUES (?, ?, ?, ?, ?)
+                        ");
+                        foreach ($bildUrls as $bild) {
+                            $insertDupImgStmt->execute([$dupCheckinId, $userId, $bild['url'], $bild['beschreibung'], $shopId]);
+                        }
+                    }
+                }
+
+                $streakSnapshot = streakPayload(streakLoad($pdo, (int)$userId, $streakClock), $streakClock, true);
+                if ($pdo->inTransaction()) {
+                    $pdo->commit();
+                }
+
+                if (ob_get_length()) {
+                    ob_clean();
+                }
+                echo json_encode([
+                    'status' => 'success',
+                    'checkin_id' => $dupCheckinId,
+                    'deduplicated' => true,
+                    'context_type' => $contextType,
+                    'streaks' => $streakSnapshot,
+                    'streak_events' => [],
+                    'new_awards' => [],
+                    'level_up' => false,
+                    'new_level' => null,
+                    'level_name' => null,
+                    'completed_challenge' => null,
+                    'completed_team_challenge' => null,
+                    'completed_ice_date' => null,
+                    'tour_de_glace_points' => [],
+                ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+                exit;
+            }
+        }
+    }
 
 
     // -------------------------
@@ -621,7 +745,7 @@ try {
             // protokollieren, aber nicht die gesamte Transaktion abbrechen.
             $evaluated = $evaluator->evaluate($userId);
             $newAwards = array_merge($newAwards, $evaluated);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
             // Fehler eines einzelnen Evaluators führt nicht zu Rollback
         }
@@ -681,7 +805,7 @@ try {
         try {
             $evaluated = $evaluator->evaluate($userId);
             $newAwards = array_merge($newAwards, $evaluated);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Fehler beim Evaluator: " . get_class($evaluator) . " - " . $e->getMessage());
         }
 
@@ -721,7 +845,7 @@ try {
         try {
             $evaluated = (new TourDeGlaceAwardEvaluator())->evaluate((int)$userId);
             $newAwards = array_merge($newAwards, $evaluated);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Fehler beim Evaluator: TourDeGlaceAwardEvaluator - " . $e->getMessage());
         }
     }
@@ -738,14 +862,21 @@ try {
     }
 
     if (!$pdo->inTransaction()) {
-        throw new Exception("Transaktion wurde vor dem Commit unerwartet beendet (impliziter Commit?).");
+        error_log("Warnung in checkin_upload: Transaktion war vor dem Commit bereits beendet (impliziter Commit) für checkin_id={$checkinId}");
     }
 
     // Alle DB-Operationen erfolgreich -> Commit
-    $pdo->commit();
+    if ($pdo->inTransaction()) {
+        $pdo->commit();
+    }
     $__profiling['after_sorten'] = microtime(true);
 
-    $levelChange = updateUserLevelIfChanged($pdo, $userId);
+    $levelChange = ['level_up' => false];
+    try {
+        $levelChange = updateUserLevelIfChanged($pdo, $userId) ?: ['level_up' => false];
+    } catch (Throwable $e) {
+        error_log("Fehler bei updateUserLevelIfChanged nach Checkin {$checkinId}: " . $e->getMessage());
+    }
     $__profiling['after_level'] = microtime(true);
 
     $profilingDurations = [
@@ -758,7 +889,17 @@ try {
         'total'       => round(($__profiling['after_level'] - $__profiling['start']) * 1000, 2) . " ms"
     ];
 
-    logProfiling($userId, $shopId, $profilingDurations, $evaluatorTimings);
+    try {
+        logProfiling($userId, $shopId, $profilingDurations, $evaluatorTimings);
+    } catch (Throwable $e) {
+        error_log("Fehler bei logProfiling: " . $e->getMessage());
+    }
+    if (ob_get_length()) {
+        $stray = trim((string)ob_get_clean());
+        if ($stray !== '') {
+            error_log("checkin_upload stray output before success JSON: " . $stray);
+        }
+    }
 
     // JSON-Antwort vorbereiten
     echo json_encode([
@@ -777,7 +918,7 @@ try {
         'tour_de_glace_points' => $tourDeGlacePoints
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     // Globales Exception-Handling für diesen Endpoint
     // Logge den Fehler mit Datei/Zeile, versuche ein Rollback falls aktiv
     error_log("Exception in checkin_upload: " . $e->getMessage() . " @ " . $e->getFile() . ":" . $e->getLine());
@@ -785,7 +926,7 @@ try {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-    } catch (Exception $rollbackError) {
+    } catch (Throwable $rollbackError) {
         // Falls Rollback fehlschlägt, loggen wir es zusätzlich, aber können
         // nichts weiter tun - wir verhindern damit die "There is no active transaction"-Fehler.
         error_log("Rollback fehlgeschlagen: " . $rollbackError->getMessage());

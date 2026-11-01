@@ -4,7 +4,7 @@ require_once __DIR__ . '/user_notification_settings.php';
 
 function ensurePushInfrastructureSchema(PDO $pdo): void
 {
-    if (isset($GLOBALS['__push_infrastructure_schema_initialized'])) {
+    if (isset($GLOBALS['__push_infrastructure_schema_initialized']) || $pdo->inTransaction()) {
         return;
     }
     $GLOBALS['__push_infrastructure_schema_initialized'] = true;

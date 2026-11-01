@@ -2,11 +2,10 @@
 
 function ensureAwardShownAtColumn(PDO $pdo): void
 {
-    static $initialized = false;
-    if ($initialized) {
+    if (isset($GLOBALS['__award_shown_at_column_initialized']) || $pdo->inTransaction()) {
         return;
     }
-    $initialized = true;
+    $GLOBALS['__award_shown_at_column_initialized'] = true;
 
     $column = $pdo->query("SHOW COLUMNS FROM user_awards LIKE 'shown_at'");
     if ($column && $column->fetch(PDO::FETCH_ASSOC)) {

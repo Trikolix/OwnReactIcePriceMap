@@ -203,7 +203,7 @@ function isTourDeGlaceLocalDevRequest(): bool
 
 function ensureTourDeGlaceTables(PDO $pdo): void
 {
-    if (isset($GLOBALS['__tour_de_glace_schema_initialized'])) {
+    if (isset($GLOBALS['__tour_de_glace_schema_initialized']) || $pdo->inTransaction()) {
         return;
     }
     $GLOBALS['__tour_de_glace_schema_initialized'] = true;

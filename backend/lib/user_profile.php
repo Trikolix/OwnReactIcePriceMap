@@ -1,6 +1,11 @@
 <?php
 
 function ensureUserProfileTable(PDO $pdo): void {
+    if (isset($GLOBALS['__user_profile_table_initialized']) || $pdo->inTransaction()) {
+        return;
+    }
+    $GLOBALS['__user_profile_table_initialized'] = true;
+
     $sql = "CREATE TABLE IF NOT EXISTS user_profile_images (
         user_id INT PRIMARY KEY,
         avatar_path VARCHAR(255) DEFAULT NULL,
@@ -11,12 +16,17 @@ function ensureUserProfileTable(PDO $pdo): void {
 }
 
 function ensureUserProfileColumns(PDO $pdo): void {
+    if (isset($GLOBALS['__user_profile_columns_initialized']) || $pdo->inTransaction()) {
+        return;
+    }
+    $GLOBALS['__user_profile_columns_initialized'] = true;
+
     $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE 'instagram_account'");
     $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
     if (!$column) {
         $pdo->exec("ALTER TABLE nutzer ADD COLUMN instagram_account VARCHAR(255) DEFAULT NULL");
     }
-    
+
     $stmt = $pdo->query("SHOW COLUMNS FROM nutzer LIKE 'strava_account'");
     $column = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
     if (!$column) {

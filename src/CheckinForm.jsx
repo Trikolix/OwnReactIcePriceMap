@@ -297,7 +297,22 @@ const CheckinForm = ({ shopId = null, shopName = "", contextType = "ice_shop", u
                 }
             );
 
-            const data = await response.json().catch(() => null);
+            const rawText = await response.text();
+            let data = null;
+            if (rawText) {
+                try {
+                    data = JSON.parse(rawText);
+                } catch {
+                    const jsonStart = rawText.indexOf('{"status":');
+                    if (jsonStart !== -1) {
+                        try {
+                            data = JSON.parse(rawText.slice(jsonStart));
+                        } catch {
+                            data = null;
+                        }
+                    }
+                }
+            }
             if (!response.ok || !data) {
                 throw new Error(data?.message || data?.error || `Upload fehlgeschlagen (${response.status})`);
             }
